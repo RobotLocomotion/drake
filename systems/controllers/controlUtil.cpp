@@ -25,6 +25,10 @@ using Eigen::VectorXd;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 
+namespace {
+const double kEpsilon = 10e-8;
+}
+
 template <typename DerivedA, typename DerivedB>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getRows(std::set<int>& rows, MatrixBase<DerivedA> const& M,
@@ -88,10 +92,10 @@ void surfaceTangents(const Vector3d& normal,
   Vector3d t1, t2;
   double theta;
 
-  if (1 - normal(2) < EPSILON) {  // handle the unit-normal case (since it's
-                                  // unit length, just check z)
+  if (1 - normal(2) < kEpsilon) {  // handle the unit-normal case (since it's
+                                   // unit length, just check z)
     t1 << 1, 0, 0;
-  } else if (1 + normal(2) < EPSILON) {
+  } else if (1 + normal(2) < kEpsilon) {
     t1 << -1, 0, 0;  // same for the reflected case
   } else {           // now the general case
     t1 << normal(1), -normal(0), 0;

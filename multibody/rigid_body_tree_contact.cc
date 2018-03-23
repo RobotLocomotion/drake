@@ -16,6 +16,10 @@ using Eigen::Vector3d;
 using Eigen::VectorXi;
 using std::vector;
 
+namespace {
+const double kEpsilon = 10e-8;
+}
+
 // Computes surface tangent vectors for a single normal vector
 // INPUTS:
 //   normal: (3 x 1) normal vector in world coordinates
@@ -29,10 +33,10 @@ void surfaceTangentsSingle(Vector3d const &normal, Matrix3kd &d) {
   Vector3d t1, t2;
   double theta;
 
-  if (1.0 - normal(2) < EPSILON) {  // handle the unit-normal case (since it's
-                                    // unit length, just check z)
+  if (1.0 - normal(2) < kEpsilon) {  // handle the unit-normal case (since it's
+                                     // unit length, just check z)
     t1 << 1.0, 0.0, 0.0;
-  } else if (1 + normal(2) < EPSILON) {
+  } else if (1 + normal(2) < kEpsilon) {
     t1 << -1.0, 0.0, 0.0;  // same for the reflected case
   } else {                 // now the general case
     t1 << normal(1), -normal(0), 0.0;
