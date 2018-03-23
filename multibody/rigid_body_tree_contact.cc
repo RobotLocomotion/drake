@@ -268,21 +268,6 @@ void RigidBodyTree<T>::surfaceTangents(
 }
 
 template void RigidBodyTree<double>::computeContactJacobians<
-    Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(
-    KinematicsCache<Eigen::AutoDiffScalar<
-        Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const &,
-    Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0,
-               Eigen::InnerStride<1> > const &,
-    Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0,
-               Eigen::InnerStride<1> > const &,
-    Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
-               Eigen::OuterStride<-1> > const &,
-    Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
-               Eigen::OuterStride<-1> > const &,
-    Eigen::Matrix<
-        Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1,
-        0, -1, -1> &) const;
-template void RigidBodyTree<double>::computeContactJacobians<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(
     KinematicsCache<Eigen::AutoDiffScalar<
         Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const &,
