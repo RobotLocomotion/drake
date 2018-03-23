@@ -17,6 +17,16 @@
 namespace drake {
 namespace solvers {
 
+/// Non-template class for UnrevisedLemkeSolver<T> constants.
+class UnrevisedLemkeSolverId {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolverId);
+  UnrevisedLemkeSolverId() = delete;
+
+  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  static SolverId id();
+};
+
 /// A class for the Unrevised Implementation of Lemke Algorithm's for solving
 /// Linear Complementarity Problems (LCPs). See MobyLcpSolver for a description
 /// of LCPs.
@@ -212,9 +222,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // variables to permit warmstarting. Changing these sets between invocations
   // of the LCP solver will not change the resulting computation.
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
 };
 
 }  // end namespace solvers

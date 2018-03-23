@@ -167,6 +167,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
+        ":unrevised_lemke_solver",
         "//common:essential",
     ],
 )
@@ -455,6 +456,7 @@ drake_cc_library(
     hdrs = ["unrevised_lemke_solver.h"],
     deps = [
         ":mathematical_program_api",
+        "//drake/common:default_scalars",
         "//drake/common:essential",
     ],
 )

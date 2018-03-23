@@ -15,6 +15,7 @@
 #include <Eigen/SparseLU>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
@@ -270,7 +271,7 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   //
 
   // We don't actually indicate different results.
-  SolverResult solver_result(UnrevisedLemkeSolver::id());
+  SolverResult solver_result(UnrevisedLemkeSolverId::id());
 
   // Create a dummy variable for the number of pivots used.
   int num_pivots = 0;
@@ -728,21 +729,18 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
 template <typename T>
 SolverId UnrevisedLemkeSolver<T>::solver_id() const {
-  return UnrevisedLemkeSolver::id();
+  return UnrevisedLemkeSolverId::id();
 }
 
-template <class T>
-SolverId UnrevisedLemkeSolver<T>::id() {
+SolverId UnrevisedLemkeSolverId::id() {
   static const never_destroyed<SolverId> singleton{"Unrevised Lemke"};
   return singleton.access();
 }
 
-// Instantiate templates.
-template class UnrevisedLemkeSolver<double>;
-template class
-    solvers::UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
-template class
-    solvers::UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>;
-
 }  // namespace solvers
 }  // namespace drake
+
+// Instantiate templates.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::solvers::UnrevisedLemkeSolver)
+
