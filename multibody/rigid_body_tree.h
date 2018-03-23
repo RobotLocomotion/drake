@@ -833,7 +833,10 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
-      int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+      int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return DoTransformPointsJacobianDotTimesV(
+        cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(
@@ -1661,6 +1664,11 @@ class RigidBodyTree {
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> DoTransformPointsJacobianDotTimesV(
+      const KinematicsCache<Scalar>&, const Eigen::Ref<const Eigen::Matrix3Xd>&,
+      int, int) const;
 
   // TODO(SeanCurtis-TRI): This isn't properly used.
   // No query operations should work if it hasn't been initialized.  Calling
