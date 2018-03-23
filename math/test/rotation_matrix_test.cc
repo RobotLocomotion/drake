@@ -477,6 +477,7 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
     EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
   }
 
+#ifdef DRAKE_ASSERT_IS_ARMED
   // A zero quaternion should throw an exception.
   const Eigen::Quaterniond q_zero(0, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::logic_error);
@@ -485,6 +486,7 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   double nan = std::numeric_limits<double>::quiet_NaN();
   const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::logic_error);
+#endif
 }
 
 }  // namespace
