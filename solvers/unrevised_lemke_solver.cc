@@ -205,7 +205,6 @@ void SetSubVector(const std::vector<int>& indices, const VectorX<T>& v_sub,
 template <>
 SolutionResult
     UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
     MathematicalProgram&) const {
   DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
                   "MathematicalProgram while templatized as an AutoDiff");
@@ -311,7 +310,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSetsHelper(
   std::sort(variable_and_array_indices_.begin(),
             variable_and_array_indices_.end());
 
-  // Set alpha and alpha_prime.
+  // Construct the set and the primed set
   for (const auto& variable_and_array_index_pair :
       variable_and_array_indices_) {
     variable_set->push_back(variable_and_array_index_pair.first);
@@ -341,9 +340,8 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
                            &index_sets_.bar_beta, &index_sets_.bar_beta_prime);
 }
 
-// Verifies that each element of the pivoting set is unique for debugging
-// purposes. This is an expensive operation and should only be executed in
-// debug mode.
+// Verifies that each element of the pivoting set is unique. This is an
+// expensive operation and should only be executed in debug mode.
 template <class T>
 bool UnrevisedLemkeSolver<T>::IsEachUnique(
     const std::vector<LCPVariable>& vars) {
@@ -510,7 +508,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       "q: {}, ", M, q.transpose());
 
   const int n = q.size();
-  const int max_pivots = 50 * n;
+  const int max_pivots = 50 * n;  // O(n) pivots expected for solvable problems.
 
   if (M.rows() != n || M.cols() != n)
     throw std::logic_error("M's dimensions do not match that of q.");
