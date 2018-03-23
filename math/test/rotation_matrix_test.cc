@@ -476,6 +476,15 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
     const RotationMatrix<double> R(qi);
     EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 40 * kEpsilon));
   }
+
+  // A zero quaternion should throw an exception.
+  const Eigen::Quaterniond q_zero(0, 0, 0, 0);
+  EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::logic_error);
+
+  // A NAN quaternion should throw an exception.
+  double nan = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
+  EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::logic_error);
 }
 
 }  // namespace
