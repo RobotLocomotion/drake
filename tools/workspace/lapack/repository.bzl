@@ -5,5 +5,13 @@ load(
     "pkg_config_repository",
 )
 
-def lapack_repository(name, modname = "lapack", **kwargs):
-    pkg_config_repository(name = name, modname = modname, **kwargs)
+def lapack_repository(
+        name,
+        licenses = ["notice"],  # BSD-3-Clause
+        modname = "lapack",
+        **kwargs):
+    pkg_config_repository(
+        name = name,
+        licenses = licenses,
+        modname = modname,
+        **kwargs)

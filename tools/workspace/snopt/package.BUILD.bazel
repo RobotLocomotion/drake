@@ -1,5 +1,7 @@
 # -*- python -*-
 
+licenses(["by_exception_only"])  # SNOPT
+
 # In some versions of SNOPT, this header provides the function declarations to
 # control SNOPT's logging.  In other versions, those declarations instead
 # appear directly in cexamples/snopt.h and this file is absent.  We'll sense

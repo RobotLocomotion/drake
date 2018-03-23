@@ -91,6 +91,8 @@ def _impl(repository_ctx):
 
     file_content = """# -*- python -*-
 
+licenses(["notice"])  # Python-2.0
+
 cc_library(
     name = "python_headers",
     hdrs = glob(["include/**"]),

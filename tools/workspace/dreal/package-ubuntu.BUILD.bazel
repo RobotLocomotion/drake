@@ -10,6 +10,8 @@ load(
     "IBEX_VERSION",
 )
 
+licenses(["notice"])  # Apache-2.0
+
 package(default_visibility = ["//visibility:public"])
 
 _DREAL_BASE = "opt/dreal/{}/".format(DREAL_VERSION)
@@ -44,6 +46,7 @@ cc_library(
         _IBEX_BASE + "include/ibex",
         _IBEX_BASE + "include/ibex/3rd",
     ],
+    licenses = ["restricted"],  # LGPL-3.0
     # The linkopts= here are transcribed from the contents of the *.pc file.
     linkopts = [
         "-lClp",

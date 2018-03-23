@@ -2,6 +2,8 @@
 
 load("@drake//tools/install:install.bzl", "install")
 
+licenses(["notice"])  # BSD-2-Clause
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(

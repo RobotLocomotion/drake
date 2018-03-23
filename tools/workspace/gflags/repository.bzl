@@ -38,7 +38,10 @@ def _impl(repository_ctx):
     if os_result.ubuntu_release == "16.04":
         repository_ctx.symlink("/usr/include/gflags", "include/gflags")
 
-        file_content = """
+        file_content = """# -*- python -*-
+
+licenses(["notice"])  # BSD-3-Clause
+
 cc_library(
     name = "gflags",
     hdrs = [
@@ -62,6 +65,7 @@ cc_library(
             fail(error)
 
 gflags_repository = repository_rule(
+    # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "gflags"),
         "pkg_config_paths": attr.string_list(

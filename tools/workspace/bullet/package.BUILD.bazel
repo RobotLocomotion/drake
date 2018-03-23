@@ -8,6 +8,11 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
+licenses([
+    "notice",  # Zlib
+    "restricted",  # LGPL-2.1+
+])
+
 package(default_visibility = ["//visibility:public"])
 
 config_setting(

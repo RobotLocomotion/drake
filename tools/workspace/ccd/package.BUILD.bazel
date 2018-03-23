@@ -9,6 +9,8 @@ load(
     "install",
 )
 
+licenses(["notice"])  # BSD-3-Clause
+
 package(
     default_visibility = ["//visibility:public"],
 )

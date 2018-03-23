@@ -1,5 +1,10 @@
 # -*- python -*-
 
+licenses([
+    "notice",  # Apache-2.0 AND BSD-3-Clause AND ISC AND MIT AND Zlib
+    "unencumbered",  # Public-Domain
+])
+
 # Compile a tool that knows how to emit the version*.gen.h files.
 py_binary(
     name = "update_version",

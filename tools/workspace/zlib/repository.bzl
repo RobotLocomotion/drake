@@ -39,7 +39,10 @@ def _impl(repository_ctx):
         repository_ctx.symlink("/usr/include/zlib.h", "include/zlib.h")
         repository_ctx.symlink("/usr/include/zconf.h", "include/zconf.h")
 
-        file_content = """
+        file_content = """# -*- python -*-
+
+licenses(["notice"])  # Zlib
+
 cc_library(
     name = "zlib",
     hdrs = [
@@ -61,6 +64,7 @@ cc_library(
             fail(error)
 
 zlib_repository = repository_rule(
+    # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "zlib"),
     },

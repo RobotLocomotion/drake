@@ -6,6 +6,7 @@ package(default_visibility = ["//visibility:public"])
 
 exports_files(
     ["com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh"],
+    licenses = ["notice"],  # Apache-2.0
     visibility = [
         "//common:__pkg__",
         "//tools/cc_toolchain:__pkg__",
@@ -14,21 +15,19 @@ exports_files(
 
 exports_files(
     ["net_sf_jchart2d/LICENSE"],
+    licenses = ["restricted"],  # LGPL-3.0+
     visibility = ["//tools/workspace/net_sf_jchart2d:__pkg__"],
 )
 
 exports_files(
-    ["com_github_robotlocomotion_libbot2/LICENSE.ldpc"],
-    visibility = ["@libbot//:__pkg__"],
-)
-
-exports_files(
     glob(["com_kitware_gitlab_cmake_cmake/**"]),
+    licenses = ["notice"],  # BSD-3-Clause
     visibility = ["//tools/workspace/find_protobuf_cmake:__pkg__"],
 )
 
 exports_files(
     glob(["josephdavisco_spruce/**"]),
+    licenses = ["notice"],  # BSD-3-Clause
     visibility = ["@spruce//:__pkg__"],
 )
 
@@ -37,11 +36,13 @@ exports_files(
         "com_github_google_protobuf/LICENSE",
         "com_github_google_protobuf/protobuf.bzl",
     ],
+    licenses = ["notice"],  # BSD-3-Clause
     visibility = ["@com_google_protobuf//:__pkg__"],
 )
 
 exports_files(
     ["com_github_google_protobuf/protobuf-ubsan-fixup.h"],
+    licenses = ["notice"],  # BSD-3-Clause
     visibility = ["//common/proto:__pkg__"],
 )
 
@@ -51,6 +52,7 @@ exports_files(
         "__init__.py",
         "wrappers.py",
     ]],
+    licenses = ["notice"],  # BSD-2-Clause
     visibility = ["//bindings/pydrake/third_party:__pkg__"],
 )
 

@@ -50,7 +50,13 @@ def _impl(repository_ctx):
     destination = repository_ctx.path("include")
     repository_ctx.symlink(source, destination)
 
-    file_content = """
+    file_content = """# -*- python -*-
+
+licenses([
+    "notice",  # BSD-2-Clause AND BSD-3-Clause AND MIT AND Python-2.0
+    "unencumbered",  # Public-Domain
+])
+
 cc_library(
     name = "numpy",
     hdrs = glob(["include/**"]),
