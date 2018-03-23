@@ -936,7 +936,7 @@ class RigidBodyTree {
   }
 
   /**
-   * Updates the collision elements registered with the collision detection 
+   * Updates the collision elements registered with the collision detection
    * engine.  Note: If U is not a double then the transforms from kinematics
    * cache will be forcefully cast to doubles (discarding any gradient
    * information).  Callers that set @p throw_if_missing_gradient to
@@ -945,7 +945,7 @@ class RigidBodyTree {
    * zero.
    * @see ComputeMaximumDepthCollisionPoints for an example.
    *
-   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    * only if @p throws_if_missing_gradient is true.
    */
   template <typename U>
@@ -955,8 +955,8 @@ class RigidBodyTree {
       bool throw_if_missing_gradient = true);
 
   /**
-   * @see updateCollisionElements 
-   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * @see updateCollisionElements
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    * only if @p throws_if_missing_gradient is true.
    */
   template <typename U>
@@ -1141,7 +1141,7 @@ class RigidBodyTree {
    @param[in] use_margins If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
 
-   @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    only if @p throws_if_missing_gradient is true.
    **/
   template <typename U>
