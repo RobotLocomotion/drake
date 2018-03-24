@@ -14,7 +14,7 @@ std::string CacheEntryValue::GetPathDescription() const {
 }
 
 void CacheEntryValue::ThrowIfBadCacheEntryValue(
-    const internal::SystemPathnameInterface* owning_subcontext) const {
+    const internal::ContextMessageInterface* owning_subcontext) const {
   if (owning_subcontext_ == nullptr) {
     // Can't use FormatName() here because that depends on us having an owning
     // context to talk to.
@@ -117,7 +117,7 @@ void Cache::SetAllEntriesOutOfDate() {
 }
 
 void Cache::RepairCachePointers(
-    const internal::SystemPathnameInterface* owning_subcontext) {
+    const internal::ContextMessageInterface* owning_subcontext) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   DRAKE_DEMAND(owning_subcontext_ == nullptr);
   owning_subcontext_ = owning_subcontext;
