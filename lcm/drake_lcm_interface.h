@@ -51,21 +51,6 @@ class DrakeLcmInterface {
    */
   virtual void Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) = 0;
-
-  /**
-   * Only used for supporting Lcm log playback. Default implementation is no-op.
-   * @see DrakeLcmLog::DispatchMessageAndAdvanceLog
-   */
-  virtual void DispatchMessageAndAdvanceLog(double) {}
-
-  /**
-   * Only used for supporting Lcm log playback. Default implementation returns
-   * infinity.
-   * @see DrakeLcmLog::GetNextMessageTime
-   */
-  virtual double GetNextMessageTime() const {
-    return std::numeric_limits<double>::infinity();
-  }
 };
 
 /**
