@@ -13,7 +13,7 @@ DrakeMockLcm::DrakeMockLcm() {}
 
 
 void DrakeMockLcm::Publish(const std::string& channel, const void* data,
-                           int data_size, double) {
+                           int data_size, optional<double> time_sec) {
   DRAKE_THROW_UNLESS(!channel.empty());
   if (last_published_messages_.find(channel) ==
       last_published_messages_.end()) {
@@ -26,6 +26,7 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
 
   const uint8_t* bytes = static_cast<const uint8_t*>(data);
   saved_message->data = std::vector<uint8_t>(&bytes[0], &bytes[data_size]);
+  saved_message->time_sec = time_sec;
 
   if (enable_loop_back_) {
     InduceSubscriberCallback(channel, data, data_size);
@@ -46,6 +47,15 @@ const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
   DRAKE_DEMAND(message);
 
   return message->data;
+}
+
+optional<double> DrakeMockLcm::get_last_publication_time(
+    const std::string& channel) const {
+  auto iter = last_published_messages_.find(channel);
+  if (iter == last_published_messages_.end()) {
+    return nullopt;
+  }
+  return iter->second.time_sec;
 }
 
 void DrakeMockLcm::Subscribe(const std::string& channel,

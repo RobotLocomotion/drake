@@ -64,7 +64,7 @@ class DrakeLcm : public DrakeLcmInterface {
   ::lcm::LCM* get_lcm_instance();
 
   void Publish(const std::string& channel, const void* data,
-               int data_size, double time_sec = 0) override;
+               int data_size, optional<double> time_sec) override;
 
   void Subscribe(const std::string& channel,
                  DrakeLcmMessageHandlerInterface* handler) override;

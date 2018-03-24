@@ -47,7 +47,6 @@ drake_cc_library(
     deps = [
         ":translator",
         "//lcm:interface",
-        "//lcm:lcm_log",
         "//systems/framework",
     ],
 )
