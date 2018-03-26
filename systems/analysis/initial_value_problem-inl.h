@@ -107,22 +107,27 @@ const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
 template <typename T>
 InitialValueProblem<T>::InitialValueProblem(
     const typename InitialValueProblem<T>::ODEFunction& ode_function,
-    const T& default_initial_time, const VectorX<T>& default_initial_state,
-    const VectorX<T>& default_parameters)
-    : default_initial_time_(default_initial_time),
-      default_initial_state_(default_initial_state),
-      default_parameters_(default_parameters),
-      current_initial_time_(default_initial_time),
-      current_initial_state_(default_initial_state),
-      current_parameters_(default_parameters) {
+    const typename InitialValueProblem<T>::SpecifiedValues& default_values)
+    : default_values_(default_values),
+      current_values_(default_values) {
+  // Checks that preconditions are met.
+  if (!default_values_.t0) {
+    throw std::logic_error("No default initial time t0 was given.");
+  }
+  if (!default_values_.x0) {
+    throw std::logic_error("No default initial state x0 was given.");
+  }
+  if (!default_values_.k) {
+    throw std::logic_error("No default parameters vector k was given.");
+  }
   // Instantiates the system using the given defaults as models.
   system_ = std::make_unique<detail::ODESystem<T>>(
-      ode_function, default_initial_state_, default_parameters_);
+      ode_function, default_values_.x0.value(), default_values_.k.value());
 
   // Allocates a new default integration context with the
   // given default initial time.
   context_ = system_->CreateDefaultContext();
-  context_->set_time(default_initial_time_);
+  context_->set_time(default_values_.t0.value());
 
   // Instantiates an explicit RK3 integrator by default.
   integrator_ = std::make_unique<RungeKutta3Integrator<T>>(
@@ -138,29 +143,33 @@ InitialValueProblem<T>::InitialValueProblem(
 }
 
 template <typename T>
-VectorX<T> InitialValueProblem<T>::Solve(
-    const T& initial_time, const VectorX<T>& initial_state,
-    const T& time, const VectorX<T>& parameters) const {
-  if (time < initial_time) {
-    throw std::logic_error("Cannot solve IVP for a time"
-                           " before the initial condition.");
+VectorX<T> InitialValueProblem<T>::Solve(const T& tf,
+    const typename InitialValueProblem<T>::SpecifiedValues& values) const {
+  // Gets specified values to solve with, while checking
+  // that all preconditions hold.
+  const T t0 = values.t0.value_or(default_values_.t0.value());
+  if (tf < t0) {
+    throw std::logic_error("Cannot solve IVP for a time tf"
+                           " before the initial time t0.");
   }
-  if (initial_state.size() != default_initial_state_.size()) {
-    throw std::logic_error("IVP initial state vector is"
-                           "of the wrong dimension.");
+  const VectorX<T> x0 = values.x0.value_or(default_values_.x0.value());
+  if (x0.size() != default_values_.x0.value().size()) {
+    throw std::logic_error("IVP initial state vector x0 is"
+                           " of the wrong dimension.");
   }
-  if (parameters.size() != default_parameters_.size()) {
-    throw std::logic_error("IVP parameters vector is "
-                           "of the wrong dimension");
+  const VectorX<T> k = values.k.value_or(default_values_.k.value());
+  if (k.size() != default_values_.k.value().size()) {
+    throw std::logic_error("IVP parameter vector k is "
+                           " of the wrong dimension");
   }
   // Performs cache invalidation and re-initializes both
   // integrator and integration context if necessary.
-  if (initial_time != current_initial_time_
-      || initial_state != current_initial_state_
-      || parameters != current_parameters_
-      || time < context_->get_time()) {
+  if (t0 != current_values_.t0 ||
+      x0 != current_values_.x0 ||
+      k != current_values_.k ||
+      tf < context_->get_time()) {
     // Sets context (initial) time.
-    context_->set_time(initial_time);
+    context_->set_time(t0);
 
     // Sets context (initial) state. This cast is safe because the
     // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
@@ -168,12 +177,12 @@ VectorX<T> InitialValueProblem<T>::Solve(
     // instances only by design.
     BasicVector<T>& state_vector = dynamic_cast<BasicVector<T>&>(
         context_->get_mutable_continuous_state_vector());
-    state_vector.set_value(initial_state);
+    state_vector.set_value(x0);
 
     // Sets context parameters.
     BasicVector<T>& parameter_vector =
         context_->get_mutable_numeric_parameter(0);
-    parameter_vector.set_value(parameters);
+    parameter_vector.set_value(k);
 
     // Keeps track of current step size and accuracy settings (regardless
     // of whether these are actually used by the integrator instance or not).
@@ -194,9 +203,9 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
     // Keeps track of the current initial conditions and parameters
     // for future cache invalidation.
-    current_initial_time_ = initial_time;
-    current_initial_state_ = initial_state;
-    current_parameters_ = parameters;
+    current_values_.t0 = t0;
+    current_values_.x0 = x0;
+    current_values_.k = k;
   }
 
   // Initializes integrator if necessary.
@@ -206,7 +215,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
 
   // Integrates up to the requested time.
   integrator_->IntegrateWithMultipleSteps(
-      time - context_->get_time());
+      tf - context_->get_time());
 
   // Retrieves the system's state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just

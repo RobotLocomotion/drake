@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <map>
@@ -637,8 +638,10 @@ class System {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
-    T time;
+    T time{NAN};
     DoCalcNextUpdateTime(context, events, &time);
+    using std::isnan;
+    DRAKE_ASSERT(!isnan(time));
     return time;
   }
 

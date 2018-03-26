@@ -47,6 +47,7 @@ python-protobuf
 python-pygame
 python-sphinx
 python-tk
+unzip
 valgrind
 zip
 zlib1g-dev

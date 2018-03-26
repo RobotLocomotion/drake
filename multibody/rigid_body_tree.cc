@@ -3409,7 +3409,8 @@ template VectorX<AutoDiffXd     > RigidBodyTree<double>::positionConstraintsJacD
 template VectorXd                 RigidBodyTree<double>::positionConstraintsJacDotTimesV<double         >(KinematicsCache<double         > const&) const;  // NOLINT
 
 // Explicit template instantiations for jointLimitConstriants.
-template void RigidBodyTree<double>::jointLimitConstraints<VectorXd, VectorXd, MatrixXd>(Eigen::MatrixBase<VectorXd> const&, Eigen::MatrixBase<VectorXd>&, Eigen::MatrixBase<MatrixXd>&) const;  // NOLINT
+template void RigidBodyTree<double>::jointLimitConstraints<VectorXd            , VectorXd            , MatrixXd            >(Eigen::MatrixBase<VectorXd            > const&, Eigen::MatrixBase<VectorXd            >&, Eigen::MatrixBase<MatrixXd            >&) const;  // NOLINT
+template void RigidBodyTree<double>::jointLimitConstraints<Eigen::Map<VectorXd>, Eigen::Map<VectorXd>, Eigen::Map<MatrixXd>>(Eigen::MatrixBase<Eigen::Map<VectorXd>> const&, Eigen::MatrixBase<Eigen::Map<VectorXd>>&, Eigen::MatrixBase<Eigen::Map<MatrixXd>>&) const;  // NOLINT
 
 // Explicit template instantiations for relativeTwist.
 template TwistVector<AutoDiffUpTo73d> RigidBodyTree<double>::relativeTwist<AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d> const&, int, int, int) const;  // NOLINT
@@ -3436,9 +3437,6 @@ template VectorX<double         > RigidBodyTree<double>::frictionTorques(Eigen::
 template VectorX<AutoDiffUpTo73d> RigidBodyTree<double>::inverseDynamics<AutoDiffUpTo73d>(KinematicsCache<AutoDiffUpTo73d>&, unordered_map<RigidBody<double> const*, TwistVector<AutoDiffUpTo73d>, hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>, Eigen::aligned_allocator<pair<RigidBody<double> const* const, TwistVector<AutoDiffUpTo73d>>>> const&, VectorX<AutoDiffUpTo73d> const&, bool) const;  // NOLINT
 template VectorX<AutoDiffXd     > RigidBodyTree<double>::inverseDynamics<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&, unordered_map<RigidBody<double> const*, TwistVector<AutoDiffXd     >, hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>, Eigen::aligned_allocator<pair<RigidBody<double> const* const, TwistVector<AutoDiffXd     >>>> const&, VectorX<AutoDiffXd     > const&, bool) const;  // NOLINT
 template VectorX<double         > RigidBodyTree<double>::inverseDynamics<double         >(KinematicsCache<double         >&, unordered_map<RigidBody<double> const*, WrenchVector<double        >, hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>, Eigen::aligned_allocator<pair<RigidBody<double> const* const, WrenchVector<double        >>>> const&, VectorX<double         > const&, bool) const;  // NOLINT
-
-// Explicit template instantiations for jointLimitConstraints.
-template void RigidBodyTree<double>::jointLimitConstraints<Eigen::Map<VectorXd>, Eigen::Map<VectorXd>, Eigen::Map<MatrixXd>>(Eigen::MatrixBase<Eigen::Map<VectorXd>> const&, Eigen::MatrixBase<Eigen::Map<VectorXd>>&, Eigen::MatrixBase<Eigen::Map<MatrixXd>>&) const;  // NOLINT
 
 // Explicit template instantiations for resolveCenterOfPressure.
 template pair<Vector3d, double> RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&, Eigen::MatrixBase<Vector3d> const&, Eigen::MatrixBase<Vector3d> const&) const;  // NOLINT

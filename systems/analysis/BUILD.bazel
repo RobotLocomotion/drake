@@ -117,6 +117,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scalar_initial_value_problem",
+    srcs = [
+        "scalar_initial_value_problem.cc",
+    ],
+    hdrs = [
+        "scalar_initial_value_problem.h",
+    ],
+    deps = [
+        ":initial_value_problem",
+        "//drake/common:essential",
+        "//drake/common:unused",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -213,6 +228,14 @@ drake_cc_googletest(
         ":initial_value_problem",
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":scalar_initial_value_problem",
     ],
 )
 
