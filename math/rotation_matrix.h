@@ -61,7 +61,7 @@ class RotationMatrix {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
     // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
-    // Extra cost for twoOverNormSquared   =  4 multiplies,  3 adds, 1 divide.
+    // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
     R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
@@ -523,7 +523,6 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Matrix3<T>& R) {
-    // TODO(mitiguy) Uncomment the next lines when quat2rotmat is removed.
     if (!R.allFinite())
       throw std::logic_error(
         "Error: Rotation matrix contains an element that is infinity or NAN.");
@@ -590,11 +589,11 @@ class RotationMatrix {
 
   // Constructs a 3x3 rotation matrix from a Quaternion.
   // @param[in] quaternion a quaternion which may or may not have unit length.
-  // @param[in] twoOverNormSquared is supplied by the calling method and is
+  // @param[in] two_over_norm_squared is supplied by the calling method and is
   // usually pre-computed as `2 / quaternion.squaredNorm()`.  If `quaternion`
   // has already been normalized [`quaternion.norm() = 1`] or there is a reason
   // (unlikely) that the calling method determines that normalization is
-  // unwanted, the calling method should just past `twoOverNormSquared = 2`.
+  // unwanted, the calling method should just past `two_over_norm_squared = 2`.
   // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
   // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
   // has a provision for an efficient algorithm for always calculating an
