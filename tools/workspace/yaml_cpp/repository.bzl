@@ -7,6 +7,7 @@ load(
 
 def yaml_cpp_repository(
         name,
+        licenses = ["notice"],  # X11
         modname = "yaml-cpp",
         atleast_version = "0.5.2",
         extra_deps = ["@boost//:boost_headers"],
@@ -14,6 +15,7 @@ def yaml_cpp_repository(
         **kwargs):
     pkg_config_repository(
         name = name,
+        licenses = licenses,
         modname = modname,
         atleast_version = atleast_version,
         extra_deps = extra_deps,

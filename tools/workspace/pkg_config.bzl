@@ -169,6 +169,8 @@ def setup_pkg_config_repository(repository_ctx):
 
     # Write out the BUILD file.
     substitutions = {
+        "%{licenses}": repr(
+            getattr(repository_ctx.attr, "licenses", [])),
         "%{name}": repr(
             repository_ctx.name),
         "%{srcs}": repr(
@@ -200,7 +202,11 @@ def _impl(repository_ctx):
              format(repository_ctx.name, result.error))
 
 pkg_config_repository = repository_rule(
+    # TODO(jamiesnape): Make licenses mandatory.
+    # TODO(jamiesnape): Use of this rule may cause additional transitive
+    # dependencies to be linked and their licenses must also be enumerated.
     attrs = {
+        "licenses": attr.string_list(),
         "modname": attr.string(mandatory = True),
         "atleast_version": attr.string(),
         "static": attr.bool(default = _DEFAULT_STATIC),
@@ -250,6 +256,10 @@ Example:
 
 Args:
     name: A unique name for this rule.
+    licenses: Licenses of the library. Valid license types include restricted,
+              reciprocal, notice, permissive, and unencumbered. See
+              https://docs.bazel.build/versions/master/be/functions.html#licenses_args
+              for more information.
     modname: The library name as known to pkg-config.
     atleast_version: (Optional) The --atleast-version to pkg-config.
     static: (Optional) Add linkopts for static linking to the library target.
