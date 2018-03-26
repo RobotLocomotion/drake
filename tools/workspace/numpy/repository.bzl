@@ -10,7 +10,7 @@ Example:
         load("@drake//tools/workspace/numpy:repo.bzl", "numpy_repository")
         numpy_repository(
             name = "foo",
-            python_version = "2.7",
+            python_version = "2",
         )
 
     BUILD:
@@ -22,8 +22,8 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    python_version: The version of Python for which NumPy headers are to be
-                    found.
+    python_version: The major or major.minor version of Python for which NumPy
+                    headers are to be found.
 """
 
 def _impl(repository_ctx):
@@ -63,6 +63,6 @@ cc_library(
 
 numpy_repository = repository_rule(
     _impl,
-    attrs = {"python_version": attr.string(default = "2.7")},
+    attrs = {"python_version": attr.string(default = "2")},
     local = True,
 )
