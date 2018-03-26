@@ -5,5 +5,13 @@ load(
     "pkg_config_repository",
 )
 
-def blas_repository(name, modname = "blas", **kwargs):
-    pkg_config_repository(name = name, modname = modname, **kwargs)
+def blas_repository(
+        name,
+        licenses = ["notice"],  # BSD-3-Clause
+        modname = "blas",
+        **kwargs):
+    pkg_config_repository(
+        name = name,
+        licenses = licenses,
+        modname = modname,
+        **kwargs)

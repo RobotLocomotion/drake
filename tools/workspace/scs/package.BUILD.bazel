@@ -2,6 +2,11 @@
 
 load("@drake//tools/install:install.bzl", "install")
 
+licenses([
+    "notice",  # MIT
+    "restricted",  # LGPL-2.1+
+])
+
 package(default_visibility = ["//visibility:public"])
 
 config_setting(

@@ -40,7 +40,10 @@ def _impl(repository_ctx):
         repository_ctx.symlink("/usr/include/expat_external.h",
                                "include/expat_external.h")
 
-        file_content = """
+        file_content = """# -*- python -*-
+
+licenses(["notice"])  # MIT
+
 cc_library(
     name = "expat",
     hdrs = [
@@ -62,6 +65,7 @@ cc_library(
             fail(error)
 
 expat_repository = repository_rule(
+    # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "expat"),
     },

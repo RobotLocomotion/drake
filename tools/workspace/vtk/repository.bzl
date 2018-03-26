@@ -126,7 +126,14 @@ def _impl(repository_ctx):
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
-    file_content = "# -*- python -*-"
+    file_content = """# -*- python -*-
+
+licenses([
+    "notice",  # BSD-3-Clause AND MIT
+    "reciprocal",  # GL2PS
+    "unencumbered",  # Public-Domain
+])
+"""
 
     # Note that we only create library targets for enough of VTK to support
     # those used directly or indirectly by Drake.

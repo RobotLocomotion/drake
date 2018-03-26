@@ -2,6 +2,8 @@
 
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
+licenses(["notice"])  # MIT
+
 package(default_visibility = ["//visibility:public"])
 
 # Downstream users of python modules expect to say 'import pycodestyle'.
