@@ -8,6 +8,12 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
+licenses(["notice"])  # Zlib AND (BSD-3-Clause OR LGPL-2.1+ OR Zlib)
+
+# Gimpact, which is used by BulletCollision offers a choice of three licenses,
+# and we choose Zlib to match the license of the rest of Bullet. Hence, the
+# license type only includes "notice" and not "restricted."
+
 package(default_visibility = ["//visibility:public"])
 
 config_setting(

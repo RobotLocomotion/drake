@@ -1,5 +1,10 @@
 # -*- python -*-
 
+licenses([
+    "notice",  # Apache-2.0 AND BSD-3-Clause AND ISC AND MIT AND Zlib
+    "unencumbered",  # Public-Domain
+])
+
 # Compile a tool that knows how to emit the version*.gen.h files.
 py_binary(
     name = "update_version",
@@ -87,7 +92,10 @@ cc_library(
     ],
 )
 
-# The packages that we want.  Use "/**" to also glob their subpackages.
+# The packages that we want.  Use "/**" to also glob their subpackages.  When
+# adding new third-party packages to this list, verify that the licenses()
+# function call at the top of this file and the inline comments next to it are
+# still accurate.
 _PACKAGES = [
     "core/**",
     "drivers",
