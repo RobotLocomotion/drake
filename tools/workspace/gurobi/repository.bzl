@@ -48,6 +48,8 @@ def _gurobi_impl(repository_ctx):
 
     file_content = """# -*- python -*-
 
+licenses(["by_exception_only"])  # Gurobi
+
 package(default_visibility = ["//visibility:public"])
 
 GUROBI_HDRS = glob([

@@ -41,7 +41,10 @@ def _impl(repository_ctx):
 
     repository_ctx.symlink("{}/include/boost".format(prefix), "boost")
 
-    file_content = """
+    file_content = """# -*- python -*-
+
+licenses(["notice"])  # BSL-1.0
+
 cc_library(
     name = "boost_headers",
     hdrs = glob({}),

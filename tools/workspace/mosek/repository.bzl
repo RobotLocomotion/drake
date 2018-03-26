@@ -100,6 +100,11 @@ def _impl(repository_ctx):
 
 load("@drake//tools/install:install.bzl", "install", "install_files")
 
+licenses([
+    "by_exception_only",  # MOSEK
+    "notice",  # fplib AND Zlib
+])
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(

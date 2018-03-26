@@ -1,7 +1,5 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
-
 load(
     "@drake//tools/install:install.bzl",
     "cmake_config",
@@ -14,6 +12,13 @@ load(
     "lcm_java_library",
     "lcm_py_library",
 )
+
+licenses([
+    "none",
+    "notice",  # BSD-3-Clause
+])
+
+package(default_visibility = ["//visibility:public"])
 
 LCM_SRCS = glob(["lcmtypes/*.lcm"])
 

@@ -64,6 +64,23 @@ def _impl(repository_ctx):
 
     file_content = """# -*- python -*-
 
+licenses([
+    "notice",  # Apache-2.0 AND BSD-3-Clause AND Python-2.0
+    "reciprocal",  # MPL-2.0
+    "restricted",  # LGPL-2.1 AND LGPL-2.1+
+    "unencumbered",  # Public-Domain
+])
+
+# drake-visualizer has the following non-system dependencies in addition to
+# those declared in deps:
+#   ctkPythonConsole: Apache-2.0
+#   Eigen: BSD-3-Clause AND MPL-2.0 AND Public-Domain
+#   LCM: BSD-3-Clause AND LGPL-2.1 AND LGPL-2.1+
+#   Python: Python-2.0
+#   PythonQt: LGPL-2.1
+#   QtPropertyBrowser: LGPL-2.1
+# TODO(jamiesnape): Enumerate system dependencies.
+
 py_library(
     name = "drake_visualizer_python_deps",
     deps = [

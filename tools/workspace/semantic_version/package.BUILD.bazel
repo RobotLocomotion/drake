@@ -1,5 +1,7 @@
 # -*- python -*-
 
+licenses(["notice"])  # BSD-2-Clause
+
 py_library(
     name = "semantic_version",
     srcs = glob(["*.py"]),
