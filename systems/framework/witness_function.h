@@ -98,8 +98,9 @@ class WitnessFunction {
   using CalcCallback = std::function<T(const Context<T>&)>;
 
   /// Constructs the witness function with the pointer to the given non-null
-  /// System, with the given direction type and specified calculation function,
-  /// and with no event type.
+  /// System; with the given description of this witness function (used
+  /// primarily for debugging and logging), direction type, and specified
+  /// calculation function; and with no event type.
   /// @note Constructing a witness function with no corresponding event forces
   ///       Simulator's integration of an ODE to halt at the witness isolation
   ///       time. For example, isolating a function's minimum or maximum values
@@ -110,27 +111,30 @@ class WitnessFunction {
   /// the lifetime of the witness function.
   template <class MySystem>
   WitnessFunction(const System<T>* system,
+                  const std::string& description,
                   const WitnessFunctionDirection& dtype,
                   T (MySystem::*calc)(const Context<T>&) const) :
-                  system_(system), dir_type_(dtype) {
+                  system_(system), description_(description), dir_type_(dtype) {
     DRAKE_DEMAND(system);
     set_calculation_function(calc);
   }
 
   /// Constructs the witness function with the pointer to the given non-null
-  /// System, with the given direction type and specified calculation function,
-  /// and with a unique pointer to the event that is to be dispatched when this
-  /// witness function triggers. Example events are publish, discrete variable
-  /// update, unrestricted update events.
+  /// System; with the given description of this witness function (used
+  /// primarily for debugging and logging), direction type, and specified
+  /// calculation function, and with a unique pointer to the event that is to be
+  /// dispatched when this witness function triggers. Example events are
+  /// publish, discrete variable update, unrestricted update events.
   /// @tparam EventType a class derived from Event<T>
   /// @warning the pointer to the System must be valid as long or longer than
   /// the lifetime of the witness function.
   template <class EventType, class MySystem>
   WitnessFunction(const System<T>* system,
+                  const std::string& description,
                   const WitnessFunctionDirection& dtype,
                   T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<EventType> e) :
-                  system_(system), dir_type_(dtype) {
+                  system_(system), description_(description), dir_type_(dtype) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
@@ -138,12 +142,9 @@ class WitnessFunction {
     event_ = std::move(e);
   }
 
-  /// Gets the name of this witness function (used primarily for logging and
-  /// debugging).
-  const std::string& get_name() const { return name_; }
-
-  /// Sets the name of this witness function.
-  void set_name(const std::string& name) { name_ = name; }
+  /// Gets the description of this witness function (used primarily for logging
+  /// and debugging).
+  const std::string& get_description() const { return description_; }
 
   /// Gets the direction(s) under which this witness function triggers.
   WitnessFunctionDirection get_dir_type() const { return dir_type_; }
@@ -153,7 +154,7 @@ class WitnessFunction {
     DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
     if (!calc_function_) {
       throw std::logic_error("WitnessFunction::CalcWitnessValue(): " +
-          get_name() +
+          get_description() +
           " had no calculation function available.");
     }
     return calc_function_(context);
@@ -217,14 +218,15 @@ class WitnessFunction {
   // A reference to the system.
   const System<T>* system_{nullptr};
 
+  // The description of this witness function (used primarily for debugging and
+  // logging).
+  const std::string description_;
+
   // Direction(s) under which this witness function triggers.
   WitnessFunctionDirection dir_type_;
 
   // Unique pointer to the event.
   std::unique_ptr<Event<T>> event_;
-
-  // The name of this witness function.
-  std::string name_;
 
   // The witness function calculation function pointer.
   CalcCallback calc_function_;

@@ -41,8 +41,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
                                   &BouncingBall::CopyStateOut);
 
     // Declare the witness function.
-    signed_distance_witness_ = std::make_unique<systems::WitnessFunction<T>>(
-        this,
+    signed_distance_witness_ = this->DeclareWitnessFunction(
+        "Signed distance",
         systems::WitnessFunctionDirection::kPositiveThenNonPositive,
         &BouncingBall::CalcSignedDistance,
         std::make_unique<systems::UnrestrictedUpdateEvent<T>>());

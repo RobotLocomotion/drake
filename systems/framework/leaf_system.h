@@ -809,6 +809,38 @@ class LeafSystem : public System<T> {
   }
   //@}
 
+  /// Syntactic sugar for declaring a witness function.
+  /// Constructs the witness function with the given description of the witness
+  /// function (used primarily for debugging and logging), direction type, and
+  /// specified calculation function; and with no event type.
+  /// @sa WitnessFunction::WitnessFunction() for a description of why one would
+  ///     want to construct a witness function with no event type.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& dtype,
+      T (MySystem::*calc)(const Context<T>&) const) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, dtype, calc);
+  }
+
+  /// Syntactic sugar for declaring a witness function.
+  /// Constructs the witness function with the given description of the witness
+  /// function (used primarily for debugging and logging), direction type, and
+  /// specified calculation function, and with a unique pointer to the event
+  /// that is to be dispatched when this witness function triggers. Example
+  /// events are publish, discrete variable update, unrestricted update events.
+  /// @tparam EventType a class derived from Event<T>
+  template <class MySystem, class EventType>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& dtype,
+      T (MySystem::*calc)(const Context<T>&) const,
+      std::unique_ptr<EventType> e) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, dtype, calc, std::move(e));
+  }
+
   // =========================================================================
   /// @name                    Declare output ports
   /// Methods in this section are used by derived classes to declare their

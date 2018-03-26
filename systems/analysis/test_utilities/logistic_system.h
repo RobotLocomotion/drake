@@ -24,7 +24,7 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = std::make_unique<WitnessFunction<T>>(this,
+    witness_ = this->DeclareWitnessFunction("Logistic witness",
         WitnessFunctionDirection::kCrossesZero,
         &LogisticSystem::GetStateValue,
         std::make_unique<PublishEvent<T>>());

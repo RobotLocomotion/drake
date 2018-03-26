@@ -21,8 +21,8 @@ class StatelessSystem final : public LeafSystem<T> {
   StatelessSystem(double offset, const WitnessFunctionDirection& dir_type)
       : LeafSystem<T>(SystemTypeTag<analysis_test::StatelessSystem>{}),
         offset_(offset) {
-    witness_ = std::make_unique<WitnessFunction<T>>(
-        this, dir_type, &StatelessSystem::CalcClockWitness,
+    witness_ = this->DeclareWitnessFunction(
+        "clock witness", dir_type, &StatelessSystem::CalcClockWitness,
             std::make_unique<PublishEvent<T>>());
   }
 
