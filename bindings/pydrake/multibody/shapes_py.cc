@@ -78,12 +78,18 @@ PYBIND11_MODULE(shapes, m) {
       return self->getLocalTransform().matrix();
     });
   py::class_<VisualElement, Element>(m, "VisualElement")
-    .def(py::init<const Geometry&, const Eigen::Isometry3d&,
-                  const Eigen::Vector4d&>(),
-         py::arg("geometry_in"),
-         py::arg("T_element_to_local"),
+    .def("__init__",
+         [](VisualElement& instance, const Geometry& geometry_in,
+            const Eigen::Matrix4d& T_element_to_local,
+            const Eigen::Vector4d& material_in) {
+           Eigen::Isometry3d tf;
+           tf.matrix() = T_element_to_local;
+           new (&instance) VisualElement(geometry_in, tf, material_in);
+         },
+         py::arg("geometry_in"), py::arg("T_element_to_local"),
          py::arg("material_in"))
-    .def("setMaterial", &VisualElement::setMaterial, "Apply an RGBA material.")
+    .def("setMaterial", &VisualElement::setMaterial,
+         "Apply an RGBA material.")
     .def("getMaterial", &VisualElement::getMaterial, "Get an RGBA material.");
 }
 

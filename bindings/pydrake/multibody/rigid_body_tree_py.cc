@@ -8,6 +8,8 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/type_pack.h"
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -19,6 +21,7 @@ using std::make_unique;
 namespace drake {
 namespace pydrake {
 
+
 PYBIND11_MODULE(rigid_body_tree, m) {
   m.doc() = "Bindings for the RigidBodyTree class";
 
@@ -27,7 +30,10 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   namespace sdf = drake::parsers::sdf;
   using std::shared_ptr;
 
+  py::module::import("pydrake.multibody.collision");
+  py::module::import("pydrake.multibody.joints");
   py::module::import("pydrake.multibody.parsers");
+  py::module::import("pydrake.multibody.rigid_body");
   py::module::import("pydrake.multibody.shapes");
   py::module::import("pydrake.util.eigen_geometry");
 
@@ -118,7 +124,45 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_body", &RigidBodyTree<double>::get_body,
          py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
+<<<<<<< b2fb0ea14a29e1fe8805f89f2d26617debc3b780
     .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
+=======
+    .def("transformPoints", [](const RigidBodyTree<double>& tree,
+                               const KinematicsCache<double>& cache,
+                               const Eigen::Matrix<double, 3,
+                                                   Eigen::Dynamic>& points,
+                               int from_body_or_frame_ind,
+                               int to_body_or_frame_ind) {
+      return tree.transformPoints(cache, points,
+                                  from_body_or_frame_ind, to_body_or_frame_ind);
+    })
+    .def("transformPoints", [](const RigidBodyTree<double>& tree,
+                               const KinematicsCache<AutoDiffXd>& cache,
+                               const Eigen::Matrix<double, 3,
+                                                   Eigen::Dynamic>& points,
+                               int from_body_or_frame_ind,
+                               int to_body_or_frame_ind) {
+      return tree.transformPoints(cache, points,
+                                  from_body_or_frame_ind, to_body_or_frame_ind);
+    })
+    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
+                                  const KinematicsCache<double>& cache,
+                                  int base_or_frame_ind,
+                                  int body_or_frame_ind) {
+      return tree.relativeTransform(cache, base_or_frame_ind,
+        body_or_frame_ind).matrix();
+    })
+    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
+                                  const KinematicsCache<AutoDiffXd>& cache,
+                                  int base_or_frame_ind,
+                                  int body_or_frame_ind) {
+      return tree.relativeTransform(cache, base_or_frame_ind,
+        body_or_frame_ind).matrix();
+    })
+    .def("add_rigid_body", &RigidBodyTree<double>::add_rigid_body)
+    .def("addCollisionElement", &RigidBodyTree<double>::addCollisionElement)
+    .def("addFrame", &RigidBodyTree<double>::addFrame)
+>>>>>>> Split out bindings for rigid_body and some joints and collision types
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
                         const std::string& model_name = "",

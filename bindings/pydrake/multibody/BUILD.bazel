@@ -82,11 +82,47 @@ drake_pybind_library(
     cc_srcs = ["rigid_body_tree_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":collision_py",
+        ":joints_py",
         ":module_py",
         ":parsers_py",
+        ":rigid_body_py",
         ":shapes_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "collision_py",
+    cc_so_name = "collision",
+    cc_srcs = ["collision_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":rigid_body_py",
+        ":shapes_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "joints_py",
+    cc_so_name = "joints",
+    cc_srcs = ["joints_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "rigid_body_py",
+    cc_so_name = "rigid_body",
+    cc_srcs = ["rigid_body_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":shapes_py",
     ],
 )
 
@@ -101,8 +137,11 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":collision_py",
+    ":joints_py",
     ":multibody_tree_py",
     ":parsers_py",
+    ":rigid_body_py",
     ":rigid_body_plant_py",
     ":rigid_body_tree_py",
     ":shapes_py",
