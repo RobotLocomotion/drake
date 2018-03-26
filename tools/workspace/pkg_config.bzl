@@ -191,7 +191,7 @@ def setup_pkg_config_repository(repository_ctx):
     }
     template = getattr(
         repository_ctx.attr, "build_file_template", _DEFAULT_TEMPLATE)
-    repository_ctx.template("BUILD", template, substitutions)
+    repository_ctx.template("BUILD.bazel", template, substitutions)
 
     return struct(value = True, error = None)
 
