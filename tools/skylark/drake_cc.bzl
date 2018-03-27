@@ -443,6 +443,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
+            tags = kwargs.pop("tags", []) + ["nolint"],
             **kwargs)
 
 def drake_cc_test(
