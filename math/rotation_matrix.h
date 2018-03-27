@@ -54,9 +54,12 @@ class RotationMatrix {
   }
 
   /// Constructs a %RotationMatrix from a Quaternion.
-  /// @param[in] quaternion a unit-length quaternion [`quaternion.norm() ≈ 1`].
+  /// @param[in] quaternion a non-zero, finite quaternion.
   /// @throws exception std::logic_error in debug builds if the rotation matrix
-  /// R that is built from `quaternion` fails IsValid(R).
+  /// R that is built from `quaternion` fails IsValid(R).  For example, an
+  /// exception is thrown if `quaternion` is zero or contains a NAN or infinity.
+  /// @note This method has the effect of normalizing its `quaternion` argument,
+  /// without the inefficiency of the square-root associated with normalization.
   explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
@@ -523,9 +526,11 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Matrix3<T>& R) {
-    if (!R.allFinite())
+    if (!R.allFinite()) {
       throw std::logic_error(
-        "Error: Rotation matrix contains an element that is infinity or NAN.");
+          "Error: Rotation matrix contains an element that is infinity or "
+          "NAN.");
+    }
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
     if (R.determinant() < 0)
