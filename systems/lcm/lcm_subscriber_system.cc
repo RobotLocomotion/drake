@@ -161,7 +161,8 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
 
   // Schedule an update event.
   // TODO(siyuan): should be context.get_time() once #5725 is resolved.
-  *time = context.get_time() + 0.0001;
+  *time =
+      std::nextafter(context.get_time(), std::numeric_limits<double>::max());
   if (translator_ == nullptr) {
     EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
         events->get_mutable_unrestricted_update_events();
