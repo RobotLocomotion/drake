@@ -53,6 +53,26 @@ class RotationMatrix {
 #endif
   }
 
+  /// Constructs a %RotationMatrix from a Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion.
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `quaternion` fails IsValid(R).  For example, an
+  /// exception is thrown if `quaternion` is zero or contains a NAN or infinity.
+  /// @note This method has the effect of normalizing its `quaternion` argument,
+  /// without the inefficiency of the square-root associated with normalization.
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    // Cost for various way to create a rotation matrix from a quaternion.
+    // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
+    // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
+    // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
+    // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
+    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
+#ifdef DRAKE_ASSERT_IS_ARMED
+    ThrowIfNotValid(R_AB_);
+#endif
+  }
+
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
@@ -506,6 +526,11 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Matrix3<T>& R) {
+    if (!R.allFinite()) {
+      throw std::logic_error(
+          "Error: Rotation matrix contains an element that is infinity or "
+          "NAN.");
+    }
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
     if (R.determinant() < 0)
@@ -565,6 +590,51 @@ class RotationMatrix {
       *quality_factor = s_f * sign_det;
     }
     return svd.matrixU() * svd.matrixV().transpose();
+  }
+
+  // Constructs a 3x3 rotation matrix from a Quaternion.
+  // @param[in] quaternion a quaternion which may or may not have unit length.
+  // @param[in] two_over_norm_squared is supplied by the calling method and is
+  // usually pre-computed as `2 / quaternion.squaredNorm()`.  If `quaternion`
+  // has already been normalized [`quaternion.norm() = 1`] or there is a reason
+  // (unlikely) that the calling method determines that normalization is
+  // unwanted, the calling method should just past `two_over_norm_squared = 2`.
+  // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
+  // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
+  // has a provision for an efficient algorithm for always calculating an
+  // orthogonal rotation matrix (whereas Eigen's algorithm does not).
+  static Matrix3<T> QuaternionToRotationMatrix(
+      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
+    Matrix3<T> m;
+
+    const T w = quaternion.w();
+    const T x = quaternion.x();
+    const T y = quaternion.y();
+    const T z = quaternion.z();
+    const T sx  = two_over_norm_squared * x;  // scaled x-value.
+    const T sy  = two_over_norm_squared * y;  // scaled y-value.
+    const T sz  = two_over_norm_squared * z;  // scaled z-value.
+    const T swx = sx * w;
+    const T swy = sy * w;
+    const T swz = sz * w;
+    const T sxx = sx * x;
+    const T sxy = sy * x;
+    const T sxz = sz * x;
+    const T syy = sy * y;
+    const T syz = sz * y;
+    const T szz = sz * z;
+
+    m.coeffRef(0, 0) = T(1) - syy - szz;
+    m.coeffRef(0, 1) = sxy - swz;
+    m.coeffRef(0, 2) = sxz + swy;
+    m.coeffRef(1, 0) = sxy + swz;
+    m.coeffRef(1, 1) = T(1) - sxx - szz;
+    m.coeffRef(1, 2) = syz - swx;
+    m.coeffRef(2, 0) = sxz - swy;
+    m.coeffRef(2, 1) = syz + swx;
+    m.coeffRef(2, 2) = T(1) - sxx - syy;
+
+    return m;
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
