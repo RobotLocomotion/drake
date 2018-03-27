@@ -13,7 +13,7 @@ test:kcov --nocache_test_results
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
 # significantly.
-test:kcov --test_timeout=120,600,1800,7200
+test:kcov --test_timeout=200,1000,1800,7200
 
 ### Kcov everything build. ###
 build:kcov_everything --define=WITH_GUROBI=ON
