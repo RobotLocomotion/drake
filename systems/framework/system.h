@@ -1474,7 +1474,7 @@ class System {
   const InputPortDescriptor<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
-    int port_index = get_num_input_ports();
+    const InputPortIndex port_index(get_num_input_ports());
     input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
         this, port_index, type, size, random_type));
     return *input_ports_.back();
