@@ -6,6 +6,7 @@
 
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace bouncing_ball {
@@ -98,9 +99,7 @@ GTEST_TEST(BouncingBall, AutoDiff) {
 }
 
 TEST_F(BouncingBallTest, Transmogrification) {
-  std::unique_ptr<BouncingBall<AutoDiffXd>> ad_plant =
-      systems::System<double>::ToAutoDiffXd(*dut_);
-  ASSERT_NE(nullptr, ad_plant);
+  ASSERT_TRUE(systems::is_autodiffxd_convertible(*dut_));
 }
 
 TEST_F(BouncingBallTest, Topology) {

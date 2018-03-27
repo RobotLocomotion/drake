@@ -23,7 +23,7 @@ class StatelessSystem final : public LeafSystem<T> {
         offset_(offset) {
     witness_ = this->DeclareWitnessFunction(
         "clock witness", dir_type, &StatelessSystem::CalcClockWitness,
-            std::make_unique<PublishEvent<T>>());
+            PublishEvent<T>());
   }
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -65,7 +65,7 @@ class StatelessSystem final : public LeafSystem<T> {
     return context.get_time() - offset_;
   }
 
-  double offset_{-1};
+  const double offset_;
   std::unique_ptr<WitnessFunction<T>> witness_;
   std::function<void(const Context<T>&)> publish_callback_{nullptr};
 };

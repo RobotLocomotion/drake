@@ -152,18 +152,18 @@ class CompositeSystem : public LogisticSystem {
     logistic_witness_ = this->DeclareWitnessFunction("logistic witness",
       WitnessFunctionDirection::kCrossesZero,
       &CompositeSystem::GetStateValue,
-      std::make_unique<PublishEvent<double>>());
+      PublishEvent<double>());
     clock_witness_ = this->DeclareWitnessFunction("clock witness",
       WitnessFunctionDirection::kCrossesZero,
       &CompositeSystem::CalcClockWitness,
-      std::make_unique<PublishEvent<double>>());
+      PublishEvent<double>());
   }
 
-  WitnessFunction<double>* get_logistic_witness() const {
+  const WitnessFunction<double>* get_logistic_witness() const {
     return logistic_witness_.get();
   }
 
-  WitnessFunction<double>* get_clock_witness() const {
+  const WitnessFunction<double>* get_clock_witness() const {
     return clock_witness_.get();
   }
 
@@ -185,7 +185,7 @@ class CompositeSystem : public LogisticSystem {
     return context.get_time() - trigger_time_;
   }
 
-  double trigger_time_{-1};
+  const double trigger_time_;
   std::unique_ptr<WitnessFunction<double>> logistic_witness_;
   std::unique_ptr<WitnessFunction<double>> clock_witness_;
 };
@@ -195,16 +195,16 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoWitnessStatelessSystem)
 
-  explicit TwoWitnessStatelessSystem(double off1, double off2) :
-      offset1_(off1), offset2_(off2) {
+  explicit TwoWitnessStatelessSystem(double off1, double off2)
+      : offset1_(off1), offset2_(off2) {
     witness1_ = this->DeclareWitnessFunction("clock witness1",
             WitnessFunctionDirection::kCrossesZero,
             &TwoWitnessStatelessSystem::CalcClockWitness1,
-            std::make_unique<PublishEvent<double>>());
+            PublishEvent<double>());
     witness2_ = this->DeclareWitnessFunction("clock witness2",
             WitnessFunctionDirection::kCrossesZero,
             &TwoWitnessStatelessSystem::CalcClockWitness2,
-            std::make_unique<PublishEvent<double>>());
+            PublishEvent<double>());
   }
 
   void set_publish_callback(
@@ -238,7 +238,8 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
   }
 
   std::unique_ptr<WitnessFunction<double>> witness1_, witness2_;
-  double offset1_{-1}, offset2_{-1};
+  const double offset1_;
+  const double offset2_;
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
 };
 

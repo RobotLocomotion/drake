@@ -45,7 +45,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
         "Signed distance",
         systems::WitnessFunctionDirection::kPositiveThenNonPositive,
         &BouncingBall::CalcSignedDistance,
-        std::make_unique<systems::UnrestrictedUpdateEvent<T>>());
+        systems::UnrestrictedUpdateEvent<T>());
   }
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

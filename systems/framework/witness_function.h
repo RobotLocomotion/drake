@@ -35,10 +35,10 @@ enum class WitnessFunctionDirection {
 };
 
 /// Class that stores a function that is able to help determine the time and
-/// state at which a simulation of a System should be halted, which may be
-/// done for any number of purposes, including publishing or state
-/// reinitialization (i.e., event handling). System authors declare
-/// witness functions through LeafSystem::DeclareWitnessFunction().
+/// state at which a step of the initial value problem integration of a System
+/// should end, which may be done for any number of purposes, including
+/// publishing or state reinitialization (i.e., event handling). System authors
+/// declare witness functions through LeafSystem::DeclareWitnessFunction().
 ///
 /// For the ensuing discussion, consider two times (`t₀` and `t₁ > t₀`) and
 /// states corresponding to those times (`x(t₀)` and `x(t₁)`). A
@@ -88,38 +88,37 @@ enum class WitnessFunctionDirection {
 /// for isolating the time interval, though it's a reliable choice and always
 /// converges linearly.
 template <class T>
-class WitnessFunction {
+class WitnessFunction final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WitnessFunction)
-
-  virtual ~WitnessFunction() {}
 
   /** Signature of a function suitable for calculating a value of a particular
   witness function. */
   using CalcCallback = std::function<T(const Context<T>&)>;
 
+  // The preferred method to construct a witness function is through
+  // LeafSystem::DeclareWitnessFunction(), so we hide the constructors from
+  // Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
   // logging), direction type, and specified calculation function; and with no
   // event type.
   // @note Constructing a witness function with no corresponding event forces
-  //       Simulator's integration of an ODE to halt at the witness isolation
-  //       time. For example, isolating a function's minimum or maximum values
-  //       can be realized with a witness that triggers on a sign change of
-  //       the function's time derivative, ensuring that the actual extreme
-  //       value is present in the discretized trajectory.
+  //       Simulator's integration of an ODE to end a step at the witness
+  ///      isolation time. For example, isolating a function's minimum or
+  ///      maximum values can be realized with a witness that triggers on a sign
+  ///      change of the function's time derivative, ensuring that the actual
+  ///      extreme value is present in the discretized trajectory.
   // @warning the pointer to the System must be valid as long or longer than
   // the lifetime of the witness function.
   template <class MySystem>
   WitnessFunction(const System<T>* system,
                   const std::string& description,
                   const WitnessFunctionDirection& dtype,
-                  T (MySystem::*calc)(const Context<T>&) const) :
-                  system_(system), description_(description), dir_type_(dtype) {
-    DRAKE_DEMAND(system);
-    set_calculation_function(calc);
-  }
+                  T (MySystem::*calc)(const Context<T>&) const)
+      : WitnessFunction(
+      system, description, dtype, calc, std::unique_ptr<Event<T>>()) {}
 
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
@@ -136,12 +135,13 @@ class WitnessFunction {
                   const WitnessFunctionDirection& dtype,
                   T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<EventType> e) :
-                  system_(system), description_(description), dir_type_(dtype) {
+                  system_(system), description_(description), dir_type_(dtype),
+                  event_(std::move(e)) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
+    DRAKE_DEMAND(dynamic_cast<const MySystem*>(system));
     set_calculation_function(calc);
-    event_ = std::move(e);
   }
 #endif
 
@@ -155,11 +155,6 @@ class WitnessFunction {
   /// Evaluates the witness function at the given context.
   T CalcWitnessValue(const Context <T>& context) const {
     DRAKE_ASSERT_VOID(system_->CheckValidContext(context));
-    if (!calc_function_) {
-      throw std::logic_error("WitnessFunction::CalcWitnessValue(): " +
-          get_description() +
-          " had no calculation function available.");
-    }
     return calc_function_(context);
   }
 
@@ -226,10 +221,10 @@ class WitnessFunction {
   const std::string description_;
 
   // Direction(s) under which this witness function triggers.
-  WitnessFunctionDirection dir_type_;
+  const WitnessFunctionDirection dir_type_;
 
   // Unique pointer to the event.
-  std::unique_ptr<Event<T>> event_;
+  const std::unique_ptr<Event<T>> event_;
 
   // The witness function calculation function pointer.
   CalcCallback calc_function_;

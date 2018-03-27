@@ -27,7 +27,7 @@ class LogisticSystem : public LeafSystem<T> {
     witness_ = this->DeclareWitnessFunction("Logistic witness",
         WitnessFunctionDirection::kCrossesZero,
         &LogisticSystem::GetStateValue,
-        std::make_unique<PublishEvent<T>>());
+        PublishEvent<T>());
   }
 
   void set_publish_callback(
