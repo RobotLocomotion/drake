@@ -43,8 +43,7 @@ namespace lcm {
  *
  * @ingroup message_passing
  */
-class LcmSubscriberSystem : public LeafSystem<double>,
-                            public drake::lcm::DrakeLcmMessageHandlerInterface {
+class LcmSubscriberSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
@@ -208,10 +207,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;
 
-  // Callback entry point from LCM into this class. Also wakes up one thread
-  // block on notification_ if it's not nullptr.
-  void HandleMessage(const std::string& channel, const void* message_buffer,
-                     int message_size) override;
+  // Callback entry point from LCM into this class.
+  void HandleMessage(const void*, int);
 
   // This pair of methods is used for the output port when we're using a
   // translator.

@@ -41,7 +41,9 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
-  lcm->Subscribe(channel_, this);
+  lcm->Subscribe(channel_, [this](const void* buffer, int size) {
+      this->HandleMessage(buffer, size);
+    });
 
   if (translator_ != nullptr) {
     // Invoke the translator allocate method once to provide a model value.
@@ -250,27 +252,16 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
       context.get_abstract_state().get_value(kStateIndexMessage));
 }
 
-void LcmSubscriberSystem::HandleMessage(const std::string& channel,
-                                        const void* message_buffer,
-                                        int message_size) {
-  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);
+void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
+  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel_);
 
-  if (channel == channel_) {
-    const uint8_t* const rbuf_begin =
-        static_cast<const uint8_t*>(message_buffer);
-    const uint8_t* const rbuf_end = rbuf_begin + message_size;
-    std::lock_guard<std::mutex> lock(received_message_mutex_);
-    received_message_.clear();
-    received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
-
-    received_message_count_++;
-    received_message_condition_variable_.notify_all();
-  } else {
-    std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
-              << "message for channel \"" << channel
-              << "\" instead of channel \"" << channel_ << "\". Ignoring it."
-              << std::endl;
-  }
+  const uint8_t* const rbuf_begin = static_cast<const uint8_t*>(buffer);
+  const uint8_t* const rbuf_end = rbuf_begin + size;
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  received_message_.clear();
+  received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
+  received_message_count_++;
+  received_message_condition_variable_.notify_all();
 }
 
 int LcmSubscriberSystem::WaitForMessage(
@@ -313,3 +304,4 @@ const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake
+

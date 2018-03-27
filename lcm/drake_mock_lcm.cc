@@ -1,6 +1,7 @@
 #include "drake/lcm/drake_mock_lcm.h"
 
 #include <cstring>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -49,27 +50,32 @@ const std::vector<uint8_t>& DrakeMockLcm::get_last_published_message(
 }
 
 void DrakeMockLcm::Subscribe(const std::string& channel,
-                             DrakeLcmMessageHandlerInterface* handler) {
+                             HandlerFunction handler) {
   DRAKE_THROW_UNLESS(!channel.empty());
-  if (subscriptions_.find(channel) == subscriptions_.end()) {
-    subscriptions_[channel] = handler;
-  } else {
-    throw std::runtime_error(
-        "DrakeMockLcm::Subscribe: Subscription to "
-        "channel \"" +
-        channel + "\" already exists.");
-  }
+  subscriptions_.emplace(channel, std::move(handler));
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+void DrakeMockLcm::Subscribe(const std::string& channel,
+                             DrakeLcmMessageHandlerInterface* handler) {
+  Subscribe(channel, std::bind(
+      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
+      channel, std::placeholders::_1, std::placeholders::_2));
+}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 void DrakeMockLcm::InduceSubscriberCallback(const std::string& channel,
                                             const void* data, int data_size) {
-  if (subscriptions_.find(channel) == subscriptions_.end()) {
+  const auto& range = subscriptions_.equal_range(channel);
+  if (range.first == range.second) {
     throw std::runtime_error(
-        "DrakeMockLcm::InduceSubscriberCallback: No "
-        "subscription to channel \"" +
-        channel + "\".");
-  } else {
-    subscriptions_[channel]->HandleMessage(channel, data, data_size);
+        "DrakeMockLcm::InduceSubscriberCallback: No subscription to channel "
+        "\"" + channel + "\".");
+  }
+  for (auto iter = range.first; iter != range.second; ++iter) {
+    const HandlerFunction& handler = iter->second;
+    handler(data, data_size);
   }
 }
 

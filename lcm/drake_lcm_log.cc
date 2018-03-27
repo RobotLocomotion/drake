@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 
@@ -50,21 +51,25 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void DrakeLcmLog::Subscribe(const std::string& channel,
                             DrakeLcmMessageHandlerInterface* handler) {
+  Subscribe(channel, std::bind(
+      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
+      channel, std::placeholders::_1, std::placeholders::_2));
+}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+void DrakeLcmLog::Subscribe(const std::string& channel,
+                            HandlerFunction handler) {
   if (is_write_) {
     throw std::logic_error("Subscribe is only available for log playback.");
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  auto it = subscriptions_.find(channel);
-  // No channels yet.
-  if (it == subscriptions_.end()) {
-    subscriptions_[channel] = {handler};
-  } else {
-    it->second.push_back(handler);
-  }
+  subscriptions_.emplace(channel, std::move(handler));
 }
 
 double DrakeLcmLog::GetNextMessageTime() const {
@@ -96,12 +101,10 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   }
 
   // Dispatch message if necessary.
-  auto it = subscriptions_.find(next_event_->channel);
-  if (it != subscriptions_.end()) {
-    for (DrakeLcmMessageHandlerInterface* handler : it->second) {
-      handler->HandleMessage(next_event_->channel, next_event_->data,
-                             next_event_->datalen);
-    }
+  const auto& range = subscriptions_.equal_range(next_event_->channel);
+  for (auto iter = range.first; iter != range.second; ++iter) {
+    const HandlerFunction& handler = iter->second;
+    handler(next_event_->data, next_event_->datalen);
   }
 
   // Advance log.

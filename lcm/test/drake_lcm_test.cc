@@ -132,6 +132,12 @@ TEST_F(DrakeLcmTest, PublishTest) {
   EXPECT_FALSE(dut.IsReceiveThreadRunning());
 }
 
+// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
+// deleted, refactor this test to use the HandlerFunction interface.  For now,
+// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
+// keep this all as-is so that all codepaths are covered by tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Handles received LCM messages.
 class MessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
@@ -175,6 +181,7 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   std::mutex message_mutex_;
   drake::lcmt_drake_signal received_message_;
 };
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Tests DrakeLcm's ability to subscribe to an LCM message.
 TEST_F(DrakeLcmTest, SubscribeTest) {
