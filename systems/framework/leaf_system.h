@@ -809,12 +809,22 @@ class LeafSystem : public System<T> {
   }
   //@}
 
-  /// Syntactic sugar for declaring a witness function.
+  // =========================================================================
+  /// @name                    Declare witness functions
+  /// Methods in this section are used by derived classes to declare any
+  /// witness functions useful for ensuring that integration ends a step upon
+  /// entering particular times or states.
+  //@{
+
   /// Constructs the witness function with the given description of the witness
   /// function (used primarily for debugging and logging), direction type, and
-  /// specified calculation function; and with no event type.
-  /// @sa WitnessFunction::WitnessFunction() for a description of why one would
-  ///     want to construct a witness function with no event type.
+  /// specified calculation function; and with no event object.
+  /// @note Constructing a witness function with no corresponding event forces
+  ///       Simulator's integration of an ODE to end a step at the witness
+  ///       isolation time. For example, isolating a function's minimum or
+  ///       maximum values can be realized with a witness that triggers on a
+  ///       sign change of the function's time derivative, ensuring that the
+  ///       actual extreme value is present in the discretized trajectory.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
@@ -824,22 +834,23 @@ class LeafSystem : public System<T> {
         this, description, dtype, calc);
   }
 
-  /// Syntactic sugar for declaring a witness function.
   /// Constructs the witness function with the given description of the witness
   /// function (used primarily for debugging and logging), direction type, and
-  /// specified calculation function, and with a unique pointer to the event
+  /// specified calculator function, and with a unique pointer to the event
   /// that is to be dispatched when this witness function triggers. Example
-  /// events are publish, discrete variable update, unrestricted update events.
+  /// event types are publish, discrete variable update, unrestricted update
+  /// events.
   /// @tparam EventType a class derived from Event<T>
-  template <class MySystem, class EventType>
+  template <class MySystem, class MyEvent>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& dtype,
       T (MySystem::*calc)(const Context<T>&) const,
-      std::unique_ptr<EventType> e) const {
+      std::unique_ptr<MyEvent> e) const {
     return std::make_unique<WitnessFunction<T>>(
         this, description, dtype, calc, std::move(e));
   }
+  //@}
 
   // =========================================================================
   /// @name                    Declare output ports

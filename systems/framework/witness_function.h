@@ -34,10 +34,11 @@ enum class WitnessFunctionDirection {
   kCrossesZero,
 };
 
-/// Class that stores a function that is able to help determine
-/// the time and state at which a simulation should be halted, which may be
+/// Class that stores a function that is able to help determine the time and
+/// state at which a simulation of a System should be halted, which may be
 /// done for any number of purposes, including publishing or state
-/// reinitialization (i.e., event handling).
+/// reinitialization (i.e., event handling). System authors declare
+/// witness functions through LeafSystem::DeclareWitnessFunction().
 ///
 /// For the ensuing discussion, consider two times (`t₀` and `t₁ > t₀`) and
 /// states corresponding to those times (`x(t₀)` and `x(t₁)`). A
@@ -97,18 +98,19 @@ class WitnessFunction {
   witness function. */
   using CalcCallback = std::function<T(const Context<T>&)>;
 
-  /// Constructs the witness function with the pointer to the given non-null
-  /// System; with the given description of this witness function (used
-  /// primarily for debugging and logging), direction type, and specified
-  /// calculation function; and with no event type.
-  /// @note Constructing a witness function with no corresponding event forces
-  ///       Simulator's integration of an ODE to halt at the witness isolation
-  ///       time. For example, isolating a function's minimum or maximum values
-  ///       can be realized with a witness that triggers on a sign change of
-  ///       the function's time derivative, ensuring that the actual extreme
-  ///       value is present in the discretized trajectory.
-  /// @warning the pointer to the System must be valid as long or longer than
-  /// the lifetime of the witness function.
+#ifndef DRAKE_DOXYGEN_CXX
+  // Constructs the witness function with the pointer to the given non-null
+  // System; with the given description (used primarily for debugging and
+  // logging), direction type, and specified calculation function; and with no
+  // event type.
+  // @note Constructing a witness function with no corresponding event forces
+  //       Simulator's integration of an ODE to halt at the witness isolation
+  //       time. For example, isolating a function's minimum or maximum values
+  //       can be realized with a witness that triggers on a sign change of
+  //       the function's time derivative, ensuring that the actual extreme
+  //       value is present in the discretized trajectory.
+  // @warning the pointer to the System must be valid as long or longer than
+  // the lifetime of the witness function.
   template <class MySystem>
   WitnessFunction(const System<T>* system,
                   const std::string& description,
@@ -119,15 +121,15 @@ class WitnessFunction {
     set_calculation_function(calc);
   }
 
-  /// Constructs the witness function with the pointer to the given non-null
-  /// System; with the given description of this witness function (used
-  /// primarily for debugging and logging), direction type, and specified
-  /// calculation function, and with a unique pointer to the event that is to be
-  /// dispatched when this witness function triggers. Example events are
-  /// publish, discrete variable update, unrestricted update events.
-  /// @tparam EventType a class derived from Event<T>
-  /// @warning the pointer to the System must be valid as long or longer than
-  /// the lifetime of the witness function.
+  // Constructs the witness function with the pointer to the given non-null
+  // System; with the given description (used primarily for debugging and
+  // logging), direction type, and calculation function, and with a unique
+  // pointer to the event that is to be dispatched when this witness function
+  // triggers. Example events are publish, discrete variable update,
+  // unrestricted update events.
+  // @tparam EventType a class derived from Event<T>
+  // @warning the pointer to the System must be valid as long or longer than
+  // the lifetime of the witness function.
   template <class EventType, class MySystem>
   WitnessFunction(const System<T>* system,
                   const std::string& description,
@@ -141,6 +143,7 @@ class WitnessFunction {
     set_calculation_function(calc);
     event_ = std::move(e);
   }
+#endif
 
   /// Gets the description of this witness function (used primarily for logging
   /// and debugging).
