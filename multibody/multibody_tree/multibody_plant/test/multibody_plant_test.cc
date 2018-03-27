@@ -477,7 +477,7 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
 // joint models were properly added and the model sizes.
 GTEST_TEST(MultibodyPlant, SimpleModelCreationSdf) {
   const std::string kInvalidName = "InvalidName";
-  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlantSdf(true);
+  std::unique_ptr<MultibodyPlant<double>> plant = MakeAcrobotPlantSdf();
 
   // MakePlantSdf() has already called Finalize() on the new acrobot
   // plant. Therefore attempting to call this method again will throw an
@@ -487,8 +487,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreationSdf) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(3, plant->num_bodies());
   EXPECT_EQ(2, plant->num_joints());
-  EXPECT_EQ(1, plant->num_actuators());
-  EXPECT_EQ(1, plant->num_actuated_dofs());
+  EXPECT_EQ(0, plant->num_actuators());
+  EXPECT_EQ(0, plant->num_actuated_dofs());
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 2);

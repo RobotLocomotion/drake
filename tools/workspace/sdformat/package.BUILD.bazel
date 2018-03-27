@@ -164,8 +164,6 @@ cc_library(
         "src/JointAxis.cc",
         "src/Link.cc",
         "src/Model.cc",
-        "src/parser.cc",
-        "src/parser_urdf.cc",
         "src/Param.cc",
         "src/Plane.cc",
         "src/Root.cc",
@@ -177,7 +175,8 @@ cc_library(
         "src/Utils.hh",
         "src/Visual.cc",
         "src/World.cc",
-
+        "src/parser.cc",
+        "src/parser_urdf.cc",
     ],
     hdrs = SDFORMAT_ALL_PUBLIC_HDRS,
     # TODO(jamiesnape): Enable visibility after resolving warnings such as

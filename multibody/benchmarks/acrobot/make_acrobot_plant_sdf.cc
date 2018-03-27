@@ -1,5 +1,8 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant_sdf.h"
-#include "drake/multibody/benchmarks/acrobot/acrobot_sdf.h"
+
+#include <memory>
+
+#include <sdf/sdf.hh>
 
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -18,67 +21,96 @@ using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlantSdf(bool finalize) {
-
+MakeAcrobotPlantSdf() {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // Load the SDF string
   sdf::Root root;
-  sdf::Errors errors = root.LoadSdfString(multibody::benchmarks::acrobotSdf);
+  sdf::Errors errors = root.LoadSdfString(
+    "<?xml version='1.0' ?>"
+    "<sdf version='1.6'>"
+    "  <model name='acrobot'>"
+    "    <link name='Link1'>"
+    "      <inertial>"
+    "        <pose>0 0 0.5 0 0 0</pose>"
+    "        <mass>1.0</mass>"
+    "      </inertial>"
+    "    </link>"
+    "    <link name='Link2'>"
+    "      <inertial>"
+    "        <pose>0 0 0.5 0 0 0</pose>"
+    "        <mass>1.0</mass>"
+    "      </inertial>"
+    "    </link>"
+    "    <joint name='ShoulderJoint' type='revolute'>"
+    "      <parent>world</parent>"
+    "      <child>Link1</child>"
+    "      <axis>"
+    "        <xyz>1.0 0 0</xyz>"
+    "      </axis>"
+    "    </joint>"
+    "    <joint name='ElbowJoint' type='revolute'>"
+    "      <parent>Link1</parent>"
+    "      <child>Link2</child>"
+    "      <axis>"
+    "        <xyz>1.0 0 0</xyz>"
+    "      </axis>"
+    "    </joint>"
+    "  </model>"
+    "</sdf>");
 
   // Check for any errors.
   if (!errors.empty()) {
-    std::cerr << "Errors loading SDF string.\n";
+    std::string error_accumulation;
     for (auto e : errors)
-      std::cerr << e << std::endl;
-    return plant;
+      error_accumulation += e.Message();
+    throw std::runtime_error(error_accumulation);
   }
 
   // Get a pointer to the first model.
-  const sdf::Model *model = root.ModelByIndex(0);
+  const sdf::Model* model = root.ModelByIndex(0);
   if (!model) {
-    std::cerr << "No models present in SDF string.";
-    return plant;
+    throw std::logic_error("No models present in SDF string.");
   }
 
   // Add all the links
-  for (uint64_t linkIndex = 0; linkIndex < model->LinkCount(); ++linkIndex)
-  {
-    const sdf::Link *link = model->LinkByIndex(linkIndex);
+  for (uint64_t link_index = 0; link_index < model->LinkCount(); ++link_index) {
+    const sdf::Link* link = model->LinkByIndex(link_index);
 
-    // Get the SDF inertia
-    const ignition::math::Inertiald &inertiaSdf = link->Inertial();
+    // Get the link's inertia relative to a reference frame. The origin of
+    // the reference frame must be at the center of mass.
+    const ignition::math::Inertiald& inertia = link->Inertial();
+
+    // The axes of the inertial reference frame do not need to be aligned
+    // wit the principal axes of inertia.
+    ignition::math::Matrix3d moiRotated = inertia.MOI();
 
     // Create the multibody inertia
-    // \todo(nkoenig) Write test to verify that I'm setting this correctly.
-    SpatialInertia<double> inertia =
+    // TODO(nkoenig) Write test to verify that I'm setting this correctly.
+    SpatialInertia<double> M_Bo =
       SpatialInertia<double>::MakeFromCentralInertia(
-          inertiaSdf.MassMatrix().Mass(),
-          Vector3d(inertiaSdf.Pose().Pos().X(),
-                   inertiaSdf.Pose().Pos().Y(),
-                   inertiaSdf.Pose().Pos().Z()),
-          UnitInertia<double>(
-            inertiaSdf.MassMatrix().DiagonalMoments().X(),
-            inertiaSdf.MassMatrix().DiagonalMoments().Y(),
-            inertiaSdf.MassMatrix().DiagonalMoments().Z(),
-            inertiaSdf.MassMatrix().OffDiagonalMoments().X(),
-            inertiaSdf.MassMatrix().OffDiagonalMoments().Y(),
-            inertiaSdf.MassMatrix().OffDiagonalMoments().Z()));
+          inertia.MassMatrix().Mass(),
+          Vector3d(inertia.Pose().Pos().X(),
+                   inertia.Pose().Pos().Y(),
+                   inertia.Pose().Pos().Z()),
+          RotationalInertia<double>(
+            moiRotated(0, 0), moiRotated(1, 1), moiRotated(2, 2),
+            moiRotated(1, 0), moiRotated(2, 0), moiRotated(2, 1)));
 
     // Add a rigid body to model each link.
-    plant->AddRigidBody(link->Name(), inertia);
+    plant->AddRigidBody(link->Name(), M_Bo);
   }
 
   // Add all the joints
-  for (uint64_t jointIndex = 0; jointIndex < model->JointCount();
-       ++jointIndex) {
+  for (uint64_t joint_index = 0; joint_index < model->JointCount();
+       ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
-    const sdf::Joint *joint = model->JointByIndex(jointIndex);
-    const sdf::JointAxis *axis = joint->Axis();
+    const sdf::Joint* joint = model->JointByIndex(joint_index);
+    const sdf::JointAxis* axis = joint->Axis();
 
     // Only supporting revolute joints for now.
     if (joint->Type() == sdf::JointType::REVOLUTE) {
-      /// \todo(nkoenig) Check that the links exist before creating the
+      /// TODO(nkoenig) Check that the links exist before creating the
       /// joint.
 
       // Special case for a joint connected to the world.
@@ -87,26 +119,24 @@ MakeAcrobotPlantSdf(bool finalize) {
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->world_body(), {},
             plant->GetBodyByName(joint->ChildLinkName()), {},
-            Vector3d(axis->Xyz().X(),axis->Xyz().Y(),axis->Xyz().Z()));
+            Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       } else {
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->GetBodyByName(joint->ParentLinkName()), {},
             plant->GetBodyByName(joint->ChildLinkName()), {},
-            Vector3d(axis->Xyz().X(),axis->Xyz().Y(),axis->Xyz().Z()));
+            Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       }
     }
   }
 
-  // Add acrobot's actuator at the elbow joint.
-  plant->AddJointActuator("ElbowActuator",
-      plant->GetJointByName("ElbowJoint"));
-
   // Gravity acting in the -z direction.
+  // TODO(nkoenig) A model in SDF has no knowledge about external forces,
+  // such as gravity. We would have to place the model inside a <world>
+  // and assign a <gravity>.
   plant->AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3d::UnitZ());
 
-  if (finalize)
-    plant->Finalize();
+  plant->Finalize();
 
   return plant;
 }
