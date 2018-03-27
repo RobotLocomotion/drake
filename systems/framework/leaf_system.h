@@ -818,9 +818,9 @@ class LeafSystem : public System<T> {
   /// In contrast to other declaration methods (e.g., DeclareVectorOutputPort(),
   /// for which the System class creates and stores the objects and returns
   /// references to them, the witness function declaration functions return
-  /// heap-allocated methods that each leaf system owns. That design decision
-  /// was enacted because a LeafSystem usually must maintain pointers to the
-  /// individual witness functions in order to implement
+  /// heap-allocated methods that the subclass of leaf system owns. That design
+  /// decision was enacted because a LeafSystem derivative usually must maintain
+  /// pointers to the individual witness functions in order to implement
   /// System::DoGetWitnessFunctions().
   //@{
 

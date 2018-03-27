@@ -115,10 +115,10 @@ class WitnessFunction final {
   template <class MySystem>
   WitnessFunction(const System<T>* system,
                   const std::string& description,
-                  const WitnessFunctionDirection& dtype,
+                  const WitnessFunctionDirection& direction_type,
                   T (MySystem::*calc)(const Context<T>&) const)
       : WitnessFunction(
-      system, description, dtype, calc, std::unique_ptr<Event<T>>()) {}
+      system, description, direction_type, calc, std::unique_ptr<Event<T>>()) {}
 
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
@@ -132,11 +132,11 @@ class WitnessFunction final {
   template <class EventType, class MySystem>
   WitnessFunction(const System<T>* system,
                   const std::string& description,
-                  const WitnessFunctionDirection& dtype,
+                  const WitnessFunctionDirection& direction_type,
                   T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<EventType> e) :
-                  system_(system), description_(description), dir_type_(dtype),
-                  event_(std::move(e)) {
+                  system_(system), description_(description),
+                  dir_type_(direction_type), event_(std::move(e)) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
@@ -165,10 +165,10 @@ class WitnessFunction final {
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
   decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
-    WitnessFunctionDirection dtype = get_dir_type();
+    WitnessFunctionDirection direction_type = get_dir_type();
 
     const T zero(0);
-    switch (dtype) {
+    switch (direction_type) {
       case WitnessFunctionDirection::kNone:
         return (T(0) > T(0));
 
