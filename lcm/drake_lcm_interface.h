@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
@@ -20,6 +22,14 @@ class DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface)
   virtual ~DrakeLcmInterface() = default;
+
+  /**
+   * A callback used by DrakeLcmInterface::Subscribe(), with arguments:
+   * - `message_buffer` A pointer to the byte vector that is the serial
+   *   representation of the LCM message.
+   * - `message_size` The size of `message_buffer`.
+   */
+  using HandlerFunction = std::function<void(const void*, int)>;
 
   /**
    * Publishes an LCM message on channel @p channel.
@@ -40,16 +50,21 @@ class DrakeLcmInterface {
 
   /**
    * Subscribes to an LCM channel without automatic message decoding. The
-   * callback method within @p handler will be invoked when a message arrives on
-   * channel @p channel.
+   * handler will be invoked when a message arrives on channel @p channel.
    *
-   * @param[in] channel The channel to subscribe to.
+   * @param channel The channel to subscribe to.
    * Must not be the empty string.
-   *
-   * @param[in] handler A class instance whose callback method will be invoked.
    */
+  virtual void Subscribe(const std::string& channel, HandlerFunction) = 0;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  /** A deprecated overload of Subscribe. */
+  // TODO(jwnimmer-tri) Remove this deprecated method on or about 2018-06-01.
+  DRAKE_DEPRECATED("Use the std::function overload instead")
   virtual void Subscribe(const std::string& channel,
-                         DrakeLcmMessageHandlerInterface* handler) = 0;
+                         DrakeLcmMessageHandlerInterface*) = 0;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  protected:
   DrakeLcmInterface() = default;
