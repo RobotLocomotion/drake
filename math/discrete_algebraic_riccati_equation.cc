@@ -303,7 +303,7 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 // stable eigenvalue(s).
 // Push the block pointed by q to the position pointed by p.
 // Finish when n stable eigenvalues are placed at the top-left n by n matrix.
-// The algorithm for swapping blocks is described in the papers
+// The algorithm for swaping blocks is described in the papers
 // "A generalized eigenvalue approach for solving Riccati equations" by P. Van
 // Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
 // Problems" by Daniel Kressner, 2005.
@@ -312,6 +312,27 @@ void reorder_eigen(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
   // abs(a) < eps => a = 0
   int n2 = S.rows();
   int n = n2 / 2, p = 0, q = 0;
+
+  // Find the first unstable p block.
+  while (p < n) {
+    if (fabs(S(p + 1, p)) < eps) {  // p block size = 1
+      if (fabs(T(p, p)) > eps && fabs(S(p, p)) <= fabs(T(p, p))) {  // stable
+        p++;
+        continue;
+      }
+    } else {  // p block size = 2
+      double det_S = S(p, p) * S(p + 1, p + 1) - S(p + 1, p) * S(p, p + 1);
+      double det_T = T(p, p) * T(p + 1, p + 1) - T(p + 1, p) * T(p, p + 1);
+      if (fabs(det_T) > eps && fabs(det_S) <= fabs(det_T)) {  // stable
+        p += 2;
+        continue;
+      }
+    }
+    break;
+  }
+  q = p;
+
+  // Make the first n generalized eigenvalues stable.
   while (p < n && q < n2) {
     // Update q.
     int q_block_size = 0;
