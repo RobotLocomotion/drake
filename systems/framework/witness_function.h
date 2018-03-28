@@ -147,10 +147,10 @@ class WitnessFunction final {
 
   /// Gets the description of this witness function (used primarily for logging
   /// and debugging).
-  const std::string& get_description() const { return description_; }
+  const std::string& description() const { return description_; }
 
   /// Gets the direction(s) under which this witness function triggers.
-  WitnessFunctionDirection get_dir_type() const { return dir_type_; }
+  WitnessFunctionDirection dir_type() const { return dir_type_; }
 
   /// Evaluates the witness function at the given context.
   T CalcWitnessValue(const Context <T>& context) const {
@@ -165,7 +165,7 @@ class WitnessFunction final {
   /// values at w0 and wf. Note that this function is not specific to a
   /// particular witness function.
   decltype(T() < T()) should_trigger(const T& w0, const T& wf) const {
-    WitnessFunctionDirection direction_type = get_dir_type();
+    WitnessFunctionDirection direction_type = dir_type();
 
     const T zero(0);
     switch (direction_type) {

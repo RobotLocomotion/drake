@@ -96,7 +96,7 @@ class TestSystem : public LeafSystem<T> {
   // Second testing type: no event specified.
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithoutEvent() const {
     return this->DeclareWitnessFunction(
-        "dummy2", WitnessFunctionDirection::kNone,
+        "dummy2", WitnessFunctionDirection::kCrossesZero,
         &TestSystem<double>::DummyWitnessFunction);
   }
 
@@ -125,8 +125,19 @@ class LeafSystemTest : public ::testing::Test {
 // function) are done in diagram_test.cc and
 // drake/systems/analysis/test/simulator_test.cc.
 TEST_F(LeafSystemTest, WitnessDeclarations) {
-  EXPECT_TRUE(system_.DeclareWitnessWithEvent());
-  EXPECT_TRUE(system_.DeclareWitnessWithoutEvent());
+  auto witness1 = system_.DeclareWitnessWithEvent();
+  ASSERT_TRUE(witness1);
+  EXPECT_EQ(witness1->description(), "dummy1");
+  EXPECT_EQ(witness1->dir_type(), WitnessFunctionDirection::kNone);
+  EXPECT_TRUE(witness1->get_event());
+  EXPECT_EQ(witness1->CalcWitnessValue(context_), 0.0);
+  auto witness2 = system_.DeclareWitnessWithoutEvent();
+  ASSERT_TRUE(witness2);
+  EXPECT_EQ(witness2->description(), "dummy2");
+  EXPECT_EQ(witness2->dir_type(),
+      WitnessFunctionDirection::kCrossesZero);
+  EXPECT_FALSE(witness2->get_event());
+  EXPECT_EQ(witness2->CalcWitnessValue(context_), 0.0);
 }
 
 // Tests that if no update events are configured, none are reported.

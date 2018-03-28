@@ -855,7 +855,7 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       const MyEvent& e) const {
     return std::make_unique<WitnessFunction<T>>(
-        this, description, direction_type, calc, std::move(e.Clone()));
+        this, description, direction_type, calc, e.Clone());
   }
   //@}
 
