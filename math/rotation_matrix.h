@@ -53,13 +53,16 @@ class RotationMatrix {
 #endif
   }
 
-  /// Constructs a %RotationMatrix from a Quaternion.
-  /// @param[in] quaternion a non-zero, finite quaternion.
+  /// Constructs a %RotationMatrix from a Eigen::Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
+  /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
   /// exception is thrown if `quaternion` is zero or contains a NAN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
   /// without the inefficiency of the square-root associated with normalization.
+  // TODO(mitiguy) Consider adding an optional second argument if quaternion is
+  // known to be normalized apriori or calling site does not want normalization.
   explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
@@ -68,6 +71,25 @@ class RotationMatrix {
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
     R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
+#ifdef DRAKE_ASSERT_IS_ARMED
+    ThrowIfNotValid(R_AB_);
+#endif
+  }
+
+  /// Constructs a %RotationMatrix from a Eigen::AngleAxis.
+  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
+  /// direction herein called `lambda`) is non-zero and finite, but which may or
+  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
+  /// exception is thrown if `lambda` is zero or contains a NAN or infinity.
+  // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
+  // known to be normalized apriori or calling site does not want normalization.
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    const Vector3<T>& lambda = theta_lambda.axis();
+    const T norm = lambda.norm();
+    const T& theta = theta_lambda.angle();
+    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
 #ifdef DRAKE_ASSERT_IS_ARMED
     ThrowIfNotValid(R_AB_);
 #endif
@@ -472,6 +494,17 @@ class RotationMatrix {
     const T scale = canonical_factor / q.norm();
     q.coeffs() *= scale;
     return q;
+  }
+
+  /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
+  /// vector (axis direction) `lambda` that represents `this` %RotationMatrix.
+  /// @note The orientation and %RotationMatrix associated with `theta * lambda`
+  /// is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
+  /// this method chooses to have `0 <= theta <= pi`.
+  /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
+  Eigen::AngleAxis<T> ToAngleAxis() const {
+    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
+    return theta_lambda;
   }
 
  private:

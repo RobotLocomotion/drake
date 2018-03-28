@@ -47,7 +47,8 @@ Eigen::Vector4d UniformlyRandomQuat(Generator& generator) {
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Matrix3d UniformlyRandomRotmat(Generator& generator) {
-  return axis2rotmat(UniformlyRandomAxisAngle(generator));
+  const RotationMatrix<double> R(UniformlyRandomAxisAngle(generator));
+  return R.matrix();
 }
 
 /// Generates a rotation (in the roll-pitch-yaw representation) that rotates a

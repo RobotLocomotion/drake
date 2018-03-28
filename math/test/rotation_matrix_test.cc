@@ -482,10 +482,50 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   const Eigen::Quaterniond q_zero(0, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::logic_error);
 
-  // A NAN quaternion should throw an exception.
+  // A quaternion containing a NAN throw an exception.
   double nan = std::numeric_limits<double>::quiet_NaN();
   const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::logic_error);
+#endif
+}
+
+TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Compute the rotation matrix using Eigen's quaterion.toRotationMatrix().
+    const RotationMatrix<double> R(qi);
+    // Compare that result with the corresponding RotationMatrix constructor.
+    const double w = qi.w(), x = qi.x(), y = qi.y(), z = qi.z();
+    const double sin_half_theta_squared = x*x + y*y + z*z;
+    const double abs_sin_half_theta = std::sqrt(sin_half_theta_squared);
+    const double theta = 2 * std::atan2(abs_sin_half_theta, w);
+    const bool is_small_theta = abs_sin_half_theta < 40 * kEpsilon;
+    const double s = is_small_theta ? 0 : 1 / abs_sin_half_theta;
+    Vector3d lambda(s * x, s * y, s * z);
+    if (s == 0) lambda << 1, 0, 0;
+    const Eigen::AngleAxisd angle_axis(theta, lambda);
+    const RotationMatrix<double> R_expected(angle_axis);
+    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+
+    // Check that can invert this operation, i.e., calculate the angle-axis from
+    // the rotation matrix that correspond to the same orientation.
+    // This check is done by comparing equivalent rotation matrices.
+    // Note: We do not compare the angle-axes directly. This is because the
+    // angle-axis has singularities for angles near 0 and 180 degree.
+    Eigen::AngleAxis<double> inverse_angle_axis;
+    inverse_angle_axis.fromRotationMatrix(R_expected.matrix());
+    const RotationMatrix<double> R_test(inverse_angle_axis);
+    EXPECT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
+  }
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // An AngleAxis with a zero unit vector should throw an exception.
+  const Eigen::AngleAxisd aa_zero(5, Vector3d(0, 0, 0));
+  EXPECT_THROW(const RotationMatrix<double> R_zero(aa_zero), std::logic_error);
+
+  // An AngleAxis containing a NAN should throw an exception.
+  double nan = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::AngleAxisd aa_nan(nan, Vector3d(1, 0, 0));
+  EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::logic_error);
 #endif
 }
 
