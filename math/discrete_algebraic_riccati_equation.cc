@@ -303,7 +303,7 @@ void swap_block(Eigen::Ref<Eigen::MatrixXd> S, Eigen::Ref<Eigen::MatrixXd> T,
 // stable eigenvalue(s).
 // Push the block pointed by q to the position pointed by p.
 // Finish when n stable eigenvalues are placed at the top-left n by n matrix.
-// The algorithm for swaping blocks is described in the papers
+// The algorithm for swapping blocks is described in the papers
 // "A generalized eigenvalue approach for solving Riccati equations" by P. Van
 // Dooren, 1981, and "Numerical Methods for General and Structured Eigenvalue
 // Problems" by Daniel Kressner, 2005.
