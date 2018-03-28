@@ -47,7 +47,11 @@ Eigen::Vector4d UniformlyRandomQuat(Generator& generator) {
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Matrix3d UniformlyRandomRotmat(Generator& generator) {
-  const RotationMatrix<double> R(UniformlyRandomAxisAngle(generator));
+  const Eigen::Vector4d axis_angle = UniformlyRandomAxisAngle(generator);
+  const Eigen::Vector3d lambda = axis_angle.head<3>();
+  const double theta = axis_angle(3);
+  const Eigen::AngleAxis<double> angle_axis(theta, lambda);
+  const RotationMatrix<double> R(angle_axis);
   return R.matrix();
 }
 
