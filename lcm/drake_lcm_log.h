@@ -71,8 +71,12 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * @throws std::logic_error if this instance is not constructed in read-only
    * mode.
    */
-  void Subscribe(const std::string& channel,
-                 DrakeLcmMessageHandlerInterface* handler) override;
+  void Subscribe(const std::string& channel, HandlerFunction handler) override;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  void Subscribe(const std::string&, DrakeLcmMessageHandlerInterface*) override;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   /**
    * Returns the time in seconds for the next logged message's occurrence time
@@ -127,8 +131,7 @@ class DrakeLcmLog : public DrakeLcmInterface {
 
   // This mutes guards access to all of the below member fields.
   mutable std::mutex mutex_;
-  std::map<std::string, std::vector<DrakeLcmMessageHandlerInterface*>>
-      subscriptions_;
+  std::multimap<std::string, DrakeLcmInterface::HandlerFunction> subscriptions_;
   std::unique_ptr<::lcm::LogFile> log_;
   const ::lcm::LogEvent* next_event_{nullptr};
 };
