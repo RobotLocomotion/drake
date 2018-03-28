@@ -14,7 +14,7 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
     : is_write_(is_write),
       overwrite_publish_time_with_system_clock_(
           overwrite_publish_time_with_system_clock) {
-  if (is_write) {
+  if (is_write_) {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   } else {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "r");
@@ -26,16 +26,16 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
 }
 
 void DrakeLcmLog::Publish(const std::string& channel, const void* data,
-                          int data_size, double second) {
+                          int data_size, optional<double> time_sec) {
   if (!is_write_) {
     throw std::logic_error("Publish is only available for log saving.");
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  ::lcm::LogEvent log_event;
+  ::lcm::LogEvent log_event{};
   if (!overwrite_publish_time_with_system_clock_) {
-    log_event.timestamp = second_to_timestamp(second);
+    log_event.timestamp = second_to_timestamp(time_sec.value_or(0.0));
   } else {
     log_event.timestamp = std::chrono::steady_clock::now().time_since_epoch() /
                           std::chrono::microseconds(1);

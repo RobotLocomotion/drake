@@ -544,12 +544,7 @@ template <typename T>
 void AutomotiveSimulator<T>::SendLoadRobotMessage(
     const lcmt_viewer_load_robot& message) {
   DRAKE_DEMAND(lcm_ != nullptr);
-  const int num_bytes = message.getEncodedSize();
-  std::vector<uint8_t> message_bytes(num_bytes);
-  const int num_bytes_encoded =
-      message.encode(message_bytes.data(), 0, num_bytes);
-  DRAKE_ASSERT(num_bytes_encoded == num_bytes);
-  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(), num_bytes);
+  Publish(lcm_.get(), "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 template <typename T>

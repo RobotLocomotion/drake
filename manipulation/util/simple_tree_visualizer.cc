@@ -42,7 +42,7 @@ void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-                message_bytes.size());
+                message_bytes.size(), kTime);
 }
 
 }  // namespace manipulation

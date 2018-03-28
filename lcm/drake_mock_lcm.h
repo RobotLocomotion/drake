@@ -36,8 +36,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
    */
   void EnableLoopBack() { enable_loop_back_ = true; }
 
-  void Publish(const std::string& channel, const void* data,
-               int data_size, double time_sec = 0) override;
+  void Publish(const std::string&, const void*, int, optional<double>) override;
 
   /**
    * Obtains the most recently "published" message on a particular channel.
@@ -89,6 +88,13 @@ class DrakeMockLcm : public DrakeLcmInterface {
       const std::string& channel) const;
 
   /**
+   * Returns the time of the most recent publication on a particular channel.
+   * Returns nullopt iff a message has never been published on this channel or
+   * the most recent Publish call had no time_sec.
+   */
+  optional<double> get_last_publication_time(const std::string& channel) const;
+
+  /**
    * Creates a subscription. Only one subscription per channel name is
    * permitted. A std::runtime_error is thrown if more than one subscription to
    * the same channel name is attempted.
@@ -115,6 +121,7 @@ class DrakeMockLcm : public DrakeLcmInterface {
 
   struct LastPublishedMessage {
     std::vector<uint8_t> data{};
+    optional<double> time_sec{};
   };
 
   std::map<std::string, LastPublishedMessage> last_published_messages_;

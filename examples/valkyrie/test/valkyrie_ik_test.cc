@@ -274,7 +274,7 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   std::vector<uint8_t> message_bytes;
   posture_drawer.Serialize(0, q_draw, &message_bytes);
   lcm.Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-              message_bytes.size());
+              message_bytes.size(), {});
 }
 
 }  // namespace
