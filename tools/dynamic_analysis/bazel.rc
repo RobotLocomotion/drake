@@ -12,8 +12,8 @@ test:kcov --nocache_test_results
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
-# significantly.
-test:kcov --test_timeout=120,600,1800,7200
+# significantly. Timeouts are 3.5x default values.
+test:kcov --test_timeout=210,1050,3150,12600
 
 ### Kcov everything build. ###
 build:kcov_everything --define=WITH_GUROBI=ON
@@ -30,7 +30,7 @@ test:kcov_everything --local_test_jobs=1
 test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
 test:kcov_everything --nocache_test_results
 # See timeout note above.
-test:kcov_everything --test_timeout=120,600,1800,7200
+test:kcov_everything --test_timeout=210,1050,3150,12600
 
 ### ASan build. ###
 build:asan --copt -g
