@@ -924,6 +924,8 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
       const Event<T>& e) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
   }

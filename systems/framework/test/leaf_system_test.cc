@@ -135,24 +135,28 @@ class TestSystem : public LeafSystem<T> {
   }
 
  private:
-  // This dummy witness function will never be used.
+  // This dummy witness function exists only to test that the
+  // DeclareWitnessFunction() interface works as promised.
   T DummyWitnessFunction(const Context<T>& context) const {
     static int call_counter = 0;
     return static_cast<T>(++call_counter);
   }
 
-  // Publish callback function (will never be used).
+  // Publish callback function, which serves to test whether the appropriate
+  // DeclareWitnessFunction() interface works as promised.
   void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
     publish_callback_called_ = true;
   }
 
-  // Discrete update callback function (will never be used).
+  // Discrete update callback function, which serves to test whether the
+  // appropriate DeclareWitnessFunction() interface works as promised.
   void DiscreteUpdateCallback(const Context<T>&,
       const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {
     discrete_update_callback_called_ = true;
   }
 
-  // Unrestricted update callback function (will never be used).
+  // Unrestricted update callback function, which serves to test whether the
+  // appropriate DeclareWitnessFunction() interface works as promised.
   void UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
     unrestricted_update_callback_called_ = true;
