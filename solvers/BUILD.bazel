@@ -572,11 +572,13 @@ drake_cc_library(
     deps = select({
         "//tools:with_snopt": [
             ":mathematical_program_api",
+            "//common:temp_directory",
             "//math:autodiff",
             "@snopt//:snopt_c",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
+            "//common:temp_directory",
         ],
     }),
 )

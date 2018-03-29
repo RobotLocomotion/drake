@@ -45,6 +45,7 @@ drake_cc_library(
         ":sorted_vectors_have_intersection",
         ":symbolic",
         ":symbolic_decompose",
+        ":temp_directory",
         ":type_safe_index",
         ":unused",
     ],
@@ -352,6 +353,16 @@ drake_cc_library(
     hdrs = ["sorted_vectors_have_intersection.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "temp_directory",
+    srcs = ["temp_directory.cc"],
+    hdrs = ["temp_directory.h"],
+    deps = [
+        ":essential",
+        "@spruce",
     ],
 )
 
@@ -939,6 +950,13 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "temp_directory_test",
+    deps = [
+        ":temp_directory",
     ],
 )
 

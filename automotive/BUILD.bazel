@@ -381,6 +381,7 @@ drake_cc_library(
         ":trajectory_car",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
+        "//common:temp_directory",
         "//lcm",
         "//multibody/parsers",
         "//multibody/rigid_body_plant:drake_visualizer",

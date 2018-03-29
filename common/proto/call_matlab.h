@@ -22,7 +22,7 @@
 ///
 /// To play the remote calls in matlab, simply run call_matlab_client from your
 /// matlab terminal.  For synchronous playback, use a named pipe by running
-///    `mkfifo /tmp/matlab_rpc`
+///    `mkfifo "${TMPDIR}/matlab_rpc"`
 /// in a bash terminal.
 ///
 /// The primary use case that this was designed for was to make MATLAB plotting
