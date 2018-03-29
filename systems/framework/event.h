@@ -347,6 +347,11 @@ class PublishEvent final : public Event<T> {
   /// no specified callback function.
   PublishEvent() : Event<T>() {}
 
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit PublishEvent(PublishCallback callback)
+      : Event<T>(), callback_(callback) {}
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a PublishEvent with `trigger_type`, no event data, and
@@ -414,6 +419,11 @@ class DiscreteUpdateEvent final : public Event<T> {
   /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
   /// no specified callback function.
   DiscreteUpdateEvent() : Event<T>() {}
+
+  /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit DiscreteUpdateEvent(DiscreteUpdateCallback callback)
+      : Event<T>(), callback_(callback) {}
 
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
@@ -487,6 +497,11 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   /// Makes an UnrestrictedUpdateEvent with no trigger type, no event data, and
   /// no specified callback function.
   UnrestrictedUpdateEvent() : Event<T>() {}
+
+  /// Makes a UnrestrictedUpdateEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit UnrestrictedUpdateEvent(UnrestrictedUpdateCallback callback)
+      : Event<T>(), callback_(callback) {}
 
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)

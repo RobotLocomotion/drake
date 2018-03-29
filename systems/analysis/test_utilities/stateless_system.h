@@ -33,7 +33,7 @@ class StatelessSystem final : public LeafSystem<T> {
   template <typename U>
   explicit StatelessSystem(const StatelessSystem<U>& other)
       : StatelessSystem<T>(other.get_trigger_time(),
-                           other.witness_->dir_type()) {}
+                           other.witness_->direction_type()) {}
 
   void set_publish_callback(
       std::function<void(const Context<T>&)> callback) {
