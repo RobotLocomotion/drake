@@ -1,11 +1,13 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
@@ -19,8 +21,15 @@ namespace lcm {
 class DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrakeLcmInterface)
-  DrakeLcmInterface() = default;
   virtual ~DrakeLcmInterface() = default;
+
+  /**
+   * A callback used by DrakeLcmInterface::Subscribe(), with arguments:
+   * - `message_buffer` A pointer to the byte vector that is the serial
+   *   representation of the LCM message.
+   * - `message_size` The size of `message_buffer`.
+   */
+  using HandlerFunction = std::function<void(const void*, int)>;
 
   /**
    * Publishes an LCM message on channel @p channel.
@@ -33,24 +42,32 @@ class DrakeLcmInterface {
    *
    * @param[in] data_size The length of @data in bytes.
    *
-   * @param[in] time_sec Time in seconds when the publish event occurred. Note
-   * that this argument is only used when generating a Lcm log.
+   * @param[in] time_sec Time in seconds when the publish event occurred.
+   * If unknown, use drake::nullopt or a default-constructed optional.
    */
   virtual void Publish(const std::string& channel, const void* data,
-                       int data_size, double time_sec = 0) = 0;
+                       int data_size, optional<double> time_sec) = 0;
 
   /**
    * Subscribes to an LCM channel without automatic message decoding. The
-   * callback method within @p handler will be invoked when a message arrives on
-   * channel @p channel.
+   * handler will be invoked when a message arrives on channel @p channel.
    *
-   * @param[in] channel The channel to subscribe to.
+   * @param channel The channel to subscribe to.
    * Must not be the empty string.
-   *
-   * @param[in] handler A class instance whose callback method will be invoked.
    */
+  virtual void Subscribe(const std::string& channel, HandlerFunction) = 0;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  /** A deprecated overload of Subscribe. */
+  // TODO(jwnimmer-tri) Remove this deprecated method on or about 2018-06-01.
+  DRAKE_DEPRECATED("Use the std::function overload instead")
   virtual void Subscribe(const std::string& channel,
-                         DrakeLcmMessageHandlerInterface* handler) = 0;
+                         DrakeLcmMessageHandlerInterface*) = 0;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+ protected:
+  DrakeLcmInterface() = default;
 };
 
 /**
@@ -76,7 +93,7 @@ void Publish(DrakeLcmInterface* lcm, const std::string& channel,
   const size_t size_bytes = static_cast<size_t>(num_bytes);
   std::vector<uint8_t> bytes(size_bytes);
   message.encode(bytes.data(), 0, num_bytes);
-  lcm->Publish(channel, bytes.data(), num_bytes, time_sec.value_or(0.0));
+  lcm->Publish(channel, bytes.data(), num_bytes, time_sec);
 }
 
 }  // namespace lcm

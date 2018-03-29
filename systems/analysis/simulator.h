@@ -850,7 +850,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   fn->get_name(), context.get_time());
+                   fn->description(), context.get_time());
 
       // Skip witness functions that have no associated event.
       if (!fn->get_event())

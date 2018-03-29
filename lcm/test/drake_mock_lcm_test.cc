@@ -29,7 +29,7 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
   // Instantiates the Device Under Test (DUT).
   DrakeMockLcm dut;
 
-  dut.Publish(channel_name, &message_bytes[0], message_size);
+  dut.Publish(channel_name, &message_bytes[0], message_size, nullopt);
 
   // Verifies that the message was "published".
   const vector<uint8_t>& published_message_bytes =
@@ -37,6 +37,11 @@ GTEST_TEST(DrakeMockLcmTest, PublishTest) {
 
   EXPECT_EQ(message_size, static_cast<int>(published_message_bytes.size()));
   EXPECT_EQ(message_bytes, published_message_bytes);
+  EXPECT_FALSE(dut.get_last_publication_time(channel_name).has_value());
+
+  // Now with a publication time.
+  dut.Publish(channel_name, &message_bytes[0], message_size, 1.23);
+  EXPECT_EQ(dut.get_last_publication_time(channel_name).value_or(-1.0), 1.23);
 }
 
 // Tests DrakeMockLcm::DecodeLastPublishedMessageAs() using an lcmt_drake_signal
@@ -57,7 +62,7 @@ GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
 
   // Instantiates the Device Under Test (DUT).
   DrakeMockLcm dut;
-  dut.Publish(channel_name, &message_bytes[0], message_size);
+  dut.Publish(channel_name, &message_bytes[0], message_size, nullopt);
 
   // Verifies that the message was "published".
   const lcmt_drake_signal last_published_message =
@@ -69,16 +74,22 @@ GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
   EXPECT_EQ(last_published_message.timestamp, original_message.timestamp);
 
   // Verifies that exceptions are thrown when a decode operation fails.
-  dut.Publish(channel_name, &message_bytes[0], message_size - 1);
+  dut.Publish(channel_name, &message_bytes[0], message_size - 1, nullopt);
   EXPECT_THROW(dut.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
       channel_name), std::runtime_error);
 
   message_bytes.push_back(0);
-  dut.Publish(channel_name, &message_bytes[0], message_size + 1);
+  dut.Publish(channel_name, &message_bytes[0], message_size + 1, nullopt);
   EXPECT_THROW(dut.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
       channel_name), std::runtime_error);
 }
 
+// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
+// deleted, refactor this test to use the HandlerFunction interface.  For now,
+// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
+// keep this all as-is so that all codepaths are covered by tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Handles received LCM messages.
 class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
@@ -110,6 +121,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   string channel_{};
   vector<uint8_t> buffer_;
 };
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Tests DrakeMockLcm's ability to "subscribe" to an LCM channel.
 GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
@@ -166,7 +178,7 @@ GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
     message_bytes[i] = i;
   }
 
-  dut.Publish(kChannelName, &message_bytes[0], kMessageSize);
+  dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
 
   // Verifies that the message was received via loopback.
   EXPECT_EQ(kChannelName, handler.get_channel());
@@ -200,7 +212,7 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
     message_bytes[i] = i;
   }
 
-  dut.Publish(kChannelName, &message_bytes[0], kMessageSize);
+  dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
 
   // Verifies that the message was not received via loopback.
   EXPECT_NE(kChannelName, handler.get_channel());

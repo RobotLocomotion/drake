@@ -810,6 +810,56 @@ class LeafSystem : public System<T> {
   //@}
 
   // =========================================================================
+  /// @name                    Declare witness functions
+  /// Methods in this section are used by derived classes to declare any
+  /// witness functions useful for ensuring that integration ends a step upon
+  /// entering particular times or states.
+  ///
+  /// In contrast to other declaration methods (e.g., DeclareVectorOutputPort(),
+  /// for which the System class creates and stores the objects and returns
+  /// references to them, the witness function declaration functions return
+  /// heap-allocated methods that the subclass of leaf system owns. That design
+  /// decision was enacted because a LeafSystem derivative usually must maintain
+  /// pointers to the individual witness functions in order to implement
+  /// System::DoGetWitnessFunctions().
+  //@{
+
+  /// Constructs the witness function with the given description(used primarily
+  /// for debugging and logging), direction type, and calculation function; and
+  /// with no event object.
+  /// @note Constructing a witness function with no corresponding event forces
+  ///       Simulator's integration of an ODE to end a step at the witness
+  ///       isolation time. For example, isolating a function's minimum or
+  ///       maximum values can be realized with a witness that triggers on a
+  ///       sign change of the function's time derivative, ensuring that the
+  ///       actual extreme value is present in the discretized trajectory.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc);
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, and calculation
+  /// function, and with a unique pointer to the event that is to be dispatched
+  /// when this witness function triggers. Example types of event objects are
+  /// publish, discrete variable update, unrestricted update events.
+  /// @tparam EventType a class derived from Event<T>
+  template <class MySystem, class MyEvent>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      const MyEvent& e) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, e.Clone());
+  }
+  //@}
+
+  // =========================================================================
   /// @name                    Declare output ports
   /// Methods in this section are used by derived classes to declare their
   /// output ports, which may be vector valued or abstract valued. Every output

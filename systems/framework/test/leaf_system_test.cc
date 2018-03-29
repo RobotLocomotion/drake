@@ -84,6 +84,25 @@ class TestSystem : public LeafSystem<T> {
       Context<T>* context) const {
     return this->GetMutableNumericParameter(context, 0 /* index */);
   }
+
+  // First testing type: event specified.
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithEvent() const {
+    return this->DeclareWitnessFunction(
+        "dummy1", WitnessFunctionDirection::kNone,
+        &TestSystem<double>::DummyWitnessFunction,
+        PublishEvent<double>());
+  }
+
+  // Second testing type: no event specified.
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessWithoutEvent() const {
+    return this->DeclareWitnessFunction(
+        "dummy2", WitnessFunctionDirection::kCrossesZero,
+        &TestSystem<double>::DummyWitnessFunction);
+  }
+
+ private:
+  // This dummy witness function will never be used.
+  T DummyWitnessFunction(const Context<T>& context) const { return 0.0; }
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -100,6 +119,26 @@ class LeafSystemTest : public ::testing::Test {
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
 };
+
+// Tests that witness functions can be declared. Tests that witness functions
+// stop Simulator at desired points (i.e., the raison d'etre of a witness
+// function) are done in diagram_test.cc and
+// drake/systems/analysis/test/simulator_test.cc.
+TEST_F(LeafSystemTest, WitnessDeclarations) {
+  auto witness1 = system_.DeclareWitnessWithEvent();
+  ASSERT_TRUE(witness1);
+  EXPECT_EQ(witness1->description(), "dummy1");
+  EXPECT_EQ(witness1->dir_type(), WitnessFunctionDirection::kNone);
+  EXPECT_TRUE(witness1->get_event());
+  EXPECT_EQ(witness1->CalcWitnessValue(context_), 0.0);
+  auto witness2 = system_.DeclareWitnessWithoutEvent();
+  ASSERT_TRUE(witness2);
+  EXPECT_EQ(witness2->description(), "dummy2");
+  EXPECT_EQ(witness2->dir_type(),
+      WitnessFunctionDirection::kCrossesZero);
+  EXPECT_FALSE(witness2->get_event());
+  EXPECT_EQ(witness2->CalcWitnessValue(context_), 0.0);
+}
 
 // Tests that if no update events are configured, none are reported.
 TEST_F(LeafSystemTest, NoUpdateEvents) {

@@ -8,26 +8,18 @@
 
 namespace drake {
 namespace lcm {
+namespace {
 
-// This is the actual subscriber to an LCM channel. It simply extracts the
-// serialized LCM message and passes it to the `DrakeLcmMessageHandlerInterface`
-// object. A single type of subscriber is used to avoid DrakeLcm from being
-// templated on the subscriber type.
-class DrakeLcm::Subscriber {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Subscriber)
+void Callback(const ::lcm::ReceiveBuffer* buffer,
+              const std::string& /* channel */ ,
+              DrakeLcm::HandlerFunction* context) {
+  DRAKE_DEMAND(buffer != nullptr);
+  DRAKE_DEMAND(context != nullptr);
+  DrakeLcm::HandlerFunction& handler = *context;
+  handler(buffer->data, buffer->data_size);
+}
 
-  explicit Subscriber(DrakeLcmMessageHandlerInterface* drake_handler)
-      : drake_handler_(drake_handler) {}
-
-  void LcmCallback(const ::lcm::ReceiveBuffer* rbuf,
-                   const std::string& channel) {
-    drake_handler_->HandleMessage(channel, rbuf->data, rbuf->data_size);
-  }
-
- private:
-  DrakeLcmMessageHandlerInterface* const drake_handler_{};
-};
+}  // namespace
 
 DrakeLcm::DrakeLcm() {}
 
@@ -48,20 +40,28 @@ void DrakeLcm::StopReceiveThread() {
 ::lcm::LCM* DrakeLcm::get_lcm_instance() { return &lcm_; }
 
 void DrakeLcm::Publish(const std::string& channel, const void* data,
-                       int data_size, double) {
+                       int data_size, optional<double>) {
   DRAKE_THROW_UNLESS(!channel.empty());
   lcm_.publish(channel, data, data_size);
 }
 
+void DrakeLcm::Subscribe(const std::string& channel, HandlerFunction handler) {
+  DRAKE_THROW_UNLESS(!channel.empty());
+  handlers_.emplace_back(std::move(handler));
+  // The handlers_ is a std::list so that the context pointers remain stable.
+  HandlerFunction* const context = &handlers_.back();
+  lcm_.subscribeFunction(channel, &Callback, context)->setQueueCapacity(1);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void DrakeLcm::Subscribe(const std::string& channel,
                          DrakeLcmMessageHandlerInterface* handler) {
-  DRAKE_THROW_UNLESS(!channel.empty());
-  auto subscriber = std::make_unique<Subscriber>(handler);
-  auto sub =
-      lcm_.subscribe(channel, &Subscriber::LcmCallback, subscriber.get());
-  sub->setQueueCapacity(1);
-  subscriptions_.push_back(std::move(subscriber));
+  Subscribe(channel, std::bind(
+      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
+      channel, std::placeholders::_1, std::placeholders::_2));
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 }  // namespace lcm
 }  // namespace drake

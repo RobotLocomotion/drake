@@ -61,7 +61,7 @@ class ArticulatedIcpVisualizer : public PointCloudVisualizer {
     xb.setZero();
     xb.head(num_q) = scene_state.q();
     draw_msg_tx.Serialize(0, x, &bytes);
-    lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
+    lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size(), {});
   }
 
  private:

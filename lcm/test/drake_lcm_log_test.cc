@@ -11,6 +11,12 @@ namespace drake {
 namespace lcm {
 namespace {
 
+// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
+// deleted, refactor this test to use the HandlerFunction interface.  For now,
+// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
+// keep this all as-is so that all codepaths are covered by tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename MsgType>
 class TestHandler : public DrakeLcmMessageHandlerInterface {
  public:
@@ -30,6 +36,7 @@ class TestHandler : public DrakeLcmMessageHandlerInterface {
   const std::string name_;
   MsgType msg_{};
 };
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Generates a log file using the write-only interface, then plays it back
 // and check message content with a subscriber.
