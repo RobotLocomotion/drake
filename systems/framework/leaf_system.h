@@ -856,6 +856,7 @@ class LeafSystem : public System<T> {
     auto fn = [this, publish_callback](
         const Context<T>& context, const PublishEvent<T>& publish_event) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
       return (system_ptr->*publish_callback)(context, publish_event);
     };
     PublishEvent<T> publish_event(fn);
@@ -879,6 +880,7 @@ class LeafSystem : public System<T> {
     auto fn = [this, du_callback](const Context<T>& context,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
       return (system_ptr->*du_callback)(context, du_event, values);
     };
     DiscreteUpdateEvent<T> du_event(fn);
@@ -902,6 +904,7 @@ class LeafSystem : public System<T> {
     auto fn = [this, uu_callback](const Context<T>& context,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
       return (system_ptr->*uu_callback)(context, uu_event, state);
     };
     UnrestrictedUpdateEvent<T> uu_event(fn);
@@ -915,7 +918,6 @@ class LeafSystem : public System<T> {
   /// function, and with a unique pointer to the event that is to be dispatched
   /// when this witness function triggers. Example types of event objects are
   /// publish, discrete variable update, unrestricted update events.
-  /// @tparam MyEvent a class derived from Event<T>
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,

@@ -210,6 +210,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_TRUE(witness3->get_event());
   EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
   auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
+  ASSERT_TRUE(pe);
   pe->handle(context_);
   EXPECT_TRUE(system_.publish_callback_called());
 
@@ -222,6 +223,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness4->CalcWitnessValue(context_), 4.0);
   auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
       witness4->get_event());
+  ASSERT_TRUE(de);
   de->handle(context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
 
@@ -234,6 +236,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness5->CalcWitnessValue(context_), 5.0);
   auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness5->get_event());
+  ASSERT_TRUE(ue);
   ue->handle(context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
 }
