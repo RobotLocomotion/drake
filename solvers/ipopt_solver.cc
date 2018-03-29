@@ -465,6 +465,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* result = constraint_cache_->result.data();
     Number* grad = constraint_cache_->grad.data();
 
+    problem_->EvalCallbacks(xvec);
+
     for (const auto& c : problem_->generic_constraints()) {
       grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
                                  c.variables(), result, grad);

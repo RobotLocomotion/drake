@@ -2841,6 +2841,24 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
 
+GTEST_TEST(testMathematicalProgram, testAddCallback) {
+  MathematicalProgram prog;
+
+  auto x = prog.NewContinuousVariables<2>();
+  bool was_called = false;
+  auto my_callback = [&was_called](const Eigen::Ref<const Eigen::VectorXd>& x) {
+    EXPECT_EQ(x.size(), 2);
+    was_called = true;
+  };
+
+  Binding<Callback> b = prog.AddCallback(my_callback, x);
+
+  prog.EvalBinding(b, Vector2d(1., 2.));
+  EXPECT_TRUE(was_called);
+
+  EXPECT_EQ(prog.callbacks().size(), 1);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
