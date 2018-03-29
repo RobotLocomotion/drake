@@ -66,18 +66,6 @@ GTEST_TEST(PrimitiveFunctionTest, UsingMultipleIntegrators) {
       kAccuracy);
 }
 
-// Validates preconditions when constructing any given primitive function.
-GTEST_TEST(PrimitiveFunctionTest, ConstructorPreconditionValidation) {
-  EXPECT_THROW({
-      const PrimitiveFunction<double>::SpecifiedValues no_values;
-      // Defines a primitive function for f(x; 𝐤) = x * k₁ + k₂.
-      const PrimitiveFunction<double> func(
-          [](const double& x, const VectorX<double>& k) -> double {
-            return x * k[0] + k[1];
-          }, no_values);
-    }, std::logic_error);
-}
-
 // Validates preconditions when evaluating any given primitive function.
 GTEST_TEST(PrimitiveFunctionTest, EvaluatePreconditionValidation) {
   // The lower integration bound v, for function definition.
@@ -113,19 +101,17 @@ GTEST_TEST(PrimitiveFunctionTest, EvaluatePreconditionValidation) {
   EXPECT_THROW(primitive_f.Evaluate(kInvalidUpperIntegrationBound),
                std::logic_error);
 
-  {
-    PrimitiveFunction<double>::SpecifiedValues values;
-    values.k = kInvalidParameters;
-    EXPECT_THROW(primitive_f.Evaluate(kValidUpperIntegrationBound, values),
-                 std::logic_error);
-  }
+  EXPECT_THROW({
+      PrimitiveFunction<double>::SpecifiedValues values;
+      values.k = kInvalidParameters;
+      primitive_f.Evaluate(kValidUpperIntegrationBound, values);
+    }, std::logic_error);
 
-  {
+  EXPECT_THROW({
     PrimitiveFunction<double>::SpecifiedValues values;
     values.k = kValidParameters;
-    EXPECT_THROW(primitive_f.Evaluate(kInvalidUpperIntegrationBound, values),
-                 std::logic_error);
-  }
+    primitive_f.Evaluate(kInvalidUpperIntegrationBound, values);
+  }, std::logic_error);
 }
 
 
