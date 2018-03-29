@@ -491,9 +491,9 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
 
 TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
   for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
-    // Compute the rotation matrix using Eigen's quaterion.toRotationMatrix().
+    // Compute the rotation matrix R using Eigen's quaterion.toRotationMatrix().
     const RotationMatrix<double> R(qi);
-    // Compare that result with the corresponding RotationMatrix constructor.
+    // Compare R with the RotationMatrix constructor that uses Eigen::AngleAxis.
     const double w = qi.w(), x = qi.x(), y = qi.y(), z = qi.z();
     const double sin_half_theta_squared = x*x + y*y + z*z;
     const double abs_sin_half_theta = std::sqrt(sin_half_theta_squared);
@@ -506,8 +506,8 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     const RotationMatrix<double> R_expected(angle_axis);
     EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
 
-    // Check that can invert this operation, i.e., calculate the angle-axis from
-    // the rotation matrix that correspond to the same orientation.
+    // Check that inverting this operation (calculating the AngleAxis from
+    // rotation matrix R_expected) corresponds to the same orientation.
     // This check is done by comparing equivalent rotation matrices.
     // Note: We do not compare the angle-axes directly. This is because the
     // angle-axis has singularities for angles near 0 and 180 degree.
@@ -515,6 +515,9 @@ TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
     inverse_angle_axis.fromRotationMatrix(R_expected.matrix());
     const RotationMatrix<double> R_test(inverse_angle_axis);
     EXPECT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
+    // Ensure the angle returned via Eigen's AngleAxis is between 0 and PI.
+    const double angle = inverse_angle_axis.angle();
+    EXPECT_TRUE(0 <= angle && angle <= M_PI);
   }
 
 #ifdef DRAKE_ASSERT_IS_ARMED
