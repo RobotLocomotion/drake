@@ -125,20 +125,46 @@ class TestSystem : public LeafSystem<T> {
         &TestSystem<double>::UnrestrictedUpdateCallback);
   }
 
+  // Indicates whether various callbacks have been called.
+  bool publish_callback_called() const { return publish_callback_called_; }
+  bool discrete_update_callback_called() const {
+      return discrete_update_callback_called_;
+  }
+  bool unrestricted_update_callback_called() const {
+      return unrestricted_update_callback_called_;
+  }
+
  private:
   // This dummy witness function will never be used.
-  T DummyWitnessFunction(const Context<T>& context) const { return 0.0; }
+  T DummyWitnessFunction(const Context<T>& context) const {
+    static int call_counter = 0;
+    return static_cast<T>(++call_counter);
+  }
 
   // Publish callback function (will never be used).
-  void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {}
+  void PublishCallback(const Context<T>&, const PublishEvent<T>&) const {
+    publish_callback_called_ = true;
+  }
 
   // Discrete update callback function (will never be used).
   void DiscreteUpdateCallback(const Context<T>&,
-      const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {}
+      const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const {
+    discrete_update_callback_called_ = true;
+  }
 
   // Unrestricted update callback function (will never be used).
   void UnrestrictedUpdateCallback(const Context<T>&,
-      const UnrestrictedUpdateEvent<T>&, State<T>*) const {}
+      const UnrestrictedUpdateEvent<T>&, State<T>*) const {
+    unrestricted_update_callback_called_ = true;
+  }
+
+  // Indicators for which callbacks have been called, made mutable as
+  // PublishCallback() cannot alter any state (the others are mutable for
+  // consistency with PublishCallback() and to avoid machinations with state
+  // that would otherwise be required).
+  mutable bool publish_callback_called_{false};
+  mutable bool discrete_update_callback_called_{false};
+  mutable bool unrestricted_update_callback_called_{false};
 };
 
 class LeafSystemTest : public ::testing::Test {
@@ -167,14 +193,14 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness1->direction_type(),
       WitnessFunctionDirection::kCrossesZero);
   EXPECT_FALSE(witness1->get_event());
-  EXPECT_EQ(witness1->CalcWitnessValue(context_), 0.0);
+  EXPECT_EQ(witness1->CalcWitnessValue(context_), 1.0);
 
   auto witness2 = system_.DeclareWitnessWithEvent();
   ASSERT_TRUE(witness2);
   EXPECT_EQ(witness2->description(), "dummy2");
   EXPECT_EQ(witness2->direction_type(), WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness2->get_event());
-  EXPECT_EQ(witness2->CalcWitnessValue(context_), 0.0);
+  EXPECT_EQ(witness2->CalcWitnessValue(context_), 2.0);
 
   auto witness3 = system_.DeclareWitnessWithPublish();
   ASSERT_TRUE(witness3);
@@ -182,7 +208,10 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness3->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness3->get_event());
-  EXPECT_EQ(witness3->CalcWitnessValue(context_), 0.0);
+  EXPECT_EQ(witness3->CalcWitnessValue(context_), 3.0);
+  auto pe = dynamic_cast<const PublishEvent<double>*>(witness3->get_event());
+  pe->handle(context_);
+  EXPECT_TRUE(system_.publish_callback_called());
 
   auto witness4 = system_.DeclareWitnessWithDiscreteUpdate();
   ASSERT_TRUE(witness4);
@@ -190,7 +219,11 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness4->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness4->get_event());
-  EXPECT_EQ(witness4->CalcWitnessValue(context_), 0.0);
+  EXPECT_EQ(witness4->CalcWitnessValue(context_), 4.0);
+  auto de = dynamic_cast<const DiscreteUpdateEvent<double>*>(
+      witness4->get_event());
+  de->handle(context_, nullptr);
+  EXPECT_TRUE(system_.discrete_update_callback_called());
 
   auto witness5 = system_.DeclareWitnessWithUnrestrictedUpdate();
   ASSERT_TRUE(witness5);
@@ -198,7 +231,11 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   EXPECT_EQ(witness5->direction_type(),
       WitnessFunctionDirection::kNone);
   EXPECT_TRUE(witness5->get_event());
-  EXPECT_EQ(witness5->CalcWitnessValue(context_), 0.0);
+  EXPECT_EQ(witness5->CalcWitnessValue(context_), 5.0);
+  auto ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
+      witness5->get_event());
+  ue->handle(context_, nullptr);
+  EXPECT_TRUE(system_.unrestricted_update_callback_called());
 }
 
 // Tests that if no update events are configured, none are reported.
