@@ -12,6 +12,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/math/autodiff.h"
 #include "drake/solvers/function.h"
 
 namespace drake {
@@ -245,6 +246,42 @@ std::shared_ptr<EvaluatorBase> MakeFunctionEvaluator(FF&& f) {
   using F = std::decay_t<FF>;
   return std::make_shared<FunctionEvaluator<F>>(std::forward<FF>(f));
 }
+
+/**
+ * Defines a simple evaluator with no outputs that takes a callback function
+ * pointer.  This is intended for debugging / visualization of intermediate
+ * results during an optimization (for solvers that support it).
+ */
+class VisualizationCallback : public EvaluatorBase {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VisualizationCallback)
+
+  typedef std::function<void(const Eigen::Ref<const Eigen::VectorXd>&)>
+      CallbackFunction;
+
+  VisualizationCallback(int num_inputs, const CallbackFunction& callback,
+                        const std::string& description = "")
+      : EvaluatorBase(0, num_inputs, description), callback_(callback) {}
+
+  void EvalCallback(const Eigen::Ref<const Eigen::VectorXd>& x) const {
+    callback_(x);
+  }
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override {
+    y.resize(0);
+    callback_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override {
+    y.resize(0);
+    callback_(math::autoDiffToValueMatrix(x));
+  }
+
+  const CallbackFunction callback_;
+};
 
 }  // namespace solvers
 }  // namespace drake

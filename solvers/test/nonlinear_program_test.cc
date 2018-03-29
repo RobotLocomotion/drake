@@ -394,6 +394,48 @@ GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
   prob.SetInitialGuessForAllVariables(Vector4d(1, 2, 3, 4));
   RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
 }
+
+GTEST_TEST(testNonlinearProgram, CallbackTest) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  // Solve a program
+  // min x(0) + x(1) + x(2)
+  // s.t xᵀx<=1
+  prog.AddLinearCost(x.cast<symbolic::Expression>().sum());
+  prog.AddConstraint(x.transpose()*x <= 1.0);
+
+  int num_calls = 0;
+  auto my_callback = [&num_calls](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 3);
+    num_calls++;
+  };
+
+  prog.AddVisualizationCallback(my_callback, x);
+
+  IpoptSolver ipopt_solver;
+  NloptSolver nlopt_solver;
+  SnoptSolver snopt_solver;
+
+  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
+      std::make_pair("SNOPT", &snopt_solver),
+      std::make_pair("NLopt", &nlopt_solver),
+      std::make_pair("Ipopt", &ipopt_solver)};
+
+  for (const auto& solver : solvers) {
+    if (!solver.second->available()) {
+      continue;
+    }
+    SolutionResult result = SolutionResult::kUnknownError;
+
+    num_calls = 0;
+    ASSERT_NO_THROW(result = solver.second->Solve(prog))
+        << "Using solver: " << solver.first;
+    EXPECT_EQ(result, SolutionResult::kSolutionFound)
+        << "Using solver: " << solver.first;
+    EXPECT_GT(num_calls, 0);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
