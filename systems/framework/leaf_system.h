@@ -851,6 +851,8 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*publish_callback)(
           const Context<T>&, const PublishEvent<T>&) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, publish_callback](
         const Context<T>& context, const PublishEvent<T>& publish_event) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
@@ -872,6 +874,8 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*du_callback)(const Context<T>&,
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, du_callback](const Context<T>& context,
         const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
@@ -893,6 +897,8 @@ class LeafSystem : public System<T> {
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*uu_callback)(const Context<T>&,
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
     auto fn = [this, uu_callback](const Context<T>& context,
         const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
       auto system_ptr = dynamic_cast<const MySystem*>(this);
