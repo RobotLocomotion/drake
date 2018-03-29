@@ -1117,6 +1117,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "@spruce",
     ],

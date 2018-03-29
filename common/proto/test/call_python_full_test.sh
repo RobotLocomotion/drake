@@ -35,7 +35,7 @@ cc_bin=${cur}/call_python_test
 py_client_cli=${cur}/call_python_client_cli
 # TODO(eric.cousineau): Use `tempfile` once we can choose which file C++
 # uses.
-filename=$(mktemp)
+filename="${TEST_TMPDIR}/python_rpc"
 done_file=${filename}_done
 
 cc_bin_flags=

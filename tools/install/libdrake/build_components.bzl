@@ -82,6 +82,7 @@ LIBDRAKE_COMPONENTS = [
     "//common:sorted_vectors_have_intersection",
     "//common:symbolic",
     "//common:symbolic_decompose",
+    "//common:temp_directory",
     "//common:text_logging_gflags_h",
     "//common:type_safe_index",
     "//common:unused",
