@@ -19,6 +19,9 @@
 #include "drake/geometry/proximity_engine.h"
 
 namespace drake {
+
+class lcmt_viewer_load_robot;
+
 namespace geometry {
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -429,8 +432,10 @@ class GeometryState {
     convert(source.X_WF_, &X_WF_);
   }
 
-  // Allow geometry dispatch to peek into GeometryState.
-  friend void DispatchLoadMessage(const GeometryState<double>&);
+  // NOTE: This function is defined in geometry_visualization.cc and is *not*
+  // declared anywhere else but here. This signature must match the definition
+  // given in the .cc file. See the .cc file for more details.
+  friend lcmt_viewer_load_robot BuildLoadMessage(const GeometryState<double>&);
 
   // Allow GeometrySystem unique access to the state members to perform queries.
   friend class GeometrySystem<T>;

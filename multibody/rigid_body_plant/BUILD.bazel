@@ -83,6 +83,7 @@ drake_cc_library(
     hdrs = ["rigid_body_plant_bridge.h"],
     deps = [
         "//geometry:geometry_ids",
+        "//geometry:geometry_material",
         "//geometry:geometry_system",
         "//multibody:rigid_body_tree",
     ],
