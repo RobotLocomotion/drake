@@ -347,12 +347,17 @@ class PublishEvent final : public Event<T> {
   /// no specified callback function.
   PublishEvent() : Event<T>() {}
 
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit PublishEvent(const PublishCallback& callback)
+      : Event<T>(), callback_(callback) {}
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // callback function `callback`, which can be null.
   PublishEvent(const typename Event<T>::TriggerType& trigger_type,
-               PublishCallback callback)
+               const PublishCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes a PublishEvent with `trigger_type`, no event data, and
@@ -415,13 +420,18 @@ class DiscreteUpdateEvent final : public Event<T> {
   /// no specified callback function.
   DiscreteUpdateEvent() : Event<T>() {}
 
+  /// Makes a DiscreteUpdateEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit DiscreteUpdateEvent(const DiscreteUpdateCallback& callback)
+      : Event<T>(), callback_(callback) {}
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a DiscreteUpdateEvent with `trigger_type` with no event data and
   // the callback function `callback`.
   // `callback` can be null.
   DiscreteUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
-                      DiscreteUpdateCallback callback)
+                      const DiscreteUpdateCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes a DiscreteUpdateEvent with @p trigger_type with no event data and
@@ -488,12 +498,17 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   /// no specified callback function.
   UnrestrictedUpdateEvent() : Event<T>() {}
 
+  /// Makes a UnrestrictedUpdateEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit UnrestrictedUpdateEvent(const UnrestrictedUpdateCallback& callback)
+      : Event<T>(), callback_(callback) {}
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes an UnrestrictedUpdateEvent with `trigger_type` and callback function
   // `callback`. `callback` can be null.
   UnrestrictedUpdateEvent(const typename Event<T>::TriggerType& trigger_type,
-                          UnrestrictedUpdateCallback callback)
+                          const UnrestrictedUpdateCallback& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes an UnrestrictedUpateEvent with @p trigger_type, no optional data, and
