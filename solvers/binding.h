@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/decision_variable.h"
 
 namespace drake {
@@ -20,7 +21,7 @@ class Binding {
 
   Binding(const std::shared_ptr<C>& c,
           const Eigen::Ref<const VectorXDecisionVariable>& v)
-      : constraint_(c), vars_(v) {
+      : evaluator_(c), vars_(v) {
     DRAKE_DEMAND(c->num_vars() == v.rows() || c->num_vars() == Eigen::Dynamic);
   }
 
@@ -30,7 +31,7 @@ class Binding {
    * the constraint @p c.
    */
   Binding(const std::shared_ptr<C>& c, const VariableRefList& v)
-      : constraint_(c) {
+      : evaluator_(c) {
     vars_ = ConcatenateVariableRefList(v);
     DRAKE_DEMAND(c->num_vars() == vars_.rows() ||
                  c->num_vars() == Eigen::Dynamic);
@@ -40,11 +41,12 @@ class Binding {
   Binding(const Binding<U>& b,
           typename std::enable_if<std::is_convertible<
               std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-      : Binding(b.constraint(), b.variables()) {}
+      : Binding(b.evaluator(), b.variables()) {}
 
-  // TODO(eric.cousineau): Rename `constraint` to `evaluator` to incorporate
-  // `Cost` (and `EvaluatorBase`) as well.
-  const std::shared_ptr<C>& constraint() const { return constraint_; }
+  DRAKE_DEPRECATED("Please use evaluator() instead of constraint()")
+  const std::shared_ptr<C>& constraint() const { return evaluator_; }
+
+  const std::shared_ptr<C>& evaluator() const { return evaluator_; }
 
   const VectorXDecisionVariable& variables() const { return vars_; }
 
@@ -66,7 +68,7 @@ class Binding {
   }
 
  private:
-  std::shared_ptr<C> constraint_;
+  std::shared_ptr<C> evaluator_;
   VectorXDecisionVariable vars_;
 };
 
@@ -81,6 +83,13 @@ namespace internal {
 template <typename C, typename... Args>
 Binding<C> CreateBinding(const std::shared_ptr<C>& c, Args&&... args) {
   return Binding<C>(c, std::forward<Args>(args)...);
+}
+
+template <typename To, typename From>
+Binding<To> BindingDynamicCast(const Binding<From>& binding) {
+  auto constraint = std::dynamic_pointer_cast<To>(binding.evaluator());
+  DRAKE_DEMAND(constraint != nullptr);
+  return Binding<To>(constraint, binding.variables());
 }
 
 }  // namespace internal

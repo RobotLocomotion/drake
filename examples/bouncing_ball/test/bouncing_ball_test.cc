@@ -6,6 +6,7 @@
 
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace bouncing_ball {
@@ -79,67 +80,97 @@ class BouncingBallTest : public ::testing::Test {
     return context_->get_mutable_continuous_state_vector();
   }
 
+  const systems::VectorBase<double>& generalized_position() {
+    return context_->get_continuous_state().get_generalized_position();
+  }
+
+  const systems::VectorBase<double>& generalized_velocity() {
+    return context_->get_continuous_state().get_generalized_velocity();
+  }
+
   std::unique_ptr<BouncingBall<double>> dut_;  //< The device under test.
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
 };
 
-TEST_F(BouncingBallTest, Guard) {
-  // Evaluate the guard at the initial state.
-  EXPECT_EQ(10.0, dut_->EvalGuard(*context_));
-
-  // Evaluate at a state where the ball is rising.
-  // The guard should be positive, meaning a mode transition cannot be made.
-  continuous_state().SetAtIndex(0, 1.7);
-  continuous_state().SetAtIndex(1, 2.3);
-  EXPECT_EQ(2.3, dut_->EvalGuard(*context_));
-
-  // Evaluate at a state where the ball is falling.
-  // The guard should be positive, meaning a mode transition cannot be made.
-  continuous_state().SetAtIndex(0, 1.7);
-  continuous_state().SetAtIndex(1, -2.0);
-  EXPECT_EQ(1.7, dut_->EvalGuard(*context_));
-
-  // Evaluate at the moment of impact, where the ball is falling.
-  // The guard is non-positive, so a mode transition is possible.
-  continuous_state().SetAtIndex(0, 0.0);
-  continuous_state().SetAtIndex(1, -3.7);
-  EXPECT_EQ(0.0, dut_->EvalGuard(*context_));
+GTEST_TEST(BouncingBall, AutoDiff) {
+  BouncingBall<AutoDiffXd> ad_plant;
 }
 
-TEST_F(BouncingBallTest, Reset) {
-  // Grab a pointer to where the context results will be saved.
+TEST_F(BouncingBallTest, Transmogrification) {
+  ASSERT_TRUE(systems::is_autodiffxd_convertible(*dut_));
+}
+
+TEST_F(BouncingBallTest, Topology) {
+  ASSERT_EQ(0, dut_->get_num_input_ports());
+
+  ASSERT_EQ(1, dut_->get_num_output_ports());
+  const auto& output_port = dut_->get_output_port(0);
+  EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
+}
+
+TEST_F(BouncingBallTest, Output) {
+  // Grab a pointer to where the CalcOutput results will be saved.
   const auto result = output_->get_vector_data(0);
 
-  // Perform a reset at the initial state.
-  dut_->PerformReset(context_.get());
+  // Initial state and output.
   dut_->CalcOutput(*context_, output_.get());
   EXPECT_EQ(10.0, result->GetAtIndex(0));
   EXPECT_EQ(0.0, result->GetAtIndex(1));
 
-  // Perform a reset at the moment of impact.
-  continuous_state().SetAtIndex(0, 0.0);
-  continuous_state().SetAtIndex(1, -5.7);
-  dut_->PerformReset(context_.get());
+  // New state just propagates through.
+  continuous_state().SetAtIndex(0, 1.0);
+  continuous_state().SetAtIndex(1, 2.0);
   dut_->CalcOutput(*context_, output_.get());
-  EXPECT_EQ(0.0, result->GetAtIndex(0));
-  EXPECT_NEAR(-5.7 * -1 * dut_->get_restitution_coef(),
-              result->GetAtIndex(1), 1e-14);
+  EXPECT_EQ(1.0, result->GetAtIndex(0));
+  EXPECT_EQ(2.0, result->GetAtIndex(1));
+}
+
+TEST_F(BouncingBallTest, Derivatives) {
+  // Grab a pointer to where the EvalTimeDerivatives results will be saved.
+  const auto& result = derivatives_->get_mutable_vector();
+
+  // Evaluate time derivatives.
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(0.0, result.GetAtIndex(0));
+  EXPECT_EQ(-9.81, result.GetAtIndex(1));
+
+  // Test at non-zero velocity.
+  continuous_state().SetAtIndex(1, 5.3);
+  dut_->CalcTimeDerivatives(*context_, derivatives_.get());
+  EXPECT_EQ(5.3, result.GetAtIndex(0));
+  EXPECT_EQ(-9.81, result.GetAtIndex(1));
+}
+
+TEST_F(BouncingBallTest, Accessors) {
+  // Evaluate accessors specific to the second-order system.
+  EXPECT_EQ(10.0, generalized_position().GetAtIndex(0));
+  EXPECT_EQ(0, generalized_velocity().GetAtIndex(0));
 }
 
 TEST_F(BouncingBallTest, Simulate) {
+  // Small errors from time-of-impact isolation tolerances propagate for this
+  // particular instance of the problem (with restitution coefficient of 1).
+  // Drake's integrators control local (truncation) rather than global
+  // (i.e., solution to the initial value problem) error. This means that the
+  // number of digits of precision obtained will not be equal to the digits of
+  // precision requested (via the accuracy setting) for longer running times
+  // than t_final = 10.0.
   const double t_final = 10.0;
   const double x0 = 1.0;
   const double v0 = 0.0;
+  const double accuracy = 1e-4;
 
   // Prepare to integrate.
+  // TODO(edrumwri): Update the code below when accuracy is settable purely
+  // from the context.
   drake::systems::Simulator<double> simulator(*dut_, std::move(context_));
   simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
       &simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator.get_mutable_integrator()->set_requested_minimum_step_size(1e-3);
-  simulator.get_mutable_integrator()->set_maximum_step_size(1e-3);
+  simulator.get_mutable_context().set_accuracy(accuracy);
+  simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
+  simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
   simulator.Initialize();
 
   // Set the initial state for the bouncing ball.
@@ -154,32 +185,11 @@ TEST_F(BouncingBallTest, Simulate) {
 
   // Check against closed form solution for the bouncing ball. We anticipate
   // some small integration error.
-  const double tol = 1e-11;
+  const double tol = accuracy;
   double height, velocity;
   std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
-                                    dut_->get_gravitational_acceleration(),
-                                    dut_->get_restitution_coef(), x0, t_final);
-  EXPECT_NEAR(xc.GetAtIndex(0), height, tol);
-  EXPECT_NEAR(xc.GetAtIndex(1), velocity, tol);
-
-  // Try again in variable step mode.
-  simulator.get_mutable_context().set_time(0.0);
-  xc.SetAtIndex(0, x0);
-  xc.SetAtIndex(1, v0);
-  simulator.reset_integrator<systems::RungeKutta3Integrator<double>>(*dut_,
-      &simulator.get_mutable_context());
-  simulator.get_mutable_integrator()->set_fixed_step_mode(false);
-  simulator.get_mutable_integrator()->set_requested_minimum_step_size(1e-8);
-  simulator.get_mutable_integrator()->set_maximum_step_size(1e-2);
-  simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
-  simulator.Initialize();
-
-  // Integrate.
-  simulator.StepTo(t_final);
-  EXPECT_EQ(simulator.get_mutable_context().get_time(), t_final);
-  std::tie(height, velocity) = CalcClosedFormHeightAndVelocity(
-                                    dut_->get_gravitational_acceleration(),
-                                    dut_->get_restitution_coef(), x0, t_final);
+      dut_->get_gravitational_acceleration(),
+      dut_->get_restitution_coef(), x0, t_final);
   EXPECT_NEAR(xc.GetAtIndex(0), height, tol);
   EXPECT_NEAR(xc.GetAtIndex(1), velocity, tol);
 }

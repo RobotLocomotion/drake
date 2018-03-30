@@ -41,15 +41,11 @@ struct PickAndPlaceStateMachineSystem::InternalState {
   InternalState(const pick_and_place::PlannerConfiguration& configuration,
                 bool single_move)
       : world_state(
-            configuration.absolute_model_path(),
-            configuration.end_effector_name,
             configuration.num_tables,
             configuration.target_dimensions),
         state_machine(configuration, single_move),
         last_iiwa_plan(MakeDefaultIiwaPlan()),
         last_wsg_command(MakeDefaultWsgCommand()) {}
-
-  ~InternalState() {}
 
   pick_and_place::WorldState world_state;
   PickAndPlaceStateMachine state_machine;

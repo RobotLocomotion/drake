@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "optitrack/optitrack_frame_t.hpp"
+#include <fmt/format.h>
 
 #include "drake/common/text_logging.h"
 #include "drake/math/quaternion.h"
@@ -13,9 +13,54 @@
 namespace drake {
 namespace manipulation {
 namespace perception {
+
 using systems::Context;
 using systems::DiscreteValues;
 using systems::BasicVector;
+
+Isometry3<double> ExtractOptitrackPose(
+    const optitrack::optitrack_rigid_body_t& body) {
+  // The optitrack quaternion ordering is X-Y-Z-W and this needs fitting into
+  // Eigen's W-X-Y-Z ordering.
+  auto& q_xyzw = body.quat;
+  Eigen::Quaterniond q_wxyz(q_xyzw[3], q_xyzw[0], q_xyzw[1], q_xyzw[2]);
+  // Quaternion arrived in float (single) precision so is not sufficiently
+  // normalized for use in double precision.
+  q_wxyz.normalize();
+  // Pose of rigid body frame `B` in Optitrack frame `O`.
+  Isometry3<double> X_OB;
+  X_OB.linear() = q_wxyz.toRotationMatrix();
+  X_OB.translation() =
+      Eigen::Vector3d(body.xyz[0], body.xyz[1], body.xyz[2]);
+  X_OB.makeAffine();
+  return X_OB;
+}
+
+std::map<int, Isometry3<double>> ExtractOptitrackPoses(
+    const optitrack::optitrack_frame_t& frame) {
+  std::map<int, Isometry3<double>> poses;
+  for (auto& body : frame.rigid_bodies) {
+    poses[body.id] = ExtractOptitrackPose(body);
+  }
+  return poses;
+}
+
+optional<optitrack::optitrack_rigid_body_t> FindOptitrackBody(
+      const optitrack::optitrack_frame_t& message, int object_id) {
+  for (auto& body : message.rigid_bodies) {
+    if (body.id == object_id) return body;
+  }
+  return nullopt;
+}
+
+optional<int> FindOptitrackObjectId(
+    const optitrack::optitrack_data_descriptions_t& message,
+    const std::string& object_name) {
+  for (auto& desc : message.rigid_bodies) {
+    if (desc.name == object_name) return desc.id;
+  }
+  return nullopt;
+}
 
 OptitrackPoseExtractor::OptitrackPoseExtractor(
     int object_id, const Isometry3<double>& X_WO,
@@ -45,41 +90,13 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
   // Update world state from inputs.
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& pose_message = input->GetValue<optitrack::optitrack_frame_t>();
-
-  internal_state = Isometry3<double>::Identity();
-
-  std::vector<optitrack::optitrack_rigid_body_t> rigid_bodies =
-      pose_message.rigid_bodies;
-
-  // Lookup and verify if object exists and extract vector index.
-  bool body_exists = false;
-  size_t vector_index;
-  for (vector_index = 0; vector_index < rigid_bodies.size(); ++vector_index) {
-    if (rigid_bodies[vector_index].id == object_id_) {
-      body_exists = true;
-      break;
-    }
+  auto& message = input->GetValue<optitrack::optitrack_frame_t>();
+  auto body = FindOptitrackBody(message, object_id_);
+  if (!body.has_value()) {
+    throw std::runtime_error(fmt::format(
+        "optitrack: id {} not found", object_id_));
   }
-  DRAKE_THROW_UNLESS(body_exists);
-
-  // The optitrack quaternion ordering is X-Y-Z-W and this needs fitting into
-  // Eigen's W-X-Y-Z ordering.
-  Eigen::Quaterniond quaternion(
-      rigid_bodies[vector_index].quat[3], rigid_bodies[vector_index].quat[0],
-      rigid_bodies[vector_index].quat[1], rigid_bodies[vector_index].quat[2]);
-
-  // Transform from world frame W to rigid body frame B.
-  Isometry3<double> X_OB;
-  X_OB.linear() = quaternion.toRotationMatrix();
-  X_OB.translation() = Eigen::Vector3d(rigid_bodies[vector_index].xyz[0],
-                                       rigid_bodies[vector_index].xyz[1],
-                                       rigid_bodies[vector_index].xyz[2]);
-
-  X_OB.makeAffine();
-  Isometry3<double> X_WB = X_WO_ * X_OB;
-
-  internal_state = X_WB;
+  internal_state = X_WO_ * ExtractOptitrackPose(*body);
 }
 
 void OptitrackPoseExtractor::OutputMeasuredPose(

@@ -322,6 +322,92 @@ TEST_F(VariableTest, MakeVectorIntegerVariable) {
   EXPECT_EQ(vec2[1].get_type(), Variable::Type::INTEGER);
 }
 
+TEST_F(VariableTest, MakeMatrixVariable) {
+  const MatrixX<Variable> m1{
+      MakeMatrixVariable(1, 2, "x", Variable::Type::CONTINUOUS)};
+  const auto m2 = MakeMatrixVariable<1, 2>("x", Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m1.rows(), 1);
+  EXPECT_EQ(m1.cols(), 2);
+  EXPECT_EQ(m1(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m1(0, 0).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m1(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m1(0, 1).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2.cols(), 2);
+  EXPECT_EQ(m2(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::CONTINUOUS);
+}
+
+TEST_F(VariableTest, MakeMatrixBooleanVariable) {
+  const MatrixX<Variable> m1{MakeMatrixBooleanVariable(1, 2, "x")};
+  const auto m2 = MakeMatrixBooleanVariable<1, 2>("x");
+  EXPECT_EQ(m1.rows(), 1);
+  EXPECT_EQ(m1.cols(), 2);
+  EXPECT_EQ(m1(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m1(0, 0).get_type(), Variable::Type::BOOLEAN);
+  EXPECT_EQ(m1(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m1(0, 1).get_type(), Variable::Type::BOOLEAN);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2.cols(), 2);
+  EXPECT_EQ(m2(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::BOOLEAN);
+  EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::BOOLEAN);
+}
+
+TEST_F(VariableTest, MakeMatrixBinaryVariable) {
+  const MatrixX<Variable> m1{MakeMatrixBinaryVariable(1, 2, "x")};
+  const auto m2 = MakeMatrixBinaryVariable<1, 2>("x");
+  EXPECT_EQ(m1.rows(), 1);
+  EXPECT_EQ(m1.cols(), 2);
+  EXPECT_EQ(m1(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m1(0, 0).get_type(), Variable::Type::BINARY);
+  EXPECT_EQ(m1(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m1(0, 1).get_type(), Variable::Type::BINARY);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2.cols(), 2);
+  EXPECT_EQ(m2(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::BINARY);
+  EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::BINARY);
+}
+
+TEST_F(VariableTest, MakeMatrixContinuousVariable) {
+  const MatrixX<Variable> m1{MakeMatrixContinuousVariable(1, 2, "x")};
+  const auto m2 = MakeMatrixContinuousVariable<1, 2>("x");
+  EXPECT_EQ(m1.rows(), 1);
+  EXPECT_EQ(m1.cols(), 2);
+  EXPECT_EQ(m1(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m1(0, 0).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m1(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m1(0, 1).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2.cols(), 2);
+  EXPECT_EQ(m2(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::CONTINUOUS);
+}
+
+TEST_F(VariableTest, MakeMatrixIntegerVariable) {
+  const MatrixX<Variable> m1{MakeMatrixIntegerVariable(1, 2, "x")};
+  const auto m2 = MakeMatrixIntegerVariable<1, 2>("x");
+  EXPECT_EQ(m1.rows(), 1);
+  EXPECT_EQ(m1.cols(), 2);
+  EXPECT_EQ(m1(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m1(0, 0).get_type(), Variable::Type::INTEGER);
+  EXPECT_EQ(m1(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m1(0, 1).get_type(), Variable::Type::INTEGER);
+  EXPECT_EQ(m2.rows(), 1);
+  EXPECT_EQ(m2.cols(), 2);
+  EXPECT_EQ(m2(0, 0).get_name(), "x(0, 0)");
+  EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::INTEGER);
+  EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
+  EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::INTEGER);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

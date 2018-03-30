@@ -17,6 +17,11 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
+licenses([
+    "notice",  # BSD-3-Clause
+    "restricted",  # LGPL-2.1 AND LGPL-2.1+
+])
+
 package(default_visibility = ["//visibility:public"])
 
 config_setting(
@@ -96,7 +101,10 @@ cc_binary(
     copts = LCM_COPTS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
     linkopts = select({
-        ":linux": ["-pthread"],  # For lcm_(mp)udpm.c.
+        ":linux": [
+            "-pthread",  # For lcm_(mp)udpm.c.
+            "-Wl,-soname,libdrake_lcm.so",
+        ],
         "@//conditions:default": [],
     }),
     linkshared = 1,
@@ -294,6 +302,9 @@ install(
 
 install(
     name = "install",
+    install_tests = [
+        "@drake//tools/workspace/lcm:test/lcm-gen_install_test.py",
+    ],
     targets = [
         ":lcm-gen",
         ":lcm-java",
@@ -325,4 +336,4 @@ install(
     ],
 )
 
-python_lint()
+python_lint(extra_srcs = [":test/lcm-gen_install_test.py"])

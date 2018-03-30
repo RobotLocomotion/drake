@@ -8,6 +8,10 @@
 namespace drake {
 namespace systems {
 namespace controllers {
+
+using trajectories::ExponentialPlusPiecewisePolynomial;
+using trajectories::PiecewisePolynomial;
+
 namespace {
 
 class ZMPPlannerTest : public ::testing::Test {
@@ -147,8 +151,8 @@ class ZMPPlannerTest : public ::testing::Test {
 // -Vdot = L(y, u) + dV / dx_bar * x_bar_dot
 TEST_F(ZMPPlannerTest, TestHJB) {
   double dt = 1e-2;
-  double t0 = zmp_planner_.get_desired_zmp().getStartTime();
-  double t1 = zmp_planner_.get_desired_zmp().getEndTime();
+  double t0 = zmp_planner_.get_desired_zmp().start_time();
+  double t1 = zmp_planner_.get_desired_zmp().end_time();
 
   Eigen::Vector4d x, x_bar, Vx, Vxdot;
   Eigen::Vector2d u, y_diff;
@@ -179,8 +183,8 @@ TEST_F(ZMPPlannerTest, TestS1dot) {
 // s2dot computed by Eq. 18 should be the same as s2.derivative.
 TEST_F(ZMPPlannerTest, TestS2dot) {
   double dt = 1e-2;
-  double t0 = zmp_planner_.get_desired_zmp().getStartTime();
-  double t1 = zmp_planner_.get_desired_zmp().getEndTime();
+  double t0 = zmp_planner_.get_desired_zmp().start_time();
+  double t1 = zmp_planner_.get_desired_zmp().end_time();
 
   ExponentialPlusPiecewisePolynomial<double> Vxdot =
       zmp_planner_.get_Vx().derivative();
@@ -196,8 +200,8 @@ TEST_F(ZMPPlannerTest, TestS2dot) {
 // with the nominal CoM state.
 TEST_F(ZMPPlannerTest, TestCoMdd) {
   double dt = 1e-2;
-  double t0 = zmp_planner_.get_desired_zmp().getStartTime();
-  double t1 = zmp_planner_.get_desired_zmp().getEndTime();
+  double t0 = zmp_planner_.get_desired_zmp().start_time();
+  double t1 = zmp_planner_.get_desired_zmp().end_time();
   for (double t = t0 + dt; t + dt < t1; t += dt) {
     EXPECT_TRUE(CompareMatrices(zmp_planner_.get_nominal_comdd(t),
                                 zmp_planner_.ComputeOptimalCoMdd(t, get_x(t)),

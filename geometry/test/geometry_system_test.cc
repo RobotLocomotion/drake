@@ -5,13 +5,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test_utilities/expect_error_message.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -151,7 +151,7 @@ TEST_F(GeometrySystemTest, RegisterSourceSpecifiedName) {
 // Tests that sources cannot be registered after context allocation.
 TEST_F(GeometrySystemTest, PoseContextSourceRegistration) {
   AllocateContext();
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterSource(),
       std::logic_error,
       "The call to RegisterSource is invalid; a context has already been "
@@ -172,11 +172,11 @@ TEST_F(GeometrySystemTest, SourceIsRegistered) {
 // throws exceptions.
 TEST_F(GeometrySystemTest, InputPortsForInvalidSource) {
   SourceId fake_source = SourceId::get_new_id();
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.get_source_frame_id_port(fake_source),
       std::logic_error,
       "Can't acquire id port for unknown source id: \\d+.");
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.get_source_pose_port(fake_source),
       std::logic_error,
       "Can't acquire pose port for unknown source id: \\d+.");
@@ -206,7 +206,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
   AllocateContext();
 
   // Attach frame to world.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterFrame(
           id, GeometryFrame("frame", Isometry3<double>::Identity())),
       std::logic_error,
@@ -214,7 +214,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       "allocated.");
 
   // Attach frame to another frame.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterFrame(
           id, FrameId::get_new_id(),
           GeometryFrame("frame", Isometry3<double>::Identity())),
@@ -223,7 +223,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       "allocated.");
 
   // Attach geometry to frame.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterGeometry(
           id, FrameId::get_new_id(), make_sphere_instance()),
       std::logic_error,
@@ -231,7 +231,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
       "allocated.");
 
   // Attach geometry to another geometry.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterGeometry(
           id, GeometryId::get_new_id(), make_sphere_instance()),
       std::logic_error,
@@ -239,7 +239,7 @@ TEST_F(GeometrySystemTest, TopologyAfterAllocation) {
           "allocated.");
 
   // Attach anchored geometry to world.
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.RegisterAnchoredGeometry(id, make_sphere_instance()),
       std::logic_error,
       "The call to RegisterAnchoredGeometry is invalid; a context has already "
@@ -458,7 +458,7 @@ GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoIdConnection) {
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
       diagram->GetMutableSubsystemContext(*geometry_system,
                                           diagram_context.get()));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide id values on "
@@ -482,7 +482,7 @@ GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoPoseConnection) {
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
       diagram->GetMutableSubsystemContext(*geometry_system,
                                           diagram_context.get()));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
@@ -503,7 +503,7 @@ GTEST_TEST(GeometrySystemConnectionTest, FullPoseUpdateNoConnections) {
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
       diagram->GetMutableSubsystemContext(*geometry_system,
                                           diagram_context.get()));
-  EXPECT_ERROR_MESSAGE(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       GeometrySystemTester::FullPoseUpdate(*geometry_system, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide id values on "

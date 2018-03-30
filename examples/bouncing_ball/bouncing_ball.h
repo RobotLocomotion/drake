@@ -3,7 +3,9 @@
 #include <memory>
 #include <vector>
 
-#include "drake/examples/bouncing_ball/ball.h"
+#include "drake/systems/framework/event.h"
+#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/framework/witness_function.h"
 
 namespace drake {
 namespace bouncing_ball {
@@ -11,14 +13,9 @@ namespace bouncing_ball {
 /// Dynamical representation of the idealized hybrid dynamics
 /// of a ball dropping from a height and bouncing on a surface.
 ///
-/// This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-/// this class, please refer to http://drake.mit.edu/cxx_inl.html.
-///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 /// - AutoDiffXd
-///
-/// To use other specific scalar types see bouncing_ball-inl.h.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -30,44 +27,125 @@ namespace bouncing_ball {
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 template <typename T>
-class BouncingBall : public Ball<T> {
+class BouncingBall final : public systems::LeafSystem<T> {
  public:
-  /// Constructor for the BouncingBall system.
-  BouncingBall();
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBall);
 
-  void DoCalcNextUpdateTime(const systems::Context<T>& context,
-      systems::CompositeEventCollection<T>* events, T* time) const override;
+  BouncingBall() : systems::LeafSystem<T>(
+      systems::SystemTypeTag<bouncing_ball::BouncingBall>{}) {
+    // Two state variables: q and v.
+    this->DeclareContinuousState(1, 1, 0);
 
-  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>& events,
-      systems::State<T>* state) const override;
+    // The state of the system is output.
+    this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
+                                  &BouncingBall::CopyStateOut);
 
-  /// TODO(jadecastro): This is a prototype implementation to be overridden from
-  /// the system API, pending further discussions.
-  ///
-  /// Evaluate the guard function associated with the system in a particular
-  /// mode. If the EvalGuard returns a non-positive value, then the hybrid
-  /// system is allowed to make a transition from the `pre` mode to `post` mode.
-  T EvalGuard(const systems::Context<T>& context) const;
+    // Declare the witness function.
+    signed_distance_witness_ = this->DeclareWitnessFunction(
+        "Signed distance",
+        systems::WitnessFunctionDirection::kPositiveThenNonPositive,
+        &BouncingBall::CalcSignedDistance,
+        systems::UnrestrictedUpdateEvent<T>());
+  }
 
-  /// TODO(jadecastro): This is a prototype implementation to be overridden from
-  /// the system API, pending further discussions.
-  ///
-  /// Performs a reset mapping that occurs if and only if a mode transition
-  /// (discrete jump) has been made. It does so by mutating the context so that,
-  /// by default, the reset mapping is the identity mapping.
-  void PerformReset(systems::Context<T>* context) const;
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit BouncingBall(const BouncingBall<U>&) : BouncingBall<T>() {}
+
+  /// Gets the signed acceleration due to gravity. Since initial positions
+  /// correspond to heights, acceleration should be negative.
+  double get_gravitational_acceleration() const { return -9.81; }
 
   /// Getter for the coefficient of restitution for this model.
   double get_restitution_coef() const { return restitution_coef_; }
 
  private:
+  // A witness function to determine when the bouncing ball crosses the
+  // boundary q = 0 from q > 0. Note that the witness function only triggers
+  // when the signed distance is positive at the left hand side of an interval
+  // (via WitnessFunctionDirection::kPositiveThenNonPositive). An "unrestricted
+  // update" event is necessary to change the velocity of the system
+  // discontinuously.
+  T CalcSignedDistance(const systems::Context<T>& context) const {
+    const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
+    return xc.GetAtIndex(0);
+  }
+
+  void CopyStateOut(const systems::Context<T>& context,
+                    systems::BasicVector<T>* output) const {
+    output->get_mutable_value() =
+        context.get_continuous_state().CopyToVector();
+  }
+
+  void DoCalcTimeDerivatives(
+      const systems::Context<T>& context,
+      systems::ContinuousState<T>* derivatives) const override {
+    // Obtain the state.
+    const systems::VectorBase<T>& state = context.get_continuous_state_vector();
+
+    // Obtain the structure we need to write into.
+    DRAKE_ASSERT(derivatives != nullptr);
+    systems::VectorBase<T>& derivatives_vec = derivatives->get_mutable_vector();
+
+    // Time derivative of position (state index 0) is velocity.
+    derivatives_vec.SetAtIndex(0, state.GetAtIndex(1));
+
+    // Time derivative of velocity (state index 1) is acceleration.
+    derivatives_vec.SetAtIndex(1, T(get_gravitational_acceleration()));
+  }
+
+  void SetDefaultState(const systems::Context<T>&,
+                       systems::State<T>* state) const override {
+    DRAKE_DEMAND(state != nullptr);
+    Vector2<T> x0;
+    x0 << 10.0, 0.0;  // initial state values.
+    state->get_mutable_continuous_state().SetFromVector(x0);
+  }
+
+  // Updates the velocity discontinuously to reverse direction. This method
+  // is called by the Simulator when the signed distance witness function
+  // triggers.
+  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      systems::State<T>* next_state) const override {
+    systems::VectorBase<T>& next_cstate =
+        next_state->get_mutable_continuous_state().get_mutable_vector();
+
+    // Get present state.
+    const systems::VectorBase<T>& cstate =
+        context.get_continuous_state().get_vector();
+
+    // Copy the present state to the new one.
+    next_state->CopyFrom(context.get_state());
+
+    // Verify that velocity is non-positive.
+    DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);
+
+    // Update the velocity using Newtonian restitution (note that Newtonian
+    // restitution can lead to unphysical energy gains, as described in
+    // [Stronge 1991]). For this reason, other impact models are generally
+    // preferable.
+    //
+    // [Stronge 1991]  W. J. Stronge. Unraveling paradoxical theories for rigid
+    //                 body collisions. J. Appl. Mech., 58:1049-1055, 1991.
+    next_cstate.SetAtIndex(
+        1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
+  }
+
+  // The signed distance witness function is always active and, hence, always
+  // returned.
+  void DoGetWitnessFunctions(
+      const systems::Context<T>&,
+      std::vector<const systems::WitnessFunction<T>*>* witnesses)
+      const override {
+    witnesses->push_back(signed_distance_witness_.get());
+  }
+
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
-  // Numerically intolerant signum function.
-  int sgn(T x) const {
-    return (T(0) < x) - (x < T(0));
-  }
+  // The witness function for computing the signed distance between the ball
+  // and the ground.
+  std::unique_ptr<systems::WitnessFunction<T>> signed_distance_witness_;
 };
 
 }  // namespace bouncing_ball

@@ -229,22 +229,22 @@ void QuasistaticSystem<Scalar>::Initialize() {
   // Add uppder bound to the norms of all decision variables.
   bounds_delta_q_ =
       prog_->AddBoundingBoxConstraint(-kInfinity, kInfinity, delta_q_)
-          .constraint()
+          .evaluator()
           .get();
   bounds_gamma_ =
-      prog_->AddBoundingBoxConstraint(0, kInfinity, gamma_).constraint().get();
+      prog_->AddBoundingBoxConstraint(0, kInfinity, gamma_).evaluator().get();
   bounds_lambda_n_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_n_)
-                         .constraint()
+                         .evaluator()
                          .get();
   bounds_lambda_f_ = prog_->AddBoundingBoxConstraint(0, kInfinity, lambda_f_)
-                         .constraint()
+                         .evaluator()
                          .get();
   // Force balance
   force_balance_ = prog_
                        ->AddLinearEqualityConstraint(
                            MatrixXd::Zero(n_vu_, nc_ + nd_),
                            VectorXd::Zero(n_vu_), {lambda_n_, lambda_f_})
-                       .constraint()
+                       .evaluator()
                        .get();
 
   // prog.AddLinearConstraint(delta_phi_n >= -phi);
@@ -252,7 +252,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
       prog_
           ->AddLinearConstraint(MatrixXd::Zero(nc_, n1_), VectorXd::Zero(nc_),
                                 VectorXd::Constant(nc_, kInfinity), delta_q_)
-          .constraint()
+          .evaluator()
           .get();
 
   // prog.AddLinearConstraint(delta_phi_f >= -E * gamma);
@@ -261,7 +261,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
           ->AddLinearConstraint(
               MatrixXd::Zero(nd_, n1_ + nc_), VectorXd::Zero(nd_),
               VectorXd::Constant(nd_, kInfinity), {delta_q_, gamma_})
-          .constraint()
+          .evaluator()
           .get();
 
   // prog.AddLinearConstraint(U * lambda_n >= E.transpose() * lambda_f);
@@ -270,7 +270,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
           ->AddLinearConstraint(
               MatrixXd::Zero(nc_, nc_ + nd_), VectorXd::Zero(nc_),
               VectorXd::Constant(nc_, kInfinity), {lambda_n_, lambda_f_})
-          .constraint()
+          .evaluator()
           .get();
 
   // prog.AddLinearConstraint(delta_phi_n + phi <= kBigM * z_n);
@@ -279,7 +279,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
           ->AddLinearConstraint(MatrixXd::Zero(nc_, n1_ + nc_),
                                 -VectorXd::Constant(nc_, kInfinity),
                                 VectorXd::Zero(nc_), {delta_q_, z_n_})
-          .constraint()
+          .evaluator()
           .get();
 
   // prog.AddLinearConstraint(delta_phi_f + E * gamma <= kBigM * z_f);
@@ -288,7 +288,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
           ->AddLinearConstraint(MatrixXd::Zero(nd_, n1_ + nc_ + nd_),
                                 -VectorXd::Constant(nd_, kInfinity),
                                 VectorXd::Zero(nd_), {delta_q_, gamma_, z_f_})
-          .constraint()
+          .evaluator()
           .get();
 
   // prog.AddLinearConstraint(U * lambda_n - E.transpose() * lambda_f <=
@@ -299,7 +299,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
                                 -VectorXd::Constant(nc_, kInfinity),
                                 VectorXd::Zero(nc_),
                                 {lambda_n_, lambda_f_, z_gamma_})
-          .constraint()
+          .evaluator()
           .get();
 
   // decision_variables_complementarity
@@ -309,7 +309,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
               MatrixXd::Zero(n2_, n2_ * 2), -VectorXd::Constant(n2_, kInfinity),
               VectorXd::Ones(n2_),
               {lambda_n_, lambda_f_, gamma_, z_n_, z_f_, z_gamma_})
-          .constraint()
+          .evaluator()
           .get();
 
   // objective
@@ -317,7 +317,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
   Q.setZero();
   VectorXd b(n1_);
   b.setZero();
-  objective_ = prog_->AddQuadraticCost(Q, b, delta_q_).constraint().get();
+  objective_ = prog_->AddQuadraticCost(Q, b, delta_q_).evaluator().get();
 
   // set solver options.
   prog_->SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
@@ -482,8 +482,8 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhi(
   Jf_half.resize(nc * 2, nq_tree);
 
   MatrixX<Scalar> Jv = J * tree_->GetVelocityToQDotMapping(cache);
-  DRAKE_ASSERT(Jv.cols() == 3 * nc);
-  DRAKE_ASSERT(Jv.rows() == nv_tree);
+  DRAKE_ASSERT(Jv.cols() == nv_tree);
+  DRAKE_ASSERT(Jv.rows() == 3 * nc);
 
   int idx_first = 0;
   int idx_tangent = 0;
@@ -727,7 +727,7 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
     }
   }
 
-  prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_, 0), delta_qu_QP);
+  prog_QP.AddQuadraticCost(H, VectorXd::Zero(nu_), delta_qu_QP);
 
   // solve QP
   prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);

@@ -21,7 +21,7 @@ drake_cc_library(
         "frame_cache.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         "@eigen",
     ],
 )
@@ -36,7 +36,7 @@ drake_cc_library(
         "sdf_spec.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -51,7 +51,7 @@ drake_cc_library(
     deps = [
         ":frame_cache",
         ":sdf_spec",
-        "//drake/common:essential",
+        "//common:essential",
         "@eigen",
         "@sdformat",
     ],
@@ -73,8 +73,8 @@ drake_cc_googletest(
     ],
     deps = [
         ":sdf_parser",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -11,10 +11,10 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_tree.h"
 
+using drake::trajectories::PiecewisePolynomial;
+
 const int m_surface_tangents =
     2;  // number of faces in the friction cone approx
-
-#define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 typedef Eigen::Matrix<double, 7, 1> Vector7d;

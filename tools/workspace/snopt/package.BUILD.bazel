@@ -1,12 +1,6 @@
 # -*- python -*-
 
-config_setting(
-    name = "linux_opt",
-    values = {
-        "compilation_mode": "opt",
-        "cpu": "k8",
-    },
-)
+licenses(["by_exception_only"])  # SNOPT
 
 # In some versions of SNOPT, this header provides the function declarations to
 # control SNOPT's logging.  In other versions, those declarations instead
@@ -19,8 +13,7 @@ _MAYBE_SNFILEWRAPPER = glob([
 # Drake's binary releases are allowed to redistribute SNOPT only if SNOPT is
 # not redistributed as a stand-alone package -- users must not use the SNOPT
 # code on its own, but rather only through Drake's interfaces.  To that end,
-# we (1) always link SNOPT statically, (2) use hidden symbol visibility, and
-# (3) strip its symbols in release mode.
+# we (1) always link SNOPT statically, (2) use hidden symbol visibility.
 cc_library(
     name = "snopt_c",
     srcs = glob(
@@ -41,12 +34,7 @@ cc_library(
     includes = ["."],
     linkopts = [
         "-lm",
-    ] + select({
-        # Strip symbols in release mode where supported by the linker per note
-        # (3) above. Symbols are stripped during install on macOS.
-        ":linux_opt": ["-s"],
-        "//conditions:default": [],
-    }),
+    ],
     # Link statically per note (1) above.
     linkstatic = 1,
     visibility = ["//visibility:public"],

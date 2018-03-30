@@ -117,7 +117,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.constraint()->A().rows();
+    num_constraints += binding.evaluator()->A().rows();
   }
 
   // Setup the quadratic cost matrix and linear cost vector.
@@ -125,9 +125,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   Eigen::VectorXd c = Eigen::VectorXd::Zero(prog.num_vars());
   double constant_term{0};
   for (auto const& binding : prog.quadratic_costs()) {
-    const auto& Q = binding.constraint()->Q();
-    const auto& b = binding.constraint()->b();
-    constant_term += binding.constraint()->c();
+    const auto& Q = binding.evaluator()->Q();
+    const auto& b = binding.evaluator()->b();
+    constant_term += binding.evaluator()->c();
     int num_v_variables = binding.variables().rows();
 
     std::vector<size_t> v_index(num_v_variables);
@@ -142,8 +142,8 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   }
   for (const auto& binding : prog.linear_costs()) {
-    const auto& a = binding.constraint()->a();
-    constant_term += binding.constraint()->b();
+    const auto& a = binding.evaluator()->a();
+    constant_term += binding.evaluator()->b();
     int num_v_variables = binding.variables().rows();
 
     for (int i = 0; i < num_v_variables; ++i) {
@@ -153,14 +153,14 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   Eigen::VectorXd x{};
-  optional<SolutionResult> solver_result;
+  optional<SolutionResult> solution_result;
   if (num_constraints > 0) {
     // Setup the linear constraints.
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
     Eigen::VectorXd b = Eigen::VectorXd::Zero(num_constraints);
     int constraint_index = 0;
     for (auto const& binding : prog.linear_equality_constraints()) {
-      auto const& bc = binding.constraint();
+      auto const& bc = binding.evaluator();
       size_t n = bc->A().rows();
 
       int num_v_variables = binding.variables().rows();
@@ -191,7 +191,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       const Eigen::VectorXd rhs = AiG_T.transpose() * c + b;
       Eigen::VectorXd lambda = qr.solve(rhs);
 
-      solver_result = rhs.isApprox(A_iG_A_T * lambda, feasibility_tol)
+      solution_result = rhs.isApprox(A_iG_A_T * lambda, feasibility_tol)
                           ? SolutionResult::kSolutionFound
                           : SolutionResult::kInfeasibleConstraints;
 
@@ -209,12 +209,12 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
           A, Eigen::ComputeThinU | Eigen::ComputeThinV);
       const Eigen::VectorXd x0 = svd_A_thin.solve(b);
       if (!b.isApprox(A * x0, feasibility_tol)) {
-        solver_result = SolutionResult::kInfeasibleConstraints;
+        solution_result = SolutionResult::kInfeasibleConstraints;
         x = x0;
       } else {
         if (svd_A_thin.rank() == A.cols()) {
           // The kernel is empty, the solution is unique.
-          solver_result = SolutionResult::kSolutionFound;
+          solution_result = SolutionResult::kSolutionFound;
           x = x0;
         } else {
           // N is the null space of A
@@ -233,7 +233,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
               qr_A.householderQ().setLength(qr_A.nonzeroPivots());
           const Eigen::MatrixXd N = Q.rightCols(A.cols() - qr_A.rank());
           Eigen::VectorXd y(N.cols());
-          solver_result = SolveUnconstrainedQP(
+          solution_result = SolveUnconstrainedQP(
               N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
               feasibility_tol, &y);
           x = x0 + N * y;
@@ -242,12 +242,13 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
     }
   } else {
     // num_constraints = 0
-    solver_result = SolveUnconstrainedQP(G, c, feasibility_tol, &x);
+    solution_result = SolveUnconstrainedQP(G, c, feasibility_tol, &x);
   }
 
-  prog.SetDecisionVariableValues(x);
+  SolverResult solver_result(id());
+  solver_result.set_decision_variable_values(x);
   double optimal_cost{};
-  switch (solver_result.value()) {
+  switch (solution_result.value()) {
     case SolutionResult::kSolutionFound: {
       optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
       break;
@@ -264,11 +265,11 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       optimal_cost = NAN;
     }
   }
-  prog.SetOptimalCost(optimal_cost);
-  prog.SetSolverId(id());
-  // Make sure solver_result is set.
-  DRAKE_DEMAND(!!solver_result);
-  return *solver_result;
+  solver_result.set_optimal_cost(optimal_cost);
+  prog.SetSolverResult(solver_result);
+  // Make sure solution_result is set.
+  DRAKE_DEMAND(!!solution_result);
+  return *solution_result;
 }
 
 SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }

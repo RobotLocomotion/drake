@@ -306,13 +306,14 @@ SystemIdentification<T>::EstimateParameters(
   // Create a cost function that is least-squares on the error terms.
   auto cost = problem.AddQuadraticCost(
       Eigen::MatrixXd::Identity(num_err_terms, num_err_terms),
-      Eigen::VectorXd::Zero(num_err_terms), error_variables).constraint();
+      Eigen::VectorXd::Zero(num_err_terms), error_variables).evaluator();
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();
-  if (solution_result != kSolutionFound) {
-    throw std::runtime_error("Solution failed: " +
-                             std::to_string(solution_result));
+  if (solution_result != SolutionResult::kSolutionFound) {
+    std::ostringstream oss;
+    oss << "Solution failed: " << solution_result;
+    throw std::runtime_error(oss.str());
   }
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {

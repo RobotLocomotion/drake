@@ -1,23 +1,25 @@
 #include "drake/systems/robotInterfaces/BodyMotionData.h"
 
+using drake::trajectories::PiecewisePolynomial;
+
 int BodyMotionData::findSegmentIndex(double t) const {
-  return trajectory.getSegmentIndex(t);
+  return trajectory.get_segment_index(t);
 }
 
 int BodyMotionData::getBodyOrFrameId() const { return body_or_frame_id; }
 
 bool BodyMotionData::isToeOffAllowed(int segment_index) const {
-  trajectory.segmentNumberRangeCheck(segment_index);
+  trajectory.segment_number_range_check(segment_index);
   return toe_off_allowed[segment_index];
 }
 
 bool BodyMotionData::isInFloatingBaseNullSpace(int segment_index) const {
-  trajectory.segmentNumberRangeCheck(segment_index);
+  trajectory.segment_number_range_check(segment_index);
   return in_floating_base_nullspace[segment_index];
 }
 
 bool BodyMotionData::isPoseControlledWhenInContact(int segment_index) const {
-  trajectory.segmentNumberRangeCheck(segment_index);
+  trajectory.segment_number_range_check(segment_index);
   return control_pose_when_in_contact[segment_index];
 }
 

@@ -50,6 +50,10 @@ def _impl(repo_ctx):
             "opt/dreal/{}/lib".format(DREAL_VERSION),
             "libdreal.so",
         )
+        execute_or_fail(repo_ctx, [
+            "chmod", "a+w",
+            "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
+        ])
         # Our BUILD file declares this dependency with the revised spelling.
         execute_or_fail(repo_ctx, [
             "patchelf", "--remove-needed", "libibex.so",
@@ -60,6 +64,7 @@ def _impl(repo_ctx):
              format(repo_ctx.name, result.error))
 
 dreal_repository = repository_rule(
+    # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "dreal"),
         # This attribute is only used for macOS.  It is documented in the

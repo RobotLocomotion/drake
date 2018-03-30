@@ -11,11 +11,14 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+using trajectories::ExponentialPlusPiecewisePolynomial;
+using trajectories::PiecewisePolynomial;
+
 Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
     double time, const Eigen::Vector4d& x) const {
   DRAKE_DEMAND(planned_);
   // Eq. 20 in [1].
-  Eigen::Vector2d yf = zmp_d_.value(zmp_d_.getEndTime());
+  Eigen::Vector2d yf = zmp_d_.value(zmp_d_.end_time());
   Eigen::Vector4d x_bar = x;
   x_bar.head<2>() -= yf;
   return K_ * x_bar + k2_.value(time);
@@ -24,11 +27,11 @@ Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
 bool ZMPPlanner::CheckStationaryEndPoint(
     const PiecewisePolynomial<double>& zmp_d) const {
   PiecewisePolynomial<double> last_segment =
-      zmp_d.slice(zmp_d.getNumberOfSegments() - 1, 1);
+      zmp_d.slice(zmp_d.get_number_of_segments() - 1, 1);
   PiecewisePolynomial<double> derivative = last_segment.derivative();
   int degree = last_segment.getSegmentPolynomialDegree(0);
   for (int d = degree; d >= 0; d--) {
-    if (derivative.value(derivative.getEndTime()).norm() >
+    if (derivative.value(derivative.end_time()).norm() >
         kStationaryThreshold) {
       return false;
     }
@@ -49,7 +52,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
         "in a stationary condition.");
   }
 
-  int n_segments = zmp_d.getNumberOfSegments();
+  int n_segments = zmp_d.get_number_of_segments();
   int zmp_d_degree = zmp_d.getSegmentPolynomialDegree(0);
   DRAKE_DEMAND(zmp_d_degree >= 0);
   DRAKE_DEMAND(zmp_d.rows() == 2 && zmp_d.cols() == 1);
@@ -97,7 +100,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   B2_ = B2;
 
   // Last desired ZMP.
-  Eigen::Vector2d zmp_tf = zmp_d.value(zmp_d.getEndTime());
+  Eigen::Vector2d zmp_tf = zmp_d.value(zmp_d.end_time());
   Eigen::Vector4d tmp4;
 
   Eigen::MatrixXd alpha = Eigen::MatrixXd::Zero(4, n_segments);
@@ -144,7 +147,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
       tmp4 = alpha.col(t + 1) + beta[t + 1].col(0);
     }
 
-    double dt = zmp_d.getDuration(t);
+    double dt = zmp_d.duration(t);
     Eigen::Matrix4d A2exp = A2 * dt;
     A2exp = A2exp.exp();
     for (int i = 0; i < zmp_d_degree + 1; i++)
@@ -165,12 +168,12 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   }
 
   // Eq. 25 in [1].
-  PiecewisePolynomial<double> beta_traj(beta_poly, zmp_d.getSegmentTimes());
+  PiecewisePolynomial<double> beta_traj(beta_poly, zmp_d.get_segment_times());
   s2_ = ExponentialPlusPiecewisePolynomial<double>(Eigen::Matrix4d::Identity(),
                                                    A2, alpha, beta_traj);
 
   // Eq. 28 in [1].
-  PiecewisePolynomial<double> gamma_traj(gamma_poly, zmp_d.getSegmentTimes());
+  PiecewisePolynomial<double> gamma_traj(gamma_poly, zmp_d.get_segment_times());
   k2_ = ExponentialPlusPiecewisePolynomial<double>(-0.5 * R1i * B_.transpose(),
                                                    A2, alpha, gamma_traj);
 
@@ -206,7 +209,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   // Since s2 is already solved above, we only compute the top half for the
   // CoM trajectory.
   for (int t = 0; t < n_segments; t++) {
-    double dt = zmp_d.getDuration(t);
+    double dt = zmp_d.duration(t);
     b[t].col(zmp_d_degree) = -Azi.topRows(4) * Bz * c[t].col(zmp_d_degree);
     for (int d = zmp_d_degree - 1; d >= 0; d--) {
       tmp81.head<4>() = b[t].col(d + 1);
@@ -234,7 +237,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   Eigen::Matrix<double, 2, 8> tmp28;
   tmp28.block<2, 2>(0, 0).setIdentity();
   tmp28.block<2, 6>(0, 2).setZero();
-  PiecewisePolynomial<double> b_traj(b_poly, zmp_d.getSegmentTimes());
+  PiecewisePolynomial<double> b_traj(b_poly, zmp_d.get_segment_times());
 
   com_ = ExponentialPlusPiecewisePolynomial<double>(tmp28, Az, a, b_traj);
   comd_ = com_.derivative();

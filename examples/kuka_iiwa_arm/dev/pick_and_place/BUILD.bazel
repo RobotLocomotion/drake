@@ -15,8 +15,33 @@ package(
 )
 
 drake_cc_library(
+    name = "pick_and_place_simulation_helpers",
+    srcs = [
+        "pick_and_place_simulation_helpers.cc",
+    ],
+    hdrs = [
+        "pick_and_place_simulation_helpers.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
+        "//manipulation/schunk_wsg:schunk_wsg_controller",
+        "//manipulation/util:frame_pose_tracker",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody/rigid_body_plant",
+        "//systems/framework:diagram_builder",
+        "//systems/sensors:optitrack_encoder",
+        "//systems/sensors:optitrack_sender",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
     name = "lcm_plant",
-    srcs = ["lcm_plant.cc"],
+    srcs = [
+        "lcm_plant.cc",
+    ],
     hdrs = [
         "lcm_plant.h",
     ],
@@ -26,14 +51,11 @@ drake_cc_library(
         "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
+        ":pick_and_place_simulation_helpers",
         "//examples/kuka_iiwa_arm:iiwa_lcm",
-        "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",  # noqa
-        "//manipulation/schunk_wsg:schunk_wsg_controller",
-        "//manipulation/util:frame_pose_tracker",
-        "//systems/sensors:optitrack_encoder",
-        "//systems/sensors:optitrack_sender",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+        "//multibody/rigid_body_plant",
+        "//systems/framework:diagram_builder",
     ],
 )
 

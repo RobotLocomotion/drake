@@ -25,13 +25,7 @@ SimpleTreeVisualizer::SimpleTreeVisualizer(const RigidBodyTreed& tree,
   const lcmt_viewer_load_robot load_message(
       multibody::CreateLoadRobotMessage<double>(tree_));
 
-  const int lcm_message_length = load_message.getEncodedSize();
-  std::vector<uint8_t> lcm_message_bytes{};
-  lcm_message_bytes.resize(lcm_message_length);
-  load_message.encode(lcm_message_bytes.data(), 0, lcm_message_length);
-
-  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", lcm_message_bytes.data(),
-                lcm_message_length);
+  Publish(lcm_, "DRAKE_VIEWER_LOAD_ROBOT", load_message);
 }
 
 void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
@@ -48,7 +42,7 @@ void SimpleTreeVisualizer::visualize(const VectorX<double>& position_vector) {
 
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-                message_bytes.size());
+                message_bytes.size(), kTime);
 }
 
 }  // namespace manipulation

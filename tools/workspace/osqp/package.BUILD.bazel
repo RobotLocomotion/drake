@@ -9,8 +9,16 @@ load(
     "install",
 )
 
+licenses(["notice"])  # Apache-2.0
+
 package(
     default_visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
 )
 
 # Generates glob_opts.h based on the defines= we want in Drake.
@@ -55,6 +63,10 @@ cc_binary(
         "lin_sys/direct/suitesparse/amd/include",
         "lin_sys/direct/suitesparse/ldl/include",
     ],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_osqp.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = ["//visibility:private"],
 )

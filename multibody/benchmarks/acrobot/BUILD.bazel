@@ -10,8 +10,8 @@ drake_cc_library(
     srcs = ["acrobot.cc"],
     hdrs = ["acrobot.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:extract_double",
+        "//common:autodiff",
+        "//common:extract_double",
     ],
 )
 
@@ -35,8 +35,8 @@ drake_cc_library(
         "make_acrobot_plant.h",
     ],
     deps = [
-        "//drake/geometry:geometry_system",
-        "//drake/multibody/multibody_tree/multibody_plant",
+        "//geometry:geometry_system",
+        "//multibody/multibody_tree/multibody_plant",
     ],
 )
 

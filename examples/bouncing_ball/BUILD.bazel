@@ -6,11 +6,10 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
-    name = "ball",
-    srcs = ["ball.cc"],
+    name = "bouncing_ball",
+    srcs = ["bouncing_ball.cc"],
     hdrs = [
-        "ball.h",
-        "ball-inl.h",
+        "bouncing_ball.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -19,34 +18,14 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "bouncing_ball",
-    srcs = ["bouncing_ball.cc"],
-    hdrs = [
-        "bouncing_ball.h",
-        "bouncing_ball-inl.h",
-    ],
-    deps = [
-        ":ball",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
 # === test/ ===
-
-drake_cc_googletest(
-    name = "ball_test",
-    deps = [
-        ":ball",
-    ],
-)
 
 drake_cc_googletest(
     name = "bouncing_ball_test",
     deps = [
         ":bouncing_ball",
         "//systems/analysis",
+        "//systems/framework/test_utilities",
     ],
 )
 

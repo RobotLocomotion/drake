@@ -7,31 +7,31 @@ namespace systems {
 namespace {
 
 GTEST_TEST(EventsTest, PeriodicAttributeComparatorTest) {
-  PeriodicAttributeComparator<double> comparator;
+  PeriodicEventDataComparator comparator;
 
-  // Create two periodic attributes.
-  Event<double>::PeriodicAttribute att1, att2;
-  att1.period_sec = 0;
-  att1.offset_sec = 0;
-  att2.period_sec = 0;
-  att2.offset_sec = 1;
+  // Create two periodic event data objects.
+  PeriodicEventData d1, d2;
+  d1.set_period_sec(0);
+  d1.set_offset_sec(0);
+  d2.set_period_sec(0);
+  d2.set_offset_sec(1);
 
-  // Case 1: both period_sec's equal (att1's offset is less than att2's).
-  EXPECT_TRUE(comparator(att1, att2));
+  // Case 1: both period_sec's equal (d1's offset is less than d2's).
+  EXPECT_TRUE(comparator(d1, d2));
 
-  // Case 2: att1's period is greater than att2's period (but att2's offset is
-  // greater than att1's offset).
-  att1.period_sec = 1e-8;
-  EXPECT_FALSE(comparator(att1, att2));
+  // Case 2: d1's period is greater than d2's period (but d2's offset is
+  // greater than d1's offset).
+  d1.set_period_sec(1e-8);
+  EXPECT_FALSE(comparator(d1, d2));
 
-  // Case 3: att1's period is less than att2's period (but att2's offset is
-  // lesser than att1's offset).
-  EXPECT_TRUE(comparator(att2, att1));
+  // Case 3: d1's period is less than d2's period (but d2's offset is
+  // lesser than d1's offset).
+  EXPECT_TRUE(comparator(d2, d1));
 
   // Case 4: the two attributes are identical.
-  att2 = att1;
-  EXPECT_FALSE(comparator(att1, att2));
-  EXPECT_FALSE(comparator(att2, att1));
+  d2 = d1;
+  EXPECT_FALSE(comparator(d1, d2));
+  EXPECT_FALSE(comparator(d2, d1));
 }
 
 }  // namespace

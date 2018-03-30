@@ -19,7 +19,7 @@ namespace systems {
 
 /**
  * This is a Drake System block that takes a RigidBodyTree and publishes LCM
- * messages that are intended for the DrakeVisualizer. It does this in two
+ * messages that are intended for drake-visualizer. It does this in two
  * phases: initialization and run-time. This system holds a DiscreteState in
  * its context that identifies whether the initialization phase has been
  * completed. It is initialized to false in SetDefaultState(). The
@@ -37,7 +37,7 @@ namespace systems {
  * "DRAKE_VIEWER_LOAD_ROBOT".
  *
  * During run-time, this system block takes the current state of the model and
- * tells Drake Visualizer how to visualize the model. For example, this includes
+ * tells drake-visualizer how to visualize the model. For example, this includes
  * the position and orientation of each rigid body. The LCM messages used during
  * this phase is `lcmt_viewer_draw` and the channel name is
  * "DRAKE_VIEWER_DRAW".
@@ -106,7 +106,15 @@ class DrakeVisualizer : public LeafSystem<double> {
    * Plays back (at real time) a trajectory representing the input signal.
    */
   void PlaybackTrajectory(
-      const PiecewisePolynomial<double>& input_trajectory) const;
+      const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
+
+  /**
+   * Publishes a lcmt_viewer_load_robot message containing a description
+   * of what should be visualized. The message is intended to be received by
+   * drake-visualizer. This method is automatically invoked when the
+   * DrakeVisualizer instance is analyzed by a systems::Simulator.
+   */
+  void PublishLoadRobot() const;
 
  private:
   // TODO(siyuan): Split DoPublish into individual callbacks for different
@@ -117,11 +125,6 @@ class DrakeVisualizer : public LeafSystem<double> {
   void DoPublish(const systems::Context<double>& context,
                  const std::vector<const PublishEvent<double>*>& events)
                  const override;
-
-  // Publishes a lcmt_viewer_load_robot message containing a description
-  // of what should be visualized. The message is intended to be received by the
-  // Drake Visualizer.
-  void PublishLoadRobot() const;
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.

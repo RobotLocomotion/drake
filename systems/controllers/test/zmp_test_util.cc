@@ -6,18 +6,20 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+using trajectories::PiecewisePolynomial;
+
 ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end) {
   const PiecewisePolynomial<double>& zmp_d = zmp_planner.get_desired_zmp();
   int N = static_cast<int>(
-      (zmp_d.getEndTime() + extra_time_at_the_end - zmp_d.getStartTime())
+      (zmp_d.end_time() + extra_time_at_the_end - zmp_d.start_time())
       / dt);
 
   ZMPTestTraj traj(N);
 
   for (int i = 0; i < N; i++) {
-    traj.time[i] = zmp_d.getStartTime() + i * dt;
+    traj.time[i] = zmp_d.start_time() + i * dt;
     if (i == 0) {
       traj.x.col(i) = x0;
     } else {
