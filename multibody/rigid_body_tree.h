@@ -806,7 +806,15 @@ class RigidBodyTree {
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
       int from_body_or_frame_ind, int to_body_or_frame_ind,
-      bool in_terms_of_qdot) const;
+      bool in_terms_of_qdot) const {
+    using PointScalar = typename std::conditional<
+      std::is_same<typename DerivedPoints::Scalar, double>::value,
+      double, drake::AutoDiffXd>::type;
+    return DoTransformPointsJacobian<Scalar, PointScalar>(
+        cache,
+        points.template cast<PointScalar>().eval(),
+        from_body_or_frame_ind, to_body_or_frame_ind, in_terms_of_qdot);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kQuaternionSize, Eigen::Dynamic>
@@ -832,7 +840,10 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
-      int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+      int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return DoTransformPointsJacobianDotTimesV<Scalar>(
+        cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(
@@ -1660,6 +1671,20 @@ class RigidBodyTree {
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar, typename PointScalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  DoTransformPointsJacobian(
+      const KinematicsCache<Scalar>&,
+      const Eigen::Ref<const drake::Matrix3X<PointScalar>>&,
+      int, int, bool) const;
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> DoTransformPointsJacobianDotTimesV(
+      const KinematicsCache<Scalar>&, const Eigen::Ref<const Eigen::Matrix3Xd>&,
+      int, int) const;
 
   // TODO(SeanCurtis-TRI): This isn't properly used.
   // No query operations should work if it hasn't been initialized.  Calling
