@@ -78,6 +78,7 @@ def _vector_gen_impl(ctx):
         ] + [
             "--out=%s" % out.path for out in ctx.outputs.outs
         ],
+        env = ctx.attr.env,
         executable = ctx.executable.lcm_vector_gen,
     )
     return struct()
@@ -92,10 +93,29 @@ _vector_gen = rule(
             executable = True,
             default = Label("@drake//tools/vector_gen:lcm_vector_gen"),
         ),
+        "env": attr.string_dict(
+            mandatory = True,
+            allow_empty = True,
+        ),
     },
     output_to_genfiles = True,
     implementation = _vector_gen_impl,
 )
+
+def _vector_gen_env():
+    # In general, we do not want to use $HOME/.local because it's not hermetic.
+    # Thus, we set PYTHONNOUSERSITE to disable the user site-packages.
+    #
+    # However, our macOS setup instrutions provide for PyYAML to come from pip,
+    # and in some reasonable end-user configurations, it could be done via `pip
+    # install --user` and so be part of $HOME.  Thus, in order to support that
+    # configuration, we only set PYTHONNOUSERSITE under linux.
+    return select({
+        "@drake//tools/vector_gen:linux": {
+            "PYTHONNOUSERSITE": "1",
+        },
+        "//conditions:default": {},
+    })
 
 def drake_cc_vector_gen_library(
         name,
@@ -111,7 +131,8 @@ def drake_cc_vector_gen_library(
         name = name + "_codegen",
         srcs = srcs,
         outs = outs.srcs + outs.hdrs,
-        visibility = [])
+        visibility = [],
+        env = _vector_gen_env())
     drake_cc_library(
         name = name,
         srcs = outs.srcs,
@@ -139,7 +160,8 @@ def drake_cc_vector_gen_translator_library(
         name = name + "_codegen",
         srcs = srcs,
         outs = outs.srcs + outs.hdrs,
-        visibility = [])
+        visibility = [],
+        env = _vector_gen_env())
     drake_cc_library(
         name = name,
         srcs = outs.srcs,
@@ -163,4 +185,5 @@ def drake_vector_gen_lcm_sources(
         name = name,
         srcs = srcs,
         outs = outs.outs,
+        env = _vector_gen_env(),
         **kwargs)

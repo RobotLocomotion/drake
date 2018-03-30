@@ -28,6 +28,13 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Used by :vector_gen.bzl.
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
+
 drake_py_proto_library(
     name = "named_vector",
     srcs = ["named_vector.proto"],
