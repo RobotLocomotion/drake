@@ -14,6 +14,8 @@ def _cmake_configure_file_impl(ctx):
         inputs = [ctx.file.src] + ctx.files.cmakelists,
         outputs = [ctx.outputs.out],
         arguments = arguments,
+        # Never use $HOME/.local; it's not hermetic.
+        env = {"PYTHONNOUSERSITE": "1"},
         executable = ctx.executable.cmake_configure_file_py,
     )
     return struct()

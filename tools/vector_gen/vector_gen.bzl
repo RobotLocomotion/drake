@@ -78,6 +78,8 @@ def _vector_gen_impl(ctx):
         ] + [
             "--out=%s" % out.path for out in ctx.outputs.outs
         ],
+        # Never use $HOME/.local; it's not hermetic.
+        env = {"PYTHONNOUSERSITE": "1"},
         executable = ctx.executable.lcm_vector_gen,
     )
     return struct()

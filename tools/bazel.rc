@@ -3,6 +3,9 @@ import %workspace%/tools/cc_toolchain/bazel.rc
 import %workspace%/tools/dynamic_analysis/bazel.rc
 import %workspace%/tools/lint/bazel.rc
 
+# Never use $HOME/.local; it's not hermetic.
+build --action_env=PYTHONNOUSERSITE=1
+
 # Default to an optimized build.
 build -c opt
 
