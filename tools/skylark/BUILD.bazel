@@ -4,6 +4,12 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Used by :python_env.bzl.
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+)
+
 py_binary(
     name = "drake_proto_ubsan_fix",
     srcs = ["drake_proto_ubsan_fix.py"],
