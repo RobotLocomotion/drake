@@ -192,20 +192,24 @@ void RemoteTreeViewerWrapper::PublishRigidBody(
     const std::vector<std::string>& path, bool visual_flag) {
   const auto& body = tree.get_body(body_index);
   if (visual_flag) {
+    int ctr = 0;
     for (const auto& element : body.get_visual_elements()) {
       if (element.hasGeometry()) {
         std::vector<std::string> full_name = path;
-        full_name.push_back(body.get_name());
+        full_name.push_back(body.get_name() + "_visual_" +
+                            std::to_string(ctr++));
         PublishGeometry(element.getGeometry(), tf * element.getLocalTransform(),
                         color, full_name);
       }
     }
   } else {
+    int ctr = 0;
     for (const auto& collision_elem_id : body.get_collision_element_ids()) {
       auto element = tree.FindCollisionElement(collision_elem_id);
       if (element->hasGeometry()) {
         std::vector<std::string> full_name = path;
-        full_name.push_back(body.get_name());
+        full_name.push_back(body.get_name() + "_collision_" +
+                            std::to_string(ctr++));
         PublishGeometry(element->getGeometry(),
                         tf * element->getLocalTransform(), color, full_name);
       }
