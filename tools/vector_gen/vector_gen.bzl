@@ -10,6 +10,10 @@ load(
     "dirname",
     "join_paths",
 )
+load(
+    "@drake//tools/skylark:python_env.bzl",
+    "hermetic_python_env",
+)
 
 def _relative_dirname_basename(label):
     # When computing outs derived from srcs in a different package (i.e., when
@@ -78,6 +82,7 @@ def _vector_gen_impl(ctx):
         ] + [
             "--out=%s" % out.path for out in ctx.outputs.outs
         ],
+        env = ctx.attr.env,
         executable = ctx.executable.lcm_vector_gen,
     )
     return struct()
@@ -91,6 +96,10 @@ _vector_gen = rule(
             cfg = "host",
             executable = True,
             default = Label("@drake//tools/vector_gen:lcm_vector_gen"),
+        ),
+        "env": attr.string_dict(
+            mandatory = True,
+            allow_empty = True,
         ),
     },
     output_to_genfiles = True,
@@ -111,7 +120,8 @@ def drake_cc_vector_gen_library(
         name = name + "_codegen",
         srcs = srcs,
         outs = outs.srcs + outs.hdrs,
-        visibility = [])
+        visibility = [],
+        env = hermetic_python_env())
     drake_cc_library(
         name = name,
         srcs = outs.srcs,
@@ -139,7 +149,8 @@ def drake_cc_vector_gen_translator_library(
         name = name + "_codegen",
         srcs = srcs,
         outs = outs.srcs + outs.hdrs,
-        visibility = [])
+        visibility = [],
+        env = hermetic_python_env())
     drake_cc_library(
         name = name,
         srcs = outs.srcs,
@@ -163,4 +174,5 @@ def drake_vector_gen_lcm_sources(
         name = name,
         srcs = srcs,
         outs = outs.outs,
+        env = hermetic_python_env(),
         **kwargs)
