@@ -161,9 +161,8 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
     return;
   }
 
-  // Schedule an update event.
-  // TODO(siyuan): should be context.get_time() once #5725 is resolved.
-  *time = context.get_time() + 0.0001;
+  // Schedule an update event at the current time.
+  *time = context.get_time();
   if (translator_ == nullptr) {
     EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
         events->get_mutable_unrestricted_update_events();

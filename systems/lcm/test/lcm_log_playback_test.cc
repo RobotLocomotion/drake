@@ -121,10 +121,7 @@ void CheckLog(const std::vector<double>& expected_times,
 
     // msg.timestamp is generated with the shifted time.
     EXPECT_NEAR(msg.timestamp, expected_times[i] * 1e6, 1e-12);
-    // Note: this needs to match how we schedule event processing
-    // (DoCalcNextUpdateTime) in LcmSubscriberSystem.
-    // TODO(siyuan): fix this together with #5725.
-    EXPECT_NEAR(times[i], expected_times[i] + 0.0001, 1e-12);
+    EXPECT_NEAR(times[i], expected_times[i], 1e-12);
   }
 }
 
