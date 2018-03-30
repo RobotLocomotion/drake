@@ -330,6 +330,11 @@ class LeafSystem : public System<T> {
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic. Subclasses that require aperiodic events should override.
+  /// @post `*time` is set to a non-negative value, on return.
+  /// @warning Setting `*time` to zero can inadvertently cause simulations of
+  ///          systems derived from @LeafSystem to loop interminably. Such a
+  ///          loop will occur if, for example, the event(s) does not modify
+  ///          the state.
   void DoCalcNextUpdateTime(const Context<T>& context,
                             CompositeEventCollection<T>* events,
                             T* time) const override {
