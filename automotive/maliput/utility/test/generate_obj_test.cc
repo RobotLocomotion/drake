@@ -27,7 +27,7 @@ class GenerateObjTest : public ::testing::Test {
 
 
   void TearDown() override {
-    // spruce is retarded: it has no functionality for reading/walking a
+    // spruce has no functionality for reading/walking a
     // directory, so we have to keep track of created files manually and
     // delete them by hand.
     for (const spruce::path& path : paths_to_cleanup_) {
@@ -37,7 +37,7 @@ class GenerateObjTest : public ::testing::Test {
   }
 
 
-  // TODO(maddog@tri.global)  spruce is lame.  file::readAsString() does not
+  // TODO(maddog@tri.global)  spruce::file::readAsString() does not
   //                          handle EOF correctly.  File a bug upstream.
   void ReadAsString(const spruce::path& path, std::string* destination) {
     std::ifstream is(path.getStr());
