@@ -1,5 +1,7 @@
 /// @file
 /// Utilities for arithmetic on axis-angle rotations.
+// TODO(mitiguy) Replace the functionality in this file with related methods
+// in Eigen::AngleAxis and Eigen::Quaternion and then delete this file.
 
 #pragma once
 

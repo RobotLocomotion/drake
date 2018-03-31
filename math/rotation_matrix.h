@@ -53,16 +53,17 @@ class RotationMatrix {
 #endif
   }
 
-  /// Constructs a %RotationMatrix from a Eigen::Quaternion.
+  /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
   /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
-  /// exception is thrown if `quaternion` is zero or contains a NAN or infinity.
+  /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
   /// without the inefficiency of the square-root associated with normalization.
-  // TODO(mitiguy) Consider adding an optional second argument if quaternion is
-  // known to be normalized apriori or calling site does not want normalization.
+  // TODO(mitiguy) Although this method is fairly efficient, consider adding an
+  // optional second argument if `quaternion` is known to be normalized apriori
+  // or for some reason the calling site does not want `quaternion` normalized.
   explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
@@ -71,18 +72,20 @@ class RotationMatrix {
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
     R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
-#ifdef DRAKE_ASSERT_IS_ARMED
-    ThrowIfNotValid(R_AB_);
-#endif
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
-  /// Constructs a %RotationMatrix from a Eigen::AngleAxis.
+  /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
-  /// exception is thrown if `lambda` is zero or contains a NAN or infinity.
+  /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
+  /// @note In general, the %RotationMatrix constructed by passing a non-unit
+  /// `lambda` to this method is different than the %RotationMatrix produced by
+  /// converting `lambda` to an un-normalized quaternion and calling the
+  /// %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
@@ -90,9 +93,7 @@ class RotationMatrix {
     const T norm = lambda.norm();
     const T& theta = theta_lambda.angle();
     R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
-#ifdef DRAKE_ASSERT_IS_ARMED
-    ThrowIfNotValid(R_AB_);
-#endif
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -562,7 +563,7 @@ class RotationMatrix {
     if (!R.allFinite()) {
       throw std::logic_error(
           "Error: Rotation matrix contains an element that is infinity or "
-          "NAN.");
+          "NaN.");
     }
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
       throw std::logic_error("Error: Rotation matrix is not orthonormal.");
