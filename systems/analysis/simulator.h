@@ -624,6 +624,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
+
+  // TODO(edrumwri): Add test coverage to complete #8490.
+  redetermine_active_witnesses_ = true;
 }
 
 template <class T>
