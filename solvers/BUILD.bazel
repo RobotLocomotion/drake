@@ -455,7 +455,7 @@ drake_cc_library(
     hdrs = ["unrevised_lemke_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -956,7 +956,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":unrevised_lemke_solver",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
