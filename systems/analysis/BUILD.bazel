@@ -126,8 +126,8 @@ drake_cc_library(
     ],
     deps = [
         ":initial_value_problem",
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
