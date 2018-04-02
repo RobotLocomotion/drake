@@ -301,7 +301,8 @@ class RotationalInertia {
   ///         since `this` has been multiplied by `nonnegative_scalar`.
   /// @see operator*(), operator*(const T&, const RotationalInertia<T>&).
   RotationalInertia<T>& operator*=(const T& nonnegative_scalar) {
-    DRAKE_ASSERT(nonnegative_scalar >= 0);
+    DRAKE_ASSERT_VOID(
+        this->ThrowIfMultiplyByNegativeScalar(nonnegative_scalar));
     this->get_mutable_triangular_view() *= nonnegative_scalar;
     return *this;
   }
@@ -344,7 +345,7 @@ class RotationalInertia {
   ///         since `this` has been divided by `positive_scalar`.
   /// @see operator/().
   RotationalInertia<T>& operator/=(const T& positive_scalar) {
-    DRAKE_ASSERT(positive_scalar > 0);
+    DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
     this->get_mutable_triangular_view() /= positive_scalar;
     return *this;
   }
@@ -913,7 +914,18 @@ class RotationalInertia {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }
 
-  // Throws an exception if a rotational inertia is not physically valid.
+  // ==========================================================================
+  // The following set of methods, ThrowIfSomeCondition(), are used within
+  // assertions or demands. We do not try to attempt a smart way throw based on
+  // a given symbolic::Formula but instead we make these methods a no-throw
+  // for non-numeric types.
+
+  // This method is used to demand the physical validity of a RotationalInertia
+  // at either construction or after an operation that could lead to
+  // non-physical results when a user provides data that is not valid. For
+  // numerical T-types this would imply computing the rotational inertia
+  // eigenvalues and checking if they are positive and satisfy the triangle
+  // inequality.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type
   ThrowIfNotPhysicallyValid() {
@@ -923,20 +935,47 @@ class RotationalInertia {
     }
   }
 
-  // This method is used to demand the physical validity of a RotationalInertia
-  // at either construction or after an operation that could lead to
-  // non-physical results when a user provides data that is not valid. For
-  // numerical T-types this would imply computing the rotational inertia
-  // eigenvalues and checking if they are positive and satisfy the triangle
-  // inequality. For non-numeric values the right thing to do is not as clear.
-  // Consider the case for symbolic::Variable as a typical case of a non-numeric
-  // T-type.
-  // Given this is meant to be called in assertions or demands, we do not try
-  // to attempt a smart way throw based on given a symbolic::Formula but instead
-  // we make this method a no-throw for non-numeric types.
+  // SFINAE for non-numeric types. See documentation in the implementation for
+  // numeric types.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type
   ThrowIfNotPhysicallyValid() {}
+
+  // Throws an exception if a rotational inertia is multiplied by a negative
+  // number - which implies that the resulting rotational inertia is invalid.
+  template <typename T1 = T>
+  static typename std::enable_if<is_numeric<T1>::value>::type
+  ThrowIfMultiplyByNegativeScalar(const T& nonnegative_scalar) {
+    if (nonnegative_scalar < 0) {
+      throw std::logic_error("Error: Rotational inertia is multiplied by a "
+                             "negative number.");
+    }
+  }
+
+  // SFINAE for non-numeric types. See documentation in the implementation for
+  // numeric types.
+  template <typename T1 = T>
+  static typename std::enable_if<!is_numeric<T1>::value>::type
+  ThrowIfMultiplyByNegativeScalar(const T&) {}
+
+  // Throws an exception if a rotational inertia is divided by a non-positive
+  // number - which implies that the resulting rotational inertia is invalid.
+  template <typename T1 = T>
+  static typename std::enable_if<is_numeric<T1>::value>::type
+  ThrowIfDivideByZeroOrNegativeScalar(const T& positive_scalar) {
+    if (positive_scalar == 0)
+      throw std::logic_error("Error: Rotational inertia is divided by 0.");
+    if (positive_scalar < 0) {
+      throw std::logic_error("Error: Rotational inertia is divided by a "
+                             "negative number");
+    }
+  }
+
+  // SFINAE for non-numeric types. See documentation in the implementation for
+  // numeric types.
+  template <typename T1 = T>
+  static typename std::enable_if<!is_numeric<T1>::value>::type
+  ThrowIfDivideByZeroOrNegativeScalar(const T&) {}
 
   // The 3x3 inertia matrix is symmetric and its diagonal elements (moments of
   // inertia) and off-diagonal elements (products of inertia) are associated
