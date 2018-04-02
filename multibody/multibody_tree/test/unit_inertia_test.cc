@@ -394,7 +394,7 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
 
   // Cast from double to AutoDiffScalar.
   const UnitInertia<ADScalar> I_cast = I_double.cast<ADScalar>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon).value());
 
   const Matrix3<ADScalar> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
   auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);

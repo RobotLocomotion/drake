@@ -12,6 +12,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -217,7 +218,7 @@ class RotationalInertia {
   ///    in `this` and `other` can be converted to a double (discarding
   ///    supplemental scalar data such as derivatives of an AutoDiffScalar).
   ///    It fails at runtime if type T cannot be converted to `double`.
-  decltype(T() < T()) IsNearlyEqualTo(
+  Bool<T> IsNearlyEqualTo(
       const RotationalInertia& other, double precision) const {
     using std::min;
     const T I_maxA = CalcMaximumPossibleMomentOfInertia();
@@ -507,20 +508,20 @@ class RotationalInertia {
     // non-negative and also satisfy triangle inequality.
     const Vector3<T> m = get_moments();
     if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        m(0), m(1), m(2), epsilon)) return false;
+        m(0), m(1), m(2), epsilon).value()) return false;
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
     return AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        p(0), p(1), p(2), epsilon);
+        p(0), p(1), p(2), epsilon).value();
   }
 
   // This method throws an exception for non-numeric types.
   // @tparam T1 SFINAE boilerplate.
 #ifndef DRAKE_DOXYGEN_CXX
   template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, decltype(T() < T())>::type
+  typename std::enable_if<!is_numeric<T1>::value, Bool<T>>::type
   CouldBePhysicallyValid() const {
     throw std::logic_error(
         "RotationalInertia<T>::CouldBePhysicallyValid() only works with types "
@@ -865,7 +866,7 @@ class RotationalInertia {
   //          product absolute value in `other`.  Otherwise returns `false`.
   // @note Trace() / 2 is a rotational inertia's maximum possible element,
   // e.g., consider: epsilon = 1E-9 * Trace()  (where 1E-9 is a heuristic).
-  decltype(T() < T()) IsApproxMomentsAndProducts(
+  Bool<T> IsApproxMomentsAndProducts(
       const RotationalInertia& other, const T& epsilon) const {
     const Vector3<T> moment_difference = get_moments() - other.get_moments();
     const Vector3<T> product_difference = get_products() - other.get_products();
@@ -892,8 +893,7 @@ class RotationalInertia {
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
-  static decltype(T() < T())
-  AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+  static Bool<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     const auto are_moments_near_positive = AreMomentsOfInertiaNearPositive(
         Ixx, Iyy, Izz, epsilon);
@@ -911,7 +911,7 @@ class RotationalInertia {
   // @param epsilon Real positive number that is significantly smaller than the
   //        largest possible element in a valid rotational inertia.
   //        Heuristically, `epsilon` is a small multiplier of Trace() / 2.
-  static decltype(T() < T()) AreMomentsOfInertiaNearPositive(
+  static Bool<T> AreMomentsOfInertiaNearPositive(
       const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
     return Ixx + epsilon >= 0  &&  Iyy + epsilon >= 0  &&  Izz + epsilon >= 0;
   }

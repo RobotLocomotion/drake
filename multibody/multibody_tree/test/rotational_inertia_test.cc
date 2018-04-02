@@ -169,8 +169,8 @@ GTEST_TEST(RotationalInertia, IsNearlyEqualTo) {
 
   // Ensure rotational inertias I1 and I2 are nearly equal.
   // Ensure rotational inertias I1 and I3 are not equal.
-  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon));
-  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon));
+  EXPECT_TRUE(I1.IsNearlyEqualTo(I2, 4*kEpsilon).value());
+  EXPECT_FALSE(I1.IsNearlyEqualTo(I3, 7*kEpsilon).value());
 }
 
 // TestA: Rotational inertia expressed in frame R then re-expressed in frame E.
@@ -259,7 +259,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
   // Compare Drake results versus MotionGenesis results using a comparison
   // that tests moments/products of inertia to within kEpsilon multiplied
   // by trace / 2, where trace is the smallest trace of the two matrices.
-  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, kEpsilon));
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(expected_I_BBo_B, kEpsilon).value());
 }
 
 // Test the method ShiftFromCenterOfMass for a body B's rotational inertia
@@ -282,7 +282,7 @@ GTEST_TEST(RotationalInertia, ShiftFromCenterOfMass) {
   const double Ixz = I_BBcm_Bxz - mass * xQ*zQ;
   const double Iyz = I_BBcm_Byz - mass * yQ*zQ;
   const RotationalInertia<double> expected_I_BQ_B(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon).value());
 }
 
 // Test the method ShiftToCenterOfMass for a body B's rotational inertia
@@ -306,7 +306,7 @@ GTEST_TEST(RotationalInertia, ShiftToCenterOfMass) {
   const double Iyz = I_BP_Byz + mass * yBcm*zBcm;
   const RotationalInertia<double> expected_I_BBcm_B(
       Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(expected_I_BBcm_B, 2*kEpsilon).value());
 }
 
 // Test the method ShiftToThenAwayFromCenterOfMass for a body B's
@@ -333,16 +333,17 @@ GTEST_TEST(RotationalInertia, ShiftToThenAwayFromCenterOfMass) {
   // Calculate with single method that does it slightly more efficiently.
   const RotationalInertia<double> I_BQ_B =
       I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, p_PBcm, p_QBcm);
-  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon));
+  EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(expected_I_BQ_B, 2*kEpsilon).value());
 
   // Test that negating position vectors have no affect on results.
   EXPECT_TRUE(I_BBcm_B.IsNearlyEqualTo(
-              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon));
+              I_BP_B.ShiftToCenterOfMass(mass, -p_PBcm), 2*kEpsilon).value());
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
-              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm), 2*kEpsilon));
+              I_BBcm_B.ShiftFromCenterOfMass(mass, -p_QBcm),
+              2*kEpsilon).value());
   EXPECT_TRUE(I_BQ_B.IsNearlyEqualTo(
               I_BP_B.ShiftToThenAwayFromCenterOfMass(mass, -p_PBcm, -p_QBcm),
-              2*kEpsilon));
+              2*kEpsilon).value());
 }
 
 // Test the method CouldBePhysicallyValid after a body B's rotational inertia
@@ -557,7 +558,7 @@ GTEST_TEST(RotationalInertia, CastToAutoDiff) {
 
   // Cast from double to AutoDiffScalar.
   const RotationalInertia<AutoDiff1d> I_cast = I_double.cast<AutoDiff1d>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon).value());
 
   const Matrix3<AutoDiff1d> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
   auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
@@ -661,7 +662,7 @@ GTEST_TEST(RotationalInertia, AutoDiff) {
   const Matrix3<AutoDiff1d> R_BW =
       (AngleAxis<AutoDiff1d>(-angle, Vector3d::UnitZ())).toRotationMatrix();
   const RotationalInertia<AutoDiff1d> expectedI_B = I_W.ReExpress(R_BW);
-  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon));
+  EXPECT_TRUE(expectedI_B.IsNearlyEqualTo(I_B, kEpsilon).value());
 }
 
 GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {

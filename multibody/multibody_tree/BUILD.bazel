@@ -124,6 +124,7 @@ drake_cc_library(
     deps = [
         "//common:autodiff",
         "//common:default_scalars",
+        "//common:drake_bool",
         "//common:essential",
         "//common:extract_double",
     ],
