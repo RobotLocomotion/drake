@@ -68,7 +68,7 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
   integrator.Initialize();
 
   EXPECT_NO_THROW(integrator.IntegrateAtMost(dt, dt, dt));
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, 0.0, dt), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateAtMost(dt, -1, dt), std::logic_error);
   EXPECT_THROW(integrator.IntegrateAtMost(-1, dt, dt), std::logic_error);
   EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, -1), std::logic_error);
 }
