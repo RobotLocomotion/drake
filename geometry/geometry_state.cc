@@ -268,7 +268,8 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->pose(), engine_index));
+                       geometry->pose(), engine_index,
+                       geometry->visual_material()));
   // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
@@ -354,8 +355,9 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   anchored_geometry_index_id_map_.push_back(geometry_id);
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
-                               geometry->pose(), engine_index));
+      InternalAnchoredGeometry(
+          geometry->release_shape(), geometry_id, geometry->pose(),
+          engine_index, geometry->visual_material()));
   return geometry_id;
 }
 
