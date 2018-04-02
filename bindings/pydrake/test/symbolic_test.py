@@ -507,6 +507,22 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
 
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x + y).Evaluate(env),
+                         env[x] + env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
+
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
 
@@ -551,6 +567,22 @@ class TestSymbolicFormula(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(x > y), '<Formula "(x > y)">')
+
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x > y).Evaluate(env),
+                         env[x] > env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
 
 
 class TestSymbolicMonomial(unittest.TestCase):

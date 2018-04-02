@@ -154,6 +154,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })
+      .def("Evaluate",
+           [](const Expression& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -285,6 +289,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::class_<Formula>(m, "Formula")
       .def("GetFreeVariables", &Formula::GetFreeVariables)
       .def("EqualTo", &Formula::EqualTo)
+      .def("Evaluate",
+           [](const Formula& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Substitute",
            [](const Formula& self, const Variable& var, const Expression& e) {
              return self.Substitute(var, e);
