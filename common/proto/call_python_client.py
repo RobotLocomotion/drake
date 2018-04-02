@@ -252,7 +252,8 @@ class CallPythonClient(object):
                  scope_globals=None, scope_locals=None,
                  threaded=True, wait=False):
         if filename is None:
-            # TODO(jamiesnape): Use drake.common.temp_directory.
+            # TODO(jamiesnape): Implement and use a
+            # drake.common.GetRpcPipeTempDirectory function.
             temp_directory = os.environ.get("TEST_TMPDIR", "/tmp")
             self.filename = os.path.join(temp_directory, "python_rpc")
         else:
