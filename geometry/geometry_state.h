@@ -10,7 +10,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
-#include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
@@ -444,27 +443,18 @@ class GeometryState {
   // unit tests.
   template <class U> friend class GeometryStateTester;
 
-  // Sets the kinematic poses for the frames indicated by the given ids. This
-  // method assumes that the `ids` have already been validated by
+  // Sets the kinematic poses for the frames indicated by the given ids.
+  // @param poses The frame id and pose values.
+  // @throws std::logic_error  If the ids are invalid as defined by
   // ValidateFrameIds().
-  // @param ids   The ids of the frames whose poses are being set.
-  // @param poses The frame pose values.
-  // @throws std::logic_error  if the poses don't "match" the ids.
-  void SetFramePoses(const FrameIdVector& ids, const FramePoseVector<T>& poses);
+  void SetFramePoses(const FramePoseVector<T>& poses);
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.
-  // @param ids The id set to validate.
-  // @throws std::logic_error if the set is inconsistent with known topology.
-  void ValidateFrameIds(const FrameIdVector& ids) const;
-
-  // Confirms that the pose data is consistent with the set of ids.
-  // @param ids       The id set to test against.
-  // @param poses     The poses to test.
-  // @throws  std::logic_error if the two data sets don't have matching source
-  //                           ids or matching size.
-  void ValidateFramePoses(const FrameIdVector& ids,
-                          const FramePoseVector<T>& poses) const;
+  // @param values The kinematics values (ids and values) to validate.
+  // @throws std::runtime_error if the set is inconsistent with known topology.
+  template <typename ValueType>
+  void ValidateFrameIds(const FrameKinematicsVector<ValueType>& values) const;
 
   // Method that performs any final book-keeping/updating on the state after
   // _all_ of the state's frames have had their poses updated.
@@ -479,7 +469,6 @@ class GeometryState {
   // as `X_WP`.
   void UpdatePosesRecursively(const internal::InternalFrame& frame,
                               const Isometry3<T>& X_WP,
-                              const FrameIdVector& ids,
                               const FramePoseVector<T>& poses);
 
   // Reports true if the given id refers to a _dynamic_ geometry. Assumes the

@@ -159,9 +159,6 @@ int main() {
                   rbt_gs_bridge->rigid_body_plant_state_input_port());
 
   builder.Connect(
-      rbt_gs_bridge->geometry_id_output_port(),
-      geometry_system->get_source_frame_id_port(rbt_gs_bridge->source_id()));
-  builder.Connect(
       rbt_gs_bridge->geometry_pose_output_port(),
       geometry_system->get_source_pose_port(rbt_gs_bridge->source_id()));
 

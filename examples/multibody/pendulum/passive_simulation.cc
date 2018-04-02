@@ -103,10 +103,6 @@ int do_main() {
   DRAKE_DEMAND(!!pendulum.get_source_id());
 
   builder.Connect(
-      pendulum.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          pendulum.get_source_id().value()));
-  builder.Connect(
       pendulum.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
 
