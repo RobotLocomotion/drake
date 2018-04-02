@@ -125,29 +125,31 @@ class Context {
     return get_continuous_state().get_vector();
   }
 
-  /// Returns the number of elements in the discrete state.
+  /// Returns the number of vectors (groups) in the discrete state.
   int get_num_discrete_state_groups() const {
     return get_state().get_discrete_state().num_groups();
   }
 
+  /// Returns a reference to the entire discrete state, which may consist of
+  /// multiple discrete state vectors (groups).
   const DiscreteValues<T>& get_discrete_state() const {
     return get_state().get_discrete_state();
   }
 
-  /// Returns a reference to the discrete state vector. The vector may be of
-  /// size zero.
+  /// Returns a reference to the _only_ discrete state vector. The vector may be
+  /// of size zero. Fails if there is more than one discrete state group.
   const BasicVector<T>& get_discrete_state_vector() const {
     return get_discrete_state().get_vector();
   }
 
-  /// Returns a mutable pointer to the discrete component of the state,
+  /// Returns a mutable reference to the discrete component of the state,
   /// which may be of size zero.
   DiscreteValues<T>& get_mutable_discrete_state() {
     return get_mutable_state().get_mutable_discrete_state();
   }
 
-  /// Returns a mutable pointer to element @p index of the discrete state.
-  /// Asserts if @p index doesn't exist.
+  /// Returns a mutable reference to group (vector) @p index of the discrete
+  /// state. Asserts if group @p index doesn't exist.
   BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>& xd = get_mutable_discrete_state();
     return xd.get_mutable_vector(index);
@@ -158,8 +160,8 @@ class Context {
     get_mutable_state().set_discrete_state(std::move(xd));
   }
 
-  /// Returns a const pointer to the discrete component of the
-  /// state at @p index.  Asserts if @p index doesn't exist.
+  /// Returns a const reference to group (vector) @p index of the discrete
+  /// state. Asserts if group @p index doesn't exist.
   const BasicVector<T>& get_discrete_state(int index) const {
     const DiscreteValues<T>& xd = get_state().get_discrete_state();
     return xd.get_vector(index);
@@ -182,7 +184,7 @@ class Context {
     return get_mutable_state().get_mutable_abstract_state();
   }
 
-  /// Returns a mutable pointer to element @p index of the abstract state.
+  /// Returns a mutable reference to element @p index of the abstract state.
   /// Asserts if @p index doesn't exist.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
@@ -335,13 +337,13 @@ class Context {
     return get_parameters().num_numeric_parameters();
   }
 
-  /// Returns a const pointer to the vector-valued parameter at @p index.
+  /// Returns a const reference to the vector-valued parameter at @p index.
   /// Asserts if @p index doesn't exist.
   const BasicVector<T>& get_numeric_parameter(int index) const {
     return get_parameters().get_numeric_parameter(index);
   }
 
-  /// Returns a mutable pointer to element @p index of the vector-valued
+  /// Returns a mutable reference to element @p index of the vector-valued
   /// parameters. Asserts if @p index doesn't exist.
   BasicVector<T>& get_mutable_numeric_parameter(int index) {
     return get_mutable_parameters().get_mutable_numeric_parameter(index);
