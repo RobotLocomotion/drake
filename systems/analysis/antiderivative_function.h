@@ -12,32 +12,32 @@
 namespace drake {
 namespace systems {
 
-
 /// A thin wrapper of the ScalarInitialValueProblem class that, in concert with
 /// Drake's ODE initial value problem solvers ("integrators"), provides the
-/// ability to perform quadrature on an arbitrary scalar function. That is, it
-/// allows the evaluation of a primitive function F(u; 𝐤), such that
-/// F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ, 𝐤 ∈ ℝᵐ. The
-/// parameter vector 𝐤 allows for generic function definitions, which can later
-/// be evaluated for any instance of said vector.
+/// ability to perform quadrature on an arbitrary scalar integrable function.
+/// That is, it allows the evaluation of an antiderivative function F(u; 𝐤),
+/// such that F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ, 𝐤 ∈ ℝᵐ.
+/// The parameter vector 𝐤 allows for generic function definitions, which can
+/// later be evaluated for any instance of said vector. Also, note that 𝐤 can be
+/// understood as an m-tuple or as an element of ℝᵐ, the vector space, depending
+/// on how it is used by the integrable function.
 ///
 /// For further insight into its use, consider the following examples.
 ///
 /// - Solving the elliptic integral of the first kind
 ///   F(φ; ξ) = ∫ᵠ √(1 - ξ² sin² θ)⁻¹ dθ becomes straightforward by defining
-///   f(θ; 𝐤) ≜ √(1 - k₁² sin² θ)⁻¹ with 𝐤 ≜ [ξ] and evaluating F(u; 𝐤) at
+///   f(x; 𝐤) ≜ √(1 - k₁² sin² x)⁻¹ with 𝐤 ≜ [ξ] and evaluating F(u; 𝐤) at
 ///   u = φ.
 ///
 /// - As the bearings in a rotating machine age over time, these are more likely
 ///   to fail. Let γ be a random variable describing the time to first bearing
 ///   failure, described by a family of probability density functions fᵧ(y; l)
 ///   parameterized by bearing load l. In this context, the probability of a
-///   bearing under a load l₁ to fail in the first N months becomes
-///   P(0 < γ ≤ N mo.; l₁) = Fᵧ(N mo.; l₁) - Fᵧ(0; l₁), where Fᵧ(y; l) is the
-///   associated family of cumulative probability density functions (i.e. the
-///   probability of γ taking a value less than or equal to its argument y) and
-///   F'ᵧ(y; l) = fᵧ(y; l). Therefore, defining f ≜ fᵧ with 𝐤 ≜ [l] and
-///   evaluating at u = N yields the result.
+///   bearing under load to fail during the first N months becomes
+///   P(0 < γ ≤ N mo.; l) = Fᵧ(N mo.; l) - Fᵧ(0; l), where Fᵧ(y; l) is the
+///   family of cumulative density functions, parameterized by bearing load l,
+///   and F'ᵧ(y; l) = fᵧ(y; l). Therefore, defining f(x; 𝐤) ≜ fᵧ(x; k₁) with
+///   𝐤 ≜ [l] and evaluating F(u; 𝐤) at u = N yields the result.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
 ///
@@ -45,20 +45,21 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
 template <typename T>
-class PrimitiveFunction {
+class AntiderivativeFunction {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrimitiveFunction);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AntiderivativeFunction);
 
-  /// Scalar integrand function f(x; 𝐤) type.
+  /// Scalar integrable function f(x; 𝐤) type.
   ///
   /// @param x The variable of integration x ∈ ℝ .
-  /// @param k The integrand parameter vector 𝐤 ∈ ℝᵐ.
-  /// @return The integrand value f(@p x; @p k).
-  typedef std::function<T(const T& x, const VectorX<T>& k)> IntegrandFunction;
+  /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
+  /// @return The function value f(@p x; @p k).
+  typedef std::function<T(const T& x, const VectorX<T>& k)> IntegrableFunction;
 
-  /// The set of values that, along with the integrand, fully specify the
-  /// definite integral i.e. the lower integration bound v and the parameter
-  /// vector 𝐤.
+  /// The set of values that, along with the function being integrated,
+  /// partially specify the definite integral i.e. providing the lower
+  /// integration bound v and the parameter vector 𝐤, leaving the upper
+  /// integration bound u to be set on evaluation.
   struct SpecifiedValues {
     /// Default constructor that leaves all values unspecified.
     SpecifiedValues() = default;
@@ -74,23 +75,23 @@ class PrimitiveFunction {
     optional<VectorX<T>> k;  ///< The parameter vector 𝐤.
   };
 
-  /// Constructs the primitive function of the given @p integrand_function,
-  /// using @p default_values.v as lower integration bound if given (0 if
-  /// not) and parameterized with @p default_values.k if given (an empty vector
-  /// if not) by default.
+  /// Constructs the antiderivative function of the given
+  /// @p integrable_function, using @p default_values.v as lower integration
+  /// bound if given (0 if not) and parameterized with @p default_values.k if
+  /// given (an empty vector if not) by default.
   ///
-  /// @param integrand_function The function f(x; 𝐤) being integrated.
+  /// @param integrable_function The function f(x; 𝐤) to be integrated.
   /// @param default_values The values specified by default for this function,
   ///                       i.e. default lower integration bound v ∈ ℝ  and
   ///                       default parameter vector 𝐤 ∈ ℝᵐ.
-  PrimitiveFunction(const IntegrandFunction& integrand_function,
-                    const SpecifiedValues& default_values = {}) {
+  AntiderivativeFunction(const IntegrableFunction& integrable_function,
+                         const SpecifiedValues& default_values = {}) {
     // Expresses the scalar integral to be solved as an ODE.
     typename ScalarInitialValueProblem<T>::ScalarODEFunction
-        scalar_ode_function = [integrand_function](
+        scalar_ode_function = [integrable_function](
             const T& t, const T& x, const VectorX<T>& k) -> T {
       unused(x);
-      return integrand_function(t, k);
+      return integrable_function(t, k);
     };
 
     typename ScalarInitialValueProblem<T>::SpecifiedValues
@@ -133,7 +134,7 @@ class PrimitiveFunction {
   ///
   /// A usage example is shown below.
   /// @code{.cpp}
-  ///    primitive_f.reset_integrator<RungeKutta2Integrator<T>>(max_step);
+  ///    antiderivative_f.reset_integrator<RungeKutta2Integrator<T>>(max_step);
   /// @endcode
   ///
   /// @param args The integrator type-specific arguments.
@@ -142,8 +143,8 @@ class PrimitiveFunction {
   ///                    IntegratorBase subclass.
   /// @tparam Args The integrator specific argument types.
   /// @warning This operation invalidates pointers returned by
-  ///          PrimitiveFunction::get_integrator() and
-  ///          PrimitiveFunction::get_mutable_integrator().
+  ///          AntiderivativeFunction::get_integrator() and
+  ///          AntiderivativeFunction::get_mutable_integrator().
   template <typename Integrator, typename... Args>
   Integrator* reset_integrator(Args&&... args) {
     return scalar_ivp_->template reset_integrator<Integrator>(
