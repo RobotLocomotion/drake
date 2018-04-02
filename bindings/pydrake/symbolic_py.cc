@@ -150,9 +150,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return fmt::format("<Expression \"{}\">", self.to_string());
            })
       .def("__copy__",
-           [](const Expression& self) -> Expression {
-             return self;
-           })
+           [](const Expression& self) -> Expression { return self; })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })

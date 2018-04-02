@@ -474,10 +474,10 @@ class TestSymbolicExpression(unittest.TestCase):
         self._check_scalar(sym.ceil(v_x), np.ceil(v_x))
         self._check_scalar(sym.floor(v_x), np.floor(v_x))
         self._check_scalar(
-          sym.if_then_else(
-            sym.Expression(v_x) > sym.Expression(v_y),
-            v_x, v_y),
-          v_x if v_x > v_y else v_y)
+            sym.if_then_else(
+                sym.Expression(v_x) > sym.Expression(v_y),
+                v_x, v_y),
+            v_x if v_x > v_y else v_y)
 
     def test_non_method_jacobian(self):
         # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
