@@ -53,34 +53,18 @@ template <typename T> class QueryObject;
  // types.
  @endcond
 
- For each registered geometry source, there are _two_ input ports: id and pose.
- Failing to connect to those ports or providing "bad" values on
- those ports will cause runtime errors to be thrown. The two ports work in
- tandem. Through these ports, the upstream source system communicates the
- poses of all of the _frames_ it has registered with %GeometrySystem (see
- RegisterFrame() for more details).
+ For each registered geometry source, there is one input port for each
+ order of kinematics values (e.g., pose, velocity, and acceleration).
+ If a source registers a frame, it must connect to these ports (although, in the
+ current version, only pose is supported). Failure to connect to the port (or
+ to provide valid kinematics values) will lead to runtime exceptions.
 
- __identifier port__: An abstract-valued port containing an instance of
- FrameIdVector. It should contain the FrameId of each frame registered by the
- upstream source exactly once. The _order_ of the ids is how the values in the
- pose port will be interpreted. Use get_source_frame_id_port() to acquire the
- port for a given source.
-
- __pose port__: An abstract-valued port containing an instance of
- FramePoseVector. There should be one pose value for each id in the the
- identifier port value. The iᵗʰ pose belongs to the iᵗʰ id. Use
- get_source_pose_port() to acquire the port for a given source.
-
- For source systems, there are some implicit assumptions regarding these input
- ports. Generally, we assume that the source system already has some logic for
- computing kinematics of the frames they've registered and an ordered data
- structure for organizing that data. These input ports rely on that. It is
- expected that the geometry source will define the frame identifiers in an order
- which matches the source's internal ordering (and never need to change that
- output value unless the topology changes). The values of the pose port can
- then simply be written by copying the ordered data from the internal ordering
- to the output ordering. This should facilitate translation from internal
- representation to GeometrySystem representation.
+ __pose port__: An abstract-valued port providing an instance of
+ FramePoseVector. For each registered frame, this "pose vector" maps the
+ registered FrameId to a pose value. All registered frames must be accounted
+ for and only frames registered by a source can be included in its output port.
+ See the details in FrameKinematicsVector for details on how to allocate and
+ calculate this port.
 
  @section geom_sys_outputs Outputs
 
@@ -233,7 +217,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    This source id can be used to register arbitrary _anchored_ geometry. But if
    dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then
    the context-dependent pose values must be provided on an input port.
-   See get_source_frame_id_port() and get_source_pose_port().
+   See get_source_pose_port().
    @param name          The optional name of the source. If none is provided
                         (or the empty string) a unique name will be defined by
                         GeometrySystem's logic.
@@ -245,13 +229,6 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   /** Reports if the given source id is registered.
    @param id       The id of the source to query. */
   bool SourceIsRegistered(SourceId id) const;
-
-  /** Given a valid source `id`, returns the "frame id" input port associated
-   with that `id`. This port's value is an ordered list of frame ids; it
-   is used to provide an interpretation on the pose values provided on the
-   pose port.
-   @throws  std::logic_error if the source_id is _not_ recognized. */
-  const systems::InputPortDescriptor<T>& get_source_frame_id_port(SourceId id);
 
   /** Given a valid source `id`, returns a _pose_ input port associated
    with that `id`. This port is used to communicate _pose_ data for registered
@@ -446,7 +423,6 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
-    int id_port{-1};
     int pose_port{-1};
   };
 

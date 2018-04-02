@@ -123,8 +123,7 @@ GeometrySystem<T>::GeometrySystem(const GeometrySystem<U>& other)
     MakeSourcePorts(source_id);
     const auto& new_ports = input_source_ids_[source_id];
     const auto& ref_ports = other.input_source_ids_.at(source_id);
-    DRAKE_DEMAND(new_ports.id_port == ref_ports.id_port &&
-                 new_ports.pose_port == ref_ports.pose_port);
+    DRAKE_DEMAND(new_ports.pose_port == ref_ports.pose_port);
   }
 }
 
@@ -139,14 +138,6 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
 template <typename T>
 bool GeometrySystem<T>::SourceIsRegistered(SourceId id) const {
   return input_source_ids_.count(id) > 0;
-}
-
-template <typename T>
-const systems::InputPortDescriptor<T>&
-GeometrySystem<T>::get_source_frame_id_port(SourceId id) {
-  ThrowUnlessRegistered(
-      id, "Can't acquire id port for unknown source id: ");
-  return this->get_input_port(input_source_ids_[id].id_port);
 }
 
 template <typename T>
@@ -204,7 +195,6 @@ void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.id_port = this->DeclareAbstractInputPort().get_index();
   source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
 }
 
@@ -301,27 +291,15 @@ void GeometrySystem<T>::FullPoseUpdate(
       SourceId source_id = pair.first;
       const auto itr = input_source_ids_.find(source_id);
       DRAKE_ASSERT(itr != input_source_ids_.end());
-      const int id_port = itr->second.id_port;
-      const auto id_port_value =
-          this->template EvalAbstractInput(context, id_port);
-      if (id_port_value) {
-        const FrameIdVector& ids =
-            id_port_value->template GetValue<FrameIdVector>();
-        // TODO(SeanCurtis-TRI): In future versions consider moving this to
-        // a DRAKE_ASSERT_VOID execution.
-        state.ValidateFrameIds(ids);
-        const int pose_port = itr->second.pose_port;
-        const auto pose_port_value =
-            this->template EvalAbstractInput(context, pose_port);
-        if (pose_port_value) {
-          const auto& poses =
-              pose_port_value->template GetValue<FramePoseVector<T>>();
-          mutable_state.SetFramePoses(ids, poses);
-        } else {
-          throw_error(source_id, "pose");
-        }
+      const int pose_port = itr->second.pose_port;
+      const auto pose_port_value =
+          this->template EvalAbstractInput(context, pose_port);
+      if (pose_port_value) {
+        const auto& poses =
+            pose_port_value->template GetValue<FramePoseVector<T>>();
+        mutable_state.SetFramePoses(poses);
       } else {
-        throw_error(source_id, "id");
+        throw_error(source_id, "pose");
       }
     }
   }
