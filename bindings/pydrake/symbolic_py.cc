@@ -37,6 +37,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
+      .def("__copy__",
+           [](const Variable& self) -> Variable {
+             return self;
+           })
       // Addition.
       .def(py::self + py::self)
       .def(py::self + double())
@@ -145,6 +149,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self) {
              return fmt::format("<Expression \"{}\">", self.to_string());
            })
+      .def("__copy__",
+           [](const Expression& self) -> Expression {
+             return self;
+           })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })
@@ -223,11 +231,31 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::self != Variable())
       .def(py::self != double())
       .def("Differentiate", &Expression::Differentiate)
-      .def("Jacobian", &Expression::Jacobian);
+      .def("Jacobian", &Expression::Jacobian)
+      // TODO(eric.cousineau): Figure out how to consolidate with the below
+      // methods.
+      .def("log", &symbolic::log)
+      .def("__abs__", &symbolic::abs)
+      .def("exp", &symbolic::exp)
+      .def("sqrt", &symbolic::sqrt)
+      // TODO(eric.cousineau): Move `__pow__` here.
+      .def("sin", &symbolic::sin)
+      .def("cos", &symbolic::cos)
+      .def("tan", &symbolic::tan)
+      .def("arcsin", &symbolic::asin)
+      .def("arccos", &symbolic::acos)
+      .def("arctan2", &symbolic::atan2)
+      .def("sinh", &symbolic::sinh)
+      .def("cosh", &symbolic::cosh)
+      .def("tanh", &symbolic::tanh)
+      .def("min", &symbolic::min)
+      .def("max", &symbolic::max)
+      .def("ceil", &symbolic::ceil)
+      .def("floor", &symbolic::floor);
 
   // TODO(eric.cousineau): Consider deprecating these methods?
   auto math = py::module::import("pydrake.math");
-  MirrorDef(math, m)
+  MirrorDef<py::module, py::module>(&math, &m)
       .def("log", &symbolic::log)
       .def("abs", &symbolic::abs)
       .def("exp", &symbolic::exp)

@@ -310,9 +310,10 @@ SystemIdentification<T>::EstimateParameters(
 
   // Solve the problem and copy out the result.
   SolutionResult solution_result = problem.Solve();
-  if (solution_result != kSolutionFound) {
-    throw std::runtime_error("Solution failed: " +
-                             std::to_string(solution_result));
+  if (solution_result != SolutionResult::kSolutionFound) {
+    std::ostringstream oss;
+    oss << "Solution failed: " << solution_result;
+    throw std::runtime_error(oss.str());
   }
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {

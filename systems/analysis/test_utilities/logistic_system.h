@@ -12,28 +12,6 @@ namespace drake {
 namespace systems {
 namespace analysis_test {
 
-template <class T>
-class LogisticSystem;
-
-/// Witness function for determining when the state of the logistic system
-/// crosses zero.
-template <class T>
-class LogisticWitness : public systems::WitnessFunction<T> {
- public:
-  ~LogisticWitness() override {}
-  explicit LogisticWitness(const LogisticSystem<T>* system) :
-    WitnessFunction<T>(
-        system,
-        WitnessFunctionDirection::kCrossesZero,
-        std::make_unique<PublishEvent<T>>(Event<T>::TriggerType::kWitness)) {}
-
- protected:
-  // The witness function is simply the state value itself.
-  T DoCalcWitnessValue(const Context<T>& context) const override {
-    return context.get_continuous_state()[0];
-  }
-};
-
 /// System with state evolution yielding a logistic function, for purposes of
 /// witness function testing using the differential equation
 /// dx/dt = α⋅(1 - (x/k)^ν)⋅t, where ν > 0 (affects the shape of the curve),
@@ -46,7 +24,10 @@ class LogisticSystem : public LeafSystem<T> {
   LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
       nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = std::make_unique<LogisticWitness<T>>(this);
+    witness_ = this->DeclareWitnessFunction("Logistic witness",
+        WitnessFunctionDirection::kCrossesZero,
+        &LogisticSystem::GetStateValue,
+        PublishEvent<T>());
   }
 
   void set_publish_callback(
@@ -82,8 +63,12 @@ class LogisticSystem : public LeafSystem<T> {
   }
 
  private:
-  std::unique_ptr<LogisticWitness<T>> witness_;
+  std::unique_ptr<WitnessFunction<T>> witness_;
   std::function<void(const Context<double>&)> publish_callback_{nullptr};
+
+  T GetStateValue(const Context<T>& context) const {
+    return context.get_continuous_state()[0];
+  }
 
   // The upper asymptote on the logistic function.
   double k_{1.0};

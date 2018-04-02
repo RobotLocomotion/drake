@@ -1,21 +1,15 @@
 # -*- python -*-
 
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
-
 def drake_py_library(
         name,
         deps = None,
-        data = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
-    deps = adjust_labels_for_drake_hoist(deps)
-    data = adjust_labels_for_drake_hoist(data)
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     native.py_library(
         name = name,
         deps = deps,
-        data = data,
         **kwargs)
 
 def _py_target_isolated(
@@ -64,7 +58,6 @@ def drake_py_binary(
         name,
         srcs = None,
         deps = None,
-        data = None,
         isolate = False,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
@@ -74,8 +67,6 @@ def drake_py_binary(
         library code. This prevents submodules from leaking in as top-level
         submodules. For more detail, see #8041.
     """
-    deps = adjust_labels_for_drake_hoist(deps)
-    data = adjust_labels_for_drake_hoist(data)
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     _py_target_isolated(
@@ -84,7 +75,6 @@ def drake_py_binary(
         isolate = isolate,
         srcs = srcs,
         deps = deps,
-        data = data,
         **kwargs)
 
 def drake_py_unittest(
@@ -111,7 +101,6 @@ def drake_py_test(
         name,
         srcs = None,
         deps = None,
-        data = None,
         isolate = True,
         allow_import_unittest = False,
         **kwargs):
@@ -132,19 +121,16 @@ def drake_py_test(
     """
     if srcs == None:
         srcs = ["test/%s.py" % name]
-    deps = adjust_labels_for_drake_hoist(deps)
-    if not allow_import_unittest:
-        deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    data = adjust_labels_for_drake_hoist(data)
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
+    if not allow_import_unittest:
+        deps = deps + ["//common/test_utilities:disable_python_unittest"]
     _py_target_isolated(
         name = name,
         py_target = native.py_test,
         isolate = isolate,
         srcs = srcs,
         deps = deps,
-        data = data,
         **kwargs)
 
 def py_test_isolated(

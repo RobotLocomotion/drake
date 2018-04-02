@@ -16,7 +16,7 @@ drake_cc_library(
         "constraint_problem_data.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -28,7 +28,7 @@ drake_cc_library(
     ],
     deps = [
         ":constraint",
-        "//drake/solvers:mathematical_program",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -40,7 +40,7 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":constraint_solver",
-        "//drake/examples/rod2d",
+        "//examples/rod2d",
     ],
 )
 

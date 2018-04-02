@@ -27,9 +27,12 @@ namespace bouncing_ball {
 /// Outputs: vertical position (state index 0) and velocity (state index 1) in
 /// units of m and m/s, respectively.
 template <typename T>
-class BouncingBall : public systems::LeafSystem<T> {
+class BouncingBall final : public systems::LeafSystem<T> {
  public:
-  BouncingBall() {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BouncingBall);
+
+  BouncingBall() : systems::LeafSystem<T>(
+      systems::SystemTypeTag<bouncing_ball::BouncingBall>{}) {
     // Two state variables: q and v.
     this->DeclareContinuousState(1, 1, 0);
 
@@ -37,10 +40,17 @@ class BouncingBall : public systems::LeafSystem<T> {
     this->DeclareVectorOutputPort(systems::BasicVector<T>(2),
                                   &BouncingBall::CopyStateOut);
 
-    // Create the witness function.
-    signed_distance_witness_ =
-        std::make_unique<SignedDistanceWitnessFunction>(this);
+    // Declare the witness function.
+    signed_distance_witness_ = this->DeclareWitnessFunction(
+        "Signed distance",
+        systems::WitnessFunctionDirection::kPositiveThenNonPositive,
+        &BouncingBall::CalcSignedDistance,
+        systems::UnrestrictedUpdateEvent<T>());
   }
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit BouncingBall(const BouncingBall<U>&) : BouncingBall<T>() {}
 
   /// Gets the signed acceleration due to gravity. Since initial positions
   /// correspond to heights, acceleration should be negative.
@@ -56,23 +66,10 @@ class BouncingBall : public systems::LeafSystem<T> {
   // (via WitnessFunctionDirection::kPositiveThenNonPositive). An "unrestricted
   // update" event is necessary to change the velocity of the system
   // discontinuously.
-  class SignedDistanceWitnessFunction : public systems::WitnessFunction<T> {
-   public:
-    explicit SignedDistanceWitnessFunction(const systems::System<T>* system) :
-        systems::WitnessFunction<T>(
-            system,
-            systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-            std::make_unique<systems::UnrestrictedUpdateEvent<T>>()) {}
-    ~SignedDistanceWitnessFunction() override {}
-
-   private:
-    // Returns the signed distance of the witness function from the halfspace
-    // boundary.
-    T DoCalcWitnessValue(const systems::Context<T>& context) const override {
-      const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
-      return xc.GetAtIndex(0);
-    }
-  };
+  T CalcSignedDistance(const systems::Context<T>& context) const {
+    const systems::VectorBase<T>& xc = context.get_continuous_state_vector();
+    return xc.GetAtIndex(0);
+  }
 
   void CopyStateOut(const systems::Context<T>& context,
                     systems::BasicVector<T>* output) const {
@@ -146,8 +143,9 @@ class BouncingBall : public systems::LeafSystem<T> {
 
   const double restitution_coef_ = 1.0;  // Coefficient of restitution.
 
-  // The system stores its witness function internally.
-  std::unique_ptr<SignedDistanceWitnessFunction> signed_distance_witness_;
+  // The witness function for computing the signed distance between the ball
+  // and the ground.
+  std::unique_ptr<systems::WitnessFunction<T>> signed_distance_witness_;
 };
 
 }  // namespace bouncing_ball
