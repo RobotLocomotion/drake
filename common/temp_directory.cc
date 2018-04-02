@@ -1,5 +1,7 @@
 #include "drake/common/temp_directory.h"
 
+#include <unistd.h>
+
 #include <cstdlib>
 
 #include <spruce.hh>
@@ -9,10 +11,13 @@
 namespace drake {
 
 std::string temp_directory() {
-  // TODO(jamiesnape): Use mkdtemp instead of simply returning /tmp for
-  // applications that do not require a hardcoded /tmp.
-  const char* path_str = nullptr;
-  (path_str = std::getenv("TEST_TMPDIR")) || (path_str = "/tmp");
+  const char* path_str = std::getenv("TEST_TMPDIR");
+
+  if (path_str == nullptr) {
+      char path_template[] = "/tmp/robotlocomotion_drake_XXXXXX";
+      path_str = ::mkdtemp(path_template);
+      DRAKE_THROW_UNLESS(path_str != nullptr);
+  }
 
   // Spruce normalizes the path and strips any trailing /.
   spruce::path path(path_str);

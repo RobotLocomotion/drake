@@ -2,8 +2,8 @@
 
 #include <memory>
 
+#include "drake/common/proto/call_temp_directory.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
-#include "drake/common/temp_directory.h"
 
 namespace drake {
 namespace common {
@@ -32,7 +32,7 @@ auto GetPythonOutputStream(const std::string* filename = nullptr) {
   static std::unique_ptr<google::protobuf::io::FileOutputStream> raw_output;
   if (!raw_output) {
     // If we do not yet have a file, create it.
-    const std::string filename_default = temp_directory() + "/python_rpc";
+    const std::string filename_default = call_temp_directory() + "/python_rpc";
     raw_output =
         internal::CreateOutputStream(filename ? *filename : filename_default);
   } else {

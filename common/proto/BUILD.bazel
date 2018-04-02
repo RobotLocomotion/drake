@@ -34,9 +34,9 @@ drake_cc_library(
     srcs = ["call_matlab.cc"],
     hdrs = ["call_matlab.h"],
     deps = [
+        ":call_temp_directory",
         ":matlab_rpc",
         "//common:essential",
-        "//common:temp_directory",
     ],
 )
 
@@ -55,8 +55,8 @@ drake_cc_library(
     hdrs = ["call_python.h"],
     deps = [
         ":call_matlab",
+        ":call_temp_directory",
         "//common:copyable_unique_ptr",
-        "//common:temp_directory",
     ],
 )
 
@@ -79,6 +79,17 @@ py_binary(
         # Drake's import paths are consistent without having to use weird
         # spellings such as this one.
         "@drake//common/proto:call_python_client",
+    ],
+)
+
+drake_cc_library(
+    name = "call_temp_directory",
+    srcs = ["call_temp_directory.cc"],
+    hdrs = ["call_temp_directory.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "@spruce",
     ],
 )
 
@@ -132,6 +143,13 @@ sh_test(
     # TODO(eric.cousineau): Find the source of (more) sporadic CI failures, but
     # after refactoring the script into Python.
     flaky = 1,
+)
+
+drake_cc_googletest(
+    name = "call_temp_directory_test",
+    deps = [
+        ":call_temp_directory",
+    ],
 )
 
 drake_cc_googletest(

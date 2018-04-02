@@ -1,0 +1,24 @@
+#include "drake/common/proto/call_temp_directory.h"
+
+#include <cstdlib>
+
+#include <spruce.hh>
+
+#include "drake/common/drake_throw.h"
+
+namespace drake {
+namespace common {
+
+std::string call_temp_directory() {
+  const char* path_str = nullptr;
+  (path_str = std::getenv("TEST_TMPDIR")) || (path_str = "/tmp");
+
+  // Spruce normalizes the path and strips any trailing /.
+  spruce::path path(path_str);
+  DRAKE_THROW_UNLESS(path.isDir());
+
+  return path.getStr();
+}
+
+}  // namespace common
+}  // namespace drake
