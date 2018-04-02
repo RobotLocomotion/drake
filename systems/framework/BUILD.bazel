@@ -19,6 +19,7 @@ drake_cc_library(
         ":diagram_builder",
         ":diagram_context",
         ":diagram_continuous_state",
+        ":diagram_discrete_values",
         ":discrete_values",
         ":event_collection",
         ":framework_common",
@@ -97,6 +98,7 @@ drake_cc_library(
     srcs = ["abstract_values.cc"],
     hdrs = ["abstract_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         "//common:autodiff",
         "//common:essential",
@@ -108,6 +110,7 @@ drake_cc_library(
     srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
     deps = [
+        ":framework_common",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
@@ -120,6 +123,7 @@ drake_cc_library(
     srcs = ["discrete_values.cc"],
     hdrs = ["discrete_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":vector",
         "//common:autodiff",
@@ -424,7 +428,18 @@ drake_cc_library(
     srcs = ["diagram_continuous_state.cc"],
     hdrs = ["diagram_continuous_state.h"],
     deps = [
-        ":state",
+        ":continuous_state",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "diagram_discrete_values",
+    srcs = ["diagram_discrete_values.cc"],
+    hdrs = ["diagram_discrete_values.h"],
+    deps = [
+        ":discrete_values",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -437,6 +452,7 @@ drake_cc_library(
     deps = [
         ":context",
         ":diagram_continuous_state",
+        ":diagram_discrete_values",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
@@ -550,7 +566,9 @@ drake_cc_googletest(
     name = "continuous_state_test",
     deps = [
         ":continuous_state",
+        ":diagram_continuous_state",
         "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -603,8 +621,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "discrete_values_test",
     deps = [
+        ":diagram_discrete_values",
         ":discrete_values",
         "//common:essential",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/framework/test_utilities",
     ],
 )
 
