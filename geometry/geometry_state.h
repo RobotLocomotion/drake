@@ -19,10 +19,13 @@
 #include "drake/geometry/proximity_engine.h"
 
 namespace drake {
+
 namespace geometry {
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace internal {
+
+class GeometryVisualizationImpl;
 
 // A const range iterator through the keys of an unordered map.
 template <typename K, typename V>
@@ -429,8 +432,10 @@ class GeometryState {
     convert(source.X_WF_, &X_WF_);
   }
 
-  // Allow geometry dispatch to peek into GeometryState.
-  friend void DispatchLoadMessage(const GeometryState<double>&);
+  // NOTE: This friend class is responsible for evaluating the internals of
+  // a GeometryState and translating it into the appropriate visualization
+  // mechanism.
+  friend class internal::GeometryVisualizationImpl;
 
   // Allow GeometrySystem unique access to the state members to perform queries.
   friend class GeometrySystem<T>;

@@ -1,13 +1,35 @@
-#pragma once
-
 /** @file
  Provides a set of functions to facilitate visualization operations based on
  geometry world state. */
 
+#pragma once
+
+#include "drake/geometry/geometry_state.h"
+#include "drake/geometry/geometry_system.h"
+
 namespace drake {
+
+// Forward declaration to avoid bringing lcm headers into code that otherwise
+// just wants to visualize their scene graph.
+class lcmt_viewer_load_robot;
+
 namespace geometry {
 
-template <typename T> class GeometrySystem;
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+
+// Simple class declared as a friend to GeometryState to facilitate the creation
+// of visualization artifacts directly from the contents of GeometryState.
+class GeometryVisualizationImpl {
+ public:
+  // Given an instance of GeometryState, returns an lcm message sufficient
+  // to load the state's geometry.
+  static lcmt_viewer_load_robot BuildLoadMessage(
+      const GeometryState<double>& state);
+};
+
+}  // namespace internal
+#endif  // DRAKE_DOXYGEN_CXX
 
 /** Dispatches an LCM load message based on the registered geometry. It should
  be invoked _after_ registration is complete, but before context allocation.
