@@ -24,6 +24,7 @@ namespace drake {
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix2d;
+using Eigen::Translation3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -291,9 +292,9 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       2.0);                     /* Actuation torque */
 }
 
-// Verifies the process of geometry registration with a GeometrySystem for the
-// acrobot model.
-TEST_F(AcrobotPlantTests, GeometryRegistration) {
+// Verifies the process of visual geometry registration with a GeometrySystem
+// for the acrobot model.
+TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
@@ -345,6 +346,89 @@ TEST_F(AcrobotPlantTests, GeometryRegistration) {
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "Body 'WorldBody' does not have geometry registered with it.");
+}
+
+// Verifies the process of collision geometry registration with a
+// GeometrySystem.
+// We build a model with two spheres and a ground plane. The ground plane is
+// located at y = 0 with normal in the y-axis direction.
+// For testing the output port computation we place the spheres on the ground
+// plane with a given offset in the x direction from the origin.
+GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
+  // Parameters of the setup.
+  const double radius = 0.5;
+  const double x_offset = 0.6;
+
+  GeometrySystem<double> geometry_system;
+  MultibodyPlant<double> plant;
+  plant.RegisterAsSourceForGeometrySystem(&geometry_system);
+
+  // A half-space for the ground geometry.
+  plant.RegisterCollisionGeometry(
+      plant.world_body(),
+      // A half-space passing through the origin in the x-z plane.
+      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      geometry::HalfSpace(), &geometry_system);
+
+  // Add two spherical bodies.
+  const RigidBody<double>& sphere1 =
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
+  plant.RegisterCollisionGeometry(sphere1, Isometry3d::Identity(),
+                                  geometry::Sphere(radius), &geometry_system);
+  const RigidBody<double>& sphere2 =
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>());
+  plant.RegisterCollisionGeometry(sphere2, Isometry3d::Identity(),
+                                  geometry::Sphere(radius), &geometry_system);
+  // We are done defining the model.
+  plant.Finalize();
+
+  EXPECT_EQ(plant.get_num_visual_geometries(), 0);
+  EXPECT_EQ(plant.get_num_collision_geometries(), 3);
+  EXPECT_TRUE(plant.geometry_source_is_registered());
+  EXPECT_TRUE(plant.get_source_id());
+
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Place sphere 1 on top of the ground, with offset x = -x_offset.
+  plant.model().SetFreeBodyPoseOrThrow(
+      sphere1, Isometry3d(Translation3d(-x_offset, radius, 0.0)),
+      context.get());
+  // Place sphere 2 on top of the ground, with offset x = x_offset.
+  plant.model().SetFreeBodyPoseOrThrow(
+      sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
+      context.get());
+
+  std::unique_ptr<AbstractValue> ids_value =
+      plant.get_geometry_ids_output_port().Allocate(*context);
+  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
+  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
+  EXPECT_EQ(ids.get_source_id(), plant.get_source_id());
+  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
+
+  std::unique_ptr<AbstractValue> poses_value =
+      plant.get_geometry_poses_output_port().Allocate(*context);
+  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
+  const FramePoseVector<double>& poses =
+      poses_value->GetValueOrThrow<FramePoseVector<double>>();
+  EXPECT_EQ(poses.get_source_id(), plant.get_source_id());
+  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+
+  // Compute the poses for each geometry in the model.
+  plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
+
+  const MultibodyTree<double>& model = plant.model();
+  std::vector<Isometry3<double >> X_WB_all;
+  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  for (BodyIndex body_index(1);
+       body_index < plant.num_bodies(); ++body_index) {
+    const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
+    const int id_index = ids.GetIndex(frame_id);
+    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+                                kTolerance, MatrixCompareType::relative));
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
