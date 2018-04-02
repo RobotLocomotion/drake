@@ -49,7 +49,10 @@ def _impl(repository_ctx):
 
     repository_ctx.download(urls, output, sha256, executable = True)
 
-    content = """
+    content = """# -*- python -*-
+
+licenses(["notice"])  # Apache-2.0
+
 exports_files(
     ["buildifier"],
 )

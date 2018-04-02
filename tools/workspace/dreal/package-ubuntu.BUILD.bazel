@@ -10,6 +10,8 @@ load(
     "IBEX_VERSION",
 )
 
+licenses(["notice"])  # Apache-2.0
+
 package(default_visibility = ["//visibility:public"])
 
 _DREAL_BASE = "opt/dreal/{}/".format(DREAL_VERSION)
@@ -34,6 +36,11 @@ cc_library(
     ],
 )
 
+# IBEX has the following dependencies in addition to those declared in deps:
+#   Clp: EPL-1
+#   CoinUtils: EPL-1
+#   bzip2: bzip2-1.0.6
+
 cc_library(
     name = "ibex",
     srcs = [_IBEX_BASE + "lib/libdrake_ibex.so"],
@@ -43,6 +50,11 @@ cc_library(
         _IBEX_BASE + "include",
         _IBEX_BASE + "include/ibex",
         _IBEX_BASE + "include/ibex/3rd",
+    ],
+    licenses = [
+        "notice",  # bzip2-1.0.6
+        "reciprocal",  # EPL-1
+        "restricted",  # LGPL-3.0
     ],
     # The linkopts= here are transcribed from the contents of the *.pc file.
     linkopts = [

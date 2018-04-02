@@ -12,15 +12,16 @@ namespace drake {
 
 using std::move;
 
+using symbolic::Environment;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
+using symbolic::test::ExprEqual;
 using symbolic::test::FormulaEqual;
 
 // --------------------------------------------------------------
 // Test constructors and assignment operators using T = double case.
 // --------------------------------------------------------------
-
 class BoolTestDouble : public ::testing::Test {
  protected:
   Bool<double> b_true_{3.0 < 4.0};
@@ -78,6 +79,39 @@ TEST_F(BoolTestDouble, Value) {
   EXPECT_FALSE(b_false_.value());
 }
 
+TEST_F(BoolTestDouble, IfThenElse) {
+  const double v_true{if_then_else(b_true_, 1.0, 0.0)};
+  const double v_false{if_then_else(b_false_, 1.0, 0.0)};
+  EXPECT_EQ(v_true, 1);
+  EXPECT_EQ(v_false, 0);
+}
+
+TEST_F(BoolTestDouble, Cond) {
+  const double v_true{cond(b_true_, 1.0, 0.0)};
+  const double v_false{cond(b_false_, 1.0, 0.0)};
+  EXPECT_EQ(v_true, 1);
+  EXPECT_EQ(v_false, 0);
+}
+
+TEST_F(BoolTestDouble, LogicalOperators) {
+  EXPECT_TRUE((b_true_ && b_true_).value());
+  EXPECT_FALSE((b_false_ && b_true_).value());
+  EXPECT_FALSE((b_true_ && b_false_).value());
+  EXPECT_FALSE((b_false_ && b_false_).value());
+  EXPECT_FALSE((b_true_ && false).value());
+  EXPECT_FALSE((false && b_true_).value());
+
+  EXPECT_TRUE((b_true_ || b_true_).value());
+  EXPECT_TRUE((b_false_ || b_true_).value());
+  EXPECT_TRUE((b_true_ || b_false_).value());
+  EXPECT_FALSE((b_false_ || b_false_).value());
+  EXPECT_TRUE((b_false_ || true).value());
+  EXPECT_TRUE((true || b_false_).value());
+
+  EXPECT_FALSE((!b_true_).value());
+  EXPECT_TRUE((!b_false_).value());
+}
+
 // -------------------
 // Case T = AutoDiffXd
 // -------------------
@@ -104,6 +138,39 @@ TEST_F(BoolTestAutoDiffXd, ExtractBoolOrThrow) {
 TEST_F(BoolTestAutoDiffXd, Value) {
   EXPECT_TRUE(b_true_.value());
   EXPECT_FALSE(b_false_.value());
+}
+
+TEST_F(BoolTestAutoDiffXd, IfThenElse) {
+  const AutoDiffXd v_true{if_then_else(b_true_, x_, y_)};
+  const AutoDiffXd v_false{if_then_else(b_false_, x_, y_)};
+  EXPECT_EQ(v_true, x_);
+  EXPECT_EQ(v_false, y_);
+}
+
+TEST_F(BoolTestAutoDiffXd, Cond) {
+  const AutoDiffXd v_true{cond(b_true_, x_, y_)};
+  const AutoDiffXd v_false{cond(b_false_, x_, y_)};
+  EXPECT_EQ(v_true, x_);
+  EXPECT_EQ(v_false, y_);
+}
+
+TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
+  EXPECT_TRUE((b_true_ && b_true_).value());
+  EXPECT_FALSE((b_false_ && b_true_).value());
+  EXPECT_FALSE((b_true_ && b_false_).value());
+  EXPECT_FALSE((b_false_ && b_false_).value());
+  EXPECT_FALSE((b_true_ && (x_ > y_)).value());
+  EXPECT_FALSE(((x_ > y_) && b_true_).value());
+
+  EXPECT_TRUE((b_true_ || b_true_).value());
+  EXPECT_TRUE((b_false_ || b_true_).value());
+  EXPECT_TRUE((b_true_ || b_false_).value());
+  EXPECT_FALSE((b_false_ || b_false_).value());
+  EXPECT_TRUE((b_false_ || (x_ < y_)).value());
+  EXPECT_TRUE(((x_ < y_) || b_false_).value());
+
+  EXPECT_FALSE((!b_true_).value());
+  EXPECT_TRUE((!b_false_).value());
 }
 
 // -----------------------------
@@ -149,6 +216,57 @@ TEST_F(BoolTestSymbolic, Value) {
   EXPECT_PRED2(FormulaEqual, b_true_.value(), Formula::True());
   EXPECT_PRED2(FormulaEqual, b_false_.value(), Formula::False());
   EXPECT_PRED2(FormulaEqual, Bool<Expression>{x_ < y_}.value(), x_ < y_);
+}
+
+TEST_F(BoolTestSymbolic, IfThenElse) {
+  const Expression e{if_then_else(Bool<Expression>{x_ > y_}, +x_, -y_)};
+
+  Environment env;
+  env[x_] = 4.0;
+  env[y_] = 3.0;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), env[x_]);
+
+  env[x_] = 3.0;
+  env[y_] = 4.0;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), -env[y_]);
+}
+
+TEST_F(BoolTestSymbolic, Cond) {
+  // clang-format off
+  const Expression e{cond(x_ > 3.0, 3.0,
+                          x_ > 2.0, 2.0,
+                          x_ > 1.0, 1.0,
+                          0.0)};
+  // clang-format on
+  Environment env;
+  env[x_] = 3.5;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), 3.0);
+
+  env[x_] = 2.5;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), 2.0);
+
+  env[x_] = 1.5;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), 1.0);
+
+  env[x_] = 0.5;
+  EXPECT_PRED2(ExprEqual, e.Evaluate(env), 0.0);
+}
+
+TEST_F(BoolTestSymbolic, LogicalOperators) {
+  const Formula f1{x_ > 0};
+  const Formula f2{y_ > 0};
+  const Bool<Expression> b1{f1};
+  const Bool<Expression> b2{f2};
+
+  EXPECT_PRED2(FormulaEqual, (b1 && b2).value(), f1 && f2);
+  EXPECT_PRED2(FormulaEqual, (b1 && f2).value(), f1 && f2);
+  EXPECT_PRED2(FormulaEqual, (f1 && b2).value(), f1 && f2);
+
+  EXPECT_PRED2(FormulaEqual, (b1 || b2).value(), f1 || f2);
+  EXPECT_PRED2(FormulaEqual, (b1 || f2).value(), f1 || f2);
+  EXPECT_PRED2(FormulaEqual, (f1 || b2).value(), f1 || f2);
+
+  EXPECT_PRED2(FormulaEqual, (!b1).value(), !f1);
 }
 
 }  // namespace drake

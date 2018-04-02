@@ -83,17 +83,17 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kVectorValued, 0, nullopt);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const std::string* ReadStringInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+  static const std::string* ReadStringInputPort(const Context<double>& context,
+                                                int index) {
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt);
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
@@ -101,8 +101,8 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt);
     return context.EvalAbstractInput(nullptr, descriptor);
   }
 

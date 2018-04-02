@@ -12,7 +12,6 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
-load("//tools/skylark:6996.bzl", "adjust_label_for_drake_hoist")
 
 _PY_VERSION = "2.7"
 

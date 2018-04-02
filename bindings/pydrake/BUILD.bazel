@@ -58,6 +58,7 @@ drake_pybind_library(
     name = "autodiffutils_py",
     cc_deps = [
         ":autodiff_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,
@@ -198,9 +199,18 @@ drake_py_unittest(
     deps = [":all_py"],
 )
 
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = 1,
+    srcs = ["test/algebra_test_util.py"],
+)
+
 drake_py_unittest(
     name = "autodiffutils_test",
-    deps = [":autodiffutils_py"],
+    deps = [
+        ":algebra_test_util_py",
+        ":autodiffutils_py",
+    ],
 )
 
 # Test ODR (One Definition Rule).
@@ -267,7 +277,10 @@ drake_py_unittest(
 drake_py_unittest(
     name = "symbolic_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [
+        ":algebra_test_util_py",
+        ":symbolic_py",
+    ],
 )
 
 drake_py_unittest(

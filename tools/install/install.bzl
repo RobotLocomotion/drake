@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
@@ -763,13 +764,12 @@ def install_test(
 
     src = "//tools/install:install_test.py"
 
-    native.py_test(
+    drake_py_unittest(
         name = name,
         size = "small",
         # Increase the timeout so that debug builds are successful.
         timeout = "long",
         srcs = [src],
-        main = src,
         deps = ["//tools/install:install_test_helper"],
         **kwargs
     )

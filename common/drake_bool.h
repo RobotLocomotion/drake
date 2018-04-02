@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 
@@ -33,7 +35,6 @@ namespace drake {
 /// }
 /// @endcode
 ///
-/// TODO(soonho-tri): Make cond compatible with Bool.
 template <typename T>
 class Bool {
  public:
@@ -58,6 +59,21 @@ class Bool {
   /// Returns a copy of its value.
   value_type value() const { return value_; }
 
+  /// Provides logical AND operator (&&).
+  ///
+  /// @note We define this operator in the class as a friend function so that
+  /// implicit conversion works as expected (i.e. Bool<T> &&
+  /// Bool<T>::value_type). See item 46 of Effective C++ (3rd ed.) for more
+  /// information.
+  friend Bool<T> operator&&(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() && b2.value()};
+  }
+
+  /// Provides logical OR operator (||).
+  friend Bool<T> operator||(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() || b2.value()};
+  }
+
  private:
   value_type value_{};
 };
@@ -67,6 +83,31 @@ class Bool {
 template <typename T>
 bool ExtractBoolOrThrow(const Bool<T>& b) {
   return bool{b.value()};
+}
+
+/// Provides logical NOT operator (!).
+template <typename T>
+Bool<T> operator!(const Bool<T>& b) {
+  return Bool<T>{!b.value()};
+}
+
+/// Allows users to use `if_then_else` with a conditional of `Bool<T>` type in
+/// addition to `Bool<T>::value_type`.
+///
+/// Note that we need to have `#include "drake/common/autodiff.h"` atop this
+/// file because, in case of T = AutoDiffXd, this template function calls
+/// another template function defined in common/autodiff.h. See
+/// https://clang.llvm.org/compatibility.html#dep_lookup for more information.
+template <typename T>
+T if_then_else(const Bool<T>& b, const T& v_then, const T& v_else) {
+  return if_then_else(b.value(), v_then, v_else);
+}
+
+/// Allows users to use `cond` with conditionals of `Bool<T>` type in addition
+/// to `Bool<T>::value_type`.
+template <typename T, typename... Rest>
+T cond(const Bool<T>& b, const T& e_then, Rest... rest) {
+  return cond(b.value(), e_then, rest...);
 }
 
 namespace assert {

@@ -85,7 +85,6 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_TRUE(sol_result == solvers::SolutionResult::kInfeasibleConstraints ||
                 sol_result ==
                     solvers::SolutionResult::kInfeasible_Or_Unbounded);
-    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
   }
 }
 }  // namespace

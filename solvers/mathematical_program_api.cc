@@ -6,7 +6,11 @@
 #include <stdexcept>
 
 // This file contains the portions of mathematical_program.h's implementation
-// that are called by MathematicalProgramSolverInterface implementations.
+// that are referred to by MathematicalProgramSolverInterface implementations.
+//
+// The MathematicalProgram destructor is listed here because the typeinfo for
+// MathematicalProgram might be needed by ...SolverInterface implementations,
+// not because they would usually destroy MathematicalProgram objects.
 
 namespace drake {
 namespace solvers {
@@ -15,6 +19,8 @@ using std::ostringstream;
 using std::runtime_error;
 
 using symbolic::Variable;
+
+MathematicalProgram::~MathematicalProgram() = default;
 
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
