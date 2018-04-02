@@ -359,6 +359,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
       .def("ToExpression", &Monomial::ToExpression)
+      .def("Evaluate",
+           [](const Monomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
@@ -419,6 +423,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__pow__",
            [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("Evaluate",
+           [](const Polynomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Jacobian", [](const Polynomial& p,
                           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return p.Jacobian(vars);

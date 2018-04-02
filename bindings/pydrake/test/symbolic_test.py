@@ -699,6 +699,25 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertEqual(basis1.size, 20)
         self.assertEqual(basis2.size, 20)
 
+    def test_evaluate(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
+        env = {x: 2.0,
+               y: 3.0}
+        self.assertEqual(m.Evaluate(env),
+                         env[x] ** 3 * env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
+
 
 class TestSymbolicPolynomial(unittest.TestCase):
     def test_default_constructor(self):
@@ -837,3 +856,24 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p1 += 1
         self.assertNotEqual(p1, p2)
         self.assertNotEqual(hash(p1), hash(p2))
+
+    def test_evaluate(self):
+        p = sym.Polynomial(a * x * x + b * x + c, [x])
+        env = {a: 2.0,
+               b: 3.0,
+               c: 5.0,
+               x: 2.0}
+        self.assertEqual(p.Evaluate(env),
+                         env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+
+    def test_evaluate_exception_np_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)
