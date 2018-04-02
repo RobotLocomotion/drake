@@ -122,10 +122,10 @@ drake_cc_library(
     srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/common:extract_double",
+        "//common:autodiff",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:extract_double",
     ],
 )
 
@@ -146,7 +146,7 @@ drake_cc_library(
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
-        "//drake/common:default_scalars",
+        "//common:default_scalars",
     ],
 )
 
