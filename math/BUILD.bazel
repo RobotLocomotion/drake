@@ -353,6 +353,7 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",
+        "//common/test_utilities",
     ],
 )
 
