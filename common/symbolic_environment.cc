@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/common/symbolic.h"
 
@@ -12,11 +13,12 @@ namespace drake {
 namespace symbolic {
 
 using std::endl;
+using std::initializer_list;
+using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
-using std::initializer_list;
 
 namespace {
 void throw_if_dummy(const Variable& var) {
@@ -48,6 +50,13 @@ Environment::Environment(const initializer_list<key_type> vars) {
   for (const auto& var : vars) {
     throw_if_dummy(var);
     map_.emplace(var, 0.0);
+  }
+}
+
+Environment::Environment(map m) : map_{move(m)} {
+  for (const auto& p : map_) {
+    throw_if_dummy(p.first);
+    throw_if_nan(p.second);
   }
 }
 

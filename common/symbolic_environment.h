@@ -76,6 +76,13 @@ class Environment {
    * Variable. Initializes the variables with 0.0. */
   Environment(std::initializer_list<key_type> vars);
 
+  /** Constructs an environment from @p m (of `map` type, which is
+   * `std::unordered_map`).
+   *
+   * @throws std::runtime_error if @p m include a dummy variable or a NaN value.
+   */
+  explicit Environment(map m);
+
   /** Returns an iterator to the beginning. */
   iterator begin() { return map_.begin(); }
   /** Returns an iterator to the end. */

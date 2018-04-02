@@ -45,6 +45,27 @@ TEST_F(EnvironmentTest, InitializerListWithoutValues) {
   }
 }
 
+TEST_F(EnvironmentTest, InitWithMap) {
+  Environment::map m;
+  m.emplace(var_x_, 3.0);
+  m.emplace(var_y_, 4.0);
+  const Expression e{var_x_ + var_y_};
+  EXPECT_EQ(e.Evaluate(Environment{m}), 7.0);
+}
+
+TEST_F(EnvironmentTest, InitWithMapExceptionDummyVariable) {
+  Environment::map m;
+  const Variable dummy;
+  m.emplace(dummy, 3.0);
+  EXPECT_THROW(Environment{m}, runtime_error);
+}
+
+TEST_F(EnvironmentTest, InitWithMapExceptionNan) {
+  Environment::map m;
+  m.emplace(var_x_, NAN);
+  EXPECT_THROW(Environment{m}, runtime_error);
+}
+
 TEST_F(EnvironmentTest, insert_find) {
   Environment env1{{var_x_, 2}, {var_y_, 3}, {var_z_, 4}};
   const Environment env2{env1};
