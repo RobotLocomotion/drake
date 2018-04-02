@@ -97,6 +97,7 @@ drake_cc_library(
     srcs = ["abstract_values.cc"],
     hdrs = ["abstract_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         "//common:autodiff",
         "//common:essential",
@@ -108,6 +109,7 @@ drake_cc_library(
     srcs = ["continuous_state.cc"],
     hdrs = ["continuous_state.h"],
     deps = [
+        ":framework_common",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
@@ -120,6 +122,7 @@ drake_cc_library(
     srcs = ["discrete_values.cc"],
     hdrs = ["discrete_values.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":vector",
         "//common:autodiff",
@@ -550,7 +553,9 @@ drake_cc_googletest(
     name = "continuous_state_test",
     deps = [
         ":continuous_state",
+        ":diagram_continuous_state",
         "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -605,6 +610,8 @@ drake_cc_googletest(
     deps = [
         ":discrete_values",
         "//common:essential",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/framework/test_utilities",
     ],
 )
 
