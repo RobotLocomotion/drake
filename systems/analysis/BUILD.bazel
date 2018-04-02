@@ -132,12 +132,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "primitive_function",
+    name = "antiderivative_function",
     srcs = [
-        "primitive_function.cc",
+        "antiderivative_function.cc",
     ],
     hdrs = [
-        "primitive_function.h",
+        "antiderivative_function.h",
     ],
     deps = [
         ":scalar_initial_value_problem",
@@ -255,10 +255,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "primitive_function_test",
+    name = "antiderivative_function_test",
     size = "small",
     deps = [
-        ":primitive_function",
+        ":antiderivative_function",
     ],
 )
 
