@@ -32,7 +32,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // quick detection of un-initialized values.
 GTEST_TEST(UnitInertia, DefaultConstructor) {
   UnitInertia<double> I;
-  ASSERT_TRUE(I.IsNaN());
+  ASSERT_TRUE(I.IsNaN().value());
 }
 
 // Test constructor for a diagonal unit inertia with all elements equal.

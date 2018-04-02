@@ -12,12 +12,13 @@
 #include <Eigen/Eigenvalues>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_bool.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace multibody {
@@ -377,17 +378,13 @@ class RotationalInertia {
 
   /// Returns `true` if any moment/product in `this` rotational inertia is NaN.
   /// Otherwise returns `false`.
-  bool IsNaN() const {
+  Bool<T> IsNaN() const {
     using std::isnan;
     // Only check the lower-triangular part of this symmetric matrix for NaN.
     // The three upper off-diagonal products of inertia should be/remain NaN.
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j <= i; ++j) {
-        DRAKE_DEMAND(is_lower_triangular_order(i, j));
-        if (isnan(I_SP_E_(i, j))) return true;
-      }
-    }
-    return false;
+    return isnan(I_SP_E_(0, 0)) ||
+        isnan(I_SP_E_(1, 0)) || isnan(I_SP_E_(1, 1)) ||
+        isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));
   }
 
   /// Returns a new %RotationalInertia object templated on `Scalar` initialized
@@ -490,7 +487,7 @@ class RotationalInertia {
   typename std::enable_if<is_numeric<T1>::value, bool>::type
 #endif
   CouldBePhysicallyValid() const {
-    if (IsNaN()) return false;
+    if (IsNaN().value()) return false;
 
     // All the moments of inertia should be non-negative, so the maximum moment
     // of inertia (which is trace / 2) should be non-negative.
