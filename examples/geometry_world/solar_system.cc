@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -20,7 +19,6 @@ namespace solar_system {
 using Eigen::Vector4d;
 using geometry::Cylinder;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
@@ -39,10 +37,6 @@ template <typename T>
 SolarSystem<T>::SolarSystem(GeometrySystem<T>* geometry_system) {
   DRAKE_DEMAND(geometry_system);
   source_id_ = geometry_system->RegisterSource("solar_system");
-  geometry_id_port_ =
-      this->DeclareAbstractOutputPort(&SolarSystem::AllocateFrameIdOutput,
-                                      &SolarSystem::CalcFrameIdOutput)
-          .get_index();
   geometry_pose_port_ =
       this->DeclareAbstractOutputPort(&SolarSystem::AllocateFramePoseOutput,
                                       &SolarSystem::CalcFramePoseOutput)
@@ -52,12 +46,6 @@ SolarSystem<T>::SolarSystem(GeometrySystem<T>* geometry_system) {
                                0 /* num_z */);
 
   AllocateGeometry(geometry_system);
-}
-
-template <typename T>
-const systems::OutputPort<T>& SolarSystem<T>::get_geometry_id_output_port()
-    const {
-  return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
 template <typename T>
@@ -257,38 +245,27 @@ FramePoseVector<T> SolarSystem<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
   DRAKE_DEMAND(source_id_.is_valid());
   DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
-  // NOTE: We initialize with the translational offset during allocation so that
-  // the `CalcFramePoseOutput` need only update the rotational component.
-  return FramePoseVector<T>(source_id_, body_offset_);
+  return FramePoseVector<T>(source_id_, kBodyCount);
 }
 
 template <typename T>
 void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
                                          FramePoseVector<T>* poses) const {
+  DRAKE_THROW_UNLESS(poses->size() == kBodyCount);
+  DRAKE_THROW_UNLESS(poses->source_id() == source_id_);
+
+
   const BasicVector<T>& state = get_state(context);
-  DRAKE_ASSERT(poses->vector().size() == body_ids_.size());
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  for (size_t i = 0; i < body_ids_.size(); ++i) {
+
+  poses->clear();
+  for (int i = 0; i < kBodyCount; ++i) {
+    Isometry3<T> pose = body_offset_[i];
     // Frames only revolve around their origin; it is only necessary to set the
     // rotation value.
-    T rot{state[i]};
-    pose_data[i].linear() = AngleAxis<T>(rot, axes_[i]).matrix();
+    T rotation{state[i]};
+    pose.linear() = AngleAxis<T>(rotation, axes_[i]).matrix();
+    poses->set_value(body_ids_[i], pose);
   }
-}
-
-template <typename T>
-FrameIdVector SolarSystem<T>::AllocateFrameIdOutput(const MyContext&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
-  FrameIdVector ids(source_id_);
-  ids.AddFrameIds(body_ids_);
-  return ids;
-}
-
-template <typename T>
-void SolarSystem<T>::CalcFrameIdOutput(const MyContext&, FrameIdVector*) const {
-  // NOTE: This only needs to do work if the topology changes. This system makes
-  // no topology changes.
 }
 
 template <typename T>

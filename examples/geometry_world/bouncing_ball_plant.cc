@@ -1,9 +1,9 @@
 #include "drake/examples/geometry_world/bouncing_ball_plant.h"
 
 #include <algorithm>
+#include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -14,7 +14,6 @@ namespace examples {
 namespace geometry_world {
 namespace bouncing_ball {
 
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
@@ -37,10 +36,6 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),
                                     &BouncingBallPlant::CopyStateToOutput)
-          .get_index();
-  geometry_id_port_ =
-      this->DeclareAbstractOutputPort(&BouncingBallPlant::AllocateFrameIdOutput,
-                                      &BouncingBallPlant::CalcFrameIdOutput)
           .get_index();
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
                                 &BouncingBallPlant::AllocateFramePoseOutput,
@@ -77,12 +72,6 @@ BouncingBallPlant<T>::get_state_output_port() const {
 
 template <typename T>
 const systems::OutputPort<T>&
-BouncingBallPlant<T>::get_geometry_id_output_port() const {
-  return systems::System<T>::get_output_port(geometry_id_port_);
-}
-
-template <typename T>
-const systems::OutputPort<T>&
 BouncingBallPlant<T>::get_geometry_pose_output_port() const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
@@ -98,33 +87,20 @@ void BouncingBallPlant<T>::CopyStateToOutput(
 template <typename T>
 FramePoseVector<T> BouncingBallPlant<T>::AllocateFramePoseOutput(
     const Context<T>&) const {
-  FramePoseVector<T> poses(source_id_);
-  poses.mutable_vector().push_back(Isometry3<T>::Identity());
-  return poses;
+  DRAKE_DEMAND(source_id_.is_valid());
+  return FramePoseVector<T> {source_id_, 1};
 }
 
 template <typename T>
 void BouncingBallPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
+  DRAKE_THROW_UNLESS(poses->size() == 1);
+  DRAKE_THROW_UNLESS(poses->source_id() == source_id_);
+  Isometry3<T> pose = Isometry3<T>::Identity();
   const BouncingBallVector<T>& state = get_state(context);
-  DRAKE_ASSERT(poses->vector().size() == 1);
-  // This assumes *no* rotation, we only need to update the translation.
-  poses->mutable_vector()[0].translation() << p_WB_(0),
-      p_WB_(1), state.z();
-  poses->mutable_vector()[0].linear() << Matrix3<T>::Identity();
-}
-
-template <typename T>
-FrameIdVector BouncingBallPlant<T>::AllocateFrameIdOutput(
-    const systems::Context<T>&) const {
-  return FrameIdVector(source_id_,
-                       std::vector<geometry::FrameId>{ball_frame_id_});
-}
-
-template <typename T>
-void BouncingBallPlant<T>::CalcFrameIdOutput(const systems::Context<T>& context,
-                                             FrameIdVector* frame_ids) const {
-  *frame_ids = AllocateFrameIdOutput(context);
+  pose.translation() << p_WB_(0), p_WB_(1), state.z();
+  poses->clear();
+  poses->set_value(ball_frame_id_, pose);
 }
 
 // Compute the actual physics.

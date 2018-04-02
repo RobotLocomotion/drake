@@ -105,10 +105,6 @@ int do_main() {
   DRAKE_DEMAND(!!acrobot.get_source_id());
 
   builder.Connect(
-      acrobot.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          acrobot.get_source_id().value()));
-  builder.Connect(
       acrobot.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(acrobot.get_source_id().value()));
 

@@ -573,13 +573,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
 
-  /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem.
-  /// @throws std::exception if this system was not registered with a
-  /// GeometrySystem.
-  /// @throws std::exception if called pre-finalize. See Finalize().
-  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
-
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
   /// @throws std::exception if this system was not registered with a
@@ -885,13 +878,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
 
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  void CalcFrameIdOutput(
-      const systems::Context<T>& context,
-      geometry::FrameIdVector* id_set) const;
-
   geometry::FramePoseVector<T> AllocateFramePoseOutput(
       const systems::Context<T>& context) const;
 
@@ -949,7 +935,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
-  // Iteraion order on this map DOES matter, and therefore we use an std::map.
+  // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
   // Vector of FrameId ordered by BodyIndex. Const post-finalize.
@@ -975,7 +961,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Port handles for geometry:
   int geometry_query_port_{-1};
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 
   // For geometry registration with a GS, we save a pointer to the GS instance
@@ -988,7 +973,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
 
-  // Temporary solution for fake cache entries to help statbilize the API.
+  // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
   std::unique_ptr<PositionKinematicsCache<T>> pc_;
   std::unique_ptr<VelocityKinematicsCache<T>> vc_;

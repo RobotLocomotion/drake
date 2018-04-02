@@ -11,18 +11,26 @@ using std::move;
 
 template <typename KinematicsValue>
 FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    SourceId source_id)
-    : source_id_(source_id) {}
+    SourceId source_id, int size)
+    : source_id_(source_id), ids_(size), data_(size), next_pose_(0) {}
 
 template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    SourceId source_id, const std::vector<KinematicsValue>& values)
-    : vector_(values), source_id_(source_id) {}
+void FrameKinematicsVector<KinematicsValue>::clear() {
+  next_pose_ = 0;
+}
 
 template <typename KinematicsValue>
-FrameKinematicsVector<KinematicsValue>::FrameKinematicsVector(
-    SourceId source_id, std::vector<KinematicsValue>&& values)
-    : vector_(move(values)), source_id_(source_id) {}
+void FrameKinematicsVector<KinematicsValue>::set_value(
+    FrameId id, const KinematicsValue& value) {
+  if (count() >= size()) {
+    throw std::runtime_error(
+        "Trying to report kinematics data for more frames "
+        "than the vector was sized for; did you forget to call clear()?");
+  }
+  ids_[next_pose_] = id;
+  data_[next_pose_] = value;
+  ++next_pose_;
+}
 
 // Explicitly instantiates on the most common scalar types.
 template class FrameKinematicsVector<Isometry3<double>>;
