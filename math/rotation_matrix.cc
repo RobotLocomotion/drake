@@ -27,9 +27,10 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
         " you are using quaternions, ensure you normalize them.", measure);
     throw std::logic_error(message);
   }
-  if (R.determinant() < 0)
+  if (R.determinant() < 0) {
     throw std::logic_error("Error: Rotation matrix determinant is negative. "
                                "It is possible a basis is left-handed");
+  }
 }
 }  // namespace math
 }  // namespace drake
