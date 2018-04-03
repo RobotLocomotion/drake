@@ -474,10 +474,10 @@ class TestSymbolicExpression(unittest.TestCase):
         self._check_scalar(sym.ceil(v_x), np.ceil(v_x))
         self._check_scalar(sym.floor(v_x), np.floor(v_x))
         self._check_scalar(
-          sym.if_then_else(
-            sym.Expression(v_x) > sym.Expression(v_y),
-            v_x, v_y),
-          v_x if v_x > v_y else v_y)
+            sym.if_then_else(
+                sym.Expression(v_x) > sym.Expression(v_y),
+                v_x, v_y),
+            v_x if v_x > v_y else v_y)
 
     def test_non_method_jacobian(self):
         # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
@@ -506,6 +506,22 @@ class TestSymbolicExpression(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
+
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x + y).Evaluate(env),
+                         env[x] + env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
 
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
@@ -551,6 +567,22 @@ class TestSymbolicFormula(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(repr(x > y), '<Formula "(x > y)">')
+
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x > y).Evaluate(env),
+                         env[x] > env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
 
 
 class TestSymbolicMonomial(unittest.TestCase):
@@ -666,6 +698,25 @@ class TestSymbolicMonomial(unittest.TestCase):
         basis2 = sym.MonomialBasis([x, y, z], 3)
         self.assertEqual(basis1.size, 20)
         self.assertEqual(basis2.size, 20)
+
+    def test_evaluate(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
+        env = {x: 2.0,
+               y: 3.0}
+        self.assertEqual(m.Evaluate(env),
+                         env[x] ** 3 * env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
 
 
 class TestSymbolicPolynomial(unittest.TestCase):
@@ -805,3 +856,24 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p1 += 1
         self.assertNotEqual(p1, p2)
         self.assertNotEqual(hash(p1), hash(p2))
+
+    def test_evaluate(self):
+        p = sym.Polynomial(a * x * x + b * x + c, [x])
+        env = {a: 2.0,
+               b: 3.0,
+               c: 5.0,
+               x: 2.0}
+        self.assertEqual(p.Evaluate(env),
+                         env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+
+    def test_evaluate_exception_np_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)

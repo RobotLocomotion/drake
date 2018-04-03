@@ -150,12 +150,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return fmt::format("<Expression \"{}\">", self.to_string());
            })
       .def("__copy__",
-           [](const Expression& self) -> Expression {
-             return self;
-           })
+           [](const Expression& self) -> Expression { return self; })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })
+      .def("Evaluate",
+           [](const Expression& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -287,6 +289,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::class_<Formula>(m, "Formula")
       .def("GetFreeVariables", &Formula::GetFreeVariables)
       .def("EqualTo", &Formula::EqualTo)
+      .def("Evaluate",
+           [](const Formula& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Substitute",
            [](const Formula& self, const Variable& var, const Expression& e) {
              return self.Substitute(var, e);
@@ -353,6 +359,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
       .def("ToExpression", &Monomial::ToExpression)
+      .def("Evaluate",
+           [](const Monomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
@@ -413,6 +423,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__pow__",
            [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("Evaluate",
+           [](const Polynomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Jacobian", [](const Polynomial& p,
                           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return p.Jacobian(vars);

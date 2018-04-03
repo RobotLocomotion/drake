@@ -57,6 +57,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
+  prog->EvalVisualizationCallbacks(xvec);
+
   auto tx = math::initializeAutoDiff(xvec);
   AutoDiffVecXd ty(1);
   AutoDiffVecXd this_x;

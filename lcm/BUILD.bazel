@@ -87,6 +87,7 @@ drake_cc_googletest(
     deps = [
         ":lcmt_drake_signal_utils",
         ":mock",
+        "//common/test_utilities",
     ],
 )
 
