@@ -59,6 +59,12 @@ class Bool {
   /// Returns a copy of its value.
   value_type value() const { return value_; }
 
+  /// Returns the true value.
+  static Bool<T> True() { return Bool{!(T(0) < T(0))}; }
+
+  /// Returns the false value.
+  static Bool<T> False() { return Bool{T(0) < T(0)}; }
+
   /// Provides logical AND operator (&&).
   ///
   /// @note We define this operator in the class as a friend function so that

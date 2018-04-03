@@ -35,6 +35,11 @@ TEST_F(BoolTestDouble, Constructor) {
   EXPECT_FALSE(v_false_);
 }
 
+TEST_F(BoolTestDouble, TrueFalse) {
+  EXPECT_TRUE(Bool<double>::True().value());
+  EXPECT_FALSE(Bool<double>::False().value());
+}
+
 TEST_F(BoolTestDouble, CopyConstructor) {
   const Bool<double> b_true_copy{b_true_};
   const Bool<double> b_false_copy{b_false_};
@@ -130,6 +135,11 @@ TEST_F(BoolTestAutoDiffXd, TypeCheck) {
                 "Bool<AutoDiffXd>::value_type should be bool");
 }
 
+TEST_F(BoolTestAutoDiffXd, TrueFalse) {
+  EXPECT_TRUE(Bool<AutoDiffXd>::True().value());
+  EXPECT_FALSE(Bool<AutoDiffXd>::False().value());
+}
+
 TEST_F(BoolTestAutoDiffXd, ExtractBoolOrThrow) {
   EXPECT_TRUE(v_true_);
   EXPECT_FALSE(v_false_);
@@ -190,6 +200,11 @@ TEST_F(BoolTestSymbolic, TypeCheck) {
   static_assert(
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
+}
+
+TEST_F(BoolTestSymbolic, TrueFalse) {
+  EXPECT_TRUE(is_true(Bool<Expression>::True().value()));
+  EXPECT_TRUE(is_false(Bool<Expression>::False().value()));
 }
 
 TEST_F(BoolTestSymbolic, ConstructFromBool) {
