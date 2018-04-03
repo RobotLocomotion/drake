@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -82,10 +83,10 @@ class RotationMatrix {
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
-  /// @note In general, the %RotationMatrix constructed by passing a non-unit
-  /// `lambda` to this method is different than the %RotationMatrix produced by
-  /// converting `lambda` to an un-normalized quaternion and calling the
-  /// %RotationMatrix constructor (above) with that un-normalized quaternion.
+  // @internal In general, the %RotationMatrix constructed by passing a non-unit
+  // `lambda` to this method is different than the %RotationMatrix produced by
+  // converting `lambda` to an un-normalized quaternion and calling the
+  // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
@@ -559,18 +560,7 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Matrix3<T>& R) {
-    if (!R.allFinite()) {
-      throw std::logic_error(
-          "Error: Rotation matrix contains an element that is infinity or "
-          "NaN.");
-    }
-    if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
-      throw std::logic_error("Error: Rotation matrix is not orthonormal.");
-    if (R.determinant() < 0)
-      throw std::logic_error("Error: Rotation matrix determinant is negative. "
-                                 "It is possible a basis is left-handed");
-  }
+  static void ThrowIfNotValid(const Matrix3<T>& R);
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently

@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -78,11 +79,40 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
 #ifdef DRAKE_ASSERT_IS_ARMED
-  // Bad matrix should throw exception.
+  // Really poor non-orthogonal matrix should throw an exception.
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                              "Error: Rotation matrix is not orthonormal.*")
+
+  // Barely non-orthogonal matrix should throw an exception.
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_THROW(RotationMatrix<double> R2(m), std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                              "Error: Rotation matrix is not orthonormal.*");
+
+  // Orthogonal matrix with determinant = -1 should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                            "Error: Rotation matrix determinant is negative.*");
+
+  // Matrix with a NaN should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
+
+  // Matrix with an infinity should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, std::numeric_limits<double>::infinity();
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
 #endif
 }
 
