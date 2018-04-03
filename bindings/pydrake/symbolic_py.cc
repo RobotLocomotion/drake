@@ -71,6 +71,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return pow(self, other);
            },
            py::is_operator())
+      // We add `EqualTo` instead of `equal_to` to maintain consistency among
+      // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
+      // side. This enables us to achieve polymorphism via ducktyping in Python.
+      .def("EqualTo", &Variable::equal_to)
       // Unary Plus.
       .def(+py::self)
       // Unary Minus.
@@ -128,6 +132,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("IsSupersetOf", &Variables::IsSupersetOf)
       .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf)
+      .def("EqualTo", [](const Variables& self,
+                         const Variables& vars) { return self == vars; })
       .def(py::self == py::self)
       .def(py::self < py::self)
       .def(py::self + py::self)
@@ -158,6 +164,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self, const Environment::map& env) {
              return self.Evaluate(Environment{env});
            })
+      .def("EqualTo", &Expression::EqualTo)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -356,6 +363,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Monomial& self) {
              return fmt::format("<Monomial \"{}\">", self);
            })
+      .def("EqualTo", [](const Monomial& self,
+                         const Monomial& monomial) { return self == monomial; })
       .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
       .def("ToExpression", &Monomial::ToExpression)
