@@ -2841,6 +2841,49 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
 
+GTEST_TEST(testMathematicalProgram, testAddCallback) {
+  MathematicalProgram prog;
+
+  auto x = prog.NewContinuousVariables<2>();
+  bool was_called = false;
+  auto my_callback = [&was_called](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(v(0), 1.);
+    EXPECT_EQ(v(1), 2.);
+    was_called = true;
+  };
+
+  Binding<VisualizationCallback> b =
+      prog.AddVisualizationCallback(my_callback, x);
+  EXPECT_EQ(prog.visualization_callbacks().size(), 1);
+
+  const Vector2d test_x(1., 2.);
+
+  // Call it via EvalVisualizationCallbacks.
+  was_called = false;
+  prog.EvalVisualizationCallbacks(test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it via EvalBinding.
+  was_called = false;
+  prog.EvalBinding(b, test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the double interface.
+  VectorXd test_y(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x, test_y);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the autodiff interface.
+  const VectorX<AutoDiffXd> test_x_autodiff =
+      math::initializeAutoDiff(VectorXd{test_x});
+  VectorX<AutoDiffXd> test_y_autodiff(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x_autodiff, test_y_autodiff);
+  EXPECT_TRUE(was_called);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

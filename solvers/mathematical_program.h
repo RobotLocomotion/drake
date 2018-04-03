@@ -194,7 +194,8 @@ enum ProgramAttributes {
   kLorentzConeConstraint = 1 << 9,
   kRotatedLorentzConeConstraint = 1 << 10,
   kPositiveSemidefiniteConstraint = 1 << 11,
-  kBinaryVariable = 1 << 12
+  kBinaryVariable = 1 << 12,
+  kCallback = 1 << 13
 };
 typedef uint32_t AttributesSet;
 
@@ -760,6 +761,45 @@ class MathematicalProgram {
    */
   void AddIndeterminates(
       const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the for the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const VariableRefList& vars) {
+    return AddVisualizationCallback(callback,
+                                    ConcatenateVariableRefList((vars)));
+  }
 
   /**
    * Adds a generic cost to the optimization program.
@@ -2227,6 +2267,14 @@ class MathematicalProgram {
   double GetLowerBoundCost() const { return lower_bound_cost_; }
 
   /**
+   * Getter for all callbacks.
+   */
+  const std::vector<Binding<VisualizationCallback>>& visualization_callbacks()
+      const {
+    return visualization_callbacks_;
+  }
+
+  /**
    * Getter for all generic costs.
    */
   const std::vector<Binding<Cost>>& generic_costs() const {
@@ -2443,6 +2491,38 @@ class MathematicalProgram {
     return binding_y;
   }
 
+  /** Evaluates all visualization callbacks registered with the
+   * MathematicalProgram.
+   *
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a logic error if the size does not match.
+   **/
+  void EvalVisualizationCallbacks(
+      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expects "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::logic_error(oss.str());
+    }
+
+    Eigen::VectorXd this_x;
+
+    for (auto const& binding : visualization_callbacks_) {
+      auto const& obj = binding.evaluator();
+
+      const int num_v_variables = binding.GetNumElements();
+      this_x.resize(num_v_variables);
+      for (int j = 0; j < num_v_variables; ++j) {
+        this_x(j) =
+            prog_var_vals(FindDecisionVariableIndex(binding.variables()(j)));
+      }
+
+      obj->EvalCallback(this_x);
+    }
+  }
+
   /**
    * Evaluates the evaluator in @p binding at the solution value.
    * @return The value of @p binding at the solution value.
@@ -2502,6 +2582,8 @@ class MathematicalProgram {
 
   std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
   VectorXIndeterminate indeterminates_;
+
+  std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
 
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
