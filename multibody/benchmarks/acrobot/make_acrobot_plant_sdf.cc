@@ -62,7 +62,7 @@ MakeAcrobotPlantSdf() {
   // Check for any errors.
   if (!errors.empty()) {
     std::string error_accumulation;
-    for (auto e : errors)
+    for (const auto& e : errors)
       error_accumulation += e.Message();
     throw std::runtime_error(error_accumulation);
   }
@@ -77,25 +77,24 @@ MakeAcrobotPlantSdf() {
   for (uint64_t link_index = 0; link_index < model->LinkCount(); ++link_index) {
     const sdf::Link* link = model->LinkByIndex(link_index);
 
-    // Get the link's inertia relative to a reference frame. The origin of
-    // the reference frame must be at the center of mass.
-    const ignition::math::Inertiald& inertia = link->Inertial();
+    // Get the link's inertia relative to the Bcm frame.
+    const ignition::math::Inertiald& I_Bcm_B = link->Inertial();
 
     // The axes of the inertial reference frame do not need to be aligned
-    // wit the principal axes of inertia.
-    ignition::math::Matrix3d moiRotated = inertia.MOI();
+    // with the principal axes of inertia.
+    const ignition::math::Matrix3d I_BBcm_Bi = I_Bcm_B.MOI();
 
     // Create the multibody inertia
     // TODO(nkoenig) Write test to verify that I'm setting this correctly.
     SpatialInertia<double> M_Bo =
       SpatialInertia<double>::MakeFromCentralInertia(
-          inertia.MassMatrix().Mass(),
-          Vector3d(inertia.Pose().Pos().X(),
-                   inertia.Pose().Pos().Y(),
-                   inertia.Pose().Pos().Z()),
+          I_Bcm_B.MassMatrix().Mass(),
+          Vector3d(I_Bcm_B.Pose().Pos().X(),
+                   I_Bcm_B.Pose().Pos().Y(),
+                   I_Bcm_B.Pose().Pos().Z()),
           RotationalInertia<double>(
-            moiRotated(0, 0), moiRotated(1, 1), moiRotated(2, 2),
-            moiRotated(1, 0), moiRotated(2, 0), moiRotated(2, 1)));
+            I_BBcm_Bi(0, 0), I_BBcm_Bi(1, 1), I_BBcm_Bi(2, 2),
+            I_BBcm_Bi(1, 0), I_BBcm_Bi(2, 0), I_BBcm_Bi(2, 1)));
 
     // Add a rigid body to model each link.
     plant->AddRigidBody(link->Name(), M_Bo);

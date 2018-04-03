@@ -12,8 +12,7 @@ namespace acrobot {
 
 /// This method makes a MultibodyPlant model for an acrobot SDF model.
 /// @throws std::runtime_error if the parsing the acrobot SDF model fails.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlantSdf();
+std::unique_ptr<multibody_plant::MultibodyPlant<double>> MakeAcrobotPlantSdf();
 }  // namespace acrobot
 }  // namespace benchmarks
 }  // namespace multibody
