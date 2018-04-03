@@ -156,6 +156,14 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "pure_hash_dict_py",
+    srcs = ["pure_hash_dict.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
@@ -164,8 +172,9 @@ PY_LIBRARIES = [
     ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
-    ":module_py",
     ":deprecation_py",
+    ":module_py",
+    ":pure_hash_dict_py",
     ":pybind11_version_py",
 ]
 
@@ -286,6 +295,13 @@ drake_py_unittest(
     name = "pybind11_version_test",
     deps = [
         ":pybind11_version_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "pure_hash_dict_test",
+    deps = [
+        ":pure_hash_dict_py",
     ],
 )
 
