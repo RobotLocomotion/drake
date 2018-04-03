@@ -280,6 +280,7 @@ drake_py_unittest(
     deps = [
         ":algebra_test_util_py",
         ":symbolic_py",
+        "//bindings/pydrake/util:pure_hash_dict_py",
     ],
 )
 
