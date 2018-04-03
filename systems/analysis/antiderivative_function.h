@@ -13,7 +13,7 @@ namespace drake {
 namespace systems {
 
 /// A thin wrapper of the ScalarInitialValueProblem class that, in concert with
-/// Drake's ODE initial value problem solvers ("integrators"), provides the
+/// Drake's ODE initial value problem solvers ("integrators"), provide the
 /// ability to perform quadrature on an arbitrary scalar integrable function.
 /// That is, it allows the evaluation of an antiderivative function F(u; 𝐤),
 /// such that F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ, 𝐤 ∈ ℝᵐ.
@@ -59,7 +59,7 @@ class AntiderivativeFunction {
   /// The set of values that, along with the function being integrated,
   /// partially specify the definite integral i.e. providing the lower
   /// integration bound v and the parameter vector 𝐤, leaving the upper
-  /// integration bound u to be set on evaluation.
+  /// integration bound u to be specified on evaluation.
   struct SpecifiedValues {
     /// Default constructor that leaves all values unspecified.
     SpecifiedValues() = default;
@@ -111,12 +111,13 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
-  /// Evaluates the definite integral over the lower integration bound v to
-  /// @p u using the parameter vector 𝐤 present in @p values, falling back
-  /// to the ones given on construction if not given.
+  /// Evaluates the definite integral over the lower integration bound v (see
+  /// definition in class documentation) to @p u using the parameter vector 𝐤
+  /// (see definition in class documentation) if present in @p values, falling
+  /// back to the ones given on construction if not given.
   ///
   /// @param u The upper integration bound.
-  /// @param values The specified values for the function.
+  /// @param values The specified values for the integration.
   /// @return The value of the definite integral.
   /// @pre The given upper integration bound @p u must be larger than or equal
   ///      to the lower integration bound v.
