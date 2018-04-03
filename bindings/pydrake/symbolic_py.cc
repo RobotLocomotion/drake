@@ -327,7 +327,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__hash__",
            [](const Formula& self) { return std::hash<Formula>{}(self); })
       .def_static("True", &Formula::True)
-      .def_static("False", &Formula::False);
+      .def_static("False", &Formula::False)
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__nonzero__` on `Formula`. If you are trying "
+            "to make a map with `Variable`, `Expression`, or `Polynomial` as "
+            "keys and access the keys, please use "
+            "`pydrake.util.containers.EqualToDict`.");
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
