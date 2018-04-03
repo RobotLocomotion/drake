@@ -1230,7 +1230,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
 // Populates `contact_results` for the time stepping calculation using the
 // geometric data (`contacts`), the time stepping problem data, and the computed
-// contact force (impulse) solution. Note: we
+// contact force (impulse) solution.
 template <typename T>
 void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     const T& dt,
@@ -1300,8 +1300,10 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     contact_result.set_contact_details(std::move(contact_details));
   }
 
-  // Convert the contact forces to generalized forces by zeroing joint limit
-  // and bilateral constraint forces first.
+  // Convert the contact forces to generalized forces by using the constraint
+  // solvers function for doing so, but first zeroing joint limit and bilateral
+  // constraint forces, in order to get *just* the generalized forces due to
+  // contact.
   VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
   VectorX<T> contact_force = constraint_force;
@@ -1444,8 +1446,12 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   contacts->set_generalized_contact_force(
       VectorX<T>::Zero(get_num_velocities()));
 
-  // This code should do nothing if the state is discrete because the compliant
-  // contact model will not be used to compute contact forces.
+  // Computing the contact forces from scratch, as is currently done for the
+  // continuous time plant, is a bad idea for the discretized plant since a
+  // mathematical programming problem must be solved. The discretized plant
+  // uses a discretized contact model, with results dependent upon the step
+  // size. Therefore, we do not use the continuous plant's contact forces,
+  // because we want better than an estimate of the contact forces.
   if (is_state_discrete()) {
     *contacts = time_stepping_contact_results_;
     return;
