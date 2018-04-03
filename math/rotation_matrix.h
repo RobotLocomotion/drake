@@ -2,12 +2,13 @@
 
 #include <cmath>
 #include <iomanip>
-#include <ios>
 #include <limits>
 #include <sstream>
 #include <string>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -86,10 +87,10 @@ class RotationMatrix {
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
-  /// @note In general, the %RotationMatrix constructed by passing a non-unit
-  /// `lambda` to this method is different than the %RotationMatrix produced by
-  /// converting `lambda` to an un-normalized quaternion and calling the
-  /// %RotationMatrix constructor (above) with that un-normalized quaternion.
+  // @internal In general, the %RotationMatrix constructed by passing a non-unit
+  // `lambda` to this method is different than the %RotationMatrix produced by
+  // converting `lambda` to an un-normalized quaternion and calling the
+  // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
@@ -574,11 +575,9 @@ class RotationMatrix {
     if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality())) {
       const T measure_of_orthonormality = GetMeasureOfOrthonormality(R);
       const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
-      std::stringstream ss;
-      ss << std::setiosflags(std::ios::scientific) << std::abs(measure);
-      std::string measure_as_string = ss.str();
       std::string message = "Error: Rotation matrix is not orthonormal."
-                  "  Measure of orthonormality error = " + measure_as_string +
+                  "  Measure of orthonormality error: " +
+                  fmt::format("{:G}", measure) +
                   " (near-zero is good).  To orthonormalize a 3x3 matrix,"
                   " use RotationMatrix::ProjectToRotationMatrix(), or if"
                   " you are using quaternions, ensure you normalize them.";
