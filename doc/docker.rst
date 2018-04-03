@@ -158,8 +158,8 @@ the bowling ball simulation.
 
 Walking through this command:
 
-* ``xhost +local`` will allow access for non-network connections to your local
-  X server and pass the necessary X11 parameters for graphical display of
+* ``xhost +local:root`` will allow access for non-network connections to your
+  local X server and pass the necessary X11 parameters for graphical display of
   programs within the Docker container.
 * ``docker-nvidia`` is an Nvidia plugin that couples with the proprietary
   Nvidia drivers and gives access to advanced features like CUDA.
@@ -173,7 +173,7 @@ Walking through this command:
   Docker container as a volume.
 * ``--privileged`` is only needed on selinux systems.
 * ``-t drake`` provides the Docker container name, and
-* ```xhost -local:root`` removes the permission given earlier for local
+* ``xhost -local:root`` removes the permission given earlier for local
   non-network connections to X.
 
 See the `Docker Run Reference
@@ -193,9 +193,9 @@ where you may want to try various demonstrations, e.g.:
 ::
  
   $ cd /drake
-  $ bazel run //drake/examples/contact_model:bowling_ball
-  $ bazel run //drake/examples/kuka_iiwa_arm:kuka_simulation
-  $ bazel run //drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
+  $ bazel run //examples/contact_model:bowling_ball
+  $ bazel run //examples/kuka_iiwa_arm:kuka_simulation
+  $ bazel run //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 
 
 Note: these are currently not rendering properly due to VTK .obj/.mtl importing.
