@@ -125,6 +125,11 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(2, clone.get_discrete_state().num_groups());
   const BasicVector<double>& xd0 = clone.get_discrete_state().get_vector(0);
   const BasicVector<double>& xd1 = clone.get_discrete_state().get_vector(1);
+
+  // Check that sugar methods work too.
+  EXPECT_EQ(&clone.get_discrete_state(0), &xd0);
+  EXPECT_EQ(&clone.get_discrete_state(1), &xd1);
+
   {
     VectorX<double> contents = xd0.CopyToVector();
     VectorX<double> expected(1);
@@ -286,6 +291,11 @@ TEST_F(LeafContextTest, Clone) {
   xd1.SetAtIndex(0, 1024.0);
   EXPECT_EQ(1024.0, clone->get_discrete_state(1).GetAtIndex(0));
   EXPECT_EQ(256.0, context_.get_discrete_state(1).GetAtIndex(0));
+
+  // Check State indexed discrete methods too.
+  State<double>& state = clone->get_mutable_state();
+  EXPECT_EQ(1024.0, state.get_discrete_state(1).GetAtIndex(0));
+  EXPECT_EQ(1024.0, state.get_mutable_discrete_state(1).GetAtIndex(0));
 
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
