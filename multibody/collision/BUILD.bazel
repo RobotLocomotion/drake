@@ -71,6 +71,7 @@ drake_cc_library(
         "fcl_model.cc",
         "fcl_model.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
         "//common:unused",
