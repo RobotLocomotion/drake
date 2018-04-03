@@ -1,0 +1,38 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "model_tree_node",
+    srcs = [
+        "model_tree_node.cc",
+    ],
+    hdrs = [
+        "model_tree_node.h",
+    ],
+    deps = [
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//multibody/joints",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "model_tree_node_test",
+    deps = [
+        ":model_tree_node",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()
