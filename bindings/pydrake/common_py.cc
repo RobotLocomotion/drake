@@ -54,7 +54,9 @@ PYBIND11_MODULE(_common_py, m) {
   m.def("temp_directory", &temp_directory,
         "Returns a directory location suitable for temporary files that is "
         "the value of the environment variable TEST_TMPDIR if defined or "
-        "otherwise /tmp. Any trailing / will be stripped from the output.");
+        "otherwise ${TMPDIR:-/tmp}/robotlocomotion_drake_XXXXXX where each X "
+        "is replaced by a character from the portable filename character set. "
+        "Any trailing / will be stripped from the output.");
   // Returns the fully-qualified path to the root of the `drake` source tree.
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
