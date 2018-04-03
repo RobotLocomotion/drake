@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
@@ -192,12 +193,10 @@ class SpatialInertia {
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
-  bool IsNaN() const {
+  Bool<T> IsNaN() const {
     using std::isnan;
-    if (isnan(mass_)) return true;
-    if (G_SP_E_.IsNaN()) return true;
-    if (p_PScm_E_.array().isNaN().any()) return true;
-    return false;
+    return isnan(mass_) || G_SP_E_.IsNaN() ||
+        isnan(p_PScm_E_[0]) || isnan(p_PScm_E_[1]) || isnan(p_PScm_E_[2]);
   }
 
   /// Performs a number of checks to verify that this is a physically valid
@@ -215,9 +214,16 @@ class SpatialInertia {
   /// RotationalInertia::CouldBePhysicallyValid() which become a sufficient
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
+  /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  bool IsPhysicallyValid() const {
-    if (IsNaN()) return false;
+#ifdef DRAKE_DOXYGEN_CXX
+  bool
+#else
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value, bool>::type
+#endif
+  IsPhysicallyValid() const {
+    if (IsNaN().value()) return false;
     if (mass_ < T(0)) return false;
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
@@ -225,6 +231,18 @@ class SpatialInertia {
     if (!G_SScm_E.CouldBePhysicallyValid()) return false;
     return true;  // All tests passed.
   }
+
+  // This method throws an exception for non-numeric types.
+  // @tparam T1 SFINAE boilerplate.
+#ifndef DRAKE_DOXYGEN_CXX
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value, Bool<T>>::type
+  IsPhysicallyValid() const {
+    throw std::logic_error(
+        "SpatialInertia<T>::IsPhysicallyValid() only works with types that are "
+        "drake::is_numeric.");
+  }
+#endif
 
   /// Copy to a full 6x6 matrix representation.
   Matrix6<T> CopyToFullMatrix6() const {

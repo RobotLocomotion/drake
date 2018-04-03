@@ -383,6 +383,12 @@ class RotationalInertia {
     using std::isnan;
     // Only check the lower-triangular part of this symmetric matrix for NaN.
     // The three upper off-diagonal products of inertia should be/remain NaN.
+    static_assert(is_lower_triangular_order(0, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
     return isnan(I_SP_E_(0, 0)) ||
         isnan(I_SP_E_(1, 0)) || isnan(I_SP_E_(1, 1)) ||
         isnan(I_SP_E_(2, 0)) || isnan(I_SP_E_(2, 1)) || isnan(I_SP_E_(2, 2));

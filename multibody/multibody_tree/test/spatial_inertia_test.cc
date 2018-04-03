@@ -29,7 +29,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
   SpatialInertia<double> I;
-  ASSERT_TRUE(I.IsNaN());
+  ASSERT_TRUE(I.IsNaN().value());
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
@@ -63,9 +63,9 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 
   EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, kEpsilon));
 
-  EXPECT_FALSE(M.IsNaN());
+  EXPECT_FALSE(M.IsNaN().value());
   M.SetNaN();
-  EXPECT_TRUE(M.IsNaN());
+  EXPECT_TRUE(M.IsNaN().value());
 }
 
 // Tests that we can correctly cast a SpatialInertia<double> to a
