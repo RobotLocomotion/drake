@@ -156,16 +156,25 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "containers_py",
+    srcs = ["containers.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
 
 PY_LIBRARIES = [
+    ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
-    ":module_py",
     ":deprecation_py",
+    ":module_py",
     ":pybind11_version_py",
 ]
 
@@ -286,6 +295,13 @@ drake_py_unittest(
     name = "pybind11_version_test",
     deps = [
         ":pybind11_version_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "containers_test",
+    deps = [
+        ":containers_py",
     ],
 )
 
