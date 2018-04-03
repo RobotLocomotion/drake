@@ -21,6 +21,9 @@
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+
 namespace drake {
 namespace examples {
 namespace multibody {
@@ -36,7 +39,7 @@ DEFINE_string(integration_scheme, "runge_kutta2",
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
 
-DEFINE_double(simulation_time, 10.0,
+DEFINE_double(simulation_time, 1.0,
               "Desired duration of the simulation in seconds.");
 
 using Eigen::AngleAxisd;
@@ -49,6 +52,9 @@ using lcm::DrakeLcm;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
+using drake::multibody::RigidBody;
+using drake::multibody::SpatialVelocity;
+using drake::multibody::SpatialInertia;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
@@ -81,6 +87,7 @@ int do_main() {
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
+  const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
 
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
@@ -138,11 +145,10 @@ int do_main() {
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
   Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
-  Isometry3d X_WB = Isometry3d::Identity();
-  X_WB.linear() = R_WB;
-  X_WB.translation() = Vector3d(0.0, 0.0, z0);
-  model.SetFreeBodyPoseOrThrow(
-      model.GetBodyByName("Ball"), X_WB, &plant_context);
+  Isometry3d X0_WB = Isometry3d::Identity();
+  X0_WB.linear() = R_WB;
+  X0_WB.translation() = Vector3d(0.0, 0.0, z0);
+  model.SetFreeBodyPoseOrThrow(ball, X0_WB, &plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -212,6 +218,20 @@ int do_main() {
   DRAKE_DEMAND(integrator->get_num_substep_failures() == 0);
   DRAKE_DEMAND(
       integrator->get_num_step_shrinkages_from_substep_failures() == 0);
+
+  // Compute the kinetic energy of B (in frame W) from V_WB.
+  const SpatialVelocity<double>& V_WB =
+      model.EvalBodySpatialVelocityInWorld(plant_context, ball);
+  const SpatialInertia<double> M_Bo_W = ball.default_spatial_inertia();
+  const double ke_WB = 0.5 * V_WB.dot(M_Bo_W * V_WB);
+  const Isometry3<double>& X_WB =
+      model.EvalBodyPoseInWorld(plant_context, ball);
+
+  const double Ve = model.CalcPotentialEnergy(plant_context);
+
+  PRINT_VAR(ke_WB);
+  PRINT_VAR(Ve);
+  PRINT_VAR(X_WB.translation().transpose());
 
   return 0;
 }

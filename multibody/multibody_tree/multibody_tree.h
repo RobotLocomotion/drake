@@ -777,6 +777,15 @@ class MultibodyTree {
     return get_body(it->second);
   }
 
+  const RigidBody<T>& GetRigidBodyByName(const std::string& name) const {
+    const RigidBody<T>* body =
+        dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name));
+    if (body == nullptr) {
+      throw std::logic_error("Body '" + name + "' is not a RigidBody.");
+    }
+    return *body;
+  }
+
   /// Returns a constant reference to the joint that is uniquely identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no joint with the requested name.
