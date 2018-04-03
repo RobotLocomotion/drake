@@ -5,8 +5,6 @@
 #include <string>
 
 #include <Eigen/Dense>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -562,29 +560,7 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Matrix3<T>& R) {
-    if (!R.allFinite()) {
-      throw std::logic_error(
-          "Error: Rotation matrix contains an element that is infinity or "
-          "NaN.");
-    }
-    // If the matrix is not-orthogonal, try to give a detailed message.
-    // This is particularly important if matrix is very-near orthogonal.
-    if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality())) {
-      const T measure_of_orthonormality = GetMeasureOfOrthonormality(R);
-      const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
-      std::string message = "Error: Rotation matrix is not orthonormal."
-                  "  Measure of orthonormality error: " +
-                  fmt::format("{:G}", measure) +
-                  " (near-zero is good).  To orthonormalize a 3x3 matrix,"
-                  " use RotationMatrix::ProjectToRotationMatrix(), or if"
-                  " you are using quaternions, ensure you normalize them.";
-      throw std::logic_error(message);
-    }
-    if (R.determinant() < 0)
-      throw std::logic_error("Error: Rotation matrix determinant is negative. "
-                                 "It is possible a basis is left-handed");
-  }
+  static void ThrowIfNotValid(const Matrix3<T>& R);
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
