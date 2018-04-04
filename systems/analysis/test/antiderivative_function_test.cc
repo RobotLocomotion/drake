@@ -1,6 +1,4 @@
-/* clang-format off to disable clang-format-includes */
 #include "drake/systems/analysis/antiderivative_function.h"
-/* clang-format on */
 
 #include <gtest/gtest.h>
 
@@ -20,7 +18,7 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
 
   // The lower integration bound v, for function definition.
   const double kDefaultLowerIntegrationBound = 0.0;
-  // The default parameters 𝐤₀, for function definition.
+  // The default parameters 𝐤, for function definition.
   const VectorX<double> kDefaultParameters =
       VectorX<double>::Constant(2, 1.0);
   // All specified values by default, for function definition.
@@ -34,7 +32,7 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
       }, kDefaultValues);
 
   // Testing against closed form solution of above's integral, which
-  // can be written as F(u; 𝐤) = k₁/2 * u^2 + k₂ * u for the specified
+  // can be written as F(u; 𝐤) = k₀/2 * u^2 + k₁ * u for the specified
   // integration lower bound.
   const double u1 = kDefaultLowerIntegrationBound + 10.0;
   const VectorX<double>& k1 = kDefaultParameters;
@@ -59,7 +57,7 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
   AntiderivativeFunction<double>::SpecifiedValues values;
   values.k = k2;
   // Testing against closed form solution of above's integral, which
-  // can be written as F(u; 𝐤) = k₁/2 * u^2 + k₂ * u for the specified
+  // can be written as F(u; 𝐤) = k₀/2 * u^2 + k₁ * u for the specified
   // integration lower bound.
   EXPECT_NEAR(
       antiderivative_f.Evaluate(u2, values),
@@ -71,14 +69,14 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
 GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   // The lower integration bound v, for function definition.
   const double kDefaultLowerIntegrationBound = 0.0;
-  // The default parameters 𝐤₀, for function definition.
+  // The default parameters 𝐤, for function definition.
   const VectorX<double> kDefaultParameters =
       VectorX<double>::Constant(2, 1.0);
   // All specified values by default, for function definition.
   const AntiderivativeFunction<double>::SpecifiedValues kDefaultValues(
       kDefaultLowerIntegrationBound, kDefaultParameters);
 
-  // Defines a antiderivative function for f(x; 𝐤) = k₁ * x + k₂.
+  // Defines a antiderivative function for f(x; 𝐤) = k₀ * x + k₁.
   const AntiderivativeFunction<double> antiderivative_f(
       [](const double& x, const VectorX<double>& k) -> double {
         return k[0] * x + k[1];
@@ -161,7 +159,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of
-      // the integral, which is (n + 1)⁻¹ uⁿ⁺¹.
+      // the definite integral, which is (n + 1)⁻¹ uⁿ⁺¹.
       const double exact_solution = std::pow(u, n + 1.) / (n + 1.);
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
                   exact_solution, integration_accuracy_)
@@ -207,7 +205,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
       // Tests are performed against the closed form solution of
-      // the integral, which is a⁻¹ ln(cosh(a⋅u)).
+      // the definite integral, which is a⁻¹ ln(cosh(a ⋅ u)).
       const double exact_solution = std::log(std::cosh(a * u)) / a;
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
                   exact_solution, integration_accuracy_)
@@ -259,8 +257,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
       values.k = (VectorX<double>(2) << a, b).finished();
       for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
            u += kArgStep) {
-        // Tests are performed against the closed form solution of
-        // the integral, which is (b - a)⁻¹ ln [(u + a) / (u + b)].
+        // Tests are performed against the closed form solution of the definite
+        // integral, which is (b - a)⁻¹ ln [(b / a) ⋅ (u + a) / (u + b)].
         const double exact_solution =
             std::log((b / a) * ((u + a) / (u + b))) / (b - a);
         EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
@@ -306,8 +304,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
     values.k = VectorX<double>::Constant(1, n).eval();
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
-      // Tests are performed against the closed form solution of
-      // the integral, which is (u/n - 1/n^2) * e^(n*u).
+      // Tests are performed against the closed form solution of the definite
+      // integral, which is (u / n - 1 / n²) ⋅ e^(n ⋅ u) + 1 / n².
       const double exact_solution =
           (u / n - 1. / (n * n)) * std::exp(n * u) + 1. / (n * n);
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),
@@ -352,8 +350,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
     values.k = VectorX<double>::Constant(1, a).eval();
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
-      // Tests are performed against the closed form solution of
-      // the integral, which is -u⋅cos(a⋅u)/a + sin(a⋅u) / a².
+      // Tests are performed against the closed form solution of the definite
+      // integral, which is -u ⋅ cos(a ⋅ u) / a + sin(a ⋅ u) / a².
       const double exact_solution =
           -u * std::cos(a * u) / a + std::sin(a * u) / (a * a);
       EXPECT_NEAR(antiderivative_function.Evaluate(u, values),

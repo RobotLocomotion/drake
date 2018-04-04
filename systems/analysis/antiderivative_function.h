@@ -25,18 +25,18 @@ namespace systems {
 /// For further insight into its use, consider the following examples.
 ///
 /// - Solving the elliptic integral of the first kind
-///   F(φ; ξ) = ∫ᵠ √(1 - ξ² sin² θ)⁻¹ dθ becomes straightforward by defining
-///   f(x; 𝐤) ≜ √(1 - k₁² sin² x)⁻¹ with 𝐤 ≜ [ξ] and evaluating F(u; 𝐤) at
+///   E(φ; ξ) = ∫ᵠ √(1 - ξ² sin² θ)⁻¹ dθ becomes straightforward by defining
+///   f(x; 𝐤) ≜ √(1 - k₀² sin² x)⁻¹ with 𝐤 ≜ [ξ] and evaluating F(u; 𝐤) at
 ///   u = φ.
 ///
 /// - As the bearings in a rotating machine age over time, these are more likely
 ///   to fail. Let γ be a random variable describing the time to first bearing
-///   failure, described by a family of probability density functions fᵧ(y; l)
+///   failure, described by a family of probability density functions gᵧ(y; l)
 ///   parameterized by bearing load l. In this context, the probability of a
 ///   bearing under load to fail during the first N months becomes
-///   P(0 < γ ≤ N mo.; l) = Fᵧ(N mo.; l) - Fᵧ(0; l), where Fᵧ(y; l) is the
+///   P(0 < γ ≤ N mo.; l) = Gᵧ(N mo.; l) - Gᵧ(0; l), where Gᵧ(y; l) is the
 ///   family of cumulative density functions, parameterized by bearing load l,
-///   and F'ᵧ(y; l) = fᵧ(y; l). Therefore, defining f(x; 𝐤) ≜ fᵧ(x; k₁) with
+///   and G'ᵧ(y; l) = gᵧ(y; l). Therefore, defining f(x; 𝐤) ≜ gᵧ(x; k₀) with
 ///   𝐤 ≜ [l] and evaluating F(u; 𝐤) at u = N yields the result.
 ///
 /// @tparam T The ℝ domain scalar type, which must be a valid Eigen scalar.
