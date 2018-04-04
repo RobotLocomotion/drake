@@ -71,5 +71,23 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
 Binding<LinearConstraint> CreateLogicalXorConstraint(
     const symbolic::Expression& b1, const symbolic::Expression& b2,
     const symbolic::Expression& b1_xor_b2);
+
+/** Create linear constraints such that, when these constraints are satisfied,
+ * match = 1 if and only if code == expected, otherwise match = 0
+ * @param code code(i) should only take binary values.
+ * @param expected The expected matched value for code.
+ * @param match an expression that takes binary value, representing if
+ * code == expected
+ * @return the linear constraints.
+ *
+ * This function is useful integer optimization, for example, if we have a
+ * constraint match = ((b1 == 0) && (b2 == 1) && (b3 == 1)), we can call the
+ * function CreateBinaryCodeMatchConstraint({b1, b2, b3}, {0, 1, 1}, match) to
+ * create the constraint.
+ */
+Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(
+    const VectorX<symbolic::Expression>& code,
+    const Eigen::Ref<const Eigen::VectorXi>& expected,
+    const symbolic::Expression& match);
 }  // namespace solvers
 }  // namespace drake
