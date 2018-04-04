@@ -185,7 +185,7 @@ bool IsFeasibleCheck(
 
   return (prog->Solve() == kSolutionFound);
 }
-
+/*
 GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
   MathematicalProgram prog;
   auto R = NewRotationMatrixVars(&prog);
@@ -220,7 +220,7 @@ GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
           std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
                     Eigen::Matrix<double, 9, 1>>>::value,
       "Incorrect type.");
-}
+}*/
 
 class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
  public:
