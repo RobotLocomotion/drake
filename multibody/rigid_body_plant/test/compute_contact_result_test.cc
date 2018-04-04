@@ -107,7 +107,17 @@ TEST_P(ContactResultTest, Touching) {
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
-// Confirms a contact result for two colliding spheres.
+// Confirms a contact result for two colliding spheres. Note that some care is
+// required to compare the contact results from the discrete and continuous
+// models. The continuous model computes the instantaneous force resulting from
+// a particular deformation, while the discrete model computes the *constant
+// force that would be applied over interval h*, where h is the time step. The
+// discretized plant's attempts to normalize the contact force outputs by
+// dividing the impulsive force by h.
+//
+// However, even that scaling is insufficient for this test, because the
+// discretized plant also uses h to determine how much force to apply to
+// eliminate the deformation in a single step of time h.
 TEST_P(ContactResultTest, SingleCollision) {
   double offset = 0.1;
   auto& contact_results = RunTest(-offset);
@@ -135,14 +145,6 @@ TEST_P(ContactResultTest, SingleCollision) {
   // Note: This is fragile. It assumes a particular collision model.  Once the
   // model has been generalized, this will have to adapt to account for that.
 
-  // Establish the scaling factor necessary for the impulses, which have already
-  // been averaged to be interpreted as forces, to be _instantaneously_
-  // comparable to non-impulsive forces. This is necessary because the smaller
-  // the time step, the larger the magnitude of the instantaneous force that
-  // results from the conversion of impulsive forces: this result follows from
-  // the relationship impulse = force * time.
-  const double impulsive_scaling = GetParam() ? plant_->get_time_step() : 1;
-
   // NOTE: the *effective* Young's modulus of the contact is half of the
   // material Young's modulus.
   const double effective_elasticity = kContactYoungsModulus * 0.5;
@@ -151,15 +153,13 @@ TEST_P(ContactResultTest, SingleCollision) {
   // the offset.
   double force = effective_elasticity * offset * 2;
   expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
-  ASSERT_TRUE(
-      CompareMatrices(resultant.get_spatial_force() * impulsive_scaling,
-                      expected_spatial_force));
+  ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
+              expected_spatial_force));
 
   const auto& details = info.get_contact_details();
   ASSERT_EQ(details.size(), 1u);
   auto detail_force = details[0]->ComputeContactForce();
-  ASSERT_TRUE(CompareMatrices(
-      detail_force.get_spatial_force() * impulsive_scaling,
+  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
       expected_spatial_force));
   Vector3<double> expected_point;
   expected_point << x_anchor_, 0, 0;

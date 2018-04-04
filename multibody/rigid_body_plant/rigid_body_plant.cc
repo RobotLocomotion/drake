@@ -1312,7 +1312,7 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     }
 
     ++normal_force_index;
-    const ContactForce<T> resultant_force(p_W, contact.normal, force / dt);
+    const ContactForce<T> resultant_force(p_W, contact.normal, force);
     contact_result.set_resultant_force(resultant_force);
     contact_details.emplace_back(new PointContactDetail<T>(resultant_force));
     contact_result.set_contact_details(std::move(contact_details));
