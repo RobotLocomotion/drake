@@ -47,11 +47,9 @@ class ContactResultTest : public ContactResultTestCommon<double>,
   // Runs the test on the RigidBodyPlant.
   const ContactResults<double>& RunTest(double distance) {
     // Set the time step, based on whether the continuous or discrete model is
-    // used. The nonzero value is arbitrary. The absurdly low step size is
-    // necessary for the test to pass to the requisite precision (the force
-    // depends on the step size).
-    // TODO(edrumwri): Reference constraint documentation which explains the
-    // cfm / erp relationship.
+    // used. The contact forces from the discretized plant match better as the
+    // step size gets smaller. 1e-18 is necessary to get the contact force
+    // outputs to match to the requested accuracy.
     const double timestep = (GetParam()) ? 1e-18 : 0.0;
 
     // Populate the plant.
@@ -107,17 +105,7 @@ TEST_P(ContactResultTest, Touching) {
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
-// Confirms a contact result for two colliding spheres. Note that some care is
-// required to compare the contact results from the discrete and continuous
-// models. The continuous model computes the instantaneous force resulting from
-// a particular deformation, while the discrete model computes the *constant
-// force that would be applied over interval h*, where h is the time step. The
-// discretized plant's attempts to normalize the contact force outputs by
-// dividing the impulsive force by h.
-//
-// However, even that scaling is insufficient for this test, because the
-// discretized plant also uses h to determine how much force to apply to
-// eliminate the deformation in a single step of time h.
+// Confirms a contact result for two colliding spheres.
 TEST_P(ContactResultTest, SingleCollision) {
   double offset = 0.1;
   auto& contact_results = RunTest(-offset);
