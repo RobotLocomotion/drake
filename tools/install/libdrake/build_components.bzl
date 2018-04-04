@@ -146,7 +146,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/collision:bullet_collision",
     "//multibody/collision:collision",
     "//multibody/collision:collision_api",
-    "//multibody/collision:fcl_collision",
     "//multibody/collision:model",
     "//multibody/constraint:constraint",
     "//multibody/constraint:constraint_solver",
