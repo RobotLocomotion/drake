@@ -11,17 +11,19 @@ namespace drake {
 namespace solvers {
 namespace {
 
-// Floating point comparison tolerance.
-const double epsilon = 5e-14;
+const double epsilon = 1e-6;
 
-// Run the solver and test against the expected result.
+/// Run all non-regularized solvers.  If @p expected_z is an empty
+/// vector, outputs will only be compared against each other.
 template <typename Derived>
-void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-            const Eigen::VectorXd& expected_z_in) {
+void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+                 const Eigen::VectorXd& expected_z_in) {
   UnrevisedLemkeSolver<double> l;
 
   Eigen::VectorXd expected_z = expected_z_in;
 
+  // NOTE: We don't necessarily expect the unregularized fast solver to succeed,
+  //       hence we don't test the result.
   Eigen::VectorXd lemke_z;
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &lemke_z, &num_pivots);
@@ -29,6 +31,68 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
   EXPECT_GT(num_pivots, 0);
+}
+
+/// Run all regularized solvers.  If @p expected_z is an empty
+/// vector, outputs will only be compared against each other.
+template <typename Derived>
+void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
+                       const Eigen::VectorXd& q,
+                       const Eigen::VectorXd& expected_z_in) {
+/*
+  UnrevisedLemkeSolver<double> l;
+  l.SetLoggingEnabled(verbose);
+
+  Eigen::VectorXd expected_z = expected_z_in;
+
+  Eigen::VectorXd fast_z;
+  bool result = l.SolveLcpFastRegularized(M, q, &fast_z);
+  if (expected_z.size() == 0) {
+    expected_z = fast_z;
+  } else {
+    if (expect_fast_pass) {
+      ASSERT_TRUE(result);
+      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
+                                  MatrixCompareType::absolute))
+          << "expected: " << expected_z << " actual " << fast_z << std::endl;
+    } else {
+      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
+                                   MatrixCompareType::absolute));
+    }
+  }
+
+  Eigen::VectorXd lemke_z;
+  result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+*/
+}
+
+/// Run all solvers.  If @p expected_z is an empty
+/// vector, outputs will only be compared against each other.
+template <typename Derived>
+void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+            const Eigen::VectorXd& expected_z_in) {
+  RunBasicLcp(M, q, expected_z_in);
+  RunRegularizedLcp(M, q, expected_z_in);
+}
+
+GTEST_TEST(testUnrevisedLCP, testCottle) {
+  Eigen::Matrix<double, 3, 3> M;
+
+  // clang-format off
+  M <<
+    0, -1, 2,
+    2, 0, -2,
+    -1, 1, 0;
+  // clang-format on
+
+  Eigen::Matrix<double, 3, 1> q;
+  q << -3, 6, -1;
+
+  Eigen::VectorXd expected_z(3);
+  expected_z << 0, 1, 3;
+  RunBasicLcp(M, q, expected_z);
 }
 
 GTEST_TEST(testUnrevisedLCP, testCycling) {
@@ -46,20 +110,34 @@ GTEST_TEST(testUnrevisedLCP, testCycling) {
 
   Eigen::VectorXd expected_z(3);
   expected_z << 1.0/3, 1.0/3, 1.0/3;
-  runLCP(M, q, expected_z);
+  RunBasicLcp(M, q, expected_z);
 }
 
 GTEST_TEST(testUnrevisedLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
-  M = (Eigen::Matrix<double, 9, 1>() << 1, 2, 3, 4, 5, 6, 7, 8, 9).
-      finished().asDiagonal();
+  // clang-format off
+  M <<
+      1, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 2, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 3, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 4, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 5, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 6, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 7, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 8, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 9;
+  // clang-format on
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd expected_z(9);
   expected_z << 1, 1.0/2, 1.0/3, 1.0/4, 1.0/5, 1.0/6, 1.0/7, 1.0/8, 1.0/9;
-  runLCP(M, q, expected_z);
+  RunBasicLcp(M, q, expected_z);
+
+  // Mangle the input matrix so that some regularization occurs.
+  M(0, 8) = 10;
+  RunRegularizedLcp(M, q, expected_z);
 }
 
 GTEST_TEST(testUnrevisedLCP, testProblem1) {
@@ -142,7 +220,7 @@ GTEST_TEST(testUnrevisedLCP, testProblem4) {
 
   UnrevisedLemkeSolver<double> l;
 
-  // The Lemke solvers find no solution at all.
+// TODO(sammy-tri) the Lemke solvers find no solution at all, however.
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &z, &num_pivots);
   EXPECT_FALSE(result);
@@ -201,6 +279,11 @@ GTEST_TEST(testUnrevisedLCP, testEmpty) {
   bool result = l.SolveLcpLemke(empty_M, empty_q, &z, &num_pivots);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
+/*
+  result = l.SolveLcpLemkeRegularized(empty_M, empty_q, &z);
+  EXPECT_TRUE(result);
+  EXPECT_EQ(z.size(), 0);
+*/
 }
 
 // Verifies that z is zero on LCP solver failure.
@@ -222,6 +305,10 @@ GTEST_TEST(testUnrevisedLCP, testFailure) {
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);
   EXPECT_FALSE(constraint.CheckSatisfied(z));
+
+  // Note: we do not test regularized solvers here, as we're specifically
+  // interested in algorithm failure and the regularized solvers are designed
+  // not to fail.
 }
 
 }  // namespace

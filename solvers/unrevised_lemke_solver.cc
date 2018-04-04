@@ -27,8 +27,10 @@ namespace solvers {
 
 namespace {
 
-// Linear system solver class that allows the LCP solver to function even
-// when built to support AutoDiff types.
+// A linear system solver that accommodates the inability of the LU
+// factorization to be AutoDiff'd (true in Eigen 3, at least). For double types,
+// the faster LU factorization and solve is used. For other types, QR
+// factorization and solve is used.
 template <class T>
 class LinearSolver {
  public:
@@ -95,7 +97,8 @@ MatrixX<double> LinearSolver<double>::Solve(
   return lu_.solve(m);
 }
 
-// Checks whether z = 0 solves the LCP.
+// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
+// solves the LCP.
 template <typename Scalar>
 bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
                        VectorX<Scalar>* z) {
@@ -108,24 +111,35 @@ bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
   return false;
 }
 
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in` to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
-template <typename Derived, typename T>
-void SelectSubMatrix(const Eigen::MatrixBase<Derived>& in,
-                     const std::vector<int>& rows,
-                     const std::vector<int>& cols, MatrixX<T>* out) {
-  const int num_rows = rows.size();
-  const int num_cols = cols.size();
-  out->resize(num_rows, num_cols);
+// Function for checking whether a set of indices that specify a view into
+// a vector is valid.
+bool ValidateIndices(const std::vector<int>& row_indices, int vector_size) {
+  // Don't check anything for empty vectors.
+  if (row_indices.empty())
+    return true;
 
-  for (int i = 0; i < num_rows; i++) {
-    const auto row_in = in.row(rows[i]);
-    auto row_out = out->row(i);
-    for (int j = 0; j < num_cols; j++)
-      row_out(j) = row_in(cols[j]);
-  }
+  // Sort the vector first.
+  std::vector<int> sorted_row_indices = row_indices;
+  std::sort(sorted_row_indices.begin(), sorted_row_indices.end());
+
+  // Validate the maximum and minimum elements.
+  if (sorted_row_indices.back() >= vector_size)
+    return false;
+  if (sorted_row_indices.front() < 0)
+    return false;
+
+  // Make sure that the vector is unique.
+  return std::unique(sorted_row_indices.begin(), sorted_row_indices.end()) ==
+         sorted_row_indices.end();
+}
+
+// Function for checking whether a set of indices that specify a view into
+// a matrix is valid.
+bool ValidateIndices(
+    const std::vector<int>& row_indices,
+    const std::vector<int>& col_indices, int num_rows, int num_cols) {
+  return ValidateIndices(row_indices, num_rows) &&
+         ValidateIndices(col_indices, num_cols);
 }
 
 // Utility function for copying part of a matrix (designated by the indices
@@ -139,10 +153,14 @@ void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
                      const std::vector<int>& cols, MatrixX<T>* out) {
   const int num_rows = rows.size();
   const int num_cols = cols.size();
+  DRAKE_ASSERT(ValidateIndices(rows, cols, in.rows(), in.cols() + 1));
   out->resize(num_rows, num_cols);
 
   for (int i = 0; i < num_rows; i++) {
     const auto row_in = in.row(rows[i]);
+
+    // row_out is a "view" into out: any modifications to row_out are reflected
+    // in out.
     auto row_out = out->row(i);
     for (int j = 0; j < num_cols; j++) {
       if (cols[j] < in.cols()) {
@@ -321,6 +339,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSetsHelper(
 // Determines the various index sets.
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
+  // Clear all sets.
   index_sets_.alpha.clear();
   index_sets_.bar_alpha.clear();
   index_sets_.alpha_prime.clear();
@@ -345,6 +364,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
 template <class T>
 bool UnrevisedLemkeSolver<T>::IsEachUnique(
     const std::vector<LCPVariable>& vars) {
+  // Copy the set.
   std::vector<LCPVariable> vars_copy = vars;
   std::sort(vars_copy.begin(), vars_copy.end());
   return (std::unique(vars_copy.begin(), vars_copy.end()) == vars_copy.end());
@@ -400,6 +420,7 @@ void UnrevisedLemkeSolver<T>::LemkePivot(
   // Set the components of q'.
   SetSubVector(index_sets_.beta_prime, q_prime_beta_prime_, q_prime);
   SetSubVector(index_sets_.bar_alpha_prime, q_prime_bar_alpha_prime_, q_prime);
+
   DRAKE_SPDLOG_DEBUG(log(), "q': {}", q_prime->transpose());
 
   // If it is not necessary to compute the column of M, quit now.
@@ -741,4 +762,3 @@ SolverId UnrevisedLemkeSolverId::id() {
 // Instantiate templates.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::solvers::UnrevisedLemkeSolver)
-
