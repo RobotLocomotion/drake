@@ -925,6 +925,8 @@ class LeafSystem : public System<T> {
   /// function, and with a unique pointer to the event that is to be dispatched
   /// when this witness function triggers. Example types of event objects are
   /// publish, discrete variable update, unrestricted update events.
+  /// A clone of the event will be owned by the newly constructed
+  /// WitnessFunction.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
       const std::string& description,
