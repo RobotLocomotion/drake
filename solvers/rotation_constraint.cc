@@ -1240,23 +1240,16 @@ void GetCRposAndCRnegForLogarithmicBinning(
     std::vector<Matrix3<Expression>>* CRneg) {
   DRAKE_DEMAND(is_power_of_two(num_intervals_per_half_axis));
 
-  const auto gray_codes = math::CalculateReflectedGrayCodes(
-      CeilLog2(num_intervals_per_half_axis) + 1);
-
-  // CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k+1)
-  // <=> B[i][j] represents num_interval_per_half_axis + k in reflected Gray
-  // code.
-  // CRneg[k](i, j) = 1 <=> -phi(k+1) <= R(i, j) <= -phi(k)
-  // <=> B[i][j] represents num_interval_per_half_axis - k - 1 in reflected Gray
-  // code.
   if (num_intervals_per_half_axis > 1) {
-    CRpos->reserve(num_intervals_per_half_axis);
-    CRneg->reserve(num_intervals_per_half_axis);
+    const auto gray_codes = math::CalculateReflectedGrayCodes(
+        CeilLog2(num_intervals_per_half_axis) + 1);
+    CRpos->resize(num_intervals_per_half_axis);
+    CRneg->resize(num_intervals_per_half_axis);
     for (int k = 0; k < num_intervals_per_half_axis; ++k) {
-      CRpos->push_back(prog->NewContinuousVariables<3, 3>(
-          "CRpos[" + std::to_string(k) + "]"));
-      CRneg->push_back(prog->NewContinuousVariables<3, 3>(
-          "CRneg[" + std::to_string(k) + "]"));
+      (*CRpos)[k] = prog->NewContinuousVariables<3, 3>("CRpos[" +
+                                                       std::to_string(k) + "]");
+      (*CRneg)[k] = prog->NewContinuousVariables<3, 3>("CRneg[" +
+                                                       std::to_string(k) + "]");
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
           prog->AddConstraint(CreateBinaryCodeMatchConstraint(
@@ -1285,16 +1278,17 @@ void GetCRposAndCRnegForLogarithmicBinning(
 }
 
 template <typename T>
-void GetCRposAndCRnegForLinearBinning(
-    const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
-    MathematicalProgram* prog, std::vector<Matrix3<Expression>>* CRpos,
-    std::vector<Matrix3<Expression>>* CRneg) {
+void GetCRposAndCRnegForLinearBinning(const std::array<std::array<T, 3>, 3>& B,
+                                      int num_intervals_per_half_axis,
+                                      MathematicalProgram* prog,
+                                      std::vector<Matrix3<Expression>>* CRpos,
+                                      std::vector<Matrix3<Expression>>* CRneg) {
   CRpos->resize(num_intervals_per_half_axis);
   CRneg->resize(num_intervals_per_half_axis);
 
   // CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k + 1)
   //   <=> B[i][j](num_interval_per_half_axis + k) = 1
-  // CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k) 
+  // CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k)
   //   <=> B[i][j](num_interval_per_half_axis - k - 1) = 1
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
