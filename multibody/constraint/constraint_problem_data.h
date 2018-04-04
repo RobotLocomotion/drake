@@ -20,10 +20,12 @@ namespace constraint {
 /// the second time derivative of such constraint equations (i.e., c̈(q,v,v̇))
 /// yields a far more manageable Index-1 DAE, again with regard to computation.
 /// This structure stores problem data for computing dynamics under such
-/// acceleration-level constraints.
+/// constraints and others (nonholonomic constraints, Coulomb friction
+/// constraints, etc.)
 ///
 /// <h3>Definition of variables specific to this class</h3>
-/// (See @ref variable_definitions) for the more general set of definitions).
+/// (See @ref constraint_variable_defs) for the more general set of
+/// definitions).
 /// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
 ///           that p = s + y, where p is the number of points of contact.
 /// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
@@ -228,11 +230,9 @@ struct ConstraintAccelProblemData {
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
   /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
   VectorX<T> gammaF;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
   /// This ℝᴺ vector represents the diagonal matrix γᴱ.
   VectorX<T> gammaE;
   /// @}
@@ -278,7 +278,6 @@ struct ConstraintAccelProblemData {
   /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
   /// This ℝˢ vector represents the diagonal matrix γᴸ.
   VectorX<T> gammaL;
   /// @}
