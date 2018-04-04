@@ -779,6 +779,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
   /// @}
 
+  void set_stiction_tolerance(double v_stiction) {
+    penalty_method_contact_parameters_.v_stiction_tolerance = v_stiction;
+    penalty_method_contact_parameters_.inv_v_stiction_tolerance =
+        1.0 / v_stiction;
+  }
+
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
   /// @throws if called pre-finalize. See Finalize().
@@ -961,7 +967,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
     optional<double> gravity;
-    // Stiction velocity tolerance. Defaults to 1 mm/s.
+    // Stiction velocity tolerance for the Stribeck model. Defaults to 1 mm/s.
     double v_stiction_tolerance{0.001};
     // Note: this is the *inverse* of the v_stiction_tolerance parameter to
     // optimize for the division.

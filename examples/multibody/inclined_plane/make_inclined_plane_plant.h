@@ -28,7 +28,9 @@ namespace bouncing_ball {
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(
-    double radius, double mass, double slope, double gravity,
+    double radius, double mass, double slope,
+    const drake::multibody::multibody_plant::CoulombFrictionCoefficients&
+    surface_friction, double gravity,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 
 }  // namespace bouncing_ball

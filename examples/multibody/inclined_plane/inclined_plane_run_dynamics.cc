@@ -34,13 +34,18 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-DEFINE_string(integration_scheme, "runge_kutta2",
+DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are: "
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
+DEFINE_double(integration_accuracy, 0.001, "Integration accuracy.");
 
 DEFINE_double(simulation_time, 1.0,
               "Desired duration of the simulation in seconds.");
+
+DEFINE_double(static_friction, 0.5, "Static friction coefficient.");
+DEFINE_double(dynamic_friction, 0.3, "Dynamic friction coefficient.");
+DEFINE_double(stiction_tolerance, 0.001, "Stribeck model stiction tolerance.");
 
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
@@ -49,6 +54,7 @@ using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
@@ -72,21 +78,24 @@ int do_main() {
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
-  const double target_accuracy = 0.001;
+  const double target_accuracy = FLAGS_integration_accuracy;
 
   // Plant's parameters.
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
   const double g = 9.81;        // m/s^2
   const double slope = 15.0 / 180 * M_PI;  // rad.
-  const double z0 = 0.0;        // Initial height.
+  const CoulombFrictionCoefficients surface_friction(FLAGS_static_friction,
+                                                     FLAGS_dynamic_friction);
+  const double z0 = -0.005;        // Initial height.
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeInclinedPlanePlant(
-          radius, mass, slope, g, &geometry_system));
+          radius, mass, slope, surface_friction, g, &geometry_system));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
+  plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
   const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
 
   // Hint the integrator's time step based on the contact time scale.
@@ -232,6 +241,7 @@ int do_main() {
   PRINT_VAR(ke_WB);
   PRINT_VAR(Ve);
   PRINT_VAR(X_WB.translation().transpose());
+  PRINT_VAR(V_WB);
 
   return 0;
 }

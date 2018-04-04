@@ -10,6 +10,7 @@ namespace bouncing_ball {
 using geometry::GeometrySystem;
 using geometry::Sphere;
 using geometry::HalfSpace;
+using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
@@ -18,7 +19,9 @@ using drake::multibody::UnitInertia;
 using Eigen::AngleAxisd;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeInclinedPlanePlant(double radius, double mass, double slope, double gravity,
+MakeInclinedPlanePlant(double radius, double mass, double slope,
+                       const CoulombFrictionCoefficients& surface_friction,
+                       double gravity,
                        geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);
 
@@ -42,15 +45,15 @@ MakeInclinedPlanePlant(double radius, double mass, double slope, double gravity,
 
   // A half-space for the inclined plane geometry.
   plant->RegisterCollisionGeometry(
-      plant->world_body(),
-      HalfSpace::MakePose(normal_W, point_W), HalfSpace(), geometry_system);
+      plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
+      surface_friction, geometry_system);
 
   // Add sphere geometry for the ball.
   plant->RegisterCollisionGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
-      Isometry3<double>::Identity(),
-      Sphere(radius), geometry_system);
+      Isometry3<double>::Identity(), Sphere(radius), surface_friction,
+      geometry_system);
 
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
