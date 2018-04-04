@@ -275,6 +275,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/framework:diagram_builder",
     "//systems/framework:diagram_context",
     "//systems/framework:diagram_continuous_state",
+    "//systems/framework:diagram_discrete_values",
     "//systems/framework:discrete_values",
     "//systems/framework:event_collection",
     "//systems/framework:framework",
