@@ -141,8 +141,8 @@ drake_cc_library(
     ],
     deps = [
         ":scalar_initial_value_problem",
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
