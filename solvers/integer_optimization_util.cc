@@ -44,5 +44,29 @@ Binding<LinearConstraint> CreateLogicalXorConstraint(
                                     b1_xor_b2 <= 1));
       // clang-format on
 }
+
+Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(
+    const VectorX<symbolic::Expression>& code,
+    const Eigen::Ref<const Eigen::VectorXi>& expected,
+    const symbolic::Expression& match) {
+  DRAKE_ASSERT(code.rows() == expected.rows());
+  // If the elementwise and of match_and = 1, then code = expected.
+  VectorX<symbolic::Expression> match_and(code.rows());
+  symbolic::Formula f = match >= 0 && match <= 1;
+  for (int i = 0; i < code.rows(); ++i) {
+    // match_and(i) = 1 iff code(i) == expected(i)
+    if (expected(i) == 1) {
+      match_and(i) = code(i);
+    } else if (expected(i) == 0) {
+      match_and(i) = 1 - code(i);
+    } else {
+      throw std::logic_error("expected should only contain either 0 or 1.");
+    }
+    f = f && match <= match_and(i);
+  }
+  f = f && match >= match_and.sum() - (code.rows() - 1);
+  return internal::BindingDynamicCast<LinearConstraint>(
+      internal::ParseConstraint(f));
+}
 }  // namespace solvers
 }  // namespace drake
