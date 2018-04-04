@@ -624,6 +624,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
+
+  // TODO(edrumwri): Add test coverage to complete #8490.
+  redetermine_active_witnesses_ = true;
 }
 
 template <class T>
@@ -661,7 +664,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 
   // Integration with error control isolation window determination.
   if (!accuracy) {
-    throw std::logic_error("Integrator is not operating in fixed step mode"
+    throw std::logic_error("Integrator is not operating in fixed step mode "
                                "and accuracy is not set in the context.");
   }
 
@@ -850,7 +853,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   fn->get_name(), context.get_time());
+                   fn->description(), context.get_time());
 
       // Skip witness functions that have no associated event.
       if (!fn->get_event())

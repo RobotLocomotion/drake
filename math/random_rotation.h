@@ -19,6 +19,7 @@ namespace math {
 /// Mervin E. Muller. 1959. A note on a method for generating points
 /// uniformly on n-dimensional spheres. Commun. ACM 2, 4 (April 1959), 19-20.
 /// DOI=http://dx.doi.org/10.1145/377939.377946
+// TODO(mitiguy) change this method so it returns an Eigen::AxisAngle.
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector4d UniformlyRandomAxisAngle(Generator& generator) {
@@ -35,6 +36,7 @@ Eigen::Vector4d UniformlyRandomAxisAngle(Generator& generator) {
 /// Generates a rotation (in the quaternion representation) that rotates a
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
+// TODO(mitiguy) change this method so it returns an Eigen::Quaternion.
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector4d UniformlyRandomQuat(Generator& generator) {
@@ -44,10 +46,16 @@ Eigen::Vector4d UniformlyRandomQuat(Generator& generator) {
 /// Generates a rotation (in the rotation matrix representation) that rotates a
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
+// TODO(mitiguy) change this method so it returns a RotationMatrix.
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Matrix3d UniformlyRandomRotmat(Generator& generator) {
-  return axis2rotmat(UniformlyRandomAxisAngle(generator));
+  const Eigen::Vector4d axis_angle = UniformlyRandomAxisAngle(generator);
+  const Eigen::Vector3d lambda = axis_angle.head<3>();
+  const double theta = axis_angle(3);
+  const Eigen::AngleAxis<double> angle_axis(theta, lambda);
+  const RotationMatrix<double> R(angle_axis);
+  return R.matrix();
 }
 
 /// Generates a rotation (in the roll-pitch-yaw representation) that rotates a

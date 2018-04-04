@@ -45,6 +45,7 @@ drake_cc_library(
         ":sorted_vectors_have_intersection",
         ":symbolic",
         ":symbolic_decompose",
+        ":temp_directory",
         ":type_safe_index",
         ":unused",
     ],
@@ -356,6 +357,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "temp_directory",
+    srcs = ["temp_directory.cc"],
+    hdrs = ["temp_directory.h"],
+    deps = [
+        ":essential",
+        "@spruce",
+    ],
+)
+
+drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
@@ -659,6 +670,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hash_test",
+    deps = [
+        ":hash",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_less_than_comparable_test",
     deps = [
         ":is_less_than_comparable",
@@ -932,6 +950,14 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "temp_directory_test",
+    deps = [
+        ":temp_directory",
+        "@spruce",
     ],
 )
 

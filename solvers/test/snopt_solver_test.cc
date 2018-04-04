@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -88,7 +89,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   EXPECT_EQ(result, SolutionResult::kIterationLimit);
 
   // This is to verify we can set the print out file.
-  std::string print_file = std::string(::getenv("TEST_TMPDIR")) + "/snopt.out";
+  std::string print_file = temp_directory() + "/snopt.out";
   std::cout << print_file << std::endl;
   EXPECT_FALSE(spruce::path(print_file).exists());
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);

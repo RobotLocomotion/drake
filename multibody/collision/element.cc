@@ -22,13 +22,13 @@ Element::Element(const DrakeShapes::Geometry& geometry_in,
 }
 
 Element::Element(const Isometry3d& T_element_to_link,
-                 const RigidBody<double>* body)
+                 const ::RigidBody<double>* body)
     : DrakeShapes::Element(T_element_to_link), body_(body) {
 }
 
 Element::Element(const DrakeShapes::Geometry& geometry_in,
                  const Isometry3d& T_element_to_link,
-                 const RigidBody<double>* body)
+                 const ::RigidBody<double>* body)
     : DrakeShapes::Element(geometry_in, T_element_to_link), body_(body) {
 }
 
@@ -41,9 +41,9 @@ ElementId Element::getId() const {
   return reinterpret_cast<ElementId>(this);
 }
 
-const RigidBody<double>* Element::get_body() const { return body_; }
+const ::RigidBody<double>* Element::get_body() const { return body_; }
 
-void Element::set_body(const RigidBody<double> *body) { body_ = body; }
+void Element::set_body(const ::RigidBody<double> *body) { body_ = body; }
 
 bool Element::CanCollideWith(const Element* other) const {
   // Determines if the elements filter each other via filter *groups*. The

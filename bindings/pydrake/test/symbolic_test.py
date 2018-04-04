@@ -4,6 +4,8 @@ from __future__ import absolute_import, division, print_function
 import unittest
 import numpy as np
 import pydrake.symbolic as sym
+from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
+from copy import copy
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -92,6 +94,10 @@ class TestSymbolicVariable(unittest.TestCase):
     def test_neg(self):
         self.assertEqual(str(-(x + 1)), "(-1 - x)")
 
+    def test_equalto(self):
+        self.assertTrue(x.EqualTo(x))
+        self.assertFalse(x.EqualTo(y))
+
     def test_logical(self):
         self.assertEqual(str(sym.logical_not(x == 0)),
                          "!((x = 0))")
@@ -109,6 +115,28 @@ class TestSymbolicVariable(unittest.TestCase):
                          "((y = 2) and (x >= 1) and (x <= 2))")
         self.assertEqual(str(sym.logical_or(x >= 1, x <= 2, y == 2)),
                          "((y = 2) or (x >= 1) or (x <= 2))")
+
+    def test_functions_with_variable(self):
+        self.assertEqual(str(sym.abs(x)), "abs(x)")
+        self.assertEqual(str(sym.exp(x)), "exp(x)")
+        self.assertEqual(str(sym.sqrt(x)), "sqrt(x)")
+        self.assertEqual(str(sym.pow(x, y)), "pow(x, y)")
+        self.assertEqual(str(sym.sin(x)), "sin(x)")
+        self.assertEqual(str(sym.cos(x)), "cos(x)")
+        self.assertEqual(str(sym.tan(x)), "tan(x)")
+        self.assertEqual(str(sym.asin(x)), "asin(x)")
+        self.assertEqual(str(sym.acos(x)), "acos(x)")
+        self.assertEqual(str(sym.atan(x)), "atan(x)")
+        self.assertEqual(str(sym.atan2(x, y)), "atan2(x, y)")
+        self.assertEqual(str(sym.sinh(x)), "sinh(x)")
+        self.assertEqual(str(sym.cosh(x)), "cosh(x)")
+        self.assertEqual(str(sym.tanh(x)), "tanh(x)")
+        self.assertEqual(str(sym.min(x, y)), "min(x, y)")
+        self.assertEqual(str(sym.max(x, y)), "max(x, y)")
+        self.assertEqual(str(sym.ceil(x)), "ceil(x)")
+        self.assertEqual(str(sym.floor(x)), "floor(x)")
+        self.assertEqual(str(sym.if_then_else(x > y, x, y)),
+                         "(if (x > y) then x else y)")
 
 
 class TestSymbolicVariables(unittest.TestCase):
@@ -155,6 +183,13 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_include(self):
         vars = sym.Variables([x, y, z])
         self.assertTrue(vars.include(y))
+
+    def test_equalto(self):
+        vars1 = sym.Variables([x, y, z])
+        vars2 = sym.Variables([y, z])
+        vars3 = sym.Variables([x, y, z])
+        self.assertTrue(vars1.EqualTo(vars3))
+        self.assertFalse(vars1.EqualTo(vars2))
 
     def test_to_string(self):
         vars = sym.Variables()
@@ -221,75 +256,154 @@ class TestSymbolicVariables(unittest.TestCase):
 
 
 class TestSymbolicExpression(unittest.TestCase):
-    def test_addition(self):
-        self.assertEqual(str(e_x + e_y), "(x + y)")
-        self.assertEqual(str(e_x + y), "(x + y)")
-        self.assertEqual(str(e_x + 1), "(1 + x)")
-        self.assertEqual(str(x + e_y), "(x + y)")
-        self.assertEqual(str(1 + e_x), "(1 + x)")
+    def _check_scalar(self, actual, expected):
+        self.assertIsInstance(actual, sym.Expression)
+        # Chain conversion to ensure equivalent treatment.
+        if isinstance(expected, float) or isinstance(expected, int):
+            expected = sym.Expression(expected)
+        if isinstance(expected, sym.Expression):
+            expected = str(expected)
+        self.assertIsInstance(expected, str)
+        self.assertEqual(str(actual), expected)
 
-    def test_addition_assign(self):
-        e = x
-        e += e_y
-        self.assertEqual(e, x + y)
-        e += z
-        self.assertEqual(e, x + y + z)
+    def _check_array(self, actual, expected):
+        self.assertEqual(actual.shape, expected.shape)
+        for a, b in zip(actual.flat, expected.flat):
+            self._check_scalar(a, b)
+
+    def _check_algebra(self, algebra):
+        xv = algebra.to_algebra(x)
+        yv = algebra.to_algebra(y)
+        zv = algebra.to_algebra(z)
+        wv = algebra.to_algebra(w)
+        av = algebra.to_algebra(a)
+        bv = algebra.to_algebra(b)
+        cv = algebra.to_algebra(c)
+        e_xv = algebra.to_algebra(e_x)
+        e_yv = algebra.to_algebra(e_y)
+
+        # Addition.
+        algebra.check_value(e_xv + e_yv, "(x + y)")
+        algebra.check_value(e_xv + yv, "(x + y)")
+        algebra.check_value(e_xv + 1, "(1 + x)")
+        algebra.check_value(xv + e_yv, "(x + y)")
+        algebra.check_value(1 + e_xv, "(1 + x)")
+
+        # - In place.
+        e = copy(xv)
+        e += e_yv
+        algebra.check_value(e, "(x + y)")
+        e += zv
+        algebra.check_value(e, "(x + y + z)")
         e += 1
-        self.assertEqual(e, x + y + z + 1)
+        algebra.check_value(e, "(1 + x + y + z)")
 
-    def test_subtract(self):
-        self.assertEqual(str(e_x - e_y), "(x - y)")
-        self.assertEqual(str(e_x - y), "(x - y)")
-        self.assertEqual(str(e_x - 1), "(-1 + x)")
-        self.assertEqual(str(x - e_y), "(x - y)")
-        self.assertEqual(str(1 - e_x), "(1 - x)")
+        # Subtraction.
+        algebra.check_value((e_xv - e_yv), "(x - y)")
+        algebra.check_value((e_xv - yv), "(x - y)")
+        algebra.check_value((e_xv - 1), "(-1 + x)")
+        algebra.check_value((xv - e_yv), "(x - y)")
+        algebra.check_value((1 - e_xv), "(1 - x)")
 
-    def test_subtract_assign(self):
-        e = x
-        e -= e_y
-        self.assertEqual(e, x - y)
-        e -= z
-        self.assertEqual(e, x - y - z)
+        # - In place.
+        e = copy(xv)
+        e -= e_yv
+        algebra.check_value(e, (x - y))
+        e -= zv
+        algebra.check_value(e, (x - y - z))
         e -= 1
-        self.assertEqual(e, x - y - z - 1)
+        algebra.check_value(e, (x - y - z - 1))
 
-    def test_multiplication(self):
-        self.assertEqual(str(e_x * e_y), "(x * y)")
-        self.assertEqual(str(e_x * y), "(x * y)")
-        self.assertEqual(str(e_x * 1), "x")
-        self.assertEqual(str(x * e_y), "(x * y)")
-        self.assertEqual(str(1 * e_x), "x")
+        # Multiplication.
+        algebra.check_value((e_xv * e_yv), "(x * y)")
+        algebra.check_value((e_xv * yv), "(x * y)")
+        algebra.check_value((e_xv * 1), "x")
+        algebra.check_value((xv * e_yv), "(x * y)")
+        algebra.check_value((1 * e_xv), "x")
 
-    def test_multiplication_assign(self):
-        e = x
-        e *= e_y
-        self.assertEqual(e, x * y)
-        e *= z
-        self.assertEqual(e, x * y * z)
+        # - In place.
+        e = copy(xv)
+        e *= e_yv
+        algebra.check_value(e, "(x * y)")
+        e *= zv
+        algebra.check_value(e, "(x * y * z)")
         e *= 1
-        self.assertEqual(e, x * y * z)
+        algebra.check_value(e, "(x * y * z)")
 
-    def test_division(self):
-        self.assertEqual(str(e_x / e_y), "(x / y)")
-        self.assertEqual(str(e_x / y), "(x / y)")
-        self.assertEqual(str(e_x / 1), "x")
-        self.assertEqual(str(x / e_y), "(x / y)")
-        self.assertEqual(str(1 / e_x), "(1 / x)")
+        # Division
+        algebra.check_value((e_xv / e_yv), (x / y))
+        algebra.check_value((e_xv / yv), (x / y))
+        algebra.check_value((e_xv / 1), "x")
+        algebra.check_value((xv / e_yv), (x / y))
+        algebra.check_value((1 / e_xv), (1 / x))
 
-    def test_division_assign(self):
-        e = x
-        e /= e_y
-        self.assertEqual(e, x / y)
-        e /= z
-        self.assertEqual(e, x / y / z)
+        # - In place.
+        e = copy(xv)
+        e /= e_yv
+        algebra.check_value(e, (x / y))
+        e /= zv
+        algebra.check_value(e, (x / y / z))
         e /= 1
-        self.assertEqual(e, x / y / z)
+        algebra.check_value(e, ((x / y) / z))
 
-    def test_unary_operators(self):
-        self.assertEqual(str(+e_x), "x")
-        self.assertEqual(str(-e_x), "(-1 * x)")
+        # Unary
+        algebra.check_value((+e_xv), "x")
+        algebra.check_value((-e_xv), "(-1 * x)")
+
+        # Math functions.
+        algebra.check_value((algebra.abs(e_xv)), "abs(x)")
+        algebra.check_value((algebra.exp(e_xv)), "exp(x)")
+        algebra.check_value((algebra.sqrt(e_xv)), "sqrt(x)")
+        algebra.check_value((algebra.pow(e_xv, e_yv)), "pow(x, y)")
+        algebra.check_value((algebra.sin(e_xv)), "sin(x)")
+        algebra.check_value((algebra.cos(e_xv)), "cos(x)")
+        algebra.check_value((algebra.tan(e_xv)), "tan(x)")
+        algebra.check_value((algebra.arcsin(e_xv)), "asin(x)")
+        algebra.check_value((algebra.arccos(e_xv)), "acos(x)")
+        algebra.check_value((algebra.arctan2(e_xv, e_yv)), "atan2(x, y)")
+        algebra.check_value((algebra.sinh(e_xv)), "sinh(x)")
+        algebra.check_value((algebra.cosh(e_xv)), "cosh(x)")
+        algebra.check_value((algebra.tanh(e_xv)), "tanh(x)")
+        algebra.check_value((algebra.ceil(e_xv)), "ceil(x)")
+        algebra.check_value((algebra.floor(e_xv)), "floor(x)")
+
+        if isinstance(algebra, ScalarAlgebra):
+            # TODO(eric.cousineau): Uncomment these lines if we can teach numpy
+            # that reduction is not just selection.
+            algebra.check_value((algebra.min(e_xv, e_yv)), "min(x, y)")
+            algebra.check_value((algebra.max(e_xv, e_yv)), "max(x, y)")
+            # TODO(eric.cousineau): Add broadcasting functions for these
+            # operations.
+            algebra.check_value((sym.atan(e_xv)), "atan(x)")
+            algebra.check_value((sym.if_then_else(e_xv > e_yv, e_xv, e_yv)),
+                                "(if (x > y) then x else y)")
+
+        return xv, e_xv
+
+    def test_scalar_algebra(self):
+        xv, e_xv = self._check_algebra(
+            ScalarAlgebra(
+                self._check_scalar, scalar_to_float=lambda x: x.Evaluate()))
+        self.assertIsInstance(xv, sym.Variable)
+        self.assertIsInstance(e_xv, sym.Expression)
+
+    def test_array_algebra(self):
+        xv, e_xv = self._check_algebra(
+            VectorizedAlgebra(
+                self._check_array,
+                scalar_to_float=lambda x: x.Evaluate()))
+        self.assertEquals(xv.shape, (2,))
+        self.assertIsInstance(xv[0], sym.Variable)
+        self.assertEquals(e_xv.shape, (2,))
+        self.assertIsInstance(e_xv[0], sym.Expression)
+
+    def test_equalto(self):
+        self.assertTrue((x + y).EqualTo(x + y))
+        self.assertFalse((x + y).EqualTo(x - y))
 
     def test_relational_operators(self):
+        # TODO(eric.cousineau): Use `VectorizedAlgebra` overloads once #8315 is
+        # resolved.
         # Expression rop Expression
         self.assertEqual(str(e_x < e_y), "(x < y)")
         self.assertEqual(str(e_x <= e_y), "(x <= y)")
@@ -330,76 +444,55 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(str(1 == e_y), "(y = 1)")
         self.assertEqual(str(1 != e_y), "(y != 1)")
 
+    def test_relation_operators_array_8135(self):
+        # Indication of #8135.
+        e_xv = np.array([e_x, e_x])
+        e_yv = np.array([e_y, e_y])
+        # N.B. In some versions of NumPy, `!=` for dtype=object implies ID
+        # comparison (e.g. `is`).
+        value = (e_xv == e_yv)
+        # Ideally, this would be an array of formulas.
+        self.assertEqual(value.dtype, bool)
+        self.assertFalse(isinstance(value[0], sym.Formula))
+        self.assertTrue(value.all())
+
     def test_functions_with_float(self):
+        # TODO(eric.cousineau): Use concrete values once vectorized methods are
+        # supported.
         v_x = 1.0
         v_y = 1.0
-        self.assertEqual(sym.abs(v_x), np.abs(v_x))
-        self.assertEqual(sym.exp(v_x), np.exp(v_x))
-        self.assertEqual(sym.sqrt(v_x), np.sqrt(v_x))
-        self.assertEqual(sym.pow(v_x, v_y), v_x ** v_y)
-        self.assertEqual(sym.sin(v_x), np.sin(v_x))
-        self.assertEqual(sym.cos(v_x), np.cos(v_x))
-        self.assertEqual(sym.tan(v_x), np.tan(v_x))
-        self.assertEqual(sym.asin(v_x), np.arcsin(v_x))
-        self.assertEqual(sym.acos(v_x), np.arccos(v_x))
-        self.assertEqual(sym.atan(v_x), np.arctan(v_x))
-        self.assertEqual(sym.atan2(v_x, v_y), np.arctan2(v_x, v_y))
-        self.assertEqual(sym.sinh(v_x), np.sinh(v_x))
-        self.assertEqual(sym.cosh(v_x), np.cosh(v_x))
-        self.assertEqual(sym.tanh(v_x), np.tanh(v_x))
-        self.assertEqual(sym.min(v_x, v_y), min(v_x, v_y))
-        self.assertEqual(sym.max(v_x, v_y), max(v_x, v_y))
-        self.assertEqual(sym.ceil(v_x), np.ceil(v_x))
-        self.assertEqual(sym.floor(v_x), np.floor(v_x))
-        self.assertEqual(
-          sym.if_then_else(
-            sym.Expression(v_x) > sym.Expression(v_y),
-            v_x, v_y),
-          v_x if v_x > v_y else v_y)
-
-    def test_functions_with_variable(self):
-        self.assertEqual(str(sym.abs(x)), "abs(x)")
-        self.assertEqual(str(sym.exp(x)), "exp(x)")
-        self.assertEqual(str(sym.sqrt(x)), "sqrt(x)")
-        self.assertEqual(str(sym.pow(x, y)), "pow(x, y)")
-        self.assertEqual(str(sym.sin(x)), "sin(x)")
-        self.assertEqual(str(sym.cos(x)), "cos(x)")
-        self.assertEqual(str(sym.tan(x)), "tan(x)")
-        self.assertEqual(str(sym.asin(x)), "asin(x)")
-        self.assertEqual(str(sym.acos(x)), "acos(x)")
-        self.assertEqual(str(sym.atan(x)), "atan(x)")
-        self.assertEqual(str(sym.atan2(x, y)), "atan2(x, y)")
-        self.assertEqual(str(sym.sinh(x)), "sinh(x)")
-        self.assertEqual(str(sym.cosh(x)), "cosh(x)")
-        self.assertEqual(str(sym.tanh(x)), "tanh(x)")
-        self.assertEqual(str(sym.min(x, y)), "min(x, y)")
-        self.assertEqual(str(sym.max(x, y)), "max(x, y)")
-        self.assertEqual(str(sym.ceil(x)), "ceil(x)")
-        self.assertEqual(str(sym.floor(x)), "floor(x)")
-        self.assertEqual(str(sym.if_then_else(x > y, x, y)),
-                         "(if (x > y) then x else y)")
-
-    def test_functions_with_expression(self):
-        self.assertEqual(str(sym.abs(e_x)), "abs(x)")
-        self.assertEqual(str(sym.exp(e_x)), "exp(x)")
-        self.assertEqual(str(sym.sqrt(e_x)), "sqrt(x)")
-        self.assertEqual(str(sym.pow(e_x, e_y)), "pow(x, y)")
-        self.assertEqual(str(sym.sin(e_x)), "sin(x)")
-        self.assertEqual(str(sym.cos(e_x)), "cos(x)")
-        self.assertEqual(str(sym.tan(e_x)), "tan(x)")
-        self.assertEqual(str(sym.asin(e_x)), "asin(x)")
-        self.assertEqual(str(sym.acos(e_x)), "acos(x)")
-        self.assertEqual(str(sym.atan(e_x)), "atan(x)")
-        self.assertEqual(str(sym.atan2(e_x, e_y)), "atan2(x, y)")
-        self.assertEqual(str(sym.sinh(e_x)), "sinh(x)")
-        self.assertEqual(str(sym.cosh(e_x)), "cosh(x)")
-        self.assertEqual(str(sym.tanh(e_x)), "tanh(x)")
-        self.assertEqual(str(sym.min(e_x, e_y)), "min(x, y)")
-        self.assertEqual(str(sym.max(e_x, e_y)), "max(x, y)")
-        self.assertEqual(str(sym.ceil(e_x)), "ceil(x)")
-        self.assertEqual(str(sym.floor(e_x)), "floor(x)")
-        self.assertEqual(str(sym.if_then_else(e_x > e_y, e_x, e_y)),
-                         "(if (x > y) then x else y)")
+        # WARNING: If these math functions have `float` overloads that return
+        # `float`, then `assertEqual`-like tests are meaningful (current state,
+        # and before `math` overloads were introduced).
+        # If these math functions implicitly cast `float` to `Expression`, then
+        # `assertEqual` tests are meaningless, as it tests `__nonzero__` for
+        # `Formula`, which will always be True.
+        self.assertEqual(sym.abs(v_x), 0.5*np.abs(v_x))
+        self.assertNotEqual(str(sym.abs(v_x)), str(0.5*np.abs(v_x)))
+        self._check_scalar(sym.abs(v_x), np.abs(v_x))
+        self._check_scalar(sym.abs(v_x), np.abs(v_x))
+        self._check_scalar(sym.exp(v_x), np.exp(v_x))
+        self._check_scalar(sym.sqrt(v_x), np.sqrt(v_x))
+        self._check_scalar(sym.pow(v_x, v_y), v_x ** v_y)
+        self._check_scalar(sym.sin(v_x), np.sin(v_x))
+        self._check_scalar(sym.cos(v_x), np.cos(v_x))
+        self._check_scalar(sym.tan(v_x), np.tan(v_x))
+        self._check_scalar(sym.asin(v_x), np.arcsin(v_x))
+        self._check_scalar(sym.acos(v_x), np.arccos(v_x))
+        self._check_scalar(sym.atan(v_x), np.arctan(v_x))
+        self._check_scalar(sym.atan2(v_x, v_y), np.arctan2(v_x, v_y))
+        self._check_scalar(sym.sinh(v_x), np.sinh(v_x))
+        self._check_scalar(sym.cosh(v_x), np.cosh(v_x))
+        self._check_scalar(sym.tanh(v_x), np.tanh(v_x))
+        self._check_scalar(sym.min(v_x, v_y), min(v_x, v_y))
+        self._check_scalar(sym.max(v_x, v_y), max(v_x, v_y))
+        self._check_scalar(sym.ceil(v_x), np.ceil(v_x))
+        self._check_scalar(sym.floor(v_x), np.floor(v_x))
+        self._check_scalar(
+            sym.if_then_else(
+                sym.Expression(v_x) > sym.Expression(v_y),
+                v_x, v_y),
+            v_x if v_x > v_y else v_y)
 
     def test_non_method_jacobian(self):
         # Jacobian([x * cos(y), x * sin(y), x ** 2], [x, y]) returns
@@ -409,25 +502,41 @@ class TestSymbolicExpression(unittest.TestCase):
         #    |sin(y)    x * cos(y)|
         #    | 2 * x             0|
         J = sym.Jacobian([x * sym.cos(y), x * sym.sin(y), x ** 2], [x, y])
-        self.assertEqual(J[0, 0], sym.cos(y))
-        self.assertEqual(J[1, 0], sym.sin(y))
-        self.assertEqual(J[2, 0], 2 * x)
-        self.assertEqual(J[0, 1], - x * sym.sin(y))
-        self.assertEqual(J[1, 1], x * sym.cos(y))
-        self.assertEqual(J[2, 1], 0)
+        self._check_scalar(J[0, 0], sym.cos(y))
+        self._check_scalar(J[1, 0], sym.sin(y))
+        self._check_scalar(J[2, 0], 2 * x)
+        self._check_scalar(J[0, 1], - x * sym.sin(y))
+        self._check_scalar(J[1, 1], x * sym.cos(y))
+        self._check_scalar(J[2, 1], 0)
 
     def test_method_jacobian(self):
         # (x * cos(y)).Jacobian([x, y]) returns [cos(y), -x * sin(y)].
         J = (x * sym.cos(y)).Jacobian([x, y])
-        self.assertEqual(J[0], sym.cos(y))
-        self.assertEqual(J[1], -x * sym.sin(y))
+        self._check_scalar(J[0], sym.cos(y))
+        self._check_scalar(J[1], -x * sym.sin(y))
 
     def test_differentiate(self):
         e = x * x
-        self.assertEqual(e.Differentiate(x), 2 * x)
+        self._check_scalar(e.Differentiate(x), 2 * x)
 
     def test_repr(self):
         self.assertEqual(repr(e_x), '<Expression "x">')
+
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x + y).Evaluate(env),
+                         env[x] + env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x + 1).Evaluate(env)
 
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
@@ -474,6 +583,22 @@ class TestSymbolicFormula(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(x > y), '<Formula "(x > y)">')
 
+    def test_evaluate(self):
+        env = {x: 3.0,
+               y: 4.0}
+        self.assertEqual((x > y).Evaluate(env),
+                         env[x] > env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            (x > 1).Evaluate(env)
+
 
 class TestSymbolicMonomial(unittest.TestCase):
     def test_constructor_variable(self):
@@ -514,6 +639,13 @@ class TestSymbolicMonomial(unittest.TestCase):
         self.assertTrue(m2 != m3)
         self.assertTrue(m2 != m4)
         self.assertTrue(m3 != m4)
+
+    def test_equalto(self):
+        m1 = sym.Monomial(x, 2)
+        m2 = sym.Monomial(x, 1)
+        m3 = sym.Monomial(x, 2)
+        self.assertTrue(m1.EqualTo(m3))
+        self.assertFalse(m1.EqualTo(m2))
 
     def test_str(self):
         m1 = sym.Monomial(x, 2)
@@ -588,6 +720,25 @@ class TestSymbolicMonomial(unittest.TestCase):
         basis2 = sym.MonomialBasis([x, y, z], 3)
         self.assertEqual(basis1.size, 20)
         self.assertEqual(basis2.size, 20)
+
+    def test_evaluate(self):
+        m = sym.Monomial(x, 3) * sym.Monomial(y)  # m = x³y
+        env = {x: 2.0,
+               y: 3.0}
+        self.assertEqual(m.Evaluate(env),
+                         env[x] ** 3 * env[y])
+
+    def test_evaluate_exception_np_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        m = sym.Monomial(x, 3)
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            m.Evaluate(env)
 
 
 class TestSymbolicPolynomial(unittest.TestCase):
@@ -727,3 +878,24 @@ class TestSymbolicPolynomial(unittest.TestCase):
         p1 += 1
         self.assertNotEqual(p1, p2)
         self.assertNotEqual(hash(p1), hash(p2))
+
+    def test_evaluate(self):
+        p = sym.Polynomial(a * x * x + b * x + c, [x])
+        env = {a: 2.0,
+               b: 3.0,
+               c: 5.0,
+               x: 2.0}
+        self.assertEqual(p.Evaluate(env),
+                         env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+
+    def test_evaluate_exception_np_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: np.nan}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)
+
+    def test_evaluate_exception_python_nan(self):
+        p = sym.Polynomial(x * x, [x])
+        env = {x: float('nan')}
+        with self.assertRaises(RuntimeError):
+            p.Evaluate(env)

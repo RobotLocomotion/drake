@@ -171,7 +171,7 @@ class CompliantHeterogeneousModelTest
     Element& element1 = **body1_->collision_elements_begin();
     Element& element2 = **body2_->collision_elements_begin();
 
-    auto set_params = [this](Element* element, int index) {
+    auto set_params = [](Element* element, int index) {
       CompliantMaterial material;
       material.set_youngs_modulus(kMaterialYoungsModulus[index]);
       element->set_compliant_material(material);

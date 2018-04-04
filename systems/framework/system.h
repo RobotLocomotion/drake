@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <map>
@@ -637,8 +638,10 @@ class System {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
-    T time;
+    T time{NAN};
     DoCalcNextUpdateTime(context, events, &time);
+    using std::isnan;
+    DRAKE_ASSERT(!isnan(time));
     return time;
   }
 
@@ -1471,7 +1474,7 @@ class System {
   const InputPortDescriptor<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
-    int port_index = get_num_input_ports();
+    const InputPortIndex port_index(get_num_input_ports());
     input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
         this, port_index, type, size, random_type));
     return *input_ports_.back();

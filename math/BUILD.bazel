@@ -72,6 +72,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:is_approx_equal_abstol",
+        "@fmt",
     ],
 )
 
@@ -353,6 +354,7 @@ drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",
+        "//common/test_utilities",
     ],
 )
 

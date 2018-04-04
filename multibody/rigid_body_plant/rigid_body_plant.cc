@@ -1129,7 +1129,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
   // transpose_mult() operation.
-  data.L_mult = [this, &limits](const VectorX<T>& w) -> VectorX<T> {
+  data.L_mult = [&limits](const VectorX<T>& w) -> VectorX<T> {
     VectorX<T> result(limits.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
       const int index = limits[i].v_index;
@@ -1185,10 +1185,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.kG = default_bilateral_erp *
       tree.positionConstraints(kinematics_cache) / dt;
   const auto G = tree.positionConstraintsJacobian(kinematics_cache, false);
-  data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
-    return G * w;
-  };
-  data.G_transpose_mult = [this, &G](const VectorX<T>& lambda) {
+  data.G_mult = [&G](const VectorX<T>& w) -> VectorX<T> { return G * w; };
+  data.G_transpose_mult = [&G](const VectorX<T>& lambda) {
     return G.transpose() * lambda;
   };
 

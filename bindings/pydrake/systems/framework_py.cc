@@ -645,13 +645,19 @@ PYBIND11_MODULE(framework, m) {
 
   // State.
   py::class_<State<T>>(m, "State")
-    .def(py::init<>())
-    .def("get_continuous_state",
-         &State<T>::get_continuous_state, py_reference_internal)
-    .def("get_mutable_continuous_state",
-         &State<T>::get_mutable_continuous_state, py_reference_internal)
-    .def("get_discrete_state",
-        &State<T>::get_discrete_state, py_reference_internal);
+      .def(py::init<>())
+      .def("get_continuous_state", &State<T>::get_continuous_state,
+           py_reference_internal)
+      .def("get_mutable_continuous_state",
+           &State<T>::get_mutable_continuous_state, py_reference_internal)
+      .def("get_discrete_state",
+           overload_cast_explicit<const DiscreteValues<T>&>(
+               &State<T>::get_discrete_state),
+           py_reference_internal)
+      .def("get_mutable_discrete_state",
+           overload_cast_explicit<DiscreteValues<T>&>(
+               &State<T>::get_mutable_discrete_state),
+           py_reference_internal);
 
   // - Constituents.
   py::class_<ContinuousState<T>>(m, "ContinuousState")

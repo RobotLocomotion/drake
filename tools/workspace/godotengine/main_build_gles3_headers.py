@@ -6,7 +6,7 @@ import sys
 
 # Load godotengine's SCons implementation of this feature.
 # See https://github.com/godotengine/godot/blob/master/methods.py.
-from methods import build_gles3_headers
+from godotengine.methods import build_gles3_headers
 
 # From our BUILD rule, the first argument is an *.h that build_gles3_headers
 # needs to read in.  Since the path is hard-coded in build_gles3_headers, we

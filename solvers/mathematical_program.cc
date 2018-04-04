@@ -103,7 +103,7 @@ AttributesSet kScsCapabilities =
 AttributesSet kGenericSolverCapabilities =
     (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
      kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
-     kLinearConstraint | kLinearEqualityConstraint);
+     kLinearConstraint | kLinearEqualityConstraint | kCallback);
 
 // Snopt solver capabilities.
 AttributesSet kSnoptCapabilities =
@@ -323,6 +323,16 @@ void MathematicalProgram::AddIndeterminates(
   indeterminates_.conservativeResize(num_old_indeterminates +
                                      new_indeterminates.rows());
   indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
+}
+
+Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
+    const VisualizationCallback::CallbackFunction &callback,
+    const Eigen::Ref<const VectorXDecisionVariable> &vars) {
+  visualization_callbacks_.push_back(
+      internal::CreateBinding<VisualizationCallback>(
+          make_shared<VisualizationCallback>(vars.size(), callback), vars));
+  required_capabilities_ |= kCallback;
+  return visualization_callbacks_.back();
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
