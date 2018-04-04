@@ -117,7 +117,7 @@ std::tuple<std::vector<Matrix3<symbolic::Expression>>,
  * Note: The particular representation/algorithm here was developed in an
  * attempt:
  *  - to enable efficient reuse of the variables between the constraints
- *    between multiple rows/columns (e.g. the constraints on R^T use the same
+ *    between multiple rows/columns (e.g. the constraints on Rᵀ use the same
  *    variables as the constraints on R), and
  *  - to facilitate branch-and-bound solution techniques -- binary regions are
  *    layered so that constraining one region establishes constraints
@@ -125,8 +125,7 @@ std::tuple<std::vector<Matrix3<symbolic::Expression>>,
  *    the on other binary variables.
  * @param prog The mathematical program to which the constraints are added.
  * @param R The rotation matrix
- * @param num_binary_vars_per_half_axis number of binary variables for a half
- * axis.
+ * @param num_intervals_per_half_axis number of intervals for a half axis.
  * @param limits The angle joints for space fixed z-y-x representation of the
  * rotation. @default is no constraint. @see RollPitchYawLimitOptions
  * @retval NewVars  Included the newly added variables
@@ -140,14 +139,14 @@ std::tuple<std::vector<Matrix3<symbolic::Expression>>,
  *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
  *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
  * </pre>
- * where `N` is `num_binary_vars_per_half_axis`.
+ * where `N` is `num_intervals_per_half_axis`.
  */
 
 AddRotationMatrixMcCormickEnvelopeReturnType
 AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_binary_vars_per_half_axis = 2,
+    int num_intervals_per_half_axis = 2,
     RollPitchYawLimits limits = kNoLimits);
 
 /**
@@ -181,8 +180,9 @@ struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
  * the bilinear product terms in the SO(3) constraint, with a new auxiliary
  * variable in the McCormick envelope of bilinear product. For more details,
  * please refer to
- * Global Inverse Kinematics via Mixed-Integer Convex Optimization
- * by Hongkai Dai, Gregory Izatt and Russ Tedrake, 2017.
+ *  Global Inverse Kinematics via Mixed-Integer Convex Optimization
+ *   by Hongkai Dai, Gregory Izatt and Russ Tedrake, 
+ *   International Symposium on Robotics Research 2017.
  * @tparam kNumIntervalsPerHalfAxis We cut the interval [-1, 1] evenly into
  * KNumIntervalsPerHalfAxis * 2 intervals. Then depending on in which interval
  * R(i, j) is, we impose corresponding linear constraints. Currently only
