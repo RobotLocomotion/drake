@@ -11,6 +11,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction_coefficients.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -529,6 +530,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      const CoulombFrictionCoefficients& friction_coefficients,
       geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
@@ -911,6 +913,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Computes the friction coefficient based on the relative tangential
+  // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
+  //
+  // See contact_model_doxygen.h @section tangent_force for details.
+  T ComputeFrictionCoefficient(
+      const T& v_tangent_BAc,
+      CoulombFrictionCoefficients friction) const;
+
+  // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
+  // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
+  static T step5(const T& x);
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
@@ -932,6 +946,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // This struct contains the parameters to compute forces to enforce
   // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
+    const double kDefaultVStictionTolerance{1e-2};
     // Penalty method coefficients used to compute contact forces.
     // TODO(amcastro-tri): consider having these per body. That would allow us
     // for instance to calibrate the stiffness at the fingers (stiffness related
@@ -946,6 +961,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
     optional<double> gravity;
+    // Stiction velocity tolerance. Defaults to 1 mm/s.
+    double v_stiction_tolerance{0.001};
+    // Note: this is the *inverse* of the v_stiction_tolerance parameter to
+    // optimize for the division.
+    double inv_v_stiction_tolerance{1.0 / v_stiction_tolerance};
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
@@ -972,6 +992,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // find out collision properties (such as friction coefficient) for a given
   // geometry.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
+
+  // Friction coefficients ordered by collision index.
+  // See geometry_id_to_collision_index_.
+  std::vector<CoulombFrictionCoefficients> coulomb_friction_;
 
   // Port handles for geometry:
   int geometry_query_port_{-1};

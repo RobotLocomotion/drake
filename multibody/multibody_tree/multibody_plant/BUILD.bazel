@@ -15,9 +15,11 @@ package(
 drake_cc_library(
     name = "multibody_plant",
     srcs = [
+        "coulomb_friction_coefficients.cc",
         "multibody_plant.cc",
     ],
     hdrs = [
+        "coulomb_friction_coefficients.h",
         "multibody_plant.h",
     ],
     deps = [
