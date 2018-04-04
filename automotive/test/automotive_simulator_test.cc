@@ -225,10 +225,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
 // Cover AddTrajectoryCar (and thus AddPublisher).
 GTEST_TEST(AutomotiveSimulatorTest, TestPriusTrajectoryCar) {
   typedef Curve2<double> Curve2d;
-  typedef Curve2d::Point2 Point2d;
-  const std::vector<Point2d> waypoints{
-      {0.0, 0.0}, {100.0, 0.0},
-  };
+  const std::vector<Waypoint> waypoints{Waypoint{{0.0, 0.0}},
+                                        Waypoint{{100.0, 0.0}}};
   const Curve2d curve{waypoints};
 
   // Set up a basic simulation with a couple Prius TrajectoryCars. Both cars
@@ -596,8 +594,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestLcmOutput) {
   simulator->AddPriusSimpleCar("Model2", "Channel2");
 
   typedef Curve2<double> Curve2d;
-  typedef Curve2d::Point2 Point2d;
-  const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
+  const std::vector<Waypoint> waypoints{Waypoint{{0, 0}},
+                                        Waypoint{{1, 0}}};
   const Curve2d curve{waypoints};
   simulator->AddPriusTrajectoryCar("alice", curve, 1 /* speed */,
                                    0 /* start time */);
@@ -643,8 +641,8 @@ GTEST_TEST(AutomotiveSimulatorTest, TestDuplicateVehicleNameException) {
                std::runtime_error);
 
   typedef Curve2<double> Curve2d;
-  typedef Curve2d::Point2 Point2d;
-  const std::vector<Point2d> waypoints{Point2d{0, 0}, Point2d{1, 0}};
+  const std::vector<Waypoint> waypoints{Waypoint{{0, 0}},
+                                        Waypoint{{1, 0}}};
   const Curve2d curve{waypoints};
 
   EXPECT_NO_THROW(simulator->AddPriusTrajectoryCar(
