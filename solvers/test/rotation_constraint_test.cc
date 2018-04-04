@@ -239,7 +239,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
                                     .evaluator()} {
     if (replace_bilinear_product_) {
       AddRotationMatrixBilinearMcCormickMilpConstraints(
-          &prog_, R_, num_intervals_per_half_axis_);
+          &prog_, R_, num_intervals_per_half_axis_, true);
     } else {
       AddRotationMatrixMcCormickEnvelopeMilpConstraints(
           &prog_, R_, num_intervals_per_half_axis_);

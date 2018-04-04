@@ -270,6 +270,7 @@ drake_cc_library(
     ],
     deps = [
         ":bilinear_product_util",
+        ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
         "//math:gradient",
