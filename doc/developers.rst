@@ -58,6 +58,7 @@ Testing
     :maxdepth: 1
 
     unit_testing_instructions
+    downstream_testing
 
 .. See :doc:`unit_testing_instructions`
 
@@ -73,22 +74,29 @@ integration. All other configurations are provided on a best-effort basis.
 Drake requires a compiler running in C++14 mode or greater. MATLAB is only
 supported for CMake builds using the "Unix Makefiles" generator.
 
-+-----------------------------+----------------+-----------------+------------+-------------------+--------+
-| Operating System            | Build System   | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
-+=============================+================+=================+============+===================+========+
-+-----------------------------+----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.6.1  | | Clang 3.9     | OpenJDK 8  | R2017a            | 2.7.11 |
-|                             | | CMake 3.5.1  | | GCC 5.4       |            |                   |        |
-+-----------------------------+----------------+-----------------+------------+                   +--------+
-| OS X 10.11 ("El Capitan")   | | Bazel 0.6.1  | Apple Clang 8.0 | Oracle 1.8 |                   | 2.7.14 |
-+-----------------------------+ | CMake 3.10.0 +-----------------+            |                   |        |
-| macOS 10.12 ("Sierra")      |                | Apple Clang 9.0 |            |                   |        |
-+-----------------------------+                |                 |            +-------------------+        |
-| macOS 10.13 ("High Sierra") |                |                 |            | R2017b            |        |
-+-----------------------------+----------------+-----------------+------------+-------------------+--------+
++-----------------------------+-----------------+--------------------+------------+-------------------+--------+
+| Operating System            | Build System    | C/C++ Compiler     | Java       | MATLAB (Optional) | Python |
++=============================+=================+====================+============+===================+========+
++-----------------------------+-----------------+--------------------+------------+-------------------+--------+
+| Ubuntu 16.04 LTS ("Xenial") | | Bazel 0.10.1  | | Clang 4.0        | OpenJDK 8  | R2017a            | 2.7.11 |
+|                             | | CMake 3.5.1   | | GCC 5.4          |            |                   |        |
++-----------------------------+-----------------+--------------------+------------+                   +--------+
+| macOS 10.12 ("Sierra")      | | Bazel 0.10.1  | Apple Clang 9.0.0  | Oracle 1.8 |                   | 2.7.14 |
++-----------------------------+ | CMake 3.10.2  |                    |            +-------------------+        |
+| macOS 10.13 ("High Sierra") |                 |                    |            | R2017b            |        |
++-----------------------------+-----------------+--------------------+------------+-------------------+--------+
 
-macOS 10.13 ("High Sierra") support is experimental and untested in continuous
+macOS 10.13 ("High Sierra") MATLAB support is experimental and untested in continuous
 integration.
+
+.. _binary-packages:
+
+Binary Packages
+---------------
+
+The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple Clang 9.0 on macOS 10.13.
+
+The links for these packages are listed in :ref:`binary-installation`.
 
 Code Review
 ===========
@@ -125,7 +133,7 @@ green ``+###`` number as reported by github), and *must not* include more than
   - This rule may be overridden by agreement of at least two platform reviewers
     (listed below).
 
-The utility ``drake/tools/prstat`` will report the total added or changed
+The utility ``tools/prstat`` will report the total added or changed
 lines, excluding files that are easily identified to meet the exemptions above.
 
 We use https://reviewable.io for code reviews. You can sign in for free with

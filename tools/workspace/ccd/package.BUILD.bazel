@@ -1,0 +1,66 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Generates config.h based on the defines= we want in Drake.
+cmake_configure_file(
+    name = "config",
+    src = "src/ccd/config.h.cmake.in",
+    out = "src/ccd/config.h",
+    defines = ["CCD_DOUBLE"],
+    visibility = ["//visibility:private"],
+)
+
+# Guessing headers with
+#       install(...
+#          guess_hdrs = "PACKAGE",
+#         )
+# fails and lists internal headers in addition to the public headers.
+CCD_PUBLIC_HEADERS = [
+    "src/ccd/ccd.h",
+    "src/ccd/config.h",
+    "src/ccd/compiler.h",
+    "src/ccd/quat.h",
+    "src/ccd/vec3.h",
+    "src/ccd/ccd_export.h",
+]
+
+# Options used when building the ccd code. Handled by cmake in upstream code
+CCD_COPTS = [
+    "-Wno-all",
+    "-fvisibility=hidden",
+]
+
+# Generates the library exported to users.  Upstream's CMake code lists out all
+# sources instead of globbing, but conveniently puts the public headers in one
+# place and private sources and headers in another; we'll use globbing here.
+cc_library(
+    name = "ccd",
+    srcs = glob([
+        "src/*.c",
+        "src/*.h",
+    ]),
+    hdrs = CCD_PUBLIC_HEADERS,
+    copts = CCD_COPTS,
+    defines = ["CCD_STATIC_DEFINE"],
+    includes = ["src"],
+    linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["BSD-LICENSE"],
+)

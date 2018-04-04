@@ -4,19 +4,16 @@
 Building ``kcov`` From Source
 *****************************
 
+Ubuntu
+======
+
 As of this writing, the recommended way to get ``kcov`` is to build from
 upstream sources from GitHub. Ubuntu Xenial (for example) has packaged
 versions, but they have known problems not evident when using upstream.
 
-Ubuntu-only Preparation
-=======================
-
-On Ubuntu, install the build dependencies::
+Install the build dependencies::
 
   sudo apt install binutils-dev libdw-dev libelf-dev libiberty-dev
-
-OSX and Ubuntu Build Steps
-==========================
 
 To build from source, follow these steps::
 
@@ -30,11 +27,13 @@ To build from source, follow these steps::
 The resulting binary will be in ``kcov/build/src/kcov``. Create a symbolic link
 to the binary from some directory on your ``$PATH``.
 
-OSX Run-time Requirements
-=========================
+macOS
+=====
 
-On OSX, be sure that your account has developer mode enabled, which gives you
-the privileges necessary to run debuggers and similar tools. If you are an
+A recent version of ``kcov`` is installed by the ``install_prereqs.sh`` script.
+
+Be sure that your account has developer mode enabled, which gives you the
+privileges necessary to run debuggers and similar tools. If you are an
 administrator, use this command::
 
   sudo /usr/sbin/DevToolsSecurity --enable

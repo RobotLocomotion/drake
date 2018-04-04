@@ -9,16 +9,16 @@ package(default_visibility = ["//visibility:public"])
 
 # The default toolchain selector for Drake.
 #
-# On OS X, we do not support any custom values for the --compiler flag. It
+# On macOS we do not support any custom values for the --compiler flag. It
 # must be unspecified.  The CROSSTOOL file maps this to the system default
 # Clang via osx_cc_wrapper.sh.  Confusingly, Clang is installed on Mac as
 # /usr/bin/gcc as well as /usr/bin/clang, and the wrapper script invokes the
 # former.
 #
-# On Linux, we support --compiler strings "clang-3.9", "gcc-4.9", and "gcc-5",
-# each of which does exactly what you would expect. "clang-3.9" is the default.
-# No wrapper script is needed for any of these compilers, so the cc_toolchain
-# rule does not provide one. Support for "gcc-6" is experimental without any
+# On Linux, we support --compiler strings "clang-4.0" and "gcc-5", each of
+# which does exactly what you would expect. "clang-4.0" is the default. No
+# wrapper script is needed for any of these compilers, so the cc_toolchain rule
+# does not provide one. Support for "gcc-6" is experimental without any
 # guarantees. Note that it is not in our supported configurations yet. See
 # http://drake.mit.edu/developers.html#supported-configurations for more
 # information.
@@ -26,7 +26,7 @@ cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
         "darwin|compiler": "cc_toolchain_apple",
-        "k8|clang-3.9": "cc_toolchain_linux",
+        "k8|clang-4.0": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
         "k8|gcc-6": "cc_toolchain_linux",
     },
@@ -47,7 +47,7 @@ filegroup(
     visibility = ["//visibility:private"],
 )
 
-# A compiler wrapper script that adjusts linker paths on OS X.
+# A compiler wrapper script that adjusts linker paths on macOS.
 filegroup(
     name = "osx_cc_wrapper",
     srcs = [
@@ -58,8 +58,15 @@ filegroup(
 )
 
 filegroup(
+    name = "osx_ar_wrapper",
+    srcs = ["osx_ar_wrapper.sh"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
     name = "apple_toolchain_deps",
     srcs = [
+        ":osx_ar_wrapper",
         ":osx_cc_wrapper",
         ":universal_toolchain_deps",
     ],
@@ -142,17 +149,9 @@ config_setting(
 )
 
 config_setting(
-    name = "gcc4.9-linux",
+    name = "clang4.0-linux",
     values = {
-        "compiler": "gcc-4.9",
-        "cpu": "k8",
-    },
-)
-
-config_setting(
-    name = "clang3.9-linux",
-    values = {
-        "compiler": "clang-3.9",
+        "compiler": "clang-4.0",
         "cpu": "k8",
     },
 )

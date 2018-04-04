@@ -1,0 +1,57 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_library",
+    "drake_cc_googletest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# TODO(naveenoid) : Merge all of the following with drake/perception and remove
+# current folder.
+
+drake_cc_library(
+    name = "optitrack_pose_extractor",
+    srcs = ["optitrack_pose_extractor.cc"],
+    hdrs = ["optitrack_pose_extractor.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//math:geometric_transform",
+        "//systems/framework",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+    ],
+)
+
+drake_cc_library(
+    name = "pose_smoother",
+    srcs = ["pose_smoother.cc"],
+    hdrs = ["pose_smoother.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//manipulation/util:moving_average_filter",
+        "//math:geometric_transform",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optitrack_pose_extractor_test",
+    deps = [
+        ":optitrack_pose_extractor",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pose_smoother_test",
+    deps = [
+        ":pose_smoother",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/util:moving_average_filter",
+        "//systems/framework",
+    ],
+)
+
+add_lint_tests()

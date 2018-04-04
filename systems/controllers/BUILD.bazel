@@ -1,0 +1,346 @@
+# -*- python -*-
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "state_feedback_controller_interface",
+    hdrs = ["state_feedback_controller_interface.h"],
+    deps = [
+        "//systems/framework:input_port_descriptor",
+        "//systems/framework:system",
+    ],
+)
+
+drake_cc_library(
+    name = "dynamic_programming",
+    srcs = ["dynamic_programming.cc"],
+    hdrs = ["dynamic_programming.h"],
+    deps = [
+        "//common:essential",
+        "//math:wrap_to",
+        "//solvers:mathematical_program",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/primitives:barycentric_system",
+    ],
+)
+
+drake_cc_library(
+    name = "inverse_dynamics",
+    srcs = ["inverse_dynamics.cc"],
+    hdrs = ["inverse_dynamics.h"],
+    deps = [
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "inverse_dynamics_controller",
+    srcs = ["inverse_dynamics_controller.cc"],
+    hdrs = ["inverse_dynamics_controller.h"],
+    deps = [
+        ":inverse_dynamics",
+        ":pid_controller",
+        ":state_feedback_controller_interface",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:pass_through",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_model_predictive_controller",
+    srcs = ["linear_model_predictive_controller.cc"],
+    hdrs = ["linear_model_predictive_controller.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/primitives:linear_system",
+        "//systems/trajectory_optimization:direct_transcription",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_quadratic_regulator",
+    srcs = ["linear_quadratic_regulator.cc"],
+    hdrs = ["linear_quadratic_regulator.h"],
+    deps = [
+        "//common:is_approx_equal_abstol",
+        "//math:continuous_algebraic_riccati_equation",
+        "//math:discrete_algebraic_riccati_equation",
+        "//systems/framework",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_library(
+    name = "pid_controller",
+    srcs = ["pid_controller.cc"],
+    hdrs = ["pid_controller.h"],
+    deps = [
+        ":state_feedback_controller_interface",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:matrix_gain",
+    ],
+)
+
+drake_cc_library(
+    name = "pid_controlled_system",
+    srcs = ["pid_controlled_system.cc"],
+    hdrs = ["pid_controlled_system.h"],
+    deps = [
+        ":pid_controller",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:saturation",
+    ],
+)
+
+drake_cc_library(
+    name = "setpoint",
+    srcs = ["setpoint.cc"],
+    hdrs = ["setpoint.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "control_util",
+    srcs = ["controlUtil.cpp"],
+    hdrs = ["controlUtil.h"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:autodiff",
+        "//math:expmap",
+        "//math:geometric_transform",
+        "//multibody:resolve_center_of_pressure",
+        "//multibody:rigid_body_tree",
+        "//util",
+    ],
+)
+
+drake_cc_library(
+    name = "side",
+    srcs = ["side.cc"],
+    hdrs = ["side.h"],
+    deps = [],
+)
+
+drake_cc_library(
+    name = "qp_common",
+    srcs = [],
+    hdrs = ["QPCommon.h"],
+    deps = [
+        ":control_util",
+        ":side",
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//util",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_planner",
+    srcs = ["zmp_planner.cc"],
+    hdrs = ["zmp_planner.h"],
+    deps = [
+        ":linear_quadratic_regulator",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_util",
+    srcs = ["zmpUtil.cpp"],
+    hdrs = ["zmpUtil.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_util",
+    srcs = ["yaml_util.cc"],
+    hdrs = ["yaml_util.h"],
+    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
+    # headers; yaml_util.h is only included internally within this package.
+    install_hdrs_exclude = ["yaml_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":qp_common",
+        "//common:essential",
+        "@yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "polynomial_encode_decode",
+    srcs = ["polynomial_encode_decode.cc"],
+    hdrs = ["polynomial_encode_decode.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:piecewise_polynomial",
+        "//lcmtypes:polynomial",
+        "//lcmtypes:polynomial_matrix",
+        "//util",
+    ],
+)
+
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "instantaneous_qp_controller",
+    srcs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.h"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":control_util",
+        ":polynomial_encode_decode",
+        ":qp_common",
+        ":yaml_util",
+        "//common:essential",
+        "//common:find_resource",
+        "//common:is_approx_equal_abstol",
+        "//lcmtypes:qp_controller_input",
+        "//lcmtypes:zmp_com_observer_state",
+        "//math:geometric_transform",
+        "//multibody/joints",
+        "//multibody/parsers",
+        "//solvers:gurobi_qp",
+        "//util",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "zmp_test_util",
+    testonly = 1,
+    srcs = ["test/zmp_test_util.cc"],
+    hdrs = ["test/zmp_test_util.h"],
+    deps = [
+        ":zmp_planner",
+    ],
+)
+
+drake_cc_googletest(
+    name = "dynamic_programming_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
+    deps = [
+        ":dynamic_programming",
+        ":linear_quadratic_regulator",
+        "//common/proto:call_matlab",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:integrator",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_encode_decode_test",
+    deps = [
+        ":polynomial_encode_decode",
+        "//common/test_utilities",
+        "//common/trajectories:random_piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inverse_dynamics_test",
+    data = [
+        "//examples/simple_four_bar:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":inverse_dynamics",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inverse_dynamics_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":inverse_dynamics_controller",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_model_predictive_controller_test",
+    deps = [
+        ":linear_model_predictive_controller",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:discrete_algebraic_riccati_equation",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_quadratic_regulator_test",
+    deps = [
+        ":linear_quadratic_regulator",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pid_controlled_system_test",
+    deps = [
+        ":pid_controlled_system",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pid_controller_test",
+    deps = [
+        ":pid_controller",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "setpoint_test",
+    srcs = ["test/setpoint_test.cc"],
+    deps = [
+        ":setpoint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "zmp_planner_test",
+    deps = [
+        ":zmp_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+# The extra_srcs are required here because add_lint_tests() doesn't understand
+# how to extract labels from select() functions yet.
+add_lint_tests(cpplint_extra_srcs = [
+    "InstantaneousQPController.cpp",
+    "InstantaneousQPController.h",
+])

@@ -6,6 +6,7 @@ import argparse
 import collections
 import os
 import subprocess
+import yaml
 
 import google.protobuf.text_format
 
@@ -88,9 +89,9 @@ INDICES_END = """
 INDICIES_NAMES_ACCESSOR_IMPL_START = """
 const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
   static const never_destroyed<std::vector<std::string>> coordinates(
-      std::vector<std::string> {
+      std::vector<std::string>{
 """
-INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\","""
+INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\",  // BR"""
 INDICES_NAMES_ACCESSOR_IMPL_END = """  });
   return coordinates.access();
 }"""
@@ -234,7 +235,7 @@ GET_COORDINATE_NAMES = """
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
-  decltype(T() < T()) IsValid() const {
+  Bool<T> IsValid() const {
     using std::isnan;
     auto result = (T(0) == T(0));
 """
@@ -327,6 +328,7 @@ VECTOR_HH_PREAMBLE = """
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -513,11 +515,15 @@ def generate_code(
         lcm_filename=None):
 
     cxx_include_path = os.path.dirname(named_vector_filename) + "/gen"
-    # TODO(#6996) Do this unconditionally once #6996 shuffle is finished.
-    if not cxx_include_path.startswith("drake/"):
-        # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix
-        # should probably be configurable, instead of hard-coded here.
-        cxx_include_path = "drake/" + cxx_include_path
+    if cxx_include_path.startswith("external/"):
+        # Drake is being used from within a different workspace, so we have to
+        # strip the "external/drake/" from the named_vector_filename.  (The
+        # name after "external" will vary depending on what name the workspace
+        # gave us, so we can't hard-code it to "drake".)
+        cxx_include_path = "/".join(cxx_include_path.split("/")[2:])
+    # TODO(jwnimmer-tri) For use outside of Drake, this include_prefix should
+    # probably be configurable, instead of hard-coded here.
+    cxx_include_path = "drake/" + cxx_include_path
     snake, _ = os.path.splitext(os.path.basename(named_vector_filename))
     screaming_snake = snake.upper()
     camel = "".join([x.capitalize() for x in snake.split("_")])
@@ -622,21 +628,17 @@ def generate_code(
                                                       field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
 
-    # Run clang-format over all C++ files.
-    for one_filename in cxx_names:
-        # The clang-format tool has no way to specify a config file, other than
-        # putting a dotfile somehwere in a parent dir of the target.  Because
-        # our output is in genfiles but the dotfile is in runfiles, we won't
-        # automatically find it.  We'll resolve that by temporarily symlinking
-        # the dotfile into place.
-        dotfile = find_data(".clang-format")
-        temp_dotfile = os.path.join(
-            os.path.dirname(one_filename), ".clang-format")
-        assert not os.path.exists(temp_dotfile)
-        os.symlink(dotfile, temp_dotfile)
-        subprocess.check_call([
-            get_clang_format_path(), "--style=file", "-i", one_filename])
-        os.unlink(temp_dotfile)
+    if cxx_names:
+        # Run clang-format over all C++ files.  Inserting a .clang-format
+        # settings file is problematic when formatting within bazel-genfiles,
+        # so instead we pass its contents on the command line.
+        with open(find_data(".clang-format"), "r") as f:
+            yaml_data = yaml.load(f, Loader=yaml.Loader)
+            style = str(yaml_data)
+            # For some reason, clang-format really wants lowercase booleans.
+            style = style.replace("False", "false").replace("True", "true")
+        subprocess.check_call(
+            [get_clang_format_path(), "--style=" + style, "-i"] + cxx_names)
 
 
 def generate_all_code(srcs, outs):

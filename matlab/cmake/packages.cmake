@@ -3,8 +3,7 @@ set(CMAKE_FIND_PACKAGE_NO_SYSTEM_PACKAGE_REGISTRY ON)
 
 if(APPLE)
   set(MINIMUM_MATLAB_VERSION 9.2)
-  # TODO(jamiesnape): Change from 3.1 to 3.4.1 when #7278 merges.
-  set(MINIMUM_PROTOBUF_VERSION 3.1)
+  set(MINIMUM_PROTOBUF_VERSION 3.5)
 else()
   # TODO(jamiesnape): Change from 9 to 9.2 when support for R2016a and R2016 is
   # no longer needed.
@@ -12,9 +11,19 @@ else()
   set(MINIMUM_PROTOBUF_VERSION 2.6.1)
 endif()
 
-find_package(drake CONFIG REQUIRED)
-find_package(Eigen3 3.3.3 CONFIG REQUIRED)
-find_package(Matlab ${MINIMUM_MATLAB_VERSION} MODULE REQUIRED COMPONENTS
-  MAIN_PROGRAM MEX_COMPILER MX_LIBRARY
+find_package(drake CONFIG REQUIRED
+  NO_CMAKE_SYSTEM_PATH NO_SYSTEM_ENVIRONMENT_PATH
 )
+find_package(Matlab MODULE REQUIRED
+  COMPONENTS MAIN_PROGRAM MEX_COMPILER MX_LIBRARY
+)
+
+if(Matlab_VERSION_STRING STREQUAL unknown)
+  message(WARNING "Could NOT determine MATLAB version")
+elseif(Matlab_VERSION_STRING VERSION_LESS ${MINIMUM_MATLAB_VERSION})
+  message(FATAL_ERROR
+    "Could NOT find MATLAB: Found unsuitable version ${Matlab_VERSION_STRING}, but required is at least ${MINIMUM_MATLAB_VERSION}"
+  )
+endif()
+
 find_package(Protobuf ${MINIMUM_PROTOBUF_VERSION} MODULE REQUIRED)

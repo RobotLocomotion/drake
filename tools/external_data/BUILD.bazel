@@ -1,0 +1,12 @@
+load(":expose_all_files.bzl", "expose_all_files")
+
+# Bazel does not let us glob into `test/**`, even though the workspaces are not
+# a package of this workspace. The solution is to declare the lint tests
+# externally.
+expose_all_files(
+    sub_packages = ["bazel_external_data"],
+    # We do not care about `test` for direct consumption, so do not expose it.
+)
+
+# Linting is not done here to simplify test dependencies.
+# See :test/BUILD.bazel for how it is done.

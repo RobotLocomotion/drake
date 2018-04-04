@@ -1,0 +1,322 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
+load(
+    "//tools:drake.bzl",
+    "drake_cc_library",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
+
+# @note Symbols are NOT imported directly into
+# `__init__.py` to simplify dependency management, meaning that
+# classes are organized by their directory structure rather than
+# by C++ namespace. If you want all symbols, use `all.py`.
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//bindings/pydrake:common_py",
+    ],
+)
+
+# N.B. Any C++ libraries that include this must include `cpp_template_py`.
+drake_cc_library(
+    name = "systems_pybind",
+    hdrs = ["systems_pybind.h"],
+    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+)
+
+drake_pybind_library(
+    name = "framework_py",
+    cc_deps = [
+        ":systems_pybind",
+        "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
+        "//bindings/pydrake/util:type_safe_index_pybind",
+    ],
+    cc_so_name = "framework",
+    cc_srcs = ["framework_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "primitives_py",
+    cc_deps = [
+        "//bindings/pydrake/util:drake_optional_pybind",
+    ],
+    cc_so_name = "primitives",
+    cc_srcs = ["primitives_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "analysis_py",
+    cc_so_name = "analysis",
+    cc_srcs = ["analysis_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "controllers_py",
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_function",
+    ],
+    cc_so_name = "controllers",
+    cc_srcs = ["controllers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        ":primitives_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake:symbolic_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "rendering_py",
+    cc_deps = [
+        ":systems_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "rendering",
+    cc_srcs = ["rendering_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "sensors_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
+    ],
+    cc_so_name = "sensors",
+    cc_srcs = ["sensors_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "trajectory_optimization_py",
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_so_name = "trajectory_optimization",
+    cc_srcs = ["trajectory_optimization_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake:trajectories_py",
+    ],
+)
+
+drake_py_library(
+    name = "drawing_py",
+    srcs = ["drawing.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [":module_py"],
+)
+
+PY_LIBRARIES_WITH_INSTALL = [
+    ":analysis_py",
+    ":controllers_py",
+    ":framework_py",
+    ":primitives_py",
+    ":rendering_py",
+    ":sensors_py",
+    ":trajectory_optimization_py",
+]
+
+PY_LIBRARIES = [
+    ":drawing_py",
+    ":module_py",
+]
+
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
+drake_py_library(
+    name = "systems",
+    deps = [":all_py"],
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES + [":all_py"],
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "general_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+# TODO(eric.cousineau): Convert this to a workflow test once `pydot` is added
+# to `install_prereqs.sh`.
+drake_py_binary(
+    name = "graphviz_example",
+    srcs = ["test/graphviz_example.py"],
+    deps = [
+        ":drawing_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":systems_pybind",
+    ],
+    cc_so_name = "test/test_util",
+    cc_srcs = ["test/test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":primitives_py",
+        "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "lifetime_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "custom_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "value_test",
+    size = "small",
+    deps = [
+        ":framework_py",
+        ":test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "controllers_test",
+    size = "small",
+    deps = [
+        ":controllers_py",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "primitives_test",
+    size = "small",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+        ":test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "rendering_test",
+    size = "small",
+    deps = [
+        ":rendering_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sensors_test",
+    size = "small",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    deps = [
+        ":sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "trajectory_optimization_test",
+    size = "small",
+    deps = [
+        ":trajectory_optimization_py",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+add_lint_tests()

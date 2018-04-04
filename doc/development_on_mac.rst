@@ -1,8 +1,8 @@
-************************
-Drake Development on Mac
-************************
+**************************
+Drake Development on macOS
+**************************
 
-This page contains information that may be useful to people developing on macOS / OS X.
+This page contains information that may be useful to people developing on macOS.
 
 *Note that the applications, tools, and libraries listed below are simply those that some have found useful. They should* **not** *be interpreted as mandatory.*
 
@@ -34,7 +34,7 @@ References:
 SourceTree
 -----------
 
-`SourceTree <https://www.sourcetreeapp.com>`_ is a free Git and Mercurial client for Windows and Mac made by Atlassian.
+`SourceTree <https://www.sourcetreeapp.com>`_ is a free Git and Mercurial client for Windows and macOS made by Atlassian.
 
 (*Notes coming soon*)
 

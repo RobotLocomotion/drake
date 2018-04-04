@@ -1,0 +1,172 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(
+    ["config/valkyrie.alias_groups"],
+)
+
+exports_files(
+    ["config/valkyrie.id_controller_config"],
+)
+
+exports_files(
+    ["config/iiwa.alias_groups"],
+)
+
+exports_files(
+    ["config/iiwa.id_controller_config"],
+)
+
+drake_cc_library(
+    name = "atlas_command_translator_system",
+    srcs = ["atlas_command_translator_system.cc"],
+    hdrs = ["atlas_command_translator_system.h"],
+    deps = [
+        "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_status",
+    srcs = ["humanoid_status.cc"],
+    hdrs = ["humanoid_status.h"],
+    deps = [
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_alias_groups",
+        "//systems/controllers:side",
+        "//systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_plan_eval_system",
+    srcs = ["humanoid_plan_eval_system.cc"],
+    hdrs = ["humanoid_plan_eval_system.h"],
+    deps = [
+        "//examples/humanoid_controller/dev:humanoid_manipulation_plan",
+        "//systems/controllers/plan_eval:plan_eval_base_system",
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_status_translator_system",
+    srcs = ["humanoid_status_translator_system.cc"],
+    hdrs = ["humanoid_status_translator_system.h"],
+    deps = [
+        ":humanoid_status",
+        "//manipulation/util:robot_state_msg_translator",
+        "//multibody:rigid_body_tree",
+        "//systems/controllers/qp_inverse_dynamics:lcm_utils",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "humanoid_controller",
+    hdrs = ["humanoid_controller.h"],
+    deps = [
+        ":atlas_command_translator_system",
+        ":humanoid_plan_eval_system",
+        ":humanoid_status_translator_system",
+        "//lcm",
+        "//multibody/parsers",
+        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//systems/framework",
+        "//systems/lcm",
+        "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_binary(
+    name = "send_manipulation_plan_demo",
+    srcs = [
+        "send_manipulation_plan_demo.cc",
+    ],
+    data = [
+        "//examples/valkyrie:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//examples/valkyrie:valkyrie_constants",
+        "//manipulation/util:robot_state_msg_translator",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "@gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_binary(
+    name = "valkyrie_balancing_demo",
+    srcs = [
+        "valkyrie_balancing_demo.cc",
+    ],
+    data = [
+        ":config/valkyrie.alias_groups",
+        ":config/valkyrie.id_controller_config",
+        "//examples/valkyrie:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":humanoid_controller",
+        "//common:find_resource",
+        "//examples/valkyrie:valkyrie_constants",
+        "//systems/lcm:lcm_driven_loop",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "atlas_command_translator_system_test",
+    srcs = ["test/atlas_command_translator_system_test.cc"],
+    data = [
+        "//examples/valkyrie:models",
+    ],
+    deps = [
+        ":atlas_command_translator_system",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "humanoid_plan_eval_system_test",
+    srcs = ["test/humanoid_plan_eval_system_test.cc"],
+    data = [
+        ":config/valkyrie.alias_groups",
+        ":config/valkyrie.id_controller_config",
+        "//examples/valkyrie:models",
+    ],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":humanoid_plan_eval_system",
+        ":humanoid_status",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/valkyrie:valkyrie_constants",
+        "//multibody/parsers",
+        "//systems/analysis:simulator",
+        "//systems/controllers:setpoint",
+        "//systems/controllers/qp_inverse_dynamics:param_parser",
+        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//systems/framework",
+        "//systems/primitives:constant_value_source",
+    ],
+)
+
+add_lint_tests()

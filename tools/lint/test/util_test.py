@@ -1,13 +1,13 @@
 import os
 import unittest
 
-from tools.lint.util import find_all_sources
+from drake.tools.lint.util import find_all_sources
 
 
 class UtilTest(unittest.TestCase):
 
     def test_find(self):
-        workspace_dir, relpaths = find_all_sources()
+        workspace_dir, relpaths = find_all_sources("drake")
 
         # Sanity-check workspace_dir.
         self.assertGreater(len(workspace_dir), 10)
@@ -19,7 +19,7 @@ class UtilTest(unittest.TestCase):
 
         # Sanity-check relpaths.
         self.assertGreater(len(relpaths), 1000)
-        self.assertTrue('.drake-resource-sentinel' in relpaths)
+        self.assertTrue('.bazelproject' in relpaths)
         self.assertTrue('setup/ubuntu/16.04/install_prereqs.sh' in relpaths)
         THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND = [
             "third_party/BUILD.bazel",
@@ -27,15 +27,8 @@ class UtilTest(unittest.TestCase):
         ]
         for one_relpath in relpaths:
             self.assertTrue(".git/" not in one_relpath, one_relpath)
-            if "third_party/" in one_relpath:
+            if one_relpath.startswith("third_party/"):
                 self.assertTrue(
                     one_relpath in THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND or
                     one_relpath.startswith("."),
-                    one_relpath)
-
-
-# TODO(jwnimmer-tri) Omitting or mistyping these lines means that no tests get
-# run, and nobody notices.  We should probably have drake_py_unittest macro
-# that takes care of this, to be less brittle.
-if __name__ == '__main__':
-    unittest.main()
+                    one_relpath + " has been mis-identified as a source file")

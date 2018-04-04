@@ -1,4 +1,4 @@
-#!/bin/bash -vx
+#!/bin/bash
 
 
 me=$(python -c 'import os; print(os.path.realpath("'"$0"'"))')
@@ -18,6 +18,7 @@ fi
 
 kcov \
     --include-path=$WORKSPACE \
+    --verify \
     --exclude-pattern=third_party \
     $WORKSPACE/bazel-kcov \
     --replace-src-path=/proc/self/cwd:$WORKSPACE \

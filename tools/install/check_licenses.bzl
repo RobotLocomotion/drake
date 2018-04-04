@@ -7,6 +7,8 @@ LICENSE_LITERALS = [
     "BSD-LICENSE",  # ccd
     "COPYING",
     "Copyright.txt",  # vtk
+    "EULA.pdf",  # gurobi
+    "license.pdf",  # mosek
     "LICENSE",
 ]
 

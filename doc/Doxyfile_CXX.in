@@ -128,12 +128,13 @@ RECURSIVE              = YES
 EXCLUDE                = "@DRAKE_WORKSPACE_ROOT@/build" \
                          "@DRAKE_WORKSPACE_ROOT@/third_party"
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = "@DRAKE_WORKSPACE_ROOT@/bazel-*"
+EXCLUDE_PATTERNS       = "@DRAKE_WORKSPACE_ROOT@/bazel-*" \
+                         "*/dev/*"
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             = "@DRAKE_WORKSPACE_ROOT@/drake"
+IMAGE_PATH             = "@DRAKE_WORKSPACE_ROOT@"
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
@@ -144,7 +145,7 @@ USE_MDFILE_AS_MAINPAGE =
 #---------------------------------------------------------------------------
 SOURCE_BROWSER         = NO
 INLINE_SOURCES         = NO
-STRIP_CODE_COMMENTS    = YES
+STRIP_CODE_COMMENTS    = NO
 REFERENCED_BY_RELATION = NO
 REFERENCES_RELATION    = NO
 REFERENCES_LINK_SOURCE = YES

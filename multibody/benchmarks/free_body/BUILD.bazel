@@ -1,0 +1,53 @@
+# -*- python -*-
+
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "models",
+    testonly = 1,
+    srcs = glob([
+        "**/*.obj",
+        "**/*.sdf",
+        "**/*.urdf",
+        "**/*.xml",
+    ]),
+)
+
+drake_cc_library(
+    name = "free_body",
+    srcs = [
+        "free_body.cc",
+    ],
+    hdrs = [
+        "free_body.h",
+    ],
+    deps = [
+        "//common",
+        "//math:geometric_transform",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "rigid_body_plant_free_body_test",
+    size = "medium",
+    data = [":models"],
+    deps = [
+        ":free_body",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+add_lint_tests()

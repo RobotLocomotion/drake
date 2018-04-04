@@ -1,0 +1,111 @@
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
+
+#include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/systems/trajectory_optimization/direct_collocation.h"
+#include "drake/systems/trajectory_optimization/direct_transcription.h"
+
+namespace drake {
+namespace pydrake {
+
+PYBIND11_MODULE(trajectory_optimization, m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::systems::trajectory_optimization;
+
+  py::module::import("pydrake.symbolic");
+  py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.primitives");
+  py::module::import("pydrake.solvers._mathematicalprogram_py");
+
+  py::class_<MultipleShooting, solvers::MathematicalProgram>(m,
+                                                             "MultipleShooting")
+      .def("time", &MultipleShooting::time)
+      .def("timestep", &MultipleShooting::timestep)
+      .def("fixed_timestep", &MultipleShooting::fixed_timestep)
+      .def("state",
+           overload_cast_explicit<const solvers::VectorXDecisionVariable&>(
+               &MultipleShooting::state))
+      .def("state",
+           overload_cast_explicit<
+               Eigen::VectorBlock<const solvers::VectorXDecisionVariable>, int>(
+               &MultipleShooting::state))
+      .def("initial_state", &MultipleShooting::initial_state)
+      .def("final_state", &MultipleShooting::final_state)
+      .def("input",
+           overload_cast_explicit<const solvers::VectorXDecisionVariable&>(
+               &MultipleShooting::input))
+      .def("input",
+           overload_cast_explicit<
+               Eigen::VectorBlock<const solvers::VectorXDecisionVariable>, int>(
+               &MultipleShooting::input))
+      .def("AddRunningCost",
+           [](MultipleShooting& prog, const symbolic::Expression& g) {
+             prog.AddRunningCost(g);
+           })
+      .def("AddRunningCost",
+           [](MultipleShooting& prog,
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
+             prog.AddRunningCost(g);
+           })
+      .def("AddConstraintToAllKnotPoints",
+           &MultipleShooting::AddConstraintToAllKnotPoints)
+      .def("AddTimeIntervalBounds", &MultipleShooting::AddTimeIntervalBounds)
+      .def("AddEqualTimeIntervalsConstraints",
+           &MultipleShooting::AddEqualTimeIntervalsConstraints)
+      .def("AddDurationBounds", &MultipleShooting::AddDurationBounds)
+      .def("AddFinalCost", py::overload_cast<const symbolic::Expression&>(
+                               &MultipleShooting::AddFinalCost))
+      .def("AddFinalCost",
+           py::overload_cast<
+               const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
+               &MultipleShooting::AddFinalCost))
+      .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory)
+      .def("GetSampleTimes", &MultipleShooting::GetSampleTimes)
+      .def("GetInputSamples", &MultipleShooting::GetInputSamples)
+      .def("GetStateSamples", &MultipleShooting::GetStateSamples)
+      .def("ReconstructInputTrajectory",
+           &MultipleShooting::ReconstructInputTrajectory)
+      .def("ReconstructStateTrajectory",
+           &MultipleShooting::ReconstructStateTrajectory);
+
+  py::class_<DirectCollocation, MultipleShooting>(m, "DirectCollocation")
+      .def(py::init<const systems::System<double>*,
+                    const systems::Context<double>&, int, double, double>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+           py::arg("minimum_timestep"), py::arg("maximum_timestep"))
+      .def("ReconstructInputTrajectory",
+           &DirectCollocation::ReconstructInputTrajectory)
+      .def("ReconstructStateTrajectory",
+           &DirectCollocation::ReconstructStateTrajectory);
+
+  py::class_<DirectCollocationConstraint, solvers::Constraint,
+             std::shared_ptr<DirectCollocationConstraint>>(
+      m, "DirectCollocationConstraint")
+      .def(py::init<const systems::System<double>&,
+                    const systems::Context<double>&>());
+
+  m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
+        py::arg("constraint"), py::arg("timestep"), py::arg
+            ("state"), py::arg("next_state"), py::arg("input"), py::arg
+            ("next_input"), py::arg("prog"));
+
+  py::class_<DirectTranscription, MultipleShooting>(m, "DirectTranscription")
+      .def(py::init<const systems::System<double>*,
+                    const systems::Context<double>&, int>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"))
+      .def(py::init<const systems::LinearSystem<double>*,
+                    const systems::Context<double>&, int>(),
+           py::arg("system"), py::arg("context"), py::arg("num_time_samples"))
+      // TODO(russt): Add this once TimeVaryingLinearSystem is bound.
+      //      .def(py::init<const TimeVaryingLinearSystem<double>*,
+      //                    const Context<double>&, int>())
+      .def("ReconstructInputTrajectory",
+           &DirectTranscription::ReconstructInputTrajectory)
+      .def("ReconstructStateTrajectory",
+           &DirectTranscription::ReconstructStateTrajectory);
+}
+
+}  // namespace pydrake
+}  // namespace drake

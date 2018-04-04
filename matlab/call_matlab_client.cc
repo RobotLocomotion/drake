@@ -1,33 +1,99 @@
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <cerrno>
 #include <cstring>
 #include <map>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include <mex.h>
-
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <mex.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
+#include "drake/common/proto/rpc_pipe_temp_directory.h"
 #include "drake/common/unused.h"
 
-#include "mex_util.h"
+namespace {
 
-// Mex client for matlab remote procedure calls (RPCs).
+bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
+                       const char* filename) {
+  mxArray* ex = mexCallMATLABWithTrap(nlhs, plhs, nrhs, prhs, filename);
 
-// Known issues: Some functions in matlab do not like to get called from mex.
+  if (ex != nullptr) {
+    mexPrintf(
+        "DrakeSystem mexCallMATLABsafe: error when calling ''%s'' with the "
+        "following "
+        "arguments:\n",
+        filename);
+
+    for (int i = 0; i < nrhs; i++) {
+      mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+    }
+
+    mxArray* report;
+    mexCallMATLAB(1, &report, 1, &ex, "getReport");
+    char* errmsg = mxArrayToString(report);
+    mexPrintf(errmsg);
+    mxFree(errmsg);
+    mxDestroyArray(report);
+    mxDestroyArray(ex);
+    return true;
+  }
+
+  for (int i = 0; i < nlhs; i++) {
+    if (plhs[i] == nullptr) {
+      mexPrintf(
+          "Drake mexCallMATLABsafe: error when calling ''%s'' with the "
+          "following arguments:\n",
+          filename);
+
+      for (i = 0; i < nrhs; i++) {
+        mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+      }
+
+      mexPrintf(
+          "Not Enough Outputs: Asked for %d outputs, but function only "
+          "returned %d.\n",
+          nrhs, i);
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string mxGetStdString(const mxArray* array) {
+  mwSize buffer_length = mxGetNumberOfElements(array) + 1;
+  auto* buffer = new char[buffer_length];
+  const int status = mxGetString(array, buffer, buffer_length);
+
+  if (status != 0) {
+    delete[] buffer;
+    throw std::runtime_error(
+        "mxGetStdString failed. Possible cause: mxArray is not a string "
+        "array.");
+  } else {
+    std::string ret(buffer);
+    delete[] buffer;
+    return ret;
+  }
+}
+
+}  // namespace
+
+// Mex client for MATLAB remote procedure calls (RPCs).
+
+// Known issues: Some functions in MATLAB do not like to get called from MEX.
 // For instance, calling "histogram" fails with "Error using inputname...
 // Argument number is not valid." because it is trying to extract a variable
-// name from the matlab calling stack (and there are none).  Bad matlab.
+// name from the MATLAB calling stack (and there are none).  Bad MATLAB.
 
 // TODO(russt): Implement an interface that allows the remote publisher to
 // manually delete a client variable.
@@ -36,7 +102,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   drake::unused(nlhs);
   drake::unused(plhs);
 
-  std::string filename = "/tmp/matlab_rpc";
+  std::string filename
+      = drake::common::GetRpcPipeTempDirectory() + "/matlab_rpc";
 
   if (nrhs == 1) {
     filename = mxGetStdString(prhs[0]);
@@ -82,7 +149,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     int i;
     std::vector<mxArray *> lhs(message.lhs_size()), rhs(message.rhs_size());
 
-    // Create the input arguments
+    // Create the input arguments.
     for (i = 0; i < message.rhs_size(); i++) {
       int num_bytes = message.rhs(i).data().size();
       switch (message.rhs(i).type()) {
@@ -108,6 +175,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                            message.rhs(i).rows() * message.rhs(i).cols() ==
                        num_bytes);
           memcpy(mxGetPr(rhs[i]), message.rhs(i).data().data(), num_bytes);
+          break;
+        }
+        case drake::common::MatlabArray::INT: {
+          rhs[i] = mxCreateDoubleMatrix(message.rhs(i).rows(),
+                                        message.rhs(i).cols(), mxREAL);
+          // MATLAB is pretty picky about "figure()" and other HG arguments.
+          // Just convert the integers to doubles and call it done.
+          const int isize = message.rhs(i).rows() * message.rhs(i).cols();
+          DRAKE_DEMAND(static_cast<int>(sizeof(int)) * isize == num_bytes);
+          auto array_in =
+              reinterpret_cast<const int*>(message.rhs(i).data().data());
+          double* array_out = mxGetPr(rhs[i]);
+          for (int j = 0; j < isize; j++)
+            array_out[j] = static_cast<double>(array_in[j]);
           break;
         }
         case drake::common::MatlabArray::CHAR: {

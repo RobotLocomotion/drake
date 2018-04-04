@@ -3,8 +3,11 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(
-    ["lcm-create-cps.py"],
+    [
+        "package-create-cps.py",
+        "test/lcm-gen_install_test.py",
+    ],
     visibility = ["@lcm//:__pkg__"],
 )
 
-add_lint_tests()
+add_lint_tests(python_lint_extra_srcs = ["test/lcm-gen_install_test.py"])
