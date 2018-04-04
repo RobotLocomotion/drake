@@ -604,7 +604,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
         // If the solution is good, return now, indicating only one pivot
         // (in the solution construction) was performed.
-        if (min_z > -zero_tol && min_w > -zero_tol && abs(dot) < 10*n*zero_tol) {
+        if (min_z > -zero_tol && min_w > -zero_tol &&
+            abs(dot) < 10*n*zero_tol) {
           ++(*num_pivots);
           return true;
         }
