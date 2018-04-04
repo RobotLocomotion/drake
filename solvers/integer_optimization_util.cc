@@ -50,21 +50,27 @@ Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(
     const Eigen::Ref<const Eigen::VectorXi>& expected,
     const symbolic::Expression& match) {
   DRAKE_ASSERT(code.rows() == expected.rows());
-  // If the elementwise and of match_and = 1, then code = expected.
-  VectorX<symbolic::Expression> match_and(code.rows());
+  // match_element(i) = 1 <=> code(i) = expected(i).
+  // We then take the conjunction
+  // match = match_element(0) && match_element(1) && ... && match_element(n)
+  // This conjunction can be transformed to the following constraints
+  // match >= match_element(0) + match_element(1) + ... + match_element(n) - n
+  // match <= match_element(i) ∀i
+  // 0 <= match <= 1
+  VectorX<symbolic::Expression> match_element(code.rows());
   symbolic::Formula f = match >= 0 && match <= 1;
   for (int i = 0; i < code.rows(); ++i) {
-    // match_and(i) = 1 iff code(i) == expected(i)
+    // match_element(i) = 1 iff code(i) == expected(i)
     if (expected(i) == 1) {
-      match_and(i) = code(i);
+      match_element(i) = code(i);
     } else if (expected(i) == 0) {
-      match_and(i) = 1 - code(i);
+      match_element(i) = 1 - code(i);
     } else {
       throw std::logic_error("expected should only contain either 0 or 1.");
     }
-    f = f && match <= match_and(i);
+    f = f && match <= match_element(i);
   }
-  f = f && match >= match_and.sum() - (code.rows() - 1);
+  f = f && match >= match_element.sum() - (code.rows() - 1);
   return internal::BindingDynamicCast<LinearConstraint>(
       internal::ParseConstraint(f));
 }
