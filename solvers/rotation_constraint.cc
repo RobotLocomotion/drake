@@ -9,9 +9,9 @@
 #include <limits>
 
 #include "drake/math/cross_product.h"
+#include "drake/math/gray_code.h"
 #include "drake/solvers/bilinear_product_util.h"
 #include "drake/solvers/integer_optimization_util.h"
-#include "drake/math/gray_code.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
@@ -1243,13 +1243,15 @@ void GetCRposAndCRnegForLogarithmicBinning(
   if (num_intervals_per_half_axis > 1) {
     const auto gray_codes = math::CalculateReflectedGrayCodes(
         CeilLog2(num_intervals_per_half_axis) + 1);
-    CRpos->resize(num_intervals_per_half_axis);
-    CRneg->resize(num_intervals_per_half_axis);
+    CRpos->clear();
+    CRneg->clear();
+    CRpos->reserve(num_intervals_per_half_axis);
+    CRneg->reserve(num_intervals_per_half_axis);
     for (int k = 0; k < num_intervals_per_half_axis; ++k) {
-      (*CRpos)[k] = prog->NewContinuousVariables<3, 3>("CRpos[" +
-                                                       std::to_string(k) + "]");
-      (*CRneg)[k] = prog->NewContinuousVariables<3, 3>("CRneg[" +
-                                                       std::to_string(k) + "]");
+      CRpos->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRpos[" + std::to_string(k) + "]"));
+      CRneg->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRneg[" + std::to_string(k) + "]"));
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
           prog->AddConstraint(CreateBinaryCodeMatchConstraint(
@@ -1403,10 +1405,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   }
 
   if (add_mccormick_for_sphere_box_intersection) {
-    std::vector<Matrix3<symbolic::Expression>> CRpos(
-        num_intervals_per_half_axis);
-    std::vector<Matrix3<symbolic::Expression>> CRneg(
-        num_intervals_per_half_axis);
+    std::vector<Matrix3<symbolic::Expression>> CRpos, CRneg;
     GetCRposAndCRnegForLogarithmicBinning(B, num_intervals_per_half_axis, prog,
                                           &CRpos, &CRneg);
     AddMcCormickVectorConstraintsForR(R, CRpos, CRneg,
