@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -218,7 +219,8 @@ void TestScenario2(const RigidBodyTree<double>& model) {
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      "examples/atlas/urdf/atlas_minimal_contact.urdf",
+      drake::FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   drake::multibody::TestScenario1(*tree);
