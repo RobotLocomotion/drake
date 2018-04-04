@@ -37,14 +37,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "bullet_collision",
-    srcs = [
-        "bullet_model.cc",
-        "bullet_model.h",
-    ],
+    srcs = ["bullet_model.cc"],
+    hdrs = ["bullet_model.h"],
+    install_hdrs_exclude = ["bullet_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
         "//common:unused",
-        "@bullet//:BulletCollision",
+        "@bullet",
     ],
 )
 
