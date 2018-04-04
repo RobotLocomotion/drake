@@ -10,6 +10,7 @@
 
 #include "drake/math/cross_product.h"
 #include "drake/solvers/bilinear_product_util.h"
+#include "drake/math/gray_code.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
@@ -1212,6 +1213,59 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
 
+namespace {
+// Returns true if n is positive and n is a power of 2.
+bool is_power_of_two(int n) {
+  DRAKE_ASSERT(n > 0);
+  return  (n & (n-1)) == 0;
+}
+
+template <typename T>
+void GetCRposAndCRnegForLogarithmicBinning(
+    const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
+    MathematicalProgram* prog, std::vector<Matrix3<Expression>>* CRpos,
+    std::vector<Matrix3<Expression>>* CRneg) {
+  DRAKE_DEMAND(is_power_of_two(num_intervals_per_half_axis));
+  CRpos->reserve(num_intervals_per_half_axis);
+  CRneg->reserve(num_intervals_per_half_axis);
+  // B[i][j](0) = 0 => R(i, j) <= 0
+  // B[i][j](0) = 1 => R(i, j) >= 0
+
+  const auto gray_codes = math::CalculateReflectedGrayCodes(
+      CeilLog2(num_intervals_per_half_axis) + 1);
+  auto AddBijRepresentsNumberConstraint = [prog, &gray_codes](
+      const T& Bij, int number, const symbolic::Expression c) {
+    // If the elementwise and of c_and is 1, then Bij represents the number
+    VectorX<symbolic::Expression> c_and(gray_codes.cols());
+    for (int i = 0; i < gray_codes.cols(); ++i) {
+      if (gray_codes(number, i) == 0) {
+        c_and(i) = 1 - Bij(i);
+      } else {
+        c_and(i) = Bij(i);
+      }
+      prog->AddLinearConstraint(c_and(i) <= c);
+    }
+    prog->AddLinearConstraint(c_and.sum() - (c_and.rows() - 1) <= c);
+    prog->AddLinearConstraint(c >= 0 && c <= 1);
+  };
+
+  // CRpos[k](i, j) = 1 if B[i][j] represents num_interval_per_half_axis + k
+  // in reflected Gray code.
+  // CRneg[k](i, j) = 1 if B[i][j] represents num_interval_per_half_axis - k - 1
+  // in reflected Gray code.
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 0; k < num_intervals_per_half_axis; ++k) {
+        AddBijRepresentsNumberConstraint(
+            B[i][j], num_intervals_per_half_axis + k, (*CRpos)[k](i, j));
+        AddBijRepresentsNumberConstraint(
+            B[i][j], num_intervals_per_half_axis - k - 1, (*CRneg)[k](i, j));
+      }
+    }
+  }
+}
+}  // namespace
+
 template <int kNumIntervalsPerHalfAxis>
 typename std::enable_if<
     kNumIntervalsPerHalfAxis == Eigen::Dynamic ||
@@ -1276,7 +1330,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   // B[i][j](0) = 0 => R(i, j) <= 0
   // B[i][j](0) = 1 => R(i, j) >= 0
   // We can thus impose constraints on B[i][j](0).
-  if ((num_intervals_per_half_axis & (num_intervals_per_half_axis - 1)) == 0) {
+  if (is_power_of_two(num_intervals_per_half_axis)) {
     // num_intervals_per_half_axis is a power of 2.
 
     // Bpos(i, j) = sign(R(i, j)).
