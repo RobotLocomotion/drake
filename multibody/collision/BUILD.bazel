@@ -37,14 +37,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "bullet_collision",
-    srcs = [
-        "bullet_model.cc",
-        "bullet_model.h",
-    ],
+    srcs = ["bullet_model.cc"],
+    hdrs = ["bullet_model.h"],
+    install_hdrs_exclude = ["bullet_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
         "//common:unused",
-        "@bullet//:BulletCollision",
+        "@bullet",
     ],
 )
 
@@ -53,10 +53,9 @@ drake_cc_library(
 # ensure the file still compiles.
 drake_cc_library(
     name = "unusable_collision",
-    srcs = [
-        "unusable_model.cc",
-        "unusable_model.h",
-    ],
+    srcs = ["unusable_model.cc"],
+    hdrs = ["unusable_model.h"],
+    install_hdrs_exclude = ["unusable_model.h"],
     visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
@@ -67,10 +66,10 @@ drake_cc_library(
 # other foo_collision libraries *do* contain the dispatcher.)
 drake_cc_library(
     name = "fcl_collision",
-    srcs = [
-        "fcl_model.cc",
-        "fcl_model.h",
-    ],
+    srcs = ["fcl_model.cc"],
+    hdrs = ["fcl_model.h"],
+    install_hdrs_exclude = ["fcl_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
         "//common:unused",

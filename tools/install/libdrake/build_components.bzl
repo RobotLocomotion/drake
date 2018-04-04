@@ -143,10 +143,8 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/free_body:free_body",
     "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
     "//multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
-    "//multibody/collision:bullet_collision",
     "//multibody/collision:collision",
     "//multibody/collision:collision_api",
-    "//multibody/collision:fcl_collision",
     "//multibody/collision:model",
     "//multibody/constraint:constraint",
     "//multibody/constraint:constraint_solver",
