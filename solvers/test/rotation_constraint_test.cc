@@ -10,6 +10,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mosek_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -237,8 +238,13 @@ std::string to_string(ConstraintType type) {
     case ConstraintType::kBoth:
       return "both";
   }
+  // This code should not be reached, we add the next line due to a compiler
+  // defect.
+  throw std::runtime_error("Should not reach this part of the code.");
 }
 
+// This operator overloading is useful, when GTEST prints out which parameter
+// causes the test failure.
 std::ostream& operator<<(std::ostream& os, const ConstraintType& type) {
   os << to_string(type);
   return os;
@@ -608,3 +614,12 @@ INSTANTIATE_TEST_CASE_P(
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
+
+int main(int argc, char** argv) {
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
