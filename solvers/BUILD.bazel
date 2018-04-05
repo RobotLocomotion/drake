@@ -1053,6 +1053,7 @@ drake_cc_googletest(
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],
+    use_default_main = False,
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
