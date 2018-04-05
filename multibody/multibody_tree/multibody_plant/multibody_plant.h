@@ -921,6 +921,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       std::vector<SpatialForce<T>>* F_BBo_W_array,
       std::vector<PointContactInfo<T>>* contact_info) const;
 
+  void CalcPointContactInfoOutput(
+      const systems::Context<T>& context,
+      std::vector<PointContactInfo<T>>* contact_info) const;
+
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
   //
@@ -1019,6 +1023,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Input/Output port indexes:
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
+  int contact_info_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

@@ -262,12 +262,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
-  // TODO(amcastro-tri): Cache contact_info.
-  std::vector<PointContactInfo<T>> contact_info;
   // Compute contact forces on each body by penalty method.
   if (get_num_collision_geometries() > 0) {
     CalcAndAddContactForcesByPenaltyMethod(
-        context, pc, vc, &F_BBo_W_array, &contact_info);
+        context, pc, vc, &F_BBo_W_array, nullptr);
   }
 
   model_->CalcInverseDynamics(
@@ -352,8 +350,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const VelocityKinematicsCache<double>& vc,
     std::vector<SpatialForce<double>>* F_BBo_W_array,
     std::vector<PointContactInfo<double>>* contact_info) const {
-  DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(contact_info != nullptr);
   if (get_num_collision_geometries() == 0) return;
 
   const geometry::QueryObject<double>& query_object =
@@ -362,7 +358,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
-  contact_info->reserve(penetrations.size());
+  if (contact_info != nullptr) contact_info->reserve(penetrations.size());
   for (const auto& penetration : penetrations) {
     const GeometryId geometryA_id = penetration.id_A;
     const GeometryId geometryB_id = penetration.id_B;
@@ -470,21 +466,34 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
                                         fn_AC_W + ft_AC_W);
 
-      if (bodyA_index != world_index()) {
-        // Spatial force on body A at Ao, expressed in W.
-        const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-        F_BBo_W_array->at(bodyA_index) += F_AAo_W;
-      }
+      if (F_BBo_W_array != nullptr) {
+        if (bodyA_index != world_index()) {
+          // Spatial force on body A at Ao, expressed in W.
+          const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+          F_BBo_W_array->at(bodyA_index) += F_AAo_W;
+        }
 
-      if (bodyB_index != world_index()) {
-        // Spatial force on body B at Bo, expressed in W.
-        const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-        F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+        if (bodyB_index != world_index()) {
+          // Spatial force on body B at Bo, expressed in W.
+          const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+          F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+        }
       }
     }
+
     // Store contact info.
-    contact_info->emplace_back(nhat_BA_W, that_W, x, vn, vt,
-                               v_AcBc_W, vt_AcBc_W, fn_AC, ft_AC,mu_stribeck);
+    if (contact_info != nullptr) {
+      contact_info->emplace_back(nhat_BA_W,
+                                 that_W,
+                                 x,
+                                 vn,
+                                 vt,
+                                 v_AcBc_W,
+                                 vt_AcBc_W,
+                                 fn_AC,
+                                 ft_AC,
+                                 mu_stribeck);
+    }
   }
 }
 
@@ -494,6 +503,18 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>&,
     std::vector<SpatialForce<T>>*, std::vector<PointContactInfo<T>>*) const {
   DRAKE_ABORT_MSG("Only <double> is supported.");
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcPointContactInfoOutput(
+    const Context<T>& context,
+    std::vector<PointContactInfo<T>>* contact_info) const {
+  DRAKE_DEMAND(contact_info != nullptr);
+  contact_info->clear();
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  CalcAndAddContactForcesByPenaltyMethod(
+      context, pc, vc, nullptr, contact_info);
 }
 
 template<typename T>
@@ -593,6 +614,10 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
   for (auto it : body_index_to_frame_id_) {
     ids_.push_back(it.second);
   }
+  // Output port with detailed contact information.
+  contact_info_port_ =
+      this->DeclareAbstractOutputPort(
+          &MultibodyPlant::CalcPointContactInfoOutput).get_index();
 }
 
 template <typename T>
