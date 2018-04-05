@@ -27,9 +27,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant",
         "//multibody/rigid_body_plant:rigid_body_plant_bridge",
         "//systems/analysis",
-        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:constant_vector_source",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
@@ -79,8 +77,6 @@ drake_cc_binary(
         "//multibody/rigid_body_plant",
         "//multibody/rigid_body_plant:rigid_body_plant_bridge",
         "//systems/analysis",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
