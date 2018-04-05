@@ -13,6 +13,12 @@
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
+namespace systems {
+
+template <typename T> class DiagramBuilder;
+
+}  // namespace systems
+
 namespace geometry {
 
 class GeometryInstance;
@@ -405,7 +411,8 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   void MakeSourcePorts(SourceId source_id);
 
   // Allow the load dispatch to peek into GeometrySystem.
-  friend void DispatchLoadMessage(const GeometrySystem<double>&);
+  friend void ConfigureVisualization(const GeometrySystem<double>& system,
+                                     systems::DiagramBuilder<double>* builder);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject(const systems::Context<T>& context) const;

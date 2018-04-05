@@ -1,17 +1,23 @@
 #include "drake/geometry/geometry_visualization.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/serializer.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace geometry {
@@ -183,9 +189,34 @@ void DispatchLoadMessage(const GeometryState<double>& state) {
   Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void DispatchLoadMessage(const GeometrySystem<double>& system) {
-  system.ThrowIfContextAllocated("DisplatchLoadMessage");
+void ConnectVisualization(const GeometrySystem<double>& system,
+                          systems::DiagramBuilder<double>* builder) {
+  using lcm::DrakeLcm;
+  using systems::lcm::LcmPublisherSystem;
+  using systems::lcm::Serializer;
+  using systems::rendering::PoseBundleToDrawMessage;
+
+  static never_destroyed<DrakeLcm> lcm;
+
+  PoseBundleToDrawMessage* converter =
+      builder->template AddSystem<PoseBundleToDrawMessage>();
+  LcmPublisherSystem* publisher =
+      builder->template AddSystem<LcmPublisherSystem>(
+          "DRAKE_VIEWER_DRAW",
+          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(),
+          &lcm.access());
+  publisher->set_publish_period(1 / 60.0);
+
+  builder->Connect(system.get_pose_bundle_output_port(),
+                  converter->get_input_port(0));
+  builder->Connect(*converter, *publisher);
+}
+
+void ConfigureVisualization(const GeometrySystem<double>& system,
+                            systems::DiagramBuilder<double>* builder) {
+  system.ThrowIfContextAllocated("ConfigureVisualization");
   DispatchLoadMessage(*system.initial_state_);
+  ConnectVisualization(system, builder);
 }
 
 }  // namespace geometry

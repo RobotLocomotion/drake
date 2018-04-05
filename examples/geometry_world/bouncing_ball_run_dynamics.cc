@@ -6,14 +6,9 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
-
 namespace drake {
 namespace examples {
 namespace geometry_world {
@@ -24,11 +19,7 @@ using geometry::GeometryInstance;
 using geometry::GeometrySystem;
 using geometry::HalfSpace;
 using geometry::SourceId;
-using lcm::DrakeLcm;
 using systems::InputPortDescriptor;
-using systems::rendering::PoseBundleToDrawMessage;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
 using std::make_unique;
 
 int do_main() {
@@ -59,14 +50,6 @@ int do_main() {
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>()));
-  DrakeLcm lcm;
-  PoseBundleToDrawMessage* converter =
-      builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem* publisher =
-      builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher->set_publish_period(1 / 60.0);
 
   builder.Connect(bouncing_ball1->get_geometry_id_output_port(),
                   geometry_system->get_source_frame_id_port(ball_source_id1));
@@ -82,13 +65,10 @@ int do_main() {
   builder.Connect(geometry_system->get_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
-  builder.Connect(geometry_system->get_pose_bundle_output_port(),
-                  converter->get_input_port(0));
-  builder.Connect(*converter, *publisher);
+  // Last thing before building the diagram; configure the system for
+  // visualization.
+  geometry::ConfigureVisualization(*geometry_system, &builder);
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(*geometry_system);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
