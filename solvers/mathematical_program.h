@@ -1980,7 +1980,7 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
-   * espressions @p e. We create a new symmetric matrix of variables M being
+   * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
    * @tparam Derived An Eigen Matrix of symbolic expressions.
    * @param e Imposes constraint "e is positive semidefinite".
