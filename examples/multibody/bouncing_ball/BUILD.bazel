@@ -44,8 +44,6 @@ drake_cc_binary(
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )

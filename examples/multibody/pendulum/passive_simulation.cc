@@ -6,7 +6,6 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -14,10 +13,7 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 
@@ -29,9 +25,6 @@ using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::ImplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
 using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
@@ -87,17 +80,6 @@ int do_main() {
   builder.Connect(torque_source->get_output_port(),
                   pendulum.get_actuation_input_port());
 
-  // Boilerplate used to connect the plant to a SceneGraph for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!pendulum.get_source_id());
 
@@ -105,15 +87,14 @@ int do_main() {
       pendulum.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(pendulum.get_source_id().value()));
 
-  builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
+  // Last thing before building the diagram; configure the system for
+  // visualization.
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  auto diagram = builder.Build();
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(scene_graph);
-
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  // Load message must be sent before creating a Context.
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =
