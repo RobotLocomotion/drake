@@ -1,3 +1,5 @@
+.. _getting_help:
+
 ************
 Getting Help
 ************
@@ -6,9 +8,9 @@ Searching For Your Question
 ===========================
 
 If you need help with Drake, please first review the documentation on this
-website for things such as :ref:`installation <installation>`_,
+website for things such as :ref:`installation <installation_and_quick_start>`,
 `the C++ API <doxygen_cxx/index.html#://>`_, or
-:ref:`Python bindings <python-bindings>`_.
+:ref:`Python bindings <python-bindings>`.
 
 Please also briefly review
 `Drake's open and closed GitHub issues <https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue>`_
@@ -35,14 +37,24 @@ Contributing
 ============
 
 If you wish to contribute a bugfix or a feature, please do
-:ref:`submit a pull request <pull_request>`_!
+:ref:`submit a pull request <pull_request>`!
 If you are daunted by the review process, do not hestitate to ask for help!
+
 
 Older Sources
 =============
 
-Some information was previously on the :ref:`Frequently Asked Questions <faq>`_
+Some information was previously on the
+:ref:`faq`
 page and a
 `mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>`_.
 Please use the previously listed resources for searching for and ask questions
 instead.
+
+.. toctree::
+  :hidden:
+
+  faq
+
+..
+    Use a hidden toctree to suppress error about FAQ not being linked.
