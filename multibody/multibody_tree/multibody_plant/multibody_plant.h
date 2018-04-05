@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction_coefficients.h"
+#include "drake/multibody/multibody_tree/multibody_plant/point_contact_info.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -917,7 +918,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array,
+      std::vector<PointContactInfo<T>>* contact_info) const;
 
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
