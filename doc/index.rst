@@ -124,11 +124,10 @@ Next steps
 
    installation
    getting_help
-   developers
    Doxygen (C++) <doxygen_cxx/index.html#://>
-   issues
-   credits
    GitHub <https://github.com/RobotLocomotion/drake>
+   developers
+   credits
 
 
 ********************************************

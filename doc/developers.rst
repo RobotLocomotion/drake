@@ -100,6 +100,14 @@ The binary releases of Drake are built with GCC 5.4 on Ubuntu 16.04 and Apple Cl
 
 The links for these packages are listed in :ref:`binary-installation`.
 
+Issue Tracking
+==============
+
+.. toctree::
+    :maxdepth: 1
+
+    issues
+
 Code Review
 ===========
 
