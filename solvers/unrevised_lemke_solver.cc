@@ -534,6 +534,59 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
 }
 
 template <typename T>
+bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
+    const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
+    int* blocking_index) const {
+  DRAKE_DEMAND(blocking_index);
+  DRAKE_DEMAND(ratios.size() == matrix_col.size());
+  DRAKE_DEMAND(zero_tol > 0);
+
+  T min_ratio = std::numeric_limits<double>::infinity();
+  *blocking_index = -1;
+  for (int i = 0; i < matrix_col.size(); ++i) {
+    if (matrix_col[i] < -zero_tol) {
+      DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
+      if (ratios[i] < min_ratio) {
+        min_ratio = ratios[i];
+        *blocking_index = i;
+      }
+    }
+  }
+
+  if (*blocking_index < 0) {
+    SPDLOG_DEBUG(log(), "driving variable is unblocked- algorithm failed");
+    return false;
+  }
+
+  // Determine all variables within the zero tolerance of the minimum ratio.
+  std::vector<int> blocking_indices;
+  for (int i = 0; i < matrix_col.size(); ++i) {
+    if (matrix_col[i] < -zero_tol) {
+      DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
+      if (ratios[i] < min_ratio + zero_tol)
+        blocking_indices.push_back(i);
+    }
+  }
+
+  // If there are multiple blocking variables, replace the blocking index with
+  // the cycling selection.
+  if (blocking_indices.size() > 1) {
+    auto& index = selections_[indep_variables_];
+
+    // Verify that we have not run out of indices to select, which means that
+    // cycling would be occurring, in spite of cycling prevention.
+    if (index >= static_cast<int>(blocking_indices.size())) {
+      DRAKE_SPDLOG_DEBUG(log(), "Cycling detected- indicating failure.");
+      return false;
+    }
+    *blocking_index = blocking_indices[index];
+    ++index;
+  }
+
+  return true;
+}
+
+template <typename T>
 bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const VectorX<T>& q, VectorX<T>* z,
                                      int* num_pivots,
@@ -630,16 +683,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // w = q + zn >= 0. Let blocking denote a component of w that equals
   // zero when zn = zn*.
   int blocking_index = -1;
-  T znstar = 0;
-  for (int i = 0; i < n; ++i) {
-    if (q[i] < 0) {
-      if (-q[i] > znstar) {
-        znstar = -q[i];
-        blocking_index = i;
-      }
-    }
-  }
-  DRAKE_DEMAND(blocking_index >= 0);
+  DRAKE_DEMAND(FindBlockingIndex(mod_zero_tol, q, q, &blocking_index));
 
   // Pivot blocking, artificial. Note that we rely upon the dependent variables
   // being ordered sequentially in both arrays.
@@ -684,54 +728,13 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       return false;
     }
 
-    // Perform the minimum ratio test.
-    T min_ratio = std::numeric_limits<double>::infinity();
-    blocking_index = -1;
-    for (int i = 0; i < M_prime_col.size(); ++i) {
-      if (M_prime_col[i] < -mod_zero_tol) {
-        const T ratio = -q_prime[i] / M_prime_col[i];
-        DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratio);
-        if (ratio < min_ratio) {
-          min_ratio = ratio;
-          blocking_index = i;
-        }
-      }
-    }
-
-    if (blocking_index < 0) {
-      DRAKE_SPDLOG_DEBUG(log(), "driving variable unblocked- algorithm failed");
+    // Find the blocking variable. 
+    if (!FindBlockingIndex(
+        mod_zero_tol, M_prime_col,
+        -(q_prime.array() / M_prime_col.array()).matrix(), &blocking_index)) {
       z->setZero(n);
       return false;
     }
-
-    // Determine all variables within the zero tolerance of the minimum ratio.
-    std::vector<int> blocking_indices;
-    for (int i = 0; i < M_prime_col.size(); ++i) {
-      if (M_prime_col[i] < -mod_zero_tol) {
-        const T ratio = -q_prime[i] / M_prime_col[i];
-        DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratio);
-        if (ratio < min_ratio + mod_zero_tol)
-          blocking_indices.push_back(i);
-      }
-    }
-
-    // If there are multiple blocking variables, replace the blocking index with
-    // the cycling selection.
-    if (blocking_indices.size() > 1) {
-      auto& index = selections_[indep_variables_];
-
-      // Verify that we have not run out of indices to select, which means that
-      // cycling would be occurring, in spite of cycling prevention.
-      if (index >= static_cast<int>(blocking_indices.size())) {
-        DRAKE_SPDLOG_DEBUG(log(), "Cycling detected- indicating failure.");
-        z->setZero(n);
-        return false;
-      }
-      blocking_index = blocking_indices[index];
-      ++index;
-    }
-
-    // Get the blocking variable.
     blocking = dep_variables_[blocking_index];
     DRAKE_SPDLOG_DEBUG(log(), "Blocking variable {}{}",
                        ((blocking.z()) ? "z" : "w"), blocking.index());

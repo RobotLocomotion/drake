@@ -160,6 +160,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       const std::vector<LCPVariable>& variables, bool z,
       std::vector<int>* variable_set,
       std::vector<int>* variable_set_prime) const;
+  bool FindBlockingIndex(
+      const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
+      int* blocking_index) const;
 
   typedef std::vector<LCPVariable> LCPVariableVector;
 
