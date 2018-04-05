@@ -6,7 +6,7 @@
 
 #include "drake/common/constants.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/axis_angle.h"
+#include "drake/math/quaternion.h"
 
 namespace drake {
 namespace math {
@@ -62,7 +62,8 @@ template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector3d UniformlyRandomRPY(Generator& generator) {
   const Eigen::AngleAxisd angle_axis = UniformlyRandomAxisAngle(generator);
-  return axis2rpy(angle_axis);
+  const Eigen::Quaterniond q(angle_axis);
+  return QuaternionToSpaceXYZ(q);
 }
 
 }  // namespace math

@@ -229,29 +229,6 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
 }
 
 /**
- * (Deprecated) Computes axis-angle orientation from a given quaternion.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param quaternion 4 x 1 vector that may or may not be normalized.
- * @return axis-angle [x; y; z; angle] of quaternion with axis as a unit vector
- * and  0 <= angle <= PI,  Return is independent of quaternion normalization.
- * (Deprecated) Use `QuaternionToAngleAxis()` instead.
- * @see QuaternionToAngleAxis()
- */
-template <typename Derived>
-Eigen::AngleAxis<typename Derived::Scalar> quat2axis(
-    const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-
-  using Scalar = typename Derived::Scalar;
-  Eigen::Quaternion<Scalar> eigen_quaternion(quaternion(0), quaternion(1),
-                                             quaternion(2), quaternion(3));
-
-  return QuaternionToAngleAxis(eigen_quaternion);
-}
-
-/**
  * Computes the rotation matrix from quaternion representation.
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
@@ -353,15 +330,10 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
  * </pre>
  * @author Paul Mitiguy
 **/
-template <typename Derived>
-Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
-    const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  Eigen::Matrix3d R = quat2rotmat(quaternion);
+template <typename T>
+Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
+  const Eigen::Matrix3d R = RotationMatrix<T>(quaternion).matrix();
 
-  using Scalar = typename Derived::Scalar;
   using std::atan2;
   using std::sqrt;
   using std::abs;
@@ -373,26 +345,26 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // Calculate q2 using lots of information in the rotation matrix.
   // Rsum = abs( cos(q2) ) is inherently non-negative.
   // R20 = -sin(q2) may be negative, zero, or positive.
-  const Scalar R22 = R(2, 2);
-  const Scalar R21 = R(2, 1);
-  const Scalar R10 = R(1, 0);
-  const Scalar R00 = R(0, 0);
-  const Scalar Rsum = sqrt((R22 * R22 + R21 * R21 + R10 * R10 + R00 * R00) / 2);
-  const Scalar R20 = R(2, 0);
-  const Scalar q2 = atan2(-R20, Rsum);
+  const T R22 = R(2, 2);
+  const T R21 = R(2, 1);
+  const T R10 = R(1, 0);
+  const T R00 = R(0, 0);
+  const T Rsum = sqrt((R22 * R22 + R21 * R21 + R10 * R10 + R00 * R00) / 2);
+  const T R20 = R(2, 0);
+  const T q2 = atan2(-R20, Rsum);
 
   // Calculate q1 and q3 from Steps 2-6 (documented above).
-  const Scalar e0 = quaternion(0), e1 = quaternion(1);
-  const Scalar e2 = quaternion(2), e3 = quaternion(3);
-  const Scalar yA = e1 + e3, xA = e0 - e2;
-  const Scalar yB = e3 - e1, xB = e0 + e2;
-  const Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
+  const T e0 = quaternion.w(), e1 = quaternion.x();
+  const T e2 = quaternion.y(), e3 = quaternion.z();
+  const T yA = e1 + e3, xA = e0 - e2;
+  const T yB = e3 - e1, xB = e0 + e2;
+  const T epsilon = Eigen::NumTraits<T>::epsilon();
   const bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
   const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
-  const Scalar zA = isSingularA ? 0.0 : atan2(yA, xA);
-  const Scalar zB = isSingularB ? 0.0 : atan2(yB, xB);
-  Scalar q1 = zA - zB;  // First angle in rotation sequence.
-  Scalar q3 = zA + zB;  // Third angle in rotation sequence.
+  const T zA = isSingularA ? 0.0 : atan2(yA, xA);
+  const T zB = isSingularB ? 0.0 : atan2(yB, xB);
+  T q1 = zA - zB;  // First angle in rotation sequence.
+  T q3 = zA + zB;  // Third angle in rotation sequence.
 
   // If necessary, modify angles q1 and/or q3 to be between -pi and pi.
   if (q1 > M_PI) q1 = q1 - 2 * M_PI;
@@ -402,7 +374,7 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
 
   // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
   // (which is equivalent to BodyZYX q3, q2, q1 order).
-  Vector3<Scalar> spaceXYZ_angles(q1, q2, q3);
+  Vector3<T> spaceXYZ_angles(q1, q2, q3);
 
 #ifdef DRAKE_ASSERT_IS_ARMED
   // This algorithm converts from quaternion to SpaceXYZ.
@@ -415,21 +387,12 @@ Vector3<typename Derived::Scalar> QuaternionToSpaceXYZ(
   // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
   // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
   // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
-  const Matrix3<Scalar> rotMatrix_quaternion = quat2rotmat(quaternion);
-  const Matrix3<Scalar> rotMatrix_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
-  DRAKE_ASSERT(rotMatrix_quaternion.isApprox(rotMatrix_spaceXYZ, 20 * epsilon));
+  const Matrix3<T> R_quaternion = RotationMatrix<T>(quaternion).matrix();
+  const Matrix3<T> R_spaceXYZ = rpy2rotmat(spaceXYZ_angles);
+  DRAKE_ASSERT(R_quaternion.isApprox(R_spaceXYZ, 20 * epsilon));
 #endif
 
   return spaceXYZ_angles;
-}
-
-/** (Deprecated) Computes SpaceXYZ Euler angles from quaternion.
-Use `QuaternionToSpaceXYZ()` instead.
-@see QuaternionToSpaceXYZ() **/
-template <typename Derived>
-Vector3<typename Derived::Scalar> quat2rpy(
-    const Eigen::MatrixBase<Derived>& quaternion) {
-  return QuaternionToSpaceXYZ(quaternion);
 }
 
 /**

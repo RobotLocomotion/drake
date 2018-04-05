@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/axis_angle.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
@@ -44,15 +43,6 @@ bool check_rpy_range(const Vector3d& rpy) {
   return rpy(0) <= M_PI && rpy(0) >= -M_PI && rpy(1) <= M_PI / 2 &&
          rpy(1) >= -M_PI / 2 && rpy(2) <= M_PI && rpy(2) >= -M_PI;
 }
-// Compare the equivalent rotation matrix.
-// Note that we are not comparing the axis-angle directly. This is because the
-// axis-angle has singularities around 0 degree rotation and 180 degree rotation
-// So two axis-angles that are slightly different when the angle is close to 0,
-// their equivalent rotation matrices are almost the same.
-bool AreAngleAxisForSameOrientation(const AngleAxisd& a1,
-                                    const AngleAxisd& a2) {
-  return a1.toRotationMatrix().isApprox(a2.toRotationMatrix());
-}
 
 bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
                                       double precision = 1E-12) {
@@ -60,6 +50,7 @@ bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
   // that quaternion.
   return q1.isApprox(q2, precision) || q1.isApprox(-q2, precision);
 }
+
 Quaterniond BodyZYXAnglesToEigenQuaternion(const Vector3d bodyZYX_angles) {
   // Compute the quaterion for euler angle using intrinsic z-y'-x''.
   // Uses Eigen functionality (including overloaded operators *, etc).
@@ -383,7 +374,7 @@ class RotationConversionTest : public ::testing::Test {
       const RotationMatrix<double> Ri(ai);
       rotation_matrix_test_cases_.push_back(Ri.matrix());
     }
-    for (auto const& qi : quaternion_test_cases_) {
+    for (const Quaterniond& qi : quaternion_test_cases_) {
       auto q = EigenQuaternionToOrderWXYZ((qi));
       auto R = quat2rotmat(q);
       rotation_matrix_test_cases_.push_back(R);
@@ -395,47 +386,8 @@ class RotationConversionTest : public ::testing::Test {
   std::vector<Matrix3d> rotation_matrix_test_cases_;
 };
 
-TEST_F(RotationConversionTest, AxisQuat) {
-  for (const Eigen::AngleAxisd& ai : angle_axis_test_cases_) {
-    // Compute the quaternion using Eigen geometry module, compare the result
-    // with axis2quat
-    const Eigen::Quaternion<double> q_eigen_expected(ai);
-    const Vector4d q = axis2quat(ai);
-    const Eigen::Quaternion<double> q_eigen = quat2eigenQuaternion(q);
-    EXPECT_TRUE(q_eigen.isApprox(q_eigen_expected));
-    // axis2quat should be the inversion of quat2axis
-    const Eigen::AngleAxisd a_expected = quat2axis(q);
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(ai, a_expected));
-  }
-}
-
-TEST_F(RotationConversionTest, AxisRPY) {
-  for (const Eigen::AngleAxisd& angle_axis : angle_axis_test_cases_) {
-    const Vector3d rpy = axis2rpy(angle_axis);
-    // axis2rpy should be the inversion of rpy2axis.
-    const AngleAxisd angle_axis_test = rpy2axis(rpy);
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(angle_axis, angle_axis_test));
-    EXPECT_TRUE(check_rpy_range(rpy));
-  }
-}
-
-TEST_F(RotationConversionTest, QuatAxis) {
-  for (const auto& qi_eigen : quaternion_test_cases_) {
-    // Compute the angle-axis representation using Eigen geometry module,
-    // compare the result with quat2axis
-    Eigen::AngleAxis<double> a_eigen_expected(qi_eigen);
-    const Vector4d qi(qi_eigen.w(), qi_eigen.x(), qi_eigen.y(), qi_eigen.z());
-    const Eigen::AngleAxisd angle_axis = quat2axis(qi);
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(angle_axis, a_eigen_expected));
-
-    // quat2axis should be the inversion of axis2quat
-    const Vector4d quat_expected = axis2quat(angle_axis);
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
-  }
-}
-
 TEST_F(RotationConversionTest, QuatRotmat) {
-  for (const auto& qi_eigen : quaternion_test_cases_) {
+  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with quat2rotmat
     Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
@@ -450,18 +402,18 @@ TEST_F(RotationConversionTest, QuatRotmat) {
 }
 
 TEST_F(RotationConversionTest, QuatRPY) {
-  for (const auto& qi_eigen : quaternion_test_cases_) {
-    Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
-    Vector3d rpy = quat2rpy(qi);
-    // quat2rpy should be the inversion of rpy2quat
-    Vector4d quat_expected = rpy2quat(rpy);
+  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
+    const Vector3d rpy = QuaternionToSpaceXYZ(qi_eigen);
+    // rpy2quat should be the inversion of QuaternionToSpaceXYZ().
+    const Vector4d quat_expected = rpy2quat(rpy);
+    const Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
 
 TEST_F(RotationConversionTest, QuatEigenQuaternion) {
-  for (const auto& qi_eigen : quaternion_test_cases_) {
+  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
     Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
     Quaterniond eigenQuat = quat2eigenQuaternion(qi);
     Matrix3d R_expected = quat2rotmat(qi);
@@ -510,39 +462,17 @@ TEST_F(RotationConversionTest, RPYRotmat) {
   }
 }
 
-TEST_F(RotationConversionTest, RPYAxis) {
-  // Compute the angle-axis representation using Eigen's geometry module,
-  // compare the result with rpy2axis
-  for (const Vector3d& rpyi : rpy_test_cases_) {
-    const Quaterniond q = Eigen::AngleAxisd(rpyi(2), Vector3d::UnitZ()) *
-                          Eigen::AngleAxisd(rpyi(1), Vector3d::UnitY()) *
-                          Eigen::AngleAxisd(rpyi(0), Vector3d::UnitX());
-    const Eigen::AngleAxisd angle_axis_expected(q);
-    const Eigen::AngleAxisd angle_axis_test = rpy2axis(rpyi);
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(angle_axis_expected,
-                                               angle_axis_test));
-
-    // rpy2axis should be the inversion of axis2rpy
-    const Vector3d rpy_test = axis2rpy(angle_axis_expected);
-    EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_test));
-  }
-}
-
-// Verifies the correctness of the method drake::math::rpy2quat() by comparing
-// its output to a quaternion obtained using the composition of
-// Eigen::AngleAxisd transformations in the method
-// BodyZYXAnglesToEigenQuaternion() local in this file.
+// Verifies the correctness of drake::math::QuaternionToSpaceXYZ() by comparing
+// its output to a quaternion obtained from BodyZYXAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RPYQuat) {
-  // Compute the quaternion representation using Eigen's geometry model,
-  // compare the result with rpy2quat
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    Vector3d bodyZYX_angles(rpyi(2), rpyi(1), rpyi(0));
-    auto quat_eigen_expected = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
-    auto quat_expected = EigenQuaternionToOrderWXYZ(quat_eigen_expected);
-    auto quat = rpy2quat(rpyi);
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expected));
-    // rpy2quat should be the inversion of quat2rpy
-    auto rpy_expected = quat2rpy(quat);
+    const Vector3d bodyZYX_angles(rpyi(2), rpyi(1), rpyi(0));
+    const Eigen::Quaterniond q = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
+    const Vector4d quat = rpy2quat(rpyi);
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(
+                quat, EigenQuaternionToOrderWXYZ(q)));
+    // QuaternionToSpaceXYZ() should be the inversion of rpy2quat.
+    const Vector3d rpy_expected = QuaternionToSpaceXYZ(q);
     EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
     EXPECT_TRUE(
         AreRollPitchYawForSameOrientation(rpyi, rotmat2rpy(rpy2rotmat(rpyi))));
