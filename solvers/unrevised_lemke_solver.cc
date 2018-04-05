@@ -96,131 +96,6 @@ MatrixX<double> LinearSolver<double>::Solve(
   }
   return lu_.solve(m);
 }
-
-// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
-// solves the LCP.
-template <typename Scalar>
-bool CheckLemkeTrivial(int n, const Scalar& zero_tol, const VectorX<Scalar>& q,
-                       VectorX<Scalar>* z) {
-  if (q.minCoeff() > -zero_tol) {
-    z->resize(n);
-    z->fill(0);
-    return true;
-  }
-
-  return false;
-}
-
-// Function for checking whether a set of indices that specify a view into
-// a vector is valid.
-bool ValidateIndices(const std::vector<int>& row_indices, int vector_size) {
-  // Don't check anything for empty vectors.
-  if (row_indices.empty())
-    return true;
-
-  // Sort the vector first.
-  std::vector<int> sorted_row_indices = row_indices;
-  std::sort(sorted_row_indices.begin(), sorted_row_indices.end());
-
-  // Validate the maximum and minimum elements.
-  if (sorted_row_indices.back() >= vector_size)
-    return false;
-  if (sorted_row_indices.front() < 0)
-    return false;
-
-  // Make sure that the vector is unique.
-  return std::unique(sorted_row_indices.begin(), sorted_row_indices.end()) ==
-         sorted_row_indices.end();
-}
-
-// Function for checking whether a set of indices that specify a view into
-// a matrix is valid.
-bool ValidateIndices(
-    const std::vector<int>& row_indices,
-    const std::vector<int>& col_indices, int num_rows, int num_cols) {
-  return ValidateIndices(row_indices, num_rows) &&
-         ValidateIndices(col_indices, num_cols);
-}
-
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
-template <typename Derived, typename T>
-void SelectSubMatrixWithCovering(const Eigen::MatrixBase<Derived>& in,
-                     const std::vector<int>& rows,
-                     const std::vector<int>& cols, MatrixX<T>* out) {
-  const int num_rows = rows.size();
-  const int num_cols = cols.size();
-  DRAKE_ASSERT(ValidateIndices(rows, cols, in.rows(), in.cols() + 1));
-  out->resize(num_rows, num_cols);
-
-  for (int i = 0; i < num_rows; i++) {
-    const auto row_in = in.row(rows[i]);
-
-    // row_out is a "view" into out: any modifications to row_out are reflected
-    // in out.
-    auto row_out = out->row(i);
-    for (int j = 0; j < num_cols; j++) {
-      if (cols[j] < in.cols()) {
-        row_out(j) = row_in(cols[j]);
-      } else {
-        row_out(j) = 1.0;
-      }
-    }
-  }
-}
-
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
-template <typename Derived, typename T>
-void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
-                                 const std::vector<int>& rows,
-                                 int column, VectorX<T>* out) {
-  const int num_rows = rows.size();
-  out->resize(num_rows);
-
-  // Look for the covering vector first.
-  if (column == in.cols()) {
-    out->setOnes();
-    return;
-  }
-
-  DRAKE_DEMAND(column < in.cols() && column >= 0);
-  const auto in_column = in.col(column);
-  for (int i = 0; i < num_rows; i++) {
-    DRAKE_ASSERT(rows[i] < in_column.size());
-    (*out)[i] = in_column[rows[i]];
-  }
-}
-
-// Utility function for copying selected rows of the column vector `in` to
-// the vector `out`, which is resized as necessary.
-template <typename T>
-void SelectSubVector(const VectorX<T>& in,
-                     const std::vector<int>& rows, VectorX<T>* out) {
-  const int num_rows = rows.size();
-  out->resize(num_rows);
-  for (int i = 0; i < num_rows; i++) {
-    DRAKE_ASSERT(rows[i] < in.rows());
-    (*out)(i) = in(rows[i]);
-  }
-}
-
-// Utility function for copying the vector `v_sub` to selected rows of the
-// column vector `v`. Asserts that the size of `v_sub` is equal to the size of
-// `indices`.
-template <typename T>
-void SetSubVector(const VectorX<T>& v_sub, const std::vector<int>& indices,
-                  VectorX<T>* v) {
-  DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
-  for (size_t i = 0; i < indices.size(); ++i)
-    (*v)[indices[i]] = v_sub[i];
-}
 }  // anonymous namespace
 
 template <>
@@ -315,6 +190,143 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
     solver_result.set_optimal_cost(0.0);
   }
   return SolutionResult::kSolutionFound;
+}
+
+// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
+// solves the LCP. Resizes z as necessary. Aborts if z is null.
+template <class T>
+bool UnrevisedLemkeSolver<T>::CheckLemkeTrivial(
+    const T& zero_tol, const VectorX<T>& q, VectorX<T>* z) {
+  DRAKE_ASSERT(z);
+  if (q.minCoeff() > -zero_tol) {
+    z->setZero(q.size());
+    return true;
+  }
+
+  return false;
+}
+
+// Utility function for copying part of a matrix (designated by the indices
+// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
+// the "covering vector"), to a target matrix, `out`. This template approach
+// allows selecting parts of both sparse and dense matrices for input; only
+// a dense matrix is returned.
+template <class T>
+template <typename Derived>
+void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
+    const Eigen::MatrixBase<Derived>& in,
+    const std::vector<int>& rows,
+    int column, VectorX<T>* out) {
+  const int num_rows = rows.size();
+  out->resize(num_rows);
+
+  // Look for the covering vector first.
+  if (column == in.cols()) {
+    out->setOnes();
+    return;
+  }
+
+  DRAKE_DEMAND(column < in.cols() && column >= 0);
+  const auto in_column = in.col(column);
+  for (int i = 0; i < num_rows; i++) {
+    DRAKE_ASSERT(rows[i] < in_column.size());
+    (*out)[i] = in_column[rows[i]];
+  }
+}
+
+// Utility function for copying selected rows of the column vector `in` to
+// the vector `out`, which is resized as necessary.
+template <class T>
+void UnrevisedLemkeSolver<T>::SelectSubVector(const VectorX<T>& in,
+    const std::vector<int>& rows, VectorX<T>* out) {
+  const int num_rows = rows.size();
+  out->resize(num_rows);
+  for (int i = 0; i < num_rows; i++) {
+    DRAKE_ASSERT(rows[i] < in.rows());
+    (*out)(i) = in(rows[i]);
+  }
+}
+
+// Utility function for copying the vector `v_sub` to selected rows of the
+// column vector `v`. Asserts that the size of `v_sub` is equal to the size of
+// `indices`.
+template <class T>
+void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v_sub,
+    const std::vector<int>& indices, VectorX<T>* v) {
+  DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
+  for (size_t i = 0; i < indices.size(); ++i)
+    (*v)[indices[i]] = v_sub[i];
+}
+
+// Function for checking whether a set of indices that specify a view into
+// a vector is valid. Returns `true` if row_indices are unique and each element
+// lies in [0, vector_size-1] and `false` otherwise. 
+template <class T>
+bool UnrevisedLemkeSolver<T>::ValidateIndices(
+    const std::vector<int>& row_indices, int vector_size) {
+  // Don't check anything for empty vectors.
+  if (row_indices.empty())
+    return true;
+
+  // Sort the vector first.
+  std::vector<int> sorted_row_indices = row_indices;
+  std::sort(sorted_row_indices.begin(), sorted_row_indices.end());
+
+  // Validate the maximum and minimum elements.
+  if (sorted_row_indices.back() >= vector_size)
+    return false;
+  if (sorted_row_indices.front() < 0)
+    return false;
+
+  // Make sure that the vector is unique.
+  return std::unique(sorted_row_indices.begin(), sorted_row_indices.end()) ==
+         sorted_row_indices.end();
+}
+
+// Function for checking whether a set of indices that specify a view into
+// a matrix is valid. Returns `true` if each element of row_indices is unique
+// lies in [0, num_rows-1] and if each element of col_indices is unique and
+// lies in [0, num_cols-1]. Returns `false` otherwise.
+template <class T>
+bool UnrevisedLemkeSolver<T>::ValidateIndices(
+    const std::vector<int>& row_indices,
+    const std::vector<int>& col_indices, int num_rows, int num_cols) {
+  return ValidateIndices(row_indices, num_rows) &&
+         ValidateIndices(col_indices, num_cols);
+}
+
+// Utility function for copying part of a matrix (designated by the indices
+// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
+// the "covering vector"), to a target matrix, `out`. This template approach
+// allows selecting parts of both sparse and dense matrices for input; only
+// a dense matrix is returned.
+template <class T>
+template <typename Derived>
+void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
+    const Eigen::MatrixBase<Derived>& in,
+    const std::vector<int>& rows,
+    const std::vector<int>& cols, MatrixX<T>* out) {
+  const int num_rows = rows.size();
+  const int num_cols = cols.size();
+  DRAKE_ASSERT(ValidateIndices(rows, cols, in.rows(), in.cols() + 1));
+  out->resize(num_rows, num_cols);
+
+  for (int i = 0; i < num_rows; i++) {
+    const auto row_in = in.row(rows[i]);
+
+    // `row_out` is a "view" into `out`: any modifications to row_out are
+    // reflected in `out`.
+    auto row_out = out->row(i);
+    for (int j = 0; j < num_cols; j++) {
+      if (cols[j] < in.cols()) {
+        DRAKE_ASSERT(cols[j] >= 0);
+        row_out(j) = row_in(cols[j]);
+      } else {
+        DRAKE_ASSERT(cols[j] == in.cols());
+        row_out(j) = 1.0;
+      }
+    }
+  }
 }
 
 // Helper for determining index sets.
@@ -626,7 +638,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   if (mod_zero_tol <= 0)
     mod_zero_tol = ComputeZeroTolerance(M);
 
-  if (CheckLemkeTrivial(n, mod_zero_tol, q, z)) {
+  if (CheckLemkeTrivial(mod_zero_tol, q, z)) {
     SPDLOG_DEBUG(log(), " -- trivial solution found");
     SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
     return true;

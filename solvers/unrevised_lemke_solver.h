@@ -143,6 +143,26 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                           // indicates that the index is uninitialized.
   };
 
+  template <typename Derived>
+  static void SelectSubMatrixWithCovering(
+      const Eigen::MatrixBase<Derived>& in,
+      const std::vector<int>& rows,
+      const std::vector<int>& cols, MatrixX<T>* out);
+  static bool CheckLemkeTrivial(
+      const T& zero_tol, const VectorX<T>& q, VectorX<T>* z);
+  template <typename Derived>
+  static void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
+      const std::vector<int>& rows,
+      int column, VectorX<T>* out);
+  static void SelectSubVector(const VectorX<T>& in,
+      const std::vector<int>& rows, VectorX<T>* out);
+  static void SetSubVector(
+      const VectorX<T>& v_sub, const std::vector<int>& indices, VectorX<T>* v);
+  static bool ValidateIndices(
+    const std::vector<int>& row_indices,
+    const std::vector<int>& col_indices, int num_rows, int num_cols);
+  static bool ValidateIndices(
+    const std::vector<int>& row_indices, int vector_size);
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
   bool LemkePivot(const MatrixX<T>& M, const VectorX<T>& q, int driving_index,
                   T zero_tol, VectorX<T>* M_bar_col, VectorX<T>* q_bar) const;
