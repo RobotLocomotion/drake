@@ -74,11 +74,8 @@ drake_cc_binary(
         "//multibody:rigid_body_tree_construction",
         "//multibody/parsers",
         "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//multibody/rigid_body_plant:rigid_body_plant_bridge",
         "//systems/analysis",
-        "//systems/lcm",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )

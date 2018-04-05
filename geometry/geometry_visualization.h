@@ -7,6 +7,7 @@
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
+#include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace geometry {
@@ -27,12 +28,16 @@ class GeometryVisualizationImpl {
 }  // namespace internal
 #endif  // DRAKE_DOXYGEN_CXX
 
-/** Dispatches an LCM load message based on the registered geometry. It should
- be invoked _after_ registration is complete, but before context allocation.
- @param scene_graph    The system whose geometry will be sent in an LCM message.
+/** Configures the diagram to interface with drake_visualizer. This should be
+ invoked as the _last_ thing before building the diagram; registration of all
+ frames and geometries should be done, but not context allocated.
+ @param scene_graph  The system whose geometry will be sent in an LCM message.
+ @param builder      The diagram builder to which the system belongs; additional
+                     systems will be added to enable visualization updates.
  @throws std::logic_error if the system has already had its context allocated.
  */
-void DispatchLoadMessage(const SceneGraph<double>& scene_graph);
+void ConfigureVisualization(const SceneGraph<double>& scene_graph,
+                            systems::DiagramBuilder<double>* builder);
 
 }  // namespace geometry
 }  // namespace drake

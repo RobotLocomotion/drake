@@ -146,6 +146,9 @@ drake_cc_library(
         "//lcm",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm",
+        "//systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 
