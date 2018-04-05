@@ -382,6 +382,8 @@ PYBIND11_MODULE(framework, m) {
          py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("set_time", &Context<T>::set_time)
+    .def("set_accuracy", &Context<T>::set_accuracy)
+    .def("get_accuracy", &Context<T>::get_accuracy)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
     .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
