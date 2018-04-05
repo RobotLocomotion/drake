@@ -533,6 +533,9 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
   return true;
 }
 
+// Computes the blocking index using the minimum ratio test. Returns `true`
+// if successful, `false` if not (due to, e.g., the driving variable being
+// "unblocked" or a cycle being detected).
 template <typename T>
 bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,

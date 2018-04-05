@@ -67,10 +67,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
-  /// @param[in] piv_tol The tolerance for testing against zero, specifically
-  ///            used for the purpose of finding variables for pivoting. If the
-  ///            tolerance is negative (default) the solver will determine a
-  ///            generally reasonable tolerance.
   /// @returns `true` if the solver **believes** it has computed a solution
   ///          (which it determines by the ability to "pivot out" the
   ///          "artificial" variable (see [Cottle 1992]) and `false` otherwise.
