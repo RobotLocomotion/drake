@@ -141,9 +141,6 @@ void AddOrthogonalConstraint(
   // for any real-valued alpha.  When |R1|<|R2|<=1 or |R2|<|R1|<=1,
   // different alphas represent different constraints.
 
-  Eigen::Matrix<double, 5, 6> A;
-  Eigen::Matrix<double, 5, 1> b;
-
   // |v1+v2|^2 <= 2
   // Implemented as a Lorenz cone using z = [ sqrt(2); v1+v2 ].
   Vector4<symbolic::Expression> z;
