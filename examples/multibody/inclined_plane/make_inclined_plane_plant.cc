@@ -55,6 +55,28 @@ MakeInclinedPlanePlant(double radius, double mass, double slope,
       Isometry3<double>::Identity(), Sphere(radius), surface_friction,
       geometry_system);
 
+  // Adds little spherical spokes highlight the sphere's rotation.
+  plant->RegisterVisualGeometry(
+      ball,
+      /* Pose X_BG of the geometry frame G in the ball frame B. */
+      Isometry3<double>(Translation3<double>(0, 0, radius)), Sphere(radius / 5),
+      geometry_system);
+  plant->RegisterVisualGeometry(
+      ball,
+      /* Pose X_BG of the geometry frame G in the ball frame B. */
+      Isometry3<double>(Translation3<double>(0, 0, -radius)), Sphere(radius / 5),
+      geometry_system);
+  plant->RegisterVisualGeometry(
+      ball,
+      /* Pose X_BG of the geometry frame G in the ball frame B. */
+      Isometry3<double>(Translation3<double>(radius, 0, 0)), Sphere(radius / 5),
+      geometry_system);
+  plant->RegisterVisualGeometry(
+      ball,
+      /* Pose X_BG of the geometry frame G in the ball frame B. */
+      Isometry3<double>(Translation3<double>(-radius, 0, 0)), Sphere(radius / 5),
+      geometry_system);
+
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
       -gravity * Vector3<double>::UnitZ());

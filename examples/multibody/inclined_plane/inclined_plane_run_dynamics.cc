@@ -87,7 +87,7 @@ int do_main() {
   const double slope = 15.0 / 180 * M_PI;  // rad.
   const CoulombFrictionCoefficients surface_friction(FLAGS_static_friction,
                                                      FLAGS_dynamic_friction);
-  const double z0 = -0.005;        // Initial height.
+  const double z0 = 0.000;        // Initial height.
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeInclinedPlanePlant(
@@ -150,12 +150,12 @@ int do_main() {
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Set at height z0 with random orientation.
-  std::mt19937 generator(41);
-  std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  //std::mt19937 generator(41);
+  //std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  //Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
   Isometry3d X0_WB = Isometry3d::Identity();
-  X0_WB.linear() = R_WB;
+  X0_WB.linear() = Matrix3<double>::Identity();
   X0_WB.translation() = Vector3d(0.0, 0.0, z0);
   model.SetFreeBodyPoseOrThrow(ball, X0_WB, &plant_context);
 
