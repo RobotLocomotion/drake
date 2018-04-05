@@ -4,6 +4,11 @@
 Frequently Asked Questions
 **************************
 
+..warning::
+
+    This page is old. Please review :ref:`getting_help` for more up-to-date
+    information.
+
 .. contents:: `Table of contents`
    :depth: 3
    :local:
