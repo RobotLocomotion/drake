@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
@@ -23,22 +21,19 @@ namespace drake {
 namespace manipulation {
 namespace quasistatic_kuka_iiwa_arm {
 namespace {
-using manipulation::util::ModelInstanceInfo;
-using manipulation::util::WorldSimTreeBuilder;
-using manipulation::util::SimDiagramBuilder;
 using Eigen::MatrixXd;
-using Eigen::VectorXi;
-using Eigen::VectorXd;
-using Eigen::Vector3d;
 using Eigen::Vector2d;
-using std::cout;
-using std::endl;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
+using manipulation::util::ModelInstanceInfo;
+using manipulation::util::SimDiagramBuilder;
+using manipulation::util::WorldSimTreeBuilder;
 using math::rpy2quat;
 using trajectories::PiecewisePolynomial;
 
 const Eigen::Vector3d kTableBase(0.82, 0, 0);
 const Eigen::Vector3d kDumbbellBase(0.5 + 0.0725 + 0.035, 0, 0.815);
-
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"
@@ -47,21 +42,14 @@ const char kUrdfPath[] =
 const char kUrdfPathDumbbell[] =
     "drake/manipulation/dev/double_dumbbell_for_pick_up.sdf";
 
-template <typename T>
-void print_stl_vector(const std::vector<T>& v) {
-  for (const T& i : v) {
-    cout << i << " ";
-  }
-  cout << endl;
-}
-
 std::unique_ptr<RigidBodyTreed> BuildSimWorld() {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
   tree_builder->StoreDrakeModel("iiwa", kUrdfPath);
   tree_builder->StoreDrakeModel(
       "wsg", "drake/manipulation/dev/simplified_schunk_gripper.sdf");
-  tree_builder->StoreDrakeModel("table", "drake/manipulation/dev/box_as_table"
-      ".sdf");
+  tree_builder->StoreDrakeModel("table",
+                                "drake/manipulation/dev/box_as_table"
+                                ".sdf");
   tree_builder->StoreDrakeModel("dumbbell", kUrdfPathDumbbell);
 
   tree_builder->AddFloatingModelInstance("dumbbell", Vector3d::Zero());
@@ -75,7 +63,6 @@ std::unique_ptr<RigidBodyTreed> BuildSimWorld() {
   return tree_builder->Build();
 }
 
-//////////////////////////////////////////////////////////////////////////
 const std::vector<double> kTimes{0.0, 2.0, 4.0, 6.0, 12.0};
 
 PiecewisePolynomial<double> MakePlan() {
@@ -94,8 +81,6 @@ PiecewisePolynomial<double> MakePlan() {
   joint_idx << 0, 1, 2, 3, 4, 5, 6;
   pc1.setJointLimits(joint_idx, joint_lb, joint_ub);
 
-  // Defines an end effector constraint and makes it active
-  // from 1.5s to 4.0s.
   Vector3d pos_end(0.48, 0, 0.804);
   Vector3d pos_lb = pos_end - Vector3d::Constant(0.002);
   Vector3d pos_ub = pos_end + Vector3d::Constant(0.002);
@@ -107,8 +92,6 @@ PiecewisePolynomial<double> MakePlan() {
   WorldQuatConstraint wqc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(1.5, 5.0));
 
-  // After the end effector constraint is released, applies the straight
-  // up configuration again from time 5.5 to 6.
   pos_end << 0.4, 0, 0.9;
   pos_lb = pos_end - Vector3d::Constant(0.002);
   pos_ub = pos_end + Vector3d::Constant(0.002);
@@ -170,14 +153,11 @@ PiecewisePolynomial<double> MakePlan() {
 
   std::vector<MatrixXd> knots(kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
-    // We only use column 0 of the matrix in knots (for joint positions),
-    // so we write a vector.
     knots[i] = q_sol.col(i);
   }
 
   return PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots);
 }
-///////////////////////////////////////////////////////////////////////////////
 
 class IiwaPickUpDumbbell : public manipulation::QuasistaticSystem<double> {
  public:
@@ -211,77 +191,16 @@ IiwaPickUpDumbbell::IiwaPickUpDumbbell()
   Initialize();
 }
 
-int do_main(int argc, char* argv[]) {
-  // parse command line arguments
-  double t_final = 12.0;
-  double BigM = 1;
-  double time_step = 0.005;
-  if (argc > 1) {
-    t_final = std::stod(argv[1]);
-  }
-  if (argc > 2) {
-    BigM = std::stod(argv[2]);
-  }
-  if (argc > 3) {
-    time_step = std::stod(argv[3]);
-  }
-
+int do_main() {
   // Loads model into a RigidBodyTree.
   auto tree = BuildSimWorld();
 
-  // Prints information about the model.
-  VectorXd q_iiwa(7);
-  q_iiwa << 0, 0, 0, -M_PI / 2, 0, 0, 0;
-  VectorXd q_gripper(2);
-  q_gripper << -0.055, 0.055;
-  VectorXd q_dumbbell(7);
-  q_dumbbell << kDumbbellBase, rpy2quat(Eigen::Vector3d::Zero());
-  VectorXd q(tree->get_num_positions());
-  q << q_dumbbell, q_iiwa, q_gripper;
-
-  cout << "model instances: " << tree->get_num_model_instances() << endl;
-  for (int i = 0; i < tree->get_num_positions(); i++) {
-    cout << i << ": " << tree->get_position_name(i) << " " << q(i) << endl;
-  }
-  for (int i = 0; i < tree->get_num_bodies(); i++) {
-    cout << "Body no. " << i << " " << tree->get_body(i).get_name() << endl;
-    auto body0_collision = tree->get_body(i).get_collision_element_ids();
-    cout << "No. of collision elements: " << body0_collision.size() << endl;
-  }
-
-  cout << "Num of bodies:" << tree->get_num_bodies() << endl;
-  cout << "Num of positions:" << tree->get_num_positions() << endl;
-  cout << "Num of velocities:" << tree->get_num_velocities() << endl;
-
-  VectorXd v(tree->get_num_velocities());
-  auto cache = tree->doKinematics(q, v);
-  VectorXd phi;
-  Eigen::Matrix3Xd normals, xA, xB;
-  std::vector<int> bodyA_idx;
-  std::vector<int> bodyB_idx;
-  cout << "collision? ";
-  cout << tree->collisionDetect(cache, phi, normals, xA, xB, bodyA_idx,
-                                bodyB_idx)
-       << endl;
-
-  cout << "phi\n" << phi << endl;
-  cout << "xA\n" << xA << endl;
-  cout << "xB\n" << xB << endl;
-  cout << "bodyA_idx.size(): " << bodyA_idx.size() << endl;
-  cout << "bodyA_idx: ";
-  print_stl_vector(bodyA_idx);
-  cout << "bodyB_idx.size(): " << bodyB_idx.size() << endl;
-  cout << "bodyB_idx: ";
-  print_stl_vector(bodyB_idx);
-
-  std::cin.get();
-
-  // simulation
+  // Builds simulation diagram.
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  const double h = time_step;  // time step
   auto iiwa_pickup = builder.AddSystem<IiwaPickUpDumbbell>();
+  const double h = iiwa_pickup->get_period_sec();  // time step
 
   const int n1 = iiwa_pickup->state_output().size();
   const int n_states = tree->get_num_positions() + tree->get_num_velocities();
@@ -309,14 +228,14 @@ int do_main(int argc, char* argv[]) {
       PiecewisePolynomial<double>::ZeroOrderHold(kTimes, knots);
 
   auto gripper_qdot_src =
-      builder.template AddSystem<systems::TrajectorySource<double>>(gripper_traj, 0);
+      builder.template AddSystem<systems::TrajectorySource<double>>(
+          gripper_traj, 0);
 
-  // picks the qdot segment of iiwa_traj_src output using matrix gain
+  // picks the qdot from iiwa_traj_src output using matrix gain
   const int n_qa_dot = iiwa_traj_src->get_num_total_outputs() / 2;
   MatrixXd D2(n_qa_dot, n_qa_dot * 2);
   D2.setZero();
   D2.block(0, n_qa_dot, n_qa_dot, n_qa_dot).setIdentity();
-  cout << "D2\n" << D2 << endl;
   auto gain2 = builder.template AddSystem<systems::MatrixGain>(D2);
   builder.Connect(iiwa_traj_src->get_output_port(), gain2->get_input_port());
 
@@ -348,7 +267,7 @@ int do_main(int argc, char* argv[]) {
                                                 .get_mutable_vector();
 
   x0.SetZero();
-  cout << "discrete state vector size: " << x0.size() << endl;
+
   x0.SetAtIndex(0, kDumbbellBase(0));  // x
   x0.SetAtIndex(1, kDumbbellBase(1));  // y
   x0.SetAtIndex(2, kDumbbellBase(2));  // z
@@ -360,18 +279,7 @@ int do_main(int argc, char* argv[]) {
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
 
-  simulator.StepTo(t_final);
-
-  // save logs to a file
-  std::ofstream s1, s2;
-  s1.open("state_log.txt");
-  s1 << log_state->data() << endl;
-  s1.close();
-
-  s2.open("decision_variables_log.txt");
-  s2 << log_decision_variables->data() << endl;
-  s2.close();
-
+  simulator.StepTo(kTimes.back());
 
   return 0;
 }
@@ -381,6 +289,4 @@ int do_main(int argc, char* argv[]) {
 }  // namespace manipulation
 }  // namespace drake
 
-int main(int argc, char* argv[]) {
-  return drake::manipulation::quasistatic_kuka_iiwa_arm::do_main(argc, argv);
-}
+int main() { return drake::manipulation::quasistatic_kuka_iiwa_arm::do_main(); }

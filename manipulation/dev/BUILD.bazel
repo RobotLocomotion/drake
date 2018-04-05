@@ -110,7 +110,6 @@ drake_cc_binary(
     ],
 )
 
-
 install_data()
 
 add_lint_tests()
