@@ -16,11 +16,11 @@ namespace systems {
 /// Drake's ODE initial value problem solvers ("integrators"), provide the
 /// ability to perform quadrature on an arbitrary scalar integrable function.
 /// That is, it allows the evaluation of an antiderivative function F(u; 𝐤),
-/// such that F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ, 𝐤 ∈ ℝᵐ.
-/// The parameter vector 𝐤 allows for generic function definitions, which can
-/// later be evaluated for any instance of said vector. Also, note that 𝐤 can be
-/// understood as an m-tuple or as an element of ℝᵐ, the vector space, depending
-/// on how it is used by the integrable function.
+/// such that F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ,
+/// 𝐤 ∈ ℝᵐ. The parameter vector 𝐤 allows for generic function definitions,
+/// which can later be evaluated for any instance of said vector. Also, note
+/// that 𝐤 can be understood as an m-tuple or as an element of ℝᵐ, the vector
+/// space, depending on how it is used by the integrable function.
 ///
 /// For further insight into its use, consider the following examples.
 ///
