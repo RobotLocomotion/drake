@@ -26,7 +26,7 @@ namespace math {
  * @see rpy2rotmat
  */
 template <typename Derived>
-Vector4<typename Derived::Scalar> rpy2axis(
+Eigen::AngleAxis<typename Derived::Scalar> rpy2axis(
     const Eigen::MatrixBase<Derived>& rpy) {
   // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix
   // the range problem in Eigen

@@ -238,7 +238,7 @@ Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
  * @see QuaternionToAngleAxis()
  */
 template <typename Derived>
-Vector4<typename Derived::Scalar> quat2axis(
+Eigen::AngleAxis<typename Derived::Scalar> quat2axis(
     const Eigen::MatrixBase<Derived>& quaternion) {
   // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
   // the range problem in Eigen
@@ -248,15 +248,7 @@ Vector4<typename Derived::Scalar> quat2axis(
   Eigen::Quaternion<Scalar> eigen_quaternion(quaternion(0), quaternion(1),
                                              quaternion(2), quaternion(3));
 
-  // Switch Eigen angleAxis [angle,x,y,z] order to Drake axisAngle
-  // [x,y,z,angle].
-  const Eigen::AngleAxis<Scalar> aa = QuaternionToAngleAxis(eigen_quaternion);
-  Vector4<Scalar> axis_angle;
-  axis_angle(3) = aa.angle();  // Drake's last element is angle.
-  axis_angle.template head<3>() =
-      aa.axis();  // Drake's first elements are axis.
-
-  return axis_angle;
+  return QuaternionToAngleAxis(eigen_quaternion);
 }
 
 /**
