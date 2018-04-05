@@ -295,11 +295,11 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
          ValidateIndices(col_indices, num_cols);
 }
 
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
+// Utility function for copying part of a matrix- designated by the indices
+// in rows and cols from `in` and augmented with a single column of "ones"
+// (i.e., the "covering vector")- to a target matrix, `out`. This template
+// approach allows selecting parts of both sparse and dense matrices for input;
+// only a dense matrix is returned.
 template <class T>
 template <typename Derived>
 void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
@@ -351,7 +351,8 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSetsHelper(
   }
 }
 
-// Determines the various index sets.
+// Determines the various index sets defined in Section 1.1 of
+// doc/pivot_column.pdf.
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Clear all sets.
@@ -385,7 +386,9 @@ bool UnrevisedLemkeSolver<T>::IsEachUnique(
   return (std::unique(vars_copy.begin(), vars_copy.end()) == vars_copy.end());
 }
 
-// Performs the pivoting operation.
+// Performs the pivoting operation, which is described in doc/pivot_column.pdf.
+// `M_prime_col` can be null, if the updated column of M' (pivoted version of M)
+// is not needed.
 template <typename T>
 bool UnrevisedLemkeSolver<T>::LemkePivot(
     const MatrixX<T>& M,
@@ -397,6 +400,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   DRAKE_DEMAND(q_prime);
 
   const int kArtificial = M.rows();  // Artificial variable index.
+  DRAKE_DEMAND(driving_index >= 0 && driving_index <= kArtificial);
 
   // Verify that each member in the independent and dependent sets is unique.
   DRAKE_ASSERT(IsEachUnique(indep_variables_));
@@ -425,7 +429,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SelectSubVector(q, index_sets_.alpha, &q_alpha_);
   SelectSubVector(q, index_sets_.bar_alpha, &q_bar_alpha_);
 
-  // Equation (10).
+  // Equation (10) from doc/pivot_column.pdf.
   LinearSolver<T> fMab(M_alpha_beta_);  // Factorized M_alpha_beta_.
   q_prime_beta_prime_ = -fMab.Solve(q_alpha_);
 
@@ -438,7 +442,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   if ((M_alpha_beta_ * q_prime_beta_prime_ + q_alpha_).norm() > zero_tol)
     return false;
 
-  // Equation (11).
+  // Equation (11) from doc/pivot_column.pdf.
   q_prime_bar_alpha_prime_ = M_prime_alpha_beta_ * q_prime_beta_prime_ +
       q_bar_alpha_;
 
@@ -482,7 +486,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   } else {
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #2: driving variable from z");
 
-    // Case from Section 2.2.2.
+    // Case from Section 2.2.2 of doc/pivot_column.pdf.
     // Determine zeta.
     const int zeta = indep_variables_[driving_index].index();
 
@@ -523,6 +527,10 @@ int UnrevisedLemkeSolver<T>::FindComplementIndex(
   return iter->second;
 }
 
+// Computes the solution using the current index sets. `z` must simply be
+// non-null; it will be resized as necessary. Returns `true` if able to
+// construct the solution and `false` if unable to find the solution to a
+// necessary system of linear equations.
 template <class T>
 bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
     const MatrixX<T>& M,
@@ -530,6 +538,7 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
     int artificial_index,
     T zero_tol,
     VectorX<T>* z) const {
+  DRAKE_DEMAND(z);
   const int n = q.rows();
 
   // Compute the solution.
@@ -602,6 +611,28 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
 }
 
 template <typename T>
+bool UnrevisedLemkeSolver<T>::IsSolution(
+    const MatrixX<T>& M, const VectorX<T>& q, const VectorX<T>& z,
+    T zero_tol) {
+  using std::abs;
+
+  const T mod_zero_tol = (zero_tol > 0) ? zero_tol : ComputeZeroTolerance(M);
+
+  // Find the minima of z and w.
+  const T min_z = z.minCoeff();
+  const auto w = M * z + q;
+  const T min_w = w.minCoeff();
+
+  // Compute the dot product of z and w.
+  const T dot = w.dot(z);
+  const int n = q.size();
+  return (min_z > -mod_zero_tol && min_w > -mod_zero_tol &&
+          abs(dot) < 10*n*mod_zero_tol);
+}
+
+// Note: maintainers should read Section 4.4 - 4.4.5 of [Cottle, 1992] to
+// understand Lemke's Algorithm (and this function).
+template <typename T>
 bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                                      const VectorX<T>& q, VectorX<T>* z,
                                      int* num_pivots,
@@ -630,7 +661,10 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     return true;
   }
 
-  // Denote the index of the artificial variable.
+  // Denote the index of the artificial variable (i.e., the variable denoted
+  // z₀ in [Cottle 1992], p. 266). Because z₀ is prone to being confused with
+  // the first dimension of z in 0-indexed languages like C++, we refer to the
+  // artificial variable as zₙ in this implementation.
   const int kArtificial = n;
 
   // Compute a sensible value for zero tolerance if none is given.
@@ -692,7 +726,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     dep_variables_[i] = LCPVariable(false, i);
     indep_variables_[i] = LCPVariable(true, i);
   }
-  indep_variables_[n] = LCPVariable(true, n);   // z needs one more variable.
+  // z needs one more variable (the artificial variable), whose index we
+  // denote as n to keep it from corresponding to any actual vector index.
+  indep_variables_[n] = LCPVariable(true, n);
 
   // Compute zn*, the smallest value of the artificial variable zn for which
   // w = q + zn >= 0. Let blocking denote a component of w that equals
@@ -763,8 +799,15 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
                 indep_variables_[driving_index]);
 
       // Compute the permuted q, and convert it into a solution.
-      if (ConstructLemkeSolution(M, q, driving_index, mod_zero_tol, z))
-        return true;
+      if (ConstructLemkeSolution(M, q, driving_index, mod_zero_tol, z)) {
+        if (IsSolution(M, q, *z))
+          return true;
+
+        DRAKE_SPDLOG_DEBUG(log(),
+            "Solution not computed to requested tolerance");
+        z->setZero(n);
+        return false;
+      }
 
       // Otherwise, indicate failure.
       DRAKE_SPDLOG_DEBUG(log(),

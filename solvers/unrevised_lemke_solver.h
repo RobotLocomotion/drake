@@ -43,8 +43,15 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-        (10 * std::numeric_limits<double>::epsilon());
+        (2 * std::numeric_limits<double>::epsilon());
   }
+
+  /// Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
+  /// w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance is
+  /// non-positive, this method computes a reasonable tolerance using M.
+  static bool IsSolution(
+      const MatrixX<T>& M, const VectorX<T>& q, const VectorX<T>& z,
+      T zero_tol = -1);
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -67,11 +74,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   /// @param[in] zero_tol The tolerance for testing against zero. If the
   ///            tolerance is negative (default) the solver will determine a
   ///            generally reasonable tolerance.
-  /// @returns `true` if the solver **believes** it has computed a solution
-  ///          (which it determines by the ability to "pivot out" the
-  ///          "artificial" variable (see [Cottle 1992]) and `false` otherwise.
-  /// @warning The caller should verify that the algorithm has solved the LCP to
-  ///          the desired tolerances on returns indicating success.
+  /// @returns `true` if the solver computes a solution to floating point
+  ///           tolerances (i.e., if IsSolution() returns `true` on the problem)
+  ///           and `false` otherwise.
   /// @throws std::logic_error if M is not square or the dimensions of M do not
   ///         match the length of q.
   ///

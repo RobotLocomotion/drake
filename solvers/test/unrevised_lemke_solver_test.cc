@@ -262,6 +262,22 @@ GTEST_TEST(testUnrevisedLCP, testFailure) {
   EXPECT_FALSE(constraint.CheckSatisfied(z));
 }
 
+GTEST_TEST(testSolutionQuality, testSoluion) {
+  // Set the LCP and the solution.
+  VectorX<double> q(1), z(1);
+  MatrixX<double> M(1, 1);
+  M(0, 0) = 1;
+  q[0] = -1;
+  z[0] = 1 - std::numeric_limits<double>::epsilon();
+
+  // Check solution quality without a tolerance specified.
+  UnrevisedLemkeSolver<double> lcp;
+  EXPECT_TRUE(lcp.IsSolution(M, q, z));
+
+  // Check solution quality with a tolerance specified.
+  EXPECT_TRUE(lcp.IsSolution(M, q, z, 3e-16));
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
