@@ -1318,8 +1318,9 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     contact_result.set_contact_details(std::move(contact_details));
   }
 
-  // Convert the contact forces to generalized forces by zeroing joint limit
-  // and bilateral constraint forces first.
+  // Convert the contact forces to generalized forces after first zeroing
+  // range-of-motion and bilateral constraint forces first- we do not want those
+  // accounted for in the calculation.
   VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
   VectorX<T> contact_force = constraint_force;
@@ -1462,8 +1463,9 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   contacts->set_generalized_contact_force(
       VectorX<T>::Zero(get_num_velocities()));
 
-  // This code should do nothing if the state is discrete because the compliant
-  // contact model will not be used to compute contact forces.
+  // If the state is discrete, we use the last contact results from the time
+  // stepping method, which we can do because the time stepping method
+  // progresses only forwards in time.
   if (is_state_discrete()) {
     *contacts = time_stepping_contact_results_;
     return;
