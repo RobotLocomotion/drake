@@ -1248,7 +1248,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
 // Populates `contact_results` for the time stepping calculation using the
 // geometric data (`contacts`), the time stepping problem data, and the computed
-// contact force (impulse) solution. Note: we
+// contact force (impulse) solution.
 template <typename T>
 void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     const T& dt,
