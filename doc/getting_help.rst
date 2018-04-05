@@ -7,7 +7,8 @@ Searching For Your Question
 
 If you need help with Drake, please first review the documentation on this
 website for things such as :ref:`installation <installation>`_,
-`the C++ API <doxygen_cxx/index.html#://>`_, or :ref:`Python bindings`_.
+`the C++ API <doxygen_cxx/index.html#://>`_, or
+:ref:`Python bindings <python-bindings>`_.
 
 Please also briefly review
 `Drake's open and closed GitHub issues <https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue>`_
