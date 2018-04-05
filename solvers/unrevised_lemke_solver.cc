@@ -260,7 +260,7 @@ void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v_sub,
 
 // Function for checking whether a set of indices that specify a view into
 // a vector is valid. Returns `true` if row_indices are unique and each element
-// lies in [0, vector_size-1] and `false` otherwise. 
+// lies in [0, vector_size-1] and `false` otherwise.
 template <class T>
 bool UnrevisedLemkeSolver<T>::ValidateIndices(
     const std::vector<int>& row_indices, int vector_size) {
