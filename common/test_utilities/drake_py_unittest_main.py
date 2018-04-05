@@ -3,10 +3,12 @@ use by the drake_py_unittest macro defined in //tools/skylark:drake_py.bzl and
 should NOT be called directly by anything else.
 """
 
+import argparse
 import imp
 import os
 import re
 import sys
+import trace
 import unittest
 
 if __name__ == '__main__':
@@ -76,5 +78,39 @@ if __name__ == '__main__':
             continue
         index += 1
 
-    # Delegate the rest to unittest.
-    unittest.main(module=test_name, argv=unittest_argv)
+    # Custom flags.
+    parser = argparse.ArgumentParser(description="Drake-specific arguments")
+    parser.add_argument(
+        "--trace", type=str, choices=["none", "user", "sys"], default="none",
+        help="Enable source tracing. `none` implies no tracing, `user` " +
+             "implies tracing user code, and `sys` implies tracing all " +
+             "code. Default is `none`.")
+    parser.add_argument(
+        "--nostdout_to_stderr", action="store_true",
+        help="Do not pipe stdout to stderr. When running from the Bazel " +
+             "client (non-batch), output may be mixed, so piping makes " +
+             "the output more readable.")
+    args, remaining = parser.parse_known_args()
+    sys.argv = sys.argv[:1] + remaining
+
+    def run():
+        # Ensure we print out help.
+        if "-h" in unittest_argv or "--help" in unittest_argv:
+            parser.print_help()
+            print("\n`unittest` specific arguments")
+
+        # Delegate the rest to unittest.
+        unittest.main(module=test_name, argv=unittest_argv)
+
+    if not args.nostdout_to_stderr:
+        sys.stdout = sys.stderr
+
+    if args.trace != "none":
+        if args.trace == "user":
+            ignoredirs = sys.path
+        else:
+            ignoredirs = []
+        tracer = trace.Trace(trace=1, count=0, ignoredirs=ignoredirs)
+        tracer.run('run()')
+    else:
+        run()

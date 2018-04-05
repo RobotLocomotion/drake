@@ -14,6 +14,7 @@
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 #include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -443,10 +444,11 @@ void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
   std::string filename = road_->id().string();
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
+  const std::string tmpdir = drake::temp_directory();
   maliput::utility::GenerateUrdfFile(road_.get(),
-                                     "/tmp", filename,
+                                     tmpdir, filename,
                                      maliput::utility::ObjFeatures());
-  const std::string urdf_filepath = "/tmp/" + filename + ".urdf";
+  const std::string urdf_filepath = tmpdir + "/" + filename + ".urdf";
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf_filepath,
       drake::multibody::joints::kFixed,
@@ -544,12 +546,7 @@ template <typename T>
 void AutomotiveSimulator<T>::SendLoadRobotMessage(
     const lcmt_viewer_load_robot& message) {
   DRAKE_DEMAND(lcm_ != nullptr);
-  const int num_bytes = message.getEncodedSize();
-  std::vector<uint8_t> message_bytes(num_bytes);
-  const int num_bytes_encoded =
-      message.encode(message_bytes.data(), 0, num_bytes);
-  DRAKE_ASSERT(num_bytes_encoded == num_bytes);
-  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(), num_bytes);
+  Publish(lcm_.get(), "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 template <typename T>

@@ -7,7 +7,7 @@ def com_jidesoft_jide_oss_repository(
         mirrors = None):
     java_import_external(
         name = name,
-        licenses = [],
+        licenses = ["restricted"],  # GPL-2.0 WITH Classpath-exception-2.0
         jar_urls = [
             x.format(fulljar = "com/jidesoft/jide-oss/2.9.7/jide-oss-2.9.7.jar")  # noqa
             for x in mirrors.get("maven")

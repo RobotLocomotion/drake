@@ -1,11 +1,5 @@
 # -*- python -*-
 
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
-
 # Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
 # matlab/cmake/flags.cmake.
 
@@ -127,7 +121,7 @@ def installed_headers_for_dep(dep):
         last_slash = dep.rindex("/")
         libname = dep[last_slash + 1:]
         result = dep + ":" + libname + suffix
-    return adjust_label_for_drake_hoist(result)
+    return result
 
 def installed_headers_for_drake_deps(deps):
     """Filters `deps` to find drake labels (i.e., discard third_party labels),
@@ -229,7 +223,6 @@ def _raw_drake_cc_library(
         name,
         hdrs = [],
         srcs = [],  # Cannot list any headers here.
-        data = [],
         deps = [],
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
@@ -239,8 +232,6 @@ def _raw_drake_cc_library(
     a drake_installed_headers() target.  (This should be set if and only if the
     caller is drake_cc_library.)
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
     _check_library_deps_blacklist(name, deps)
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
@@ -257,7 +248,6 @@ def _raw_drake_cc_library(
         hdrs = hdrs,
         srcs = srcs,
         deps = deps,
-        data = data,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         **kwargs)
@@ -377,8 +367,6 @@ def drake_cc_binary(
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
     new_copts = _platform_copts(copts, gcc_copts)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
@@ -443,13 +431,13 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
+            tags = kwargs.pop("tags", []) + ["nolint"],
             **kwargs)
 
 def drake_cc_test(
         name,
         size = None,
         srcs = [],
-        data = [],
         deps = [],
         copts = [],
         gcc_copts = [],
@@ -466,8 +454,6 @@ def drake_cc_test(
     in debug-mode builds, so the test will trivially pass. This option should
     be used only rarely, and the reason should always be documented.
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
     if size == None:
         size = "small"
     if not srcs:
@@ -491,7 +477,6 @@ def drake_cc_test(
         name = name,
         size = size,
         srcs = new_srcs,
-        data = data,
         deps = new_deps,
         copts = new_copts,
         **kwargs)
@@ -525,9 +510,9 @@ def drake_cc_googletest(
     be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
-        deps = deps + adjust_labels_for_drake_hoist([
-            "//drake/common/test_utilities:drake_cc_googletest_main",
-        ])
+        deps = deps + [
+            "//common/test_utilities:drake_cc_googletest_main",
+        ]
     else:
         deps = deps + ["@gtest//:without_main"]
     drake_cc_test(

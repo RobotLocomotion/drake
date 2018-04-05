@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -51,6 +52,49 @@ class RotationMatrix {
 #else
     SetUnchecked(R);
 #endif
+  }
+
+  /// Constructs a %RotationMatrix from an Eigen::Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
+  /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `quaternion` fails IsValid(R).  For example, an
+  /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
+  /// @note This method has the effect of normalizing its `quaternion` argument,
+  /// without the inefficiency of the square-root associated with normalization.
+  // TODO(mitiguy) Although this method is fairly efficient, consider adding an
+  // optional second argument if `quaternion` is known to be normalized apriori
+  // or for some reason the calling site does not want `quaternion` normalized.
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    // Cost for various way to create a rotation matrix from a quaternion.
+    // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
+    // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
+    // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
+    // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
+    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
+
+  /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
+  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
+  /// direction herein called `lambda`) is non-zero and finite, but which may or
+  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
+  /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
+  // @internal In general, the %RotationMatrix constructed by passing a non-unit
+  // `lambda` to this method is different than the %RotationMatrix produced by
+  // converting `lambda` to an un-normalized quaternion and calling the
+  // %RotationMatrix constructor (above) with that un-normalized quaternion.
+  // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
+  // known to be normalized apriori or calling site does not want normalization.
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    const Vector3<T>& lambda = theta_lambda.axis();
+    const T norm = lambda.norm();
+    const T& theta = theta_lambda.angle();
+    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -454,6 +498,17 @@ class RotationMatrix {
     return q;
   }
 
+  /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
+  /// vector (axis direction) `lambda` that represents `this` %RotationMatrix.
+  /// @note The orientation and %RotationMatrix associated with `theta * lambda`
+  /// is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
+  /// this method chooses to have `0 <= theta <= pi`.
+  /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
+  Eigen::AngleAxis<T> ToAngleAxis() const {
+    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
+    return theta_lambda;
+  }
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
@@ -505,13 +560,7 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Matrix3<T>& R) {
-    if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
-      throw std::logic_error("Error: Rotation matrix is not orthonormal.");
-    if (R.determinant() < 0)
-      throw std::logic_error("Error: Rotation matrix determinant is negative. "
-                                 "It is possible a basis is left-handed");
-  }
+  static void ThrowIfNotValid(const Matrix3<T>& R);
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
@@ -565,6 +614,51 @@ class RotationMatrix {
       *quality_factor = s_f * sign_det;
     }
     return svd.matrixU() * svd.matrixV().transpose();
+  }
+
+  // Constructs a 3x3 rotation matrix from a Quaternion.
+  // @param[in] quaternion a quaternion which may or may not have unit length.
+  // @param[in] two_over_norm_squared is supplied by the calling method and is
+  // usually pre-computed as `2 / quaternion.squaredNorm()`.  If `quaternion`
+  // has already been normalized [`quaternion.norm() = 1`] or there is a reason
+  // (unlikely) that the calling method determines that normalization is
+  // unwanted, the calling method should just past `two_over_norm_squared = 2`.
+  // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
+  // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
+  // has a provision for an efficient algorithm for always calculating an
+  // orthogonal rotation matrix (whereas Eigen's algorithm does not).
+  static Matrix3<T> QuaternionToRotationMatrix(
+      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
+    Matrix3<T> m;
+
+    const T w = quaternion.w();
+    const T x = quaternion.x();
+    const T y = quaternion.y();
+    const T z = quaternion.z();
+    const T sx  = two_over_norm_squared * x;  // scaled x-value.
+    const T sy  = two_over_norm_squared * y;  // scaled y-value.
+    const T sz  = two_over_norm_squared * z;  // scaled z-value.
+    const T swx = sx * w;
+    const T swy = sy * w;
+    const T swz = sz * w;
+    const T sxx = sx * x;
+    const T sxy = sy * x;
+    const T sxz = sz * x;
+    const T syy = sy * y;
+    const T syz = sz * y;
+    const T szz = sz * z;
+
+    m.coeffRef(0, 0) = T(1) - syy - szz;
+    m.coeffRef(0, 1) = sxy - swz;
+    m.coeffRef(0, 2) = sxz + swy;
+    m.coeffRef(1, 0) = sxy + swz;
+    m.coeffRef(1, 1) = T(1) - sxx - szz;
+    m.coeffRef(1, 2) = syz - swx;
+    m.coeffRef(2, 0) = sxz - swy;
+    m.coeffRef(2, 1) = syz + swx;
+    m.coeffRef(2, 2) = T(1) - sxx - syy;
+
+    return m;
   }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).

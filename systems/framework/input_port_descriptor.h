@@ -29,7 +29,7 @@ class InputPortDescriptor {
   /// @param random_type Input ports may optionally be labeled as random, if the
   ///                    port is intended to model a random-source "noise" or
   ///                    "disturbance" input.
-  InputPortDescriptor(const System<T>* system, int index,
+  InputPortDescriptor(const System<T>* system, InputPortIndex index,
                       PortDataType data_type, int size,
                       const optional<RandomDistribution>& random_type)
       : system_(system),
@@ -67,7 +67,7 @@ class InputPortDescriptor {
   /// @}
 
   const System<T>* get_system() const { return system_; }
-  int get_index() const { return index_; }
+  InputPortIndex get_index() const { return index_; }
   PortDataType get_data_type() const { return data_type_; }
   int size() const { return size_; }
   bool is_random() const { return static_cast<bool>(random_type_); }
@@ -75,7 +75,7 @@ class InputPortDescriptor {
 
  private:
   const System<T>* const system_;
-  const int index_;
+  const InputPortIndex index_;
   const PortDataType data_type_;
   const int size_;
   const optional<RandomDistribution> random_type_;

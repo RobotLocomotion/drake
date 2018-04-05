@@ -386,8 +386,8 @@ class RotationConversionTest : public ::testing::Test {
       rotation_matrix_test_cases_.push_back(rpy2rotmat(rpyi));
     }
     for (auto const& ai : angle_axis_test_cases_) {
-      rotation_matrix_test_cases_.push_back(
-          axis2rotmat(EigenAngleAxisToDrakeAxisAngle(ai)));
+      const RotationMatrix<double> Ri(ai);
+      rotation_matrix_test_cases_.push_back(Ri.matrix());
     }
     for (auto const& qi : quaternion_test_cases_) {
       auto q = EigenQuaternionToOrderWXYZ((qi));
@@ -412,34 +412,6 @@ TEST_F(RotationConversionTest, AxisQuat) {
     EXPECT_TRUE(q_eigen.isApprox(q_eigen_expected));
     // axis2quat should be the inversion of quat2axis
     auto a_expected = quat2axis(q);
-    AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
-  }
-}
-
-TEST_F(RotationConversionTest, AxisRotmat) {
-  for (const auto& ai_eigen : angle_axis_test_cases_) {
-    // Manually computes the rotation matrix from axis-angle representation,
-    // using Rodrigues' rotation formula
-    // https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula.
-    // This is just to make sure that whatever our implementation of axis2rotmat
-    // is, it outputs the right result.
-    auto ai = EigenAngleAxisToDrakeAxisAngle(ai_eigen);
-    auto axis_skew = VectorToSkewSymmetric(ai.head<3>());
-    auto rotmat_expected = Matrix3d::Identity() + std::sin(ai(3)) * axis_skew +
-                           (1.0 - std::cos(ai(3))) * axis_skew * axis_skew;
-    auto rotmat = axis2rotmat(ai);
-    EXPECT_TRUE(CompareMatrices(rotmat, rotmat_expected, 1E-10,
-                                MatrixCompareType::absolute));
-
-    // Compute the rotation matrix using Eigen geometry module, compare the
-    // result with axis2rotmat
-    auto rotmat_expected2 = ai_eigen.toRotationMatrix();
-    EXPECT_TRUE(CompareMatrices(rotmat_expected2, rotmat, 1E-10,
-                                MatrixCompareType::absolute));
-
-    // axis2rotmat should be the inversion of rotmat2axis
-    auto a_expected = rotmat2axis(rotmat);
     AngleAxisd a_eigen_expected(a_expected(3), a_expected.head<3>());
     EXPECT_TRUE(AreAngleAxisForSameOrientation(ai_eigen, a_eigen_expected));
   }
@@ -519,20 +491,6 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expectd));
     // rotmat2quat should be the inversion of quat2rotmat
     Matrix3d rotmat_expected = quat2rotmat(quat);
-    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
-  }
-}
-
-TEST_F(RotationConversionTest, RotmatAxis) {
-  // Compute angle-axis using Eigen geometry module, compare the result with
-  // rotmat2axis
-  for (const auto& Ri : rotation_matrix_test_cases_) {
-    auto a_eigen_expected = AngleAxisd(Ri);
-    Vector4d a = rotmat2axis(Ri);
-    auto a_eigen = AngleAxisd(a(3), a.head<3>());
-    EXPECT_TRUE(AreAngleAxisForSameOrientation(a_eigen, a_eigen_expected));
-    // rotmat2axis should be the inversion of axis2rotmat
-    auto rotmat_expected = axis2rotmat(a);
     EXPECT_TRUE(Ri.isApprox(rotmat_expected));
   }
 }

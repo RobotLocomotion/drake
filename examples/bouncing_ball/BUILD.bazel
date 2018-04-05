@@ -25,6 +25,7 @@ drake_cc_googletest(
     deps = [
         ":bouncing_ball",
         "//systems/analysis",
+        "//systems/framework/test_utilities",
     ],
 )
 

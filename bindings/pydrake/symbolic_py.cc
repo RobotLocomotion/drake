@@ -37,6 +37,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
+      .def("__copy__",
+           [](const Variable& self) -> Variable {
+             return self;
+           })
       // Addition.
       .def(py::self + py::self)
       .def(py::self + double())
@@ -67,6 +71,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
              return pow(self, other);
            },
            py::is_operator())
+      // We add `EqualTo` instead of `equal_to` to maintain consistency among
+      // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
+      // side. This enables us to achieve polymorphism via ducktyping in Python.
+      .def("EqualTo", &Variable::equal_to)
       // Unary Plus.
       .def(+py::self)
       // Unary Minus.
@@ -124,6 +132,8 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("IsSupersetOf", &Variables::IsSupersetOf)
       .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf)
+      .def("EqualTo", [](const Variables& self,
+                         const Variables& vars) { return self == vars; })
       .def(py::self == py::self)
       .def(py::self < py::self)
       .def(py::self + py::self)
@@ -145,9 +155,16 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self) {
              return fmt::format("<Expression \"{}\">", self.to_string());
            })
+      .def("__copy__",
+           [](const Expression& self) -> Expression { return self; })
       .def("to_string", &Expression::to_string)
       .def("Expand", &Expression::Expand)
       .def("Evaluate", [](const Expression& self) { return self.Evaluate(); })
+      .def("Evaluate",
+           [](const Expression& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
+      .def("EqualTo", &Expression::EqualTo)
       // Addition
       .def(py::self + py::self)
       .def(py::self + Variable())
@@ -223,11 +240,31 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::self != Variable())
       .def(py::self != double())
       .def("Differentiate", &Expression::Differentiate)
-      .def("Jacobian", &Expression::Jacobian);
+      .def("Jacobian", &Expression::Jacobian)
+      // TODO(eric.cousineau): Figure out how to consolidate with the below
+      // methods.
+      .def("log", &symbolic::log)
+      .def("__abs__", &symbolic::abs)
+      .def("exp", &symbolic::exp)
+      .def("sqrt", &symbolic::sqrt)
+      // TODO(eric.cousineau): Move `__pow__` here.
+      .def("sin", &symbolic::sin)
+      .def("cos", &symbolic::cos)
+      .def("tan", &symbolic::tan)
+      .def("arcsin", &symbolic::asin)
+      .def("arccos", &symbolic::acos)
+      .def("arctan2", &symbolic::atan2)
+      .def("sinh", &symbolic::sinh)
+      .def("cosh", &symbolic::cosh)
+      .def("tanh", &symbolic::tanh)
+      .def("min", &symbolic::min)
+      .def("max", &symbolic::max)
+      .def("ceil", &symbolic::ceil)
+      .def("floor", &symbolic::floor);
 
   // TODO(eric.cousineau): Consider deprecating these methods?
   auto math = py::module::import("pydrake.math");
-  MirrorDef(math, m)
+  MirrorDef<py::module, py::module>(&math, &m)
       .def("log", &symbolic::log)
       .def("abs", &symbolic::abs)
       .def("exp", &symbolic::exp)
@@ -259,6 +296,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::class_<Formula>(m, "Formula")
       .def("GetFreeVariables", &Formula::GetFreeVariables)
       .def("EqualTo", &Formula::EqualTo)
+      .def("Evaluate",
+           [](const Formula& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Substitute",
            [](const Formula& self, const Variable& var, const Expression& e) {
              return self.Substitute(var, e);
@@ -322,9 +363,15 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Monomial& self) {
              return fmt::format("<Monomial \"{}\">", self);
            })
+      .def("EqualTo", [](const Monomial& self,
+                         const Monomial& monomial) { return self == monomial; })
       .def("GetVariables", &Monomial::GetVariables)
       .def("get_powers", &Monomial::get_powers, py_reference_internal)
       .def("ToExpression", &Monomial::ToExpression)
+      .def("Evaluate",
+           [](const Monomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("pow_in_place", &Monomial::pow_in_place, py_reference_internal)
       .def("__pow__",
            [](const Monomial& self, const int p) { return pow(self, p); });
@@ -385,6 +432,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__pow__",
            [](const Polynomial& self, const int n) { return pow(self, n); })
+      .def("Evaluate",
+           [](const Polynomial& self, const Environment::map& env) {
+             return self.Evaluate(Environment{env});
+           })
       .def("Jacobian", [](const Polynomial& p,
                           const Eigen::Ref<const VectorX<Variable>>& vars) {
         return p.Jacobian(vars);

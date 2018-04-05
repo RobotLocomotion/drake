@@ -86,11 +86,11 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   ASSERT_EQ(2, derivatives->get_misc_continuous_state().size());
 
   // The derivatives of plant.
-  const ContinuousState<double>* plant_xcdot =
+  const ContinuousState<double>& plant_xcdot =
       model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
 
   // Position derivative.
-  EXPECT_EQ(v0, plant_xcdot->get_vector().GetAtIndex(0));
+  EXPECT_EQ(v0, plant_xcdot.get_vector().GetAtIndex(0));
 
   // Acceleration.
   const double error = x0 - kTargetPosition;
@@ -98,11 +98,11 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
   const double pid_actuation =
       kProportionalConstant * error +  kDerivativeConstant * error_rate;
   EXPECT_EQ((-kSpring * x0 - pid_actuation) / kMass,
-            plant_xcdot->get_vector().GetAtIndex(1));
+            plant_xcdot.get_vector().GetAtIndex(1));
 
   // Power.
   EXPECT_EQ(model_->get_plant().EvalConservativePower(*plant_context_),
-            plant_xcdot->get_vector().GetAtIndex(2));
+            plant_xcdot.get_vector().GetAtIndex(2));
 }
 
 TEST_F(SpringMassSystemTest, DirectFeedthrough) {

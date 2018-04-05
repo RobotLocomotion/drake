@@ -431,6 +431,8 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   void EvaluateCosts(Index n, const Number* x) {
     const Eigen::VectorXd xvec = MakeEigenVector(n, x);
 
+    problem_->EvalVisualizationCallbacks(xvec);
+
     AutoDiffVecXd ty(1);
     Eigen::VectorXd this_x;
 

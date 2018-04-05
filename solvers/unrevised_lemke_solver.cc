@@ -731,7 +731,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
       return false;
     }
 
-    // Find the blocking variable. 
+    // Find the blocking variable.
     if (!FindBlockingIndex(
         mod_zero_tol, M_prime_col,
         -(q_prime.array() / M_prime_col.array()).matrix(), &blocking_index)) {

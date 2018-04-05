@@ -16,6 +16,27 @@
 namespace drake {
 namespace math {
 
+// The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
+// x, y, z) ordering, just as we do.
+// HOWEVER: when the constructor is called on a 4-element Vector, the elements
+// must be in (x, y, z, w) order.
+// So, the following two calls will give you the SAME quaternion:
+// Quaternion<double>(q(0), q(1), q(2), q(3));
+// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+// which is gross and will cause you much pain.
+// see:
+// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
+//
+// This method takes a nice, normal (w, x, y, z) order vector and gives you
+// the Quaternion you expect.
+template <typename Derived>
+Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
+    const Eigen::MatrixBase<Derived>& q) {
+  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
+  // the range problem in Eigen
+  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
+}
+
 /**
  * Returns a unit quaternion that represents the same orientation as `q1`,
  * and has the "shortest" geodesic distance on the unit sphere to `q0`.
@@ -243,35 +264,16 @@ Vector4<typename Derived::Scalar> quat2axis(
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
  * @return 3 x 3 rotation matrix
+ * (Deprecated), use @ref math::RotationMatrix(quaternion).
  */
+// TODO(mitiguy) change all calling sites to this function.
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
     const Eigen::MatrixBase<Derived>& quaternion) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = quaternion.normalized();
-  auto w = q_normalized(0);
-  auto x = q_normalized(1);
-  auto y = q_normalized(2);
-  auto z = q_normalized(3);
-
-  auto ww = w * w;
-  auto xx = x * x;
-  auto yy = y * y;
-  auto zz = z * z;
-  auto wx = w * x;
-  auto wy = w * y;
-  auto wz = w * z;
-  auto xy = x * y;
-  auto xz = x * z;
-  auto yz = y * z;
-  Matrix3<typename Derived::Scalar> M;
-  M.row(0) << ww + xx - yy - zz, 2.0 * xy - 2.0 * wz, 2.0 * xz + 2.0 * wy;
-  M.row(1) << 2.0 * xy + 2.0 * wz, ww + yy - xx - zz, 2.0 * yz - 2.0 * wx;
-  M.row(2) << 2.0 * xz - 2.0 * wy, 2.0 * yz + 2.0 * wx, ww + zz - xx - yy;
-
-  return M;
+  const Eigen::Quaternion<typename Derived::Scalar> q =
+      quat2eigenQuaternion(quaternion);
+  const RotationMatrix<typename Derived::Scalar> R(q);
+  return R.matrix();
 }
 
 /**
@@ -436,28 +438,6 @@ template <typename Derived>
 Vector3<typename Derived::Scalar> quat2rpy(
     const Eigen::MatrixBase<Derived>& quaternion) {
   return QuaternionToSpaceXYZ(quaternion);
-}
-
-
-// The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
-// x, y, z) ordering, just as we do.
-// HOWEVER: when the constructor is called on a 4-element Vector, the elements
-// must be in (x, y, z, w) order.
-// So, the following two calls will give you the SAME quaternion:
-// Quaternion<double>(q(0), q(1), q(2), q(3));
-// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-// which is gross and will cause you much pain.
-// see:
-// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
-//
-// This method takes a nice, normal (w, x, y, z) order vector and gives you
-// the Quaternion you expect.
-template <typename Derived>
-Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
-    const Eigen::MatrixBase<Derived>& q) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
 }
 
 /**
