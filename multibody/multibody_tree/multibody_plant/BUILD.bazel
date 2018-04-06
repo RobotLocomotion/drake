@@ -46,4 +46,15 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "inclined_plane_test",
+    deps = [
+        ":multibody_plant",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
 add_lint_tests()
