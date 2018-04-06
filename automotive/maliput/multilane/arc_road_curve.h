@@ -32,16 +32,26 @@ class ArcRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
+  /// @param scale_length The minimum length, in meters, of variations that
+  /// the curve expresses.
+  /// @param linear_tolerance The linear tolerance for all computations, in the
+  /// the absolute error sense.
+  /// @param trade_accuracy_for_speed If true, prevents the use of numerical
+  /// approximations for curve parameterizations, sticking to available
+  /// closed form solutions that may not actually be correct for the curve
+  /// as specified.
   /// @throws std::runtime_error When `radius` is not positive.
   explicit ArcRoadCurve(const Vector2<double>& center, double radius,
                         double theta0, double d_theta,
                         const CubicPolynomial& elevation,
-                        const CubicPolynomial& superelevation)
-      : RoadCurve(elevation, superelevation),
-        center_(center),
-        radius_(radius),
-        theta0_(theta0),
-        d_theta_(d_theta) {
+                        const CubicPolynomial& superelevation,
+                        double scale_length = 1.0,
+                        double linear_tolerance = 0.01,
+                        bool trade_accuracy_for_speed = false)
+      : RoadCurve(scale_length, linear_tolerance,
+                  elevation, superelevation,
+                  trade_accuracy_for_speed),
+        center_(center), radius_(radius), theta0_(theta0), d_theta_(d_theta) {
     DRAKE_THROW_UNLESS(radius > 0.0);
   }
 

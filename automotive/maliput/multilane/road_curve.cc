@@ -1,8 +1,151 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 
+#include "drake/common/drake_assert.h"
+#include "drake/common/eigen_types.h"
+#include "drake/systems/analysis/integrator_base.h"
+
 namespace drake {
 namespace maliput {
 namespace multilane {
+
+namespace {
+
+// Arc length derivative function ds/dp = f(p; [r, h]) for numerical resolution
+// of the s(p) mapping as an antiderivative computation (i.e. quadrature).
+struct ArcLengthDerivativeFunction {
+  // Constructs the arc length derivative function for the given @p road_curve.
+  explicit ArcLengthDerivativeFunction(const RoadCurve* road_curve)
+      : road_curve_(road_curve) {}
+
+  // Computes the arc length derivative for the RoadCurve specified
+  // at construction.
+  //
+  // @param p The parameterization value to evaluate the derivative at.
+  // @param k The parameter vector, containing r and h coordinates respectively.
+  // @return The arc length derivative value at the specified point.
+  // @pre The given parameter vector @p k is bi-dimensional (holding r and h
+  //      coordinates only).
+  // @throw std::logic_error if preconditions are not met.
+  double operator()(const double& p, const VectorX<double>& k) const {
+    if (k.size() != 2) {
+      throw std::logic_error("Arc length derivative expects only r and"
+                             " h coordinates as parameters, respectively.");
+    }
+    return road_curve_->W_prime_of_prh(
+        p, k(0), k(1), road_curve_->Rabg_of_p(p),
+        road_curve_->elevation().f_dot_p(p)).norm();
+  }
+
+ private:
+  // Associated RoadCurve instance.
+  const RoadCurve* road_curve_;
+};
+
+// Inverse arc length ODE function dp/ds = f(s, p; [r, h]) for numerical
+// resolution of the p(s) mapping as an scalar initial value problem for
+// a given RoadCurve.
+struct InverseArcLengthODEFunction {
+  // Constructs an inverse arc length ODE for the given @p road_curve.
+  explicit InverseArcLengthODEFunction(const RoadCurve* road_curve)
+      : road_curve_(road_curve) {}
+
+  // Computes the inverse arc length derivative for the RoadCurve specified
+  // at construction.
+  //
+  // @param s The arc length to evaluate the derivative at.
+  // @param p The parameterization value to evaluate the derivative at.
+  // @param k The parameter vector, containing r and h coordinates respectively.
+  // @return The inverse arc length derivative value at the specified point.
+  // @pre The given parameter vector @p k is bi-dimensional (holding r and h
+  //      coordinates only).
+  // @throw std::logic_error if preconditions are not met.
+  double operator()(const double& s, const double& p,
+                    const VectorX<double>& k) {
+    unused(s);
+    if (k.size() != 2) {
+      throw std::logic_error("Inverse arc length ODE expects only r and"
+                             " h coordinates as parameters, respectively.");
+    }
+    return 1.0 / road_curve_->W_prime_of_prh(
+        p, k(0), k(1), road_curve_->Rabg_of_p(p),
+        road_curve_->elevation().f_dot_p(p)).norm();
+  }
+
+ private:
+  // Associated RoadCurve instance.
+  const RoadCurve* road_curve_;
+};
+
+
+}  // namespace
+
+RoadCurve::RoadCurve(double scale_length, double linear_tolerance,
+                     const CubicPolynomial& elevation,
+                     const CubicPolynomial& superelevation,
+                     bool trade_accuracy_for_speed)
+    : scale_length_(scale_length),
+      linear_tolerance_(linear_tolerance),
+      elevation_(elevation),
+      superelevation_(superelevation),
+      trade_accuracy_for_speed_(trade_accuracy_for_speed) {
+  // Enforces preconditions.
+  DRAKE_THROW_UNLESS(scale_length > 0.);
+  DRAKE_THROW_UNLESS(linear_tolerance > 0.);
+  // Sets default parameter value at the beginning of the
+  // curve to 0 by default.
+  const double initial_p_value = 0.0;
+  // Sets default arc length at the beginning of the curve
+  // to 0 by default.
+  const double initial_s_value = 0.0;
+  // Sets default r and h coordinates to 0 by default.
+  const VectorX<double> default_parameters = VectorX<double>::Zero(2);
+
+  // Instantiates s(p) and p(s) mappings with default values.
+  const systems::AntiderivativeFunction<double>::SpecifiedValues
+      s_from_p_func_values(initial_p_value, default_parameters);
+  s_from_p_func_ = std::make_unique<systems::AntiderivativeFunction<double>>(
+      ArcLengthDerivativeFunction(this), s_from_p_func_values);
+
+  const systems::ScalarInitialValueProblem<double>::SpecifiedValues
+      p_from_s_ivp_values(initial_s_value, initial_p_value, default_parameters);
+  p_from_s_ivp_ = std::make_unique<systems::ScalarInitialValueProblem<double>>(
+      InverseArcLengthODEFunction(this), p_from_s_ivp_values);
+
+  // Relative tolerance in path length is roughly bounded by e/L, where e is
+  // the linear tolerance and L is the scale length. This can be seen by
+  // considering straight path one scale length (or spatial period) long, and
+  // then another path, whose deviation from the first is a sine function with
+  // the same period and amplitude equal to the specified tolerance. The
+  // difference in path length is bounded by 4e and the relative error is thus
+  // bounded by 4e/L.
+  const double relative_tolerance = linear_tolerance_ / scale_length_;
+
+  // Sets `s_from_p`'s integration accuracy and step size.
+  systems::IntegratorBase<double>* s_from_p_integrator =
+      s_from_p_func_->get_mutable_integrator();
+  s_from_p_integrator->set_maximum_step_size(10. * scale_length_);
+  s_from_p_integrator->set_target_accuracy(relative_tolerance);
+
+  // Sets `p_from_s`'s integration accuracy and step size.
+  systems::IntegratorBase<double>* p_from_s_integrator =
+      p_from_s_ivp_->get_mutable_integrator();
+  p_from_s_integrator->set_maximum_step_size(0.1 / scale_length_);
+  p_from_s_integrator->set_target_accuracy(relative_tolerance);
+}
+
+double RoadCurve::s_from_p(double p, double r) const {
+  // Populates parameter vector with (r, h) coordinate values.
+  systems::AntiderivativeFunction<double>::SpecifiedValues values;
+  values.k = (VectorX<double>(2) << r, 0.0).finished();
+  return s_from_p_func_->Evaluate(p, values);
+}
+
+double RoadCurve::p_from_s(double s, double r) const {
+  // Populates parameter vector with (r, h) coordinate values.
+  systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
+  values.k = (VectorX<double>(2) << r, 0.0).finished();
+  return p_from_s_ivp_->Solve(s, values);
+}
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {
   // Calculates z (elevation) of (p,0,0).

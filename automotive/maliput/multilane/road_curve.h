@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -10,6 +11,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/systems/analysis/antiderivative_function.h"
+#include "drake/systems/analysis/scalar_initial_value_problem.h"
 
 namespace drake {
 namespace maliput {
@@ -99,18 +102,26 @@ class RoadCurve {
 
   const CubicPolynomial& superelevation() const { return superelevation_; }
 
+  const double& linear_tolerance() const { return linear_tolerance_; }
+
+  const double& scale_length() const { return scale_length_; }
+
+  const bool& trade_accuracy_for_speed() const {
+    return trade_accuracy_for_speed_;
+  }
+
   /// Computes the parametric position p along the reference curve corresponding
   /// to longitudinal position (in path-length) `s` along a parallel curve
   /// laterally offset by `r` from the reference curve.
   /// @return The parametric position p along an offset of the reference curve.
-  virtual double p_from_s(double s, double r) const = 0;
+  virtual double p_from_s(double s, double r) const;
 
   /// Computes the path length integral in the interval of the parameter [0; p]
   /// and along a parallel curve laterally offset by `r` the planar reference
   /// curve.
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
-  virtual double s_from_p(double p, double r) const = 0;
+  virtual double s_from_p(double p, double r) const;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -218,10 +229,22 @@ class RoadCurve {
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
+  /// @param scale_length The minimum length, in meters, of variations that
+  /// the curve expresses. This imposes an upper limit to the spatial frequency
+  /// (e.g., the Nyquist limit), which indicates the maximum level of detail
+  /// captured.
+  /// @param linear_tolerance The linear tolerance for all computations, in the
+  /// the absolute error sense i.e. linear error must lie in the 0 ± linear
+  /// tolerance interval, for @p scale_length long features at most.
   /// @param elevation CubicPolynomial object that represents the elevation
   /// function (see below for more details).
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation function (see below for more details).
+  /// @param trade_accuracy_for_speed Allows implementation specific mechanisms
+  /// to ignore accuracy settings to speed up computations.
+  /// @pre The given @p scale_length is a non-negative number.
+  /// @pre The given @p linear_tolerance is a non-negative number.
+  /// @throw std::runtime_error if preconditions are not met.
   ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
@@ -250,16 +273,32 @@ class RoadCurve {
   ///  * p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
-  RoadCurve(const CubicPolynomial& elevation,
-            const CubicPolynomial& superelevation)
-      : elevation_(elevation), superelevation_(superelevation) {}
+  RoadCurve(double scale_length,
+            double linear_tolerance,
+            const CubicPolynomial& elevation,
+            const CubicPolynomial& superelevation,
+            bool trade_accuracy_for_speed);
 
  private:
+  // The minimum length of variations that the curve expresses.
+  double scale_length_;
+  // The tolerance for all computations, in the absolute error sense, for scale
+  // length-long features in the road curve at most.
+  double linear_tolerance_;
   // A polynomial that represents the elevation change as a function of p.
   CubicPolynomial elevation_;
   // A polynomial that represents the superelevation angle change as a function
   // of p.
   CubicPolynomial superelevation_;
+  // A flag to control whether implementations are allowed to ignore
+  // accuracy settings to speed up computations or not.
+  bool trade_accuracy_for_speed_;
+  // The inverse arc length IVP, or the parameter p as a function of the
+  // arc length s.
+  std::unique_ptr<systems::ScalarInitialValueProblem<double>> p_from_s_ivp_;
+  // The arc length function, or the arc length s as a function of the
+  // parameter p.
+  std::unique_ptr<systems::AntiderivativeFunction<double>> s_from_p_func_;
 };
 
 }  // namespace multilane

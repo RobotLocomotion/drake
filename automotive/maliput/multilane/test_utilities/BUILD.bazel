@@ -29,4 +29,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "multilane_brute_force_integral",
+    testonly = 1,
+    srcs = ["multilane_brute_force_integral.cc"],
+    hdrs = ["multilane_brute_force_integral.h"],
+    deps = [
+        "//automotive/maliput/multilane:lanes",
+        "//common:essential",
+    ],
+)
+
 add_lint_tests()
