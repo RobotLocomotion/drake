@@ -1,11 +1,11 @@
-#include "drake/examples/multibody/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
-namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace benchmarks {
+namespace inclined_plane {
 
 using geometry::GeometrySystem;
 using geometry::Sphere;
@@ -87,7 +87,7 @@ MakeInclinedPlanePlant(double radius, double mass, double slope,
   return plant;
 }
 
-}  // namespace bouncing_ball
+}  // namespace inclined_plane
+}  // namespace benchmarks
 }  // namespace multibody
-}  // namespace examples
 }  // namespace drake

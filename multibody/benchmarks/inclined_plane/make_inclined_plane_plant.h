@@ -6,9 +6,9 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 namespace drake {
-namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace benchmarks {
+namespace inclined_plane {
 
 /// This method makes a MultibodyPlant model of a ball falling into a plane.
 /// MultibodyPlant models the contact of the ball with the ground as a perfectly
@@ -33,7 +33,7 @@ MakeInclinedPlanePlant(
     surface_friction, double gravity,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 
-}  // namespace bouncing_ball
+}  // namespace inclined_plane
+}  // namespace benchmarks
 }  // namespace multibody
-}  // namespace examples
 }  // namespace drake

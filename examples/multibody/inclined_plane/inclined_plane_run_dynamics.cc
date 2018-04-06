@@ -4,7 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/multibody/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
@@ -56,6 +56,7 @@ using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;

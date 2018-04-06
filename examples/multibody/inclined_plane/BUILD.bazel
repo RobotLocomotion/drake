@@ -9,23 +9,6 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_cc_library(
-    name = "make_inclined_plane_plant",
-    srcs = [
-        "make_inclined_plane_plant.cc",
-    ],
-    hdrs = [
-        "make_inclined_plane_plant.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//geometry:geometry_ids",
-        "//geometry:geometry_system",
-        "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant",
-    ],
-)
-
 drake_cc_binary(
     name = "inclined_plane_run_dynamics",
     srcs = ["inclined_plane_run_dynamics.cc"],
@@ -35,9 +18,9 @@ drake_cc_binary(
         "--target_realtime_rate=0.0",
     ],
     deps = [
-        ":make_inclined_plane_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",
         "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta2_integrator",
