@@ -36,12 +36,12 @@ optional<api::LaneEnd> Lane::DoGetDefaultBranch(
 }
 
 
-double Lane::do_length() const { return road_curve_->s_from_p(1., r0_); }
+double Lane::do_length() const { return road_curve_->CalcSFromP(1., r0_); }
 
 api::GeoPosition Lane::DoToGeoPosition(
     const api::LanePosition& lane_pos) const {
   // Recover parameter p from arc-length position s.
-  const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
+  const double p = road_curve_->CalcPFromS(lane_pos.s(), r0_);
   const Vector3<double> xyz =
       road_curve_->W_of_prh(p, lane_pos.r() + r0_, lane_pos.h());
   return {xyz.x(), xyz.y(), xyz.z()};
@@ -49,7 +49,7 @@ api::GeoPosition Lane::DoToGeoPosition(
 
 
 api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
-  const double p = road_curve_->p_from_s(lane_pos.s(), r0_);
+  const double p = road_curve_->CalcPFromS(lane_pos.s(), r0_);
   const Rot3 rotation =
       road_curve_->Orientation(p, lane_pos.r() + r0_, lane_pos.h());
   return api::Rotation::FromRpy(rotation.roll(), rotation.pitch(),
@@ -60,25 +60,23 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
 api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition& position,
     const api::IsoLaneVelocity& velocity) const {
-
-  const double p = road_curve_->p_from_s(position.s(), r0_);
+  const double p = road_curve_->CalcPFromS(position.s(), r0_);
   const double r = position.r() + r0_;
   const double h = position.h();
   const Rot3 R = road_curve_->Rabg_of_p(p);
-  // TODO(maddog@tri.global)  When s(p) is integrated properly,
-  //                          fake_g_prime should be replaced by real_g_prime.
-  const double real_g_prime = road_curve_->elevation().f_dot_p(p);
-  const double fake_g_prime = road_curve_->elevation().fake_gprime(p);
-
+  const double g_prime = road_curve_->elevation().f_dot_p(p);
+  // Note that the elevation derivative value used to compute ds/dp may
+  // not be the same as the one used for dσ/dp, to account for limitations
+  // in s_from_p() computations.
+  const double g_prime_for_ds = road_curve_->CalcGPrimeAsUsedForCalcSFromP(p);
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp
   // evaluated at (p, r, h).
   // Similarly, path-length s along the segment surface at r = r0 (which is
   // along the Lane's centerline) is related to p by ds = |∂W/∂p| dp evaluated
   // at (p, r0, 0).  Chaining yields ds/dσ:
   const double ds_dsigma =
-      road_curve_->W_prime_of_prh(p, r0_, 0, R, fake_g_prime).norm() /
-      road_curve_->W_prime_of_prh(p, r, h, R, real_g_prime).norm();
-
+      road_curve_->W_prime_of_prh(p, r0_, 0, R, g_prime_for_ds).norm() /
+      road_curve_->W_prime_of_prh(p, r, h, R, g_prime).norm();
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,
                            velocity.eta_v);
@@ -98,7 +96,7 @@ api::LanePosition Lane::DoToLanePosition(
   // coordinate because of the offset.
   const V3 lane_position_in_segment_curve_frame = road_curve_->ToCurveFrame(
       geo_position.xyz(), r_min, r_max, elevation_bounds_);
-  const double s = road_curve_->s_from_p(
+  const double s = road_curve_->CalcSFromP(
       lane_position_in_segment_curve_frame[0], r0_);
   const api::LanePosition lane_position = api::LanePosition(
       s,

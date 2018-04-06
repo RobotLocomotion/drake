@@ -53,6 +53,8 @@ drake_cc_library(
         "//common:unused",
         "//math:geometric_transform",
         "//math:saturate",
+        "//systems/analysis:antiderivative_function",
+        "//systems/analysis:scalar_initial_value_problem",
     ],
 )
 
@@ -148,6 +150,17 @@ drake_cc_googletest(
         ":loader",
         "//automotive/maliput/api/test_utilities",
         "//automotive/maliput/multilane/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multilane_road_curve_accuracy_test",
+    srcs = ["test/multilane_road_curve_accuracy_test.cc"],
+    deps = [
+        ":builder",
+        "//automotive/maliput/api/test_utilities",
+        ("//automotive/maliput/multilane/test_utilities:" +
+         "multilane_brute_force_integral"),
     ],
 )
 
