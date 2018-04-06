@@ -8,6 +8,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/loader.h"
 #include "drake/common/text_logging.h"
 
@@ -24,7 +25,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   drake::log()->info("Loading '{}'.", FLAGS_yaml_file);
-  auto rg = multilane::LoadFile(FLAGS_yaml_file);
+  auto rg = multilane::LoadFile(multilane::BuilderFactory(), FLAGS_yaml_file);
   const std::vector<std::string> failures = rg->CheckInvariants();
 
   if (!failures.empty()) {
