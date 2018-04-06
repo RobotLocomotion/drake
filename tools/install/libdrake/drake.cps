@@ -65,6 +65,7 @@
         ":drake-lcmtypes-cpp",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Eigen3:Eigen",
+        "fmt:fmt-header-only",
         "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
