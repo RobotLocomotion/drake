@@ -6,6 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
 )
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -29,6 +30,7 @@ drake_cc_library(
     hdrs = [
         "rimless_wheel.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":rimless_wheel_vector_types",
         "//common:default_scalars",
@@ -64,5 +66,7 @@ drake_cc_googletest(
         "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
+
+install_data()
 
 add_lint_tests()
