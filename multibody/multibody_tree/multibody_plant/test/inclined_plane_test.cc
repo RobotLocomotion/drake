@@ -1,13 +1,10 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
-#include <functional>
 #include <limits>
 #include <memory>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -15,18 +12,8 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
 namespace drake {
 
-using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
-using Eigen::Matrix2d;
-using Eigen::Translation3d;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
 using geometry::GeometrySystem;
 using multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using systems::Context;
@@ -156,28 +143,6 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   EXPECT_TRUE(std::abs(speed - speed_expected) / speed_expected < 0.01);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
                   / angular_velocity_expected < 0.01);
-
-#if 0
-  PRINT_VAR("energy");
-  PRINT_VAR(ke_WB);
-  PRINT_VAR(ke_WB_expected);
-  PRINT_VAR(Ve);
-  PRINT_VAR(std::abs(ke_WB - ke_WB_expected) / ke_WB);
-
-  PRINT_VAR("Velocity");
-  PRINT_VAR(speed_expected);
-  PRINT_VAR(V_WB.translational().norm());
-  PRINT_VAR(std::abs(speed_expected - V_WB.translational().norm()) / speed_expected);
-
-  PRINT_VAR("Angular velocity");
-  PRINT_VAR(angular_velocity_expected);
-  PRINT_VAR(V_WB.rotational().y());
-  PRINT_VAR(std::abs(angular_velocity_expected - V_WB.rotational().y()) / angular_velocity_expected);
-
-  PRINT_VAR("More stuff");
-  PRINT_VAR(X_WB.translation().transpose());
-  PRINT_VAR(V_WB);
-#endif
 }
 
 }  // namespace
