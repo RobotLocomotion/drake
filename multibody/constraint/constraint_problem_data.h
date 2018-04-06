@@ -242,10 +242,10 @@ struct ConstraintAccelProblemData {
   /// acceleration, where the constraint can be formulated as:<pre>
   /// 0 ≤ L(q)⋅v̇ + kᴸ(t,q,v)  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint c(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
+  /// which means that the constraint g(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
   /// to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(L⋅v̇ + kᴸ(t,q,v)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if c(q,v,v̇) is strictly greater than zero). L
+  /// if it is inactive (i.e., if g(q,v,v̇) is strictly greater than zero). L
   /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
@@ -342,7 +342,7 @@ struct ConstraintVelProblemData {
   /// velocity, where the constraint can be formulated as:<pre>
   /// 0 = G(q)⋅v + kᴳ(t,q)
   /// </pre>
-  /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
+  /// which implies the constraint definition g(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
   /// is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
   /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
