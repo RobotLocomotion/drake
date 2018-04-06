@@ -337,7 +337,6 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
           const Eigen::Quaternion<decltype(quat_diff)::Scalar> q_eigen(
               quat_diff(0), quat_diff(1), quat_diff(2), quat_diff(3));
           Eigen::AngleAxis<decltype(quat_diff)::Scalar> angle_axis(q_eigen);
-          // TODO(hongkai.dai): fix magic number once we use Eigen's AngleAxis:
           auto angle = angle_axis.angle();
           EXPECT_NEAR(angle, 0.0, tolerance);
         } else {
