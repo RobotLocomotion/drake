@@ -9,21 +9,11 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/math/random_rotation.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
-#include "drake/systems/analysis/explicit_euler_integrator.h"
-#include "drake/systems/analysis/implicit_euler_integrator.h"
-#include "drake/systems/analysis/runge_kutta2_integrator.h"
-#include "drake/systems/analysis/runge_kutta3_integrator.h"
-#include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 
 namespace drake {
 namespace examples {
@@ -42,10 +32,6 @@ DEFINE_double(static_friction, 0.5, "Static friction coefficient.");
 DEFINE_double(dynamic_friction, 0.3, "Dynamic friction coefficient.");
 DEFINE_double(stiction_tolerance, 0.001, "Stribeck model stiction tolerance.");
 
-using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
-using Eigen::Matrix3d;
-using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
@@ -53,18 +39,9 @@ using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
-using drake::multibody::QuaternionFloatingMobilizer;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialVelocity;
-using drake::multibody::SpatialInertia;
-using drake::systems::ExplicitEulerIntegrator;
-using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -84,7 +61,6 @@ int do_main() {
   const double slope = 15.0 / 180 * M_PI;  // rad.
   const CoulombFrictionCoefficients surface_friction(FLAGS_static_friction,
                                                      FLAGS_dynamic_friction);
-  const double z0 = 0.000;        // Initial height.
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeInclinedPlanePlant(
@@ -93,14 +69,12 @@ int do_main() {
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
-  const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
 
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
   // time step integrators are stable.
   const double max_time_step =
       plant.get_contact_penalty_method_time_scale() / 30;
-  PRINT_VAR(max_time_step);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
@@ -147,43 +121,21 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-  // Set at height z0 with random orientation.
-  //std::mt19937 generator(41);
-  //std::uniform_real_distribution<double> uniform(-1.0, 1.0);
+  // This will set a default initial condition with the sphere located at
+  // p_WBcm = (0; 0; 0) and zero spatial velocity.
   model.SetDefaultContext(&plant_context);
-  //Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
-  Isometry3d X0_WB = Isometry3d::Identity();
-  X0_WB.linear() = Matrix3<double>::Identity();
-  X0_WB.translation() = Vector3d(0.0, 0.0, z0);
-  model.SetFreeBodyPoseOrThrow(ball, X0_WB, &plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   systems::IntegratorBase<double>* integrator =
-      simulator.reset_integrator<RungeKutta3Integrator<double>>(
-          *diagram, &simulator.get_mutable_context());
+      simulator.get_mutable_integrator();
   integrator->set_maximum_step_size(max_time_step);
   integrator->set_target_accuracy(target_accuracy);
 
-  simulator.set_publish_every_time_step(true);
+  simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
-
-  // Compute the kinetic energy of B (in frame W) from V_WB.
-  const SpatialVelocity<double>& V_WB =
-      model.EvalBodySpatialVelocityInWorld(plant_context, ball);
-  const SpatialInertia<double> M_Bo_W = ball.default_spatial_inertia();
-  const double ke_WB = 0.5 * V_WB.dot(M_Bo_W * V_WB);
-  const Isometry3<double>& X_WB =
-      model.EvalBodyPoseInWorld(plant_context, ball);
-
-  const double Ve = model.CalcPotentialEnergy(plant_context);
-
-  PRINT_VAR(ke_WB);
-  PRINT_VAR(Ve);
-  PRINT_VAR(X_WB.translation().transpose());
-  PRINT_VAR(V_WB);
 
   return 0;
 }
@@ -196,8 +148,8 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyTree,"
-      "with GeometrySystem visualization. "
+      "A rolling sphere down an inclined plane demo using Drake's "
+      "MultibodyPlant with GeometrySystem visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
