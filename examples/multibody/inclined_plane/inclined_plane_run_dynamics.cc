@@ -34,14 +34,7 @@ namespace {
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
-
-DEFINE_string(integration_scheme, "runge_kutta3",
-              "Integration scheme to be used. Available options are: "
-              "'explicit_euler', 'semi_explicit_euler','runge_kutta2',"
-              "'runge_kutta3','implicit_euler'");
-DEFINE_double(integration_accuracy, 0.001, "Integration accuracy.");
-DEFINE_double(max_time_step, -1.0, "Maximum time step.");
-
+DEFINE_double(integration_accuracy, 1e-6, "Integration accuracy.");
 DEFINE_double(simulation_time, 1.0,
               "Desired duration of the simulation in seconds.");
 
@@ -105,11 +98,8 @@ int do_main() {
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
   // time step integrators are stable.
-  double max_time_step =
+  const double max_time_step =
       plant.get_contact_penalty_method_time_scale() / 30;
-  if (FLAGS_max_time_step > 0) {
-    max_time_step = FLAGS_max_time_step;
-  }
   PRINT_VAR(max_time_step);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
@@ -169,76 +159,16 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-  systems::IntegratorBase<double>* integrator{nullptr};
-  if (FLAGS_integration_scheme == "explicit_euler") {
-    integrator =
-        simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
-            *diagram, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "runge_kutta2") {
-    integrator =
-        simulator.reset_integrator<RungeKutta2Integrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "runge_kutta3") {
-    integrator =
-        simulator.reset_integrator<RungeKutta3Integrator<double>>(
-            *diagram, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    integrator =
-        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
-  } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
-  }
+  systems::IntegratorBase<double>* integrator =
+      simulator.reset_integrator<RungeKutta3Integrator<double>>(
+          *diagram, &simulator.get_mutable_context());
   integrator->set_maximum_step_size(max_time_step);
-
-  // Error control is only supported for variable time step integrators.
-  if (!integrator->get_fixed_step_mode())
-    integrator->set_target_accuracy(target_accuracy);
+  integrator->set_target_accuracy(target_accuracy);
 
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
-
-  // Some sanity checks:
-  if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    DRAKE_DEMAND(integrator->get_fixed_step_mode() == true);
-  }
-
-  // Checks for variable time step integrators.
-  if (!integrator->get_fixed_step_mode()) {
-    // From IntegratorBase::set_maximum_step_size():
-    // "The integrator may stretch the maximum step size by as much as 1% to
-    // reach discrete event." Thus the 1.01 factor in this DRAKE_DEMAND.
-    DRAKE_DEMAND(
-        integrator->get_largest_step_size_taken() <= 1.01 * max_time_step);
-    DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
-        integrator->get_largest_step_size_taken());
-    DRAKE_DEMAND(integrator->get_num_steps_taken() >=
-        FLAGS_simulation_time / max_time_step);
-  }
-
-  // Checks for fixed time step integrators.
-  if (integrator->get_fixed_step_mode()) {
-    const int kNumEvaluationsPerStep =
-        FLAGS_integration_scheme == "runge_kutta2"? 2 : 1;
-    DRAKE_DEMAND(integrator->get_num_derivative_evaluations() ==
-        integrator->get_num_steps_taken() * kNumEvaluationsPerStep);
-    DRAKE_DEMAND(
-        integrator->get_num_step_shrinkages_from_error_control() == 0);
-  }
-
-  // We made a good guess for max_time_step and therefore we expect no
-  // failures when taking a time step.
-  DRAKE_DEMAND(integrator->get_num_substep_failures() == 0);
-  DRAKE_DEMAND(
-      integrator->get_num_step_shrinkages_from_substep_failures() == 0);
 
   // Compute the kinetic energy of B (in frame W) from V_WB.
   const SpatialVelocity<double>& V_WB =
