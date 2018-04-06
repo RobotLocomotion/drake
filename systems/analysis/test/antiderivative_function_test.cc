@@ -113,7 +113,6 @@ GTEST_TEST(AntiderivativeFunctionTest, EvaluatePreconditionValidation) {
   }, std::logic_error);
 }
 
-
 class AntiderivativeFunctionAccuracyTest
     : public ::testing::TestWithParam<double> {
  protected:
@@ -147,11 +146,11 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
   inner_integrator->set_target_accuracy(integration_accuracy_);
 
   const int kLowestOrder = 0;
-  const int kHighestOrder = 5;
+  const int kHighestOrder = 3;
 
   const double kArgIntervalLBound = 0.0;
   const double kArgIntervalUBound = 10.0;
-  const double kArgStep = 0.1;
+  const double kArgStep = 1.0;
 
   for (int n = kLowestOrder; n <= kHighestOrder; ++n) {
     AntiderivativeFunction<double>::SpecifiedValues values;
@@ -190,13 +189,13 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
       antiderivative_function.get_mutable_integrator();
   inner_integrator->set_target_accuracy(integration_accuracy_);
 
-  const double kParamIntervalLBound = -5.25;
-  const double kParamIntervalUBound = 5.25;
-  const double kParamStep = 0.5;
+  const double kParamIntervalLBound = -4.5;
+  const double kParamIntervalUBound = 4.5;
+  const double kParamStep = 1.0;
 
   const double kArgIntervalLBound = 0.0;
   const double kArgIntervalUBound = 10.0;
-  const double kArgStep = 0.1;
+  const double kArgStep = 1.0;
 
   for (double a = kParamIntervalLBound; a <= kParamIntervalUBound;
        a += kParamStep) {
@@ -239,15 +238,15 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
 
   const double k1stPoleIntervalLBound = 20.0;
   const double k1stPoleIntervalUBound = 25.0;
-  const double k1stPoleStep = 0.5;
+  const double k1stPoleStep = 1.0;
 
   const double k2ndPoleIntervalLBound = 30.0;
   const double k2ndPoleIntervalUBound = 35.0;
-  const double k2ndPoleStep = 0.5;
+  const double k2ndPoleStep = 1.0;
 
   const double kArgIntervalLBound = 0.0;
   const double kArgIntervalUBound = 10.0;
-  const double kArgStep = 0.1;
+  const double kArgStep = 1.0;
 
   for (double a = k1stPoleIntervalLBound; a <= k1stPoleIntervalUBound;
        a += k1stPoleStep) {
@@ -290,13 +289,13 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
       antiderivative_function.get_mutable_integrator();
   inner_integrator->set_target_accuracy(integration_accuracy_);
 
-  const double kParamIntervalLBound = -5.25;
-  const double kParamIntervalUBound = 5.25;
-  const double kParamStep = 0.5;
+  const double kParamIntervalLBound = -4.5;
+  const double kParamIntervalUBound = 4.5;
+  const double kParamStep = 1.0;
 
   const double kArgIntervalLBound = 0.0;
   const double kArgIntervalUBound = 1.0;
-  const double kArgStep = 0.01;
+  const double kArgStep = 0.1;
 
   for (double n = kParamIntervalLBound; n <= kParamIntervalUBound;
        n += kParamStep) {
@@ -336,13 +335,13 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
       antiderivative_function.get_mutable_integrator();
   inner_integrator->set_target_accuracy(integration_accuracy_);
 
-  const double kParamIntervalLBound = -5.25;
-  const double kParamIntervalUBound = 5.25;
-  const double kParamStep = 0.5;
+  const double kParamIntervalLBound = -4.5;
+  const double kParamIntervalUBound = 4.5;
+  const double kParamStep = 1.0;
 
   const double kArgIntervalLBound = 0.0;
   const double kArgIntervalUBound = 10.0;
-  const double kArgStep = 0.1;
+  const double kArgStep = 1.0;
 
   for (double a = kParamIntervalLBound; a <= kParamIntervalUBound;
        a += kParamStep) {
@@ -365,7 +364,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
 
 INSTANTIATE_TEST_CASE_P(IncreasingAccuracyAntiderivativeFunctionTests,
                         AntiderivativeFunctionAccuracyTest,
-                        ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
+                        ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4));
 
 }  // namespace
 }  // namespace systems
