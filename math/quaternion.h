@@ -203,9 +203,8 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
 }
 
 /**
- * Computes SpaceXYZ Euler angles from quaternion representation.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param quaternion 4x1 unit length vector with elements [ e0, e1, e2, e3 ].
+ * Computes SpaceXYZ Euler angles (roll-pitch-yaw) from a quaternion.
+ * @param quaternion unit quaternion with elements [e0=w, e1=x, e2=y, e3=z].
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
  *
  * This accurate algorithm avoids numerical round-off issues encountered by

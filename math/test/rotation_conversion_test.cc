@@ -51,34 +51,35 @@ bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
   return q1.isApprox(q2, precision) || q1.isApprox(-q2, precision);
 }
 
-Quaterniond BodyZYXAnglesToEigenQuaternion(const Vector3d bodyZYX_angles) {
-  // Compute the quaterion for euler angle using intrinsic z-y'-x''.
-  // Uses Eigen functionality (including overloaded operators *, etc).
-  return AngleAxisd(bodyZYX_angles(0), Vector3d::UnitZ()) *
-         AngleAxisd(bodyZYX_angles(1), Vector3d::UnitY()) *
-         AngleAxisd(bodyZYX_angles(2), Vector3d::UnitX());
-}
+/// Returns a %Quaternion associated with a Space-fixed (extrinsic) X-Y-Z
+/// rotation by "roll-pitch-yaw" angles `[r, p, y]`.
+/// @param[in] rpy radian measures of "roll-pitch-yaw" angles.
+template <typename T>
+Eigen::Quaternion<T> SpaceXYZAnglesToEigenQuaternion(const Vector3<T> rpy) {
+  using std::cos;
+  using std::sin;
+  const T c0 = cos(rpy(0)/2), s0 = sin(rpy(0)/2);
+  const T c1 = cos(rpy(1)/2), s1 = sin(rpy(1)/2);
+  const T c2 = cos(rpy(2)/2), s2 = sin(rpy(2)/2);
 
-bool AreEulerAnglesForSameOrientation(const Vector3d& euler_angles1,
-                                      const Vector3d& euler_angles2,
-                                      double precision = 1E-12) {
-  auto q1 = BodyZYXAnglesToEigenQuaternion(euler_angles1);
-  auto q2 = BodyZYXAnglesToEigenQuaternion(euler_angles2);
-  return AreQuaternionsForSameOrientation(EigenQuaternionToOrderWXYZ(q1),
-                                          EigenQuaternionToOrderWXYZ(q2),
-                                          precision);
+  const T w = c0 * c1 * c2 + s0 * s1 * s2;
+  const T x = s0 * c1 * c2 - c0 * s1 * s2;
+  const T y = c0 * s1 * c2 + s0 * c1 * s2;
+  const T z = c0 * c1 * s2 - s0 * s1 * c2;
+  return Eigen::Quaternion<T>(w, x, y, z);
 }
 
 bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
                                        const Vector3d& rpy2) {
-  Vector3d euler_angles1(rpy1(2), rpy1(1), rpy1(0));
-  Vector3d euler_angles2(rpy2(2), rpy2(1), rpy2(0));
   // Note: When pitch is close to PI/2 or -PI/2, derivative calculations for
   // Euler angle can encounter numerical problems.  However, although values
   // of angles may "jump around" (hence, difficult derivatives), the angles'
   // values should be accurately reproduced.
   const double precision = 1E-13;
-  return AreEulerAnglesForSameOrientation(euler_angles1, euler_angles2,
+  const Eigen::Quaterniond q1 = SpaceXYZAnglesToEigenQuaternion(rpy1);
+  const Eigen::Quaterniond q2 = SpaceXYZAnglesToEigenQuaternion(rpy2);
+  return AreQuaternionsForSameOrientation(EigenQuaternionToOrderWXYZ(q1),
+                                          EigenQuaternionToOrderWXYZ(q2),
                                           precision);
 }
 
@@ -125,14 +126,14 @@ GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
   EXPECT_TRUE(input_angles.isApprox(output_angles));
 }
 
-GTEST_TEST(EigenEulerAngleTest, BodyZYX) {
+GTEST_TEST(EigenEulerAngleTest, SpaceXYZ) {
   // Verify ea = Eigen::eulerAngles(2, 1, 0) returns Euler angles about
   // Body-fixed z-y'-x'' axes by [ea(0), ea(1), ea(2)].
-  Vector3d input_angles(0.5, 0.4, 0.3);
-  Matrix3d bodyZYX_rotmat = CalcRotationMatrixAboutZ(input_angles(0)) *
-                            CalcRotationMatrixAboutY(input_angles(1)) *
-                            CalcRotationMatrixAboutX(input_angles(2));
-  auto output_angles = bodyZYX_rotmat.eulerAngles(2, 1, 0);
+  const Vector3d input_angles(0.5, 0.4, 0.3);
+  const Matrix3d spaceXYZ_rotmat = CalcRotationMatrixAboutZ(input_angles(0)) *
+                                   CalcRotationMatrixAboutY(input_angles(1)) *
+                                   CalcRotationMatrixAboutX(input_angles(2));
+  auto output_angles = spaceXYZ_rotmat.eulerAngles(2, 1, 0);
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
   // 0 and PI/2.
@@ -158,13 +159,13 @@ class RotationConversionTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    setupRPYTestCases();
-    setupAngleAxisTestCases();
-    setupQuaternionTestCases();
-    setupRotationMatrixTestCases();
+    SetupRPYTestCases();
+    SetupAngleAxisTestCases();
+    SetupQuaternionTestCases();
+    SetupRotationMatrixTestCases();
   }
 
-  void setupRPYTestCases() {
+  void SetupRPYTestCases() {
     // Set up a variety of specific tests for angles that may cause numerical
     // problems as well as a sweep of values to test general functionality.
     // Singularity issue associated with the second angle = pi/2
@@ -238,7 +239,8 @@ class RotationConversionTest : public ::testing::Test {
   void addAngleAxisTestCase(double angle, const Vector3d& axis) {
     angle_axis_test_cases_.push_back(AngleAxisd(angle, axis));
   }
-  void setupAngleAxisTestCases() {
+
+  void SetupAngleAxisTestCases() {
     // Set up a variety of specific tests for angles/axes that may cause
     // numerical problems as well as a sweep of values to test general
     // functionality.
@@ -344,7 +346,7 @@ class RotationConversionTest : public ::testing::Test {
     }
   }
 
-  void setupQuaternionTestCases() {
+  void SetupQuaternionTestCases() {
     // Set up a variety of general tests for quaternions.
     auto qw = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
     auto qx = Eigen::VectorXd::LinSpaced(Eigen::Sequential, kSweepSize, -1, 1);
@@ -366,7 +368,7 @@ class RotationConversionTest : public ::testing::Test {
     }
   }
 
-  void setupRotationMatrixTestCases() {
+  void SetupRotationMatrixTestCases() {
     for (const Vector3d& rpyi : rpy_test_cases_) {
       rotation_matrix_test_cases_.push_back(rpy2rotmat(rpyi));
     }
@@ -463,11 +465,11 @@ TEST_F(RotationConversionTest, RPYRotmat) {
 }
 
 // Verifies the correctness of drake::math::QuaternionToSpaceXYZ() by comparing
-// its output to a quaternion obtained from BodyZYXAnglesToEigenQuaternion().
+// its output to a quaternion obtained from SpaceXYZAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RPYQuat) {
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    const Vector3d bodyZYX_angles(rpyi(2), rpyi(1), rpyi(0));
-    const Eigen::Quaterniond q = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
+    const Vector3d spaceXYZ_angles(rpyi(0), rpyi(1), rpyi(2));
+    Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(spaceXYZ_angles);
     const Vector4d quat = rpy2quat(rpyi);
     EXPECT_TRUE(AreQuaternionsForSameOrientation(
                 quat, EigenQuaternionToOrderWXYZ(q)));
@@ -480,16 +482,14 @@ TEST_F(RotationConversionTest, RPYQuat) {
 }
 
 // Verifies the correctness of the method
-// drake::math::RollPitchYawToQuaternion() by comparing
-// its output to a quaternion obtained using the composition of
-// Eigen::AngleAxisd transformations in the method
-// BodyZYXAnglesToEigenQuaternion() local in this file.
+// drake::math::RollPitchYawToQuaternion() by comparing its output to a
+// quaternion obtained in the local function SpaceXYZAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RollPitchYawToQuaternion) {
   // Compute the quaternion representation using Eigen's geometry model,
   // compare the result with rpy2quat
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    Vector3d bodyZYX_angles(rpyi(2), rpyi(1), rpyi(0));
-    auto quat_expected = BodyZYXAnglesToEigenQuaternion(bodyZYX_angles);
+    const Vector3d spaceXYZ_angles(rpyi(0), rpyi(1), rpyi(2));
+    auto quat_expected = SpaceXYZAnglesToEigenQuaternion(spaceXYZ_angles);
     auto quat = RollPitchYawToQuaternion(rpyi);
     EXPECT_TRUE(
         quat.isApprox(quat_expected, Eigen::NumTraits<double>::epsilon()));

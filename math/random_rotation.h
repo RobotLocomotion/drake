@@ -58,6 +58,8 @@ RotationMatrix<double> UniformlyRandomRotationMatrix(Generator& generator) {
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector3d UniformlyRandomRPY(Generator& generator) {
+  // TODO(mitiguy) Replace with single call to UniformlyRandomQuaternion when
+  // that function exists and returns Eigen::Quaterniond (rather than Vector4).
   const Eigen::AngleAxisd angle_axis = UniformlyRandomAngleAxis(generator);
   const Eigen::Quaterniond q(angle_axis);
   return QuaternionToSpaceXYZ(q);
