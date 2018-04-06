@@ -329,32 +329,33 @@ void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
   }
 }
 
-// Helper for determining index sets.
-template <class T>
-void UnrevisedLemkeSolver<T>::DetermineIndexSetsHelper(
-    const std::vector<LCPVariable>& variables, bool is_z,
-    std::vector<int>* variable_set,
-    std::vector<int>* variable_set_prime) const {
-  variable_and_array_indices_.clear();
-  for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
-    if (variables[i].z() == is_z)
-      variable_and_array_indices_.emplace_back(variables[i].index(), i);
-  }
-  std::sort(variable_and_array_indices_.begin(),
-            variable_and_array_indices_.end());
-
-  // Construct the set and the primed set.
-  for (const auto& variable_and_array_index_pair :
-      variable_and_array_indices_) {
-    variable_set->push_back(variable_and_array_index_pair.first);
-    variable_set_prime->push_back(variable_and_array_index_pair.second);
-  }
-}
-
 // Determines the various index sets defined in Section 1.1 of
 // doc/pivot_column.pdf.
+// TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+// [Dai and Drumwright, 2018] when we have one.
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
+  // Helper for determining index sets.
+  auto DetermineIndexSetsHelper = [this]( 
+      const std::vector<LCPVariable>& variables, bool is_z,
+      std::vector<int>* variable_set,
+      std::vector<int>* variable_set_prime) {
+    variable_and_array_indices_.clear();
+    for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
+      if (variables[i].z() == is_z)
+        variable_and_array_indices_.emplace_back(variables[i].index(), i);
+    }
+    std::sort(variable_and_array_indices_.begin(),
+              variable_and_array_indices_.end());
+
+    // Construct the set and the primed set.
+    for (const auto& variable_and_array_index_pair :
+        variable_and_array_indices_) {
+      variable_set->push_back(variable_and_array_index_pair.first);
+      variable_set_prime->push_back(variable_and_array_index_pair.second);
+    }
+  };
+
   // Clear all sets.
   index_sets_.alpha.clear();
   index_sets_.bar_alpha.clear();
@@ -389,6 +390,8 @@ bool UnrevisedLemkeSolver<T>::IsEachUnique(
 // Performs the pivoting operation, which is described in doc/pivot_column.pdf.
 // `M_prime_col` can be null, if the updated column of M' (pivoted version of M)
 // is not needed.
+// TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+// [Dai and Drumwright, 2018] when we have one.
 template <typename T>
 bool UnrevisedLemkeSolver<T>::LemkePivot(
     const MatrixX<T>& M,
@@ -425,11 +428,13 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SelectSubMatrixWithCovering(M, index_sets_.alpha, index_sets_.beta,
                               &M_alpha_beta_);
   SelectSubMatrixWithCovering(M, index_sets_.bar_alpha, index_sets_.beta,
-                  &M_prime_alpha_beta_);
+                  &M_bar_alpha_beta_);
   SelectSubVector(q, index_sets_.alpha, &q_alpha_);
   SelectSubVector(q, index_sets_.bar_alpha, &q_bar_alpha_);
 
   // Equation (10) from doc/pivot_column.pdf.
+  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+  // [Dai and Drumwright, 2018] when we have one.
   LinearSolver<T> fMab(M_alpha_beta_);  // Factorized M_alpha_beta_.
   q_prime_beta_prime_ = -fMab.Solve(q_alpha_);
 
@@ -442,8 +447,10 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   if ((M_alpha_beta_ * q_prime_beta_prime_ + q_alpha_).norm() > zero_tol)
     return false;
 
-  // Equation (11) from doc/pivot_column.pdf.
-  q_prime_bar_alpha_prime_ = M_prime_alpha_beta_ * q_prime_beta_prime_ +
+  // Equation (12) from doc/pivot_column.pdf.
+  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+  // [Dai and Drumwright, 2018] when we have one.
+  q_prime_bar_alpha_prime_ = M_bar_alpha_beta_ * q_prime_beta_prime_ +
       q_bar_alpha_;
 
   // Set the components of q'.
@@ -473,15 +480,22 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
       }
     }
 
+
+    // From Equation (14) in doc/pivot_column.pdf.
+    // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+    // [Dai and Drumwright, 2018] when we have one.
+    DRAKE_ASSERT(index_sets_.alpha[gamma] ==
+        indep_variables_[driving_index].index());
+
     // Set the unit vector.
     e_.setZero(index_sets_.beta.size());
     e_[gamma] = 1.0;
 
-    // Equation (15).
+    // Equation (17).
     M_prime_driving_beta_prime_ = fMab.Solve(e_);
 
-    // Equation (16).
-    M_prime_driving_bar_alpha_prime_ = M_prime_alpha_beta_ *
+    // Equation (18).
+    M_prime_driving_bar_alpha_prime_ = M_bar_alpha_beta_ *
         M_prime_driving_beta_prime_;
   } else {
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #2: driving variable from z");
@@ -494,12 +508,12 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     SelectSubColumnWithCovering(M, index_sets_.alpha, zeta, &g_alpha_);
     SelectSubColumnWithCovering(M, index_sets_.bar_alpha, zeta, &g_bar_alpha_);
 
-    // Equation (19).
+    // Equation (21).
     M_prime_driving_beta_prime_ = -fMab.Solve(g_alpha_);
 
-    // Equation (20).
+    // Equation (22).
     M_prime_driving_bar_alpha_prime_ = g_bar_alpha_ +
-        M_prime_alpha_beta_ * M_prime_driving_beta_prime_;
+        M_bar_alpha_beta_ * M_prime_driving_beta_prime_;
   }
 
   SetSubVector(M_prime_driving_beta_prime_, index_sets_.beta_prime,

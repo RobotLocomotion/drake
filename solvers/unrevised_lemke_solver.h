@@ -177,10 +177,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       const LCPVariable& query,
       const std::vector<LCPVariable>& indep_variables) const;
   void DetermineIndexSets() const;
-  void DetermineIndexSetsHelper(
-      const std::vector<LCPVariable>& variables, bool z,
-      std::vector<int>* variable_set,
-      std::vector<int>* variable_set_prime) const;
   bool FindBlockingIndex(
       const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
       int* blocking_index) const;
@@ -191,8 +187,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // index.
   class LCPVariableVectorComparator {
    public:
-    // This does a lexicographic comparison, using z variables first and then
-    // w variables.
+    // This does a lexicographic comparison.
     bool operator()(
         const LCPVariableVector& v1, const LCPVariableVector& v2) const {
       DRAKE_DEMAND(v1.size() == v2.size());
@@ -206,7 +201,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       std::sort(sorted1_.begin(), sorted1_.end());
       std::sort(sorted2_.begin(), sorted2_.end());
 
-      // Now do a lexicographic comparison.
+      // Now do the lexicographic comparison.
       for (int i = 0; i < static_cast<int>(v1.size()); ++i) {
         if (sorted1_[i] < sorted2_[i]) {
           return true;
@@ -229,7 +224,13 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // to minimize heap allocations during the LCP solution process and to
   // facilitate warmstarting.
 
-  // Temporary variable for determining index sets.
+  // Temporary variable for determining index sets (i.e., α, α', α̅, α̅', etc.
+  // from doc/pivot_column.pdf). The first int of each pair stores the
+  // variable's own "internal" index and the second stores the index of the
+  // variable in the requisite array ("independent w", "dependent w",
+  // "independent z", and "dependent z") in doc/pivot_column.pdf.
+  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+  // [Dai and Drumwright, 2018] when we have one.
   mutable std::vector<std::pair<int, int>> variable_and_array_indices_;
 
   // Mapping from an LCP variable to the index of that variable in
@@ -243,7 +244,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // These temporary matrices and vectors are members to facilitate minimizing
   // memory allocations/deallocations. Changing their value between invocations
   // of the LCP solver will not change the resulting computation.
-  mutable MatrixX<T> M_alpha_beta_, M_prime_alpha_beta_;
+  mutable MatrixX<T> M_alpha_beta_, M_bar_alpha_beta_;
   mutable VectorX<T> q_alpha_, q_bar_alpha_, q_prime_beta_prime_,
       q_prime_bar_alpha_prime_, e_, M_prime_driving_beta_prime_,
       M_prime_driving_bar_alpha_prime_, g_alpha_, g_bar_alpha_;
@@ -254,9 +255,11 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   mutable LemkeIndexSets index_sets_;
 
   // The partitions of independent and dependent variables (denoted z' and w',
-  // respectively, in [Dai and Drumwright 2018]). These have been made member
+  // respectively, in doc/pivot_column.pdf). These have been made member
   // variables to permit warmstarting. Changing these sets between invocations
   // of the LCP solver will not change the resulting computation.
+  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
+  // [Dai and Drumwright, 2018] when we have one.
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
