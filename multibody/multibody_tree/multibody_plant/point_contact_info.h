@@ -49,12 +49,27 @@ class PointContactInfo {
    @param torque                    The torque component.
    */
   PointContactInfo(
+      const T& time,
       const Vector3<T>& nhat_BA, const Vector3<T>& that,
       const T& phi, const T& vn, const T& vt, const Vector3<T>& v_AcBc,
       const Vector3<T>& vt_AcBc, const T& fn_AC, const T& ft_AC,
       const T& mu_stribeck);
 
+  const T& time() const { return time_; }
+  const Vector3<T>& nhat() const { return nhat_BA_W_; }
+  const Vector3<T>& that() const { return that_W_; }
+  const Vector3<T>& v_AcBc() const { return v_AcBc_W_; }
+  const Vector3<T>& vt_AcBc() const { return vt_AcBc_W_; }
+  const T& phi() const { return phi_; }
+  const T& vn() const { return vn_; }
+  const T& vt() const { return vt_; }
+  const T& fn_AC() const { return fn_AC_; }
+  const T& ft_AC() const { return ft_AC_; }
+  const T& mu_stribeck() const { return mu_stribeck_; }
+
  private:
+  // Time at which the contact occurs.
+  T time_;
   // Normal ᴮn̂ᴬ pointing out from body B and into body A, expressed in world
   // frame W.
   Vector3<T> nhat_BA_W_{};

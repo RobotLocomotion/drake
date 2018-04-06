@@ -13,11 +13,13 @@ using std::abs;
 
 template <typename T>
 PointContactInfo<T>::PointContactInfo(
+    const T& time,
     const Vector3<T>& nhat_BA, const Vector3<T>& that, const T& phi,
     const T& vn, const T& vt, const Vector3<T>& v_AcBc,
     const Vector3<T>& vt_AcBc, const T& fn_AC, const T& ft_AC,
     const T& mu_stribeck)
-    : nhat_BA_W_(nhat_BA),
+    : time_(time),
+      nhat_BA_W_(nhat_BA),
       that_W_(that),
       phi_(phi),
       vn_(vn),

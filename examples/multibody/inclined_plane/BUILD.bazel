@@ -38,6 +38,7 @@ drake_cc_binary(
         ":make_inclined_plane_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
+        "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta2_integrator",
         "//systems/analysis:runge_kutta3_integrator",

@@ -11,6 +11,7 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
+#include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -36,9 +37,10 @@ DEFINE_double(target_realtime_rate, 1.0,
 
 DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are: "
-              "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
-              "'implicit_euler'");
+              "'explicit_euler', 'semi_explicit_euler','runge_kutta2',"
+              "'runge_kutta3','implicit_euler'");
 DEFINE_double(integration_accuracy, 0.001, "Integration accuracy.");
+DEFINE_double(max_time_step, -1.0, "Maximum time step.");
 
 DEFINE_double(simulation_time, 1.0,
               "Desired duration of the simulation in seconds.");
@@ -61,6 +63,7 @@ using drake::multibody::QuaternionFloatingMobilizer;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialVelocity;
 using drake::multibody::SpatialInertia;
+using drake::systems::ExplicitEulerIntegrator;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
@@ -101,8 +104,12 @@ int do_main() {
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
   // time step integrators are stable.
-  const double max_time_step =
+  double max_time_step =
       plant.get_contact_penalty_method_time_scale() / 30;
+  if (FLAGS_max_time_step > 0) {
+    max_time_step = FLAGS_max_time_step;
+  }
+  PRINT_VAR(max_time_step);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
@@ -162,7 +169,11 @@ int do_main() {
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
   systems::IntegratorBase<double>* integrator{nullptr};
-  if (FLAGS_integration_scheme == "implicit_euler") {
+  if (FLAGS_integration_scheme == "explicit_euler") {
+    integrator =
+        simulator.reset_integrator<ExplicitEulerIntegrator<double>>(
+            *diagram, max_time_step, &simulator.get_mutable_context());
+  } else if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
             *diagram, &simulator.get_mutable_context());
@@ -189,7 +200,7 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(target_accuracy);
 
-  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);

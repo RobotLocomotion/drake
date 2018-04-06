@@ -933,6 +933,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const T& v_tangent_BAc,
       CoulombFrictionCoefficients friction) const;
 
+  // Logging is done in this method.
+  void DoPublish(
+      const systems::Context<T>& context,
+      const std::vector<const systems::PublishEvent<T>*>& events)
+  const override;
+
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
   static T step5(const T& x);

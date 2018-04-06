@@ -11,6 +11,12 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
+#include <fstream>
+#include <iostream>
+#include <ios>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -457,9 +463,21 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
             ComputeFrictionCoefficient(vt, combined_friction_coefficients);
         // Tangential direction.
         that_W = vt_AcBc_W / vt;
+
         // Magnitude of the friction force on A at C.
         ft_AC = mu_stribeck * fn_AC;
         ft_AC_W = ft_AC * that_W;
+
+        // we know that should be that = [-0.96593   0.00000   0.25882]
+        if (that_W(0) > 0) {
+          PRINT_VAR(that_W.transpose());
+          PRINT_VAR(nhat_BA_W.transpose());
+          PRINT_VAR(ft_AC_W.transpose());
+          PRINT_VAR(vt_AcBc_W.transpose());
+          PRINT_VAR(vn);
+          PRINT_VAR(vt);
+          PRINT_VAR(v_AcBc_W.transpose());
+        }
       }
 
       // Spatial force on body A at C, expressed in the world frame W.
@@ -483,7 +501,8 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
     // Store contact info.
     if (contact_info != nullptr) {
-      contact_info->emplace_back(nhat_BA_W,
+      contact_info->emplace_back(context.get_time(),
+                                 nhat_BA_W,
                                  that_W,
                                  x,
                                  vn,
@@ -515,6 +534,47 @@ void MultibodyPlant<T>::CalcPointContactInfoOutput(
   const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   CalcAndAddContactForcesByPenaltyMethod(
       context, pc, vc, nullptr, contact_info);
+}
+
+template <typename T>
+void MultibodyPlant<T>::DoPublish(
+    const Context<T>& context,
+    const std::vector<const systems::PublishEvent<T>*>&)
+const {
+  std::vector<PointContactInfo<T>> contact_info;
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  CalcAndAddContactForcesByPenaltyMethod(
+      context, pc, vc, nullptr, &contact_info);
+  std::ofstream outfile;
+  int i = 0;
+  DRAKE_DEMAND(contact_info.size() <= 1);
+  if (context.get_time() == 0) {
+    outfile.open("contact_info.dat");
+    outfile.close();
+  }
+  outfile.open("contact_info.dat", std::ios_base::app);
+  for (const PointContactInfo<T>& c : contact_info) {
+    ++i;
+#if 0
+    const Vector3<T>& nhat() const { return nhat_BA_W_; }
+  const Vector3<T>& that() const { return that_W_; }
+  const Vector3<T>& v_AcBc() const { return v_AcBc_W_; }
+  const Vector3<T>& vt_AcBc() const { return vt_AcBc_W_; }
+#endif
+    outfile.precision(8);
+    outfile << std::scientific;
+    outfile << c.time() << " " << c.phi() << " " << c.vn() << " " << c.vt() << " " << c.mu_stribeck();
+    outfile << " " << c.fn_AC() << " " << c.ft_AC();
+
+    Eigen::IOFormat format(8, 0, " ", "\n", "", "");
+    outfile << " " << c.nhat().transpose().format(format);
+    outfile << " " << c.that().transpose();
+    outfile << " " << c.v_AcBc().transpose();
+    outfile << " " << c.vt_AcBc().transpose();
+    outfile << std::endl;
+  }
+  outfile.close();
 }
 
 template<typename T>
