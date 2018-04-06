@@ -30,13 +30,24 @@ class LineRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
+  /// @param scale_length The minimum length, in meters, of variations that
+  /// the curve expresses.
+  /// @param linear_tolerance The linear tolerance for all computations, in the
+  /// the absolute error sense.
+  /// @param trade_accuracy_for_speed If true, prevents the use of numerical
+  /// approximations for curve parameterizations, sticking to available
+  /// closed form solutions that may not actually be correct for the curve
+  /// as specified.
   explicit LineRoadCurve(const Vector2<double>& xy0, const Vector2<double>& dxy,
                          const CubicPolynomial& elevation,
-                         const CubicPolynomial& superelevation)
-      : RoadCurve(elevation, superelevation),
-        p0_(xy0),
-        dp_(dxy),
-        heading_(std::atan2(dxy.y(), dxy.x())) {
+                         const CubicPolynomial& superelevation,
+                         double scale_length = 1.0,
+                         double linear_tolerance = 0.01,
+                         bool trade_accuracy_for_speed = false)
+      : RoadCurve(scale_length, linear_tolerance,
+                  elevation, superelevation,
+                  trade_accuracy_for_speed),
+        p0_(xy0), dp_(dxy), heading_(std::atan2(dxy.y(), dxy.x())) {
     DRAKE_DEMAND(dxy.norm() > kMinimumNorm);
   }
 

@@ -65,10 +65,7 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   const double r = position.r() + r0_;
   const double h = position.h();
   const Rot3 R = road_curve_->Rabg_of_p(p);
-  // TODO(maddog@tri.global)  When s(p) is integrated properly,
-  //                          fake_g_prime should be replaced by real_g_prime.
-  const double real_g_prime = road_curve_->elevation().f_dot_p(p);
-  const double fake_g_prime = road_curve_->elevation().fake_gprime(p);
+  const double g_prime = road_curve_->elevation().f_dot_p(p);
 
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp
   // evaluated at (p, r, h).
@@ -76,9 +73,8 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   // along the Lane's centerline) is related to p by ds = |∂W/∂p| dp evaluated
   // at (p, r0, 0).  Chaining yields ds/dσ:
   const double ds_dsigma =
-      road_curve_->W_prime_of_prh(p, r0_, 0, R, fake_g_prime).norm() /
-      road_curve_->W_prime_of_prh(p, r, h, R, real_g_prime).norm();
-
+      road_curve_->W_prime_of_prh(p, r0_, 0, R, g_prime).norm() /
+      road_curve_->W_prime_of_prh(p, r, h, R, g_prime).norm();
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,
                            velocity.eta_v);
