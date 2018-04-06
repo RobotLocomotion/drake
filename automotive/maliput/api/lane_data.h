@@ -111,11 +111,6 @@ class Rotation {
  private:
   explicit Rotation(const Quaternion<double>& quat) : quaternion_(quat) {}
 
-  // Converts Eigen (x,y,z,w) quaternion to drake's temporary(?) (w,x,y,z).
-  static Vector4<double> to_drake(const Quaternion<double>& quat) {
-    return Vector4<double>(quat.w(), quat.x(), quat.y(), quat.z());
-  }
-
   Quaternion<double> quaternion_;
 };
 

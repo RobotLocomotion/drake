@@ -186,49 +186,6 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 }
 
 /**
- * Computes angle-axis orientation from a given quaternion.
- * @tparam Scalar The element type which must be a valid Eigen scalar.
- * @param quaternion 4 x 1 non-zero vector that does not have to be normalized.
- * @return Angle-axis representation of quaternion with 0 <= angle <= PI.
- * and axis as a unit vector. Return is independent of quaternion normalization.
- */
-template <typename Scalar>
-Eigen::AngleAxis<Scalar> QuaternionToAngleAxis(
-    const Eigen::Quaternion<Scalar>& quaternion) {
-  // Use Eigen's built-in algorithm which seems robust (checked by Mitiguy/Dai).
-  Eigen::AngleAxis<Scalar> angle_axis(quaternion);
-
-  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
-  // After  October 2016, Eigen calculates  0 <= angle <= PI.
-  // Ensure consistency between pre/post October 2016 Eigen versions.
-  Scalar& angle = angle_axis.angle();
-  Vector3<Scalar>& axis = angle_axis.axis();
-  if (angle >= M_PI) {
-    angle = 2 * M_PI - angle;
-    axis = -axis;
-  }
-
-#ifdef DRAKE_ASSERT_IS_ARMED
-  // Ensure angle returned is between 0 and PI.
-  // const Scalar angle = angle_axis.angle();
-  DRAKE_ASSERT(0.0 <= angle && angle <= M_PI);
-
-  // Ensure a unit vector is returned, i.e., magnitude 1.
-  // const Vector3<Scalar> axis = angle_axis.axis();
-  const Scalar norm = axis.norm();
-  // Normalization of Vector3 has 3 multiplies, 2 additions and one sqrt.
-  // Each multiply has form (1+eps)*(1+eps) = 1 + 2*eps + eps^2.
-  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
-  // Use: (3 mult * 2*eps) + (3 mults + 2 adds + 1 sqrt) * 1/2 eps = 9 eps.
-  const Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
-  using std::abs;
-  DRAKE_ASSERT(abs(norm - 1) < 9 * epsilon);
-#endif
-
-  return angle_axis;
-}
-
-/**
  * Computes the rotation matrix from quaternion representation.
  * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
  * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]

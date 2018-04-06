@@ -136,7 +136,7 @@ int do_main() {
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  Matrix3d R_WB = math::UniformlyRandomRotationMatrix(generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, z0);
