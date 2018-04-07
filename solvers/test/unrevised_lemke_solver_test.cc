@@ -10,8 +10,6 @@
 namespace drake {
 namespace solvers {
 
-// Note: we do not use
-
 const double epsilon = 5e-14;
 
 // Run the solver and test against the expected result.
@@ -259,17 +257,163 @@ GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
               1e3 * eps);
 }
 
+// Tests whether warm starting works properly.
 GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
 }
 
+// A class for testing various private functions in the Lemke solver.
 class UnrevisedLemkePrivateTests : public testing::Test {
  protected:
   UnrevisedLemkeSolver<double> lcp_;
 };
 
+// Tests proper operation of selecting a sub-matrix from a matrix that is
+// augmented with a covering vector.
 TEST_F(UnrevisedLemkePrivateTests, SelectSubMatrixWithCovering) {
-  lcp_.DetermineIndexSets();
+  MatrixX<double> result;
+
+  // After augmentation, the matrix will be:
+  // 1 0 0 1
+  // 0 1 0 1
+  // 0 0 1 1
+  MatrixX<double> M = MatrixX<double>::Identity(3, 3);
+
+  // Select the upper-left 2x2
+  lcp_.SelectSubMatrixWithCovering(M, {0, 1}, {0, 1}, &result);
+  ASSERT_EQ(result.rows(), 2);
+  ASSERT_EQ(result.cols(), 2);
+  MatrixX<double> expected(result.rows(), result.cols());
+  expected << 1, 0,
+              0, 1;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Select the lower-right 2x2.
+  lcp_.SelectSubMatrixWithCovering(M, {1, 2}, {2, 3}, &result);
+  ASSERT_EQ(result.rows(), 2);
+  ASSERT_EQ(result.cols(), 2);
+  expected << 0, 1,
+              1, 1;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Select the right 3x3, with columns reversed.
+  lcp_.SelectSubMatrixWithCovering(M, {0, 1, 2}, {3, 2, 1}, &result);
+  ASSERT_EQ(result.rows(), 3);
+  ASSERT_EQ(result.cols(), 3);
+  expected = MatrixX<double>(result.rows(), result.cols());
+  expected << 1, 0, 0,
+              1, 0, 1,
+              1, 1, 0;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Select the right 3x3, with rows reversed.
+  lcp_.SelectSubMatrixWithCovering(M, {2, 1, 0}, {1, 2, 3}, &result);
+  ASSERT_EQ(result.rows(), 3);
+  ASSERT_EQ(result.cols(), 3);
+  expected = MatrixX<double>(result.rows(), result.cols());
+  expected << 0, 1, 1,
+              1, 0, 1,
+              0, 0, 1;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Select the entire matrix.
+  lcp_.SelectSubMatrixWithCovering(M, {0, 1, 2}, {0, 1, 2, 3}, &result);
+  expected = MatrixX<double>(result.rows(), result.cols());
+  expected << 1, 0, 0, 1,
+              0, 1, 0, 1,
+              0, 0, 1, 1;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
 }
+
+// Tests proper operation of selecting a sub-column from a matrix that is
+// augmented with a covering vector.
+TEST_F(UnrevisedLemkePrivateTests,SelectSubColumnWithCovering) {
+}
+
+// Tests proper operation of selecting a sub-vector from a vector.
+TEST_F(UnrevisedLemkePrivateTests,SelectSubVector) {
+  // Set the vector.
+  VectorX<double> v(3);
+  v << 0, 1, 2;
+
+  // One element (the middle one).
+  VectorX<double> result;
+  lcp_.SelectSubVector(v, { 1 }, &result);
+  EXPECT_EQ(result.size(), 1);
+  EXPECT_EQ(result[0], 1);
+
+  // Two elements (the ends).
+  lcp_.SelectSubVector(v, { 0, 2 }, &result);
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_EQ(result[0], 0);
+  EXPECT_EQ(result[1], 2);
+
+  // All three elements, not ordered sequentially.
+  lcp_.SelectSubVector(v, { 0, 2, 1 }, &result);
+  EXPECT_EQ(result.size(), 3);
+  EXPECT_EQ(result[0], 0);
+  EXPECT_EQ(result[1], 2);
+  EXPECT_EQ(result[2], 1);
+}
+
+TEST_F(UnrevisedLemkePrivateTests, SetSubVector) {
+  // Construct a zero vector that will be used repeatedly for reinitialization.
+  VectorX<double> zero(3);
+  zero << 0, 0, 0;
+
+  // Set a single element.
+  VectorX<double> result = zero;
+  VectorX<double> v_sub(1);
+  v_sub << 1;
+  lcp_.SetSubVector(v_sub, {0}, &result);
+  EXPECT_EQ(result[0], 1.0);
+  EXPECT_EQ(result.norm(), 1.0);  // Verify no other elements were set.
+
+  // Set another single element, this time at the end.
+  result = zero;
+  lcp_.SetSubVector(v_sub, {2}, &result);
+  EXPECT_EQ(result[2], 1.0);
+  EXPECT_EQ(result.norm(), 1.0);  // Verify no other elements were set.
+
+  // Set two elements, one at either end.
+  v_sub = VectorX<double>(2);
+  v_sub << 2, 3;
+  lcp_.SetSubVector(v_sub, {0, 2}, &result);
+  EXPECT_EQ(result[0], 2);
+  EXPECT_EQ(result[1], 0);
+  EXPECT_EQ(result[2], 3);
+
+  // Set an entire vector, in reverse order.
+  v_sub = VectorX<double>(3);
+  v_sub << 1, 2, 3;
+  lcp_.SetSubVector(v_sub, {2, 1, 0}, &result);
+  EXPECT_EQ(result[0], 3);
+  EXPECT_EQ(result[1], 2);
+  EXPECT_EQ(result[2], 1);
+}
+
+TEST_F(UnrevisedLemkePrivateTests, ValidateIndices) {
+}
+
+TEST_F(UnrevisedLemkePrivateTests, IsEachUnique) {
+}
+
+TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
+}
+
+TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
+}
+
+TEST_F(UnrevisedLemkePrivateTests, DetermineIndexSets) {
+}
+
+TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndex) {
+}
+
 
 }  // namespace solvers
 }  // namespace drake
