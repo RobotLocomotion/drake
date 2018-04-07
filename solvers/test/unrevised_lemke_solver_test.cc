@@ -331,11 +331,11 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubMatrixWithCovering) {
 
 // Tests proper operation of selecting a sub-column from a matrix that is
 // augmented with a covering vector.
-TEST_F(UnrevisedLemkePrivateTests,SelectSubColumnWithCovering) {
+TEST_F(UnrevisedLemkePrivateTests, SelectSubColumnWithCovering) {
 }
 
 // Tests proper operation of selecting a sub-vector from a vector.
-TEST_F(UnrevisedLemkePrivateTests,SelectSubVector) {
+TEST_F(UnrevisedLemkePrivateTests, SelectSubVector) {
   // Set the vector.
   VectorX<double> v(3);
   v << 0, 1, 2;
