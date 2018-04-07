@@ -93,6 +93,8 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
+  friend class TestUnrevisedLemkePrivateTests_SelectSubMatrixWithCovering_Test;
+
   struct LemkeIndexSets {
     std::vector<int> alpha, alpha_prime;
     std::vector<int> bar_alpha, bar_alpha_prime;
@@ -153,8 +155,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       const Eigen::MatrixBase<Derived>& in,
       const std::vector<int>& rows,
       const std::vector<int>& cols, MatrixX<T>* out);
-  static bool CheckLemkeTrivial(
-      const T& zero_tol, const VectorX<T>& q, VectorX<T>* z);
   template <typename Derived>
   static void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
       const std::vector<int>& rows,

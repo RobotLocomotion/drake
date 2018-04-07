@@ -9,15 +9,15 @@
 
 namespace drake {
 namespace solvers {
-namespace {
 
-const double epsilon = 1e-6;
+// Note: we do not use
 
-/// Run all non-regularized solvers.  If @p expected_z is an empty
-/// vector, outputs will only be compared against each other.
+const double epsilon = 5e-14;
+
+// Run the solver and test against the expected result.
 template <typename Derived>
-void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-                 const Eigen::VectorXd& expected_z_in) {
+void RunLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+            const Eigen::VectorXd& expected_z_in) {
   UnrevisedLemkeSolver<double> l;
 
   Eigen::VectorXd expected_z = expected_z_in;
@@ -33,33 +33,7 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   EXPECT_GT(num_pivots, 0);  // We do not test any trivial LCPs.
 }
 
-/// Run all solvers.  If @p expected_z is an empty
-/// vector, outputs will only be compared against each other.
-template <typename Derived>
-void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-            const Eigen::VectorXd& expected_z_in) {
-  RunBasicLcp(M, q, expected_z_in);
-}
-
-GTEST_TEST(testUnrevisedLCP, testCottle) {
-  Eigen::Matrix<double, 3, 3> M;
-
-  // clang-format off
-  M <<
-    0, -1, 2,
-    2, 0, -2,
-    -1, 1, 0;
-  // clang-format on
-
-  Eigen::Matrix<double, 3, 1> q;
-  q << -3, 6, -1;
-
-  Eigen::VectorXd expected_z(3);
-  expected_z << 0, 1, 3;
-  RunBasicLcp(M, q, expected_z);
-}
-
-GTEST_TEST(testUnrevisedLCP, testCycling) {
+GTEST_TEST(TestUnrevisedLemke, TestCycling) {
   Eigen::Matrix<double, 3, 3> M;
 
   // clang-format off
@@ -74,33 +48,23 @@ GTEST_TEST(testUnrevisedLCP, testCycling) {
 
   Eigen::VectorXd expected_z(3);
   expected_z << 1.0/3, 1.0/3, 1.0/3;
-  RunBasicLcp(M, q, expected_z);
+  RunLCP(M, q, expected_z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testTrivial) {
-  Eigen::Matrix<double, 9, 9> M;
-  // clang-format off
-  M <<
-      1, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 2, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 3, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 4, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 5, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 6, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 7, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 8, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 9;
-  // clang-format on
+GTEST_TEST(TestUnrevisedLemke, TestTrivial) {
+  // Create a 9x9 diagonal matrix from the vector [1 2 3 4 5 6 7 8 9].
+  MatrixX<double> M = (Eigen::Matrix<double, 9, 1>() <<
+      1, 2, 3, 4, 5, 6, 7, 8, 9).finished().asDiagonal();
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd expected_z(9);
   expected_z << 1, 1.0/2, 1.0/3, 1.0/4, 1.0/5, 1.0/6, 1.0/7, 1.0/8, 1.0/9;
-  RunBasicLcp(M, q, expected_z);
+  RunLCP(M, q, expected_z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testProblem1) {
+GTEST_TEST(TestUnrevisedLemke, TestProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 16, 16> M;
@@ -117,10 +81,10 @@ GTEST_TEST(testUnrevisedLCP, testProblem1) {
   Eigen::Matrix<double, 1, 16> z;
   z.setZero();
   z(15) = 1;
-  runLCP(M, q, z);
+  RunLCP(M, q, z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testProblem2) {
+GTEST_TEST(TestUnrevisedLemke, TestProblem2) {
   // Problem from example 10.2.2 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 2, 2> M;
@@ -133,10 +97,10 @@ GTEST_TEST(testUnrevisedLCP, testProblem2) {
   Eigen::Matrix<double, 1, 2> z;
   z << 1, 0;
 
-  runLCP(M, q, z);
+  RunLCP(M, q, z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testProblem3) {
+GTEST_TEST(TestUnrevisedLemke, TestProblem3) {
   // Problem from example 10.2.3 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 3, 3> M;
@@ -154,10 +118,10 @@ GTEST_TEST(testUnrevisedLCP, testProblem3) {
   Eigen::Matrix<double, 1, 3> z;
   z << 0, 1, 3;
 
-  runLCP(M, q, z);
+  RunLCP(M, q, z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testProblem4) {
+GTEST_TEST(TestUnrevisedLemke, TestProblem4) {
   // Problem from example 10.2.4 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -177,16 +141,13 @@ GTEST_TEST(testUnrevisedLCP, testProblem4) {
   // states cannot be found using the Lemke-Howson algorithm.
   Eigen::VectorXd z(4);
   z << 1. / 90., 2. / 45., 1. / 90., 2. / 45.;
-
   UnrevisedLemkeSolver<double> l;
-
-// TODO(sammy-tri) the Lemke solvers find no solution at all, however.
   int num_pivots;
   bool result = l.SolveLcpLemke(M, q, &z, &num_pivots);
   EXPECT_FALSE(result);
 }
 
-GTEST_TEST(testUnrevisedLCP, testProblem6) {
+GTEST_TEST(TestUnrevisedLemke, TestProblem6) {
   // Problem from example 10.2.9 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -214,7 +175,7 @@ GTEST_TEST(testUnrevisedLCP, testProblem6) {
          (1286. - (9. * l)) / 13;
     // clang-format on
 
-    runLCP(M, q, z);
+    RunLCP(M, q, z);
   }
 
   // Try again with a value > 23 and see that we've hit the limit as
@@ -226,10 +187,10 @@ GTEST_TEST(testUnrevisedLCP, testProblem6) {
   Eigen::Matrix<double, 1, 4> z;
   z << 3, 3, 0, 83;
 
-  runLCP(M, q, z);
+  RunLCP(M, q, z);
 }
 
-GTEST_TEST(testUnrevisedLCP, testEmpty) {
+GTEST_TEST(TestUnrevisedLemke, TestEmpty) {
   Eigen::MatrixXd empty_M(0, 0);
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;
@@ -242,7 +203,7 @@ GTEST_TEST(testUnrevisedLCP, testEmpty) {
 }
 
 // Verifies that z is zero on LCP solver failure.
-GTEST_TEST(testUnrevisedLCP, testFailure) {
+GTEST_TEST(TestUnrevisedLemke, TestFailure) {
   Eigen::MatrixXd neg_M(1, 1);
   Eigen::VectorXd neg_q(1);
 
@@ -262,7 +223,7 @@ GTEST_TEST(testUnrevisedLCP, testFailure) {
   EXPECT_FALSE(constraint.CheckSatisfied(z));
 }
 
-GTEST_TEST(testSolutionQuality, testSoluion) {
+GTEST_TEST(TestUnrevisedLemke, TestSolutionQuality) {
   // Set the LCP and the solution.
   VectorX<double> q(1), z(1);
   MatrixX<double> M(1, 1);
@@ -278,6 +239,37 @@ GTEST_TEST(testSolutionQuality, testSoluion) {
   EXPECT_TRUE(lcp.IsSolution(M, q, z, 3e-16));
 }
 
-}  // namespace
+GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
+  // Compute the zero tolerance for several matrices.
+  // An scalar matrix- should be _around_ machine epsilon.
+  const double eps = std::numeric_limits<double>::epsilon();
+  MatrixX<double> M(1, 1);
+  M(0, 0) = 1;
+  EXPECT_NEAR(UnrevisedLemkeSolver<double>::ComputeZeroTolerance(M), eps,
+              10 * eps);
+
+  // An scalar matrix * 1e10. Should be _around_ machine epsilon * 1e10.
+  M(0, 0) = 1e10;
+  EXPECT_NEAR(UnrevisedLemkeSolver<double>::ComputeZeroTolerance(M),
+              1e10 * eps, 1e11 * eps);
+
+  // A 100 x 100 identity matrix. Should be _around_ 100 * machine epsilon.
+  M = MatrixX<double>::Identity(10, 10);
+  EXPECT_NEAR(UnrevisedLemkeSolver<double>::ComputeZeroTolerance(M), 1e2 * eps,
+              1e3 * eps);
+}
+
+GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
+}
+
+class UnrevisedLemkePrivateTests : public testing::Test {
+ protected:
+  UnrevisedLemkeSolver<double> lcp_;
+};
+
+TEST_F(UnrevisedLemkePrivateTests, SelectSubMatrixWithCovering) {
+  lcp_.DetermineIndexSets();
+}
+
 }  // namespace solvers
 }  // namespace drake

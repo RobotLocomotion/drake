@@ -192,20 +192,6 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   return SolutionResult::kSolutionFound;
 }
 
-// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
-// solves the LCP. Resizes z as necessary. Aborts if z is null.
-template <class T>
-bool UnrevisedLemkeSolver<T>::CheckLemkeTrivial(
-    const T& zero_tol, const VectorX<T>& q, VectorX<T>* z) {
-  DRAKE_ASSERT(z);
-  if (q.minCoeff() > -zero_tol) {
-    z->setZero(q.size());
-    return true;
-  }
-
-  return false;
-}
-
 // Utility function for copying part of a matrix (designated by the indices
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
 // the "covering vector"), to a target matrix, `out`. This template approach
@@ -336,7 +322,7 @@ void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Helper for determining index sets.
-  auto DetermineIndexSetsHelper = [this]( 
+  auto DetermineIndexSetsHelper = [this](
       const std::vector<LCPVariable>& variables, bool is_z,
       std::vector<int>* variable_set,
       std::vector<int>* variable_set_prime) {
@@ -686,7 +672,10 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   if (mod_zero_tol <= 0)
     mod_zero_tol = ComputeZeroTolerance(M);
 
-  if (CheckLemkeTrivial(mod_zero_tol, q, z)) {
+  // Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
+  // solves the LCP.
+  if (q.minCoeff() > -mod_zero_tol) {
+    z->setZero(q.size());
     SPDLOG_DEBUG(log(), " -- trivial solution found");
     SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
     return true;
