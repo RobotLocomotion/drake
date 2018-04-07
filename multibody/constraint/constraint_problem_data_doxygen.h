@@ -18,7 +18,7 @@ further in @ref constraint_types.
  - @ref constraint_stabilization
  - @ref constraint_regularization
  - @ref constraint_Jacobians
- - @ref noninterpenetration_constraints
+ - @ref contact_surface_constraints
  - @ref frictional_constraints
  - @ref generic_bilateral
  - @ref generic_unilateral
@@ -38,7 +38,7 @@ further in @ref constraint_types.
           below).
 - nr      *Half* the number of edges in a polygonal approximation to a
           friction cone. (nr ≥ 2).
-- np      The number of non-interpenetration constraint equations
+- np      The number of contact surface constraint equations.
 - nv      The dimension of the system generalized velocity / force.
 - nq      The dimension of the system generalized coordinates.
 - v       The system's generalized velocity vector (of dimension nv), which is a
@@ -71,19 +71,19 @@ the units of the iᵗʰ constraint function are not necessarily equivalent to th
 units of the jᵗʰ dimension of g(.).
 
 Constraints may be posed at the position level:<pre>
-g(t;q)
+gₚ(t;q)
 </pre>
 at the velocity level:<pre>
-g(t,q;v)
+gᵥ(t,q;v)
 </pre>
-or at the acceleration level:<pre>
-g(t,q,v;v̇,λ)
+or at the force/acceleration level:<pre>
+gₐ(t,q,v;v̇,λ)
 </pre>
 where λ is a vector of *constraint-space forces*. Note the semicolon in these
-definitions separates general constraint dependencies (t,q,v) from
-variables that must be determined using the constraints (v̇,λ). *The three
+definitions separates general constraint dependencies (t,q,v in gₐ) from
+variables that must be determined using the constraints (v̇,λ in gₐ). *The three
 constraint equations listed above can then be categorized as having
-position-level unknowns, velocity-level unknowns, or acceleration-level
+position-level unknowns, velocity-level unknowns, or force/acceleration-level
 unknowns*, respectively.
 
 <h4>Constraints with velocity-level unknowns</h4>
@@ -92,11 +92,11 @@ between equations that are posed at the position level but are
 differentiated once with respect to time (i.e., to reduce the Differential
 Algebraic Equation or Differential Complementarity Problem index [Ascher 1998]):
 <pre>
-d/dt g(t; q) = ċ(t, q; v)
+d/dt gₚ(t; q) = ġₚ(t, q; v)
 </pre>
 vs. equations that **must** be posed at at the velocity-level
 (i.e., nonholonomic constraints):<pre>
-g(t, q; v).
+gᵥ(t, q; v).
 </pre>
 Both cases yield a constraint with velocity-level unknowns, thereby
 allowing the constraint to be used in a velocity-level constraint formulation
@@ -104,21 +104,21 @@ allowing the constraint to be used in a velocity-level constraint formulation
 from zero over time*, due to truncation and discretization errors, unless
 corrected. See @ref constraint_stabilization for further information.
 
-<h4>Constraints with acceleration-level unknowns</h4>
-A bilateral constraint equation with acceleration-level unknowns will take the
-form:
+<h4>Constraints with force/acceleration-level unknowns</h4>
+A bilateral constraint equation with force/acceleration-level unknowns will take
+the form:
 <pre>
-c̈(t,q,v;v̇) = 0
+g̈ₚ(t,q,v;v̇) = 0
 </pre>
-if g(.) has been differentiated twice with respect to time (for DAE/DCP index
+if gₚ(.) has been differentiated twice with respect to time (for DAE/DCP index
 reduction), or<pre>
-ċ(t,q,v;v̇) = 0
+ġᵥ(t,q,v;v̇) = 0
 </pre>
-if g(.) is nonholonomic and has been differentiated once with respect to time
+if gᵥ(.) is nonholonomic and has been differentiated once with respect to time
 (again, for DAE/DCP index reduction). Constraints with acceleration-level
 unknowns can be also be modified to incorporate terms dependent on constraint
 forces, like:<pre>
-c̈ + λ = 0
+g̈ₚ + λ = 0
 </pre>
 Making the constraint type above more general by permitting unknowns over λ
 allows constraints to readily express, e.g., sliding Coulomb friction
@@ -129,15 +129,15 @@ illustrative example above, which will be examined further in
 
 <h4>Complementarity conditions</h4>
 Each unilateral constraint comprises a triplet of equations. For example:<pre>
-g(t,q,v;v̇,λ) ≥ 0
+gₐ(t,q,v;v̇,λ) ≥ 0
 λ ≥ 0
-g(t,q,v;v̇,λ)⋅λ = 0
+gₐ(t,q,v;v̇,λ)⋅λ = 0
 </pre>
 which we will typically write in the common shorthand notation:<pre>
-0 ≤ c  ⊥  λ ≥ 0
+0 ≤ gₐ  ⊥  λ ≥ 0
 </pre>
 Interpreting this triplet of constraint equations, two conditions become
-apparent: (1) when the constraint is inactive (c > 0), the constraint force
+apparent: (1) when the constraint is inactive (gₐ > 0), the constraint force
 must be zero (λ = 0) and (2) the constraint force can only act in one
 direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
 */
@@ -147,33 +147,33 @@ direction (λ ≥ 0). This triplet is known as a *complementarity constraint*.
  
 Both truncation and rounding errors can prevent constraints from being 
 exactly satisfied. For example, consider the bilateral holonomic constraint
-equation g(t,q) = 0. Even if
-g(t₀,q(t₀)) = ċ(t₀,q(t₀),v(t₀)) = c̈(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, it is often
-true that g(t₁,q(t₁)) will be nonzero for sufficiently large Δt = t₁ - t₀.
+equation gₚ(t,q) = 0. Even if
+gₚ(t₀,q(t₀)) = ġₚ(t₀,q(t₀),v(t₀)) = g̈ₚ(t₀,q(t₀),v(t₀),v̇(t₀)) = 0, it is often
+true that gₚ(t₁,q(t₁)) will be nonzero for sufficiently large Δt = t₁ - t₀.
 One way to address this constraint "drift" is through *dynamic stabilization*.
 In particular, holonomic unilateral constraints that have been differentiated
 twice with respect to time can be modified from:<pre>
-0 ≤ c̈  ⊥  λ ≥ 0
+0 ≤ g̈ₚ  ⊥  λ ≥ 0
 </pre>
 to:<pre>
-0 ≤ c̈ + 2αċ + β²c  ⊥  λ ≥ 0
+0 ≤ g̈ₚ + 2αġₚ + β²gₚ  ⊥  λ ≥ 0
 </pre>
 and holonomic bilateral constraints can be modified from:<pre>
-c̈ = 0
+g̈ₚ = 0
 </pre>
 to:<pre>
-c̈ + 2αċ + β²c = 0
+g̈ₚ + 2αġₚ + β²gₚ = 0
 </pre>
 for non-negative scalar α and real β (α and β can also represent diagonal
 matrices for greater generality). α and β, which both have units of 1/sec
 (i.e., the reciprocal of unit time) are described more fully in
 [Baumgarte 1972].
 
-We will temporarily consider the case c → ℝ, i.e., g(.) maps to a scalar rather
-than a vector. The use of α and β above make correcting position-level (c) and
-velocity-level (ċ) holonomic constraint errors analogous to the dynamic problem
-of stabilizing a damped harmonic oscillator. Given that analogy, 2α is the
-viscous damping coefficient and β² the stiffness coefficient. These two
+We will temporarily consider the case gₚ → ℝ, i.e., gₚ(.) maps to a scalar
+rather than a vector. The use of α and β above make correcting position-level
+(gₚ) and velocity-level (ġ) holonomic constraint errors analogous to the dynamic
+problem of stabilizing a damped harmonic oscillator. Given that analogy, 2α is
+the viscous damping coefficient and β² the stiffness coefficient. These two
 coefficients make predicting the motion of the oscillator challenging to
 interpret, so one typically converts them to undamped angular frequency (ω₀) 
 and damping ratio (ζ) via the following equations:<pre>
@@ -195,17 +195,17 @@ the equations above.
 It can be both numerically advantageous and a desirable modeling feature to
 regularize constraints. For example, consider modifying a 
 unilateral complementarity constraint from:<pre>
-0 ≤ g(t,q,v;v̇,λ)  ⊥  λ ≥ 0
+0 ≤ gₐ(t,q,v;v̇,λ)  ⊥  λ ≥ 0
 </pre>
 to:<pre>
-0 ≤ g(t,q,v;v̇,λ) + ελ  ⊥  λ ≥ 0
+0 ≤ gₐ(t,q,v;v̇,λ) + ελ  ⊥  λ ≥ 0
 </pre>
 where ε is a non-negative scalar; alternatively, it can represent a diagonal
-matrix with the same number of rows/columns as the dimension of c and λ,
+matrix with the same number of rows/columns as the dimension of gₐ and λ,
 permitting different coefficients for each constraint equation.
 With ελ > 0, it becomes easier to satisfy the constraint
-g(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ will not quite
-satisfy c ≥ 0: c will become slightly negative. As hinted above,
+gₐ(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ will not quite
+satisfy gₐ ≥ 0: gₐ will become slightly negative. As hinted above,
 regularization can confer two benefits. First, the resulting complementarity
 problems become easier to solve; more importantly, any complementarity problem
 becomes solvable given sufficient regularization [Cottle 1992].
@@ -231,7 +231,8 @@ defined by:
 <pre>
 mẍ = f
 </pre>
-The "hard constraint" ẋ = 0 can be added, resulting in:
+The "hard constraint" x = 0 can be added, which Catto differentiates once with
+respect to time, resulting in the equations:
 <pre>
 mẍ = f + λ
 ẋ = 0
@@ -262,8 +263,8 @@ where m̂ is the *effective inertia* of the constraint and is determined
 by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
 constraint function with respect to the quasi-coordinates (see
 @ref quasi_coordinates; equivalently, G maps generalized velocities to the time
-derivative of the constraints, i.e., ċ) and M is the generalized inertia matrix.
-Considering g(.) to be a scalar function for simplicity of presentation
+derivative of the constraints, i.e., ġₚ) and M is the generalized inertia
+matrix. Considering gₚ(.) to be a scalar function for simplicity of presentation
 should make it clear that GM⁻¹Gᵀ would be a scalar as well.
 
 While Catto studied a mass-spring system, these results apply to general
@@ -302,7 +303,7 @@ system's generalized coordinates are equal to the system's generalized
 velocities (i.e., if q̇ = v), these Jacobian matrices
 can be defined simply as the partial derivatives of the constraint equations
 taken with respect to the partial derivatives of the generalized
-coordinates (i.e., ∂c/∂q). 
+coordinates (i.e., ∂g/∂q).
 
 The time derivative of the generalized coordinates need not equal the
 generalized velocities, however,
@@ -310,24 +311,23 @@ which leads to a general, albeit harder to describe definition of the
 Jacobian matrices as the partial derivatives of the constraint equations
 taken with respect to the quasi-coordinates (see @ref quasi_coordinates);
 using the notation within the citation for
-quasi-coordinates means we write the Jacobian as ∂c/∂q̅ (quasi-coordinates
+quasi-coordinates means we write the Jacobian as ∂g/∂q̅ (quasi-coordinates
 possess the property that ∂q̅/∂v = Iₙₓₙ, the n × n identity matrix). In
-robotics literature, ∂c/∂q̅ is known as a *geometric Jacobian* while
-∂c/∂q is known as an *analytical Jacobian* [Sciavicco 2000].
+robotics literature, ∂g/∂q̅ is known as a *geometric Jacobian* while
+∂g/∂q is known as an *analytical Jacobian* [Sciavicco 2000].
 
-Fortunately, for constraints defined in the form g(t,q), the distinction is
-moot: the Jacobians are described completely by the equation ċ = ∂c/∂q̅⋅v +
+Fortunately, for constraints defined in the form gₚ(t,q), the distinction is
+moot: the Jacobians are described completely by the equation ġₚ = ∂g/∂q̅⋅v +
 ∂c/∂t, where v are the generalized velocities of the system. Since the problem
 data calls for operators (see
 @ref drake::multibody::constraint::ConstraintAccelProblemData
 "ConstraintAccelProblemData" and
 @ref drake::multibody::constraint::ConstraintVelProblemData
-"ConstraintVelProblemData" that compute (∂c/∂q̅⋅v), one can simply
-evaluate ċ - ∂c/∂t for a given v: no Jacobian need be formed explicitly.
-
+"ConstraintVelProblemData" that compute (∂g/∂q̅⋅v), one can simply
+evaluate ġ - ∂g/∂t for a given v: no Jacobian need be formed explicitly.
 */
 
-/** @defgroup noninterpenetration_constraints Noninterpenetration constraints
+/** @defgroup contact_surface_constraints Contact surface constraints
 @ingroup constraint_overview
 
 Consider two points pᵢ and pⱼ on rigid bodies i and j, respectively, and
@@ -336,24 +336,29 @@ points are coincident at a single location in space,
 p(ᶜq). To constrain the motion of pᵢ and pⱼ to the contact
 surface as the bodies move, one can introduce the constraint
 g(q) = n(q)ᵀ(pᵢ(q) - pⱼ(q)), where n(q) is the common surface normal
-expressed in the world frame. g(q) is a unilateral constraint, meaning that
+expressed in the world frame. gₚ(q) is a unilateral constraint, meaning that
 complementarity constraints are necessary (see @ref constraint_types):<pre>
-0 ≤ c  ⊥  λ ≥ 0
+0 ≤ gₚ  ⊥  λ ≥ 0
 </pre>
 
-<h4>Differentiating g(.) with respect to time</h4>
-As usual, g(.) must be differentiated (with respect to time) once to use the
+<h4>Differentiating gₚ(.) with respect to time</h4>
+As usual, gₚ(.) must be differentiated (with respect to time) once to use the
 contact constraint in velocity-level constraint formulation or twice to use
-it in an acceleration-level formulation. Differentiating g(q) once with respect
-to time yields:<pre>
-ċ(q,v) = nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ);
+it in a force/acceleration-level formulation. Differentiating gₚ(q) once with
+respect to time yields:<pre>
+ġₚ(q,v) = nᵀ(ṗᵢ - ṗⱼ) + ṅᵀ(pᵢ - pⱼ);
 </pre>
 one more differentiation with respect to time yields:<pre>
-c̈(q,v,v̇) = nᵀ(p̈ᵢ - p̈ⱼ) + 2ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
+g̈ₚ(q,v,v̇) = nᵀ(p̈ᵢ - p̈ⱼ) + 2ṅᵀ(ṗᵢ - ṗⱼ) + n̈ᵀ(pᵢ - pⱼ).
 </pre>
 
 The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
-keeps the contact force along the contact normal compressive, as desired.
+keeps the contact force along the contact normal compressive, as is consistent
+with a non-adhesive contact model.
+
+@image html multibody/constraint/images/surface_contact.png "Figure 1:
+     Illustration of the interpretation of contact surface constraints when
+     two spheres are interpenetrating."
 
 <h4>The Coulomb friction model</h4>
 Incorporating the Coulomb friction model for sliding contact between dry
@@ -396,10 +401,10 @@ As discussed in @ref constraint_regularization, the non-interpenetration
 constraint can be regularized or softened by adding a term to, e.g., the
 second time derivative of the equation:
 <pre>
-0 ≤ c̈  ⊥  λ ≥ 0
+0 ≤ g̈ₚ  ⊥  λ ≥ 0
 </pre>
 resulting in:<pre>
-0 ≤ c̈ + ελ  ⊥  λ ≥ 0
+0 ≤ g̈ₚ + ελ  ⊥  λ ≥ 0
 </pre>
 for ε ≥ 0.
 
@@ -410,11 +415,11 @@ mitigated through one of several strategies, one of which is Baumgarte
 Stabilization. The typical application of Baumgarte Stabilization will use the
 second time derivative of the complementarity condition (the regularization
 term from above is incorporated as well for purposes of illustration):<pre>
-0 ≤ c̈ + ελ  ⊥  λ ≥ 0
+0 ≤ g̈ₚ + ελ  ⊥  λ ≥ 0
 </pre>
 Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
-0 ≤ c̈ + 2αċ + β²c + ελ  ⊥  λ ≥ 0
+0 ≤ g̈ₚ + 2αġₚ + β²gₚ + ελ  ⊥  λ ≥ 0
 </pre>
 
 <h4>Effects of constraint regularization/softening and stabilization on
@@ -457,53 +462,53 @@ plane and pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and
 The non-sliding constraints can be categorized into kinematic constraints on
 tangential motion and frictional force constraints. Such a grouping for a 3D
 contact is provided below:<pre>
-(0) ⁰g = μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
-(1) ¹g = ((p̈ᵢ - p̈ⱼ)ᵀbₛ) = 0
-(2) ²g = ((p̈ᵢ - p̈ⱼ)ᵀbₜ) = 0
+(0) ⁰ĝₐ = μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
+(1) ¹ĝₐ = ((p̈ᵢ - p̈ⱼ)ᵀbₛ) = 0
+(2) ²ĝₐ = ((p̈ᵢ - p̈ⱼ)ᵀbₜ) = 0
 </pre>
 where μ is the coefficient of "static" friction, fᴺ is the magnitude of the
 force applied along the contact normal, and fˢ and fᵗ are scalars
 corresponding to the frictional forces applied along the basis vectors.
-Since nonlinear equations are typically challenging to solve, ⁰g and ¹g
+Since nonlinear equations are typically challenging to solve, the ĝ̂ equations
 are often transformed to linear approximations:<pre>
-(0')     g̅₀ = μ⋅fᴺ - 1ᵀfᵇ
-(1')     g̅₁ = (p̈ᵢ - p̈ⱼ)ᵀb₁
+(0')      ⁰g̅ₐ = μ⋅fᴺ - 1ᵀfᵇ
+(1')      ¹g̅ₐ = (p̈ᵢ - p̈ⱼ)ᵀb₁
 ...
-(r')     g̅ᵣ = (p̈ᵢ - p̈ⱼ)ᵀbᵣ
-(r+1') g̅ᵣ₊₁ = -(p̈ᵢ - p̈ⱼ)ᵀb₁
+(nr')     ⁿʳg̅ₐ = (p̈ᵢ - p̈ⱼ)ᵀbₙᵣ
+(nr+1') ⁿʳ⁺¹g̅ = -(p̈ᵢ - p̈ⱼ)ᵀb₁
 ...
-(k')     g̅k = -(p̈ᵢ - p̈ⱼ)ᵀbᵣ
+(nk')    ⁿᵏg̅ₐ = -(p̈ᵢ - p̈ⱼ)ᵀbₙᵣ
 </pre>
-where b₁,...,bᵣ ∈ ℝ³ (k = 2r) are a set of spanning vectors in the contact
+where b₁,...,bₙᵣ ∈ ℝ³ (nk = 2nr) are a set of spanning vectors in the contact
 tangent plane (the more vectors, the better the approximation to the
 nonlinear friction cone), and fᵇ ≥ 0 (which will conveniently allow us
 to pose these constraints within the linear complementarity problem
-framework), where fᵇ ∈ ℝᵏ are non-negative scalars that represent the
+framework), where fᵇ ∈ ℝⁿᵏ are non-negative scalars that represent the
 frictional force along the spanning vectors and the negated spanning
-vectors. Equations 0'-k' cannot generally be satisfied simultaneously:
+vectors. Equations 0'-nk' cannot generally be satisfied simultaneously:
 maximizing fᵇ (i.e., fᵇ = μ⋅fᴺ) may be insufficient to keep the relative
 tangential acceleration at the point of contact zero. Accordingly, we
-transform Equations 0'-k' to the following:<pre>
-(0*)     c₀ = μ⋅fᴺ - 1ᵀfᵇ
-(1*)     c₁ = (p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
+transform Equations 0'-nk' to the following:<pre>
+(0*)      ⁰gₐ = μ⋅fᴺ - 1ᵀfᵇ
+(1*)      ¹gₐ = (p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
 ...
-(r*)     cᵣ = (p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
-(r+1*) cᵣ₊₁ = -(p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
+(nr*)     ⁿʳgₐ = (p̈ᵢ - p̈ⱼ)ᵀbₙᵣ - Λ
+(nr+1*) ⁿʳ⁺¹gₐ = -(p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
 ...
-(k*)     cₖ = -(p̈ᵢ - p̈ⱼ)ᵀbᵣ - Λ
+(nk*)     ⁿᵏgₐ = -(p̈ᵢ - p̈ⱼ)ᵀbₙᵣ - Λ
 </pre>
 which lead to the following complementarity conditions:<pre>
-0 ≤ c₀    ⊥      Λ ≥ 0
-0 ≤ c₁    ⊥    fᵇ₁ ≥ 0
+0 ≤ ⁰gₐ     ⊥      Λ ≥ 0
+0 ≤ ¹gₐ     ⊥    fᵇ₁ ≥ 0
 ...
-0 ≤ cᵣ    ⊥    fᵇᵣ ≥ 0
-0 ≤ cᵣ₊₁  ⊥  fᵇᵣ₊₁ ≥ 0
-0 ≤ cₖ    ⊥    fᵇₖ ≥ 0
+0 ≤ ⁿʳgₐ    ⊥    fᵇₙᵣ ≥ 0
+0 ≤ ⁿʳ⁺¹gₐ  ⊥  fᵇₙᵣ₊₁ ≥ 0
+0 ≤ ⁿᵏgₐ    ⊥    fᵇₙₖ ≥ 0
 </pre>
 where Λ is roughly interpretable as the remaining tangential acceleration
 at the contact after constraint forces have been applied.  From this
 construction, the frictional force to be applied along direction
-i will be equal to fᵇᵢ - fᵇᵣ₊ᵢ. 
+i will be equal to fᵇᵢ - fᵇₙᵣ₊ᵢ.
 
 <h4>Friction constraints at the velocity-level</h4>
 Drake's velocity-level formulation treats both sliding and non-sliding contact
@@ -513,20 +518,20 @@ formulations apply at impacting states, and the aforementioned changes reflect
 that contacts can instantaneously change from sliding to not sliding, and
 vice versa, during impact. The constraints now act to maximize negative work in
 the contact tangent plane [Anitescu 1997]. Reflecting this change at the
-velocity level, Equations (0*)-(k*) are modified to: 
+velocity level, Equations (0*)-(nk*) are modified to:
 <pre>
-(0⁺)     c₀ = μ⋅fᴺ - 1ᵀfᵇ
-(1⁺)     c₁ = (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
+(0⁺)       ⁰gᵥ = μ⋅fᴺ - 1ᵀfᵇ
+(1⁺)       ¹gᵥ = (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
 ...
-(r⁺)     cᵣ = (ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
-(r+1⁺) cᵣ₊₁ = -(ṗᵢ - ṗⱼ)ᵀb₁ - Λ
+(nr⁺)     ⁿʳgᵥ = (ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
+(nr+1⁺) ⁿʳ⁺¹gᵥ = -(ṗᵢ - ṗⱼ)ᵀb₁ - Λ
 ...
-(k⁺)     cₖ = -(ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
+(nk⁺)     ⁿᵏgᵥ = -(ṗᵢ - ṗⱼ)ᵀbₙᵣ - Λ
 </pre>
 fᴺ and fᵇ now reflect impulsive forces, and, similarly, Λ now corresponds to
-residual tangential velocity post-impact. The remainder of the discussion in
-the previous section, apart from these modifications to the constraints, still
-applies. 
+residual tangential velocity post-impact (i.e., after those impulsive forces
+are applied). The remainder of the discussion in the previous section, apart
+from these modifications to the constraints, still applies.
 
 <h4>Effects of constraint regularization/softening and stabilization on
 constraint problem data</h4>
@@ -558,18 +563,18 @@ constraints, which are constraints posable as g(t, q). An example such holonomic
 constraint function is the transmission (gearing) constraint:<pre>
 qᵢ - rqⱼ = 0
 </pre> where
-g(q) = qᵢ - rqⱼ
+gₚ(q) = qᵢ - rqⱼ
 </pre>
 and where `r` is the gear ratio (for simplicity, this equation does not
 incorporate a constant angular offset between the rotational joints).
 The first derivative of this function with respect to time:<pre>
-ċ(q;v) = q̇ᵢ - rq̇ⱼ
+ġₚ(q;v) = q̇ᵢ - rq̇ⱼ
 </pre>
 would allow this constraint to be used with a velocity-level constraint
 formulation and can be read as the velocity at joint i (q̇ᵢ) must equal `r` times
-the velocity at joint j (q̇ⱼ). The second derivative of g(q) with respect to
+the velocity at joint j (q̇ⱼ). The second derivative of gₚ(q) with respect to
 time,<pre>
-c̈(q,v;v̇) = q̈ᵢ - rq̈ⱼ
+g̈ₚ(q,v;v̇) = q̈ᵢ - rq̈ⱼ
 </pre>
 would allow this constraint to be used with an acceleration-level constraint
 formulation. For this simple transmission constraint example, it will generally
@@ -580,33 +585,33 @@ be the case that q̇ᵢ = vᵢ and q̇ⱼ = vⱼ.
 @ingroup constraint_overview
 
 The unilateral constraint functions supported includes, among others,
-holonomic constraints, which are constraints posable as g(t, q). An example
+holonomic constraints, which are constraints posable as gₚ(t, q). An example
 such unilateral holonomic constraint function is a joint range-of-motion
 limit:<pre>
-0 ≤ g(q)  ⊥  λᵢ ≥ 0
+0 ≤ gₚ(q)  ⊥  λᵢ ≥ 0
 </pre> where
-g(q) = qᵢ.
+gₚ(q) = qᵢ.
 </pre>
 This limit range of motion limit requires joint qᵢ to be non-negative.
 The force limit (λᵢ ≥ 0) requires the applied force to also be non-negative
-(i.e., it acts against any force that would lead to make g(q)
+(i.e., it acts against any force that would lead to make gₚ(q)
 negative). And, the complementarity constraint g(q)λᵢ = 0 implies that
 force can only be applied when the joint is at the limit.
 
 The first derivative of this function with respect to time:<pre>
-ċ(q;v) = q̇ᵢ
+ġₚ(q;v) = q̇ᵢ
 </pre>
 yields the complementarity condition:<pre>
-0 ≤ ċ(q)  ⊥  λᵢ ≥ 0
+0 ≤ ġₚ(q)  ⊥  λᵢ ≥ 0
 </pre>
 and would allow this constraint to be used with a velocity-level constraint
-formulation. The second derivative of g(q) with respect to
+formulation. The second derivative of gₚ(q) with respect to
 time,<pre>
-c̈(q,v;v̇) = q̈ᵢ
+g̈ₚ(q,v;v̇) = q̈ᵢ
 </pre>
 would allow this constraint to be used with an acceleration-level constraint
 formulation and yields the complementarity condition:<pre>
-0 ≤ c̈(q,v;v̇)  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ(q,v;v̇)  ⊥  λᵢ ≥ 0
 </pre>
 For this simple range of motion constraint example, it will generally be
 the case that q̇ᵢ = vᵢ.
@@ -616,13 +621,13 @@ As discussed in @ref constraint_regularization, generic unilateral
 constraints can be regularized or softened by adding a term to, e.g., the
 second time derivative of the equation:
 <pre>
-0 ≤ c̈  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ  ⊥  λᵢ ≥ 0
 </pre>
 resulting in:<pre>
-0 ≤ c̈ + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ + ελᵢ  ⊥  λᵢ ≥ 0
 </pre>
 for ε ≥ 0. This same concept applies equally well to the first time derivative
-of g(.), as also discussed in @ref constraint_regularization.
+of gₚ(.), as also discussed in @ref constraint_regularization.
 
 <h4>Constraint stabilization</h4>
 As discussed in @ref constraint_stabilization, the drift induced by solving an
@@ -631,11 +636,11 @@ mitigated through one of several strategies, one of which is Baumgarte
 Stabilization. The typical application of Baumgarte Stabilization will use the
 second time derivative of the complementarity condition (the regularization
 term from above is incorporated as well for purposes of illustration):<pre>
-0 ≤ c̈ + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ + ελᵢ  ⊥  λᵢ ≥ 0
 </pre>
 Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
-0 ≤ c̈ + 2αċ + β²c + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ + 2αġₚ + β²gₚ + ελᵢ  ⊥  λᵢ ≥ 0
 </pre>
 
 <h4>Effects of constraint regularization/softening and stabilization on
@@ -644,7 +649,7 @@ constraint problem data</h4>
   - Constraint regularization/softening is effected through `gammaL`
   - Constraint stabilization is effected through `kL`
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
-    softening affects the definition of g(.)'s Jacobian* operators, `L_mult` and
+    softening affects the definition of gₚ(.)'s Jacobian* operators, `L_mult` and
     `L_transpose_mult`.
 
 /** @defgroup constraint_references References
