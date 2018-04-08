@@ -255,6 +255,43 @@ GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
               1e3 * eps);
 }
 
+GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
+  MatrixX<double> M(3, 3);
+  // clang-format off
+  M <<
+    1, 2, 0,
+      0, 1, 2,
+      2, 0, 1;
+  // clang-format on
+
+  Eigen::Matrix<double, 3, 1> q;
+  q << -1, -1, -1;
+
+  // Solve the problem once.
+  int num_pivots;
+  Eigen::VectorXd expected_z(3);
+  expected_z << 1.0/3, 1.0/3, 1.0/3;
+  Eigen::VectorXd z;
+  UnrevisedLemkeSolver<double> lcp;
+  bool result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Verify that more than one pivot was required.
+  EXPECT_GE(num_pivots, 1);
+
+  // Solve the problem with a slightly different q and verify that exactly
+  // one pivot was required.
+  q *= 2;
+  expected_z *= 2;
+  result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(num_pivots, 1);
+}
+
 // A class for testing various private functions in the Lemke solver.
 class UnrevisedLemkePrivateTests : public testing::Test {
  protected:
@@ -291,43 +328,6 @@ class UnrevisedLemkePrivateTests : public testing::Test {
   MatrixX<double> q_;                 // The LCP vector used in pivoting tests.
   int kArtificial{3};                 // Index of the artificial variable.
 };
-
-// Verifies that warm starting works properly.
-TEST_F(UnrevisedLemkePrivateTests, WarmStarting) {
-  MatrixX<double> M(3, 3);
-  // clang-format off
-  M <<
-    1, 2, 0,
-      0, 1, 2,
-      2, 0, 1;
-  // clang-format on
-
-  Eigen::Matrix<double, 3, 1> q;
-  q << -1, -1, -1;
-
-  // Solve the problem once.
-  int num_pivots;
-  Eigen::VectorXd expected_z(3);
-  expected_z << 1.0/3, 1.0/3, 1.0/3;
-  Eigen::VectorXd z;
-  bool result = lcp_.SolveLcpLemke(M, q, &z, &num_pivots);
-  ASSERT_TRUE(result);
-  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
-
-  // Verify that more than one pivot was required.
-  EXPECT_GE(num_pivots, 1);
-
-  // Solve the problem with a slightly different q and verify that exactly
-  // one pivot was required.
-  q *= 2;
-  expected_z *= 2;
-  result = lcp_.SolveLcpLemke(M, q, &z, &num_pivots);
-  ASSERT_TRUE(result);
-  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
-  EXPECT_EQ(num_pivots, 1);
-}
 
 // Tests proper operation of selecting a sub-matrix from a matrix that is
 // augmented with a covering vector.
@@ -588,6 +588,8 @@ TEST_F(UnrevisedLemkePrivateTests, IsEachUnique) {
 // Tests that pivoting works as expected, using Example 4.7.7 from
 // [Cottle 1992], p. 273.
 TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
+  typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
+
   // Use the computed zero tolerance.
   double zero_tol = lcp_.ComputeZeroTolerance(M_);
 
@@ -612,16 +614,66 @@ TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
   EXPECT_TRUE(CompareMatrices(M_bar_col, M_bar_col_expected, epsilon,
                               MatrixCompareType::absolute));
 
-  // TODO(edrumwri): U complete me
-  // Case 2: Driving variable is from 'w'.
-  // Compute the pivot and verify the result.
+  // Case 2: Driving variable is from 'w'. We use the second-to-last tableaux
+  // from Example 4.4.7.
+  lcp_.dep_variables_[0] = LCPVariable(true, 3);    // artificial variable
+  lcp_.dep_variables_[1] = LCPVariable(false, 0);
+  lcp_.dep_variables_[2] = LCPVariable(true, 2);
+  lcp_.indep_variables_[0] = LCPVariable(false, 1);
+  lcp_.indep_variables_[1] = LCPVariable(false, 2);
+  lcp_.indep_variables_[2] = LCPVariable(true, 2);
+  lcp_.indep_variables_[3] = LCPVariable(true, 0);
+  driving_index = 0;
+  ASSERT_TRUE(
+      lcp_.LemkePivot(M_, q_, driving_index, zero_tol, &M_bar_col, &q_bar));
+  M_bar_col_expected << 0, -1, -0.5;
+  q_bar_expected << 1, 5, 3;
+  EXPECT_TRUE(CompareMatrices(M_bar_col, M_bar_col_expected, epsilon,
+                              MatrixCompareType::absolute));
 
-  // TODO(edrumwri): U complete me
   // Case 3: Pivoting in artificial variable (no M bar column passed in).
+  // This is equivalent to the last tableaux of Example 4.4.7.
+  lcp_.dep_variables_[0] = LCPVariable(true, 1);
+  lcp_.dep_variables_[1] = LCPVariable(false, 0);
+  lcp_.dep_variables_[2] = LCPVariable(true, 2);
+  lcp_.indep_variables_[0] = LCPVariable(false, 1);
+  lcp_.indep_variables_[1] = LCPVariable(false, 2);
+  lcp_.indep_variables_[2] = LCPVariable(true, 3);  // artificial variable
+  lcp_.indep_variables_[3] = LCPVariable(true, 0);
+  driving_index = 2;
+  ASSERT_TRUE(
+      lcp_.LemkePivot(M_, q_, driving_index, zero_tol, nullptr, &q_bar));
+  q_bar_expected << 0, 1, 3;
 }
 
 TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
-  // TODO(edrumwri): U complete me
+  typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
+
+  // Set the variables as expected in the last tableaux of Example 4.4.7.
+  lcp_.dep_variables_[0] = LCPVariable(true, 1);
+  lcp_.dep_variables_[1] = LCPVariable(false, 0);
+  lcp_.dep_variables_[2] = LCPVariable(true, 2);
+  lcp_.indep_variables_[0] = LCPVariable(false, 1);
+  lcp_.indep_variables_[1] = LCPVariable(false, 2);
+  lcp_.indep_variables_[2] = LCPVariable(true, 3);  // artificial variable
+  lcp_.indep_variables_[3] = LCPVariable(true, 0);
+
+  // Set the location of the artificial variable.
+  int artificial_index_loc = 2;
+
+  // Use the computed zero tolerance.
+  double zero_tol = lcp_.ComputeZeroTolerance(M_);
+
+  // Verify that the operation completes successfully.
+  VectorX<double> z;
+  ASSERT_TRUE(lcp_.ConstructLemkeSolution(
+      M_, q_, artificial_index_loc, zero_tol, &z));
+
+  // Verify that the solution is as expected.
+  VectorX<double> z_expected(3);
+  z_expected << 0, 1, 3;
+  EXPECT_TRUE(CompareMatrices(z, z_expected, epsilon,
+                              MatrixCompareType::absolute));
 }
 
 // Verifies that DetermineIndexSets() works as expected.
