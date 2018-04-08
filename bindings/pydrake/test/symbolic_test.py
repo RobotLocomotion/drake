@@ -496,16 +496,20 @@ class TestSymbolicExpression(SymbolicTestCase):
         e_yv = np.array([e_y, e_y])
         # N.B. In some versions of NumPy, `!=` for dtype=object implies ID
         # comparison (e.g. `is`).
-        # N.B. If `__nonzero__` throws, then NumPy returns a scalar boolean if
-        # everything's false, vs. an array of `True` otherwise. No errors
-        # shown?
-        value = (e_xv == e_yv)
-        self.assertIsInstance(value, bool)
-        self.assertFalse(value)
-        value = (e_xv == e_xv)
-        self.assertEqual(value.dtype, bool)
-        self.assertFalse(isinstance(value[0], sym.Formula))
-        self.assertTrue(value.all())
+        # N.B. If `__nonzero__` throws, then NumPy swallows the error and
+        # produces a DeprecationWarning, in addition to effectively garbage
+        # values. For this reason, `pydrake.symbolic` will automatically
+        # promote these warnings to errors.
+        # - All false.
+        with self.assertRaises(DeprecationWarning):
+            value = (e_xv == e_yv)
+        # - True + False.
+        with self.assertRaises(DeprecationWarning):
+            e_xyv = np.array([e_x, e_y])
+            value = (e_xv == e_xyv)
+        # - All true.
+        with self.assertRaises(DeprecationWarning):
+            value = (e_xv == e_xv)
 
     def test_functions_with_float(self):
         # TODO(eric.cousineau): Use concrete values once vectorized methods are
