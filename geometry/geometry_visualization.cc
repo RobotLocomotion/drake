@@ -74,9 +74,9 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.type = geometry_data_.BOX;
     geometry_data_.num_float_data = 3;
     // Box width, height, and thickness.
-    geometry_data_.float_data.push_back(50);
-    geometry_data_.float_data.push_back(50);
-    const float thickness = 1;
+    geometry_data_.float_data.push_back(1.2);
+    geometry_data_.float_data.push_back(0.8);
+    const float thickness = 0.2;
     geometry_data_.float_data.push_back(thickness);
 
     // The final pose of the box is the half-space's pose pre-multiplied by
@@ -84,7 +84,7 @@ class ShapeToLcm : public ShapeReifier {
     // z = 0 plane.
     Isometry3<double> box_xform = Isometry3<double>::Identity();
     // Shift it down so that the origin lies on the top surface.
-    box_xform.translation() << 0, 0, -thickness / 2;
+    box_xform.translation() << -0.5, 0, -thickness / 2;
     X_PG_ = X_PG_ * box_xform;
   }
 

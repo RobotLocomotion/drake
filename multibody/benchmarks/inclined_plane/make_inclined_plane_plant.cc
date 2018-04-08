@@ -48,6 +48,13 @@ MakeInclinedPlanePlant(double radius, double mass, double slope,
       plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
       surface_friction, geometry_system);
 
+  Isometry3<double> pose = HalfSpace::MakePose(
+      Vector3<double>::UnitY(), Vector3<double>(0, -0.4, 0));
+  pose.linear() = pose.linear() * AngleAxisd(M_PI_2, Vector3<double>::UnitZ());
+  plant->RegisterCollisionGeometry(
+      plant->world_body(), pose, HalfSpace(),
+      surface_friction, geometry_system);
+
   // Add sphere geometry for the ball.
   plant->RegisterCollisionGeometry(
       ball,
