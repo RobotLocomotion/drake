@@ -65,6 +65,7 @@ drake_pybind_library(
     py_deps = [
         ":common_py",
         ":math_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "autodiffutils.py",
@@ -132,6 +133,7 @@ drake_pybind_library(
     py_deps = [
         ":common_py",
         ":math_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = ["symbolic.py"],
 )
