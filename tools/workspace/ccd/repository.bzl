@@ -8,8 +8,8 @@ def ccd_repository(
     github_archive(
         name = name,
         repository = "danfis/libccd",
-        commit = "5677d384315d64c41a9e1dabe6a531f10ffbb7fb",
-        sha256 = "3b37ef4555d087f7abb6aa59c3b5cecb96410ea10e95a086ef2771569fb6fdfb",  # noqa
+        commit = "63d3a911f016465a2ecf169d0c8bff8b601f1715",
+        sha256 = "1032cae04202330c5bcc9a652d75bef64669656bf4ea6cab74c5ff11c3f7a301",  # noqa
         build_file = "@drake//tools/workspace/ccd:package.BUILD.bazel",
         mirrors = mirrors,
     )
