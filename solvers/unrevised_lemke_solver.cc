@@ -706,22 +706,12 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
     if (zn_index >= 0) {
       // Compute the candidate solution.
-      if (ConstructLemkeSolution(M, q, zn_index, mod_zero_tol, z)) {
-        // Find the minima of z and w.
-        const T min_z = z->minCoeff();
-        const auto w = M * (*z) + q;
-        const T min_w = w.minCoeff();
-
-        // Compute z and w.
-        const T dot = w.dot(*z);
-
+      if (ConstructLemkeSolution(M, q, zn_index, mod_zero_tol, z) &&
+          IsSolution(M, q, *z, mod_zero_tol)) {
         // If the solution is good, return now, indicating only one pivot
         // (in the solution construction) was performed.
-        if (min_z > -zero_tol && min_w > -zero_tol &&
-            abs(dot) < 10*n*zero_tol) {
-          ++(*num_pivots);
-          return true;
-        }
+        ++(*num_pivots);
+        return true;
       } else {
         DRAKE_SPDLOG_DEBUG(log(),
             "Failed to solve linear system implied by last solution");

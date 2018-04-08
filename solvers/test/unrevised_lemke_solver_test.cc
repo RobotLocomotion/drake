@@ -612,16 +612,16 @@ TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
   EXPECT_TRUE(CompareMatrices(M_bar_col, M_bar_col_expected, epsilon,
                               MatrixCompareType::absolute));
 
-  // TODO: U complete me
+  // TODO(edrumwri): U complete me
   // Case 2: Driving variable is from 'w'.
   // Compute the pivot and verify the result.
 
-  // TODO: U complete me
+  // TODO(edrumwri): U complete me
   // Case 3: Pivoting in artificial variable (no M bar column passed in).
 }
 
 TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
-  // TODO: U complete me
+  // TODO(edrumwri): U complete me
 }
 
 // Verifies that DetermineIndexSets() works as expected.
