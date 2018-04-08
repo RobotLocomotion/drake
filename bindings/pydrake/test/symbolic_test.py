@@ -478,6 +478,9 @@ class TestSymbolicExpression(SymbolicTestCase):
         msg = cm.exception.message
         self.assertTrue(
             all([s in msg for s in ["__nonzero__", "EqualToDict"]]), msg)
+        # Ensure that compound formulas fail (#8536).
+        with self.assertRaises(RuntimeError):
+            value = 0 < e_y < e_y
         # Indication of #8135. Ideally, these would all be arrays of formulas.
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
