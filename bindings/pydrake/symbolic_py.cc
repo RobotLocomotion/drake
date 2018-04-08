@@ -23,6 +23,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
 
+  // Install NumPy warning filtres.
+  // N.B. This may interfere with other code, but until that is a confirmed
+  // issue, we should agressively try to avoid these warnings.
+  py::module::import("pydrake.util.deprecation")
+      .attr("install_numpy_warning_filters")();
+
   m.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
