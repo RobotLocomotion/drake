@@ -203,6 +203,8 @@ void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
     const Eigen::MatrixBase<Derived>& in,
     const std::vector<int>& rows,
     int column, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
+
   const int num_rows = rows.size();
   out->resize(num_rows);
 
@@ -225,6 +227,8 @@ void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubVector(const VectorX<T>& in,
     const std::vector<int>& rows, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(rows, in.size()));
+
   const int num_rows = rows.size();
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
@@ -240,6 +244,7 @@ template <class T>
 void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v_sub,
     const std::vector<int>& indices, VectorX<T>* v) {
   DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
+  DRAKE_ASSERT(ValidateIndices(indices, v->size()));
   for (size_t i = 0; i < indices.size(); ++i)
     (*v)[indices[i]] = v_sub[i];
 }
@@ -512,8 +517,9 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 }
 
 // Method for finding the index of the complement of an LCP variable in
-// a set (strictly speaking, an unsorted vector) of indices. Aborts if the
-// index is not found in the set.
+// a tuple (strictly speaking, an unsorted vector) of independent variables.
+// Aborts if the index is not found in the set or the variable is the articial
+// variable (it never should be).
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
     const LCPVariable& query,
@@ -556,7 +562,8 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
 
 // Computes the blocking index using the minimum ratio test. Returns `true`
 // if successful, `false` if not (due to, e.g., the driving variable being
-// "unblocked" or a cycle being detected).
+// "unblocked" or a cycle being detected). If `false`, `blocking_index` will
+// set to -1 on return.
 template <typename T>
 bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
@@ -601,6 +608,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     // cycling would be occurring, in spite of cycling prevention.
     if (index >= static_cast<int>(blocking_indices.size())) {
       DRAKE_SPDLOG_DEBUG(log(), "Cycling detected- indicating failure.");
+      *blocking_index = -1;
       return false;
     }
     *blocking_index = blocking_indices[index];

@@ -176,9 +176,7 @@ GTEST_TEST(TestUnrevisedLemke, TestProblem6) {
     RunLCP(M, q, z);
   }
 
-  // Try again with a value > 23 and see that we've hit the limit as
-  // described.  The fast solver has stopped working in this case
-  // without regularization.
+  // Try again with a value > 23 and verify that Lemke is still successful.
   Eigen::Matrix<double, 1, 4> q;
   q << 50, 50, 100, -6;
 
@@ -257,15 +255,79 @@ GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
               1e3 * eps);
 }
 
-// Tests whether warm starting works properly.
-GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
-}
-
 // A class for testing various private functions in the Lemke solver.
 class UnrevisedLemkePrivateTests : public testing::Test {
  protected:
-  UnrevisedLemkeSolver<double> lcp_;
+  void SetUp() {
+    typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
+
+    // clang-format off
+    M_.resize(3, 3);
+    M_ <<
+      0, -1,  2,
+        2,  0, -2,
+        -1, 1,  0;
+    // clang-format on
+
+    q_.resize(3, 1);
+    q_ << -3, 6, -1;
+
+    // Set the LCP variables. Start with all z variables independent and all w
+    // variables dependent.
+    const int n = 3;
+    lcp_.indep_variables_.resize(n+1);
+    lcp_.dep_variables_.resize(n);
+    for (int i = 0; i < n; ++i) {
+      lcp_.dep_variables_[i] = LCPVariable(false, i);
+      lcp_.indep_variables_[i] = LCPVariable(true, i);
+    }
+    // z needs one more variable (the artificial variable), whose index we
+    // denote as n to keep it from corresponding to any actual vector index.
+    lcp_.indep_variables_[n] = LCPVariable(true, n);
+  }
+
+  UnrevisedLemkeSolver<double> lcp_;  // The solver itself.
+  MatrixX<double> M_;                 // The LCP matrix used in pivoting tests.
+  MatrixX<double> q_;                 // The LCP vector used in pivoting tests.
+  int kArtificial{3};                 // Index of the artificial variable.
 };
+
+// Verifies that warm starting works properly.
+TEST_F(UnrevisedLemkePrivateTests, WarmStarting) {
+  MatrixX<double> M(3, 3);
+  // clang-format off
+  M <<
+    1, 2, 0,
+      0, 1, 2,
+      2, 0, 1;
+  // clang-format on
+
+  Eigen::Matrix<double, 3, 1> q;
+  q << -1, -1, -1;
+
+  // Solve the problem once.
+  int num_pivots;
+  Eigen::VectorXd expected_z(3);
+  expected_z << 1.0/3, 1.0/3, 1.0/3;
+  Eigen::VectorXd z;
+  bool result = lcp_.SolveLcpLemke(M, q, &z, &num_pivots);
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Verify that more than one pivot was required.
+  EXPECT_GE(num_pivots, 1);
+
+  // Solve the problem with a slightly different q and verify that exactly
+  // one pivot was required.
+  q *= 2;
+  expected_z *= 2;
+  result = lcp_.SolveLcpLemke(M, q, &z, &num_pivots);
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(num_pivots, 1);
+}
 
 // Tests proper operation of selecting a sub-matrix from a matrix that is
 // augmented with a covering vector.
@@ -332,6 +394,64 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubMatrixWithCovering) {
 // Tests proper operation of selecting a sub-column from a matrix that is
 // augmented with a covering vector.
 TEST_F(UnrevisedLemkePrivateTests, SelectSubColumnWithCovering) {
+  // After augmentation, the matrix will be:
+  // 1 0 0 1
+  // 0 1 0 1
+  // 0 0 1 1
+  MatrixX<double> M = MatrixX<double>::Identity(3, 3);
+
+  VectorX<double> result;
+
+  // Get a single row, first column.
+  VectorX<double> expected(1);
+  expected << 1;
+  lcp_.SelectSubColumnWithCovering(M, {0}, 0 /* column */, &result);
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get another single row from the first column.
+  expected << 0;
+  lcp_.SelectSubColumnWithCovering(M, {1}, 0 /* column */, &result);
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get first and third rows in forward order, first column.
+  lcp_.SelectSubColumnWithCovering(M, {0, 2}, 0 /* column */, &result);
+  expected = VectorX<double>(2);
+  expected << 1, 0;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get first and third rows in reverse order, second column.
+  lcp_.SelectSubColumnWithCovering(M, {2, 0}, 1 /* column */, &result);
+  expected << 0, 0;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get all three rows in forward order, third column.
+  lcp_.SelectSubColumnWithCovering(M, {0, 1, 2}, 2 /* column */, &result);
+  expected = VectorX<double>(3);
+  expected << 0, 0, 1;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get all three rows in reverse order, third column.
+  lcp_.SelectSubColumnWithCovering(M, {2, 1, 0}, 2 /* column */, &result);
+  expected << 1, 0, 0;
+  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // Get one row from the fourth column.
+  lcp_.SelectSubColumnWithCovering(M, {0}, 3 /* column */, &result);
+  EXPECT_EQ(result.lpNorm<1>(), 1);
+
+  // Get two rows from the fourth column.
+  lcp_.SelectSubColumnWithCovering(M, {0, 1}, 3 /* column */, &result);
+  EXPECT_EQ(result.lpNorm<1>(), 2);
+
+  // Get three rows from the fourth column.
+  lcp_.SelectSubColumnWithCovering(M, {0, 1, 2}, 3 /* column */, &result);
+  EXPECT_EQ(result.lpNorm<1>(), 3);
 }
 
 // Tests proper operation of selecting a sub-vector from a vector.
@@ -360,6 +480,7 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubVector) {
   EXPECT_EQ(result[2], 1);
 }
 
+// Verifies proper operation of SetSubVector().
 TEST_F(UnrevisedLemkePrivateTests, SetSubVector) {
   // Construct a zero vector that will be used repeatedly for reinitialization.
   VectorX<double> zero(3);
@@ -396,24 +517,235 @@ TEST_F(UnrevisedLemkePrivateTests, SetSubVector) {
   EXPECT_EQ(result[2], 1);
 }
 
+// Checks whether ValidateIndices(), which checks that a vector of indices used
+// to select a sub-block of a matrix or vector is within range and unique.
 TEST_F(UnrevisedLemkePrivateTests, ValidateIndices) {
+  // Verifies that a proper set of indices works.
+  const int first_set_size = 3;
+  EXPECT_TRUE(lcp_.ValidateIndices({0, 1, 2}, first_set_size));
+
+  // Verifies that indices need not be in sorted order.
+  EXPECT_TRUE(lcp_.ValidateIndices({2, 1, 0}, first_set_size));
+
+  // Verifies that ValidateIndices() catches a repeated index.
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, 1}, first_set_size));
+
+  // Verifies that ValidateIndices() catches indices out of range.
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, 4}, first_set_size));
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, -1}, first_set_size));
+
+  // ** Two-index set tests **.
+  // Verifies that a proper set of indices works.
+  const int second_set_size = 7;
+  EXPECT_TRUE(lcp_.ValidateIndices({0, 1, 2}, {3, 4, 5, 6}, first_set_size,
+                                   second_set_size));
+
+  // Verifies that indices need not be in sorted order.
+  EXPECT_TRUE(lcp_.ValidateIndices({2, 1, 0}, {6, 5, 4, 3}, first_set_size,
+                                   second_set_size));
+
+  // Verifies that ValidateIndices() catches a single repeated index.
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, 1}, {3, 4, 5, 6}, first_set_size,
+                                    second_set_size));
+
+  // Verifies that ValidateIndices() catches indices out of range.
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, 4}, {3, 4, 5, 6}, first_set_size,
+                                    second_set_size));
+  EXPECT_FALSE(lcp_.ValidateIndices({0, 1, -1}, {3, 4, 5, 6}, first_set_size,
+                                    second_set_size));
 }
 
+// Verifies proper operation of IsEachUnique(), which checks whether LCP
+// variables in a vector are unique.
 TEST_F(UnrevisedLemkePrivateTests, IsEachUnique) {
+  // Create two variables with the same index, but one z and one w. These should
+  // be reported as unique.
+  EXPECT_TRUE(lcp_.IsEachUnique(
+      {UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
+       UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
+
+  // Create two variables with different indices, but both z. These should be
+  // reported as unique.
+  EXPECT_TRUE(lcp_.IsEachUnique(
+      {UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
+       UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
+
+  // Create two variables with different indices, but both w. These should be
+  // reported as unique.
+  EXPECT_TRUE(lcp_.IsEachUnique(
+      {UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
+       UnrevisedLemkeSolver<double>::LCPVariable(false, 1)}));
+
+  // Create two identical variables. These should not be reported as unique.
+  EXPECT_FALSE(lcp_.IsEachUnique(
+      {UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
+       UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
+  EXPECT_FALSE(lcp_.IsEachUnique(
+      {UnrevisedLemkeSolver<double>::LCPVariable(true, 1),
+       UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
 }
 
+// Tests that pivoting works as expected, using Example 4.7.7 from
+// [Cottle 1992], p. 273.
 TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
+  // Use the computed zero tolerance.
+  double zero_tol = lcp_.ComputeZeroTolerance(M_);
+
+  // Use the blocking index that Cottle provides us with.
+  const int blocking_index = 0;
+
+  auto blocking = lcp_.dep_variables_[blocking_index];
+  int driving_index = blocking.index();
+  std::swap(lcp_.dep_variables_[blocking_index],
+            lcp_.indep_variables_[kArtificial]);
+
+  // Case 1: Driving variable is from 'z'.
+  // Compute the pivot and verify the result.
+  VectorX<double> q_bar(3);
+  VectorX<double> M_bar_col(3);
+  ASSERT_TRUE(
+      lcp_.LemkePivot(M_, q_, driving_index, zero_tol, &M_bar_col, &q_bar));
+  VectorX<double> M_bar_col_expected(3);
+  VectorX<double> q_bar_expected(3);
+  M_bar_col_expected << 0, 2, -1;
+  q_bar_expected << 3, 9, 2;
+  EXPECT_TRUE(CompareMatrices(M_bar_col, M_bar_col_expected, epsilon,
+                              MatrixCompareType::absolute));
+
+  // TODO: U complete me
+  // Case 2: Driving variable is from 'w'.
+  // Compute the pivot and verify the result.
+
+  // TODO: U complete me
+  // Case 3: Pivoting in artificial variable (no M bar column passed in).
 }
 
 TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
+  // TODO: U complete me
 }
 
+// Verifies that DetermineIndexSets() works as expected.
 TEST_F(UnrevisedLemkePrivateTests, DetermineIndexSets) {
+  typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
+
+  // Set indep_variables_ and dep_variables_ as designated in Equation (6).
+  lcp_.dep_variables_[0] = LCPVariable(true, 3);  // artificial variable.
+  lcp_.dep_variables_[1] = LCPVariable(false, 1);
+  lcp_.dep_variables_[2] = LCPVariable(true, 2);
+  lcp_.indep_variables_[0] = LCPVariable(false, 0);
+  lcp_.indep_variables_[1] = LCPVariable(false, 2);
+  lcp_.indep_variables_[2] = LCPVariable(true, 1);
+  lcp_.indep_variables_[3] = LCPVariable(true, 0);
+
+  // Compute the index sets (uses indep_variables_ and dep_variables_).
+  lcp_.DetermineIndexSets();
+
+  // Verify that the sets have indices we expect (from [1]).
+  ASSERT_EQ(lcp_.index_sets_.alpha.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.alpha[0], 0);
+  EXPECT_EQ(lcp_.index_sets_.alpha[1], 2);
+
+  ASSERT_EQ(lcp_.index_sets_.alpha_prime.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.alpha_prime[0], 0);
+  EXPECT_EQ(lcp_.index_sets_.alpha_prime[1], 1);
+
+  ASSERT_EQ(lcp_.index_sets_.beta.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.beta[0], 2);
+  EXPECT_EQ(lcp_.index_sets_.beta[1], 3);
+
+  ASSERT_EQ(lcp_.index_sets_.beta_prime.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.beta_prime[0], 2);
+  EXPECT_EQ(lcp_.index_sets_.beta_prime[1], 0);
+
+  EXPECT_EQ(lcp_.index_sets_.bar_alpha.size(), 1);
+  EXPECT_EQ(lcp_.index_sets_.bar_alpha[0], 1);
+
+  EXPECT_EQ(lcp_.index_sets_.bar_alpha_prime.size(), 1);
+  EXPECT_EQ(lcp_.index_sets_.bar_alpha_prime[0], 1);
+
+  EXPECT_EQ(lcp_.index_sets_.bar_beta.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.bar_beta[0], 0);
+  EXPECT_EQ(lcp_.index_sets_.bar_beta[1], 1);
+
+  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime[0], 3);
+  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime[1], 2);
+}
+
+// Verifies that finding the index of the complement of an independent variable
+// works as expected.
+TEST_F(UnrevisedLemkePrivateTests, FindComplementIndex) {
+  // From the setup of the LCP solver designated by SetUp(), all z variables
+  // (including the artificial one are independent). The query variable will
+  // be w1, meaning that we expect the second variable (i.e., z1) to be
+  // the complement.
+  typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
+  LCPVariable query(false /* w */, 1);
+
+  // We have to manually set the mapping from independent variables to their
+  // indices, since the solver normally maintains this for us.
+  for (int i = 0; i < static_cast<int>(lcp_.indep_variables_.size()); ++i)
+    lcp_.indep_variables_indices_[lcp_.indep_variables_[i]] = i;
+
+  // Since the indices of the LCP variables from SetUp()
+  // correspond to their array indices, verification is straightforward.
+  EXPECT_EQ(lcp_.FindComplementIndex(query, lcp_.indep_variables_), 1);
 }
 
 TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndex) {
+  // Use the computed zero tolerance.
+  double zero_tol = lcp_.ComputeZeroTolerance(M_);
+
+  // Ratios are taken from '1' column (the q vector) in the first tableaux from
+  // Example 4.3.3. Note that this is the exact procedure used to find the first
+  // blocking variable, which means we can check our answer against Cottle's.
+  VectorX<double> col(3);
+  col << -3, 6, 1;
+  VectorX<double> ratios = col;
+
+  // Index should be the first one.
+  int blocking_index = -1;
+  ASSERT_TRUE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, 0);
+
+  // Repeat the procedure using the second tableaux from Example 4.3.3. We
+  // now compute the ratios manually using component-wise division of the column
+  // marked '1' over the column marked 'z1'.
+  col << 0, 2, -1;
+  ratios << 3.0 / 0, 9.0 / 2, 2.0 / -1.0;
+  ASSERT_TRUE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, 2);  // Blocking index must be the last entry.
+
+  // Repeat the procedure, now using strictly positive column entries; no
+  // blocking index should be possible.
+  col << 0, 2, 1;
+  ASSERT_FALSE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, -1);  // Check that blocking index is invalid.
 }
 
+TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndexCycling) {
+  // Use the computed zero tolerance.
+  double zero_tol = lcp_.ComputeZeroTolerance(M_);
+
+  // We will have the column be the same as the ratios. This means that there
+  // will be exactly two valid ratios, both identical.
+  VectorX<double> col(3);
+  col << -3, -3, 1;
+  VectorX<double> ratios = col;
+
+  // Index should be the first one.
+  int blocking_index = -1;
+  ASSERT_TRUE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, 0);
+
+  // Repeat the procedure again. Index should be the next one.
+  ASSERT_TRUE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, 1);
+
+  // If we repeat one more time, there are no indices remaining.
+  ASSERT_FALSE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
+  EXPECT_EQ(blocking_index, -1);  // Check that blocking index is invalid.
+}
 
 }  // namespace solvers
 }  // namespace drake

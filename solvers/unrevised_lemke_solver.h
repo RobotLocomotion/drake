@@ -93,6 +93,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
+  friend class UnrevisedLemkePrivateTests;
   friend class UnrevisedLemkePrivateTests_SelectSubMatrixWithCovering_Test;
   friend class UnrevisedLemkePrivateTests_SelectSubColumnWithCovering_Test;
   friend class UnrevisedLemkePrivateTests_SelectSubVector_Test;
@@ -103,6 +104,8 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   friend class UnrevisedLemkePrivateTests_ConstructLemkeSolution_Test;
   friend class UnrevisedLemkePrivateTests_DetermineIndexSets_Test;
   friend class UnrevisedLemkePrivateTests_FindBlockingIndex_Test;
+  friend class UnrevisedLemkePrivateTests_FindBlockingIndexCycling_Test;
+  friend class UnrevisedLemkePrivateTests_FindComplementIndex_Test;
 
   struct LemkeIndexSets {
     std::vector<int> alpha, alpha_prime;
