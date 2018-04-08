@@ -116,43 +116,31 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
     put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
-# One variant of a default constructor (all zeros).  (Depending on the
-# named_vector details, we will either use this variant or the subsequent one.)
-DEFAULT_CTOR_ZEROS = """
-  /// Default constructor.  Sets all rows to zero.
-  %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
-  }
-"""
-# A second variant of a default constructor (field-by-field setting).
-DEFAULT_CTOR_CUSTOM_BEGIN_API = """
+# Default constructor.
+DEFAULT_CTOR_BEGIN_API = """
   /// Default constructor.  Sets all rows to their default value:
 """
-DEFAULT_CTOR_CUSTOM_FIELD_API = """
+DEFAULT_CTOR_FIELD_API = """
   /// @arg @c %(field)s defaults to %(default_value)s %(units_suffix)s.
 """
-DEFAULT_CTOR_CUSTOM_BEGIN_BODY = """
+DEFAULT_CTOR_BEGIN_BODY = """
   %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
 """
-DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
+DEFAULT_CTOR_FIELD_BODY = """
     this->set_%(field)s(%(default_value)s);
 """
-DEFAULT_CTOR_CUSTOM_END = """
+DEFAULT_CTOR_END = """
 }
 """
-DEFAULT_CTOR_FIELD_DEFAULT_VALUE = '0.0'  # When not otherwise overridden.
+
+# Default value (When not otherwise overridden).
+DEFAULT_CTOR_FIELD_DEFAULT_VALUE = 'dummy_value<T>::get()'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
 def generate_default_ctor(hh, caller_context, fields):
-    # If all defaults are 0.0 and unit-less, then emit the simple ctor.
-    if all([item['default_value'] == DEFAULT_CTOR_FIELD_DEFAULT_VALUE and
-            item['doc_units'] == DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
-            for item in fields]):
-        put(hh, DEFAULT_CTOR_ZEROS % caller_context, 2)
-        return
-    # Otherwise, emit a customized ctor.
-    put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
+    # Emit the default ctor.
+    put(hh, DEFAULT_CTOR_BEGIN_API % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
         context.update(field=field['name'])
@@ -162,14 +150,39 @@ def generate_default_ctor(hh, caller_context, fields):
         else:
             units_suffix = field['doc_units']
         context.update(units_suffix=units_suffix)
-        put(hh, DEFAULT_CTOR_CUSTOM_FIELD_API % context, 1)
-    put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_BODY % caller_context, 1)
+        put(hh, DEFAULT_CTOR_FIELD_API % context, 1)
+    put(hh, DEFAULT_CTOR_BEGIN_BODY % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
         context.update(field=field['name'])
         context.update(default_value=field['default_value'])
-        put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
-    put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
+        put(hh, DEFAULT_CTOR_FIELD_BODY % context, 1)
+    put(hh, DEFAULT_CTOR_END % caller_context, 2)
+
+
+# SetToNamedVariables (for symbolic::Expression only).
+SET_TO_NAMED_VARIABLES_BEGIN = """
+  /// Create a symbolic::Variable for each element with the known variable
+  /// name.  This is only available for T == symbolic::Expression.
+  template <typename U=T>
+  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  SetToNamedVariables() {
+"""
+SET_TO_NAMED_VARIABLES_BODY = """
+    this->set_%(field)s(symbolic::Variable("%(field)s"));
+"""
+SET_TO_NAMED_VARIABLES_END = """
+}
+"""
+
+
+def generate_set_to_named_variables(hh, caller_context, fields):
+    put(hh, SET_TO_NAMED_VARIABLES_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        put(hh, SET_TO_NAMED_VARIABLES_BODY % context, 1)
+    put(hh, SET_TO_NAMED_VARIABLES_END, 2)
 
 
 DO_CLONE = """
@@ -330,6 +343,7 @@ VECTOR_HH_PREAMBLE = """
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -587,6 +601,7 @@ def generate_code(
             generate_indices_names_accessor_decl(hh, context)
             put(hh, VECTOR_CLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
+            generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
