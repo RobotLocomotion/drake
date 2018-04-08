@@ -17,12 +17,10 @@ drake_cc_library(
     srcs = [
         "coulomb_friction_coefficients.cc",
         "multibody_plant.cc",
-        "point_contact_info.cc",
     ],
     hdrs = [
         "coulomb_friction_coefficients.h",
         "multibody_plant.h",
-        "point_contact_info.h",
     ],
     deps = [
         "//common:default_scalars",

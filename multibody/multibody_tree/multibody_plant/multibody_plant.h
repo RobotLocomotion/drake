@@ -12,7 +12,6 @@
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction_coefficients.h"
-#include "drake/multibody/multibody_tree/multibody_plant/point_contact_info.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -918,12 +917,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array,
-      std::vector<PointContactInfo<T>>* contact_info) const;
-
-  void CalcPointContactInfoOutput(
-      const systems::Context<T>& context,
-      std::vector<PointContactInfo<T>>* contact_info) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Computes the friction coefficient based on the relative tangential
   // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
@@ -932,12 +926,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   T ComputeFrictionCoefficient(
       const T& v_tangent_BAc,
       CoulombFrictionCoefficients friction) const;
-
-  // Logging is done in this method.
-  void DoPublish(
-      const systems::Context<T>& context,
-      const std::vector<const systems::PublishEvent<T>*>& events)
-  const override;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
@@ -1029,7 +1017,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Input/Output port indexes:
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
-  int contact_info_port_{-1};
 
   // Temporary solution for fake cache entries to help statbilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

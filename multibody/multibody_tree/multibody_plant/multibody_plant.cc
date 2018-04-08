@@ -270,8 +270,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // Compute contact forces on each body by penalty method.
   if (get_num_collision_geometries() > 0) {
-    CalcAndAddContactForcesByPenaltyMethod(
-        context, pc, vc, &F_BBo_W_array, nullptr);
+    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
   }
 
   model_->CalcInverseDynamics(
@@ -354,8 +353,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<double>& context,
     const PositionKinematicsCache<double>& pc,
     const VelocityKinematicsCache<double>& vc,
-    std::vector<SpatialForce<double>>* F_BBo_W_array,
-    std::vector<PointContactInfo<double>>* contact_info) const {
+    std::vector<SpatialForce<double>>* F_BBo_W_array) const {
   if (get_num_collision_geometries() == 0) return;
 
   const geometry::QueryObject<double>& query_object =
@@ -364,7 +362,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
 
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
-  if (contact_info != nullptr) contact_info->reserve(penetrations.size());
   for (const auto& penetration : penetrations) {
     const GeometryId geometryA_id = penetration.id_A;
     const GeometryId geometryB_id = penetration.id_B;
@@ -420,13 +417,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const double d = penalty_method_contact_parameters_.damping;
     const double fn_AC = k * x * (1.0 + d * vn);
 
-    // We declare and initialize these quantities to zero so that we can store
-    // them in contact_info even if the resultant normal force is zero.
-    Vector3<double> that_W = Vector3<double>::Zero();
-    Vector3<double> vt_AcBc_W = Vector3<double>::Zero();
-    double vt(0);
-    double ft_AC(0);
-    double mu_stribeck(0);
     if (fn_AC > 0) {
 
       // Normal force on body A, at C, expressed in W.
@@ -447,7 +437,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
               geometryB_friction);
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:
-      vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
+      const Vector3<double> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
       // Tangential speed (squared):
       const double vt_squared = vt_AcBc_W.squaredNorm();
 
@@ -457,15 +447,15 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       // Tangential friction force on A at C, expressed in W.
       Vector3<double> ft_AC_W = Vector3<double>::Zero();
       if (vt_squared > kNonZeroSqd) {
-        vt = sqrt(vt_squared);
+        const double vt = sqrt(vt_squared);
         // Stribeck friction coefficient.
-        mu_stribeck =
+        const double mu_stribeck =
             ComputeFrictionCoefficient(vt, combined_friction_coefficients);
         // Tangential direction.
-        that_W = vt_AcBc_W / vt;
+        const Vector3<double> that_W = vt_AcBc_W / vt;
 
         // Magnitude of the friction force on A at C.
-        ft_AC = mu_stribeck * fn_AC;
+        const double ft_AC = mu_stribeck * fn_AC;
         ft_AC_W = ft_AC * that_W;
 
         // we know that should be that = [-0.96593   0.00000   0.25882]
@@ -498,21 +488,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
         }
       }
     }
-
-    // Store contact info.
-    if (contact_info != nullptr) {
-      contact_info->emplace_back(context.get_time(),
-                                 nhat_BA_W,
-                                 that_W,
-                                 x,
-                                 vn,
-                                 vt,
-                                 v_AcBc_W,
-                                 vt_AcBc_W,
-                                 fn_AC,
-                                 ft_AC,
-                                 mu_stribeck);
-    }
   }
 }
 
@@ -520,61 +495,8 @@ template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>&,
     const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>&,
-    std::vector<SpatialForce<T>>*, std::vector<PointContactInfo<T>>*) const {
+    std::vector<SpatialForce<T>>*) const {
   DRAKE_ABORT_MSG("Only <double> is supported.");
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcPointContactInfoOutput(
-    const Context<T>& context,
-    std::vector<PointContactInfo<T>>* contact_info) const {
-  DRAKE_DEMAND(contact_info != nullptr);
-  contact_info->clear();
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  CalcAndAddContactForcesByPenaltyMethod(
-      context, pc, vc, nullptr, contact_info);
-}
-
-template <typename T>
-void MultibodyPlant<T>::DoPublish(
-    const Context<T>& context,
-    const std::vector<const systems::PublishEvent<T>*>&)
-const {
-  std::vector<PointContactInfo<T>> contact_info;
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
-  CalcAndAddContactForcesByPenaltyMethod(
-      context, pc, vc, nullptr, &contact_info);
-  std::ofstream outfile;
-  int i = 0;
-  DRAKE_DEMAND(contact_info.size() <= 1);
-  if (context.get_time() == 0) {
-    outfile.open("contact_info.dat");
-    outfile.close();
-  }
-  outfile.open("contact_info.dat", std::ios_base::app);
-  for (const PointContactInfo<T>& c : contact_info) {
-    ++i;
-#if 0
-    const Vector3<T>& nhat() const { return nhat_BA_W_; }
-  const Vector3<T>& that() const { return that_W_; }
-  const Vector3<T>& v_AcBc() const { return v_AcBc_W_; }
-  const Vector3<T>& vt_AcBc() const { return vt_AcBc_W_; }
-#endif
-    outfile.precision(8);
-    outfile << std::scientific;
-    outfile << c.time() << " " << c.phi() << " " << c.vn() << " " << c.vt() << " " << c.mu_stribeck();
-    outfile << " " << c.fn_AC() << " " << c.ft_AC();
-
-    Eigen::IOFormat format(8, 0, " ", "\n", "", "");
-    outfile << " " << c.nhat().transpose().format(format);
-    outfile << " " << c.that().transpose();
-    outfile << " " << c.v_AcBc().transpose();
-    outfile << " " << c.vt_AcBc().transpose();
-    outfile << std::endl;
-  }
-  outfile.close();
 }
 
 template<typename T>
@@ -674,10 +596,6 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
   for (auto it : body_index_to_frame_id_) {
     ids_.push_back(it.second);
   }
-  // Output port with detailed contact information.
-  contact_info_port_ =
-      this->DeclareAbstractOutputPort(
-          &MultibodyPlant::CalcPointContactInfoOutput).get_index();
 }
 
 template <typename T>
