@@ -29,7 +29,7 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
 
   // Default values.
   EXPECT_EQ(dut.x(), 42.0);
-  EXPECT_EQ(dut.two_word(), 0.0);
+  EXPECT_TRUE(std::isnan(dut.two_word()));
 
   // Accessors.
   dut.set_x(11.0);
@@ -56,11 +56,14 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
 // Cover Simple<double>::IsValid.
 GTEST_TEST(SampleTest, IsValid) {
   Sample<double> dummy1;
+  EXPECT_FALSE(ExtractBoolOrThrow(dummy1.IsValid()));
+  dummy1.SetZero();
   EXPECT_TRUE(ExtractBoolOrThrow(dummy1.IsValid()));
   dummy1.set_x(std::numeric_limits<double>::quiet_NaN());
   EXPECT_FALSE(ExtractBoolOrThrow(dummy1.IsValid()));
 
   Sample<double> dummy2;
+  dummy2.SetZero();
   EXPECT_TRUE(ExtractBoolOrThrow(dummy2.IsValid()));
   dummy2.set_two_word(std::numeric_limits<double>::quiet_NaN());
   EXPECT_FALSE(ExtractBoolOrThrow(dummy2.IsValid()));
@@ -70,6 +73,8 @@ GTEST_TEST(SampleTest, IsValid) {
 GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
   // A NaN in the AutoDiffScalar::value() makes us invalid.
   Sample<AutoDiffXd> dut;
+  EXPECT_FALSE(ExtractBoolOrThrow(dut.IsValid()));
+  dut.SetZero();
   EXPECT_TRUE(ExtractBoolOrThrow(dut.IsValid()));
   dut.set_x(std::numeric_limits<double>::quiet_NaN());
   EXPECT_FALSE(ExtractBoolOrThrow(dut.IsValid()));
@@ -84,22 +89,25 @@ GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
   EXPECT_TRUE(ExtractBoolOrThrow(dut.IsValid()));
 }
 
+GTEST_TEST(SampleTest, SetToNamedVariablesTest) {
+  Sample<symbolic::Expression> dut;
+  dut.SetToNamedVariables();
+  EXPECT_EQ(dut.x().to_string(), "x");
+  EXPECT_EQ(dut.two_word().to_string(), "two_word");
+  EXPECT_EQ(dut.absone().to_string(), "absone");
+}
+
 // Cover Simple<Expression>::IsValid.
 GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
-  const symbolic::Variable x{"x"};
-  const symbolic::Variable two_word{"two_word"};
-  const symbolic::Variable absone{"absone"};
-  dut.set_x(x);
-  dut.set_two_word(two_word);
-  dut.set_absone(absone);
+  dut.SetToNamedVariables();
   const symbolic::Formula expected_is_valid =
-      !isnan(x) &&
-      !isnan(two_word) &&
-      !isnan(absone) &&
-      (x >= 0.0) &&
-      (absone >= -1.0) &&
-      (absone <= 1.0);
+      !isnan(dut.x()) &&
+      !isnan(dut.two_word()) &&
+      !isnan(dut.absone()) &&
+      (dut.x() >= 0.0) &&
+      (dut.absone() >= -1.0) &&
+      (dut.absone() <= 1.0);
   EXPECT_TRUE(dut.IsValid().value().EqualTo(expected_is_valid));
 }
 

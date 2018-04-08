@@ -12,6 +12,7 @@
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -44,12 +45,22 @@ class Sample : public systems::BasicVector<T> {
 
   /// Default constructor.  Sets all rows to their default value:
   /// @arg @c x defaults to 42.0 m/s.
-  /// @arg @c two_word defaults to 0.0 with unknown units.
-  /// @arg @c absone defaults to 0.0 with unknown units.
+  /// @arg @c two_word defaults to dummy_value<T>::get() with unknown units.
+  /// @arg @c absone defaults to dummy_value<T>::get() with unknown units.
   Sample() : systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_x(42.0);
-    this->set_two_word(0.0);
-    this->set_absone(0.0);
+    this->set_two_word(dummy_value<T>::get());
+    this->set_absone(dummy_value<T>::get());
+  }
+
+  /// Create a symbolic::Variable for each element with the known variable
+  /// name.  This is only available for T == symbolic::Expression.
+  template <typename U = T>
+  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  SetToNamedVariables() {
+    this->set_x(symbolic::Variable("x"));
+    this->set_two_word(symbolic::Variable("two_word"));
+    this->set_absone(symbolic::Variable("absone"));
   }
 
   Sample<T>* DoClone() const override { return new Sample; }
