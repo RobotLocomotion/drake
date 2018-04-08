@@ -134,4 +134,26 @@ def deprecated(message):
     return wrapped
 
 
+def install_numpy_warning_filters(force=False):
+    """Install warnings filters specific to NumPy."""
+    global installed_numpy_warning_filters
+    if installed_numpy_warning_filters and not force:
+        return
+    installed_numpy_warning_filters = True
+    # Warnings specific to comparison with `dtype=object` should be raised to
+    # errors (#8315, #8491). Without them, NumPy will return effectively
+    # garbage values (e.g. comparison based on object ID): either a scalar bool
+    # or an array of bools (based on what objects are present and the NumPy
+    # version).
+    # N.B. Using a `module=` regex filter does not work, as the warning is
+    # raised from C code, and thus inherits the calling module, which may not
+    # be "numpy\..*" (numpy/numpy#10861).
+    warnings.filterwarnings(
+        "error", category=DeprecationWarning, message="numpy equal will not")
+    warnings.filterwarnings(
+        "error", category=DeprecationWarning,
+        message="elementwise == comparison failed")
+
+
 warnings.simplefilter('once', DrakeDeprecationWarning)
+installed_numpy_warning_filters = False
