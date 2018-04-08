@@ -36,7 +36,7 @@ void CoulombFriction<T>::ThrowForBadFriction(const T& static_friction,
     stream << "Given dynamic friction (" << dynamic_friction <<
            ") is greater than given static friction (" << static_friction <<
            "). Must be less or equal.";
-    throw std::runtime_error(stream.str());
+    throw runtime_error(stream.str());
   }
 }
 
