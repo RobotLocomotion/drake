@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction_coefficients.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 
 #include <string>
 
@@ -6,7 +6,7 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-CoulombFrictionCoefficients::CoulombFrictionCoefficients(
+CoulombFriction::CoulombFriction(
                                      double static_friction,
                                      double dynamic_friction) {
   ThrowForBadFriction(static_friction, dynamic_friction);
@@ -14,7 +14,7 @@ CoulombFrictionCoefficients::CoulombFrictionCoefficients(
   dynamic_friction_ = dynamic_friction;
 }
 
-void CoulombFrictionCoefficients::ThrowForBadFriction(double static_friction,
+void CoulombFriction::ThrowForBadFriction(double static_friction,
                                                       double dynamic_friction) {
   using std::to_string;
   using std::runtime_error;

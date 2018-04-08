@@ -29,7 +29,7 @@ namespace inclined_plane {
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(
     double radius, double mass, double slope,
-    const drake::multibody::multibody_plant::CoulombFrictionCoefficients&
+    const drake::multibody::multibody_plant::CoulombFriction&
     surface_friction, double gravity,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 

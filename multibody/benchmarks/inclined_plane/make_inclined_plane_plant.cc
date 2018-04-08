@@ -10,7 +10,7 @@ namespace inclined_plane {
 using geometry::GeometrySystem;
 using geometry::Sphere;
 using geometry::HalfSpace;
-using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
@@ -20,7 +20,7 @@ using Eigen::AngleAxisd;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(double radius, double mass, double slope,
-                       const CoulombFrictionCoefficients& surface_friction,
+                       const CoulombFriction& surface_friction,
                        double gravity,
                        geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);

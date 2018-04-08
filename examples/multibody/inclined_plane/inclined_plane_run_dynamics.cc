@@ -36,7 +36,7 @@ using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
-using drake::multibody::multibody_plant::CoulombFrictionCoefficients;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::systems::lcm::LcmPublisherSystem;
@@ -59,7 +59,7 @@ int do_main() {
   const double mass = 0.1;      // kg
   const double g = 9.81;        // m/s^2
   const double slope = 15.0 / 180 * M_PI;  // rad.
-  const CoulombFrictionCoefficients surface_friction(FLAGS_static_friction,
+  const CoulombFriction surface_friction(FLAGS_static_friction,
                                                      FLAGS_dynamic_friction);
 
   MultibodyPlant<double>& plant =

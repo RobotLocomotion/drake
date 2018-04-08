@@ -45,7 +45,7 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double g = 9.81;        // Acceleration of gravity, [m/s²]
   const double slope = 15.0 / 180 * M_PI;  // Inclined plane's slope, [rad]
-  const CoulombFrictionCoefficients surface_friction(
+  const CoulombFriction surface_friction(
       1.0 /* static friction */, 0.5 /* dynamic friction */);
 
   // Contact parameters. Results converge to the analytical solution as the

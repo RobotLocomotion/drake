@@ -11,7 +11,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction_coefficients.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -530,7 +530,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      const CoulombFrictionCoefficients& friction_coefficients,
+      const CoulombFriction& friction_coefficients,
       geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
@@ -925,7 +925,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // See contact_model_doxygen.h @section tangent_force for details.
   T ComputeFrictionCoefficient(
       const T& v_tangent_BAc,
-      CoulombFrictionCoefficients friction) const;
+      CoulombFriction friction) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
@@ -1001,7 +1001,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Friction coefficients ordered by collision index.
   // See geometry_id_to_collision_index_.
-  std::vector<CoulombFrictionCoefficients> coulomb_friction_;
+  std::vector<CoulombFriction> coulomb_friction_;
 
   // Port handles for geometry:
   int geometry_query_port_{-1};

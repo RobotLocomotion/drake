@@ -52,10 +52,10 @@ namespace multibody_plant {
 
  See @ref drake_contacts for semantics of these properties for dynamics. */
 // TODO(SeanCurtis-TRI): Investigate templatizing this on scalar.
-class CoulombFrictionCoefficients {
+class CoulombFriction {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFrictionCoefficients)
-  CoulombFrictionCoefficients() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
+  CoulombFriction() = default;
 
   /** Constructs fully specified material. Will throw an exception in any of the
    following circumstances:
@@ -66,16 +66,16 @@ class CoulombFrictionCoefficients {
      - `static_friction` < `dynamic_friction`
 
    No value will be configured to use default values. */
-  CoulombFrictionCoefficients(double static_friction, double dynamic_friction);
+  CoulombFriction(double static_friction, double dynamic_friction);
 
-  CoulombFrictionCoefficients CombineWithOtherFrictionCoefficients(
-      const CoulombFrictionCoefficients& other) const {
+  CoulombFriction CombineWithOtherFrictionCoefficients(
+      const CoulombFriction& other) const {
     // Simple utility to detect 0 / 0. As it is used in this method, denom
     // can only be zero if num is also zero, so we'll simply return zero.
     auto safe_divide = [](double num, double denom) {
       return denom == 0.0 ? 0.0 : num / denom;
     };
-    return CoulombFrictionCoefficients(
+    return CoulombFriction(
         safe_divide(
             2 * static_friction() * other.static_friction(),
             static_friction() + other.static_friction()),
