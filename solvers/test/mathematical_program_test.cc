@@ -632,6 +632,16 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   CheckGetSolution(prog, x3, x3_value);
   CheckGetSolution(prog, x4, x4_value);
 
+  {
+    const symbolic::Variables variables({x4(0), x4(1), x3(1), x4(1)});
+    const auto variables_value = prog.GetSolution(variables);
+    EXPECT_EQ(variables_value.rows(), 3);
+    int variable_count = 0;
+    for (auto it = variables.begin(); it != variables.end(); ++it) {
+      EXPECT_EQ(variables_value(variable_count++), prog.GetSolution(*it));
+    }
+  }
+
   // Check a variable that is not a decision variable of the mathematical
   // program.
   Variable z1("z1");

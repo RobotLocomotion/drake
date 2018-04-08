@@ -795,6 +795,16 @@ double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
+Eigen::VectorXd MathematicalProgram::GetSolution(
+    const symbolic::Variables& variables) const {
+  Eigen::VectorXd values(variables.size());
+  int count = 0;
+  for (auto it = variables.begin(); it != variables.end(); ++it) {
+    values(count++) = GetSolution(*it);
+  }
+  return values;
+}
+
 double MathematicalProgram::GetInitialGuess(
     const symbolic::Variable& decision_variable) const {
   return x_initial_guess_[FindDecisionVariableIndex(decision_variable)];

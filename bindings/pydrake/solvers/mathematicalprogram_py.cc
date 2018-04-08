@@ -379,6 +379,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
               const MatrixXDecisionVariable& var) {
              return prog.GetSolution(var);
            })
+      .def("GetSolution",
+          [](const MathematicalProgram& prog,
+            const Variables& variables) {
+          return prog.GetSolution(variables);
+          })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>);

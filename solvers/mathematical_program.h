@@ -2461,6 +2461,13 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
+   * Return a vector containing the solution to each variable in @p variables.
+   * The order of the solution is the same as the corresponding variable in
+   * @p variables.
+   */
+  Eigen::VectorXd GetSolution(const symbolic::Variables& variables) const;
+
+  /**
    * Evaluates the value of some binding, for some input value for all
    * decision variables.
    * @param binding A Binding whose variables are decision variables in this
