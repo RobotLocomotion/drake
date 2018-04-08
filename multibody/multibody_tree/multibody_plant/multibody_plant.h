@@ -530,7 +530,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      const CoulombFriction& friction_coefficients,
+      const CoulombFriction<double>& friction_coefficients,
       geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
@@ -925,7 +925,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // See contact_model_doxygen.h @section tangent_force for details.
   T ComputeFrictionCoefficient(
       const T& v_tangent_BAc,
-      CoulombFriction friction) const;
+      const CoulombFriction<T>& friction) const;
 
   // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
   // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
@@ -1001,7 +1001,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Friction coefficients ordered by collision index.
   // See geometry_id_to_collision_index_.
-  std::vector<CoulombFriction> coulomb_friction_;
+  std::vector<CoulombFriction<double>> default_coulomb_friction_;
 
   // Port handles for geometry:
   int geometry_query_port_{-1};

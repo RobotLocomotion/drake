@@ -119,7 +119,7 @@ template<typename T>
 void MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    const CoulombFriction& friction_coefficients,
+    const CoulombFriction<double>& friction_coefficients,
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_system != nullptr);
@@ -140,8 +140,8 @@ void MultibodyPlant<T>::RegisterCollisionGeometry(
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
-  DRAKE_ASSERT(static_cast<int>(coulomb_friction_.size()) == collision_index);
-  coulomb_friction_.emplace_back(friction_coefficients.static_friction(),
+  DRAKE_ASSERT(static_cast<int>(default_coulomb_friction_.size()) == collision_index);
+  default_coulomb_friction_.emplace_back(friction_coefficients.static_friction(),
                                  friction_coefficients.dynamic_friction());
 }
 
@@ -428,11 +428,11 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
           geometry_id_to_collision_index_.at(geometryA_id);;
       const int collision_indexB =
           geometry_id_to_collision_index_.at(geometryB_id);;
-      const CoulombFriction &geometryA_friction =
-          coulomb_friction_[collision_indexA];
-      const CoulombFriction &geometryB_friction =
-          coulomb_friction_[collision_indexB];
-      const CoulombFriction combined_friction_coefficients =
+      const CoulombFriction<double>& geometryA_friction =
+          default_coulomb_friction_[collision_indexA];
+      const CoulombFriction<double>& geometryB_friction =
+          default_coulomb_friction_[collision_indexB];
+      const CoulombFriction<double> combined_friction_coefficients =
           geometryA_friction.CombineWithOtherFrictionCoefficients(
               geometryB_friction);
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
@@ -720,7 +720,7 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 template <typename T>
 T MultibodyPlant<T>::ComputeFrictionCoefficient(
     const T& v_tangent_BAc,
-    CoulombFriction friction) const {
+    const CoulombFriction<T>& friction) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
   const T mu_d = friction.dynamic_friction();
   const T mu_s = friction.static_friction();

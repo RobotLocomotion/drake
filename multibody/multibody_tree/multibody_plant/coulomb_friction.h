@@ -1,8 +1,6 @@
 #pragma once
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace multibody {
@@ -51,7 +49,16 @@ namespace multibody_plant {
  ```
 
  See @ref drake_contacts for semantics of these properties for dynamics. */
-// TODO(SeanCurtis-TRI): Investigate templatizing this on scalar.
+/// @tparam T The scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+/// - symbolic::Expression
+///
+/// They are already available to link against in the containing library.
+/// No other values for T are currently supported.
+template<typename T>
 class CoulombFriction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
@@ -66,13 +73,13 @@ class CoulombFriction {
      - `static_friction` < `dynamic_friction`
 
    No value will be configured to use default values. */
-  CoulombFriction(double static_friction, double dynamic_friction);
+  CoulombFriction(const T& static_friction, const T& dynamic_friction);
 
   CoulombFriction CombineWithOtherFrictionCoefficients(
       const CoulombFriction& other) const {
     // Simple utility to detect 0 / 0. As it is used in this method, denom
     // can only be zero if num is also zero, so we'll simply return zero.
-    auto safe_divide = [](double num, double denom) {
+    auto safe_divide = [](const T& num, const T& denom) {
       return denom == 0.0 ? 0.0 : num / denom;
     };
     return CoulombFriction(
@@ -84,21 +91,21 @@ class CoulombFriction {
             dynamic_friction() + other.dynamic_friction()));
   }
 
-  double static_friction() const { return static_friction_; }
+  const T& static_friction() const { return static_friction_; }
 
-  double dynamic_friction() const { return dynamic_friction_; }
+  const T& dynamic_friction() const { return dynamic_friction_; }
 
  private:
   // Confirms two properties on the friction coefficient pair:
   //  1. Both values non-negative.
   //  2. static_friction >= dynamic_friction.
   // Throws std::runtime_error on failure of these tests.
-  static void ThrowForBadFriction(double static_friction,
-                                  double dynamic_friction);
+  static void ThrowForBadFriction(const T& static_friction,
+                                  const T& dynamic_friction);
 
   // Default values are for an ideal frictionless material.
-  double static_friction_{0.0};
-  double dynamic_friction_{0.0};
+  T static_friction_{0.0};
+  T dynamic_friction_{0.0};
 };
 
 }  // namespace multibody_plant

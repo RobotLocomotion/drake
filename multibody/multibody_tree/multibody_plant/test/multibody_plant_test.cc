@@ -369,19 +369,19 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
       geometry::HalfSpace(),
-      CoulombFriction(0.5, 0.3), &geometry_system);
+      CoulombFriction<double>(0.5, 0.3), &geometry_system);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
   plant.RegisterCollisionGeometry(
       sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
-      CoulombFriction(0.5, 0.3), &geometry_system);
+      CoulombFriction<double>(0.5, 0.3), &geometry_system);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
   plant.RegisterCollisionGeometry(
       sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
-      CoulombFriction(0.5, 0.3), &geometry_system);
+      CoulombFriction<double>(0.5, 0.3), &geometry_system);
 
   // We are done defining the model.
   plant.Finalize();

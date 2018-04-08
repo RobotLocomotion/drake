@@ -20,7 +20,7 @@ using Eigen::AngleAxisd;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(double radius, double mass, double slope,
-                       const CoulombFriction& surface_friction,
+                       const CoulombFriction<double>& surface_friction,
                        double gravity,
                        geometry::GeometrySystem<double>* geometry_system) {
   DRAKE_DEMAND(geometry_system != nullptr);
