@@ -172,6 +172,31 @@ def generate_default_ctor(hh, caller_context, fields):
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
 
 
+# SetToNamedVariables (for symbolic::Expression only).
+SET_TO_NAMED_VARIABLES_BEGIN = """
+  /// Create a symbolic::Variable for each element with the known variable
+  /// name.  This is only available for T == symbolic::Expression.
+  template <typename U=T>
+  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  SetToNamedVariables() {
+"""
+SET_TO_NAMED_VARIABLES_BODY = """
+    this->set_%(field)s(symbolic::Variable("%(field)s"));
+"""
+SET_TO_NAMED_VARIABLES_END = """
+}
+"""
+
+
+def generate_set_to_named_variables(hh, caller_context, fields):
+    put(hh, SET_TO_NAMED_VARIABLES_BEGIN % caller_context, 1)
+    for field in fields:
+        context = dict(caller_context)
+        context.update(field=field['name'])
+        put(hh, SET_TO_NAMED_VARIABLES_BODY % context, 1)
+    put(hh, SET_TO_NAMED_VARIABLES_END, 2)
+
+
 DO_CLONE = """
   %(camel)s<T>* DoClone() const override {
     return new %(camel)s;
@@ -330,6 +355,7 @@ VECTOR_HH_PREAMBLE = """
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
 
 %(opening_namespace)s
@@ -587,6 +613,7 @@ def generate_code(
             generate_indices_names_accessor_decl(hh, context)
             put(hh, VECTOR_CLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
+            generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
