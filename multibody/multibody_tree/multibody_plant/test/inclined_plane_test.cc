@@ -1,5 +1,3 @@
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-
 #include <limits>
 #include <memory>
 
@@ -7,6 +5,7 @@
 
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"

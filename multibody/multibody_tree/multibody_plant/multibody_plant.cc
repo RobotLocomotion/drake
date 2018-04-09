@@ -11,12 +11,6 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
-#include <fstream>
-#include <iostream>
-#include <ios>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -423,7 +417,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const double fn_AC = k * x * (1.0 + d * vn);
 
     if (fn_AC > 0) {
-
       // Normal force on body A, at C, expressed in W.
       const Vector3<double> fn_AC_W = fn_AC * nhat_BA_W;
 
@@ -462,17 +455,6 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
         // Magnitude of the friction force on A at C.
         const double ft_AC = mu_stribeck * fn_AC;
         ft_AC_W = ft_AC * that_W;
-
-        // we know that should be that = [-0.96593   0.00000   0.25882]
-        if (that_W(0) > 0) {
-          PRINT_VAR(that_W.transpose());
-          PRINT_VAR(nhat_BA_W.transpose());
-          PRINT_VAR(ft_AC_W.transpose());
-          PRINT_VAR(vt_AcBc_W.transpose());
-          PRINT_VAR(vn);
-          PRINT_VAR(vt);
-          PRINT_VAR(v_AcBc_W.transpose());
-        }
       }
 
       // Spatial force on body A at C, expressed in the world frame W.
