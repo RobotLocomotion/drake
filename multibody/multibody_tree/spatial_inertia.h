@@ -216,33 +216,12 @@ class SpatialInertia {
   /// mass.
   /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-#ifdef DRAKE_DOXYGEN_CXX
-  bool
-#else
-  template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value, bool>::type
-#endif
-  IsPhysicallyValid() const {
-    if (IsNaN().value()) return false;
-    if (mass_ < T(0)) return false;
+  Bool<T> IsPhysicallyValid() const {
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
     const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    if (!G_SScm_E.CouldBePhysicallyValid()) return false;
-    return true;  // All tests passed.
+    return !IsNaN() && mass_ >= T(0) && G_SScm_E.CouldBePhysicallyValid();
   }
-
-  // This method throws an exception for non-numeric types.
-  // @tparam T1 SFINAE boilerplate.
-#ifndef DRAKE_DOXYGEN_CXX
-  template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, Bool<T>>::type
-  IsPhysicallyValid() const {
-    throw std::logic_error(
-        "SpatialInertia<T>::IsPhysicallyValid() only works with types that are "
-        "drake::is_numeric.");
-  }
-#endif
 
   /// Copy to a full 6x6 matrix representation.
   Matrix6<T> CopyToFullMatrix6() const {
@@ -464,7 +443,7 @@ class SpatialInertia {
   // make these methods a no-op for non-numeric types.
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type CheckInvariants() const {
-    if (!IsPhysicallyValid()) {
+    if (!IsPhysicallyValid().value()) {
       throw std::runtime_error(
           "The resulting spatial inertia is not physically valid. "
               "See SpatialInertia::IsPhysicallyValid()");
