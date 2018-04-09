@@ -235,7 +235,9 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
         self.assertEqual(prog.GetSolution(
-            (d[0]*x.dot(x).decision_variables()))[0], prog.GetSolution(d[0]))
+            sym.Polynomial(d[0]*x.dot(x),
+                           sym.Variables(x)).decision_variables())[0],
+                         prog.GetSolution(d[0]))
 
     def test_lcp(self):
         prog = mp.MathematicalProgram()
