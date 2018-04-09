@@ -794,11 +794,31 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
   /// @}
 
-  void set_stiction_tolerance(double v_stiction) {
+  /// @anchor mbp_stribeck_model
+  /// @name Stribeck model of friction
+  ///
+  /// Currently %MultibodyPlant uses the Stribeck approximation to model dry
+  /// friction. The Stribeck model of friction is an approximation to Coulomb's
+  /// law of friction that allows using continuous time integration without the
+  /// need to specify complementarity constraints. While this results in a
+  /// simpler model immediately tractable with standard numerical methods for
+  /// integration of ODE's, it often leads to stiff dynamics that require
+  /// the integrator to take very small time steps. It is therefore recommended
+  /// to use error controlled integrators when using this model.
+  /// See @ref tangent_force for a detailed discussion of the Stribeck model.
+  /// @{
+
+  /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
+  /// `v_stiction` must be specified in m/s (meters per second.)
+  /// `v_stiction` defaults to a value of 1 millimeter per second.
+  /// @throws std::exception if `v_stiction` is non-positive.
+  void set_stiction_tolerance(double v_stiction = 0.001) {
+    DRAKE_DEMAND(v_stiction > 0);
     penalty_method_contact_parameters_.v_stiction_tolerance = v_stiction;
     penalty_method_contact_parameters_.inv_v_stiction_tolerance =
         1.0 / v_stiction;
   }
+  /// @}
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -967,7 +987,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // This struct contains the parameters to compute forces to enforce
   // no-interpenetration between bodies by a penalty method.
   struct ContactByPenaltyMethodParameters {
-    const double kDefaultVStictionTolerance{1e-2};
     // Penalty method coefficients used to compute contact forces.
     // TODO(amcastro-tri): consider having these per body. That would allow us
     // for instance to calibrate the stiffness at the fingers (stiffness related
@@ -982,11 +1001,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
     optional<double> gravity;
-    // Stiction velocity tolerance for the Stribeck model. Defaults to 1 mm/s.
-    double v_stiction_tolerance{0.001};
+    // Stiction velocity tolerance for the Stribeck model.
+    // A negative value indicates it was not properly initialized.
+    double v_stiction_tolerance{-1};
     // Note: this is the *inverse* of the v_stiction_tolerance parameter to
     // optimize for the division.
-    double inv_v_stiction_tolerance{1.0 / v_stiction_tolerance};
+    // A negative value indicates it was not properly initialized.
+    double inv_v_stiction_tolerance{-1};
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 

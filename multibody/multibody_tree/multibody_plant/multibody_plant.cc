@@ -205,6 +205,9 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (get_num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
+  if (get_num_collision_geometries() > 0 &&
+        penalty_method_contact_parameters_.v_stiction_tolerance < 0)
+    set_stiction_tolerance();
 }
 
 template<typename T>
