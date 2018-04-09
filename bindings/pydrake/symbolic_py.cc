@@ -164,6 +164,22 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self, const Environment::map& env) {
              return self.Evaluate(Environment{env});
            })
+      .def("EvaluatePartial",
+           [](const Expression& self, const Environment::map& env) {
+             return self.EvaluatePartial(Environment{env});
+           })
+      .def("Substitute",
+           [](const Expression& self, const Variable& var,
+              const Expression& e) { return self.Substitute(var, e); })
+      .def("Substitute",
+           [](const Expression& self, const Variable& var1,
+              const Variable& var2) { return self.Substitute(var1, var2); })
+      .def("Substitute", [](const Expression& self, const Variable& var,
+                            const double v) { return self.Substitute(var, v); })
+      .def("Substitute",
+           [](const Expression& self, const Substitution& s) {
+             return self.Substitute(s);
+           })
       .def("EqualTo", &Expression::EqualTo)
       // Addition
       .def(py::self + py::self)

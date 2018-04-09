@@ -528,6 +528,13 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual((x + y).Evaluate(env),
                          env[x] + env[y])
 
+    def test_evaluate_partial(self):
+        env = {x: 3.0,
+               y: 4.0}
+        partial_evaluated = (x + y + z).EvaluatePartial(env)
+        expected = env[x] + env[y] + z
+        self.assertTrue(partial_evaluated.EqualTo(expected))
+
     def test_evaluate_exception_np_nan(self):
         env = {x: np.nan}
         with self.assertRaises(RuntimeError):
@@ -537,6 +544,17 @@ class TestSymbolicExpression(unittest.TestCase):
         env = {x: float('nan')}
         with self.assertRaises(RuntimeError):
             (x + 1).Evaluate(env)
+
+    def test_substitute_with_pair(self):
+        e = x + y
+        self.assertEqual(e.Substitute(x, x + 5), x + y + 5)
+        self.assertEqual(e.Substitute(y, z), x + z)
+        self.assertEqual(e.Substitute(y, 3), x + 3)
+
+    def test_substitute_with_dict(self):
+        e = x + y
+        env = {x: x + 2, y:  y + 3}
+        self.assertEqual(e.Substitute(env), x + y + 5)
 
     # See `math_overloads_test` for more comprehensive checks on math
     # functions.
