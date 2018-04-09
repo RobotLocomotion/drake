@@ -814,9 +814,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     DRAKE_DEMAND(v_stiction > 0);
-    penalty_method_contact_parameters_.v_stiction_tolerance = v_stiction;
-    penalty_method_contact_parameters_.inv_v_stiction_tolerance =
-        1.0 / v_stiction;
+    stribeck_model_.v_stiction_tolerance = v_stiction;
+    stribeck_model_.inv_v_stiction_tolerance = 1.0 / v_stiction;
   }
   /// @}
 
@@ -954,18 +953,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  // Computes the friction coefficient based on the relative tangential
-  // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
-  //
-  // See contact_model_doxygen.h @section tangent_force for details.
-  T ComputeFrictionCoefficient(
-      const T& v_tangent_BAc,
-      const CoulombFriction<T>& friction) const;
-
-  // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to the
-  // range [0, 1] where f''(0) = f''(1) = f'(0) = f'(1) = 0.
-  static T step5(const T& x);
-
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
@@ -1001,6 +988,24 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // Acceleration of gravity in the model. Used to estimate penalty method
     // constants from a static equilibrium analysis.
     optional<double> gravity;
+  };
+  ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+
+  // Stribeck model of friction.
+  struct StribeckModel {
+    // Computes the friction coefficient based on the relative tangential
+    // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
+    //
+    // See contact_model_doxygen.h @section tangent_force for details.
+    T ComputeFrictionCoefficient(
+        const T& v_tangent_BAc,
+        const CoulombFriction<T>& friction) const;
+
+    // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
+    // the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
+    // f(1) = 1.
+    static T step5(const T& x);
+
     // Stiction velocity tolerance for the Stribeck model.
     // A negative value indicates it was not properly initialized.
     double v_stiction_tolerance{-1};
@@ -1009,7 +1014,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // A negative value indicates it was not properly initialized.
     double inv_v_stiction_tolerance{-1};
   };
-  ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+  StribeckModel stribeck_model_;
 
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;

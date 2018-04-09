@@ -206,7 +206,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
   if (get_num_collision_geometries() > 0 &&
-        penalty_method_contact_parameters_.v_stiction_tolerance < 0)
+      stribeck_model_.v_stiction_tolerance < 0)
     set_stiction_tolerance();
 }
 
@@ -454,8 +454,8 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       if (vt_squared > kNonZeroSqd) {
         const double vt = sqrt(vt_squared);
         // Stribeck friction coefficient.
-        const double mu_stribeck =
-            ComputeFrictionCoefficient(vt, combined_friction_coefficients);
+        const double mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+            vt, combined_friction_coefficients);
         // Tangential direction.
         const Vector3<double> that_W = vt_AcBc_W / vt;
 
@@ -723,14 +723,13 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 }
 
 template <typename T>
-T MultibodyPlant<T>::ComputeFrictionCoefficient(
+T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& v_tangent_BAc,
     const CoulombFriction<T>& friction) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
   const T mu_d = friction.dynamic_friction();
   const T mu_s = friction.static_friction();
-  const T v =
-      v_tangent_BAc * penalty_method_contact_parameters_.inv_v_stiction_tolerance;
+  const T v = v_tangent_BAc * inv_v_stiction_tolerance;
   if (v >= 3) {
     return mu_d;
   } else if (v >= 1) {
@@ -741,7 +740,7 @@ T MultibodyPlant<T>::ComputeFrictionCoefficient(
 }
 
 template <typename T>
-T MultibodyPlant<T>::step5(const T& x) {
+T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
