@@ -777,6 +777,12 @@ class MultibodyTree {
     return get_body(it->second);
   }
 
+  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the requested body is not a RigidBody.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
   const RigidBody<T>& GetRigidBodyByName(const std::string& name) const {
     const RigidBody<T>* body =
         dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name));
