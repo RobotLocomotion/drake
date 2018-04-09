@@ -20,6 +20,7 @@ drake_cc_library(
     hdrs = ["piecewise_trajectory.h"],
     deps = [
         ":trajectory",
+        "//common:autodiff",
         "//common:essential",
     ],
 )
@@ -36,6 +37,7 @@ drake_cc_library(
     ],
     deps = [
         ":piecewise_trajectory",
+        "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
     ],

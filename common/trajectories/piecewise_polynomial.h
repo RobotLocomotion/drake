@@ -329,7 +329,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   bool empty() const { return polynomials_.empty(); }
 
-  double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
+  T scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
 
   /**
    * Evaluates the PiecewisePolynomial at the given time \p t.
@@ -408,10 +408,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  private:
-  double segmentValueAtGlobalAbscissa(int segment_index, double t,
-                                      Eigen::Index row, Eigen::Index col) const;
-
-  static constexpr T kSlopeEpsilon = 1e-10;
+  T segmentValueAtGlobalAbscissa(int segment_index, double t,
+                                 Eigen::Index row, Eigen::Index col) const;
 
   // a PolynomialMatrix for each piece (segment)
   std::vector<PolynomialMatrix> polynomials_;

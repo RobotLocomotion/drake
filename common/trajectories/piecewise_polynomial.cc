@@ -3,13 +3,18 @@
 #include <algorithm>
 #include <memory>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 
+using std::abs;
 using std::runtime_error;
 using std::vector;
 
 namespace drake {
 namespace trajectories {
+namespace {
+constexpr double kSlopeEpsilon = 1e-10;
+}  // namespace
 
 template <typename T>
 PiecewisePolynomial<T>::PiecewisePolynomial(
@@ -102,9 +107,9 @@ PiecewisePolynomial<T>::integral(
 }
 
 template <typename T>
-double PiecewisePolynomial<T>::scalarValue(double t,
-                                                         Eigen::Index row,
-                                                         Eigen::Index col) {
+T PiecewisePolynomial<T>::scalarValue(double t,
+                                      Eigen::Index row,
+                                      Eigen::Index col) {
   int segment_index = this->get_segment_index(t);
   return segmentValueAtGlobalAbscissa(segment_index, t, row, col);
 }
@@ -114,7 +119,7 @@ MatrixX<T>
 PiecewisePolynomial<T>::value(double t) const {
   int segment_index = this->get_segment_index(t);
   t = std::min(std::max(t, this->start_time()), this->end_time());
-  Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime,
+  Eigen::Matrix<T, PolynomialMatrix::RowsAtCompileTime,
                 PolynomialMatrix::ColsAtCompileTime>
       ret(rows(), cols());
   for (Eigen::Index row = 0; row < rows(); row++) {
@@ -306,7 +311,7 @@ PiecewisePolynomial<T>::slice(int start_segment_index,
 }
 
 template <typename T>
-double PiecewisePolynomial<T>::segmentValueAtGlobalAbscissa(
+T PiecewisePolynomial<T>::segmentValueAtGlobalAbscissa(
     int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
   return polynomials_[segment_index](row, col).EvaluateUnivariate(
       t - this->start_time(segment_index));
@@ -449,12 +454,12 @@ PiecewisePolynomial<T>::ComputePchipEndSlope(
       ((2.0 * dt0 + dt1) * slope0 - dt0 * slope1) / (dt0 + dt1);
   for (int i = 0; i < deriv.rows(); ++i) {
     for (int j = 0; j < deriv.cols(); ++j) {
-      if (sign(deriv(i, j), kSlopeEpsilon) !=
-          sign(slope0(i, j), kSlopeEpsilon)) {
+      if (sign<T>(deriv(i, j), kSlopeEpsilon) !=
+          sign<T>(slope0(i, j), kSlopeEpsilon)) {
         deriv(i, j) = 0.;
-      } else if (sign(slope0(i, j), kSlopeEpsilon) !=
-                 sign(slope1(i, j), kSlopeEpsilon) &&
-                 std::abs(deriv(i, j)) > std::abs(3. * slope0(i, j))) {
+      } else if (sign<T>(slope0(i, j), kSlopeEpsilon) !=
+                 sign<T>(slope1(i, j), kSlopeEpsilon) &&
+                 abs(deriv(i, j)) > abs(3. * slope0(i, j))) {
         deriv(i, j) = 3. * slope0(i, j);
       }
     }
@@ -895,8 +900,7 @@ Eigen::Matrix<T, 4, 1> PiecewisePolynomial<T>::ComputeCubicSplineCoeffs(
 
 // Explicit instantiations.
 template class PiecewisePolynomial<double>;
-// doesn't work yet
-// template class PiecewisePolynomial<std::complex<double>>;
+template class PiecewisePolynomial<AutoDiffXd>;
 
 }  // namespace trajectories
 }  // namespace drake
