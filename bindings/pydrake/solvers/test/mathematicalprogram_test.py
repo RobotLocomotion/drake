@@ -241,7 +241,7 @@ class TestMathematicalProgram(unittest.TestCase):
         poly = d[0]*x.dot(x)
         self.assertTrue(prog.GetSolution(
             sym.Polynomial(poly, sym.Variables(x))),
-            sym.polynomial(prog.GetSolution(d[0])*x.dot(x), sym.Variables(x)))
+            sym.Polynomial(prog.GetSolution(d[0])*x.dot(x), sym.Variables(x)))
 
     def test_lcp(self):
         prog = mp.MathematicalProgram()
