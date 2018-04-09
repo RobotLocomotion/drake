@@ -74,6 +74,13 @@ namespace multibody {
 /// of this class to keep track of frames in which operations are performed. We
 /// suggest doing that using disciplined notation, as described above.
 ///
+/// @note Several methods in this class throw a std::exception for invalid
+/// rotational inertia operations in debug releases only.  This provides speed
+/// in a release build while facilitating debugging in debug builds.
+/// In addition, these validity tests are only performed for scalar types for
+/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
+/// performed when T is symbolic::Expression.
+///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
@@ -214,7 +221,6 @@ class SpatialInertia {
   /// RotationalInertia::CouldBePhysicallyValid() which become a sufficient
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
-  /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
   /// @see RotationalInertia::CouldBePhysicallyValid().
   Bool<T> IsPhysicallyValid() const {
     // The tests in RotationalInertia become a sufficient condition when
@@ -426,15 +432,6 @@ class SpatialInertia {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // Mass of the body or composite body.
-  T mass_{nan()};
-  // Position vector from point P to the center of mass of body or composite
-  // body S, expressed in a frame E.
-  Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
-  // Rotational inertia of body or composite body S computed about point P and
-  // expressed in a frame E.
-  UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
-
   // Checks that the SpatialInertia is physically valid and throws an
   // exception if not. This is mostly used in Debug builds to throw an
   // appropriate exception.
@@ -454,6 +451,15 @@ class SpatialInertia {
   // numeric types.
   template <typename T1 = T>
   typename std::enable_if<!is_numeric<T1>::value>::type CheckInvariants() {}
+
+  // Mass of the body or composite body.
+  T mass_{nan()};
+  // Position vector from point P to the center of mass of body or composite
+  // body S, expressed in a frame E.
+  Vector3<T> p_PScm_E_{Vector3<T>::Constant(nan())};
+  // Rotational inertia of body or composite body S computed about point P and
+  // expressed in a frame E.
+  UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
 };
 
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.

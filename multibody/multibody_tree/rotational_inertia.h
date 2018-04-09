@@ -477,16 +477,11 @@ class RotationalInertia {
   /// center of mass).  Note: this class does not know its about-point or its
   /// center of mass location.
   ///
-  /// @warning This method is only supported for types that are
-  /// drake::is_numeric. For non-numeric types this method throws an exception
-  /// at runtime.
-  ///
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
   /// @throws std::runtime_error if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
   Bool<T> CouldBePhysicallyValid() const {
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
