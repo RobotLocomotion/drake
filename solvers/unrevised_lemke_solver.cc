@@ -190,21 +190,6 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   return SolutionResult::kSolutionFound;
 }
 
-// Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
-// solves the LCP. Resizes z as necessary. Aborts if z is null.
-template <class T>
-bool UnrevisedLemkeSolver<T>::CheckLemkeTrivial(
-    const T& zero_tol, const VectorX<T>& q, VectorX<T>* z) {
-  DRAKE_ASSERT(z);
-  // If all elements of q are non-negative, z = 0 (i.e., w = q) is a solution.
-  if (q.minCoeff() > -zero_tol) {
-    z->setZero(q.size());
-    return true;
-  }
-
-  return false;
-}
-
 // Utility function for copying part of a matrix (designated by the indices
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
 // the "covering vector"), to a target matrix, `out`.
@@ -213,6 +198,8 @@ void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
     const MatrixX<T>& in,
     const std::vector<int>& rows,
     int column, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
+
   const int num_rows = rows.size();
   out->resize(num_rows);
 
@@ -235,6 +222,8 @@ void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubVector(const VectorX<T>& in,
     const std::vector<int>& rows, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(rows, in.size()));
+
   const int num_rows = rows.size();
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
@@ -250,6 +239,7 @@ template <class T>
 void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v_sub,
     const std::vector<int>& indices, VectorX<T>* v) {
   DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
+  DRAKE_ASSERT(ValidateIndices(indices, v->size()));
   for (size_t i = 0; i < indices.size(); ++i)
     (*v)[indices[i]] = v_sub[i];
 }
@@ -329,7 +319,7 @@ void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Helper for determining index sets.
-  auto DetermineIndexSetsHelper = [this]( 
+  auto DetermineIndexSetsHelper = [this](
       const std::vector<LCPVariable>& variables, bool is_z,
       std::vector<int>* variable_set,
       std::vector<int>* variable_set_prime) {
@@ -519,8 +509,9 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 }
 
 // Method for finding the index of the complement of an LCP variable in
-// a set (strictly speaking, an unsorted vector) of indices. Aborts if the
-// index is not found in the set.
+// a tuple (strictly speaking, an unsorted vector) of independent variables.
+// Aborts if the index is not found in the set or the variable is the articial
+// variable (it never should be).
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
     const LCPVariable& query,
@@ -563,7 +554,8 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
 
 // Computes the blocking index using the minimum ratio test. Returns `true`
 // if successful, `false` if not (due to, e.g., the driving variable being
-// "unblocked" or a cycle being detected).
+// "unblocked" or a cycle being detected). If `false`, `blocking_index` will
+// set to -1 on return.
 template <typename T>
 bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
@@ -608,6 +600,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     // cycling would be occurring, in spite of cycling prevention.
     if (index >= static_cast<int>(blocking_indices.size())) {
       DRAKE_SPDLOG_DEBUG(log(), "Cycling detected- indicating failure.");
+      *blocking_index = -1;
       return false;
     }
     *blocking_index = blocking_indices[index];
@@ -679,7 +672,10 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   if (mod_zero_tol <= 0)
     mod_zero_tol = ComputeZeroTolerance(M);
 
-  if (CheckLemkeTrivial(mod_zero_tol, q, z)) {
+  // Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
+  // solves the LCP.
+  if (q.minCoeff() > -mod_zero_tol) {
+    z->setZero(q.size());
     SPDLOG_DEBUG(log(), " -- trivial solution found");
     SPDLOG_DEBUG(log(), "UnrevisedLemkeSolver::SolveLcpLemke() exited");
     return true;

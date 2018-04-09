@@ -93,6 +93,20 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   SolverId solver_id() const override;
 
  private:
+  friend class UnrevisedLemkePrivateTests;
+  friend class UnrevisedLemkePrivateTests_SelectSubMatrixWithCovering_Test;
+  friend class UnrevisedLemkePrivateTests_SelectSubColumnWithCovering_Test;
+  friend class UnrevisedLemkePrivateTests_SelectSubVector_Test;
+  friend class UnrevisedLemkePrivateTests_SetSubVector_Test;
+  friend class UnrevisedLemkePrivateTests_ValidateIndices_Test;
+  friend class UnrevisedLemkePrivateTests_IsEachUnique_Test;
+  friend class UnrevisedLemkePrivateTests_LemkePivot_Test;
+  friend class UnrevisedLemkePrivateTests_ConstructLemkeSolution_Test;
+  friend class UnrevisedLemkePrivateTests_DetermineIndexSets_Test;
+  friend class UnrevisedLemkePrivateTests_FindBlockingIndex_Test;
+  friend class UnrevisedLemkePrivateTests_FindBlockingIndexCycling_Test;
+  friend class UnrevisedLemkePrivateTests_FindComplementIndex_Test;
+
   struct LemkeIndexSets {
     std::vector<int> alpha, alpha_prime;
     std::vector<int> bar_alpha, bar_alpha_prime;
@@ -152,8 +166,6 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
       const MatrixX<T>& in,
       const std::vector<int>& rows,
       const std::vector<int>& cols, MatrixX<T>* out);
-  static bool CheckLemkeTrivial(
-      const T& zero_tol, const VectorX<T>& q, VectorX<T>* z);
   static void SelectSubColumnWithCovering(const MatrixX<T>& in,
       const std::vector<int>& rows,
       int column, VectorX<T>* out);
@@ -236,7 +248,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   mutable std::map<LCPVariable, int> indep_variables_indices_;
 
   // Maps tuples of independent variables to the variable selected for pivoting
-  // when multiple pivoting choices are possible. If the LCP algorithm pivots 
+  // when multiple pivoting choices are possible. If the LCP algorithm pivots
   // such that a tuple of independent variables is detected that has been seen
   // before, we would call this "cycling". We eliminate cycling by never
   // selecting the same variable for pivoting twice *from a given pivot*.
