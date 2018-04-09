@@ -165,11 +165,6 @@ class ArcOffset {
   double d_theta_{};
 };
 
-/// Streams a string representation of `arc_offset` into `out`. Returns `out`.
-/// This method is provided for the purposes of debugging or text-logging.
-/// It is not intended for serialization.
-std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset);
-
 /// Representation of a reference path connecting two endpoints.
 ///
 /// Upon building the RoadGeometry, a Connection yields a Segment
