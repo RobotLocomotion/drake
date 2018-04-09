@@ -84,7 +84,7 @@ LcmPlant::LcmPlant(
     // Export iiwa command input port.
     input_port_iiwa_command_.push_back(
         builder.ExportInput(iiwa_command_receiver->get_input_port(0)));
-    builder.Connect(iiwa_command_receiver->get_output_port(0),
+    builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                     iiwa_and_wsg_plant_->get_input_port_iiwa_state_command(i));
 
     // lcmt_iiwa_command does not include a reference acceleration, so use a
