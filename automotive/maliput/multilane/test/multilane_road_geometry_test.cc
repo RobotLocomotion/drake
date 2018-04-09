@@ -21,7 +21,7 @@ using api::RBounds;
 using api::HBounds;
 using multilane::ArcOffset;
 
-const double kVeryExact{1e-11};
+const double kVeryExact = 1e-11;
 const double kWidth{2.};  // Lane and drivable width.
 const double kHeight{5.};  // Elevation bound.
 
@@ -54,9 +54,9 @@ const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
 
 GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
   // Define a serpentine road with multiple segments and branches.
-  auto rb = multilane::BuilderFactory().Make(
+  std::unique_ptr<multilane::Builder> rb(new multilane::Builder(
       2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */);
+      0.01 * M_PI /* angular tolerance */));
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy{0., 0., 0.};
@@ -228,9 +228,9 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   // ongoing lanes.  This tests the pathological case when a `hint` is provided
   // in a topologically isolated lane, so the code returns the default road
   // position given by the hint.
-  auto rb = multilane::BuilderFactory().Make(
+  std::unique_ptr<multilane::Builder> rb(new multilane::Builder(
       2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */);
+      0.01 * M_PI /* angular tolerance */));
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy0{0., 0., 0.};
@@ -297,8 +297,8 @@ GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
   const double kLinearTolerance{kVeryExact};
   const double kAngularTolerance{0.01 * M_PI};
 
-  auto builder = multilane::BuilderFactory().Make(
-      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  auto builder = std::make_unique<Builder>(kLaneWidth, kElevationBounds,
+                                           kLinearTolerance, kAngularTolerance);
 
   // Initialize the road from the origin.
   const EndpointZ kFlatZ{0., 0., 0., 0.};
