@@ -725,7 +725,8 @@ TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
 TEST_F(UnrevisedLemkePrivateTests, DetermineIndexSets) {
   typedef UnrevisedLemkeSolver<double>::LCPVariable LCPVariable;
 
-  // Set indep_variables_ and dep_variables_ as designated in Equation (6).
+  // Set indep_variables_ and dep_variables_ as in Equation (1) of [1].
+  // Note: this equation must be kept up-to-date with equations in [1].
   lcp_.dep_variables_[0] = LCPVariable(true, 3);  // artificial variable.
   lcp_.dep_variables_[1] = LCPVariable(false, 1);
   lcp_.dep_variables_[2] = LCPVariable(true, 2);
@@ -754,19 +755,19 @@ TEST_F(UnrevisedLemkePrivateTests, DetermineIndexSets) {
   EXPECT_EQ(lcp_.index_sets_.beta_prime[0], 2);
   EXPECT_EQ(lcp_.index_sets_.beta_prime[1], 0);
 
-  EXPECT_EQ(lcp_.index_sets_.bar_alpha.size(), 1);
-  EXPECT_EQ(lcp_.index_sets_.bar_alpha[0], 1);
+  EXPECT_EQ(lcp_.index_sets_.alpha_bar.size(), 1);
+  EXPECT_EQ(lcp_.index_sets_.alpha_bar[0], 1);
 
-  EXPECT_EQ(lcp_.index_sets_.bar_alpha_prime.size(), 1);
-  EXPECT_EQ(lcp_.index_sets_.bar_alpha_prime[0], 1);
+  EXPECT_EQ(lcp_.index_sets_.alpha_bar_prime.size(), 1);
+  EXPECT_EQ(lcp_.index_sets_.alpha_bar_prime[0], 1);
 
-  EXPECT_EQ(lcp_.index_sets_.bar_beta.size(), 2);
-  EXPECT_EQ(lcp_.index_sets_.bar_beta[0], 0);
-  EXPECT_EQ(lcp_.index_sets_.bar_beta[1], 1);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar[0], 0);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar[1], 1);
 
-  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime.size(), 2);
-  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime[0], 3);
-  EXPECT_EQ(lcp_.index_sets_.bar_beta_prime[1], 2);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar_prime.size(), 2);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar_prime[0], 3);
+  EXPECT_EQ(lcp_.index_sets_.beta_bar_prime[1], 2);
 }
 
 // Verifies that finding the index of the complement of an independent variable
