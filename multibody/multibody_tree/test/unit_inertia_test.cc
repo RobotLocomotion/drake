@@ -119,7 +119,7 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
-  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
+  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid().value());
 }
 
 // Tests the static method to obtain the unit inertia of a point mass.
@@ -353,7 +353,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));  // Equal after shifting.
-  EXPECT_TRUE(G.CouldBePhysicallyValid());
+  EXPECT_TRUE(G.CouldBePhysicallyValid().value());
 
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
@@ -372,7 +372,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
       SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
-  EXPECT_TRUE(G3.CouldBePhysicallyValid());
+  EXPECT_TRUE(G3.CouldBePhysicallyValid().value());
 }
 
 // Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
