@@ -70,10 +70,18 @@ class TestEigenGeometry(unittest.TestCase):
         test_util.check_quaternion(value)
 
     def test_transform(self):
+        # - Default constructor
         transform = mut.Isometry3()
         X = np.eye(4, 4)
         self.assertTrue(np.allclose(transform.matrix(), X))
         self.assertEquals(str(transform), str(X))
+        # - Constructor with (X)
+        transform = mut.Isometry3(matrix=X)
+        self.assertTrue(np.allclose(transform.matrix(), X))
+        # - Identity
+        transform = mut.Isometry3.Identity()
+        self.assertTrue(np.allclose(transform.matrix(), X))
+        # - Constructor with (R, p)
         R = np.array([
             [0., 1, 0],
             [-1, 0, 0],
@@ -100,7 +108,6 @@ class TestEigenGeometry(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             transform.set_matrix(X_bad)
         self.assertTrue(np.allclose(X, transform.matrix()))
-
         # Test `type_caster`s.
         value = test_util.create_isometry()
         self.assertTrue(isinstance(value, mut.Isometry3))
