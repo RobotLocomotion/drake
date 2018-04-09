@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -394,6 +395,22 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
       0.5 * mass * v_WBcm.squaredNorm();
 
   EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
+}
+
+GTEST_TEST(SpatialInertia, SymbolicNan) {
+  using T = symbolic::Expression;
+  using symbolic::Variable;
+
+  const Variable mass{"m"};
+  const Vector3<T> p_PScm_E = symbolic::MakeVectorContinuousVariable(3, "p");
+  const UnitInertia<T> G_SP_E{
+      Variable{"Ixx"}, Variable{"Iyy"}, Variable{"Izz"},
+      Variable{"Ixy"}, Variable{"Ixz"}, Variable{"Iyz"}};
+  const SpatialInertia<T> I{mass, p_PScm_E, G_SP_E};
+  ASSERT_EQ(
+      I.IsNaN().value().to_string(),
+      "(isnan(m) or isnan(p(0)) or isnan(p(1)) or isnan(p(2)) or isnan(Ixx) or"
+      " isnan(Iyy) or isnan(Izz) or isnan(Ixy) or isnan(Ixz) or isnan(Iyz))");
 }
 
 }  // namespace
