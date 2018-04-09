@@ -31,6 +31,30 @@ void RunLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   EXPECT_GT(num_pivots, 0);  // We do not test any trivial LCPs.
 }
 
+// Checks that the solver detects a dimensional mismatch between the LCP matrix
+// and vector.
+GTEST_TEST(TestUnrevisedLemke, DimensionalMismatch) {
+  UnrevisedLemkeSolver<double> lcp;
+  MatrixX<double> M(3, 3);
+  VectorX<double> q(4);
+
+  // Zero tolerance is arbitrary.
+  const double zero_tol = 1e-15;
+
+  // Verify that solver catches M not matching q.
+  int num_pivots;
+  VectorX<double> z;
+  EXPECT_THROW(lcp.SolveLcpLemke(M, q, &z, &num_pivots, zero_tol),
+               std::logic_error);
+
+  // Verify that solver catches non-square M.
+  M.resize(3, 4);
+  EXPECT_THROW(lcp.SolveLcpLemke(M, q, &z, &num_pivots, zero_tol),
+               std::logic_error);
+}
+
+// Checks the robustness of the algorithm to a known test problem that results
+// in cycling.
 GTEST_TEST(TestUnrevisedLemke, TestCycling) {
   Eigen::Matrix<double, 3, 3> M;
 
@@ -49,7 +73,8 @@ GTEST_TEST(TestUnrevisedLemke, TestCycling) {
   RunLCP(M, q, expected_z);
 }
 
-GTEST_TEST(TestUnrevisedLemke, TestTrivial) {
+// Tests a simple linear complementarity problem.
+GTEST_TEST(TestUnrevisedLemke, TestSimple) {
   // Create a 9x9 diagonal matrix from the vector [1 2 3 4 5 6 7 8 9].
   MatrixX<double> M = (Eigen::Matrix<double, 9, 1>() <<
       1, 2, 3, 4, 5, 6, 7, 8, 9).finished().asDiagonal();
@@ -255,6 +280,7 @@ GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
               1e3 * eps);
 }
 
+// Checks that warmstarting works as anticipated.
 GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
   MatrixX<double> M(3, 3);
   // clang-format off
@@ -290,6 +316,25 @@ GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
   ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
                               MatrixCompareType::absolute));
   EXPECT_EQ(num_pivots, 1);
+}
+
+// Checks that an LCP with a trivial solution is solvable without any pivots.
+GTEST_TEST(TestUnrevisedLemke, Trivial) {
+  MatrixX<double> M = MatrixX<double>::Identity(3, 3);
+  Eigen::Matrix<double, 3, 1> q;
+  q << 1, 1, 1;
+
+  // Solve the problem.
+  int num_pivots;
+  Eigen::VectorXd expected_z(3);
+  expected_z << 0, 0, 0;
+  Eigen::VectorXd z;
+  UnrevisedLemkeSolver<double> lcp;
+  bool result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
+  ASSERT_TRUE(result);
+  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
+  ASSERT_EQ(num_pivots, 0);
 }
 
 // A class for testing various private functions in the Lemke solver.
