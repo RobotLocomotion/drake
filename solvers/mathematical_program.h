@@ -2461,11 +2461,20 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
-   * Return a vector containing the solution to each variable in @p variables.
-   * The order of the solution is the same as the corresponding variable in
-   * @p variables.
+   * Replaces the variables in an expression with the solutions to the
+   * variables, returns the expression after substitution.
+   * @throw runtime error if some variables in the expression @e are NOT
+   * variables in the optimization program.
    */
-  Eigen::VectorXd GetSolution(const symbolic::Variables& variables) const;
+  symbolic::Expression GetSolution(const symbolic::Expression& e) const;
+
+  /**
+   * Replaces the decision variables in a polynomial with the solutions to the
+   * variables, returns the polynomial after substitution.
+   * @throw runtime error if some decision variables in the polynomial @p are
+   * NOT variables in the optimization program.
+   */
+  symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
 
   /**
    * Evaluates the value of some binding, for some input value for all

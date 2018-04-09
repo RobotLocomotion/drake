@@ -587,7 +587,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
   EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
                std::runtime_error);
 }
-GTEST_TEST(testGetSolution, testSetSolution1) {
+GTEST_TEST(testGetSolution, testGetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
   // 2. A dynamic-sized matrix of decision variables.
@@ -632,16 +632,6 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   CheckGetSolution(prog, x3, x3_value);
   CheckGetSolution(prog, x4, x4_value);
 
-  {
-    const symbolic::Variables variables({x4(0), x4(1), x3(1), x4(1)});
-    const auto variables_value = prog.GetSolution(variables);
-    EXPECT_EQ(variables_value.rows(), 3);
-    int variable_count = 0;
-    for (auto it = variables.begin(); it != variables.end(); ++it) {
-      EXPECT_EQ(variables_value(variable_count++), prog.GetSolution(*it));
-    }
-  }
-
   // Check a variable that is not a decision variable of the mathematical
   // program.
   Variable z1("z1");
@@ -651,6 +641,41 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
                runtime_error);
   EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
                runtime_error);
+}
+
+GTEST_TEST(testGetSolution, testGetSolution2) {
+  // GetSolution of a symbolic polynomial
+  MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<2>();
+  const auto a = prog.NewContinuousVariables<2>();
+
+  const Eigen::Vector2d a_val(1, 2);
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(a_val);
+  prog.SetSolverResult(solver_result);
+
+  symbolic::Variable b("b");
+
+  EXPECT_EQ(prog.GetSolution(a(0) + a(1)), 3);
+
+  const symbolic::Expression e = a.cast<symbolic::Expression>().dot(x);
+  // `e` contains indeterminates, so we cannot get its solution, but we can
+  // call GetSolution if we convert `e` to a symbolic::Polynomial.
+  EXPECT_THROW(prog.GetSolution(e), std::runtime_error);
+  const symbolic::Polynomial p = symbolic::Polynomial(
+      e, symbolic::Variables(x));
+  const auto p1 = prog.GetSolution(p);
+
+  // All decision variables in the polynomial are also decision
+  // variables in the optimization program.
+  EXPECT_EQ(p1, symbolic::Polynomial(a_val.dot(x), symbolic::Variables(x)));
+
+  // Not all decision variables in the polynomial are decision
+  // variables in the optimizatin program. b is a decision variable in the
+  // expression/polynomial, but not one in the optimization program.
+  EXPECT_THROW(
+      prog.GetSolution(p + symbolic::Polynomial(b, symbolic::Variables())),
+      std::runtime_error);
 }
 
 namespace {

@@ -381,8 +381,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
            })
       .def("GetSolution",
           [](const MathematicalProgram& prog,
-            const Variables& vars) {
-          return prog.GetSolution(vars);
+            const symbolic::Expression& e) {
+          return prog.GetSolution(e);
+          })
+      .def("GetSolution",
+          [](const MathematicalProgram& prog,
+            const symbolic::Polynomial& p) {
+          return prog.GetSolution(p);
           })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)

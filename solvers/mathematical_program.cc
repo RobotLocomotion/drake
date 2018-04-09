@@ -795,14 +795,27 @@ double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
-Eigen::VectorXd MathematicalProgram::GetSolution(
-    const symbolic::Variables& variables) const {
-  Eigen::VectorXd values(variables.size());
-  int count = 0;
-  for (auto it = variables.begin(); it != variables.end(); ++it) {
-    values(count++) = GetSolution(*it);
+namespace {
+template <typename T>
+T GetSolutionForExpressionOrPolynomial(const MathematicalProgram& prog,
+                                       const T& p,
+                                       const symbolic::Variables vars) {
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : vars) {
+    map_decision_vars.emplace(var, prog.GetSolution(var));
   }
-  return values;
+  return p.EvaluatePartial(symbolic::Environment(map_decision_vars));
+}
+}  // namespace
+
+symbolic::Expression MathematicalProgram::GetSolution(
+    const symbolic::Expression& p) const {
+  return GetSolutionForExpressionOrPolynomial(*this, p, p.GetVariables());
+}
+
+symbolic::Polynomial MathematicalProgram::GetSolution(
+    const symbolic::Polynomial& p) const {
+  return GetSolutionForExpressionOrPolynomial(*this, p, p.decision_variables());
 }
 
 double MathematicalProgram::GetInitialGuess(

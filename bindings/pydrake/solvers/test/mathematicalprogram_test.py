@@ -234,10 +234,14 @@ class TestMathematicalProgram(unittest.TestCase):
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
+        # Test GetSolution(sym.Expression)
         self.assertEqual(prog.GetSolution(
-            sym.Polynomial(d[0]*x.dot(x),
-                           sym.Variables(x)).decision_variables())[0],
-                         prog.GetSolution(d[0]))
+            d[0] + d[1]), prog.GetSolution(d[0]) + prog.GetSolution(d[1]))
+        # Test GetSolution(sym.Polynomial)
+        poly = d[0]*x.dot(x)
+        self.assertTrue(prog.GetSolution(
+            sym.Polynomial(poly, sym.Variables(x))),
+            sym.polynomial(prog.GetSolution(d[0])*x.dot(x), sym.Variables(x)))
 
     def test_lcp(self):
         prog = mp.MathematicalProgram()
