@@ -196,7 +196,7 @@ class SpatialInertia {
   Bool<T> IsNaN() const {
     using std::isnan;
     return isnan(mass_) || G_SP_E_.IsNaN() ||
-        isnan(p_PScm_E_[0]) || isnan(p_PScm_E_[1]) || isnan(p_PScm_E_[2]);
+        any_of(p_PScm_E_, [](auto x){ return isnan(x); });
   }
 
   /// Performs a number of checks to verify that this is a physically valid
