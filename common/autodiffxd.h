@@ -419,6 +419,10 @@ inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
                             a.derivatives() * (b * pow(a.value(), b - 1)));
 }
 
+inline bool isfinite(const AutoDiffScalar<VectorXd>& x) {
+  return std::isfinite(x.value());
+}
+
 #endif
 
 }  // namespace Eigen
