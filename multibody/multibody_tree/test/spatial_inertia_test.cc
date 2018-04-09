@@ -413,9 +413,10 @@ GTEST_TEST(SpatialInertia, SymbolicNan) {
       " isnan(Iyy) or isnan(Izz) or isnan(Ixy) or isnan(Ixz) or isnan(Iyz))");
 }
 
+// Verifies we can still call IsPhysicallyValid() when T = symbolic::Expression
+// and get a result whenever the expression represents a constant.
 GTEST_TEST(SpatialInertia, SymbolicConstant) {
   using T = symbolic::Expression;
-  using symbolic::Variable;
 
   // Make a "constant" symbolic expression of a spatial inertia.
   const T mass(2.5);

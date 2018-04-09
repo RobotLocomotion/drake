@@ -691,6 +691,14 @@ GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
   EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid().value(), std::exception);
 }
 
+// Verifies we can still call IsPhysicallyValid() when T = symbolic::Expression
+// and get a result whenever the expression represents a constant.
+GTEST_TEST(RotationalInertia, SymbolicConstant) {
+  using T = symbolic::Expression;
+  RotationalInertia<T> I = RotationalInertia<T>::TriaxiallySymmetric(1.0);
+  ASSERT_TRUE(I.CouldBePhysicallyValid().value());
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace multibody
