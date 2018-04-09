@@ -5,12 +5,14 @@
 #include <set>
 #include <stdexcept>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
 using Eigen::PolynomialSolver;
+using std::pow;
 using std::runtime_error;
 using std::string;
 using std::vector;
@@ -227,7 +229,7 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::EvaluatePartial(
     std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
       if (var_values.count(term.var)) {
-        new_coefficient *= std::pow(var_values.at(term.var), term.power);
+        new_coefficient *= pow(var_values.at(term.var), term.power);
       } else {
         new_terms.push_back(term);
       }
@@ -489,6 +491,11 @@ Polynomial<CoefficientType>::Roots() const {
     throw runtime_error(
         "Roots is only defined for univariate polynomials");
 
+  if (typeid(CoefficientType) != typeid(double)) {
+    throw runtime_error(
+        "Roots is currently only working for double scalar types");
+  }
+
   auto coefficients = GetCoefficients();
 
   // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver
@@ -565,8 +572,8 @@ string Polynomial<CoefficientType>::IdToVariableName(const VarType id) {
 
   unsigned int m = id / 2 / kMaxNamePart;
   unsigned int multiplier = static_cast<unsigned int>(
-      std::pow(static_cast<double>(kNumNameChars + 1),
-               static_cast<int>(kNameLength) - 1));
+      pow(static_cast<double>(kNumNameChars + 1),
+          static_cast<int>(kNameLength) - 1));
   char name[kNameLength + 1];
   int j = 0;
   for (int i = 0; i < static_cast<int>(kNameLength); i++) {
@@ -611,6 +618,7 @@ void Polynomial<CoefficientType>::MakeMonomialsUnique(void) {
 }
 
 template class Polynomial<double>;
+template class Polynomial<drake::AutoDiffXd>;
 
 // template class Polynomial<std::complex<double>>;
 // doesn't work yet because the roots solver can't handle it
