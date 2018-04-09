@@ -11,8 +11,6 @@
 #include <vector>
 
 #include <Eigen/LU>
-#include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
@@ -198,6 +196,7 @@ template <class T>
 bool UnrevisedLemkeSolver<T>::CheckLemkeTrivial(
     const T& zero_tol, const VectorX<T>& q, VectorX<T>* z) {
   DRAKE_ASSERT(z);
+  // If all elements of q are non-negative, z = 0 (i.e., w = q) is a solution.
   if (q.minCoeff() > -zero_tol) {
     z->setZero(q.size());
     return true;
@@ -208,13 +207,10 @@ bool UnrevisedLemkeSolver<T>::CheckLemkeTrivial(
 
 // Utility function for copying part of a matrix (designated by the indices
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
+// the "covering vector"), to a target matrix, `out`.
 template <class T>
-template <typename Derived>
 void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
-    const Eigen::MatrixBase<Derived>& in,
+    const MatrixX<T>& in,
     const std::vector<int>& rows,
     int column, VectorX<T>* out) {
   const int num_rows = rows.size();
@@ -297,13 +293,10 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
 
 // Utility function for copying part of a matrix- designated by the indices
 // in rows and cols from `in` and augmented with a single column of "ones"
-// (i.e., the "covering vector")- to a target matrix, `out`. This template
-// approach allows selecting parts of both sparse and dense matrices for input;
-// only a dense matrix is returned.
+// (i.e., the "covering vector")- to a target matrix, `out`.
 template <class T>
-template <typename Derived>
 void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
-    const Eigen::MatrixBase<Derived>& in,
+    const MatrixX<T>& in,
     const std::vector<int>& rows,
     const std::vector<int>& cols, MatrixX<T>* out) {
   const int num_rows = rows.size();
@@ -342,7 +335,7 @@ void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
       std::vector<int>* variable_set_prime) {
     variable_and_array_indices_.clear();
     for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
-      if (variables[i].z() == is_z)
+      if (variables[i].is_z() == is_z)
         variable_and_array_indices_.emplace_back(variables[i].index(), i);
     }
     std::sort(variable_and_array_indices_.begin(),
@@ -411,7 +404,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 
   // If the driving index does not correspond to the artificial variable,
   // M_prime_col must be non-null.
-  if (!indep_variables_[driving_index].z() ||
+  if (!indep_variables_[driving_index].is_z() ||
       indep_variables_[driving_index].index() != kArtificial) {
     DRAKE_DEMAND(M_prime_col);
   }
@@ -464,7 +457,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     return true;
 
   // Examine the driving variable.
-  if (!indep_variables_[driving_index].z()) {
+  if (!indep_variables_[driving_index].is_z()) {
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #1: driving variable from w");
     // Case from Section 2.2.1.
     // Determine gamma by determining the position of the driving variable
@@ -472,7 +465,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     const int n = static_cast<int>(indep_variables_.size());
     int gamma = 0;
     for (int i = 0; i < n; ++i) {
-      if (!indep_variables_[i].z()) {
+      if (!indep_variables_[i].is_z()) {
         if (indep_variables_[i].index() <
             indep_variables_[driving_index].index()) {
           ++gamma;
@@ -534,7 +527,7 @@ int UnrevisedLemkeSolver<T>::FindComplementIndex(
     const std::vector<LCPVariable>& indep_variables) const {
   // Verify that the query is not the artificial variable.
   const int kArtificial = static_cast<int>(indep_variables.size() - 1);
-  DRAKE_DEMAND(!(query.z() && query.index() == kArtificial));
+  DRAKE_DEMAND(!(query.is_z() && query.index() == kArtificial));
 
   const auto iter = indep_variables_indices_.find(query.Complement());
   DRAKE_DEMAND(iter != indep_variables_indices_.end());
@@ -562,7 +555,7 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
 
   z->setZero(n);
   for (int i = 0; i < static_cast<int>(dep_variables_.size()); ++i) {
-    if (dep_variables_[i].z())
+    if (dep_variables_[i].is_z())
       (*z)[dep_variables_[i].index()] = q_prime[i];
   }
   return true;
@@ -641,7 +634,7 @@ bool UnrevisedLemkeSolver<T>::IsSolution(
   const T dot = w.dot(z);
   const int n = q.size();
   return (min_z > -mod_zero_tol && min_w > -mod_zero_tol &&
-          abs(dot) < 10*n*mod_zero_tol);
+          abs(dot) < 10 * n * mod_zero_tol);
 }
 
 // Note: maintainers should read Section 4.4 - 4.4.5 of [Cottle, 1992] to
@@ -699,29 +692,22 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // indices from the last problem solved.
   if (static_cast<size_t>(n) == dep_variables_.size()) {
     // Verify that the last call found a solution (indicated by the presence
-    // of zn in the independent set).
+    // of the artificial variable (zn) in the independent set).
     int zn_index = -1;
     for (int i = 0;
          i < static_cast<int>(indep_variables_.size()) && zn_index < 0; ++i) {
-      if (indep_variables_[i].z() && indep_variables_[i].index() == kArtificial)
+      if (indep_variables_[i].is_z() &&
+          indep_variables_[i].index() == kArtificial) {
         zn_index = i;
+      }
     }
 
     if (zn_index >= 0) {
       // Compute the candidate solution.
       if (ConstructLemkeSolution(M, q, zn_index, mod_zero_tol, z)) {
-        // Find the minima of z and w.
-        const T min_z = z->minCoeff();
-        const auto w = M * (*z) + q;
-        const T min_w = w.minCoeff();
-
-        // Compute z and w.
-        const T dot = w.dot(*z);
-
-        // If the solution is good, return now, indicating only one pivot
-        // (in the solution construction) was performed.
-        if (min_z > -zero_tol && min_w > -zero_tol &&
-            abs(dot) < 10*n*zero_tol) {
+        if (IsSolution(M, q, *z, mod_zero_tol)) {
+          // If z truly is the solution, return now, indicating only one pivot
+          // (in the solution construction) was performed.
           ++(*num_pivots);
           return true;
         }
@@ -756,7 +742,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   int driving_index = blocking.index();
   std::swap(dep_variables_[blocking_index], indep_variables_[kArtificial]);
   DRAKE_SPDLOG_DEBUG(log(), "First blocking variable {}{}",
-                     ((blocking.z()) ? "z" : "w"), blocking.index());
+                     ((blocking.is_z()) ? "z" : "w"), blocking.index());
   DRAKE_SPDLOG_DEBUG(log(), "First driving variable (artificial)");
 
   // Initialize the independent variable indices. We do this after the initial
@@ -769,7 +755,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   auto to_string = [](const std::vector<LCPVariable>& vars) -> std::string {
     std::ostringstream oss;
     for (int i = 0; i < static_cast<int>(vars.size()); ++i)
-      oss << ((vars[i].z()) ? "z" : "w") << vars[i].index() << " ";
+      oss << ((vars[i].is_z()) ? "z" : "w") << vars[i].index() << " ";
     return oss.str();
   };
   DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
@@ -782,7 +768,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   VectorX<T> q_prime(n), M_prime_col(n);
   while (++(*num_pivots) < max_pivots) {
     DRAKE_SPDLOG_DEBUG(log(), "New driving variable {}{}",
-                       ((indep_variables_[driving_index].z()) ? "z" : "w"),
+                       ((indep_variables_[driving_index].is_z()) ? "z" : "w"),
                        indep_variables_[driving_index].index());
 
     // Compute the permuted q and driving column of the permuted M matrix.
@@ -802,11 +788,11 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     }
     blocking = dep_variables_[blocking_index];
     DRAKE_SPDLOG_DEBUG(log(), "Blocking variable {}{}",
-                       ((blocking.z()) ? "z" : "w"), blocking.index());
+                       ((blocking.is_z()) ? "z" : "w"), blocking.index());
 
     // See whether the artificial variable blocks the driving variable.
     if (blocking.index() == kArtificial) {
-      DRAKE_DEMAND(blocking.z());
+      DRAKE_DEMAND(blocking.is_z());
 
       // Pivot zn with the driving variable.
       std::swap(dep_variables_[blocking_index],

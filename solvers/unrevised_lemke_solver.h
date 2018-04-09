@@ -107,7 +107,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
     LCPVariable() {}
     LCPVariable(bool z, int index) : z_{z}, index_{index} {}
 
-    bool z() const { return z_; }
+    bool is_z() const { return z_; }
     int index() const { return index_; }
 
     // Gets the complement of this variable.
@@ -148,15 +148,13 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                           // indicates that the index is uninitialized.
   };
 
-  template <typename Derived>
   static void SelectSubMatrixWithCovering(
-      const Eigen::MatrixBase<Derived>& in,
+      const MatrixX<T>& in,
       const std::vector<int>& rows,
       const std::vector<int>& cols, MatrixX<T>* out);
   static bool CheckLemkeTrivial(
       const T& zero_tol, const VectorX<T>& q, VectorX<T>* z);
-  template <typename Derived>
-  static void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
+  static void SelectSubColumnWithCovering(const MatrixX<T>& in,
       const std::vector<int>& rows,
       int column, VectorX<T>* out);
   static void SelectSubVector(const VectorX<T>& in,
@@ -237,7 +235,11 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // indep_variables.
   mutable std::map<LCPVariable, int> indep_variables_indices_;
 
-  // Maps the independent variables to the selection taken to prevent cycling.
+  // Maps tuples of independent variables to the variable selected for pivoting
+  // when multiple pivoting choices are possible. If the LCP algorithm pivots 
+  // such that a tuple of independent variables is detected that has been seen
+  // before, we would call this "cycling". We eliminate cycling by never
+  // selecting the same variable for pivoting twice *from a given pivot*.
   mutable std::map<LCPVariableVector, int, LCPVariableVectorComparator>
       selections_;
 
