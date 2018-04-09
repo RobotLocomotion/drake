@@ -3,10 +3,13 @@
 /* clang-format on */
 
 #include <cmath>
+#include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <tuple>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -15,7 +18,19 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
-#include "drake/automotive/maliput/multilane/lane.h"
+#include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/connection.h"
+#include "drake/automotive/maliput/multilane/test_utilities/multilane_types_compare.h"
+
+using ::testing::_;
+using ::testing::An;
+using ::testing::Expectation;
+using ::testing::ExpectationSet;
+using ::testing::Invoke;
+using ::testing::Matcher;
+using ::testing::Return;
+using ::testing::Sequence;
+using ::testing::Truly;
 
 namespace drake {
 namespace maliput {
@@ -28,9 +43,115 @@ namespace {
 // TODO(agalbachicar)    Missing tests for ".reverse" semantic in "start",
 //                       "explicit_end" and "z_end".
 
+// Mocks a Builder object acting as a proxy for later method testing.
+class BuilderMock : public BuilderBase {
+ public:
+  BuilderMock(double lane_width, const api::HBounds& elevation_bounds,
+              double linear_tolerance, double angular_tolerance)
+      : builder_(lane_width, elevation_bounds, linear_tolerance,
+                 angular_tolerance) {
+    ON_CALL(*this, get_lane_width())
+        .WillByDefault(Invoke(&builder_, &Builder::get_lane_width));
+
+    ON_CALL(*this, get_elevation_bounds())
+        .WillByDefault(Invoke(&builder_, &Builder::get_elevation_bounds));
+
+    ON_CALL(*this, get_linear_tolerance())
+        .WillByDefault(Invoke(&builder_, &Builder::get_linear_tolerance));
+
+    ON_CALL(*this, get_angular_tolerance())
+        .WillByDefault(Invoke(&builder_, &Builder::get_angular_tolerance));
+
+    const Connection* (Builder::*connect_ref_line)(
+        const std::string&, int, double, double, double, const Endpoint&,
+        double, const EndpointZ&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, _, _, _, _, An<double>(), _))
+        .WillByDefault(Invoke(&builder_, connect_ref_line));
+
+    const Connection* (Builder::*connect_ref_arc)(
+        const std::string&, int, double, double, double, const Endpoint&,
+        const ArcOffset&, const EndpointZ&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, _, _, _, _, An<const ArcOffset&>(), _))
+        .WillByDefault(Invoke(&builder_, connect_ref_arc));
+
+    ON_CALL(*this, SetDefaultBranch(_, _, _, _, _, _))
+        .WillByDefault(Invoke(&builder_, &Builder::SetDefaultBranch));
+
+    Group* (Builder::*make_empty_group)(const std::string&) =
+        &Builder::MakeGroup;
+    ON_CALL(*this, MakeGroup(_))
+        .WillByDefault(Invoke(&builder_, make_empty_group));
+
+    Group* (Builder::*make_filled_group)(
+        const std::string&, const std::vector<const Connection*>&) =
+        &Builder::MakeGroup;
+    ON_CALL(*this, MakeGroup(_, _))
+        .WillByDefault(Invoke(&builder_, make_filled_group));
+
+    ON_CALL(*this, Build(_)).WillByDefault(Invoke(&builder_, &Builder::Build));
+  }
+
+  MOCK_CONST_METHOD0(get_lane_width, double());
+
+  MOCK_CONST_METHOD0(get_elevation_bounds, const api::HBounds&());
+
+  MOCK_CONST_METHOD0(get_linear_tolerance, double());
+
+  MOCK_CONST_METHOD0(get_angular_tolerance, double());
+
+  MOCK_METHOD8(Connect, const Connection*(const std::string&, int, double,
+                                          double, double, const Endpoint&,
+                                          double, const EndpointZ&));
+
+  MOCK_METHOD8(Connect, const Connection*(const std::string&, int, double,
+                                          double, double, const Endpoint&,
+                                          const ArcOffset&, const EndpointZ&));
+
+  MOCK_METHOD6(SetDefaultBranch,
+               void(const Connection*, int, const api::LaneEnd::Which,
+                    const Connection*, int, const api::LaneEnd::Which));
+
+  MOCK_METHOD1(MakeGroup, Group*(const std::string&));
+
+  MOCK_METHOD2(MakeGroup, Group*(const std::string&,
+                                 const std::vector<const Connection*>&));
+
+  MOCK_CONST_METHOD1(Build, std::unique_ptr<const api::RoadGeometry>(
+                                const api::RoadGeometryId&));
+
+ private:
+  Builder builder_;
+};
+
+// Mocks a BuilderFactoryBase.
+//
+// This factory will be fed with a mock BuilderBase instance and will return
+// just once that instance. After calling Make the first time, it will always
+// return nullptr.
+class BuilderFactoryMock : public BuilderFactoryBase {
+ public:
+  explicit BuilderFactoryMock(std::unique_ptr<BuilderBase> builder_mock)
+      : builder_mock_(std::move(builder_mock)) {
+    ON_CALL(*this, Make(_, _, _, _))
+        .WillByDefault(Invoke(this, &BuilderFactoryMock::InternalMake));
+  }
+
+  MOCK_CONST_METHOD4(Make,
+                     std::unique_ptr<BuilderBase>(double, const api::HBounds&,
+                                                  double, double));
+
+  // Wraps GMock Return(value) given that std::unique_ptr is non-copiable.
+  std::unique_ptr<BuilderBase> InternalMake(double, const api::HBounds&, double,
+                                            double) {
+    return std::move(builder_mock_);
+  }
+
+ private:
+  std::unique_ptr<BuilderBase> builder_mock_;
+};
+
 // Checks that the minimal YAML passes with an empty RoadGeometry.
 GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
-  const double kVeryExact{1e-12};
   const char* kMultilaneYaml = R"R(maliput_multilane_builder:
   id: "empty_road_geometry"
   lane_width: 4
@@ -44,42 +165,47 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   groups: {}
 )R";
 
+  const double kLaneWidth{4.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.5 * M_PI / 180.};
+  const api::HBounds kElevationBounds{0., 5.};
+
+  auto local_builder_mock = std::make_unique<BuilderMock>(
+      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  BuilderMock* builder_mock = local_builder_mock.get();
+  BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
+
+  Matcher<const api::HBounds&> hbounds_matcher =
+      MakeMatcher(new test::HBoundsMatcher({0., 5.}, 0.));
+  EXPECT_CALL(builder_factory_mock, Make(kLaneWidth, hbounds_matcher,
+                                         kLinearTolerance, kAngularTolerance));
+
+  EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId("empty_road_geometry")));
+
+  // At some point inside this function, `builder_factory_mock.Make()` will
+  // be called. That will transfer ownership of `builder_mock` to a local scope
+  // variable inside `Load()`. As a consequence, that memory will be freed and
+  // `builder_mock` must not be used anymore.
   std::unique_ptr<const api::RoadGeometry> rg =
-      Load(std::string(kMultilaneYaml));
+      Load(builder_factory_mock, std::string(kMultilaneYaml));
   EXPECT_NE(rg, nullptr);
-  EXPECT_EQ(rg->id().string(), "empty_road_geometry");
-  EXPECT_EQ(rg->linear_tolerance(), 0.01);
-  EXPECT_NEAR(rg->angular_tolerance(), 0.5 * M_PI / 180., kVeryExact);
-  EXPECT_EQ(rg->num_junctions(), 0);
-  EXPECT_EQ(rg->num_branch_points(), 0);
 }
 
-// Structures for later test checks.
-struct JunctionInfo {
-  std::string name{};
-  int num_segments{};
-};
-
-struct SegmentInfo {
-  std::string name{};
-  int num_lanes{};
-};
-
-struct LaneInfo {
-  api::GeoPosition start{};
-  api::GeoPosition end{};
-  double length{};
-  double r0{};
-  std::string left_lane_name;
-  std::string right_lane_name;
-};
-
-struct BranchPointLaneIds {
-  std::vector<std::string> start_a_side;
-  std::vector<std::string> start_b_side;
-  std::vector<std::string> finish_a_side;
-  std::vector<std::string> finish_b_side;
-};
+// Provides a pointer to a junction in `rg` whose ID is `junction_id`.
+//
+// @throws std::runtime_err When the `rg` does not contain a junction whose ID
+// is `junction_id`.
+const api::Junction* GetJunctionById(const api::RoadGeometry& rg,
+                                     const api::JunctionId& junction_id) {
+  for (int i = 0; i < rg.num_junctions(); ++i) {
+    if (rg.junction(i)->id() == junction_id) {
+      return rg.junction(i);
+    }
+  }
+  throw std::runtime_error(std::string("No matching junction whose ID is: ") +
+                           junction_id.string() +
+                           std::string(" in the road network"));
+}
 
 // These tests exercise the following RoadGeometry:
 //
@@ -108,13 +234,12 @@ struct BranchPointLaneIds {
 // z=10m and s10 travels parallel to the ground at z=10m. s11 goes down again to
 // reach z=0. s12 is flat and elevated too and goes over s6 at 10 meters. s13
 // goes down and hits the ground at the end Endpoint in between s6 and s1.
-class MultilaneLoaderMultipleSegmentCircuitTest : public ::testing::Test {
- protected:
+GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   const std::string kMultilaneYaml = R"R(maliput_multilane_builder:
-  id: "line_and_arc"
+  id: "circuit"
   lane_width: 5
   left_shoulder: 1
-  right_shoulder: 1
+  right_shoulder: 1.5
   elevation_bounds: [0, 5]
   linear_tolerance: 0.01
   angular_tolerance: 0.5
@@ -130,11 +255,13 @@ class MultilaneLoaderMultipleSegmentCircuitTest : public ::testing::Test {
       z_end: ["ref", [0, 0, 0, 0]]
     s2:
       lanes: [1, 0, 5]
+      left_shoulder: 1.2
       start: ["ref", "connections.s1.end.1.forward"]
       arc: [15, 180]
       z_end: ["ref", [0, 0, 0, 0]]
     s3:
       lanes: [1, 0, 5]
+      right_shoulder: 0.8
       start: ["ref", "connections.s2.end.ref.forward"]
       length: 50
       z_end: ["ref", [0, 0, 0, 0]]
@@ -188,276 +315,245 @@ class MultilaneLoaderMultipleSegmentCircuitTest : public ::testing::Test {
       start: ["ref", "connections.s12.end.0.forward"]
       length: 15
       z_end: ["ref", [0, 0, 0, 0]]
-  groups: {}
+  groups:
+    g1: [s2, s5]
+    g2: [s4, s8, s10]
 )R";
-  const std::map<int, JunctionInfo> kJunctionTruthMap{
-      {0, {"j:s1", 1}}, {1, {"j:s2", 1}}, {2, {"j:s3", 1}}, {3, {"j:s4", 1}},
-      {4, {"j:s5", 1}}, {5, {"j:s6", 1}}, {6, {"j:s7", 1}}, {7, {"j:s8", 1}},
-      {8, {"j:s9", 1}}, {9, {"j:s10", 1}}, {10, {"j:s11", 1}},
-      {11, {"j:s12", 1}}, {12, {"j:s13", 1}}};
+  const EndpointZ kEndpointZZero{0., 0., 0., 0.};
+  const EndpointZ kEndpointZElevated{10., 0., 0., 0.};
+  const Endpoint kEndpointA{{0., 0., 0.}, kEndpointZZero};
+  const double kZeroTolerance{0.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.5 * M_PI / 180.};
+  const api::HBounds kElevationBounds{0., 5.};
+  const int kOneLane{1};
+  const int kTwoLanes{2};
+  const int kThreeLanes{3};
+  const double kLaneWidth{5.};
+  const double kZeroRRef{0.};
+  const double kDefaultLeftShoulder{1.0};
+  const double kDefaultRightShoulder{1.5};
+  const double kCustomLeftShoulder{1.2};
+  const double kCustomRightShoulder{0.8};
 
-  const std::map<std::string, SegmentInfo> kSegmentTruthMap{
-      {"j:s1", {"s:s1", 3}}, {"j:s2", {"s:s2", 1}}, {"j:s3", {"s:s3", 1}},
-      {"j:s4", {"s:s4", 1}}, {"j:s5", {"s:s5", 2}}, {"j:s6", {"s:s6", 2}},
-      {"j:s7", {"s:s7", 2}}, {"j:s8", {"s:s8", 1}}, {"j:s9", {"s:s9", 1}},
-      {"j:s10", {"s:s10", 1}}, {"j:s11", {"s:s11", 1}}, {"j:s12", {"s:s12", 1}},
-      {"j:s13", {"s:s13", 1}}};
+  auto local_builder_mock = std::make_unique<BuilderMock>(
+      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  BuilderMock* builder_mock = local_builder_mock.get();
 
-  const std::map<std::string, LaneInfo> kLaneTruthMap{
-      {"l:s1_0", {{0., 0., 0.}, {50., 0., 0.}, 50., 0., "l:s1_1", ""}},
-      {"l:s1_1", {{0., 5., 0.}, {50., 5., 0.}, 50., 5., "l:s1_2", "l:s1_0"}},
-      {"l:s1_2", {{0., 10., 0.}, {50., 10., 0.}, 50., 10., "",  "l:s1_1"}},
+  BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
 
-      {"l:s2_0", {{50., 10., 0.}, {50., 30., 0.}, M_PI * 10., 5., "", ""}},
+  ExpectationSet prebuild_expectations;
 
-      {"l:s3_0", {{50., 30., 0.}, {0., 30., 0.}, 50., 5., "", ""}},
+  Matcher<const api::HBounds&> hbounds_matcher =
+      MakeMatcher(new test::HBoundsMatcher(kElevationBounds, kZeroTolerance));
+  prebuild_expectations += EXPECT_CALL(
+      builder_factory_mock,
+      Make(kLaneWidth, hbounds_matcher, kLinearTolerance, kAngularTolerance));
 
-      {"l:s4_0", {{0., 30., 0.}, {0., 10., 0.}, M_PI * 10., 5., "", ""}},
+  Matcher<const EndpointZ&> endpoint_z_zero_matcher =
+      MakeMatcher(new test::EndpointZMatcher(kEndpointZZero, kLinearTolerance));
+  Matcher<const EndpointZ&> endpoint_z_elevated_matcher = MakeMatcher(
+      new test::EndpointZMatcher(kEndpointZElevated, kLinearTolerance));
 
-      {"l:s5_0", {{50., 0., 0.}, {50., -40., 0.}, M_PI * 20., 0., "l:s5_1",
-                  ""}},
-      {"l:s5_1", {{50., 5., 0.}, {50., -45., 0.}, M_PI * 25., 5., "",
-                  "l:s5_0"}},
-
-      {"l:s6_0", {{50., -40., 0.}, {0., -40., 0.}, 50., 0., "l:s6_1", ""}},
-      {"l:s6_1", {{50., -45., 0.}, {0., -45., 0.}, 50., 5., "", "l:s6_0"}},
-
-      {"l:s7_0", {{0., -40., 0.}, {0., 0., 0.}, M_PI * 20., 0., "l:s7_1", ""}},
-      {"l:s7_1", {{0., -45., 0.}, {0., 5., 0.}, M_PI * 25., 5., "", "l:s7_0"}},
-
-      {"l:s8_0", {{0., -45., 0.}, {-20., -65., 0.}, M_PI / 2. * 20., 0., "",
-                  ""}},
-
-      {"l:s9_0", {{-20., -65., 0.}, {0., -85., 10.}, 32.9690830947562, 0., "",
-                  ""}},
-
-      {"l:s10_0", {{0., -85., 10.}, {20., -65., 10.}, M_PI / 2. * 20., 0., "",
-                   ""}},
-
-      {"l:s11_0", {{20., -65., 10.}, {0., -45., 0.}, 32.9690830947562, 0., "",
-                   ""}},
-
-      {"l:s12_0", {{20., -65., 10.}, {20., -35., 10.}, 30., 0., "", ""}},
-
-      {"l:s13_0", {{20., -35., 10.}, {20., -20., 0.}, 18.0277563773199, 0., "",
-                   ""}}};
-
-  const std::map<std::string, BranchPointLaneIds> kLaneBranchPointTruthMap{
-      {"l:s1_0", {{"l:s1_0"}, {"l:s7_0"}, {"l:s1_0"}, {"l:s5_0"}}},
-      {"l:s1_1", {{"l:s1_1"}, {"l:s7_1"}, {"l:s1_1"}, {"l:s5_1"}}},
-      {"l:s1_2", {{"l:s1_2"}, {"l:s4_0"}, {"l:s1_2"}, {"l:s2_0"}}},
-
-      {"l:s2_0", {{"l:s1_2"}, {"l:s2_0"}, {"l:s2_0"}, {"l:s3_0"}}},
-
-      {"l:s3_0", {{"l:s2_0"}, {"l:s3_0"}, {"l:s3_0"}, {"l:s4_0"}}},
-
-      {"l:s4_0", {{"l:s3_0"}, {"l:s4_0"}, {"l:s1_2"}, {"l:s4_0"}}},
-
-      {"l:s5_0", {{"l:s1_0"}, {"l:s5_0"}, {"l:s5_0"}, {"l:s6_0"}}},
-      {"l:s5_1", {{"l:s1_1"}, {"l:s5_1"}, {"l:s5_1"}, {"l:s6_1"}}},
-
-      {"l:s6_0", {{"l:s5_0"}, {"l:s6_0"}, {"l:s6_0"}, {"l:s7_0"}}},
-      {"l:s6_1", {{"l:s5_1"}, {"l:s6_1"}, {"l:s6_1", "l:s11_0"},
-                  {"l:s7_1", "l:s8_0"}}},
-
-      {"l:s7_0", {{"l:s6_0"}, {"l:s7_0"}, {"l:s1_0"}, {"l:s7_0"}}},
-      {"l:s7_1", {{"l:s6_1", "l:s11_0"}, {"l:s7_1", "l:s8_0"}, {"l:s1_1"},
-                  {"l:s7_1"}}},
-
-      {"l:s8_0", {{"l:s6_1", "l:s11_0"}, {"l:s7_1", "l:s8_0"}, {"l:s8_0"},
-                  {"l:s9_0"}}},
-
-      {"l:s9_0", {{"l:s8_0"}, {"l:s9_0"}, {"l:s9_0"}, {"l:s10_0"}}},
-
-      {"l:s10_0", {{"l:s9_0"}, {"l:s10_0"}, {"l:s10_0"},
-                   {"l:s11_0", "l:s12_0"}}},
-
-      {"l:s11_0", {{"l:s10_0"}, {"l:s11_0", "l:s12_0"}, {"l:s6_1", "l:s11_0"},
-                   {"l:s7_1", "l:s8_0"}}},
-
-      {"l:s12_0", {{"l:s10_0"}, {"l:s11_0", "l:s12_0"}, {"l:s12_0"},
-                   {"l:s13_0"}}},
-
-      {"l:s13_0", {{"l:s12_0"}, {"l:s13_0"}, {"l:s13_0"}, {}}}
-  };
-};
-
-// Checks how the RoadGeometry is connected.
-TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, RoadStructure) {
-  std::unique_ptr<const api::RoadGeometry> rg =
-      Load(std::string(kMultilaneYaml));
-  EXPECT_NE(rg, nullptr);
-  EXPECT_EQ(rg->num_junctions(), kJunctionTruthMap.size());
-  EXPECT_EQ(rg->num_branch_points(), 17);
-  for (const auto& junction_info : kJunctionTruthMap) {
-    // Checks junction properties.
-    EXPECT_EQ(rg->junction(junction_info.first)->id().string(),
-              junction_info.second.name);
-    EXPECT_EQ(rg->junction(junction_info.first)->num_segments(),
-              junction_info.second.num_segments);
-    // Checks segment properties.
-    const SegmentInfo& segment_info =
-        kSegmentTruthMap.at(junction_info.second.name);
-    EXPECT_EQ(rg->junction(junction_info.first)->segment(0)->id().string(),
-              segment_info.name);
-    EXPECT_EQ(rg->junction(junction_info.first)->segment(0)->num_lanes(),
-              segment_info.num_lanes);
-    // Checks lane properties.
-    const api::Segment* segment = rg->junction(junction_info.first)->segment(0);
-    for (int i = 0; i < segment->num_lanes(); ++i) {
-      const api::Lane* lane = segment->lane(i);
-      EXPECT_NE(kLaneTruthMap.find(lane->id().string()), kLaneTruthMap.end());
-      const LaneInfo& lane_info = kLaneTruthMap.at(lane->id().string());
-      if (lane_info.left_lane_name.empty()) {
-        EXPECT_EQ(lane->to_left(), nullptr);
-      } else {
-        EXPECT_EQ(lane->to_left()->id().string(), lane_info.left_lane_name);
-      }
-      if (lane_info.right_lane_name.empty()) {
-        EXPECT_EQ(lane->to_right(), nullptr);
-      } else {
-        EXPECT_EQ(lane->to_right()->id().string(), lane_info.right_lane_name);
-      }
-      // Checks the BranchPoints of the Lane.
-      const BranchPointLaneIds& bp_lane_info =
-          kLaneBranchPointTruthMap.at(lane->id().string());
-      const api::BranchPoint* const start_bp =
-          lane->GetBranchPoint(api::LaneEnd::kStart);
-      EXPECT_EQ(start_bp->GetASide()->size(), bp_lane_info.start_a_side.size());
-      for (int lane_index = 0; lane_index < start_bp->GetASide()->size();
-           lane_index++) {
-        EXPECT_EQ(start_bp->GetASide()->get(lane_index).lane->id().string(),
-                  bp_lane_info.start_a_side[lane_index]);
-      }
-      EXPECT_EQ(start_bp->GetBSide()->size(), bp_lane_info.start_b_side.size());
-      for (int lane_index = 0; lane_index < start_bp->GetBSide()->size();
-           lane_index++) {
-        EXPECT_EQ(start_bp->GetBSide()->get(lane_index).lane->id().string(),
-                  bp_lane_info.start_b_side[lane_index]);
-      }
-      const api::BranchPoint* const end_bp =
-          lane->GetBranchPoint(api::LaneEnd::kFinish);
-      EXPECT_EQ(end_bp->GetASide()->size(), bp_lane_info.finish_a_side.size());
-      for (int lane_index = 0; lane_index < end_bp->GetASide()->size();
-           lane_index++) {
-        EXPECT_EQ(end_bp->GetASide()->get(lane_index).lane->id().string(),
-                  bp_lane_info.finish_a_side[lane_index]);
-      }
-      EXPECT_EQ(end_bp->GetBSide()->size(), bp_lane_info.finish_b_side.size());
-      for (int lane_index = 0; lane_index < end_bp->GetBSide()->size();
-           lane_index++) {
-        EXPECT_EQ(end_bp->GetBSide()->get(lane_index).lane->id().string(),
-                  bp_lane_info.finish_b_side[lane_index]);
-      }
-    }
+  // Connection expectations.
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(kEndpointA, kLinearTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s1", kThreeLanes, kZeroRRef,
+                               kDefaultLeftShoulder, kDefaultRightShoulder,
+                               endpoint_matcher, 50., endpoint_z_zero_matcher));
   }
-}
 
-// Checks lane geometry by inspecting lane start and end GeoPositions, length
-// and r0.
-TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneGeometry) {
-  const double kVeryExact{1e-12};
-  std::unique_ptr<const api::RoadGeometry> rg =
-      Load(std::string(kMultilaneYaml));
-  EXPECT_NE(rg, nullptr);
-  for (const auto& junction_info : kJunctionTruthMap) {
-    // Checks lane properties.
-    const api::Segment* segment = rg->junction(junction_info.first)->segment(0);
-    for (int i = 0; i < segment->num_lanes(); ++i) {
-      const Lane* lane = dynamic_cast<const Lane*>(segment->lane(i));
-      EXPECT_NE(lane, nullptr);
-      EXPECT_NE(kLaneTruthMap.find(lane->id().string()), kLaneTruthMap.end());
-      const LaneInfo& lane_info = kLaneTruthMap.at(lane->id().string());
-      EXPECT_TRUE(api::test::IsGeoPositionClose(
-          lane->ToGeoPosition({0., 0., 0.}), lane_info.start, kVeryExact));
-      EXPECT_TRUE(api::test::IsGeoPositionClose(
-          lane->ToGeoPosition({lane->length(), 0., 0.}), lane_info.end,
-          kVeryExact));
-      EXPECT_NEAR(lane->length(), lane_info.length, kVeryExact);
-      EXPECT_NEAR(lane->r0(), lane_info.r0, kVeryExact);
-    }
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher({{50., 5., 0.}, kEndpointZZero},
+                                              kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
+                                               kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock,
+        Connect("s2", kOneLane, 5., kCustomLeftShoulder, kDefaultRightShoulder,
+                endpoint_matcher, arc_offset_matcher, endpoint_z_zero_matcher));
   }
-}
 
-// TODO(agalbachicar)  Missing tests with non-zero superelevation segments.
-TEST_F(MultilaneLoaderMultipleSegmentCircuitTest, LaneElevationPolynomials) {
-  const double kVeryExact{1e-12};
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{50., 35., M_PI}, kEndpointZZero}, kLinearTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock,
+        Connect("s3", kOneLane, 5., kDefaultLeftShoulder, kCustomRightShoulder,
+                endpoint_matcher, 50., endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher({{0., 35., M_PI}, kEndpointZZero},
+                                              kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
+                                               kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock,
+        Connect("s4", kOneLane, 5., kDefaultLeftShoulder, kDefaultRightShoulder,
+                endpoint_matcher, arc_offset_matcher, endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher({{50., 0., 0.}, kEndpointZZero},
+                                              kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
+                                               kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s5", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher,
+                               arc_offset_matcher, endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{50., -40., -M_PI}, kEndpointZZero}, kLinearTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s6", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher, 50.,
+                               endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{0., -40., -M_PI}, kEndpointZZero}, kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
+                                               kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s7", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher,
+                               arc_offset_matcher, endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{0., -45., -M_PI}, kEndpointZZero}, kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher(
+            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s8", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher,
+                               arc_offset_matcher, endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{-20., -65., -M_PI / 2.}, kEndpointZZero}, kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher(
+            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
+    prebuild_expectations +=
+        EXPECT_CALL(*builder_mock,
+                    Connect("s9", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                            kDefaultRightShoulder, endpoint_matcher,
+                            arc_offset_matcher, endpoint_z_elevated_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{0, -85., 0}, kEndpointZElevated}, kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher(
+            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
+    prebuild_expectations +=
+        EXPECT_CALL(*builder_mock,
+                    Connect("s10", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                            kDefaultRightShoulder, endpoint_matcher,
+                            arc_offset_matcher, endpoint_z_elevated_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{20., -65., M_PI / 2.}, {10., 0., 0., 0.}}, kLinearTolerance));
+    Matcher<const ArcOffset&> arc_offset_matcher =
+        MakeMatcher(new test::ArcOffsetMatcher(
+            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s11", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher,
+                               arc_offset_matcher, endpoint_z_zero_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{20., -65., M_PI / 2.}, kEndpointZElevated}, kLinearTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s12", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher, 30.,
+                               endpoint_z_elevated_matcher));
+  }
+
+  {
+    Matcher<const Endpoint&> endpoint_matcher =
+        MakeMatcher(new test::EndpointMatcher(
+            {{20., -35., M_PI / 2.}, kEndpointZElevated}, kLinearTolerance));
+    prebuild_expectations += EXPECT_CALL(
+        *builder_mock, Connect("s13", kOneLane, kZeroRRef, kDefaultLeftShoulder,
+                               kDefaultRightShoulder, endpoint_matcher, 15.,
+                               endpoint_z_zero_matcher));
+  }
+
+  // Group expectations.
+  {
+    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g1"));
+    prebuild_expectations += EXPECT_CALL(*builder_mock, MakeGroup("g2"));
+    // TODO(agalbachicar):  Loader calls Group::Add() to insert Connections into
+    //                      it. A GroupMock class should be created to test that
+    //                      correct calls arguments to Group::Add() are done.
+    //                      Once it's done, code that checks junctions below
+    //                      must be removed.
+  }
+
+  EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId("circuit")))
+      .After(prebuild_expectations);
+
+  // At some point inside this function, `builder_factory_mock.Make()` will
+  // be called. That will transfer ownership of `builder_mock` to a local scope
+  // variable inside `Load()`. As a consequence, that memory will be freed and
+  // `builder_mock` must not be used anymore.
   std::unique_ptr<const api::RoadGeometry> rg =
-      Load(std::string(kMultilaneYaml));
+      Load(builder_factory_mock, std::string(kMultilaneYaml));
   EXPECT_NE(rg, nullptr);
 
-  // Finds a lane in a RoadGeometry by its id.
-  auto find_lane = [&rg](const std::string& id) {
-    for (int i = 0; i < rg->num_junctions(); ++i) {
-      const api::Junction* junction = rg->junction(i);
-      for (int j = 0; j < junction->num_segments(); ++j) {
-        const api::Segment* segment = junction->segment(j);
-        for (int k = 0; k < segment->num_lanes(); ++k) {
-          if (segment->lane(k)->id().string() == id) {
-            return segment->lane(k);
-          }
-        }
-      }
-    }
-    return static_cast<const api::Lane*>(nullptr);
-  };
+  // Finds "g1" junction and checks that the correct segments are created.
+  const api::Junction* g1 = GetJunctionById(*rg, api::JunctionId("j:g1"));
+  EXPECT_EQ(g1->num_segments(), 2);
 
-  // Checks zero elevated linear lane elevation polynomial.
-  const multilane::Lane* flat_planar_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s1_1"));
-  EXPECT_NE(flat_planar_linear_dut, nullptr);
-  EXPECT_NEAR(flat_planar_linear_dut->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_linear_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_linear_dut->elevation().c(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_linear_dut->elevation().d(), 0., kVeryExact);
+  const std::set<api::SegmentId> g1_segment_ids{api::SegmentId("s:s2"),
+                                                api::SegmentId("s:s5")};
+  for (int i = 0; i < g1->num_segments(); i++) {
+    EXPECT_TRUE(g1_segment_ids.find(g1->segment(i)->id()) !=
+                g1_segment_ids.end());
+  }
 
-  // Checks zero elevated arc lane elevation polynomial.
-  const multilane::Lane* flat_planar_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s5_1"));
-  EXPECT_NE(flat_planar_arc_dut, nullptr);
-  EXPECT_NEAR(flat_planar_arc_dut->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_arc_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_arc_dut->elevation().c(), 0., kVeryExact);
-  EXPECT_NEAR(flat_planar_arc_dut->elevation().d(), 0., kVeryExact);
+  // Finds "g2" junction and checks that the correct segments are created.
+  const api::Junction* g2 = GetJunctionById(*rg, api::JunctionId("j:g2"));
+  EXPECT_EQ(g2->num_segments(), 3);
 
-  // Checks elevated planar linear lane elevation polynomial.
-  const multilane::Lane* elevated_planar_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s12_0"));
-  EXPECT_NE(elevated_planar_linear_dut, nullptr);
-  EXPECT_NEAR(elevated_planar_linear_dut->elevation().a(), 1. / 3., kVeryExact);
-  EXPECT_NEAR(elevated_planar_linear_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(elevated_planar_linear_dut->elevation().c(), 0., kVeryExact);
-  EXPECT_NEAR(elevated_planar_linear_dut->elevation().d(), 0., kVeryExact);
-
-  // Checks elevated planar arc lane elevation polynomial.
-  const multilane::Lane* elevated_planar_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s10_0"));
-  EXPECT_NE(elevated_planar_arc_dut, nullptr);
-  EXPECT_NEAR(
-      elevated_planar_arc_dut->elevation().a(), 0.318309886183791, kVeryExact);
-  EXPECT_NEAR(elevated_planar_arc_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(elevated_planar_arc_dut->elevation().c(), 0., kVeryExact);
-  EXPECT_NEAR(elevated_planar_arc_dut->elevation().d(), 0., kVeryExact);
-
-  // Checks elevated planar linear lane elevation polynomial.
-  const multilane::Lane* complex_linear_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s13_0"));
-  EXPECT_NE(complex_linear_dut, nullptr);
-  EXPECT_NEAR(
-      complex_linear_dut->elevation().a(), 0.666666666666667, kVeryExact);
-  EXPECT_NEAR(complex_linear_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_linear_dut->elevation().c(), -2., kVeryExact);
-  EXPECT_NEAR(
-      complex_linear_dut->elevation().d(), 1.33333333333333, kVeryExact);
-
-  // Checks elevated planar arc lane elevation polynomial.
-  const multilane::Lane* complex_arc_dut =
-      dynamic_cast<const multilane::Lane*>(find_lane("l:s11_0"));
-  EXPECT_NE(complex_arc_dut, nullptr);
-  EXPECT_NEAR(complex_arc_dut->elevation().a(), 0.318309886183791, kVeryExact);
-  EXPECT_NEAR(complex_arc_dut->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_arc_dut->elevation().c(), -0.954929658551372, kVeryExact);
-  EXPECT_NEAR(complex_arc_dut->elevation().d(), 0.636619772367581, kVeryExact);
+  const std::set<api::SegmentId> g2_segment_ids{
+      api::SegmentId("s:s4"), api::SegmentId("s:s8"), api::SegmentId("s:s10")};
+  for (int i = 0; i < g2->num_segments(); i++) {
+    EXPECT_TRUE(g2_segment_ids.find(g2->segment(i)->id()) !=
+                g2_segment_ids.end());
+  }
 }
 
 }  // namespace

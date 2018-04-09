@@ -18,6 +18,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
+#include "drake/systems/framework/diagram_discrete_values.h"
 #include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/state.h"
@@ -34,16 +35,6 @@ template <typename T>
 class DiagramBuilder;
 
 namespace internal {
-
-/// Returns a vector of raw pointers that correspond placewise with the
-/// unique_ptrs in the vector @p in.
-template <typename U>
-std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
-  std::vector<U*> out(in.size());
-  std::transform(in.begin(), in.end(), out.begin(),
-                 [](const std::unique_ptr<U>& p) { return p.get(); });
-  return out;
-}
 
 //==============================================================================
 //                          DIAGRAM OUTPUT PORT
@@ -149,69 +140,6 @@ class DiagramOutput : public SystemOutput<T> {
 
  private:
   std::vector<OutputPortValue*> ports_;
-};
-
-//==============================================================================
-//                          DIAGRAM TIME DERIVATIVES
-//==============================================================================
-/// DiagramTimeDerivatives is a version of DiagramContinuousState that owns
-/// the constituent continuous states. As the name implies, it is only useful
-/// for the time derivatives.
-template <typename T>
-class DiagramTimeDerivatives : public DiagramContinuousState<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramTimeDerivatives)
-
-  explicit DiagramTimeDerivatives(
-      std::vector<std::unique_ptr<ContinuousState<T>>>&& substates)
-      : DiagramContinuousState<T>(Unpack(substates)),
-        substates_(std::move(substates)) {}
-
-  ~DiagramTimeDerivatives() override {}
-
- private:
-  std::vector<std::unique_ptr<ContinuousState<T>>> substates_;
-};
-
-//==============================================================================
-//                          DIAGRAM DISCRETE VARIABLES
-//==============================================================================
-/// DiagramDiscreteVariables is a version of DiscreteState that owns
-/// the constituent discrete states. As the name implies, it is only useful
-/// for the discrete updates.
-template <typename T>
-class DiagramDiscreteVariables : public DiscreteValues<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteVariables)
-
-  explicit DiagramDiscreteVariables(
-      std::vector<std::unique_ptr<DiscreteValues<T>>>&& subdiscretes)
-      : DiscreteValues<T>(Flatten(Unpack(subdiscretes))),
-        subdiscretes_(std::move(subdiscretes)) {}
-
-  ~DiagramDiscreteVariables() override {}
-
-  int num_subdiscretes() const {
-    return static_cast<int>(subdiscretes_.size());
-  }
-
-  DiscreteValues<T>* get_mutable_subdiscrete(int index) {
-    DRAKE_DEMAND(index >= 0 && index < num_subdiscretes());
-    return subdiscretes_[index].get();
-  }
-
- private:
-  std::vector<BasicVector<T>*> Flatten(
-      const std::vector<DiscreteValues<T>*>& in) const {
-    std::vector<BasicVector<T>*> out;
-    for (const DiscreteValues<T>* xd : in) {
-      const std::vector<BasicVector<T>*>& xd_data = xd->get_data();
-      out.insert(out.end(), xd_data.begin(), xd_data.end());
-    }
-    return out;
-  }
-
-  std::vector<std::unique_ptr<DiscreteValues<T>>> subdiscretes_;
 };
 
 }  // namespace internal
@@ -477,14 +405,14 @@ class Diagram : public System<T>,
   /// @endcond
 
   /// Aggregates the time derivatives from each subsystem into a
-  /// DiagramTimeDerivatives.
+  /// DiagramContinuousState.
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     std::vector<std::unique_ptr<ContinuousState<T>>> sub_derivatives;
     for (const auto& system : registered_systems_) {
       sub_derivatives.push_back(system->AllocateTimeDerivatives());
     }
     return std::unique_ptr<ContinuousState<T>>(
-        new internal::DiagramTimeDerivatives<T>(std::move(sub_derivatives)));
+        new DiagramContinuousState<T>(std::move(sub_derivatives)));
   }
 
   /// Aggregates the discrete update variables from each subsystem into a
@@ -496,7 +424,7 @@ class Diagram : public System<T>,
       sub_discretes.push_back(system->AllocateDiscreteVariables());
     }
     return std::unique_ptr<DiscreteValues<T>>(
-        new internal::DiagramDiscreteVariables<T>(std::move(sub_discretes)));
+        new DiagramDiscreteValues<T>(std::move(sub_discretes)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -507,7 +435,7 @@ class Diagram : public System<T>,
     auto diagram_derivatives =
         dynamic_cast<DiagramContinuousState<T>*>(derivatives);
     DRAKE_DEMAND(diagram_derivatives != nullptr);
-    const int n = diagram_derivatives->get_num_substates();
+    const int n = diagram_derivatives->num_substates();
     DRAKE_DEMAND(num_subsystems() == n);
 
     // Evaluate the derivatives of each constituent system.
@@ -1180,16 +1108,12 @@ class Diagram : public System<T>,
     auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
     DRAKE_DEMAND(diagram_context);
     auto diagram_discrete =
-        dynamic_cast<internal::DiagramDiscreteVariables<T>*>(discrete_state);
+        dynamic_cast<DiagramDiscreteValues<T>*>(discrete_state);
     DRAKE_DEMAND(diagram_discrete);
 
     // As a baseline, initialize all the discrete variables to their
     // current values.
-    // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    for (int i = 0; i < diagram_discrete->num_groups(); ++i) {
-      diagram_discrete->get_mutable_vector(i).set_value(
-          context.get_discrete_state(i).get_value());
-    }
+    diagram_discrete->CopyFrom(context.get_discrete_state());
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
@@ -1201,12 +1125,11 @@ class Diagram : public System<T>,
 
       if (subinfo.HasEvents()) {
         const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-        DiscreteValues<T>* subdiscrete =
+        DiscreteValues<T>& subdiscrete =
             diagram_discrete->get_mutable_subdiscrete(i);
-        DRAKE_DEMAND(subdiscrete != nullptr);
 
         registered_systems_[i]->CalcDiscreteVariableUpdates(subcontext, subinfo,
-                                                            subdiscrete);
+                                                            &subdiscrete);
       }
     }
   }
@@ -1267,7 +1190,7 @@ class Diagram : public System<T>,
   template <typename BaseStuff, typename DerivedStuff>
   BaseStuff* GetSubsystemStuff(
       const System<T>& target_system, BaseStuff* my_stuff,
-      std::function<BaseStuff* (const System<T>*, const System<T>&, BaseStuff*)>
+      std::function<BaseStuff*(const System<T>*, const System<T>&, BaseStuff*)>
           recursive_getter,
       std::function<BaseStuff&(DerivedStuff*, SubsystemIndex)> get_child_stuff)
       const {

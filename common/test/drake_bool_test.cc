@@ -24,15 +24,29 @@ using symbolic::test::FormulaEqual;
 // --------------------------------------------------------------
 class BoolTestDouble : public ::testing::Test {
  protected:
+  void SetUp() override {
+    // clang-format off
+    m_ << 1, 2,
+          3, 4;
+    // clang-format on
+  }
+
   Bool<double> b_true_{3.0 < 4.0};
   Bool<double> b_false_{3.0 > 4.0};
   const bool v_true_{ExtractBoolOrThrow(b_true_)};
   const bool v_false_{ExtractBoolOrThrow(b_false_)};
+  MatrixX<double> m_{2, 2};
+  MatrixX<double> zero_m_{0, 0};
 };
 
 TEST_F(BoolTestDouble, Constructor) {
   EXPECT_TRUE(v_true_);
   EXPECT_FALSE(v_false_);
+}
+
+TEST_F(BoolTestDouble, TrueFalse) {
+  EXPECT_TRUE(Bool<double>::True().value());
+  EXPECT_FALSE(Bool<double>::False().value());
 }
 
 TEST_F(BoolTestDouble, CopyConstructor) {
@@ -112,22 +126,62 @@ TEST_F(BoolTestDouble, LogicalOperators) {
   EXPECT_TRUE((!b_false_).value());
 }
 
+TEST_F(BoolTestDouble, AllOf) {
+  EXPECT_TRUE(all_of(m_, [](const double v) { return v >= 0.0; }).value());
+  EXPECT_FALSE(all_of(m_, [](const double v) { return v >= 2.0; }).value());
+
+  // Vacuously true.
+  EXPECT_TRUE(all_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
+}
+
+TEST_F(BoolTestDouble, AnyOf) {
+  EXPECT_TRUE(any_of(m_, [](const double v) { return v >= 4.0; }).value());
+  EXPECT_FALSE(any_of(m_, [](const double v) { return v >= 5.0; }).value());
+
+  // Vacuously false.
+  EXPECT_FALSE(
+      any_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
+}
+
+TEST_F(BoolTestDouble, NoneOf) {
+  EXPECT_TRUE(none_of(m_, [](const double v) { return v >= 5.0; }).value());
+  EXPECT_FALSE(none_of(m_, [](const double v) { return v >= 4.0; }).value());
+
+  // Vacuously true.
+  EXPECT_TRUE(
+      none_of(zero_m_, [](const double v) { return v >= 0.0; }).value());
+}
+
 // -------------------
 // Case T = AutoDiffXd
 // -------------------
 class BoolTestAutoDiffXd : public ::testing::Test {
  protected:
+  void SetUp() override {
+    m_(0, 0) = AutoDiffXd{1., Eigen::Vector2d{1., 0.}};
+    m_(0, 1) = AutoDiffXd{0., Eigen::Vector2d{1., 0.}};
+    m_(1, 0) = AutoDiffXd{0., Eigen::Vector2d{0., 1.}};
+    m_(1, 1) = AutoDiffXd{1., Eigen::Vector2d{0., 1.}};
+  }
+
   const AutoDiffXd x_{3., Eigen::Vector2d{1., 0.}};
   const AutoDiffXd y_{4., Eigen::Vector2d{0., 1.}};
   Bool<AutoDiffXd> b_true_{x_ < y_};
   Bool<AutoDiffXd> b_false_{x_ > y_};
   const bool v_true_{ExtractBoolOrThrow(b_true_)};
   const bool v_false_{ExtractBoolOrThrow(b_false_)};
+  MatrixX<AutoDiffXd> m_{2, 2};
+  MatrixX<AutoDiffXd> zero_m_{0, 0};
 };
 
 TEST_F(BoolTestAutoDiffXd, TypeCheck) {
   static_assert(std::is_same<Bool<AutoDiffXd>::value_type, bool>::value,
                 "Bool<AutoDiffXd>::value_type should be bool");
+}
+
+TEST_F(BoolTestAutoDiffXd, TrueFalse) {
+  EXPECT_TRUE(Bool<AutoDiffXd>::True().value());
+  EXPECT_FALSE(Bool<AutoDiffXd>::False().value());
 }
 
 TEST_F(BoolTestAutoDiffXd, ExtractBoolOrThrow) {
@@ -173,23 +227,92 @@ TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
   EXPECT_TRUE((!b_false_).value());
 }
 
+TEST_F(BoolTestAutoDiffXd, AllOf) {
+  EXPECT_TRUE(all_of(m_,
+                     [](const AutoDiffXd& v) {
+                       return v.derivatives()[0] == 1.0 ||
+                              v.derivatives()[1] == 1.0;
+                     })
+                  .value());
+  EXPECT_FALSE(
+      all_of(m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
+
+  // Vacuously true.
+  EXPECT_TRUE(
+      all_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
+}
+
+TEST_F(BoolTestAutoDiffXd, AnyOf) {
+  EXPECT_TRUE(any_of(m_,
+                     [](const AutoDiffXd& v) {
+                       return v.derivatives()[0] == 1.0 &&
+                              v.derivatives()[1] == 0.0;
+                     })
+                  .value());
+  EXPECT_FALSE(any_of(m_,
+                      [](const AutoDiffXd& v) {
+                        return v.derivatives()[0] == 1.0 &&
+                               v.derivatives()[1] == 1.0;
+                      })
+                   .value());
+
+  // Vacuously false.
+  EXPECT_FALSE(
+      any_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
+}
+
+TEST_F(BoolTestAutoDiffXd, NoneOf) {
+  EXPECT_TRUE(none_of(m_,
+                      [](const AutoDiffXd& v) {
+                        return v.derivatives()[0] == 1.0 &&
+                               v.derivatives()[1] == 1.0;
+                      })
+                  .value());
+  EXPECT_FALSE(none_of(m_,
+                       [](const AutoDiffXd& v) {
+                         return v.derivatives()[0] == 1.0 &&
+                                v.derivatives()[1] == 0.0;
+                       })
+                   .value());
+
+  // Vacuously true.
+  EXPECT_TRUE(
+      none_of(zero_m_, [](const AutoDiffXd& v) { return v >= 1.0; }).value());
+}
+
 // -----------------------------
 // Case T = symbolic::Expression
 // -----------------------------
 class BoolTestSymbolic : public ::testing::Test {
  protected:
+  void SetUp() override {
+    // clang-format off
+    m_ <<  x_, y_,
+           z_, w_;
+    // clang-format on
+  }
+
   const Variable x_{"x"};
   const Variable y_{"y"};
+  const Variable z_{"z"};
+  const Variable w_{"w"};
   Bool<Expression> b_true_{Expression{3.0} < Expression{4.0}};
   Bool<Expression> b_false_{Expression{3.0} > Expression{4.0}};
   const bool v_true_{ExtractBoolOrThrow(b_true_)};
   const bool v_false_{ExtractBoolOrThrow(b_false_)};
+  MatrixX<Expression> m_{2, 2};
+  MatrixX<Expression> zero_m_{0, 0};
 };
 
 TEST_F(BoolTestSymbolic, TypeCheck) {
   static_assert(
       std::is_same<Bool<Expression>::value_type, Formula>::value,
       "Bool<symbolic::Expression>::value_type should be symbolic::Formula");
+}
+
+TEST_F(BoolTestSymbolic, TrueFalse) {
+  EXPECT_TRUE(is_true(Bool<Expression>::True().value()));
+  EXPECT_TRUE(is_false(Bool<Expression>::False().value()));
 }
 
 TEST_F(BoolTestSymbolic, ConstructFromBool) {
@@ -267,6 +390,38 @@ TEST_F(BoolTestSymbolic, LogicalOperators) {
   EXPECT_PRED2(FormulaEqual, (f1 || b2).value(), f1 || f2);
 
   EXPECT_PRED2(FormulaEqual, (!b1).value(), !f1);
+}
+
+TEST_F(BoolTestSymbolic, AllOf) {
+  EXPECT_PRED2(
+      FormulaEqual,
+      all_of(m_, [](const Expression& v) { return !isnan(v); }).value(),
+      !isnan(x_) && !isnan(y_) && !isnan(z_) && !isnan(w_));
+
+  // Vacuously true.
+  EXPECT_TRUE(
+      all_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
+}
+
+TEST_F(BoolTestSymbolic, AnyOf) {
+  EXPECT_PRED2(FormulaEqual,
+               any_of(m_, [](const Expression& v) { return isnan(v); }).value(),
+               isnan(x_) || isnan(y_) || isnan(z_) || isnan(w_));
+
+  // Vacuously false.
+  EXPECT_FALSE(
+      any_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
+}
+
+TEST_F(BoolTestSymbolic, NoneOf) {
+  EXPECT_PRED2(
+      FormulaEqual,
+      none_of(m_, [](const Expression& v) { return isnan(v); }).value(),
+      !isnan(x_) && !isnan(y_) && !isnan(z_) && !isnan(w_));
+
+  // Vacuously true.
+  EXPECT_TRUE(
+      none_of(zero_m_, [](const Expression& v) { return v >= 0.0; }).value());
 }
 
 }  // namespace drake

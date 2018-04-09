@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 
@@ -53,13 +54,17 @@ class RotationMatrix {
 #endif
   }
 
-  /// Constructs a %RotationMatrix from a Quaternion.
-  /// @param[in] quaternion a non-zero, finite quaternion.
+  /// Constructs a %RotationMatrix from an Eigen::Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
+  /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
   /// @throws exception std::logic_error in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
-  /// exception is thrown if `quaternion` is zero or contains a NAN or infinity.
+  /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
   /// without the inefficiency of the square-root associated with normalization.
+  // TODO(mitiguy) Although this method is fairly efficient, consider adding an
+  // optional second argument if `quaternion` is known to be normalized apriori
+  // or for some reason the calling site does not want `quaternion` normalized.
   explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
     // Cost for various way to create a rotation matrix from a quaternion.
     // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
@@ -68,9 +73,28 @@ class RotationMatrix {
     // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
     const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
     R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
-#ifdef DRAKE_ASSERT_IS_ARMED
-    ThrowIfNotValid(R_AB_);
-#endif
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
+
+  /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
+  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
+  /// direction herein called `lambda`) is non-zero and finite, but which may or
+  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
+  /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
+  // @internal In general, the %RotationMatrix constructed by passing a non-unit
+  // `lambda` to this method is different than the %RotationMatrix produced by
+  // converting `lambda` to an un-normalized quaternion and calling the
+  // %RotationMatrix constructor (above) with that un-normalized quaternion.
+  // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
+  // known to be normalized apriori or calling site does not want normalization.
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    const Vector3<T>& lambda = theta_lambda.axis();
+    const T norm = lambda.norm();
+    const T& theta = theta_lambda.angle();
+    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
@@ -474,6 +498,17 @@ class RotationMatrix {
     return q;
   }
 
+  /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
+  /// vector (axis direction) `lambda` that represents `this` %RotationMatrix.
+  /// @note The orientation and %RotationMatrix associated with `theta * lambda`
+  /// is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
+  /// this method chooses to have `0 <= theta <= pi`.
+  /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
+  Eigen::AngleAxis<T> ToAngleAxis() const {
+    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
+    return theta_lambda;
+  }
+
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
   // %RotationMatrix templatized on any other typename T.
@@ -525,18 +560,7 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Matrix3<T>& R) {
-    if (!R.allFinite()) {
-      throw std::logic_error(
-          "Error: Rotation matrix contains an element that is infinity or "
-          "NAN.");
-    }
-    if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
-      throw std::logic_error("Error: Rotation matrix is not orthonormal.");
-    if (R.determinant() < 0)
-      throw std::logic_error("Error: Rotation matrix determinant is negative. "
-                                 "It is possible a basis is left-handed");
-  }
+  static void ThrowIfNotValid(const Matrix3<T>& R);
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
