@@ -46,6 +46,7 @@ using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
@@ -73,10 +74,13 @@ int do_main() {
   const double mass = 0.1;      // kg
   const double g = 9.81;        // m/s^2
   const double z0 = 0.3;        // Initial height.
+  const CoulombFriction<double> coulomb_friction(
+      0.8 /* static friction */, 0.3 /* dynamic friction */);
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeBouncingBallPlant(
-          radius, mass, -g * Vector3d::UnitZ(), &geometry_system));
+          radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
+          &geometry_system));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
