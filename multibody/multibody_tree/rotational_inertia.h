@@ -487,51 +487,23 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   /// @throws std::logic_error if drake::is_numeric<T>::value is `false`.
-#ifdef DRAKE_DOXYGEN_CXX
-  bool
-#else
-  template <typename T1 = T>
-  typename std::enable_if<is_numeric<T1>::value, bool>::type
-#endif
-  CouldBePhysicallyValid() const {
-    if (IsNaN().value()) return false;
-
-    // All the moments of inertia should be non-negative, so the maximum moment
-    // of inertia (which is trace / 2) should be non-negative.
-    const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
-    if (max_possible_inertia_moment < 0) return false;
-
+  Bool<T> CouldBePhysicallyValid() const {
     // To check the validity of rotational inertia use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
     // element that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
     const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const T max_possible_inertia_moment  = CalcMaximumPossibleMomentOfInertia();
     const T epsilon = precision * max_possible_inertia_moment;
-
-    // Test `this` rotational inertia's moments of inertia to be mostly
-    // non-negative and also satisfy triangle inequality.
-    const Vector3<T> m = get_moments();
-    if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        m(0), m(1), m(2), epsilon).value()) return false;
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-    return AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        p(0), p(1), p(2), epsilon).value();
-  }
 
-  // This method throws an exception for non-numeric types.
-  // @tparam T1 SFINAE boilerplate.
-#ifndef DRAKE_DOXYGEN_CXX
-  template <typename T1 = T>
-  typename std::enable_if<!is_numeric<T1>::value, Bool<T>>::type
-  CouldBePhysicallyValid() const {
-    throw std::logic_error(
-        "RotationalInertia<T>::CouldBePhysicallyValid() only works with types "
-        "that are drake::is_numeric.");
+    return !IsNaN() &&
+        AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+            p(0), p(1), p(2), epsilon);
   }
-#endif
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`.
   /// In other words, starts with `this` rotational inertia of a body (or
@@ -935,7 +907,7 @@ class RotationalInertia {
   template <typename T1 = T>
   typename std::enable_if<is_numeric<T1>::value>::type
   ThrowIfNotPhysicallyValid() {
-    if (!CouldBePhysicallyValid()) {
+    if (!CouldBePhysicallyValid().value()) {
       throw std::logic_error("Error: Rotational inertia did not pass test: "
                              "CouldBePhysicallyValid().");
     }

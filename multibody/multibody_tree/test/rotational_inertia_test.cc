@@ -203,7 +203,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameA) {
   EXPECT_NEAR(I_RRo_F(2, 2), I_RRo_R(1, 1), kEpsilon);  // F z-axis = R -y-axis.
 
   // Ensure re-expressing in frame F still produces a physically valid inertia.
-  EXPECT_TRUE(I_RRo_F.CouldBePhysicallyValid());
+  EXPECT_TRUE(I_RRo_F.CouldBePhysicallyValid().value());
 }
 
 // TestB: Rotational inertia expressed in frame R then re-expressed in frame E.
@@ -240,7 +240,7 @@ GTEST_TEST(RotationalInertia, ReExpressInAnotherFrameB) {
                                           I_BBo_Axy, I_BBo_Axz, I_BBo_Ayz);
 
   // Ensure rotational inertia I_BBo_A is physically valid.
-  EXPECT_TRUE(I_BBo_A.CouldBePhysicallyValid());
+  EXPECT_TRUE(I_BBo_A.CouldBePhysicallyValid().value());
 
   // Re-express I_BBo_A from expressed-in frame A to expressed-in frame B.
   const RotationalInertia<double> I_BBo_B = I_BBo_A.ReExpress(R_BA);
@@ -368,10 +368,10 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidB) {
   const double I_transverse = 20;
   const double I_axial = -1.0E-15;  // Although negative, this is effectively 0.
   const RotationalInertia<double> rod(I_transverse, I_transverse, I_axial);
-  EXPECT_TRUE(rod.CouldBePhysicallyValid());
+  EXPECT_TRUE(rod.CouldBePhysicallyValid().value());
 
   const RotationalInertia<double> sphere(1.0E-5, 1.0E-5, 1.0E-5);
-  EXPECT_TRUE(sphere.CouldBePhysicallyValid());
+  EXPECT_TRUE(sphere.CouldBePhysicallyValid().value());
 
   // Subtracting the sphere from the rod creates an invalid rotational inertia.
   EXPECT_THROW_IF_ARMED(rod - sphere, std::logic_error);
@@ -686,8 +686,9 @@ GTEST_TEST(RotationalInertia, CompatibleWithSymbolicExpression) {
   EXPECT_EQ(I_BQ_E(1, 1).to_string(), Iyy_string);
   EXPECT_EQ(I_BQ_E(2, 2).to_string(), Izz_string);
 
-  // Currently, we do not support CouldBePhysicallyValid() for T = Expression.
-  EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid(), std::logic_error);
+  // The expression cannot be evaluated to bool given it contains free
+  // variables.
+  EXPECT_THROW(I_BQ_E.CouldBePhysicallyValid().value(), std::exception);
 }
 
 }  // namespace
