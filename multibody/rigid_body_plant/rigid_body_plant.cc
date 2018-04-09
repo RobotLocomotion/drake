@@ -92,7 +92,7 @@ void RigidBodyPlant<T>::initialize() {
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
-  // Schedule time stepping update.
+  // Schedule discretization update.
   if (timestep_ > 0.0)
     this->DeclarePeriodicDiscreteUpdate(timestep_);
 }
@@ -1076,7 +1076,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
       // See whether the joint is currently violated or the *current* joint
       // velocity might lead to a limit violation. The latter is a heuristic to
-      // incorporate the joint limit into the time stepping calculations before
+      // incorporate the joint limit into the discretization calculations before
       // it is violated.
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.

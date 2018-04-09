@@ -759,12 +759,12 @@ TEST_F(Rod2DDAETest, RigidContactProblemDataVerticalSliding) {
 
 /// Class for testing the Rod 2D example using a first order time
 /// stepping approach.
-class Rod2DTimeSteppingTest : public ::testing::Test {
+class Rod2DDiscretizedTest : public ::testing::Test {
  protected:
   void SetUp() override {
     const double dt = 1e-2;
     dut_ = std::make_unique<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kTimeStepping, dt);
+        Rod2D<double>::SimulationType::kDiscretized, dt);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -812,7 +812,7 @@ class Rod2DTimeSteppingTest : public ::testing::Test {
 
 /// Verify that Rod 2D system eventually goes to rest using the
 /// first-order time stepping approach (this tests expected meta behavior).
-TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
+TEST_F(Rod2DDiscretizedTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.
   SetSecondInitialConfig();
 
@@ -835,7 +835,7 @@ TEST_F(Rod2DTimeSteppingTest, RodGoesToRest) {
 }
 
 // Validates the number of witness functions is determined correctly.
-TEST_F(Rod2DTimeSteppingTest, NumWitnessFunctions) {
+TEST_F(Rod2DDiscretizedTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 }
 
@@ -845,7 +845,7 @@ TEST_F(Rod2DTimeSteppingTest, NumWitnessFunctions) {
 GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
   // Create two Rod2D systems.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kTimeStepping, dt);
+  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
   Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
 
   // Set the coefficient of friction to a small value for both.
@@ -905,7 +905,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   // Create two Rod2D systems.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kTimeStepping, dt);
+  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
   Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
 
   // Set the coefficient of friction to a large value for both.
@@ -968,11 +968,11 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
 
 /// Class for testing the Rod 2D example using compliant contact
 /// thus permitting integration as an ODE.
-class Rod2DCompliantTest : public ::testing::Test {
+class Rod2DContinuousTest : public ::testing::Test {
  protected:
   void SetUp() override {
     dut_ = std::make_unique<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kCompliant, 0.0);
+        Rod2D<double>::SimulationType::kContinuous, 0.0);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -1065,7 +1065,7 @@ class Rod2DCompliantTest : public ::testing::Test {
 };
 
 /// Verify that the compliant contact resists penetration.
-TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
+TEST_F(Rod2DContinuousTest, ForcesHaveRightSign) {
   // We expect only roundoff errors, scaled by force magnitude (~1e-14).
   const double kTightTol = 50 * std::numeric_limits<double>::epsilon();
 
@@ -1134,7 +1134,7 @@ TEST_F(Rod2DCompliantTest, ForcesHaveRightSign) {
 }
 
 // Validates the number of witness functions is determined correctly.
-TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
+TEST_F(Rod2DContinuousTest, NumWitnessFunctions) {
   EXPECT_EQ(dut_->DetermineNumWitnessFunctions(*context_), 0);
 }
 
@@ -1142,7 +1142,7 @@ TEST_F(Rod2DCompliantTest, NumWitnessFunctions) {
 GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   // Create two Rod2D systems, one time stepping, one with continuous state.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kTimeStepping, dt);
+  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
   Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
 
   // Create contexts for both.

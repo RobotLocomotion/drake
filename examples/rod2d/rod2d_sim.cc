@@ -39,14 +39,14 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta3Integrator;
 
 // Simulation parameters.
-DEFINE_string(simulation_type, "timestepping",
+DEFINE_string(simulation_type, "discretized",
               "Type of simulation, valid values are "
-              "'timestepping','compliant'");
+              "'discretized','continuous'");
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
 DEFINE_double(sim_duration, 10, "Simulation duration in virtual seconds");
 DEFINE_double(accuracy, 1e-5,
-              "Requested simulation accuracy (ignored for time stepping)");
+              "Requested simulation accuracy (ignored for discretized system)");
 
 int main(int argc, char* argv[]) {
   // Parse any flags.
@@ -75,11 +75,11 @@ int main(int argc, char* argv[]) {
 
   // Create the rod and add it to the diagram.
   Rod2D* rod;
-  if (FLAGS_simulation_type == "timestepping") {
+  if (FLAGS_simulation_type == "discretized") {
     rod = builder.template AddSystem<Rod2D>(
-        Rod2D::SimulationType::kTimeStepping, FLAGS_dt);
-  } else if (FLAGS_simulation_type == "compliant") {
-    rod = builder.template AddSystem<Rod2D>(Rod2D::SimulationType::kCompliant,
+        Rod2D::SimulationType::kDiscretized, FLAGS_dt);
+  } else if (FLAGS_simulation_type == "continuous") {
+    rod = builder.template AddSystem<Rod2D>(Rod2D::SimulationType::kContinuous,
                                             0.0);
   } else {
     std::cerr << "Invalid simulation type '" << FLAGS_simulation_type
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
-  if (FLAGS_simulation_type == "compliant") {
+  if (FLAGS_simulation_type == "continuous") {
     Context<double>& mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
                                                                 &mut_context);
