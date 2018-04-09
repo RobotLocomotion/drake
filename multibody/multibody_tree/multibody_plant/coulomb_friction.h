@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
@@ -68,6 +69,8 @@ class CoulombFriction {
 
   /// Returns the coefficient of dynamic friction.
   const T& dynamic_friction() const { return dynamic_friction_; }
+
+  Bool<T> operator==(const CoulombFriction& other) const;
 
  private:
   // Confirms two properties on the friction coefficient pair:

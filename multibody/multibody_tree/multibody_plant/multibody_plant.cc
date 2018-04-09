@@ -116,10 +116,10 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
 }
 
 template<typename T>
-void MultibodyPlant<T>::RegisterCollisionGeometry(
+geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    const CoulombFriction<double>& friction_coefficients,
+    const CoulombFriction<double>& coulomb_friction,
     geometry::GeometrySystem<T>* geometry_system) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_system != nullptr);
@@ -140,9 +140,11 @@ void MultibodyPlant<T>::RegisterCollisionGeometry(
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
-  DRAKE_ASSERT(static_cast<int>(default_coulomb_friction_.size()) == collision_index);
-  default_coulomb_friction_.emplace_back(friction_coefficients.static_friction(),
-                                 friction_coefficients.dynamic_friction());
+  DRAKE_ASSERT(
+      static_cast<int>(default_coulomb_friction_.size()) == collision_index);
+  default_coulomb_friction_.emplace_back(
+      coulomb_friction.static_friction(), coulomb_friction.dynamic_friction());
+  return id;
 }
 
 template<typename T>

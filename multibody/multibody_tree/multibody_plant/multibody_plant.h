@@ -519,6 +519,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
+  /// @param[in] coulomb_friction
+  ///   Coulomb's law of friction coefficients to model friction on the
+  ///   surface of `shape` for the given `body`.
   /// @param[out] geometry_system
   ///   A valid, non-null pointer to a GeometrySystem on which geometry will get
   ///   registered.
@@ -527,10 +530,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `geometry_system` does not correspond to the
   /// same instance with which RegisterAsSourceForGeometrySystem() was called.
   // TODO(amcastro-tri): Augment API to specify friction coefficients.
-  void RegisterCollisionGeometry(
+  geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      const CoulombFriction<double>& friction_coefficients,
+      const CoulombFriction<double>& coulomb_friction,
       geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
@@ -547,6 +550,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Post-finalize calls will always return the same value.
   int get_num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
+  }
+
+  /// Returns the default friction coefficients provided during geometry
+  /// registration for the given geometry `id`.
+  /// @throws std::exception if `id` does not correspond to a geometry in `this`
+  /// model registered for contact modeling.
+  /// @see RegisterCollisionGeometry() for details on geometry registration.
+  const CoulombFriction<double>& default_coulomb_friction(
+      geometry::GeometryId id) const {
+    DRAKE_DEMAND(is_collision_geometry(id));
+    const int collision_index = geometry_id_to_collision_index_.at(id);
+    return default_coulomb_friction_[collision_index];
   }
 
   /// @name Retrieving ports for communication with a GeometrySystem.
