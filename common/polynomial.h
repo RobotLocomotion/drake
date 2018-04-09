@@ -184,12 +184,16 @@ class Polynomial {
   template <typename T>
   typename Product<CoefficientType, T>::type EvaluateUnivariate(
       const T& x) const {
-    typedef typename Product<CoefficientType, T>::type ProductType;
+    typedef typename std::remove_const<
+      typename Product<CoefficientType, T>::type>::type ProductType;
 
     if (!is_univariate_)
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
-    ProductType value = 0;
+    // This baroque spelling of 0 (x - x) is needed for certain types
+    // which may not have an assignment from double
+    // (e.g. std::complex<AutoDiffXd>).
+    ProductType value = x - x;
     using std::pow;
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials_.begin();
