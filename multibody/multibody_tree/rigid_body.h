@@ -119,7 +119,7 @@ class RigidBody : public Body<T> {
   /// Gets the default value of this body B's spatial inertia about Bo
   /// (B's origin) and expressed in B (this body's frame).
   /// @retval M_BBo_B body B's spatial inertia about Bo, expressed in B.
-  SpatialInertia<double> default_spatial_inertia() const {
+  const SpatialInertia<double>& default_spatial_inertia() const {
     return default_spatial_inertia_;
   }
 
