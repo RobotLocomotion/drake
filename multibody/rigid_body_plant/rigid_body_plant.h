@@ -146,7 +146,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// @param[in] timestep a non-negative value specifying the update period of
   ///   the model; 0.0 implies continuous-time dynamics with derivatives, and
   ///   values > 0.0 result in discrete-time dynamics implementing a
-  ///   time-stepping approximation to the dynamics.  @default 0.0.
+  ///   discretization of the dynamics equation.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<double>> tree,

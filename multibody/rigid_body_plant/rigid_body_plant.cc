@@ -72,8 +72,8 @@ void RigidBodyPlant<T>::initialize() {
           .get_index();
   if (is_state_discrete()) {
     // TODO(jwnimmer-tri) Add an implementation of the state derivative output
-    // port that works in timestepping mode.  For now, we just disable the port
-    // entirely and have a cautionary API comment on its accessor.
+    // port that works in the discretized mode.  For now, we just disable the
+    // port entirely and have a cautionary API comment on its accessor.
   } else {
     state_derivative_output_port_index_ =
         this->DeclareVectorOutputPort(
@@ -1240,7 +1240,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
     drake::systems::DiscreteValues<U>*) const {
   throw std::runtime_error(
-      "RigidBodyPlant with discrete updates (time-stepping) currently only "
+      "Discretized RigidBodyPlant currently only "
           "supports T=double.");
 }
 
