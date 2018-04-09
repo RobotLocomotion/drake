@@ -48,7 +48,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "spdlog": {
-      "Version": "1.0.0",
+      "Version": "0.16.3",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
