@@ -529,7 +529,7 @@ class IntegratorBase {
    *
    * @param publish_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next publish will occur.
-   * @param update_dt The step size, > 0.0 (exception will be thrown
+   * @param update_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) at which the next update will occur.
    * @param boundary_dt The step size, >= 0.0 (exception will be thrown
    *        if this is not the case) marking the end of the user-designated
@@ -1690,11 +1690,9 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   // time.
   const T t0 = context_->get_time();
 
-  // Verify that update dt is positive.
-  if (update_dt <= 0.0)
-    throw std::logic_error("Update dt must be strictly positive.");
-
-  // Verify that other dt's are non-negative.
+  // Verify that dt's are non-negative.
+  if (update_dt < 0.0)
+    throw std::logic_error("Update dt is negative.");
   if (publish_dt < 0.0)
     throw std::logic_error("Publish dt is negative.");
   if (boundary_dt < 0.0)

@@ -393,9 +393,11 @@ Vector6d bodySpatialMotionPD(
 
   Matrix3d R_des = body_pose_des.linear();
   Matrix3d R_err_task = R_des * R_body_to_task.transpose();
-  Vector4d angleAxis_err_task = drake::math::rotmat2axis(R_err_task);
-  Vector3d angular_err_task =
-      angleAxis_err_task.head<3>() * angleAxis_err_task(3);
+  const drake::math::RotationMatrix<double> RR_err_task(R_err_task);
+  const Eigen::AngleAxis<double> angle_axis = RR_err_task.ToAngleAxis();
+  const Vector3d& lambda = angle_axis.axis();
+  const double theta = angle_axis.angle();
+  const Vector3d angular_err_task = theta * lambda;
 
   Vector3d xyzdot_err_task = body_v_des.head<3>() - body_xyzdot_task;
   Vector3d angular_vel_err_task = body_angular_vel_des - body_angular_vel_task;

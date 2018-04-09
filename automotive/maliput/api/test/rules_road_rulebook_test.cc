@@ -32,7 +32,7 @@ const SpeedLimitRule kSpeedLimit(SpeedLimitRule::Id("slr_id"),
 class MockRulebook : public RoadRulebook {
  private:
   virtual QueryResults DoFindRules(
-      const std::vector<LaneSRange>& ranges) const {
+      const std::vector<LaneSRange>& ranges, double) const {
     QueryResults results;
     if ((!ranges.empty()) &&
         (ranges[0].lane_id() == kZone.lane_id()) &&
@@ -63,12 +63,18 @@ class MockRulebook : public RoadRulebook {
 GTEST_TEST(RoadRulebookTest, ExerciseInterface) {
   const MockRulebook dut;
 
-  RoadRulebook::QueryResults nonempty = dut.FindRules({kZone});
+  const double kZeroTolerance = 0.;
+
+  RoadRulebook::QueryResults nonempty = dut.FindRules({kZone}, kZeroTolerance);
   EXPECT_EQ(nonempty.right_of_way.size(), 1);
   EXPECT_EQ(nonempty.speed_limit.size(), 1);
-  RoadRulebook::QueryResults empty = dut.FindRules({});
+  RoadRulebook::QueryResults empty = dut.FindRules({}, kZeroTolerance);
   EXPECT_EQ(empty.right_of_way.size(), 0);
   EXPECT_EQ(empty.speed_limit.size(), 0);
+
+  const double kNegativeTolerance = -1.;
+  EXPECT_THROW(dut.FindRules({}, kNegativeTolerance),
+               std::runtime_error);
 
   EXPECT_EQ(dut.GetRule(kRightOfWay.id()).id(), kRightOfWay.id());
   EXPECT_THROW(dut.GetRule(RightOfWayRule::Id("xxx")), std::out_of_range);

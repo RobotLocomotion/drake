@@ -50,7 +50,7 @@ namespace symbolic {
 template <typename VariableOrder>
 struct GradedReverseLexOrder {
   /** Returns true if m1 > m2 under the Graded reverse lexicographic order. */
-  bool operator()(const Monomial& m1, const Monomial& m2) {
+  bool operator()(const Monomial& m1, const Monomial& m2) const {
     const int d1{m1.total_degree()};
     const int d2{m2.total_degree()};
     if (d1 > d2) {

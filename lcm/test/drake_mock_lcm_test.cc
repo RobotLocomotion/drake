@@ -84,6 +84,12 @@ GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
       channel_name), std::runtime_error);
 }
 
+// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
+// deleted, refactor this test to use the HandlerFunction interface.  For now,
+// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
+// keep this all as-is so that all codepaths are covered by tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Handles received LCM messages.
 class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
@@ -115,6 +121,7 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   string channel_{};
   vector<uint8_t> buffer_;
 };
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Tests DrakeMockLcm's ability to "subscribe" to an LCM channel.
 GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {

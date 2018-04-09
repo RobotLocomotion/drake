@@ -1,8 +1,8 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "lcm/lcm-cpp.hpp"
 
@@ -66,14 +66,17 @@ class DrakeLcm : public DrakeLcmInterface {
   void Publish(const std::string& channel, const void* data,
                int data_size, optional<double> time_sec) override;
 
-  void Subscribe(const std::string& channel,
-                 DrakeLcmMessageHandlerInterface* handler) override;
+  void Subscribe(const std::string&, HandlerFunction) override;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  void Subscribe(const std::string&, DrakeLcmMessageHandlerInterface*) override;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  private:
-  class Subscriber;
   ::lcm::LCM lcm_;
   std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
-  std::vector<std::unique_ptr<Subscriber>> subscriptions_;
+  std::list<HandlerFunction> handlers_;
 };
 
 }  // namespace lcm
