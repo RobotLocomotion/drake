@@ -51,7 +51,7 @@ struct LaneEnd {
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
 /// A 3-dimensional rotation.
-//TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
+// TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
