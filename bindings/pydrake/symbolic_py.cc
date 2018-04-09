@@ -110,6 +110,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<>())
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>())
       .def("size", &Variables::size)
+      .def("__len__", &Variables::size)
       .def("empty", &Variables::empty)
       .def("__str__", &Variables::to_string)
       .def("__repr__",
@@ -128,12 +129,19 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("erase", [](Variables& self,
                        const Variables& vars) { return self.erase(vars); })
       .def("include", &Variables::include)
+      .def("__contains__", &Variables::include)
       .def("IsSubsetOf", &Variables::IsSubsetOf)
       .def("IsSupersetOf", &Variables::IsSupersetOf)
       .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf)
       .def("EqualTo", [](const Variables& self,
                          const Variables& vars) { return self == vars; })
+      .def("__iter__",
+           [](const Variables& vars) {
+             return py::make_iterator(vars.begin(), vars.end());
+           },
+           py::keep_alive<
+               0, 1>() /* Essential: keep object alive while iterator exists */)
       .def(py::self == py::self)
       .def(py::self < py::self)
       .def(py::self + py::self)
