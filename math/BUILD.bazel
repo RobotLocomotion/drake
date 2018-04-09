@@ -50,7 +50,6 @@ drake_cc_library(
 drake_cc_library(
     name = "geometric_transform",
     srcs = [
-        "axis_angle.cc",
         "quaternion.cc",
         "random_rotation.cc",
         "roll_pitch_yaw.cc",
@@ -58,7 +57,6 @@ drake_cc_library(
         "transform.cc",
     ],
     hdrs = [
-        "axis_angle.h",
         "quaternion.h",
         "random_rotation.h",
         "roll_pitch_yaw.h",

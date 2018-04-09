@@ -51,6 +51,7 @@ struct LaneEnd {
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
 /// A 3-dimensional rotation.
+// TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
@@ -92,7 +93,7 @@ class Rotation {
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
   Vector3<double> rpy() const {
-    return math::QuaternionToSpaceXYZ(to_drake(quaternion_));
+    return math::QuaternionToSpaceXYZ(quaternion_);
   }
 
   // TODO(maddog@tri.global)  Deprecate and/or remove roll()/pitch()/yaw(),
@@ -110,11 +111,6 @@ class Rotation {
 
  private:
   explicit Rotation(const Quaternion<double>& quat) : quaternion_(quat) {}
-
-  // Converts Eigen (x,y,z,w) quaternion to drake's temporary(?) (w,x,y,z).
-  static Vector4<double> to_drake(const Quaternion<double>& quat) {
-    return Vector4<double>(quat.w(), quat.x(), quat.y(), quat.z());
-  }
 
   Quaternion<double> quaternion_;
 };

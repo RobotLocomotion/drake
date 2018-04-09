@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include "drake/math/axis_angle.h"
 #include "drake/math/random_rotation.h"
 
 double angleDiff(double phi1, double phi2) {
