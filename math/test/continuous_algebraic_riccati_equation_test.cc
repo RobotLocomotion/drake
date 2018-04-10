@@ -50,6 +50,16 @@ GTEST_TEST(CARE, TestCare) {
   SolveCAREandVerify(A1, B1, Q, R1);
 }
 
+// Test the stabilization of the linearized pendulum (at the top).
+GTEST_TEST(CARE, TestCare2) {
+  MatrixXd A1(2, 2), B1(2, 1), Q(2, 2), R1(1, 1);
+  A1 << 0, 1, 10, 0;
+  B1 << 0, 1;
+  Q << 1, 0, 0, 1;
+  R1 << 1;
+  SolveCAREandVerify(A1, B1, Q, R1);
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

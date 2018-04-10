@@ -12,6 +12,7 @@
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -50,6 +51,16 @@ class Sample : public systems::BasicVector<T> {
     this->set_x(42.0);
     this->set_two_word(0.0);
     this->set_absone(0.0);
+  }
+
+  /// Create a symbolic::Variable for each element with the known variable
+  /// name.  This is only available for T == symbolic::Expression.
+  template <typename U = T>
+  typename std::enable_if<std::is_same<U, symbolic::Expression>::value>::type
+  SetToNamedVariables() {
+    this->set_x(symbolic::Variable("x"));
+    this->set_two_word(symbolic::Variable("two_word"));
+    this->set_absone(symbolic::Variable("absone"));
   }
 
   Sample<T>* DoClone() const override { return new Sample; }

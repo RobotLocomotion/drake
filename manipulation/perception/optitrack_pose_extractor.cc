@@ -24,6 +24,9 @@ Isometry3<double> ExtractOptitrackPose(
   // Eigen's W-X-Y-Z ordering.
   auto& q_xyzw = body.quat;
   Eigen::Quaterniond q_wxyz(q_xyzw[3], q_xyzw[0], q_xyzw[1], q_xyzw[2]);
+  // Quaternion arrived in float (single) precision so is not sufficiently
+  // normalized for use in double precision.
+  q_wxyz.normalize();
   // Pose of rigid body frame `B` in Optitrack frame `O`.
   Isometry3<double> X_OB;
   X_OB.linear() = q_wxyz.toRotationMatrix();

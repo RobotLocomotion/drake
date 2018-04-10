@@ -47,6 +47,20 @@ drake_cc_library(
     deps = [
         ":translator",
         "//lcm:interface",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_log_playback_system",
+    srcs = [
+        "lcm_log_playback_system.cc",
+    ],
+    hdrs = [
+        "lcm_log_playback_system.h",
+    ],
+    deps = [
+        ":lcm",
         "//lcm:lcm_log",
         "//systems/framework",
     ],
@@ -112,8 +126,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcm_log_playback_test",
     deps = [
-        ":lcm",
-        "//lcm:lcm_log",
+        ":lcm_log_playback_system",
         "//lcmtypes:drake_signal",
         "//systems/analysis",
     ],

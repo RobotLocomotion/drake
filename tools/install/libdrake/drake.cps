@@ -11,14 +11,13 @@
       "Hints": ["@prefix@/lib/cmake/bot2-core-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "Bullet": {
-      "Version": "2.86",
-      "Hints": ["@prefix@/lib/cmake/bullet"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "Eigen3": {
       "Version": "3.3.3",
       "Hints": ["@prefix@/lib/cmake/eigen3"],
+      "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "fmt": {
+      "Hints": ["@prefix@/lib/cmake/fmt"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "ignition-math4": {
@@ -49,7 +48,7 @@
       "X-CMake-Find-Args": ["CONFIG"]
     },
     "spdlog": {
-      "Version": "1.0.0",
+      "Version": "0.16.3",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
@@ -69,8 +68,8 @@
       "Requires": [
         ":drake-lcmtypes-cpp",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
-        "Bullet:BulletCollision",
         "Eigen3:Eigen",
+        "fmt:fmt-header-only",
         "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",

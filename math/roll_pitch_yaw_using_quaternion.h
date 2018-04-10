@@ -18,22 +18,6 @@
 namespace drake {
 namespace math {
 /**
- * Computes angle-axis representation from Euler angles.
- * @param rpy A 3 x 1 vector. The Euler angles about Body-fixed z-y'-x'' axes
- * by angles [rpy(2), rpy(1), rpy(0)].
- * @return A 4 x 1 angle-axis representation `a`, with `a.head<3>()` being the
- * rotation axis,  `a(3)` being the rotation angle
- * @see rpy2rotmat
- */
-template <typename Derived>
-Vector4<typename Derived::Scalar> rpy2axis(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix
-  // the range problem in Eigen
-  return quat2axis(rpy2quat(rpy));
-}
-
-/**
  * Computes the Quaternion representation of a rotation given the set of Euler
  * angles describing this rotation. These angles follow the Tait–Bryan formalism
  * about body-fixed z-y'-x'' axes. This convention is equivalent to a

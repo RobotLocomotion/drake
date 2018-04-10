@@ -23,8 +23,8 @@ drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     deps = [
-        "//drake/systems/framework:context",
-        "//drake/systems/framework:system",
+        "//systems/framework:context",
+        "//systems/framework:system",
     ],
 )
 
@@ -68,7 +68,7 @@ drake_cc_library(
     ],
     deps = [
         ":integrator_base",
-        "//drake/math:gradient",
+        "//math:gradient",
     ],
 )
 
@@ -107,12 +107,42 @@ drake_cc_library(
     ],
     deps = [
         ":runge_kutta3_integrator",
-        "//drake/common:essential",
-        "//drake/systems/framework:context",
-        "//drake/systems/framework:continuous_state",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/framework:parameters",
-        "//drake/systems/framework:vector",
+        "//common:essential",
+        "//systems/framework:context",
+        "//systems/framework:continuous_state",
+        "//systems/framework:leaf_system",
+        "//systems/framework:parameters",
+        "//systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_initial_value_problem",
+    srcs = [
+        "scalar_initial_value_problem.cc",
+    ],
+    hdrs = [
+        "scalar_initial_value_problem.h",
+    ],
+    deps = [
+        ":initial_value_problem",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "antiderivative_function",
+    srcs = [
+        "antiderivative_function.cc",
+    ],
+    hdrs = [
+        "antiderivative_function.h",
+    ],
+    deps = [
+        ":scalar_initial_value_problem",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
@@ -123,9 +153,9 @@ drake_cc_library(
     deps = [
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
-        "//drake/common:extract_double",
-        "//drake/systems/framework:context",
-        "//drake/systems/framework:system",
+        "//common:extract_double",
+        "//systems/framework:context",
+        "//systems/framework:system",
     ],
 )
 
@@ -138,8 +168,8 @@ drake_cc_googletest(
         ":implicit_euler_integrator",
         ":runge_kutta3_integrator",
         ":simulator",
-        "//drake/common/test_utilities:is_dynamic_castable",
-        "//drake/systems/analysis/test_utilities",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -147,7 +177,7 @@ drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     deps = [
         ":explicit_euler_integrator",
-        "//drake/systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -157,8 +187,8 @@ drake_cc_googletest(
     size = "large",
     deps = [
         ":implicit_euler_integrator",
-        "//drake/systems/analysis/test_utilities",
-        "//drake/systems/plants/spring_mass_system",
+        "//systems/analysis/test_utilities",
+        "//systems/plants/spring_mass_system",
     ],
 )
 
@@ -176,7 +206,7 @@ drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":runge_kutta2_integrator",
-        "//drake/systems/analysis/test_utilities",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -186,10 +216,10 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":runge_kutta3_integrator",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis/test_utilities",
+        "//math:geometric_transform",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -200,9 +230,9 @@ drake_cc_googletest(
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
-        "//drake/multibody/joints",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis/test_utilities",
+        "//multibody/joints",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis/test_utilities",
     ],
 )
 
@@ -213,6 +243,22 @@ drake_cc_googletest(
         ":initial_value_problem",
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_initial_value_problem_test",
+    size = "small",
+    deps = [
+        ":scalar_initial_value_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "antiderivative_function_test",
+    size = "small",
+    deps = [
+        ":antiderivative_function",
     ],
 )
 

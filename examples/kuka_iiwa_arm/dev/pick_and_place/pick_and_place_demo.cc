@@ -98,13 +98,8 @@ class WorldStateSubscriber {
 void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
-  const std::string iiwa_absolute_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_primitive_collision.urdf");
-  const std::string iiwa_end_effector_name = "iiwa_link_ee";
-
   // Makes a WorldState, and sets up LCM subscriptions.
-  WorldState env_state(iiwa_absolute_path, iiwa_end_effector_name);
+  WorldState env_state;
   WorldStateSubscriber env_state_subscriber(&lcm, &env_state);
 
   // Spins until at least one message is received from every LCM channel.

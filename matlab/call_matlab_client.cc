@@ -18,6 +18,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
+#include "drake/common/proto/rpc_pipe_temp_directory.h"
 #include "drake/common/unused.h"
 
 namespace {
@@ -101,7 +102,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   drake::unused(nlhs);
   drake::unused(plhs);
 
-  std::string filename = "/tmp/matlab_rpc";
+  std::string filename
+      = drake::common::GetRpcPipeTempDirectory() + "/matlab_rpc";
 
   if (nrhs == 1) {
     filename = mxGetStdString(prhs[0]);

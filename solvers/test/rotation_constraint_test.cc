@@ -297,7 +297,7 @@ TEST_P(TestMcCormick, TestExactRotationMatrix) {
 
   std::mt19937 generator(41);
   for (int i = 0; i < 40; i++) {
-    R_test = math::UniformlyRandomRotmat(generator);
+    R_test = math::UniformlyRandomRotationMatrix(generator).matrix();
     EXPECT_TRUE(IsFeasible(R_test));
   }
 }

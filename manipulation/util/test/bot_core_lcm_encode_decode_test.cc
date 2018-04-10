@@ -37,7 +37,8 @@ GTEST_TEST(TestLcmUtil, testPose) {
   std::default_random_engine generator;
   generator.seed(0);
   Eigen::Isometry3d pose;
-  pose.linear() = drake::math::UniformlyRandomRotmat(generator);
+  pose.linear() =
+      drake::math::UniformlyRandomRotationMatrix(generator).matrix();
   pose.translation().setLinSpaced(0, drake::kSpaceDimension);
   pose.makeAffine();
   const Eigen::Isometry3d& const_pose = pose;

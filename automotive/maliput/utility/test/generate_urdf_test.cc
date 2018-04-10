@@ -68,7 +68,7 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
 
   // Quick regression test on the URDF, which is mostly static content.
   std::string actual_urdf_contents;
-  // TODO(maddog@tri.global)  spruce is lame.  file::readAsString() does not
+  // TODO(maddog@tri.global)  spruce::file::readAsString() does not
   //                          handle EOF correctly.  File a bug upstream.
   // RE: spruce::file::readAsString(expected_urdf, actual_urdf_contents);
   {
@@ -104,7 +104,7 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
 </robot>
 )R", actual_urdf_contents);
 
-  // spruce is retarded: it has no functionality for reading/walking a
+  // spruce has no functionality for reading/walking a
   // directory, so we have to delete all our files individually here where
   // we know the names.
   EXPECT_TRUE(spruce::file::remove(expected_urdf));

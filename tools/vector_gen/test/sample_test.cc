@@ -84,22 +84,25 @@ GTEST_TEST(SampleTest, AutoDiffXdIsValid) {
   EXPECT_TRUE(ExtractBoolOrThrow(dut.IsValid()));
 }
 
+GTEST_TEST(SampleTest, SetToNamedVariablesTest) {
+  Sample<symbolic::Expression> dut;
+  dut.SetToNamedVariables();
+  EXPECT_EQ(dut.x().to_string(), "x");
+  EXPECT_EQ(dut.two_word().to_string(), "two_word");
+  EXPECT_EQ(dut.absone().to_string(), "absone");
+}
+
 // Cover Simple<Expression>::IsValid.
 GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
-  const symbolic::Variable x{"x"};
-  const symbolic::Variable two_word{"two_word"};
-  const symbolic::Variable absone{"absone"};
-  dut.set_x(x);
-  dut.set_two_word(two_word);
-  dut.set_absone(absone);
+  dut.SetToNamedVariables();
   const symbolic::Formula expected_is_valid =
-      !isnan(x) &&
-      !isnan(two_word) &&
-      !isnan(absone) &&
-      (x >= 0.0) &&
-      (absone >= -1.0) &&
-      (absone <= 1.0);
+      !isnan(dut.x()) &&
+      !isnan(dut.two_word()) &&
+      !isnan(dut.absone()) &&
+      (dut.x() >= 0.0) &&
+      (dut.absone() >= -1.0) &&
+      (dut.absone() <= 1.0);
   EXPECT_TRUE(dut.IsValid().value().EqualTo(expected_is_valid));
 }
 

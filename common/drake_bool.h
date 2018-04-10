@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+#include <Eigen/Core>
+
 #include "drake/common/autodiff.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
@@ -59,6 +61,27 @@ class Bool {
   /// Returns a copy of its value.
   value_type value() const { return value_; }
 
+  /// Returns the true value.
+  static Bool<T> True() { return Bool{!(T(0) < T(0))}; }
+
+  /// Returns the false value.
+  static Bool<T> False() { return Bool{T(0) < T(0)}; }
+
+  /// Provides logical AND operator (&&).
+  ///
+  /// @note We define this operator in the class as a friend function so that
+  /// implicit conversion works as expected (i.e. Bool<T> &&
+  /// Bool<T>::value_type). See item 46 of Effective C++ (3rd ed.) for more
+  /// information.
+  friend Bool<T> operator&&(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() && b2.value()};
+  }
+
+  /// Provides logical OR operator (||).
+  friend Bool<T> operator||(const Bool<T>& b1, const Bool<T>& b2) {
+    return Bool<T>{b1.value() || b2.value()};
+  }
+
  private:
   value_type value_{};
 };
@@ -68,6 +91,12 @@ class Bool {
 template <typename T>
 bool ExtractBoolOrThrow(const Bool<T>& b) {
   return bool{b.value()};
+}
+
+/// Provides logical NOT operator (!).
+template <typename T>
+Bool<T> operator!(const Bool<T>& b) {
+  return Bool<T>{!b.value()};
 }
 
 /// Allows users to use `if_then_else` with a conditional of `Bool<T>` type in
@@ -87,6 +116,56 @@ T if_then_else(const Bool<T>& b, const T& v_then, const T& v_else) {
 template <typename T, typename... Rest>
 T cond(const Bool<T>& b, const T& e_then, Rest... rest) {
   return cond(b.value(), e_then, rest...);
+}
+
+/// Checks if unary predicate @p pred holds for all elements in the matrix @p m.
+template <typename Derived>
+Bool<typename Derived::Scalar> all_of(
+    const Eigen::MatrixBase<Derived>& m,
+    const std::function<typename Bool<typename Derived::Scalar>::value_type(
+        const typename Derived::Scalar&)>& pred) {
+  using T = typename Derived::Scalar;
+  if (m.rows() == 0 || m.cols() == 0) {
+    // all_of holds vacuously when there is nothing to check.
+    return Bool<T>::True();
+  }
+  return m.unaryExpr(pred).redux(
+      [](const typename Bool<T>::value_type& v1,
+         const typename Bool<T>::value_type& v2) { return v1 && v2; });
+}
+
+/// Checks if unary predicate @p pred holds for at least one element in the
+/// matrix @p m.
+template <typename Derived>
+Bool<typename Derived::Scalar> any_of(
+    const Eigen::MatrixBase<Derived>& m,
+    const std::function<typename Bool<typename Derived::Scalar>::value_type(
+        const typename Derived::Scalar&)>& pred) {
+  using T = typename Derived::Scalar;
+  if (m.rows() == 0 || m.cols() == 0) {
+    // any_of is vacuously false when there is nothing to check.
+    return Bool<T>::False();
+  }
+  return m.unaryExpr(pred).redux(
+      [](const typename Bool<T>::value_type& v1,
+         const typename Bool<T>::value_type& v2) { return v1 || v2; });
+}
+
+/// Checks if unary predicate @p pred holds for no elements in the matrix @p m.
+template <typename Derived>
+Bool<typename Derived::Scalar> none_of(
+    const Eigen::MatrixBase<Derived>& m,
+    const std::function<typename Bool<typename Derived::Scalar>::value_type(
+        const typename Derived::Scalar&)>& pred) {
+  using T = typename Derived::Scalar;
+  if (m.rows() == 0 || m.cols() == 0) {
+    // none_of holds vacuously when there is nothing to check.
+    return Bool<T>::True();
+  }
+  const auto neg_pred = [&pred](const T& v) { return !pred(v); };
+  return m.unaryExpr(neg_pred).redux(
+      [](const typename Bool<T>::value_type& v1,
+         const typename Bool<T>::value_type& v2) { return v1 && v2; });
 }
 
 namespace assert {

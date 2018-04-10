@@ -46,8 +46,7 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
   PickAndPlaceStateMachine dut(planner_configuration, true /*single_move*/);
 
   // Create world state and initialize with a trivial configuration.
-  WorldState world_state(FindResourceOrThrow(kIiwaUrdf), "iiwa_link_ee",
-                         planner_configuration.num_tables,
+  WorldState world_state(planner_configuration.num_tables,
                          planner_configuration.target_dimensions);
 
   Isometry3<double> iiwa_base{Isometry3<double>::Identity()};

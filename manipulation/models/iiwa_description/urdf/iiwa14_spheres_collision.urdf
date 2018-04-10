@@ -296,7 +296,7 @@
       <material name="Orange"/>
     </visual>
     <collision>
-      origin rpy="0 0 0" xyz="-2.904627567e-018 -0.01623589495 0.00748218906"/>
+      <origin rpy="0 0 0" xyz="-2.904627567e-018 -0.01623589495 0.00748218906"/>
       <geometry>
         <sphere radius="0.06341754633"/>
       </geometry>
@@ -483,4 +483,10 @@
       <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
+  <collision_filter_group name="wrist">
+    <member link="iiwa_link_5"/>
+    <member link="iiwa_link_6"/>
+    <member link="iiwa_link_7"/>
+    <ignored_collision_filter_group collision_filter_group="wrist"/>
+  </collision_filter_group>
 </robot>

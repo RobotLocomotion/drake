@@ -204,6 +204,12 @@ class TestRigidBodyTree(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             sphere_geometry.getFaces()
 
+        # Add a visual element just to test the spelling of AddVisualElement.
+        tree.world().AddVisualElement(sphere_visual_element)
+
+        # Test that I can call compile.
+        tree.compile()
+
     def test_atlas_parsing(self):
         # Sanity check on parsing.
         pm = PackageMap()

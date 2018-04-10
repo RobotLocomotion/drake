@@ -2,108 +2,40 @@
 
 load(
     "@drake//tools/install:install.bzl",
-    "cmake_config",
     "install",
-    "install_cmake_config",
 )
-load("@drake//tools/lint:python_lint.bzl", "python_lint")
+
+licenses(["notice"])  # Zlib AND (BSD-3-Clause OR LGPL-2.1+ OR Zlib)
+
+# Gimpact, which is used by BulletCollision offers a choice of three licenses,
+# and we choose Zlib to match the license of the rest of Bullet. Hence, the
+# license type only includes "notice" and not "restricted."
 
 package(default_visibility = ["//visibility:public"])
 
-config_setting(
-    name = "linux",
-    values = {"cpu": "k8"},
-    visibility = ["//visibility:private"],
-)
-
 # Note that this is only a portion of Bullet.
 
-BULLET_COPTS = [
-    "-fvisibility-inlines-hidden",
-    "-Wno-all",
-]
-
-BULLET_INCLUDES = ["src"]
-
-LINEAR_MATH_HDRS = glob(["src/LinearMath/**/*.h"])
-
-# Keep defines in sync with Components.LinearMath.Definitions in
-# package-create-cps.py.
-LINEAR_MATH_DEFINES = ["BT_USE_DOUBLE_PRECISION"]
-
-cc_binary(
-    name = "libdrake_bullet_linear_math.so",
-    srcs = glob(["src/LinearMath/**/*.cpp"]) + LINEAR_MATH_HDRS,
-    copts = BULLET_COPTS,
-    defines = LINEAR_MATH_DEFINES,
-    includes = BULLET_INCLUDES,
-    linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_bullet_linear_math.so"],
-        "//conditions:default": [],
-    }),
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-)
-
 cc_library(
-    name = "LinearMath",
-    srcs = ["libdrake_bullet_linear_math.so"],
-    hdrs = LINEAR_MATH_HDRS,
-    copts = BULLET_COPTS,
-    defines = LINEAR_MATH_DEFINES,
-    includes = BULLET_INCLUDES,
+    name = "bullet",
+    srcs = glob([
+        "src/BulletCollision/**/*.cpp",
+        "src/LinearMath/**/*.cpp",
+    ]),
+    hdrs = glob([
+        "src/btBulletCollisionCommon.h",
+        "src/BulletCollision/**/*.h",
+        "src/LinearMath/**/*.h",
+    ]),
+    copts = [
+        "-fvisibility=hidden",
+        "-Wno-all",
+    ],
+    defines = ["BT_USE_DOUBLE_PRECISION"],
+    includes = ["src"],
+    linkstatic = 1,
 )
-
-BULLET_COLLISION_HDRS = glob(["src/BulletCollision/**/*.h"]) + [
-    "src/btBulletCollisionCommon.h",
-]
-
-# BulletCollision contains LGPL code so only build shared library.
-cc_binary(
-    name = "libdrake_bullet_collision.so",
-    srcs = glob(["src/BulletCollision/**/*.cpp"]) + BULLET_COLLISION_HDRS,
-    copts = BULLET_COPTS,
-    includes = BULLET_INCLUDES,
-    linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_bullet_collision.so"],
-        "//conditions:default": [],
-    }),
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-    deps = [":LinearMath"],
-)
-
-cc_library(
-    name = "BulletCollision",
-    srcs = ["libdrake_bullet_collision.so"],
-    hdrs = BULLET_COLLISION_HDRS,
-    copts = BULLET_COPTS,
-    includes = BULLET_INCLUDES,
-    deps = [":LinearMath"],
-)
-
-cmake_config(
-    package = "Bullet",
-    script = "@drake//tools/workspace/bullet:package-create-cps.py",
-    version_file = "VERSION",
-)
-
-install_cmake_config(package = "Bullet")
 
 install(
     name = "install",
-    targets = [
-        ":libdrake_bullet_collision.so",
-        ":libdrake_bullet_linear_math.so",
-    ],
-    hdr_dest = "include/bullet",
-    hdr_strip_prefix = BULLET_INCLUDES,
-    guess_hdrs = "PACKAGE",
-    docs = [
-        "AUTHORS.txt",
-        "LICENSE.txt",
-    ],
-    deps = [":install_cmake_config"],
+    docs = ["LICENSE.txt"],
 )
-
-python_lint()

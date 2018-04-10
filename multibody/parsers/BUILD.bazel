@@ -29,8 +29,8 @@ drake_cc_library(
         "xml_util.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/rigid_body_plant:compliant_material",
+        "//multibody:rigid_body_tree",
+        "//multibody/rigid_body_plant:compliant_material",
         "@spruce",
         "@tinydir",
         "@tinyxml2",
@@ -50,7 +50,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":parsers",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 
@@ -68,7 +68,7 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":parsers",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 
@@ -77,11 +77,11 @@ drake_cc_googletest(
     srcs = ["test/urdf_parser_test/urdf_parser_test.cc"],
     data = [
         ":test_models",
-        "//drake/examples/atlas:models",
+        "//examples/atlas:models",
     ],
     deps = [
         ":parsers",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 

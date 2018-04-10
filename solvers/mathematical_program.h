@@ -194,7 +194,8 @@ enum ProgramAttributes {
   kLorentzConeConstraint = 1 << 9,
   kRotatedLorentzConeConstraint = 1 << 10,
   kPositiveSemidefiniteConstraint = 1 << 11,
-  kBinaryVariable = 1 << 12
+  kBinaryVariable = 1 << 12,
+  kCallback = 1 << 13
 };
 typedef uint32_t AttributesSet;
 
@@ -323,49 +324,8 @@ class MathematicalProgram {
    * However, the clone's x values will be initialized to NaN, and all internal
    * solvers will be freshly constructed.
    * @retval new_prog. The newly constructed mathematical program.
-   * TODO(hongkai.dai): I put the definition of this function in the header
-   * file, so that the target mathematical_program_api has the definition of
-   * this virtual function. We should make MathematicalProgramSolverInterface
-   * independent of MathematicalProgram.
    */
-  virtual std::unique_ptr<MathematicalProgram> Clone() const {
-    // The constructor of MathematicalProgram will construct each solver. It
-    // also sets x_values_ and x_initial_guess_ to default values.
-    auto new_prog = std::make_unique<MathematicalProgram>();
-    // Add variables and indeterminates
-    // AddDecisionVariables and AddIndeterminates also set
-    // decision_variable_index_ and indeterminate_index_ properly.
-    new_prog->AddDecisionVariables(decision_variables_);
-    new_prog->AddIndeterminates(indeterminates_);
-    // Add costs
-    new_prog->generic_costs_ = generic_costs_;
-    new_prog->quadratic_costs_ = quadratic_costs_;
-    new_prog->linear_costs_ = linear_costs_;
-
-    // Add constraints
-    new_prog->generic_constraints_ = generic_constraints_;
-    new_prog->linear_constraints_ = linear_constraints_;
-    new_prog->linear_equality_constraints_ = linear_equality_constraints_;
-    new_prog->bbox_constraints_ = bbox_constraints_;
-    new_prog->lorentz_cone_constraint_ = lorentz_cone_constraint_;
-    new_prog->rotated_lorentz_cone_constraint_ =
-        rotated_lorentz_cone_constraint_;
-    new_prog->positive_semidefinite_constraint_ =
-        positive_semidefinite_constraint_;
-    new_prog->linear_matrix_inequality_constraint_ =
-        linear_matrix_inequality_constraint_;
-    new_prog->linear_complementarity_constraints_ =
-        linear_complementarity_constraints_;
-
-    new_prog->x_initial_guess_ = x_initial_guess_;
-    new_prog->solver_id_ = solver_id_;
-    new_prog->solver_options_double_ = solver_options_double_;
-    new_prog->solver_options_int_ = solver_options_int_;
-    new_prog->solver_options_str_ = solver_options_str_;
-
-    new_prog->required_capabilities_ = required_capabilities_;
-    return new_prog;
-  }
+  std::unique_ptr<MathematicalProgram> Clone() const;
 
   /**
    * Adds continuous variables, appending them to an internal vector of any
@@ -801,6 +761,45 @@ class MathematicalProgram {
    */
   void AddIndeterminates(
       const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the for the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const VariableRefList& vars) {
+    return AddVisualizationCallback(callback,
+                                    ConcatenateVariableRefList((vars)));
+  }
 
   /**
    * Adds a generic cost to the optimization program.
@@ -1981,7 +1980,7 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
-   * espressions @p e. We create a new symmetric matrix of variables M being
+   * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
    * @tparam Derived An Eigen Matrix of symbolic expressions.
    * @param e Imposes constraint "e is positive semidefinite".
@@ -2268,6 +2267,14 @@ class MathematicalProgram {
   double GetLowerBoundCost() const { return lower_bound_cost_; }
 
   /**
+   * Getter for all callbacks.
+   */
+  const std::vector<Binding<VisualizationCallback>>& visualization_callbacks()
+      const {
+    return visualization_callbacks_;
+  }
+
+  /**
    * Getter for all generic costs.
    */
   const std::vector<Binding<Cost>>& generic_costs() const {
@@ -2484,6 +2491,38 @@ class MathematicalProgram {
     return binding_y;
   }
 
+  /** Evaluates all visualization callbacks registered with the
+   * MathematicalProgram.
+   *
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a logic error if the size does not match.
+   **/
+  void EvalVisualizationCallbacks(
+      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expects "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::logic_error(oss.str());
+    }
+
+    Eigen::VectorXd this_x;
+
+    for (auto const& binding : visualization_callbacks_) {
+      auto const& obj = binding.evaluator();
+
+      const int num_v_variables = binding.GetNumElements();
+      this_x.resize(num_v_variables);
+      for (int j = 0; j < num_v_variables; ++j) {
+        this_x(j) =
+            prog_var_vals(FindDecisionVariableIndex(binding.variables()(j)));
+      }
+
+      obj->EvalCallback(this_x);
+    }
+  }
+
   /**
    * Evaluates the evaluator in @p binding at the solution value.
    * @return The value of @p binding at the solution value.
@@ -2543,6 +2582,8 @@ class MathematicalProgram {
 
   std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
   VectorXIndeterminate indeterminates_;
+
+  std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
 
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
