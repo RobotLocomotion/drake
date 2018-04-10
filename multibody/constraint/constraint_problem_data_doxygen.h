@@ -87,7 +87,7 @@ position-level unknowns, velocity-level unknowns, or force/acceleration-level
 unknowns*, respectively.
 
 <h4>Constraints with velocity-level unknowns</h4>
-This documentation does not generally attempt to distinguish
+This documentation distinguishes
 between equations that are posed at the position level but are
 differentiated once with respect to time (i.e., to reduce the Differential
 Algebraic Equation or Differential Complementarity Problem index [Ascher 1998]):
@@ -116,8 +116,8 @@ ġᵥ(t,q,v;v̇) = 0
 </pre>
 if gᵥ(.) is nonholonomic and has been differentiated once with respect to time
 (again, for DAE/DCP index reduction). Constraints with acceleration-level
-unknowns can be also be modified to incorporate terms dependent on constraint
-forces, like:<pre>
+unknowns can be also incorporate terms dependent on constraint forces,
+like:<pre>
 g̈ₚ + λ = 0
 </pre>
 Making the constraint type above more general by permitting unknowns over λ
@@ -167,11 +167,8 @@ g̈ₚ + 2αġₚ + β²gₚ = 0
 for non-negative scalar α and real β (α and β can also represent diagonal
 matrices for greater generality). α and β, which both have units of 1/sec
 (i.e., the reciprocal of unit time) are described more fully in
-[Baumgarte 1972].
-
-We will temporarily consider the case gₚ → ℝ, i.e., gₚ(.) maps to a scalar
-rather than a vector. The use of α and β above make correcting position-level
-(gₚ) and velocity-level (ġ) holonomic constraint errors analogous to the dynamic
+[Baumgarte 1972]. The use of α and β above make correcting position-level
+(gₚ) and velocity-level (gₚ̇) holonomic constraint errors analogous to the dynamic
 problem of stabilizing a damped harmonic oscillator. Given that analogy, 2α is
 the viscous damping coefficient and β² the stiffness coefficient. These two
 coefficients make predicting the motion of the oscillator challenging to
@@ -204,8 +201,8 @@ where ε is a non-negative scalar; alternatively, it can represent a diagonal
 matrix with the same number of rows/columns as the dimension of gₐ and λ,
 permitting different coefficients for each constraint equation.
 With ελ > 0, it becomes easier to satisfy the constraint
-gₐ(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ will not quite
-satisfy gₐ ≥ 0: gₐ will become slightly negative. As hinted above,
+gₐ(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ may not quite
+satisfy gₐ ≥ 0: gₐ can become slightly negative. As hinted above,
 regularization can confer two benefits. First, the resulting complementarity
 problems become easier to solve; more importantly, any complementarity problem
 becomes solvable given sufficient regularization [Cottle 1992].
@@ -220,7 +217,7 @@ Unfortunately, not all constraints can be intuitively softened. While
 [Lacoursiere 2007] convincingly argues for softening interpenetration
 constraints between rigid bodies (and even provides an algorithmic mechanism
 for doing so), users typically expect stiction and Coulomb friction constraints
-to be maintained to high tolerances. Without softening *all* constraints, the
+to be maintained to high accuracy. Without softening *all* constraints, the
 regularization benefits noted above disappear.
 
 <h4>Regularizing at the velocity level</h4>
@@ -291,7 +288,7 @@ complementarity problems become easier to solve (albeit at the expense of
 larger constraint errors to be stabilized).
 
 <h4>Bilateral constraints</h4>
-Note that Drake does not regularize bilateral constraints.
+Drake does not regularize bilateral constraints.
 */
 
 /** @defgroup constraint_Jacobians Constraint Jacobian matrices
@@ -356,48 +353,10 @@ The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
 keeps the contact force along the contact normal compressive, as is consistent
 with a non-adhesive contact model.
 
-@image html multibody/constraint/images/surface_contact.png "Figure 1:
-     Illustration of the interpretation of contact surface constraints when
-     two spheres are interpenetrating."
-
-<h4>The Coulomb friction model</h4>
-Incorporating the Coulomb friction model for sliding contact between dry
-surfaces introduces a new constraint equation:<pre>
-μλ = ᶜλ 
-</pre>
-where ᶜλ is the force due to Coulomb friction, μ is the (dimensionless)
-Coulomb coefficient of friction, and λ retains its previous definition.
-The frictional force ᶜλ is applied against the direction of sliding between
-two bodies. When there is no sliding, this equation does not apply; those
-cases can be treated using special equations for stiction (as Drake's
-constraint problem data does, see @ref frictional_constraints), by applying no
-force at all, or by using a "regularized" Coulomb friction model (using e.g.,
-the hyperbolic tangent function). 
-
-Drake's constraint solver solves for ᶜλ by substituting it with μλ in the
-multi-body dynamics equations. As a concrete example, consider
-a system consisting for two bodies sliding at a single point of contact with
-surface normal (n̂) and sliding direction q̂. If all other (non-contact related)
-forces are captured by the generalized force f, the dynamics of that system
-could be written
-as:<pre>
-Mv̇ = f + Nᵀλ - (Qᵀ)ᶜλ
-</pre>
-where M is the generalized inertia matrix. Instead, Drake uses the equivalent
-equation:
-<pre>
-Mv̇ = f + (Nᵀ - μQᵀ)λ
-</pre>
-Where Nᵀ is the wrench on the bodies that results from applying a unit force
-along n̂ to the bodies at the point of contact and Qᵀ is the wrench on the
-bodies that results from applying a unit force along q̂.
-
-Note that *the Coulomb friction model is not applied in velocity-level
-constraint equations* (see @ref frictional_constraints).
-
+@image html multibody/constraint/images/surface_contact.png "Figure 1: Illustration of the interpretation of contact surface constraints when two spheres are interpenetrating. The contact surface, normal, and signed distance are determined by mapping the undeformed intersecting configurations to the minimum-potential-energy deformed 'kissing' configuration."
 
 <h4>Constraint regularization and softening</h4>
-As discussed in @ref constraint_regularization, the non-interpenetration
+As discussed in @ref constraint_regularization, the contact surface
 constraint can be regularized or softened by adding a term to, e.g., the
 second time derivative of the equation:
 <pre>
@@ -432,12 +391,52 @@ constraint problem data</h4>
     either `N_minus_muQ_transpose_mult` (for
     @ref drake::multibody::constraint::ConstraintAccelProblemData
     "ConstraintAccelProblemData") or `N_transpose_mult` (for
-    @ref drake::multibody::constraint::ConstraintAccelProblemData
+    @ref drake::multibody::constraint::ConstraintVelProblemData
     "ConstraintVelProblemData")
 */
  
 /** @defgroup frictional_constraints Frictional constraints
 @ingroup constraint_overview
+
+<h4>The Coulomb friction model (for sliding)</h4>
+Incorporating the Coulomb friction model for sliding contact between dry
+surfaces introduces the constraint equation:<pre>
+μλ = λᶜ
+</pre>
+where λᶜ is the force due to Coulomb friction, μ is the (dimensionless)
+Coulomb coefficient of friction, and λᴺ corresponds to the constraint force
+applied along the surface normal. The frictional force λᶜ is applied against the
+direction of sliding between two bodies. When there is no sliding, this equation
+does not apply; those cases can be treated using special equations for stiction
+(see the next section), by applying no force at all, or by using a
+"regularized" Coulomb friction model (using e.g., the hyperbolic tangent
+function).
+
+Drake's constraint solver solves for λᶜ by substituting it with μλᴺ (i.e., the
+coefficient of friction times the force applied along the surface normal) in the
+multi-body dynamics equations. As a concrete example, consider
+a system consisting for two bodies sliding at a single point of contact with
+surface normal (n̂) and sliding direction q̂. If all other (non-contact related)
+forces are captured by the generalized force f, the dynamics of that system
+could be written
+as:<pre>
+Mv̇ = f + Nᵀλᴺ - (Qᵀ)λᶜ
+</pre>
+where M is the generalized inertia matrix, Nᵀ is the wrench on the bodies that
+results from applying a unit force along n̂ to the bodies at the point of
+contact, and Qᵀ is the wrench on the bodies that results from applying a unit
+force along q̂. Instead, Drake uses the equivalent equation:
+<pre>
+Mv̇ = f + (Nᵀ - μQᵀ)λᴺ
+</pre>
+which allows the constraint solver to avoid explicitly solving for ᶜλ.
+This optimization explains the provenance of `N_minus_muQ_transpose_mult` (for
+@ref drake::multibody::constraint::ConstraintAccelProblemData
+"ConstraintAccelProblemData").
+
+Note that *the Coulomb friction model is not applied in velocity-level
+constraint equations*.
+
 
 <i>This section applies to both non-sliding contacts for constraints solved
 at the acceleration-level and **all contacts** for constraints solved at the
@@ -462,16 +461,16 @@ plane and pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and
 The non-sliding constraints can be categorized into kinematic constraints on
 tangential motion and frictional force constraints. Such a grouping for a 3D
 contact is provided below:<pre>
-(0) ⁰ĝₐ = μ⋅fᴺ - ||fˢ fᵗ|| ≥ 0
+(0) ⁰ĝₐ = μ⋅λᴺ - ||λˢ λᵗ|| ≥ 0
 (1) ¹ĝₐ = ((p̈ᵢ - p̈ⱼ)ᵀbₛ) = 0
 (2) ²ĝₐ = ((p̈ᵢ - p̈ⱼ)ᵀbₜ) = 0
 </pre>
-where μ is the coefficient of "static" friction, fᴺ is the magnitude of the
-force applied along the contact normal, and fˢ and fᵗ are scalars
+where μ is the coefficient of "static" friction, λᴺ is the magnitude of the
+force applied along the contact normal, and λˢ and λᵗ are scalars
 corresponding to the frictional forces applied along the basis vectors.
 Since nonlinear equations are typically challenging to solve, the ĝ̂ equations
 are often transformed to linear approximations:<pre>
-(0')      ⁰g̅ₐ = μ⋅fᴺ - 1ᵀfᵇ
+(0')      ⁰g̅ₐ = μ⋅λᴺ - 1ᵀλᵇ
 (1')      ¹g̅ₐ = (p̈ᵢ - p̈ⱼ)ᵀb₁
 ...
 (nr')     ⁿʳg̅ₐ = (p̈ᵢ - p̈ⱼ)ᵀbₙᵣ
@@ -481,15 +480,15 @@ are often transformed to linear approximations:<pre>
 </pre>
 where b₁,...,bₙᵣ ∈ ℝ³ (nk = 2nr) are a set of spanning vectors in the contact
 tangent plane (the more vectors, the better the approximation to the
-nonlinear friction cone), and fᵇ ≥ 0 (which will conveniently allow us
+nonlinear friction cone), and λᵇ ≥ 0 (which will conveniently allow us
 to pose these constraints within the linear complementarity problem
-framework), where fᵇ ∈ ℝⁿᵏ are non-negative scalars that represent the
+framework), where λᵇ ∈ ℝⁿᵏ are non-negative scalars that represent the
 frictional force along the spanning vectors and the negated spanning
 vectors. Equations 0'-nk' cannot generally be satisfied simultaneously:
-maximizing fᵇ (i.e., fᵇ = μ⋅fᴺ) may be insufficient to keep the relative
+maximizing λᵇ (i.e., λᵇ = μ⋅λᴺ) may be insufficient to keep the relative
 tangential acceleration at the point of contact zero. Accordingly, we
 transform Equations 0'-nk' to the following:<pre>
-(0*)      ⁰gₐ = μ⋅fᴺ - 1ᵀfᵇ
+(0*)      ⁰gₐ = μ⋅λᴺ - 1ᵀλᵇ
 (1*)      ¹gₐ = (p̈ᵢ - p̈ⱼ)ᵀb₁ - Λ
 ...
 (nr*)     ⁿʳgₐ = (p̈ᵢ - p̈ⱼ)ᵀbₙᵣ - Λ
@@ -499,16 +498,16 @@ transform Equations 0'-nk' to the following:<pre>
 </pre>
 which lead to the following complementarity conditions:<pre>
 0 ≤ ⁰gₐ     ⊥      Λ ≥ 0
-0 ≤ ¹gₐ     ⊥    fᵇ₁ ≥ 0
+0 ≤ ¹gₐ     ⊥    λᵇ₁ ≥ 0
 ...
-0 ≤ ⁿʳgₐ    ⊥    fᵇₙᵣ ≥ 0
-0 ≤ ⁿʳ⁺¹gₐ  ⊥  fᵇₙᵣ₊₁ ≥ 0
-0 ≤ ⁿᵏgₐ    ⊥    fᵇₙₖ ≥ 0
+0 ≤ ⁿʳgₐ    ⊥    λᵇₙᵣ ≥ 0
+0 ≤ ⁿʳ⁺¹gₐ  ⊥  λᵇₙᵣ₊₁ ≥ 0
+0 ≤ ⁿᵏgₐ    ⊥    λᵇₙₖ ≥ 0
 </pre>
 where Λ is roughly interpretable as the remaining tangential acceleration
 at the contact after constraint forces have been applied.  From this
 construction, the frictional force to be applied along direction
-i will be equal to fᵇᵢ - fᵇₙᵣ₊ᵢ.
+i will be equal to λᵇᵢ - λᵇₙᵣ₊ᵢ.
 
 <h4>Friction constraints at the velocity-level</h4>
 Drake's velocity-level formulation treats both sliding and non-sliding contact
@@ -520,7 +519,7 @@ vice versa, during impact. The constraints now act to maximize negative work in
 the contact tangent plane [Anitescu 1997]. Reflecting this change at the
 velocity level, Equations (0*)-(nk*) are modified to:
 <pre>
-(0⁺)       ⁰gᵥ = μ⋅fᴺ - 1ᵀfᵇ
+(0⁺)       ⁰gᵥ = μ⋅λᴺ - 1ᵀλᵇ
 (1⁺)       ¹gᵥ = (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
 ...
 (nr⁺)     ⁿʳgᵥ = (ṗᵢ - ṗⱼ)ᵀbᵣ - Λ
@@ -528,7 +527,7 @@ velocity level, Equations (0*)-(nk*) are modified to:
 ...
 (nk⁺)     ⁿᵏgᵥ = -(ṗᵢ - ṗⱼ)ᵀbₙᵣ - Λ
 </pre>
-fᴺ and fᵇ now reflect impulsive forces, and, similarly, Λ now corresponds to
+λᴺ and λᵇ now reflect impulsive forces, and, similarly, Λ now corresponds to
 residual tangential velocity post-impact (i.e., after those impulsive forces
 are applied). The remainder of the discussion in the previous section, apart
 from these modifications to the constraints, still applies.
@@ -544,10 +543,10 @@ infrastructure that permits using these capabilities:
   - Regularization/softening of the no-slip constraint is effected through
     `gammaF`
   - Regularization/softening of the linearized version of the Coulomb friction
-    relationship constraint (i.e., μ⋅fᴺ = 1ᵀfᵇ) is effected through
+    relationship constraint (i.e., μ⋅λᴺ = 1ᵀλᵇ) is effected through
     `gammaE`. A positive value of `gammaE` corresponds to permitting the
     linearized frictional force to lie outside of the friction cone
-    (μ⋅fᴺ < 1ᵀfᵇ); a zero value of `gammaE` requires the linearized
+    (μ⋅λᴺ < 1ᵀλᵇ); a zero value of `gammaE` requires the linearized
     frictional force force to lie inside or on the friction cone.
   - Constraint stabilization of the no-slip constraint is effected through `kF`
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
