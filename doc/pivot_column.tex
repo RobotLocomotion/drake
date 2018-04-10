@@ -1,0 +1,282 @@
+\documentclass{article}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+% necessary packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{oldstyle}
+\usepackage{color}
+\usepackage{soul}
+% disabled b/c we're using tcolorbox
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+
+% math stuff
+\providecommand{\inv}[1]{{#1}^{\ensuremath{\mathsf{-1}}}} % inverse ...
+\providecommand{\tr}[1]{{#1}^{\ensuremath{\mathsf{T}}}} % transpose ...
+\providecommand{\itr}[1]{{#1}^{\ensuremath{\mathsf{-T}}}} % transpose ...
+\providecommand{\strans}[1]{{#1}^{\ensuremath{\mathsf{S}}}} % transpose ...
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\left\lVert#1\right\rVert}
+\providecommand{\svect}[1]{\hat{\bm{#1}}}
+\providecommand{\vect}[1]{\bm#1}
+\providecommand{\mat}[1]{\mathbf#1}
+\providecommand{\smat}[1]{\hat{\mathbf{#1}}}
+\providecommand{\bigTheta}{\mathit{\Theta}}
+\providecommand{\bigO}{\mathit{O}}
+\providecommand{\sgn}[1]{\textrm{sgn}(#1)}
+\providecommand{\xform}[3]{\hspace{0mm}_#1\mat{#2}_#3}
+\newcommand{\ud}{\,\mathrm{d}}
+
+% lists
+\newcommand{\ia}{(\textos{a})\!}
+\newcommand{\ib}{(\textos{b})\!}
+\newcommand{\ic}{(\textos{c})\!}
+\newcommand{\id}{(\textos{d})\!}
+\newcommand{\ie}{(\textos{e})\!}
+\newcommand{\1}{(\textos{1})\!}
+\newcommand{\2}{(\textos{2})\!}
+\newcommand{\3}{(\textos{3})\!}
+\newcommand{\4}{(\textos{4})\!}
+\newcommand{\5}{(\textos{5})\!}
+\newcommand{\6}{(\textos{6})\!}
+\newcommand{\7}{(\textos{7})\!}
+\newcommand{\8}{(\textos{8})\!}
+
+\DeclareMathOperator*{\minimize}{minimize}
+
+% indicate necessary changes
+\providecommand{\captiontxt}[1]{\caption{\emph{#1}}}
+\providecommand{\note}[1]{\textcolor{orange}{#1}} 
+\providecommand{\changeme}[1]{\textcolor{red}{#1}} 
+\providecommand{\TODO}[1]{
+\sethlcolor{yellow}
+\noindent
+$\cdot$\ \hl{#1}
+\\
+} 
+
+\title{Computing the principal pivoting transform for solving Linear Complementarity Problems with Lemke's Algorithm}
+\date{}
+\author{Hongkai Dai and Evan Drumwright\\Toyota Research Institute}
+
+\begin{document}
+\maketitle
+\section{Problem statement} Given tuples $w = \{ w_1, \hdots, w_n \}$ and $z = \{z_1, \hdots, z_n, z_{n+1}\}$, which can be arranged into vectors as follows:
+\begin{align*}
+	\vect{w} =& \tr{\begin{bmatrix}w_1 & \hdots & w_n \end{bmatrix}}\in\mathbb{R}^n \\
+		\vect{z} =& \tr{\begin{bmatrix}z_1 & \hdots & z_n & z_{n+1} \end{bmatrix}}\in\mathbb{R}^{n+1},
+\end{align*}
+we seek to permute the relationship:
+\begin{align*}
+	\vect{w} = \vect{q} + \mat{M}\vect{z}
+\end{align*}
+where $\vect{q}\in\mathbb{R}^n, \mat{M}\in\mathbb{R}^{n\times (n+1)}$ are a given vector/matrix (note that boldface is used to help distinguish vectors and matrices from sets). $z_{n+1}$ will hereforth be referred to as the ``artificial variable'' by swapping some entries in the ``dependent variable tuple'' $w$ with some entries in the ``independent variable'' tuple $z$, yielding two new sets $z'$ and $w'$. Similarly to the matrix/vector relationship above, vectors $\vect{z}' \in \mathbb{R}^{n+1}$ and $\vect{w}' \in \mathbb{R}^n$ can be defined that correspond to variable indices of $z$ and $w$. \emph{The problem that this document seeks to solve is the vector} $\vect{q}'$ \emph{and the matrix} $\mat{M}'$ (actually, just a single column of it) \emph{such that the relationship}:
+\begin{align*}
+\vect{w}' = \vect{q}' + \mat{M}'\vect{z}'
+\end{align*}
+follows from the ordering in the vectors corresponding to the positions of the
+individual $w$ and $z$ variables in the tuples $w'$ and $z'$. Recall that
+pivoting takes the value $\vect{z'} = \vect{0}$, which allows $\vect{w'}$ to be
+determined simply be setting it equal to $\vect{q}'$, via the equation above.
+This rearrangement is known as a \emph{principal pivoting transform}. 
+
+One of the variables in the independent variable tuple $z'$ will be identified as the \textit{driving variable}. We will denote this variable as $z'_{\textrm{driving}}$. Our goal is to find the vector $\vect{q}'$, together with the column in $\mat{M}'$ that will be multiplied (i.e., via the inner product operation) with $z'_{\textrm{driving}}$. We will denote this column as $\mat{M}'_{\textrm{driving}}$.
+
+\subsubsection{Running example} 
+We consider the LCP from Example 4.4.7 in \cite{Cottle:1992}:
+\begin{align*}
+	\begin{bmatrix} w_1 \\ w_2 \\ w_3\end{bmatrix} = \underbrace{\begin{bmatrix}-3 \\ 6 \\ -1\end{bmatrix}}_{q} + \underbrace{\begin{bmatrix}  0 & -1 & 2 & 1\\ 2 & 0 & -2 & 1 \\ -1 & 1 & 0 & 1\end{bmatrix}}_{M}\begin{bmatrix}z_1 \\ z_2 \\ z_3 \\ z_4\end{bmatrix}
+\end{align*}
+After some number of pivoting operations, assume that the ``dependent'' tuple $w'$ and ``independent'' tuple $z'$ consist of:
+\begin{align}
+	w' = \{ z_4, w_2, z_3 \} ,
+	z' = \{ w_1, w_3, z_2, z_1 \} 
+    \tag{1} % NOTE: Do not change equation number without changing
+            % unrevised_lemke_solver_test.cc
+\end{align}
+
+
+\subsection{Terminology} \label{subsec:terminology}
+We now introduce some terminology:
+\begin{itemize}
+	\item \textsc{independent w}: the tuple of variables from $w$ that (partially) comprise $z'$ in the order in which they are found in $w$  (i.e., the elements of \textsc{independent w} appear in ascending order, e.g., $\{ w_1, w_2 \}$). In the running example, \textsc{independent w} is $\{ w_1, w_3 \}$.
+		\begin{itemize}
+			\item  $\alpha$: the positions in $w$ of the elements from \textsc{independent w}. In the running example, $\alpha = \{ 1, 3 \}$. From the definition of \textsc{independent w}, these $w$ elements of $\alpha$ appear in ascending order.
+			\item $\alpha'$: the respective indices in $z'$ of the variables from \textsc{independent w}. In the running example, $\alpha' = \{ 1, 2\}$. These $w$ elements of $\alpha'$ \emph{elements will not necessarily be present in ascending order.} 
+		\end{itemize}
+		Note that the elements in the ``vanilla'' tuple correspond to variable indices, while elements in the primed tuple correspond to tuple indices. Also, \textbf{observe} the invariant $w_{\alpha_i} = z'_{\alpha'_i}$.
+	\item \textsc{dependent z}: the tuple of variables from $z$ that (partially) comprise $w'$ in the order in which they are found in $z$ (i.e., the elements of \textsc{dependent z} appear in ascending order, e.g., $\{ z_3, z_4 \}$). In the running example, \textsc{dependent z} is $\{ z_3, z_4 \}$.
+		\begin{itemize}
+			\item $\beta$: the positions in $z$ of the elements from \textsc{dependent z}. In the running example, $\beta = \{3, 4\}$ (corresponding to $z_3$ and $z_4$). From the definition of \textsc{dependent z}, these $z$ elements of $\beta$ appear in ascending order.
+			\item $\beta'$: the respective indices in $w'$ of the variables from \textsc{dependent z}. In the running example, $\beta' = \{3, 1\}$. These $z$ elements of $\alpha'$ \emph{elements will not necessarily be present in ascending order.}
+		\end{itemize}
+		Again, note that the elements in the ``vanilla'' tuple correspond to variable indices, while elements in the primed tuple correspond to tuple indices. Also, \textbf{observe} the invariant $z_{\beta_i} = w'_{\beta'_i}$.
+	\item \textsc{dependent w}: the tuple of variables from $w$ that (partially) comprise $w'$ in the order in which they are found in $w$ (i.e., the elements of \textsc{dependent w} appear in ascending order, e.g., $\{ w_1, w_2 \}$). In the running example, \textsc{dependent w} is $\{ w_2 \}$.
+		\begin{itemize}
+			\item $\bar{\alpha}$: the positions in $w$ of the elements from \textsc{dependent w}. In the running example, $\bar{\alpha} = \{ 2 \}$. From the definition of \textsc{dependent w}, these $w$ elements of $\bar{\alpha}$ appear in ascending order.
+			\item $\bar{\alpha}'$: the respective indices in $w'$ of the variables from \textsc{dependent w}. In the running example, $\bar{\alpha}' = \{ 2 \}$. These $w$ elements of $\bar{\alpha}$'s \emph{elements are not necessarily present in ascending order}.
+		\end{itemize}
+		Again, note that the elements in the ``vanilla'' tuple correspond to variable indices, while elements in the primed tuple correspond to tuple indices. Also, \textbf{observe} the invariant $w_{\bar{\alpha}_i} = w'_{\bar{\alpha}'_i}$.
+	\item \textsc{independent z}: the tuple of variables from $z$ that (partially) comprise $z'$ in the order in which they are found in $z$ (i.e., the elements of \textsc{independent z} appear in ascending order, e.g., $\{ z_1, z_2 \}$). In the running example, \textsc{independent z} is $\{ z_1, z_2 \}$. The elements in \textsc{independent z} are present in ascending order (e.g., $\{ z_1, z_2 \}$).
+		\begin{itemize}
+			\item $\bar{\beta}$: one greater, respectively, than the positions in $z$ of the elements from \textsc{independent z}. In the running examples, $\bar{\beta} = \{1, 2 \}$. From the definition of \textsc{independent z}, the elements of $\bar{\beta}$'s elements appear in ascending order.
+			\item $\bar{\beta}'$: the respective indices in $z'$ of the variables from \textsc{independent z}. In the running example, $\bar{\beta}' = \{4, 3 \}$. These $z$ elments of $\bar{\beta}'$ \emph{elements are not necessarily present in ascending order}.
+		\end{itemize}
+		Once more, note that the elements in the ``vanilla'' tuple correspond to variable indices, while elements in the primed tuple correspond to tuple indices. Also, \textbf{observe} the invariant $z_{\bar{\beta}_i} = z'_{\bar{\beta}'_i}$.
+\end{itemize}
+
+\section{Approach}
+\begin{lemma}
+	The length of \textsc{independent w} is the same as that of \textsc{dependent z}.
+\end{lemma}
+We will denote the length of \textsc{independent w} as $m$. In the running example, $m = 2$.
+\subsection{Computing $q'$}
+We first define a \textit{square} matrix $\mat{M}^{\alpha\beta} \in\mathbb{R}^{m \times m}$ as being comprised of entries $i \in 1,\ldots,m$ and $j \in 1, \ldots, m$:
+\begin{align*}
+	\mat{M}^{\alpha\beta}_{ij} = \mat{M}_{\alpha_i\beta_j}
+\end{align*}
+and a rectangular matrix $\mat{M}^{\bar{\alpha}\beta} \in\mathbb{R}^{(n-m)\times m}$ as being comprised of entries $i \in 1,\ldots,n-m$ and $j \in 1, \ldots, m$:
+\begin{align*}
+	\mat{M}^{\bar{\alpha}\beta}_{ij} = \mat{M}_{\bar{\alpha}_i\beta_j}
+\end{align*}
+
+Likewise, we define vectors $\vect{q}^{\alpha} \in \mathbb{R}^m$ and $\vect{q}^{\bar{\alpha}} \in \mathbb{R}^{(n-m)}$ as being comprised of entries $i \in 1,\ldots,m$ and $j \in 1, \ldots, n-m$:
+\begin{align*}
+	q^{\alpha}_i & = q_{\alpha_i} \\
+	q^{\bar{\alpha}}_j & = q_{\bar{\alpha}_j}
+\end{align*}
+In the running example---recall that $\alpha = \{1, 3\}, \beta = \{3, 4\},
+\bar{\alpha} = \{2 \}$---we highlight the parts of $\vect{q}$ and $\mat{M}$ that correspond to $\textcolor{red}{q^{\alpha}}$, $\textcolor{red}{M^{\alpha\beta}}$ in red, and $\textcolor{blue}{q^{\bar{\alpha}}}$, $\textcolor{blue}{M^{\bar{\alpha}\beta}}$ in blue. Now putting the example into ``tableaux form'':
+\begin{center}
+	\begin{tabular}{|c|c|c c c c|}
+		\hline
+		      &  & $z_1$ & $z_2$ & $\textcolor{red}{z_3}$ & $\textcolor{red}{z_4}$\\
+		\hline
+		$\textcolor{red}{w_1}$ &\textcolor{red}{-3} & 0 & -1 & \textcolor{red}{2} & \textcolor{red}{1}\\
+		$\textcolor{blue}{w_2}$ & \textcolor{blue}{6} & 2 & 0 & \textcolor{blue}{-2} & \textcolor{blue}{1}\\
+		$\textcolor{red}{w_3}$ & \textcolor{red}{-1} & -1 & -1 & \textcolor{red}{0} & \textcolor{red}{1}\\
+		\hline
+	\end{tabular}
+\end{center}
+thereby yielding the following vectors and matrices:
+\begin{align*}
+		\textcolor{red}{q^{\alpha} = \begin{bmatrix} -3 \\ -1\end{bmatrix}},
+		\textcolor{blue}{q^{\bar{\alpha}} = \begin{bmatrix} 6\end{bmatrix}},
+		\textcolor{red}{M^{\alpha\beta} = \begin{bmatrix} 2 & 1 \\ 0 & 1\end{bmatrix}},
+		\textcolor{blue}{M^{\bar{\alpha}\beta} = \begin{bmatrix} -2 & 1 \end{bmatrix}}
+\end{align*}
+With the index sets $\alpha', \bar{\alpha}'$ defined in Subsection
+\ref{subsec:terminology}, and Equation 10 from Page 71 of~\cite{Cottle:1992}, we
+can write $\vect{q}'$ as:
+\begin{align}
+	\vect{q}'^{\beta'} = -(\mat{M}^{\alpha\beta})^{-1}\vect{q}^{\alpha}
+ \tag{2} \\ 
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+	\vect{q}'^{\bar{\alpha}'} = \vect{q}^{\bar{\alpha}} +
+    \mat{M}^{\bar{\alpha}\beta}\vect{q}'^{\beta'}
+ \tag{3} 
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+\end{align}
+where $\vect{q}'^{\alpha'}, \vect{q}'^{\bar{\alpha}'}$ are ``views'' of the
+vector $q'$, as $\vect{q}'^{\alpha'}_i = \vect{q}'_{\alpha'_i},
+\vect{q}'^{\bar{\alpha}'}_i = \vect{q}'_{\bar{\alpha}'_i}$. In the running
+example $\vect{q}'^{\alpha'} = \tr{\begin{bmatrix}1 & 1\end{bmatrix}},
+\vect{q}'^{\bar{\alpha}'} = [5]$. \textbf{$\vect{q}'$ is not composed by
+stacking $\vect{q}'^{\alpha'}, \vect{q}'^{\bar{\alpha}'}$ as is done in similar procedures in~\cite{Cottle:1992}.}
+
+
+
+\subsection{Computing $\mat{M}'_{\textrm{driving}}$}
+This computation requires considering two cases for the driving variable, which is an entry in the new independent variable $z'$. The driving variable can be either:
+\begin{enumerate}
+		\item a dependent variable from $w$.
+		\item an independent variable $z$.
+\end{enumerate}
+in the running example, if the driving variable is $w_1$ or $w_3$, then it belongs to the first case; if the driving variable is $z_2$ or $z_1$, then it belongs to the second case. Let's discuss the two cases separately.
+
+\subsubsection{Driving variable is a dependent variable from $w$}
+If the driving variable $z'_{\textrm{driving}}$ is a dependent variable from $w$, then it also belongs to the vector \textsc{independent w}. We denote the index of $z'_{\textrm{driving}}$ in \textsc{independent w} as $\gamma$, namely: 
+\begin{align}
+	w^{\alpha}_\gamma = w_{\alpha_\gamma} = z'_{\textrm{driving}} \tag{4}
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+\end{align}
+where $w^{\alpha}$ is the vector \textsc{independent w}. In the running example,
+\textsc{independent w} is $\{ w_1, w_3 \}$, thus $\alpha = \{ 1, 3 \}$. If
+$z'_{\textrm{driving}} \equiv w_1$, then the index $\gamma \equiv 1$. If
+$z'_{\textrm{driving}} \equiv w_3$, then the index $\gamma \equiv 2$. To compute
+the column vector $\mat{M}'_{\textrm{driving}}$, we need to first compute the
+$\gamma^{\textrm{th}}$ column of the matrix $(\mat{M}^{\alpha\beta})^{-1}$. To
+this end, we define a unit vector $\vect{e} \in\mathbb{R}^m$ as:
+\begin{align*}
+	&e_{\gamma} = 1\\
+	&e_i = 0 \quad \text{if } i \neq \gamma
+\end{align*}
+and we can compute $M'_{\textrm{driving}}$ as:
+\begin{align}
+	&\mat{M}'^{\beta'}_{\textrm{driving}} =
+    (\mat{M}^{\alpha\beta})^{-1}\vect{e}\label{eq:b_prime_alpha_prime} 
+    \tag{5}\\
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+	&\mat{M}'^{\bar{\alpha}'}_{\textrm{driving}} =
+    \mat{M}^{\bar{\alpha}\beta}\mat{M}'_{\textrm{driving}_{\beta'}} \tag{6}
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+\end{align}
+Notice that $\mat{M}'_{\textrm{driving}_{\alpha'}}$ is the
+$\gamma^{\textrm{th}}$ column of $\mat{M}_{\alpha\beta}^{-1}$ according to Equation~\eqref{eq:b_prime_alpha_prime}.
+
+\subsubsection{Driving variable is an independent variable from $z$}
+If the driving variable $z'_{\textrm{driving}}$ is an independent variable from $z$, we denote the position in $z$ of $z'_{\textrm{driving}}$ as $\zeta$. In the running example, if the driving variable is $z_2$, then $\zeta \equiv 2$; if the driving variable is $z_1$, then $\zeta \equiv 1$.
+
+To compute the column vector $\mat{M}'_{\textrm{driving}}$ in $\mat{M}'$, we
+need the $\zeta^{\textrm{th}}$ column of $\mat{M}$, denoted $\vect{g}$, which
+will be decomposed into two sub-vectors. One sub-vector  $\vect{g}^{\alpha}$
+contains the entries with row indices in $\alpha$ while the other,  $\vect{g}^{\bar{\alpha}}$, contains the entries with row indices from $\bar{\alpha}$. Namely:
+\begin{align*}
+	&g^{\alpha}_i = M_{\alpha_i\zeta}\\
+	&g^{\bar{\alpha}}_i = M_{\bar{\alpha}_i\zeta}
+\end{align*}
+
+In the running example, $\textcolor{red}{w_1, w_3}$ will be pivoted to $z'$, and
+$\textcolor{blue}{w_2}$ will remain in $w'$. If the driving variable is $z_2$,
+we highlight the vector $\textcolor{red}{g^{\alpha}},
+\textcolor{blue}{g^{\bar{\alpha}}}$ in $\mat{M}$ as:
+\begin{center}
+\begin{tabular}{|c|cccc|}
+	\hline
+		& $z_1$ & $z_2$ & $z_3$ & $z_0$\\
+		\hline
+		$\textcolor{red}{w_1}$ & 0 & \textcolor{red}{-1} & 2 & 1\\
+		$\textcolor{blue}{w_2}$ & 2 & \textcolor{blue}{0} & -2 & 1\\
+		$\textcolor{red}{w_3}$ & -1 & \textcolor{red}{1} & 0 & 1\\
+		\hline
+\end{tabular}
+\end{center}
+so $\textcolor{red}{g^{\alpha}} \equiv \tr{\begin{bmatrix}-1 & 1\end{bmatrix}}, \textcolor{blue}{g^{\bar{\alpha}}} = [0]$.
+
+with the vector $\vect{g}^{\alpha}, \vect{g}^{\bar{\alpha}}$, we can then
+compute $\mat{M}'_{\textrm{driving}}$ as
+\begin{align}
+	&\mat{M}'^{\beta'}_{\textrm{driving}} =
+    -(\mat{M}^{\alpha\beta})^{-1}\vect{g}^{\alpha} \tag{7} \\
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+	&\mat{M}'^{\bar{\alpha}'}_{\textrm{driving}} = \vect{g}^{\bar{\alpha}} +
+    \mat{M}^{\bar{\alpha}\beta}\mat{M}'^{\beta'}_{\textrm{driving}} \tag{8}
+  % NOTE: Do not change equation number without changing
+  % unrevised_lemke_solver.cc
+\end{align}
+
+\bibliographystyle{abbrv}
+\begin{thebibliography}{56}
+\bibitem{Cottle:1992}
+Richard W. Cottle, Jong-Shi Pang, and R.E. Stone. \emph{The Linear
+Complementarity Problem}, Academic Press, 1992.
+\end{thebibliography}
+
+\end{document}
