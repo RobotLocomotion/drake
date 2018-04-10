@@ -23,6 +23,11 @@ std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint) {
   return out << "(xy: " << endpoint.xy() << ", z: " << endpoint.z() << ")";
 }
 
+std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset) {
+  return out << "(r: " << arc_offset.radius()
+             << ", d_theta: " << arc_offset.d_theta() << ")";
+}
+
 Connection::Connection(const std::string& id, const Endpoint& start,
                        const EndpointZ& end_z, int num_lanes, double r0,
                        double lane_width, double left_shoulder,

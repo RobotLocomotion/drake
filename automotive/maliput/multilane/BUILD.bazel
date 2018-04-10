@@ -149,9 +149,11 @@ drake_cc_googletest(
     name = "multilane_loader_test",
     size = "small",
     srcs = ["test/multilane_loader_test.cc"],
+    tags = ["no_ubsan"],
     deps = [
         ":loader",
         "//automotive/maliput/api/test_utilities",
+        "//automotive/maliput/multilane/test_utilities",
     ],
 )
 

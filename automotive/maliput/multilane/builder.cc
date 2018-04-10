@@ -233,7 +233,6 @@ std::unique_ptr<const api::RoadGeometry> Builder::Build(
   return std::move(road_geometry);
 }
 
-
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake
