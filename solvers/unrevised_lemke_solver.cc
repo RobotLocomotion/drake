@@ -191,77 +191,106 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
 }
 
 // Utility function for copying an r-dimensional column vector v (designated by
-// the indices in row_indices and col_indices) from a matrix M to a target
+// the indices in row_indices and col_index) from a matrix M to a target
 // vector, `out`. Let M be the matrix `in` augmented with a single column of
 // ones (i.e., the "covering vector"); put another way, M = | in 1 |, where "in"
 // refers the n × m-dimensional matrix `in` and 1 is a column of ones (so M is
 // n × (m+1)-dimensional). Let R be a r × n "row selection" matrix, constructed
-// using `rows`. R is constructed using r = `rows.size()` as follows:
+// using `row_indices`. R is constructed using r = `row_indices.size()` as
+// follows:
 //
 // Rᵢⱼ = { 1  if j = row_indices[i], ∀i ∈ 0..r-1, ∀j ∈ 0..n-1
 //       { 0  otherwise
 //
 // Consider the following example with `in` set to the 3 × 3 identity matrix,
-// `row_indices = { 2, 0}` and `column = 1`. This would make:
+// `row_indices = { 2, 0}` and `col_index = 1`. This would make:
 // R =  | 0 0 1 |      and R⋅M = | 0 0 1 1 |
 //      | 1 0 0 |                | 1 0 0 1 |
 //
-// The second column (`column = 1`) of R⋅M is v = | 0 |
-//                                                | 0 |
+// The second column (`col_index = 1`) of R⋅M is v = | 0 |
+//                                                   | 0 |
 //
-// `rows` need not be in sorted order, and `out` need not be properly sized on
-// entry (it will be resized as necessary). However, this method aborts if any
-// element of `rows` is out of range, `column` is out of range, *or* if there
-// are any duplicated elements in `rows`.
+// `row_indices` need not be in sorted order, and `out` need not be properly
+// sized on entry (it will be resized as necessary). However, this method aborts
+// if any element of `row_indices` is out of range, `col_index` is out of range,
+// *or* if there are any duplicated elements in `row_indices`.
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
     const MatrixX<T>& in,
-    const std::vector<int>& rows,
-    int column, VectorX<T>* out) {
-  DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
+    const std::vector<int>& row_indices,
+    int col_index, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(row_indices, in.rows()));
 
-  const int num_rows = rows.size();
+  const int num_rows = row_indices.size();
   out->resize(num_rows);
 
   // Look for the covering vector first.
-  if (column == in.cols()) {
+  if (col_index == in.cols()) {
     out->setOnes();
     return;
   }
 
-  DRAKE_DEMAND(0 <= column && column < in.cols());
-  const auto in_column = in.col(column);
+  DRAKE_DEMAND(0 <= col_index && col_index < in.cols());
+  const auto in_column = in.col(col_index);
   for (int i = 0; i < num_rows; i++) {
-    DRAKE_ASSERT(rows[i] < in_column.size());
+    DRAKE_ASSERT(row_indices[i] < in_column.size());
     (*out)[i] = in_column[rows[i]];
   }
 }
 
-// Utility function for copying selected rows of the column vector `in` to
-// the vector `out`, which is resized as necessary.
+// Utility function for copying an r-dimensional column vector v (designated by
+// the indices in `row_indices`) from n-dimensional vector `in` to a target
+// vector, `out`. Let R be a r × n "row selection" matrix, constructed using
+// r = `row_indices.size()` as follows:
+//
+// Rᵢⱼ = { 1  if j = row_indices[i], ∀i ∈ 0..r-1, ∀j ∈ 0..n-1
+//       { 0  otherwise
+//
+// Consider the following example with `in` set to the vector [ 1 2 3 ]ᵀ,
+// and `row_indices = { 2, 0}`. This would make:
+// R =  | 0 0 1 |      and v = R⋅`in` = | 3 |
+//      | 1 0 0 |                       | 1 |
+//
+// `row_indices` need not be in sorted order, and `out` need not be properly
+// sized on entry (it will be resized as necessary). However, this method aborts
+// if any element of `row_indices` is out of range  *or* if there are any
+// duplicated elements in `row_indices`.
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubVector(const VectorX<T>& in,
-    const std::vector<int>& rows, VectorX<T>* out) {
-  DRAKE_ASSERT(ValidateIndices(rows, in.size()));
+    const std::vector<int>& row_indices, VectorX<T>* out) {
+  DRAKE_ASSERT(ValidateIndices(row_indices, in.size()));
 
-  const int num_rows = rows.size();
+  const int num_rows = row_indices.size();
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
-    DRAKE_ASSERT(rows[i] < in.rows());
-    (*out)(i) = in(rows[i]);
+    DRAKE_ASSERT(row_indices[i] < in.rows());
+    (*out)(i) = in(row_indices[i]);
   }
 }
 
-// Utility function for copying the vector `v_sub` to selected rows of the
-// column vector `v`. Asserts that the size of `v_sub` is equal to the size of
-// `indices`.
+// Utility function for copying an r-dimensional column vector v (designated by
+// the indices in `row_indices`) into n-dimensional vector `out`. Let R be the
+// r × n "row selection" matrix defined in the documentation of
+// SelectSubVector(). Then, the result of the operation is:
+// `out` = `out` + Rᵀ⋅(`v` - R⋅`out`)
+//
+// Consider the following example with `v` set to the vector [ 3 1 ]ᵀ,
+// `row_indices = { 2, 0}`, and `out` set to the vector [ 4 5 6 ]. This would
+// make:
+// R =  | 0 0 1 |      and `out` + Rᵀ⋅(`v` - R⋅`out`) = | 1 |
+//      | 1 0 0 |                                       | 5 |
+//                                                      | 3 |
+//
+// `row_indices` need not be in sorted order. This method aborts if any element
+// of `row_indices` is out of the range of `out`, if `row_indices` is not the
+// same size as `v`, or if there are any duplicated elements in `row_indices`.
 template <class T>
-void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v_sub,
-    const std::vector<int>& indices, VectorX<T>* v) {
-  DRAKE_DEMAND(indices.size() == static_cast<size_t>(v_sub.size()));
-  DRAKE_ASSERT(ValidateIndices(indices, v->size()));
-  for (size_t i = 0; i < indices.size(); ++i)
-    (*v)[indices[i]] = v_sub[i];
+void UnrevisedLemkeSolver<T>::SetSubVector(const VectorX<T>& v,
+    const std::vector<int>& row_indices, VectorX<T>* out) {
+  DRAKE_DEMAND(row_indices.size() == static_cast<size_t>(v.size()));
+  DRAKE_ASSERT(ValidateIndices(row_indices, out->size()));
+  for (size_t i = 0; i < row_indices.size(); ++i)
+    (*out)[row_indices[i]] = v[i];
 }
 
 // Function for checking whether a set of indices that specify a view into
@@ -314,6 +343,7 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
 // Rᵢⱼ = { 1  if j = row_indices[i], ∀i ∈ 0..r-1, ∀j ∈ 0..n-1
 //       { 0  otherwise
 // Cᵢⱼ = { 1  if col_indices[j] = i, ∀i ∈ 0..m, ∀j ∈ 0..c-1
+//       { 0  otherwise
 //
 // Consider the following example with `in` set to the 3 × 3 identity matrix,
 // `row_indices = { 2, 1, 0}` and `col_indices = { 1, 2, 3 }`. This would make:
@@ -463,7 +493,11 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   // experience in solving LCPs), loss of rank need not lead to errors in
   // solving the LCP. We assume that if the factorization is good enough to
   // solve this linear system, it's good enough to solve the subsequent
-  // linear system (below).
+  // linear system (below). NOTE: current unit tests do not exercise the
+  // affirmative evaluation of the conditional.
+  // @TODO(edrumwri) Institute a unit test that exercises the affirmative
+  //   evaluation branch of the conditional when such a problem has been
+  //   found.
   if ((M_alpha_beta_ * q_prime_beta_prime_ + q_alpha_).norm() > zero_tol)
     return false;
 
