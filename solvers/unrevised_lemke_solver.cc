@@ -234,7 +234,7 @@ void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
   const auto in_column = in.col(col_index);
   for (int i = 0; i < num_rows; i++) {
     DRAKE_ASSERT(row_indices[i] < in_column.size());
-    (*out)[i] = in_column[rows[i]];
+    (*out)[i] = in_column[row_indices[i]];
   }
 }
 
