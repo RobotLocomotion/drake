@@ -397,6 +397,8 @@ constraint problem data</h4>
  
 /** @defgroup frictional_constraints Frictional constraints
 @ingroup constraint_overview
+The frictional aspect of the contact model used by Drake's constraint solver is
+
 
 <h4>The Coulomb friction model (for sliding)</h4>
 Incorporating the Coulomb friction model for sliding contact between dry
