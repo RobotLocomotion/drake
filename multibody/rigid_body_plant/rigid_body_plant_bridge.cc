@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/visual_material.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 
@@ -22,6 +23,7 @@ using geometry::GeometrySystem;
 using geometry::Mesh;
 using geometry::Shape;
 using geometry::Sphere;
+using geometry::VisualMaterial;
 
 template <typename T>
 RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
@@ -120,10 +122,13 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
                                "are supported by RigidBodyPlantBridge");
         }
         if (shape) {
+          // Visual element's "material" is simply the diffuse rgba values.
+          const Vector4<double>& diffuse = visual_element.getMaterial();
           geometry_system->RegisterGeometry(
               source_id_, body_id,
               std::make_unique<GeometryInstance>(
-                  X_FG, std::move(shape)));
+                  X_FG, std::move(shape),
+                  VisualMaterial(diffuse)));
           DRAKE_DEMAND(shape == nullptr);
         }
       }
