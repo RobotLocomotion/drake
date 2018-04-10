@@ -109,9 +109,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
 
   struct LemkeIndexSets {
     std::vector<int> alpha, alpha_prime;
-    std::vector<int> bar_alpha, bar_alpha_prime;
+    std::vector<int> alpha_bar, alpha_bar_prime;
     std::vector<int> beta, beta_prime;
-    std::vector<int> bar_beta, bar_beta_prime;
+    std::vector<int> beta_bar, beta_bar_prime;
   };
 
   // A structure for holding a linear complementarity problem variable.
@@ -235,12 +235,10 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // facilitate warmstarting.
 
   // Temporary variable for determining index sets (i.e., α, α', α̅, α̅', etc.
-  // from doc/pivot_column.pdf). The first int of each pair stores the
+  // from [1]). The first int of each pair stores the
   // variable's own "internal" index and the second stores the index of the
   // variable in the requisite array ("independent w", "dependent w",
-  // "independent z", and "dependent z") in doc/pivot_column.pdf.
-  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
-  // [Dai and Drumwright, 2018] when we have one.
+  // "independent z", and "dependent z") in [1].
   mutable std::vector<std::pair<int, int>> variable_and_array_indices_;
 
   // Mapping from an LCP variable to the index of that variable in
@@ -258,10 +256,10 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // These temporary matrices and vectors are members to facilitate minimizing
   // memory allocations/deallocations. Changing their value between invocations
   // of the LCP solver will not change the resulting computation.
-  mutable MatrixX<T> M_alpha_beta_, M_bar_alpha_beta_;
-  mutable VectorX<T> q_alpha_, q_bar_alpha_, q_prime_beta_prime_,
-      q_prime_bar_alpha_prime_, e_, M_prime_driving_beta_prime_,
-      M_prime_driving_bar_alpha_prime_, g_alpha_, g_bar_alpha_;
+  mutable MatrixX<T> M_alpha_beta_, M_alpha_bar_beta_;
+  mutable VectorX<T> q_alpha_, q_alpha_bar_, q_prime_beta_prime_,
+      q_prime_alpha_bar_prime_, e_, M_prime_driving_beta_prime_,
+      M_prime_driving_alpha_bar_prime_, g_alpha_, g_alpha_bar_;
 
   // The index sets for the Lemke Algorithm and is a member variable to
   // permit warmstarting. Changing the index set between invocations of the LCP
@@ -269,11 +267,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   mutable LemkeIndexSets index_sets_;
 
   // The partitions of independent and dependent variables (denoted z' and w',
-  // respectively, in doc/pivot_column.pdf). These have been made member
+  // respectively, in [1]. These have been made member
   // variables to permit warmstarting. Changing these sets between invocations
   // of the LCP solver will not change the resulting computation.
-  // TODO(edrumwri): Replace doc/pivot_column.pdf with a nice reference like
-  // [Dai and Drumwright, 2018] when we have one.
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
