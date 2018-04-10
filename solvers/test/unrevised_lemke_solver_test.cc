@@ -285,7 +285,7 @@ GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
   MatrixX<double> M(3, 3);
   // clang-format off
   M <<
-    1, 2, 0,
+      1, 2, 0,
       0, 1, 2,
       2, 0, 1;
   // clang-format on
@@ -346,7 +346,7 @@ class UnrevisedLemkePrivateTests : public testing::Test {
     // clang-format off
     M_.resize(3, 3);
     M_ <<
-      0, -1,  2,
+        0, -1,  2,
         2,  0, -2,
         -1, 1,  0;
     // clang-format on
