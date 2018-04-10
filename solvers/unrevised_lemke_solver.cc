@@ -199,13 +199,10 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
 
 // Utility function for copying part of a matrix (designated by the indices
 // in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`. This template approach
-// allows selecting parts of both sparse and dense matrices for input; only
-// a dense matrix is returned.
+// the "covering vector"), to a target matrix, `out`.
 template <class T>
-template <typename Derived>
 void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
-    const Eigen::MatrixBase<Derived>& in,
+    const MatrixX<T>& in,
     const std::vector<int>& rows,
     int column, VectorX<T>* out) {
   DRAKE_ASSERT(ValidateIndices(rows, in.rows()));
@@ -293,13 +290,10 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
 
 // Utility function for copying part of a matrix- designated by the indices
 // in rows and cols from `in` and augmented with a single column of "ones"
-// (i.e., the "covering vector")- to a target matrix, `out`. This template
-// approach allows selecting parts of both sparse and dense matrices for input;
-// only a dense matrix is returned.
+// (i.e., the "covering vector")- to a target matrix, `out`.
 template <class T>
-template <typename Derived>
 void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
-    const Eigen::MatrixBase<Derived>& in,
+    const MatrixX<T>& in,
     const std::vector<int>& rows,
     const std::vector<int>& cols, MatrixX<T>* out) {
   const int num_rows = rows.size();

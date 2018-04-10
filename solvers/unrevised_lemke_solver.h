@@ -162,13 +162,11 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                           // indicates that the index is uninitialized.
   };
 
-  template <typename Derived>
   static void SelectSubMatrixWithCovering(
-      const Eigen::MatrixBase<Derived>& in,
+      const MatrixX<T>& in,
       const std::vector<int>& rows,
       const std::vector<int>& cols, MatrixX<T>* out);
-  template <typename Derived>
-  static void SelectSubColumnWithCovering(const Eigen::MatrixBase<Derived>& in,
+  static void SelectSubColumnWithCovering(const MatrixX<T>& in,
       const std::vector<int>& rows,
       int column, VectorX<T>* out);
   static void SelectSubVector(const VectorX<T>& in,
