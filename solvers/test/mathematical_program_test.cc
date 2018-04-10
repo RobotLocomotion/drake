@@ -656,18 +656,17 @@ GTEST_TEST(testGetSolution, testGetSolution2) {
 
   symbolic::Variable b("b");
 
-  EXPECT_EQ(prog.GetSolution(a(0) + a(1)), 3);
+  EXPECT_EQ(prog.SubstituteSolution(a(0) + a(1)), 3);
 
   const symbolic::Expression e = a.cast<symbolic::Expression>().dot(x);
-  // `e` contains indeterminates, so we cannot get its solution, but we can
-  // call GetSolution if we convert `e` to a symbolic::Polynomial.
-  const auto e1 = prog.GetSolution(e);
+  // `e` contains indeterminates
+  const auto e1 = prog.SubstituteSolution(e);
   // All decision variables in the expression are also decision
   // variables in the optimization program.
   EXPECT_EQ(e1, a_val.dot(x));
   const symbolic::Polynomial p = symbolic::Polynomial(
       e, symbolic::Variables(x));
-  const auto p1 = prog.GetSolution(p);
+  const auto p1 = prog.SubstituteSolution(p);
 
   // All decision variables in the polynomial are also decision
   // variables in the optimization program.
@@ -676,9 +675,9 @@ GTEST_TEST(testGetSolution, testGetSolution2) {
   // Not all decision variables in the expression/polynomial are decision
   // variables in the optimizatin program. b is a decision variable in the
   // expression/polynomial, but not one in the optimization program.
-  EXPECT_THROW(prog.GetSolution(e + b), std::runtime_error);
+  EXPECT_THROW(prog.SubstituteSolution(e + b), std::runtime_error);
   EXPECT_THROW(
-      prog.GetSolution(p + symbolic::Polynomial(b, symbolic::Variables())),
+      prog.SubstituteSolution(p + symbolic::Polynomial(b, symbolic::Variables())),
       std::runtime_error);
 }
 

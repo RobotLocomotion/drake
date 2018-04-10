@@ -808,7 +808,7 @@ T GetSolutionForExpressionOrPolynomial(const MathematicalProgram& prog,
 }
 }  // namespace
 
-symbolic::Expression MathematicalProgram::GetSolution(
+symbolic::Expression MathematicalProgram::SubstituteSolution(
     const symbolic::Expression& e) const {
   symbolic::Environment::map map_decision_vars;
   for (const auto& var : e.GetVariables()) {
@@ -828,7 +828,7 @@ symbolic::Expression MathematicalProgram::GetSolution(
   return e.EvaluatePartial(symbolic::Environment(map_decision_vars));
 }
 
-symbolic::Polynomial MathematicalProgram::GetSolution(
+symbolic::Polynomial MathematicalProgram::SubstituteSolution(
     const symbolic::Polynomial& p) const {
   symbolic::Environment::map map_decision_vars;
   for (const auto& var : p.decision_variables()) {
