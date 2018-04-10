@@ -164,6 +164,17 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self, const Environment::map& env) {
              return self.Evaluate(Environment{env});
            })
+      .def("EvaluatePartial",
+           [](const Expression& self, const Environment::map& env) {
+             return self.EvaluatePartial(Environment{env});
+           })
+      .def("Substitute",
+           [](const Expression& self, const Variable& var,
+              const Expression& e) { return self.Substitute(var, e); })
+      .def("Substitute",
+           [](const Expression& self, const Substitution& s) {
+             return self.Substitute(s);
+           })
       .def("EqualTo", &Expression::EqualTo)
       // Addition
       .def(py::self + py::self)
@@ -441,6 +452,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
         return p.Jacobian(vars);
       });
 
+  // We have this line because pybind11 does not permit transitive
+  // conversions. See
+  // https://github.com/pybind/pybind11/blob/289e5d9cc2a4545d832d3c7fb50066476bce3c1d/include/pybind11/pybind11.h#L1629.
+  py::implicitly_convertible<int, drake::symbolic::Expression>();
   py::implicitly_convertible<double, drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Variable,
                              drake::symbolic::Expression>();
