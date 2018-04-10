@@ -29,7 +29,10 @@ class UnrevisedLemkeSolverId {
 
 /// A class for the Unrevised Implementation of Lemke Algorithm's for solving
 /// Linear Complementarity Problems (LCPs). See MobyLcpSolver for a description
-/// of LCPs.
+/// of LCPs. This code makes extensive use of the following document:
+/// [Dai 2018]  Dai, H. and Drumwright, E. Computing the Principal Pivoting
+///     Transform for Solving Linear Complementarity Problems with Lemke's
+///     Algorithm. (2018, located in doc/pivot_column.pdf).
 template <class T>
 class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
  public:
@@ -235,10 +238,10 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   // facilitate warmstarting.
 
   // Temporary variable for determining index sets (i.e., α, α', α̅, α̅', etc.
-  // from [1]). The first int of each pair stores the
+  // from [Dai 2018]). The first int of each pair stores the
   // variable's own "internal" index and the second stores the index of the
   // variable in the requisite array ("independent w", "dependent w",
-  // "independent z", and "dependent z") in [1].
+  // "independent z", and "dependent z") in [Dai 2018].
   mutable std::vector<std::pair<int, int>> variable_and_array_indices_;
 
   // Mapping from an LCP variable to the index of that variable in
@@ -267,7 +270,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   mutable LemkeIndexSets index_sets_;
 
   // The partitions of independent and dependent variables (denoted z' and w',
-  // respectively, in [1]. These have been made member
+  // respectively, in [Dai 2018]. These have been made member
   // variables to permit warmstarting. Changing these sets between invocations
   // of the LCP solver will not change the resulting computation.
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;

@@ -20,11 +20,6 @@
 
 using drake::log;
 
-// Note: this code makes extensive use of the following document:
-// [1] Dai, H. and Drumwright, E. Computing the Principal Pivoting Transform
-//     for Solving Linear Complementarity Problems with Lemke's Algorithm.
-//     (2018, located in doc/pivot_column.pdf).
-
 namespace drake {
 namespace solvers {
 
@@ -287,37 +282,38 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
 }
 
 // Utility function for copying part of a matrix- designated by the indices
-// in rows and cols from `in` and augmented with a single column of "ones"
-// (i.e., the "covering vector")- to a target matrix, `out`.
+// in row_indices and col_indices from `in` and augmented with a single column
+// of "ones" (i.e., the "covering vector")- to a target matrix, `out`.
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
     const MatrixX<T>& in,
-    const std::vector<int>& rows,
-    const std::vector<int>& cols, MatrixX<T>* out) {
-  const int num_rows = rows.size();
-  const int num_cols = cols.size();
-  DRAKE_ASSERT(ValidateIndices(rows, cols, in.rows(), in.cols() + 1));
+    const std::vector<int>& row_indices,
+    const std::vector<int>& col_indices, MatrixX<T>* out) {
+  const int num_rows = row_indices.size();
+  const int num_cols = col_indices.size();
+  DRAKE_ASSERT(
+      ValidateIndices(row_indices, col_indices, in.rows(), in.cols() + 1));
   out->resize(num_rows, num_cols);
 
   for (int i = 0; i < num_rows; i++) {
-    const auto row_in = in.row(rows[i]);
+    const auto row_in = in.row(row_indices[i]);
 
     // `row_out` is a "view" into `out`: any modifications to row_out are
     // reflected in `out`.
     auto row_out = out->row(i);
     for (int j = 0; j < num_cols; j++) {
-      if (cols[j] < in.cols()) {
-        DRAKE_ASSERT(cols[j] >= 0);
-        row_out(j) = row_in(cols[j]);
+      if (col_indices[j] < in.cols()) {
+        DRAKE_ASSERT(col_indices[j] >= 0);
+        row_out(j) = row_in(col_indices[j]);
       } else {
-        DRAKE_ASSERT(cols[j] == in.cols());
+        DRAKE_ASSERT(col_indices[j] == in.cols());
         row_out(j) = 1.0;
       }
     }
   }
 }
 
-// Determines the various index sets defined in Section 1.1 of [1].
+// Determines the various index sets defined in Section 1.1 of [Dai 2018].
 template <class T>
 void UnrevisedLemkeSolver<T>::DetermineIndexSets() const {
   // Helper for determining index sets.
@@ -372,8 +368,8 @@ bool UnrevisedLemkeSolver<T>::IsEachUnique(
   return (std::unique(vars_copy.begin(), vars_copy.end()) == vars_copy.end());
 }
 
-// Performs the pivoting operation, which is described in [1]. `M_prime_col`
-// can be null, if the updated column of M' (pivoted version of M)
+// Performs the pivoting operation, which is described in [Dai 2018].
+// `M_prime_col` can be null, if the updated column of M' (pivoted version of M)
 // is not needed and the driving_index corresponds to the artificial variable.
 template <typename T>
 bool UnrevisedLemkeSolver<T>::LemkePivot(
@@ -415,8 +411,9 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SelectSubVector(q, index_sets_.alpha, &q_alpha_);
   SelectSubVector(q, index_sets_.alpha_bar, &q_alpha_bar_);
 
-  // Equation (2) from [1].
-  // Note: this equation, and those below, must be kept up-to-date with [1].
+  // Equation (2) from [Dai 2018].
+  // Note: this equation, and those below, must be kept up-to-date with
+  // [Dai 2018].
   LinearSolver<T> fMab(M_alpha_beta_);  // Factorized M_alpha_beta_.
   q_prime_beta_prime_ = -fMab.Solve(q_alpha_);
 
@@ -429,7 +426,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   if ((M_alpha_beta_ * q_prime_beta_prime_ + q_alpha_).norm() > zero_tol)
     return false;
 
-  // Equation (3) from [1].
+  // Equation (3) from [Dai 2018].
   q_prime_alpha_bar_prime_ = M_alpha_bar_beta_ * q_prime_beta_prime_ +
       q_alpha_bar_;
 
@@ -448,7 +445,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #1: driving variable from w");
     // Case from Section 2.2.1.
     // Determine gamma by determining the position of the driving variable
-    // in INDEPENDENT W (as defined in [1]).
+    // in INDEPENDENT W (as defined in [Dai 2018]).
     const int n = static_cast<int>(indep_variables_.size());
     int gamma = 0;
     for (int i = 0; i < n; ++i) {
@@ -461,7 +458,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     }
 
 
-    // From Equation (4) in [1].
+    // From Equation (4) in [Dai 2018].
     DRAKE_ASSERT(index_sets_.alpha[gamma] ==
         indep_variables_[driving_index].index());
 
@@ -478,7 +475,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   } else {
     DRAKE_SPDLOG_DEBUG(log(), "Driving case #2: driving variable from z");
 
-    // Case from Section 2.2.2 of [1].
+    // Case from Section 2.2.2 of [Dai 2018].
     // Determine zeta.
     const int zeta = indep_variables_[driving_index].index();
 
@@ -505,7 +502,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 
 // Method for finding the index of the complement of an LCP variable in
 // a tuple (strictly speaking, an unsorted vector) of independent variables.
-// Aborts if the index is not found in the set or the variable is the articial
+// Aborts if the index is not found in the set or the variable is the artificial
 // variable (it never should be).
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
@@ -625,7 +622,7 @@ bool UnrevisedLemkeSolver<T>::IsSolution(
           abs(dot) < 10 * n * mod_zero_tol);
 }
 
-// Note: maintainers should read Section 4.4 - 4.4.5 of [Cottle, 1992] to
+// Note: maintainers should read Section 4.4 - 4.4.5 of [Cottle 1992] to
 // understand Lemke's Algorithm (and this function).
 template <typename T>
 bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
@@ -660,7 +657,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // z₀ in [Cottle 1992], p. 266). Because z₀ is prone to being confused with
   // the first dimension of z in 0-indexed languages like C++, we refer to the
   // artificial variable as zₙ in this implementation (it is denoted zₙ₊₁ in
-  // [1], as that document uses the 1-indexing prevalent in algorithmic
+  // [Dai 2018], as that document uses the 1-indexing prevalent in algorithmic
   // descriptions).
   const int kArtificial = n;
 
@@ -727,7 +724,9 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
   // w = q + zn >= 0. Let blocking denote a component of w that equals
   // zero when zn = zn*.
   int blocking_index = -1;
-  DRAKE_DEMAND(FindBlockingIndex(mod_zero_tol, q, q, &blocking_index));
+  bool blocking_index_found = FindBlockingIndex(
+      mod_zero_tol, q, q, &blocking_index);
+  DRAKE_DEMAND(blocking_index_found);
 
   // Pivot blocking, artificial. Note that we rely upon the dependent variables
   // being ordered sequentially in both arrays.

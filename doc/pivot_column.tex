@@ -56,8 +56,7 @@ $\cdot$\ \hl{#1}
 \\
 } 
 
-\title{Computing the principal pivoting transform in the context of Lemke's
-Algorithm for solving Linear Complementarity Problems}
+\title{Computing the principal pivoting transform for solving Linear Complementarity Problems with Lemke's Algorithm}
 \date{}
 \author{Hongkai Dai and Evan Drumwright\\Toyota Research Institute}
 
@@ -116,7 +115,7 @@ We now introduce some terminology:
 	\item \textsc{dependent w}: the tuple of variables from $w$ that (partially) comprise $w'$ in the order in which they are found in $w$ (i.e., the elements of \textsc{dependent w} appear in ascending order, e.g., $\{ w_1, w_2 \}$). In the running example, \textsc{dependent w} is $\{ w_2 \}$.
 		\begin{itemize}
 			\item $\bar{\alpha}$: the positions in $w$ of the elements from \textsc{dependent w}. In the running example, $\bar{\alpha} = \{ 2 \}$. From the definition of \textsc{dependent w}, these $w$ elements of $\bar{\alpha}$ appear in ascending order.
-			\item $\bar{\alpha}'$: the respective indices in $w'$ of the variables from \textsc{dependent w}. In the running example, $\bar{\alpha'} = \{ 2 \}$. These $w$ elements of $\bar{\alpha}$'s \emph{elements are not necessarily present in ascending order}.
+			\item $\bar{\alpha}'$: the respective indices in $w'$ of the variables from \textsc{dependent w}. In the running example, $\bar{\alpha}' = \{ 2 \}$. These $w$ elements of $\bar{\alpha}$'s \emph{elements are not necessarily present in ascending order}.
 		\end{itemize}
 		Again, note that the elements in the ``vanilla'' tuple correspond to variable indices, while elements in the primed tuple correspond to tuple indices. Also, \textbf{observe} the invariant $w_{\bar{\alpha}_i} = w'_{\bar{\alpha'}_i}$.
 	\item \textsc{independent z}: the tuple of variables from $z$ that (partially) comprise $z'$ in the order in which they are found in $z$ (i.e., the elements of \textsc{independent z} appear in ascending order, e.g., $\{ z_1, z_2 \}$). In the running example, \textsc{independent z} is $\{ z_1, z_2 \}$. The elements in \textsc{independent z} are present in ascending order (e.g., $\{ z_1, z_2 \}$).
