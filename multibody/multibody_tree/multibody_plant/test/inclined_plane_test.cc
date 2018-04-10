@@ -22,9 +22,10 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
-// This test creates a simple model for an acrobot using MultibodyPlant and
-// verifies a number of invariants such as that body and joint models were
-// properly added and the model sizes.
+// This test creates a simple multibody model of a sphere rolling down an
+// inclined plane. After simulating the model for a given length of time, this
+// test verifies the numerical solution against analytical results obtained from
+// an energy conservation analysis.
 GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   systems::DiagramBuilder<double> builder;
 

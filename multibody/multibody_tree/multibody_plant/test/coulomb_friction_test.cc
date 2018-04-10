@@ -42,8 +42,8 @@ GTEST_TEST(CoulombFriction, ConstructionFromFrictionCoefficients) {
       CoulombFriction<double>(kDynamicFriction, kStaticFriction),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
-      "Given dynamic friction (.*) is greater than given static friction (.*). "
-      "Must be less or equal.");
+      "Given dynamic friction \\(.*\\) is greater than given static "
+      "friction \\(.*\\). Must be less than or equal.");
 
   CoulombFriction<double> friction(kStaticFriction, kDynamicFriction);
   EXPECT_EQ(friction.static_friction(), kStaticFriction);

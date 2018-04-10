@@ -7,14 +7,48 @@ namespace drake {
 namespace multibody {
 namespace multibody_plant {
 
-/// Parameters for the Coulomb's Law of Friction, namely:
-/// - Static friction coefficient, for surfaces at rest.
-/// - Dynamic (or kinematic) friction coefficient, for surfaces in relative
-///   motion.
-/// The coefficients of friction are an empirical property of the contacting
-/// surfaces which depend upon the mechanical properties of the surfaces's
-/// materials and on the roughness of the surfaces. Friction coefficients are
-/// determined experimentally.
+/// Parameters for Coulomb's Law of Friction, namely:
+/// - Static friction coefficient, for a pair of surfaces at rest relative to
+///   each other.
+/// - Dynamic (or kinematic) friction coefficient, for a pair of surfaces in
+///   relative motion.
+/// The coefficients of friction are an empirical property of the pair of
+/// contacting surfaces which depend upon the mechanical properties of the
+/// surfaces's materials and on the roughness of the surfaces. Friction
+/// coefficients are determined experimentally.
+///
+/// Even though the Coulomb's law coefficients of friction characterize a pair
+/// of surfaces interacting by friction, we associate the abstract __idea__ of
+/// friction coefficients to a single material by considering the coefficients
+/// for contact between two identical surfaces. For this case of two identical
+/// surfaces, the friction coefficients that describe the surface pair are taken
+/// to equal those of one of the identical surfaces. We extend this idea to the
+/// case of different surfaces by defining a __combination law__ that allow us
+/// to obtain the Coulomb's law coefficients of friction characterizing the pair
+/// of surfaces, given the individual friction coefficients of each surface.
+/// We would like this __combination law__ to satisfy:
+/// - The friction coefficient of two identical surfaces is the friction
+///   coefficient of one of the surfaces.
+/// - The combination law is commutative. That is, surface A combined with
+///   surface B gives the same results as surface B combined with surface A.
+/// - For two surface M an N with very different friction coefficients, say
+///   `μₘ ≪ μₙ`, the combined friction coefficient should be in the order of
+///   magnitude of the smallest friction coefficient (in the example μₘ). To
+///   understand this requirement, consider rubber (high friction coefficient)
+///   sliding on ice (low friction coefficient). We'd like the surface pair
+///   to be defined by a friction coefficient close to that of ice, since rubber
+///   will easily slide on ice.
+/// This requirements are set forth in the following ad-hoc combination law:
+/// <pre>
+///   μ = 2μₘμₙ/(μₘ + μₙ)
+/// </pre>
+/// See CombineWithOtherFrictionCoefficients(), which implements this law.
+/// More complex combination laws could also be a function of other parameters
+/// such as the mechanical properties of the interacting surfaces or even their
+/// roughnesses. For instance, if the the rubber surface above has metal studs
+/// (somehow making the surface "rougher"), it will definitely have a better
+/// grip on an ice surface. Therefore this new variable should be taken into
+/// account in the combination law.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -37,8 +71,7 @@ class CoulombFriction {
   /// Specifies both the static and dynamic friction coefficients for a given
   /// surface.
   /// @throws std::runtime_error if any of the friction coefficients are
-  /// negative or if the dynamic friction coefficient is strictly higher than
-  /// the static friction coefficient (they can be equal.)
+  /// negative or if `dynamic_friction > static_friction` (they can be equal.)
   CoulombFriction(const T& static_friction, const T& dynamic_friction);
 
   /// Combines `this` friction coefficients for a surface M with `other` set of

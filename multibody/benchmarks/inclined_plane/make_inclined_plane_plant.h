@@ -20,19 +20,20 @@ namespace inclined_plane {
 /// @param[in] slope
 ///   The slope in radians of the inclined plane.
 /// @param[in] surface_friction
-///   The Coulomb's law coefficients of friction.
+///   The Coulomb's law coefficients of friction. This model uses the same
+///   surface properties for both the inclined plane and the sphere.
 /// @param[in] gravity
-///   The acceleration of gravity, in m/s².
+///   The acceleration of gravity, in m/s². Points in the minus z direction.
 /// @param geometry_system
 ///   This factory method will register the new multibody plant to be a source
 ///   for this geometry system and it will also register geometry for contact
 ///   modeling.
 /// @throws std::exception if geometry_system is nullptr.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(
     double radius, double mass, double slope,
-    const drake::multibody::multibody_plant::CoulombFriction<double>&
-    surface_friction, double gravity,
+    const multibody_plant::CoulombFriction<double>& surface_friction,
+    double gravity,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 
 }  // namespace inclined_plane

@@ -136,8 +136,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
       static_cast<int>(default_coulomb_friction_.size()) == collision_index);
-  default_coulomb_friction_.emplace_back(
-      coulomb_friction.static_friction(), coulomb_friction.dynamic_friction());
+  default_coulomb_friction_.push_back(coulomb_friction);
   return id;
 }
 
@@ -420,8 +419,8 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       // Normal force on body A, at C, expressed in W.
       const Vector3<double> fn_AC_W = fn_AC * nhat_BA_W;
 
-      // Since the normal forces is positive (non-zero), compute the friction
-      // forces. First obtain the friction coefficients:
+      // Since the normal force is positive (non-zero), compute the friction
+      // force. First obtain the friction coefficients:
       const int collision_indexA =
           geometry_id_to_collision_index_.at(geometryA_id);;
       const int collision_indexB =
@@ -709,8 +708,8 @@ T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& v_tangent_BAc,
     const CoulombFriction<T>& friction) const {
   DRAKE_ASSERT(v_tangent_BAc >= 0);
-  const T mu_d = friction.dynamic_friction();
-  const T mu_s = friction.static_friction();
+  const T& mu_d = friction.dynamic_friction();
+  const T& mu_s = friction.static_friction();
   const T v = v_tangent_BAc * inv_v_stiction_tolerance;
   if (v >= 3) {
     return mu_d;

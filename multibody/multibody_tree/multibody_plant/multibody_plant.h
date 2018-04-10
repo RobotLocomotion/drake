@@ -529,7 +529,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `geometry_system` does not correspond to the
   /// same instance with which RegisterAsSourceForGeometrySystem() was called.
-  // TODO(amcastro-tri): Augment API to specify friction coefficients.
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
