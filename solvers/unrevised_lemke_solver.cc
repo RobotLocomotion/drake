@@ -494,10 +494,11 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   // solving the LCP. We assume that if the factorization is good enough to
   // solve this linear system, it's good enough to solve the subsequent
   // linear system (below). NOTE: current unit tests do not exercise the
-  // affirmative evaluation of the conditional.
+  // affirmative evaluation of the conditional (meaning that the "return false"
+  // never gets called).
   // @TODO(edrumwri) Institute a unit test that exercises the affirmative
-  //   evaluation branch of the conditional when such a problem has been
-  //   found.
+  //   evaluation branch of the conditional when such a LCP has been
+  //   identified.
   if ((M_alpha_beta_ * q_prime_beta_prime_ + q_alpha_).norm() > zero_tol)
     return false;
 
