@@ -596,7 +596,13 @@ int UnrevisedLemkeSolver<T>::FindComplementIndex(
 // Computes the solution using the current index sets. `z` must simply be
 // non-null; it will be resized as necessary. Returns `true` if able to
 // construct the solution and `false` if unable to find the solution to a
-// necessary system of linear equations.
+// necessary system of linear equations. Aborts (in LemkePivot()) if
+// `artificial_index` does not correspond to the index of the artificial
+// variable in the vector of independent_variables.
+// @pre The artificial variable was the blocking variable, indicating that the
+//      solution to the LCP can be obtained after a final pivoting operation.
+// @pre `artificial_index` corresponds to the index of the artificial variable
+//      in the vector of independent variables.
 template <class T>
 bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
     const MatrixX<T>& M,
@@ -607,7 +613,9 @@ bool UnrevisedLemkeSolver<T>::ConstructLemkeSolution(
   DRAKE_DEMAND(z);
   const int n = q.rows();
 
-  // Compute the solution.
+  // Compute the solution by pivoting the artificial variable, which was just
+  // identified as the blocking variable, from the set of dependent variables
+  // to the set of independent variables.
   VectorX<T> q_prime(n);
   if (!LemkePivot(M, q, artificial_index, zero_tol, nullptr, &q_prime))
     return false;
