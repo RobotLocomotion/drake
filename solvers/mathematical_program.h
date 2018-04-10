@@ -2463,16 +2463,16 @@ class MathematicalProgram {
   /**
    * Replaces the variables in an expression with the solutions to the
    * variables, returns the expression after substitution.
-   * @throw runtime error if some variables in the expression @e are NOT
-   * variables in the optimization program.
+   * @throw runtime error if some variables in the expression @p e are NOT
+   * decision variables or indeterminates in the optimization program.
    */
   symbolic::Expression GetSolution(const symbolic::Expression& e) const;
 
   /**
    * Replaces the decision variables in a polynomial with the solutions to the
    * variables, returns the polynomial after substitution.
-   * @throw runtime error if some decision variables in the polynomial @p are
-   * NOT variables in the optimization program.
+   * @throw runtime error if some decision variables in the polynomial @p p are
+   * NOT decision variables in the optimization program.
    */
   symbolic::Polynomial GetSolution(const symbolic::Polynomial& p) const;
 

@@ -809,13 +809,32 @@ T GetSolutionForExpressionOrPolynomial(const MathematicalProgram& prog,
 }  // namespace
 
 symbolic::Expression MathematicalProgram::GetSolution(
-    const symbolic::Expression& p) const {
-  return GetSolutionForExpressionOrPolynomial(*this, p, p.GetVariables());
+    const symbolic::Expression& e) const {
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : e.GetVariables()) {
+    const auto it = decision_variable_index_.find(var.get_id());
+    if (it != decision_variable_index_.end()) {
+      map_decision_vars.emplace(var, x_values_[it->second]);
+    } else if (indeterminates_index_.find(var.get_id()) ==
+               indeterminates_index_.end()) {
+      // var is not a decision variable or an indeterminate in the optimization
+      // program.
+      std::ostringstream oss;
+      oss << var << " is not a decision variable or an indeterminate of the "
+                    "optimization program.\n";
+      throw std::runtime_error(oss.str());
+    }
+  }
+  return e.EvaluatePartial(symbolic::Environment(map_decision_vars));
 }
 
 symbolic::Polynomial MathematicalProgram::GetSolution(
     const symbolic::Polynomial& p) const {
-  return GetSolutionForExpressionOrPolynomial(*this, p, p.decision_variables());
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : p.decision_variables()) {
+    map_decision_vars.emplace(var, GetSolution(var));
+  }
+  return p.EvaluatePartial(symbolic::Environment(map_decision_vars));
 }
 
 double MathematicalProgram::GetInitialGuess(
