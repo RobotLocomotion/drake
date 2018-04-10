@@ -397,13 +397,15 @@ constraint problem data</h4>
  
 /** @defgroup frictional_constraints Frictional constraints
 @ingroup constraint_overview
-The frictional aspect of the contact model used by Drake's constraint solver is
-
+The frictional aspects of the contact model used by Drake's constraint solver
+are modeled by the Coulomb friction model, which requires setting few
+parameters (sticking and sliding friction coefficients) and captures important
+stick-slip transition phenomena.
 
 <h4>The Coulomb friction model (for sliding)</h4>
 Incorporating the Coulomb friction model for sliding contact between dry
 surfaces introduces the constraint equation:<pre>
-μλ = λᶜ
+μλᴺ = λᶜ
 </pre>
 where λᶜ is the force due to Coulomb friction, μ is the (dimensionless)
 Coulomb coefficient of friction, and λᴺ corresponds to the constraint force
@@ -431,19 +433,14 @@ force along q̂. Instead, Drake uses the equivalent equation:
 <pre>
 Mv̇ = f + (Nᵀ - μQᵀ)λᴺ
 </pre>
-which allows the constraint solver to avoid explicitly solving for ᶜλ.
-This optimization explains the provenance of `N_minus_muQ_transpose_mult` (for
+which allows the constraint solver to avoid explicitly solving for λᶜ.
+This optimization explains the provenance of `N_minus_muQ_transpose_mult` (see
 @ref drake::multibody::constraint::ConstraintAccelProblemData
 "ConstraintAccelProblemData").
 
-Note that *the Coulomb friction model is not applied in velocity-level
-constraint equations*.
-
-
-<i>This section applies to both non-sliding contacts for constraints solved
-at the acceleration-level and **all contacts** for constraints solved at the
-velocity level.</i> 
-
+Note that *this aspect of the Coulomb friction model does not apply in
+velocity-level constraint equations*, in which contacts can transition from
+sliding to sticking (and vice versa) instantaneously.
 <h4>Non-sliding constraints</h4>
 Non-sliding constraints for bodies can correspond to constraints introduced
 for bodies in stiction or rolling at a point of contact. These
@@ -470,7 +467,7 @@ contact is provided below:<pre>
 where μ is the coefficient of "static" friction, λᴺ is the magnitude of the
 force applied along the contact normal, and λˢ and λᵗ are scalars
 corresponding to the frictional forces applied along the basis vectors.
-Since nonlinear equations are typically challenging to solve, the ĝ̂ equations
+Since nonlinear equations are typically challenging to solve, the ĝ equations
 are often transformed to linear approximations:<pre>
 (0')      ⁰g̅ₐ = μ⋅λᴺ - 1ᵀλᵇ
 (1')      ¹g̅ₐ = (p̈ᵢ - p̈ⱼ)ᵀb₁
@@ -512,14 +509,13 @@ construction, the frictional force to be applied along direction
 i will be equal to λᵇᵢ - λᵇₙᵣ₊ᵢ.
 
 <h4>Friction constraints at the velocity-level</h4>
-Drake's velocity-level formulation treats both sliding and non-sliding contact
-constraints identically: the treatment in the section above changes, and
-the Coulomb friction constraints disappear. Velocity-level constraint
-formulations apply at impacting states, and the aforementioned changes reflect
-that contacts can instantaneously change from sliding to not sliding, and
-vice versa, during impact. The constraints now act to maximize negative work in
-the contact tangent plane [Anitescu 1997]. Reflecting this change at the
-velocity level, Equations (0*)-(nk*) are modified to:
+Since modifying velocity variables can cause constraints to change from sticking
+and sliding and vice versa, Drake's velocity-level formulation treats both
+sliding and non-sliding contact constraints indistinguishably using a
+modification to the treatment above (the sliding Coulomb friction constraints
+μλᴺ = λᶜ do not apply in this formulation). The constraints now act to maximize
+negative work in the contact tangent plane [Anitescu 1997]. Reflecting this
+change at the velocity level, Equations (0*)-(nk*) are modified to:
 <pre>
 (0⁺)       ⁰gᵥ = μ⋅λᴺ - 1ᵀλᵇ
 (1⁺)       ¹gᵥ = (ṗᵢ - ṗⱼ)ᵀb₁ - Λ
@@ -560,8 +556,8 @@ infrastructure that permits using these capabilities:
 @ingroup constraint_overview
 
 The bilateral constraint functions supported includes, among others, holonomic
-constraints, which are constraints posable as g(t, q). An example such holonomic
-constraint function is the transmission (gearing) constraint:<pre>
+constraints, which are constraints posable as gₚ(t, q). An example such
+holonomic constraint function is the transmission (gearing) constraint:<pre>
 qᵢ - rqⱼ = 0
 </pre> where
 gₚ(q) = qᵢ - rqⱼ
@@ -572,9 +568,9 @@ The first derivative of this function with respect to time:<pre>
 ġₚ(q;v) = q̇ᵢ - rq̇ⱼ
 </pre>
 would allow this constraint to be used with a velocity-level constraint
-formulation and can be read as the velocity at joint i (q̇ᵢ) must equal `r` times
-the velocity at joint j (q̇ⱼ). The second derivative of gₚ(q) with respect to
-time,<pre>
+formulation and can be read as the velocity at joint i (q̇ᵢ) must equal `r`
+times the velocity at joint j (q̇ⱼ). The second derivative of gₚ(q) with respect
+to time,<pre>
 g̈ₚ(q,v;v̇) = q̈ᵢ - rq̈ⱼ
 </pre>
 would allow this constraint to be used with an acceleration-level constraint
@@ -650,8 +646,8 @@ constraint problem data</h4>
   - Constraint regularization/softening is effected through `gammaL`
   - Constraint stabilization is effected through `kL`
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
-    softening affects the definition of gₚ(.)'s Jacobian* operators, `L_mult` and
-    `L_transpose_mult`.
+    softening affects the definition of gₚ(.)'s Jacobian* operators, `L_mult`
+    and `L_transpose_mult`.
 
 /** @defgroup constraint_references References
  @ingroup constraint_overview
