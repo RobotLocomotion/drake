@@ -33,13 +33,11 @@ Eigen::AngleAxisd UniformlyRandomAngleAxis(Generator& generator) {
 /// Generates a rotation (in the quaternion representation) that rotates a
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
-// TODO(mitiguy) change this method so it returns an Eigen::Quaternion.
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-Eigen::Vector4d UniformlyRandomQuat(Generator& generator) {
+Eigen::Quaterniond UniformlyRandomQuaternion(Generator& generator) {
   const Eigen::AngleAxisd angle_axis = UniformlyRandomAngleAxis(generator);
-  const Eigen::Quaterniond q(angle_axis);
-  return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
+  return Eigen::Quaterniond(angle_axis);
 }
 
 /// Generates a rotation (in the rotation matrix representation) that rotates a
@@ -58,10 +56,7 @@ RotationMatrix<double> UniformlyRandomRotationMatrix(Generator& generator) {
 template <class Generator>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 Eigen::Vector3d UniformlyRandomRPY(Generator& generator) {
-  // TODO(mitiguy) Replace with single call to UniformlyRandomQuaternion when
-  // that function exists and returns Eigen::Quaterniond (rather than Vector4).
-  const Eigen::AngleAxisd angle_axis = UniformlyRandomAngleAxis(generator);
-  const Eigen::Quaterniond q(angle_axis);
+  const Eigen::Quaterniond q = UniformlyRandomQuaternion(generator);
   return QuaternionToSpaceXYZ(q);
 }
 

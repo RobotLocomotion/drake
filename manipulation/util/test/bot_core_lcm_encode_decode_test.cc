@@ -25,7 +25,8 @@ GTEST_TEST(TestLcmUtil, testVector3d) {
 GTEST_TEST(TestLcmUtil, testQuaternion) {
   std::default_random_engine generator;
   generator.seed(0);
-  const auto quaternion = drake::math::UniformlyRandomQuat(generator);
+  Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(generator);
+  const Eigen::Vector4d quaternion(q.w(), q.x(), q.y(), q.z());
   bot_core::quaternion_t msg;
   EncodeQuaternion(quaternion, msg);
   auto quat_back = DecodeQuaternion(msg);
