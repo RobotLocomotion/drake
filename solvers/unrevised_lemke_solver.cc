@@ -190,9 +190,29 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   return SolutionResult::kSolutionFound;
 }
 
-// Utility function for copying part of a matrix (designated by the indices
-// in rows and cols) from `in`, augmented with a single column of "ones" (i.e.,
-// the "covering vector"), to a target matrix, `out`.
+// Utility function for copying an r-dimensional column vector v (designated by
+// the indices in row_indices and col_indices) from a matrix M to a target
+// vector, `out`. Let M be the matrix `in` augmented with a single column of
+// ones (i.e., the "covering vector"); put another way, M = | in 1 |, where "in"
+// refers the n × m-dimensional matrix `in` and 1 is a column of ones (so M is
+// n × (m+1)-dimensional). Let R be a r × n "row selection" matrix, constructed
+// using `rows`. R is constructed using r = `rows.size()` as follows:
+//
+// Rᵢⱼ = { 1  if j = row_indices[i], ∀i ∈ 0..r-1, ∀j ∈ 0..n-1
+//       { 0  otherwise
+//
+// Consider the following example with `in` set to the 3 × 3 identity matrix,
+// `row_indices = { 2, 0}` and `column = 1`. This would make:
+// R =  | 0 0 1 |      and R⋅M = | 0 0 1 1 |
+//      | 1 0 0 |                | 1 0 0 1 |
+//
+// The second column (`column = 1`) of R⋅M is v = | 0 |
+//                                                | 0 |
+//
+// `rows` need not be in sorted order, and `out` need not be properly sized on
+// entry (it will be resized as necessary). However, this method aborts if any
+// element of `rows` is out of range, `column` is out of range, *or* if there
+// are any duplicated elements in `rows`.
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubColumnWithCovering(
     const MatrixX<T>& in,
@@ -281,9 +301,30 @@ bool UnrevisedLemkeSolver<T>::ValidateIndices(
          ValidateIndices(col_indices, num_cols);
 }
 
-// Utility function for copying part of a matrix- designated by the indices
-// in row_indices and col_indices from `in` and augmented with a single column
-// of "ones" (i.e., the "covering vector")- to a target matrix, `out`.
+// Utility function for copying an r × c dimensional submatrix S (designated by
+// the indices in row_indices and col_indices) from a matrix M to a target
+// matrix, `out`. Let M be the matrix `in` augmented with a single column of
+// ones (i.e., the "covering vector"); put another way, M = | in 1 |, where "in"
+// refers the n × m-dimensional matrix `in` and 1 is a column of ones (so M is
+// n × (m+1)-dimensional). Let R be a r × n "row selection" matrix, constructed
+// using `row_indices` and C be a (m+1) × c-dimensional "column selection"
+// matrix constructed using `col_indices`. R and C are constructed using
+// r = `row_indices.size()` and c = `col_indices.size()` as follows:
+//
+// Rᵢⱼ = { 1  if j = row_indices[i], ∀i ∈ 0..r-1, ∀j ∈ 0..n-1
+//       { 0  otherwise
+// Cᵢⱼ = { 1  if col_indices[j] = i, ∀i ∈ 0..m, ∀j ∈ 0..c-1
+//
+// Consider the following example with `in` set to the 3 × 3 identity matrix,
+// `row_indices = { 2, 1, 0}` and `col_indices = { 1, 2, 3 }`. This would make:
+// R =  | 0 0 1 |      C = | 0 0 0 |   and  R⋅M⋅C = | 0 1 1 |
+//      | 0 1 0 |          | 1 0 0 |                | 1 0 1 |
+//      | 1 0 0 |          | 0 1 0 |                | 0 0 1 |
+//                         | 0 0 1 |
+// `row_indices` and `col_indices` need not be in sorted order, and `out` need
+// not be properly sized on entry (it will be resized as necessary). However,
+// this method aborts if any element of `row_indices` or `col_indices` is out
+// of range *or* if there are any duplicated elements.
 template <class T>
 void UnrevisedLemkeSolver<T>::SelectSubMatrixWithCovering(
     const MatrixX<T>& in,
@@ -667,7 +708,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     mod_zero_tol = ComputeZeroTolerance(M);
 
   // Checks to see whether the trivial solution z = 0 to the LCP w = Mz + q
-  // solves the LCP.
+  // solves the LCP. This must be the case if q is non-negative, as w would then
+  // be non-negative, z would be non-negative (zero), and w'z = 0.
   if (q.minCoeff() > -mod_zero_tol) {
     z->setZero(q.size());
     SPDLOG_DEBUG(log(), " -- trivial solution found");
