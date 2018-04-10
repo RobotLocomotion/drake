@@ -148,6 +148,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_constructor_list(self):
         vars = sym.Variables([x, y, z])
         self.assertEqual(vars.size(), 3)
+        self.assertEqual(len(vars), 3)
 
     def test_to_string(self):
         vars = sym.Variables([x, y, z])
@@ -183,6 +184,7 @@ class TestSymbolicVariables(unittest.TestCase):
     def test_include(self):
         vars = sym.Variables([x, y, z])
         self.assertTrue(vars.include(y))
+        self.assertTrue(z in vars)
 
     def test_equalto(self):
         vars1 = sym.Variables([x, y, z])
@@ -253,6 +255,14 @@ class TestSymbolicVariables(unittest.TestCase):
         vars2 = sym.Variables([y, w])
         vars3 = sym.intersect(vars1, vars2)  # = [y]
         self.assertEqual(vars3, sym.Variables([y]))
+
+    def test_iterable(self):
+        vars = sym.Variables([x, y, z])
+        count = 0
+        for var in vars:
+            self.assertTrue(var in vars)
+            count = count + 1
+        self.assertEqual(count, 3)
 
 
 class TestSymbolicExpression(unittest.TestCase):
