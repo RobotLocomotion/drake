@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -310,7 +311,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
   /// and the identity matrix I, i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`.
   /// @returns `true` if R is an orthonormal matrix.
-  static bool IsOrthonormal(const Matrix3<T>& R, double tolerance) {
+  static Bool<T> IsOrthonormal(const Matrix3<T>& R, double tolerance) {
     return GetMeasureOfOrthonormality(R) <= tolerance;
   }
 
@@ -320,7 +321,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
   /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
-  static bool IsValid(const Matrix3<T>& R, double tolerance) {
+  static Bool<T> IsValid(const Matrix3<T>& R, double tolerance) {
     return IsOrthonormal(R, tolerance) && R.determinant() > 0;
   }
 
@@ -328,21 +329,21 @@ class RotationMatrix {
   /// within the threshold of get_internal_tolerance_for_orthonormality().
   /// @param[in] R an allegedly valid rotation matrix.
   /// @returns `true` if R is a valid rotation matrix.
-  static bool IsValid(const Matrix3<T>& R) {
+  static Bool<T> IsValid(const Matrix3<T>& R) {
     return IsValid(R, get_internal_tolerance_for_orthonormality());
   }
 
   /// Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
   /// to within the threshold of get_internal_tolerance_for_orthonormality().
   /// @returns `true` if `this` is a valid rotation matrix.
-  bool IsValid() const { return IsValid(matrix()); }
+  Bool<T> IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
-  bool IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
+  Bool<T> IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
 
   /// Returns true if `this` is equal to the identity matrix to within the
   /// threshold of get_internal_tolerance_for_orthonormality().
-  bool IsIdentityToInternalTolerance() const {
+  Bool<T> IsIdentityToInternalTolerance() const {
     return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
                            get_internal_tolerance_for_orthonormality());
   }
@@ -353,7 +354,7 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
+  Bool<T> IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
   }
 
@@ -362,7 +363,7 @@ class RotationMatrix {
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @returns true if each element of `this` is exactly equal to the
   /// corresponding element in `other`.
-  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+  Bool<T> IsExactlyEqualTo(const RotationMatrix<T>& other) const {
     return matrix() == other.matrix();
   }
 
@@ -415,6 +416,13 @@ class RotationMatrix {
         ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
     ThrowIfNotValid(M_orthonormalized);
     return RotationMatrix<S>(M_orthonormalized, true);
+  }
+
+  template <typename S = T>
+  static typename std::enable_if<!is_numeric<S>::value, RotationMatrix<S>>::type
+  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
+    throw std::runtime_error("This method is not supported for scalar types "
+                             "that are not is_numeric<S>.");
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.
@@ -563,15 +571,21 @@ class RotationMatrix {
   // @param[in] tolerance maximum allowable absolute difference between the
   // matrix elements in R and `other`.
   // @returns `true` if `‖R - `other`‖∞ <= tolerance`.
-  static bool IsNearlyEqualTo(const Matrix3<T>& R, const Matrix3<T>& other,
-                              double tolerance) {
+  static Bool<T> IsNearlyEqualTo(const Matrix3<T>& R, const Matrix3<T>& other,
+                                 double tolerance) {
     const T R_max_difference = GetMaximumAbsoluteDifference(R, other);
     return R_max_difference <= tolerance;
   }
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Matrix3<T>& R);
+  template <typename S = T>
+  static typename std::enable_if<is_numeric<S>::value>::type
+  ThrowIfNotValid(const Matrix3<T>& R);
+
+  template <typename S = T>
+  static typename std::enable_if<!is_numeric<S>::value>::type
+  ThrowIfNotValid(const Matrix3<T>& R) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
