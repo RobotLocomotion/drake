@@ -339,7 +339,9 @@ class RotationMatrix {
   Bool<T> IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
-  Bool<T> IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
+  Bool<T> IsExactlyIdentity() const {
+    return matrix() == Matrix3<T>::Identity();
+  }
 
   /// Returns true if `this` is equal to the identity matrix to within the
   /// threshold of get_internal_tolerance_for_orthonormality().
@@ -354,7 +356,8 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  Bool<T> IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
+  Bool<T> IsNearlyEqualTo(
+      const RotationMatrix<T>& other, double tolerance) const {
     return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
   }
 

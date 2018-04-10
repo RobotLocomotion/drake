@@ -297,7 +297,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
   m = RotationMatrix<double>(rpy).matrix();
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
-  EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon).value());
+  EXPECT_TRUE(
+      R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon).value());
   EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40*kEpsilon);
 
   // Test scaling each element of a rotation matrix by 2 (linear scaling).
