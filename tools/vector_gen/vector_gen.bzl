@@ -127,8 +127,9 @@ def drake_cc_vector_gen_library(
         srcs = outs.srcs,
         hdrs = outs.hdrs,
         deps = deps + [
-            "//systems/framework:vector",
             "//common:essential",
+            "//common:symbolic",
+            "//systems/framework:vector",
         ],
         **kwargs)
 
