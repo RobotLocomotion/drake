@@ -92,6 +92,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         }),
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
+    .def("compile", &RigidBodyTree<double>::compile)
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
       std::default_random_engine generator(std::random_device {}());
       return tree.getRandomConfiguration(generator);
@@ -223,7 +224,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_name", &RigidBody<double>::get_name)
     .def("get_body_index", &RigidBody<double>::get_body_index)
     .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
-    .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
+    .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
+    .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
 
   py::class_<RigidBodyFrame<double>,
              shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
