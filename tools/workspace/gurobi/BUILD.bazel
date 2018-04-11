@@ -5,4 +5,4 @@
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-add_lint_tests()
+add_lint_tests(bazel_lint_extra_srcs = glob(["*.BUILD.bazel.in"]))
