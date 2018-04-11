@@ -45,7 +45,7 @@ Installing CLion
 ----------------
 
 1. Go to https://www.jetbrains.com/clion/download/. Download the latest version
-   of CLion. For macOS, choose the version with bundled custom JDK.
+   of CLion.
 2. Install CLion. Exact steps depend on your platform, but it's
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free
