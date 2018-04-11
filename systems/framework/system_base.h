@@ -457,9 +457,7 @@ class SystemBase : public internal::SystemMessageInterface {
   called during runtime use. It will _always_ be called as the final step in
   Context allocation, even in Release builds.
   @see DoCheckValidContext() for runtime checking. */
-  virtual void DoValidateAllocatedContext(const ContextBase& context) const {
-    unused(context);
-  }
+  virtual void DoValidateAllocatedContext(const ContextBase& context) const = 0;
 
   /** Derived classes must implement this to verify that the supplied
   Context is suitable, and throw an exception if not. This is a runtime check

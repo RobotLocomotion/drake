@@ -133,11 +133,13 @@ class MySystemBase final : public SystemBase {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<MyContextBase>();
   }
 
-  void DoCheckValidContext(const ContextBase&) const override {}
+  void DoValidateAllocatedContext(const ContextBase& context) const final {}
+
+  void DoCheckValidContext(const ContextBase&) const final {}
 
   const CacheEntry& entry0_;
   const CacheEntry& entry1_;

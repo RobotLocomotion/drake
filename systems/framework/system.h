@@ -1103,13 +1103,6 @@ class System : public SystemBase {
     }
   }
 
-  /// SystemBase override checks a Context of same type T.
-  void DoCheckValidContext(const ContextBase& context_base) const final {
-    const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
-    DRAKE_THROW_UNLESS(context != nullptr);
-    CheckValidContextT(*context);
-  }
-
   /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
     return context.get_continuous_state().CopyToVector();
@@ -1888,6 +1881,13 @@ class System : public SystemBase {
   // Attorney-Client idiom to expose a subset of private elements of System.
   // Refer to SystemImpl comments for details.
   friend class SystemImpl;
+
+  // SystemBase override checks a Context of same type T.
+  void DoCheckValidContext(const ContextBase& context_base) const final {
+    const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
+    DRAKE_THROW_UNLESS(context != nullptr);
+    CheckValidContextT(*context);
+  }
 
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
