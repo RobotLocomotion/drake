@@ -26,12 +26,11 @@ GTEST_TEST(TestLcmUtil, testQuaternion) {
   std::default_random_engine generator;
   generator.seed(0);
   Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(generator);
-  const Eigen::Vector4d quaternion(q.w(), q.x(), q.y(), q.z());
   bot_core::quaternion_t msg;
-  EncodeQuaternion(quaternion, msg);
+  EncodeQuaternion(q, msg);
   auto quat_back = DecodeQuaternion(msg);
-  EXPECT_TRUE(
-      CompareMatrices(quaternion, quat_back, 0.0, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Eigen::Vector4d(q.w(), q.x(), q.y(), q.z()),
+                              quat_back, 0.0, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestLcmUtil, testPose) {

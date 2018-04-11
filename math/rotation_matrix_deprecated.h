@@ -30,8 +30,7 @@ Vector4<typename Derived::Scalar> rotmat2quat(
 
   using Scalar = typename Derived::Scalar;
   const drake::math::RotationMatrix<Scalar> R((drake::Matrix3<Scalar>(M)));
-  const Eigen::Quaternion<Scalar> q = R.ToQuaternion();
-  return Vector4<Scalar>(q.w(), q.x(), q.y(), q.z());
+  return R.ToQuaternionAsVector4();
 }
 
 /**

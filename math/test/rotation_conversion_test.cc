@@ -44,10 +44,13 @@ bool check_rpy_range(const Vector3d& rpy) {
          rpy(1) >= -M_PI / 2 && rpy(2) <= M_PI && rpy(2) >= -M_PI;
 }
 
-bool AreQuaternionsForSameOrientation(const Vector4d& q1, const Vector4d& q2,
+bool AreQuaternionsForSameOrientation(const Eigen::Quaterniond& quat1,
+                                      const Eigen::Quaterniond& quat2,
                                       double precision = 1E-12) {
   // The same orientation is described by both a quaternion and the negative of
   // that quaternion.
+  const Eigen::Vector4d q1(quat1.w(), quat1.x(), quat1.y(), quat1.z());
+  const Eigen::Vector4d q2(quat2.w(), quat2.x(), quat2.y(), quat2.z());
   return q1.isApprox(q2, precision) || q1.isApprox(-q2, precision);
 }
 
@@ -78,9 +81,7 @@ bool AreRollPitchYawForSameOrientation(const Vector3d& rpy1,
   const double precision = 1E-13;
   const Eigen::Quaterniond q1 = SpaceXYZAnglesToEigenQuaternion(rpy1);
   const Eigen::Quaterniond q2 = SpaceXYZAnglesToEigenQuaternion(rpy2);
-  return AreQuaternionsForSameOrientation(EigenQuaternionToOrderWXYZ(q1),
-                                          EigenQuaternionToOrderWXYZ(q2),
-                                          precision);
+  return AreQuaternionsForSameOrientation(q1, q2, precision);
 }
 
 Matrix3d CalcRotationMatrixAboutZ(double a) {
@@ -389,27 +390,27 @@ class RotationConversionTest : public ::testing::Test {
 };
 
 TEST_F(RotationConversionTest, QuatRotmat) {
-  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
+  for (const Quaterniond& qi : quaternion_test_cases_) {
     // Compute the rotation matrix using Eigen geometry module, compare the
     // result with quat2rotmat
-    Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
-    Matrix3d rotmat_expected = qi_eigen.toRotationMatrix();
-    Matrix3d rotmat = quat2rotmat(qi);
+    const Matrix3d rotmat_expected = qi.toRotationMatrix();
+    const Matrix3d rotmat = quat2rotmat(EigenQuaternionToOrderWXYZ(qi));
     EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10,
                                 MatrixCompareType::absolute));
-    // quat2rotmat should be the inversion of rotmat2quat
-    auto quat_expected = rotmat2quat(rotmat);
+    // quat2rotmat should be the inversion of ToQuaternion().
+    const Eigen::Quaterniond quat_expected =
+        RotationMatrix<double>::ToQuaternion(rotmat);
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
   }
 }
 
 TEST_F(RotationConversionTest, QuatRPY) {
-  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
-    const Vector3d rpy = QuaternionToSpaceXYZ(qi_eigen);
+  for (const Quaterniond& qi : quaternion_test_cases_) {
+    const Vector3d rpy = QuaternionToSpaceXYZ(qi);
     // rpy2quat should be the inversion of QuaternionToSpaceXYZ().
-    const Vector4d quat_expected = rpy2quat(rpy);
-    const Vector4d qi = EigenQuaternionToOrderWXYZ(qi_eigen);
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
+    const Vector4d quat4 = rpy2quat(rpy);
+    Eigen::Quaterniond q_expected(quat4(0), quat4(1), quat4(2), quat4(3));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, q_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
 }
@@ -425,16 +426,15 @@ TEST_F(RotationConversionTest, QuatEigenQuaternion) {
   }
 }
 TEST_F(RotationConversionTest, RotmatQuat) {
-  // Compute the quaternion using Eigen geomery module, compare the result with
-  // rotmat2quat
+  // Compare Eigen's rotation matrix to quaternion result with the result from
+  // RotationMatrix::ToQuaternion().
   for (const auto& Ri : rotation_matrix_test_cases_) {
-    Vector4d quat = rotmat2quat(Ri);
-    auto quat_expected_eigen = Quaterniond(Ri);
-    Vector4d quat_expectd = EigenQuaternionToOrderWXYZ(quat_expected_eigen);
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expectd));
-    // rotmat2quat should be the inversion of quat2rotmat
-    Matrix3d rotmat_expected = quat2rotmat(quat);
-    EXPECT_TRUE(Ri.isApprox(rotmat_expected));
+    const Eigen::Quaterniond quat = RotationMatrix<double>::ToQuaternion(Ri);
+    const Eigen::Quaterniond quat_expected = Quaterniond(Ri);
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, quat_expected));
+    // Ensure the calculated quaternion produces the same rotation matrix.
+    const RotationMatrix<double> rotmat(quat);
+    EXPECT_TRUE(Ri.isApprox(rotmat.matrix()));
   }
 }
 
@@ -468,11 +468,10 @@ TEST_F(RotationConversionTest, RPYRotmat) {
 // its output to a quaternion obtained from SpaceXYZAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RPYQuat) {
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    const Vector3d spaceXYZ_angles(rpyi(0), rpyi(1), rpyi(2));
-    Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(spaceXYZ_angles);
-    const Vector4d quat = rpy2quat(rpyi);
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(
-                quat, EigenQuaternionToOrderWXYZ(q)));
+    Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(rpyi);
+    const Vector4d quat4 = rpy2quat(rpyi);
+    Eigen::Quaterniond quat(quat4(0), quat4(1), quat4(2), quat4(3));
+    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, q));
     // QuaternionToSpaceXYZ() should be the inversion of rpy2quat.
     const Vector3d rpy_expected = QuaternionToSpaceXYZ(q);
     EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
