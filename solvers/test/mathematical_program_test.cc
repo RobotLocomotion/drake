@@ -587,7 +587,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
   EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
                std::runtime_error);
 }
-GTEST_TEST(testGetSolution, testSetSolution1) {
+GTEST_TEST(testGetSolution, testGetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
   // 2. A dynamic-sized matrix of decision variables.
@@ -641,6 +641,44 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
                runtime_error);
   EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
                runtime_error);
+}
+
+GTEST_TEST(testGetSolution, testGetSolution2) {
+  // GetSolution of a symbolic expression/polynomial
+  MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<2>();
+  const auto a = prog.NewContinuousVariables<2>();
+
+  const Eigen::Vector2d a_val(1, 2);
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(a_val);
+  prog.SetSolverResult(solver_result);
+
+  symbolic::Variable b("b");
+
+  EXPECT_EQ(prog.SubstituteSolution(a(0) + a(1)), 3);
+
+  const symbolic::Expression e = a.cast<symbolic::Expression>().dot(x);
+  // `e` contains indeterminates
+  const auto e1 = prog.SubstituteSolution(e);
+  // All decision variables in the expression are also decision
+  // variables in the optimization program.
+  EXPECT_EQ(e1, a_val.dot(x));
+  const symbolic::Polynomial p = symbolic::Polynomial(
+      e, symbolic::Variables(x));
+  const auto p1 = prog.SubstituteSolution(p);
+
+  // All decision variables in the polynomial are also decision
+  // variables in the optimization program.
+  EXPECT_EQ(p1, symbolic::Polynomial(a_val.dot(x), symbolic::Variables(x)));
+
+  // Not all decision variables in the expression/polynomial are decision
+  // variables in the optimizatin program. b is a decision variable in the
+  // expression/polynomial, but not one in the optimization program.
+  EXPECT_THROW(prog.SubstituteSolution(e + b), std::runtime_error);
+  EXPECT_THROW(prog.SubstituteSolution(
+                   p + symbolic::Polynomial(b, symbolic::Variables())),
+               std::runtime_error);
 }
 
 namespace {

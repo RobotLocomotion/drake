@@ -2461,6 +2461,30 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
+   * Replaces the variables in an expression with the solutions to the
+   * variables, returns the expression after substitution.
+   * @throw runtime error if some variables in the expression @p e are NOT
+   * decision variables or indeterminates in the optimization program.
+   * @note If the expression @p e contains both decision variables and
+   * indeterminates of the optimization program, then the decision variables
+   * will be substituted by its solutions in double values, but not the
+   * indeterminates.
+   */
+  symbolic::Expression SubstituteSolution(const symbolic::Expression& e) const;
+
+  /**
+   * Replaces the decision variables in a polynomial with the solutions to the
+   * variables, returns the polynomial after substitution.
+   * @throw runtime error if some decision variables in the polynomial @p p are
+   * NOT decision variables in the optimization program.
+   * @note If the polynomial @p p contains both decision variables and
+   * indeterminates of the optimization program, then the decision variables
+   * will be substituted by its solutions in double values, but not the
+   * indeterminates.
+   */
+  symbolic::Polynomial SubstituteSolution(const symbolic::Polynomial& p) const;
+
+  /**
    * Evaluates the value of some binding, for some input value for all
    * decision variables.
    * @param binding A Binding whose variables are decision variables in this
