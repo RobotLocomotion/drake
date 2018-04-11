@@ -787,7 +787,7 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    const Eigen::Matrix3<Scalar> R = relativeTransform(cache,
+    const Matrix3<Scalar> R = relativeTransform(cache,
                          to_body_or_frame_ind, from_body_or_frame_ind).linear();
     return drake::math::RotationMatrix<Scalar>::ToQuaternionAsVector4(R);
   }
