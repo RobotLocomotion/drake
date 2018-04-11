@@ -26,7 +26,7 @@ are indexed using a SubsystemIndex; there is no separate SubcontextIndex since
 the numbering must be identical. */
 class ContextBase : public internal::ContextMessageInterface {
  public:
-  /** @name  Does not allow move or assignment; copy is protected. */
+  /** @name     Does not allow copy, move, or assignment. */
   /** @{ */
   // Copy constructor is used only to facilitate implementation of Clone()
   // in derived classes.
@@ -143,9 +143,13 @@ class ContextBase : public internal::ContextMessageInterface {
   contained in the source are left null in the copy. */
   ContextBase(const ContextBase&) = default;
 
-  /** Clones a context but without any of its internal pointers. */
-  std::unique_ptr<ContextBase> CloneWithoutPointers() const {
-      return DoCloneWithoutPointers();
+  /** Clones a context but without copying any of its internal pointers; the
+  clone's pointers are set to null. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected function on its children.
+  static std::unique_ptr<ContextBase> CloneWithoutPointers(
+      const ContextBase& source) {
+    return source.DoCloneWithoutPointers();
   }
 
   /** Derived classes must implement this so that it performs the complete
