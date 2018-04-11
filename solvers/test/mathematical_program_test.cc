@@ -676,9 +676,9 @@ GTEST_TEST(testGetSolution, testGetSolution2) {
   // variables in the optimizatin program. b is a decision variable in the
   // expression/polynomial, but not one in the optimization program.
   EXPECT_THROW(prog.SubstituteSolution(e + b), std::runtime_error);
-  EXPECT_THROW(
-      prog.SubstituteSolution(p + symbolic::Polynomial(b, symbolic::Variables())),
-      std::runtime_error);
+  EXPECT_THROW(prog.SubstituteSolution(
+                   p + symbolic::Polynomial(b, symbolic::Variables())),
+               std::runtime_error);
 }
 
 namespace {
