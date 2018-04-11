@@ -379,6 +379,16 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
               const MatrixXDecisionVariable& var) {
              return prog.GetSolution(var);
            })
+      .def("SubstituteSolution",
+          [](const MathematicalProgram& prog,
+            const symbolic::Expression& e) {
+          return prog.SubstituteSolution(e);
+          })
+      .def("SubstituteSolution",
+          [](const MathematicalProgram& prog,
+            const symbolic::Polynomial& p) {
+          return prog.SubstituteSolution(p);
+          })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
