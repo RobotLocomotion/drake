@@ -215,6 +215,11 @@ class LaneLayout {
   double ref_r0_{};
 };
 
+/// Streams a string representation of `lane_layout` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout);
+
 /// Defines a builder interface for multilane. It is used for testing purposes
 /// only, and derived code should instantiate Builder objects.
 class BuilderBase {
@@ -237,44 +242,38 @@ class BuilderBase {
   /// Gets `angular_tolerance` value.
   virtual double get_angular_tolerance() const = 0;
 
+  /// Connects `start_spec`'s Endpoint to an end-point linearly displaced from
+  /// `start_spec`'s Endpoint.
+  ///
+  /// `line_offset` specifies the length of displacement (in the direction of
+  /// the heading of `start_spec`'s Endpoint). `end_spec` specifies the
+  /// elevation characteristics at the end-point.
+  /// `lane_layout` defines the number of lanes, their width, extra shoulder
+  /// asphalt extensions and placing with respect to connection's reference
+  /// curve.
   virtual const Connection* Connect(const std::string& id,
-                            const LaneLayout& lane_layout,
-                            const StartReferenceSpec& start_spec,
-                            const LineOffset& line_offset,
-                            const EndReferenceSpec& end_spec) = 0;
+                                    const LaneLayout& lane_layout,
+                                    const StartReferenceSpec& start_spec,
+                                    const LineOffset& line_offset,
+                                    const EndReferenceSpec& end_spec) = 0;
 
-  virtual const Connection* Connect(const std::string& id,
-                            const LaneLayout& lane_layout,
-                            const StartReferenceSpec& start_spec,
-                            const ArcOffset& arc_offset,
-                            const EndReferenceSpec& end_spec) = 0;
-
-  /// Connects `start` to an end-point linearly displaced from `start`.
-  /// `length` specifies the length of displacement (in the direction of the
-  /// heading of `start`). `z_end` specifies the elevation characteristics at
-  /// the end-point.
+  /// Connects `start_spec`'s Endpoint to an end-point displaced from
+  /// `start_spec`'s Endpoint via an arc.
+  ///
+  /// `arc_offset` specifies the shape of the arc. `end_spec` specifies the
+  /// elevation characteristics at the end-point.
   /// `r0` is the distance from the reference curve to the first Lane
   /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
   /// distances added to the extents of the Segment after the first and last
   /// Lanes positions are determined.
-  // virtual const Connection* Connect(const std::string& id, int num_lanes,
-  //                                   double r0, double left_shoulder,
-  //                                   double right_shoulder,
-  //                                   const Endpoint& start, double length,
-  //                                   const EndpointZ& z_end) = 0;
-
-  /// Connects `start` to an end-point displaced from `start` via an arc.
-  /// `arc` specifies the shape of the arc. `z_end` specifies the elevation
-  /// characteristics at the end-point.
-  /// `r0` is the distance from the reference curve to the first Lane
-  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
-  /// distances added to the extents of the Segment after the first and last
-  /// Lanes positions are determined.
-  // virtual const Connection* Connect(const std::string& id, int num_lanes,
-  //                                   double r0, double left_shoulder,
-  //                                   double right_shoulder,
-  //                                   const Endpoint& start, const ArcOffset& arc,
-  //                                   const EndpointZ& z_end) = 0;
+  /// `lane_layout` defines the number of lanes, their width, extra shoulder
+  /// asphalt extensions and placing with respect to connection's reference
+  /// curve.
+  virtual const Connection* Connect(const std::string& id,
+                                    const LaneLayout& lane_layout,
+                                    const StartReferenceSpec& start_spec,
+                                    const ArcOffset& arc_offset,
+                                    const EndReferenceSpec& end_spec) = 0;
 
   /// Sets the default branch for one end of a connection.
   ///
@@ -391,33 +390,12 @@ class Builder : public BuilderBase {
   /// Gets `angular_tolerance` value.
   double get_angular_tolerance() const override { return angular_tolerance_; }
 
-  /// Connects `start_spec`'s Endpoint to an end-point linearly displaced from
-  /// `start_spec`'s Endpoint.
-  ///
-  /// `line_offset` specifies the length of displacement (in the direction of
-  /// the heading of `start_spec`'s Endpoint). `end_spec` specifies the
-  /// elevation characteristics at the end-point.
-  /// `lane_layout` defines the number of lanes, their width, extra shoulder
-  /// asphalt extensions and placing with respect to connection's reference
-  /// curve.
   const Connection* Connect(const std::string& id,
                             const LaneLayout& lane_layout,
                             const StartReferenceSpec& start_spec,
                             const LineOffset& line_offset,
                             const EndReferenceSpec& end_spec) override;
 
-  /// Connects `start_spec`'s Endpoint to an end-point displaced from
-  /// `start_spec`'s Endpoint via an arc.
-  ///
-  /// `arc_offset` specifies the shape of the arc. `end_spec` specifies the
-  /// elevation characteristics at the end-point.
-  /// `r0` is the distance from the reference curve to the first Lane
-  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
-  /// distances added to the extents of the Segment after the first and last
-  /// Lanes positions are determined.
-  /// `lane_layout` defines the number of lanes, their width, extra shoulder
-  /// asphalt extensions and placing with respect to connection's reference
-  /// curve.
   const Connection* Connect(const std::string& id,
                             const LaneLayout& lane_layout,
                             const StartReferenceSpec& start_spec,

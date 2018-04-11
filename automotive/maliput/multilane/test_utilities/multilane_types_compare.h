@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
+#include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/connection.h"
 
 namespace drake {
@@ -99,48 +100,6 @@ class HBoundsMatcher : public MatcherInterface<const api::HBounds&> {
   const double tolerance_{};
 };
 
-/// Wraps Endpoint comparison into a MatcherInterface.
-class EndpointMatcher : public MatcherInterface<const Endpoint&> {
- public:
-  EndpointMatcher(const Endpoint& endpoint, double tolerance)
-      : endpoint_(endpoint), tolerance_(tolerance) {}
-
-  bool MatchAndExplain(const Endpoint& other,
-                       MatchResultListener*) const override {
-    return IsEndpointClose(endpoint_, other, tolerance_);
-  }
-
-  void DescribeTo(std::ostream* os) const override  {
-    *os << "is within tolerance [" << tolerance_ << "] of endpoint: ["
-        << endpoint_ << "].";
-  }
-
- private:
-  const Endpoint endpoint_;
-  const double tolerance_{};
-};
-
-/// Wraps EndpointZ comparison into a MatcherInterface.
-class EndpointZMatcher : public MatcherInterface<const EndpointZ&> {
- public:
-  EndpointZMatcher(const EndpointZ& endpoint_z, double tolerance)
-      : endpoint_z_(endpoint_z), tolerance_(tolerance) {}
-
-  bool MatchAndExplain(const EndpointZ& other,
-                       MatchResultListener*) const override {
-    return IsEndpointZClose(endpoint_z_, other, tolerance_);
-  }
-
-  void DescribeTo(std::ostream* os) const override {
-    *os << "is within tolerance [" << tolerance_ << "] of endpoint_z: ["
-        << endpoint_z_ << "].";
-  }
-
- private:
-  const EndpointZ endpoint_z_;
-  const double tolerance_{};
-};
-
 /// Wraps an ArcOffset comparison into a MatcherInterface.
 class ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
  public:
@@ -166,6 +125,112 @@ class ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
   const ArcOffset arc_offset_;
   const double linear_tolerance_{};
   const double angular_tolerance_{};
+};
+
+/// Wraps a LineOffset comparison into a MatcherInterface.
+class LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
+ public:
+  LineOffsetMatcher(const LineOffset& line_offset, double tolerance)
+      : line_offset_(line_offset), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const LineOffset& other,
+                       MatchResultListener*) const override {
+    const double delta = std::abs(line_offset_.length() - other.length());
+    return delta <= tolerance_;
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_ << "] of line_offset: ["
+        << line_offset_ << "].";
+  }
+
+ private:
+  const LineOffset line_offset_{};
+  const double tolerance_{};
+};
+
+/// Wraps a LineOffset comparison into a MatcherInterface.
+class LaneLayoutMatcher : public MatcherInterface<const LaneLayout&> {
+ public:
+  LaneLayoutMatcher(const LaneLayout& lane_layout, double tolerance)
+      : lane_layout_(lane_layout), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const LaneLayout& other,
+                       MatchResultListener*) const override {
+    double delta{};
+
+    delta = std::abs(lane_layout_.left_shoulder() - other.left_shoulder());
+    if (delta > tolerance_) return false;
+
+    delta = std::abs(lane_layout_.right_shoulder() - other.right_shoulder());
+    if (delta > tolerance_) return false;
+
+    if (lane_layout_.num_lanes() != other.num_lanes()) return false;
+
+    if (lane_layout_.ref_lane() != other.ref_lane()) return false;
+
+    delta = std::abs(lane_layout_.ref_r0() - other.ref_r0());
+    if (delta > tolerance_) return false;
+
+    return true;
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_ << "] of lane_layout: ["
+        << lane_layout_ << "].";
+  }
+
+ private:
+  const LaneLayout lane_layout_;
+  const double tolerance_{};
+};
+
+/// Wraps a StartReferenceSpec comparison into a MatcherInterface.
+class StartReferenceSpecMatcher
+    : public MatcherInterface<const StartReferenceSpec&> {
+ public:
+  StartReferenceSpecMatcher(const StartReferenceSpec& start_reference,
+                            double tolerance)
+      : start_reference_(start_reference), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const StartReferenceSpec& other,
+                       MatchResultListener*) const override {
+    return IsEndpointClose(start_reference_.endpoint(), other.endpoint(),
+                           tolerance_);
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_ << "] of start_reference: [{"
+        << start_reference_.endpoint() << "}].";
+  }
+
+ private:
+  const StartReferenceSpec start_reference_;
+  const double tolerance_{};
+};
+
+/// Wraps a EndReferenceSpec comparison into a MatcherInterface.
+class EndReferenceSpecMatcher
+    : public MatcherInterface<const EndReferenceSpec&> {
+ public:
+  EndReferenceSpecMatcher(const EndReferenceSpec& end_reference,
+                          double tolerance)
+      : end_reference_(end_reference), tolerance_(tolerance) {}
+
+  bool MatchAndExplain(const EndReferenceSpec& other,
+                       MatchResultListener*) const override {
+    return IsEndpointZClose(end_reference_.endpoint_z(), other.endpoint_z(),
+                            tolerance_);
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    *os << "is within tolerance: [" << tolerance_ << "] of end_reference: [{"
+        << end_reference_.endpoint_z() << "}].";
+  }
+
+ private:
+  const EndReferenceSpec end_reference_;
+  const double tolerance_{};
 };
 
 }  // namespace test
