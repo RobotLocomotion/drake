@@ -41,7 +41,7 @@ GTEST_TEST(StartReferenceSpecTest, Endpoint) {
 }
 
 // StartReferenceSpec using a connection's reference curve.
-GTEST_TEST(StartReferenceSpec, Connection) {
+GTEST_TEST(StartReferenceSpecTest, Connection) {
   const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
   const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
   const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
@@ -256,26 +256,26 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
   const ArcOffset kSmallCounterClockwiseLoop(50., 2. * M_PI);
 
   const EndpointZ kFlatZ(0., 0., 0., 0.);
-  const Endpoint northbound{{0., 0., M_PI / 2.}, kFlatZ};
+  const Endpoint kNorthbound{{0., 0., M_PI / 2.}, kFlatZ};
 
   // This heads -y, loops to -x, clockwise, back to origin.
   auto left1 = b.Connect("left1", kLaneLayout,
-                         StartReference().at(northbound, Direction::kReverse),
+                         StartReference().at(kNorthbound, Direction::kReverse),
                          kLargeClockwiseLoop,
                          EndReference().z_at(kFlatZ, Direction::kForward));
   // This heads +y, loops to -x, counterclockwise, back to origin.
   auto left0 = b.Connect("left0", kLaneLayout,
-                         StartReference().at(northbound, Direction::kForward),
+                         StartReference().at(kNorthbound, Direction::kForward),
                          kSmallCounterClockwiseLoop,
                          EndReference().z_at(kFlatZ, Direction::kForward));
   // This heads +y, loops to +x, clockwise, back to origin.
   auto right0 = b.Connect("right0", kLaneLayout,
-                          StartReference().at(northbound, Direction::kForward),
+                          StartReference().at(kNorthbound, Direction::kForward),
                           kSmallClockwiseLoop,
                           EndReference().z_at(kFlatZ, Direction::kForward));
   // This heads -y, loops to +x, counterclockwise, back to origin.
   auto right1 = b.Connect("right1", kLaneLayout,
-                          StartReference().at(northbound, Direction::kReverse),
+                          StartReference().at(kNorthbound, Direction::kReverse),
                           kLargeCounterClockwiseLoop,
                           EndReference().z_at(kFlatZ, Direction::kForward));
 
@@ -565,61 +565,49 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
       EndReference().z_at(kLowFlatZ, Direction::kReverse);
 
   // Creates connections.
-  const LaneLayout c1_lane_layout(kLeftShoulder, kRightShoulder, kThreeLanes,
-                                  kRefLane, 0.);
-  b.Connect("c1", c1_lane_layout,
-            StartReference().at(endpoint_a, Direction::kForward),
-            LineOffset(50.),
-            EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  b.Connect(
+      "c1",
+      LaneLayout(kLeftShoulder, kRightShoulder, kThreeLanes, kRefLane, 0.),
+      StartReference().at(endpoint_a, Direction::kForward), LineOffset(50.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c2_lane_layout(kLeftShoulder, kRightShoulder, kTwoLanes,
-                                  kRefLane, 4.);
-  auto c2 = b.Connect("c2", c2_lane_layout,
-                      StartReference().at(endpoint_b, Direction::kForward),
-                      LineOffset((20.)),
-                      EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  auto c2 = b.Connect(
+      "c2", LaneLayout(kLeftShoulder, kRightShoulder, kTwoLanes, kRefLane, 4.),
+      StartReference().at(endpoint_b, Direction::kForward), LineOffset((20.)),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c3_lane_layout(kLeftShoulder, kRightShoulder, kTwoLanes,
-                                  kRefLane, 4.);
-  b.Connect("c3", c3_lane_layout,
-            StartReference().at(endpoint_c, Direction::kForward),
-            LineOffset(30.),
-            EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  b.Connect(
+      "c3", LaneLayout(kLeftShoulder, kRightShoulder, kTwoLanes, kRefLane, 4.),
+      StartReference().at(endpoint_c, Direction::kForward), LineOffset(30.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c4_lane_layout(kLeftShoulder, kRightShoulder, kThreeLanes,
-                                  kRefLane, 0.);
-  auto c4 = b.Connect("c4", c4_lane_layout,
+  auto c4 = b.Connect("c4", LaneLayout(kLeftShoulder, kRightShoulder,
+                                       kThreeLanes, kRefLane, 0.),
                       StartReference().at(endpoint_b, Direction::kForward),
                       ArcOffset(6., -M_PI / 2.),
                       EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c5_lane_layout(kLeftShoulder, kRightShoulder, kTwoLanes,
-                                  kRefLane, 10.);
-  b.Connect("c5", c5_lane_layout,
-            StartReference().at(endpoint_d, Direction::kForward),
-            LineOffset(36.),
-            EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  b.Connect(
+      "c5", LaneLayout(kLeftShoulder, kRightShoulder, kTwoLanes, kRefLane, 10.),
+      StartReference().at(endpoint_d, Direction::kForward), LineOffset(36.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c6_lane_layout(kLeftShoulder, kRightShoulder, kTwoLanes,
-                                  kRefLane, 0.);
-  auto c6 = b.Connect("c6", c6_lane_layout,
-                      StartReference().at(endpoint_f, Direction::kForward),
-                      ArcOffset(10., M_PI / 2.),
-                      EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  auto c6 = b.Connect(
+      "c6", LaneLayout(kLeftShoulder, kRightShoulder, kTwoLanes, kRefLane, 0.),
+      StartReference().at(endpoint_f, Direction::kForward),
+      ArcOffset(10., M_PI / 2.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c7_lane_layout(kLeftShoulder, kRightShoulder, kTwoLanes,
-                                  kRefLane, 10.);
-  auto c7 = b.Connect("c7", c7_lane_layout,
-                      StartReference().at(endpoint_e, Direction::kForward),
-                      LineOffset(20.),
-                      EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  auto c7 = b.Connect(
+      "c7", LaneLayout(kLeftShoulder, kRightShoulder, kTwoLanes, kRefLane, 10.),
+      StartReference().at(endpoint_e, Direction::kForward), LineOffset(20.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
-  const LaneLayout c8_lane_layout(kLeftShoulder, kRightShoulder, kThreeLanes,
-                                  kRefLane, 6.);
-  b.Connect("c8", c8_lane_layout,
-            StartReference().at(endpoint_g, Direction::kForward),
-            LineOffset(44.),
-            EndReference().z_at(kLowFlatZ, Direction::kReverse));
+  b.Connect(
+      "c8",
+      LaneLayout(kLeftShoulder, kRightShoulder, kThreeLanes, kRefLane, 6.),
+      StartReference().at(endpoint_g, Direction::kForward), LineOffset(44.),
+      EndReference().z_at(kLowFlatZ, Direction::kReverse));
 
   // Creates the crossing junction.
   std::vector<const Connection*> connections{c2, c4, c6, c7};

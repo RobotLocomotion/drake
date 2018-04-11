@@ -23,6 +23,10 @@ std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint) {
   return out << "(xy: " << endpoint.xy() << ", z: " << endpoint.z() << ")";
 }
 
+std::ostream& operator<<(std::ostream& out, const LineOffset& line_offset) {
+  return out << "(length: " << line_offset.length() << ")";
+}
+
 std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset) {
   return out << "(r: " << arc_offset.radius()
              << ", d_theta: " << arc_offset.d_theta() << ")";
