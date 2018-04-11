@@ -97,7 +97,7 @@ something_before: other-stuff
 something_after: other-stuff
 )R");
   DRAKE_EXPECT_THROWS_MESSAGE(LoadYaml(&yaml, &dut), std::runtime_error,
-                              "yaml-cpp: error .* invalid node.*");
+                              ".*invalid node.*");
 
   // Bad SpeedLimitRule::Severity.
   yaml = std::istringstream(R"R(# -*- yaml -*-
@@ -125,7 +125,7 @@ maliput_simple_rulebook_v1:
 )R");
   dut.RemoveAll();
   DRAKE_EXPECT_THROWS_MESSAGE(LoadYaml(&yaml, &dut), std::runtime_error,
-                              "yaml-cpp: error.*: bad conversion");
+                              ".*bad conversion.*");
 
   // Bad SpeedLimitRule limit.
   yaml = std::istringstream(R"R(# -*- yaml -*-
