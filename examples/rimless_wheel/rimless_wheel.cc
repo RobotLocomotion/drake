@@ -105,7 +105,9 @@ void RimlessWheel<T>::StepForwardReset(
   // closer to zero will not cause the wheel to miss an event, but will cause
   // the simulator to perform arbitrarily more event detection calculations.
   // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() < 0.01*sqrt(params.gravity()/params.length())) {
+  const double tol = (context.get_accuracy()) ?
+                     context.get_accuracy().value() : 1e-2;
+  if (next_state.thetadot() < tol * sqrt(params.gravity() / params.length())) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);
@@ -154,11 +156,14 @@ void RimlessWheel<T>::StepBackwardReset(
   // If thetadot is very small, then transition to double support.
   // Note: I already know that thetadot < 0 since the guard triggered.
   DRAKE_ASSERT(next_state.thetadot() <= 0.);
+
   // The threshold value below only impacts early termination.  Setting it
   // closer to zero will not cause the wheel to miss an event, but will cause
   // the simulator to perform arbitrarily more event detection calculations.
   // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
-  if (next_state.thetadot() > -0.01*sqrt(params.gravity()/params.length())) {
+  const double tol = (context.get_accuracy()) ?
+                     context.get_accuracy().value() : 1e-2;
+  if (next_state.thetadot() > -tol * sqrt(params.gravity() / params.length())) {
     bool& double_support = get_mutable_double_support(state);
     double_support = true;
     next_state.set_thetadot(0.0);

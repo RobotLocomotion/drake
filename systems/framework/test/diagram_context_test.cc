@@ -183,6 +183,19 @@ TEST_F(DiagramContextTest, Time) {
   }
 }
 
+// Tests that the accuracy writes through to the subsystem contexts.
+TEST_F(DiagramContextTest, Accuracy) {
+  const double kAccuracy = 1e-12;
+  context_->set_accuracy(kAccuracy);
+  EXPECT_TRUE(context_->get_accuracy());
+  EXPECT_EQ(kAccuracy, context_->get_accuracy().value());
+  for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+    EXPECT_TRUE(context_->GetSubsystemContext(i).get_accuracy());
+    EXPECT_EQ(kAccuracy,
+              context_->GetSubsystemContext(i).get_accuracy().value());
+  }
+}
+
 // Tests that state variables appear in the diagram context, and write
 // transparently through to the constituent system contexts.
 TEST_F(DiagramContextTest, State) {
@@ -300,8 +313,8 @@ TEST_F(DiagramContextTest, CloneState) {
   EXPECT_EQ(43.0, context_->get_continuous_state()[1]);
 }
 
-// Verifies that accuracy is set properly.
-TEST_F(DiagramContextTest, Accuracy) {
+// Verifies that accuracy is set properly during cloning.
+TEST_F(DiagramContextTest, CloneAccuracy) {
   // Verify accuracy is not set by default.
   EXPECT_FALSE(context_->get_accuracy());
 
