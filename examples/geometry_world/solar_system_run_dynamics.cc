@@ -1,6 +1,7 @@
 #include "drake/examples/geometry_world/solar_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -11,6 +12,7 @@ namespace {
 
 using geometry::SceneGraph;
 using geometry::SourceId;
+using lcm::DrakeLcm;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -26,7 +28,9 @@ int do_main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(*scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   auto diagram = builder.Build();
 

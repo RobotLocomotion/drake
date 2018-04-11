@@ -6,6 +6,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -20,6 +21,7 @@ using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::HalfSpace;
 using geometry::SourceId;
+using lcm::DrakeLcm;
 using systems::InputPortDescriptor;
 using std::make_unique;
 
@@ -64,7 +66,9 @@ int do_main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(*scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   auto diagram = builder.Build();
 

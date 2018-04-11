@@ -31,6 +31,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
@@ -42,7 +43,8 @@
 namespace drake {
 namespace systems {
 
-using drake::multibody::joints::kQuaternion;
+using lcm::DrakeLcm;
+using multibody::joints::kQuaternion;
 using Eigen::VectorXd;
 using std::make_unique;
 
@@ -144,7 +146,9 @@ int main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(*scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(*scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(*scene_graph, &lcm);
 
   auto diagram = builder.Build();
 

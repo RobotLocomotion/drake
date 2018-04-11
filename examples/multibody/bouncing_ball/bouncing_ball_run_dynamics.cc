@@ -7,6 +7,7 @@
 #include "drake/examples/multibody/bouncing_ball/make_bouncing_ball_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -41,6 +42,7 @@ using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using drake::multibody::multibody_plant::CoulombFriction;
+using lcm::DrakeLcm;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
@@ -93,7 +95,9 @@ int do_main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();

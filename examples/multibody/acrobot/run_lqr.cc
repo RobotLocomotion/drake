@@ -7,25 +7,24 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 
 using geometry::SceneGraph;
+using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::Context;
+
 namespace examples {
 namespace multibody {
 namespace acrobot {
@@ -108,7 +107,9 @@ int do_main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();

@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
@@ -18,6 +19,7 @@ namespace drake {
 
 using geometry::SceneGraph;
 using geometry::SourceId;
+using lcm::DrakeLcm;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::multibody_plant::MultibodyPlant;
@@ -87,7 +89,9 @@ int do_main() {
 
   // Last thing before building the diagram; configure the system for
   // visualization.
-  geometry::ConfigureVisualization(scene_graph, &builder);
+  DrakeLcm lcm;
+  geometry::ConnectVisualization(scene_graph, &builder, &lcm);
+  geometry::DispatchLoadMessage(scene_graph, &lcm);
 
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 

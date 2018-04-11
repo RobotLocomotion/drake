@@ -192,24 +192,24 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
 
 }  // namespace internal
 
-void DispatchLoadMessage(const GeometryState<double>& state) {
-  using lcm::DrakeLcm;
 
+void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
+                         lcm::DrakeLcmInterface* lcm) {
+  scene_graph.ThrowIfContextAllocated("DispatchLoadMessage");
   lcmt_viewer_load_robot message =
-      internal::GeometryVisualizationImpl::BuildLoadMessage(state);
+      internal::GeometryVisualizationImpl::BuildLoadMessage(
+          *scene_graph.initial_state_);
   // Send a load message.
-  DrakeLcm lcm;
-  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
+  Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void ConnectVisualization(const SceneGraph<double>& system,
-                          systems::DiagramBuilder<double>* builder) {
+void ConnectVisualization(const SceneGraph<double>& scene_graph,
+                          systems::DiagramBuilder<double>* builder,
+                          lcm::DrakeLcmInterface* lcm) {
   using lcm::DrakeLcm;
   using systems::lcm::LcmPublisherSystem;
   using systems::lcm::Serializer;
   using systems::rendering::PoseBundleToDrawMessage;
-
-  static never_destroyed<DrakeLcm> lcm;
 
   PoseBundleToDrawMessage* converter =
       builder->template AddSystem<PoseBundleToDrawMessage>();
@@ -217,19 +217,12 @@ void ConnectVisualization(const SceneGraph<double>& system,
       builder->template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(),
-          &lcm.access());
+          lcm);
   publisher->set_publish_period(1 / 60.0);
 
-  builder->Connect(system.get_pose_bundle_output_port(),
+  builder->Connect(scene_graph.get_pose_bundle_output_port(),
                   converter->get_input_port(0));
   builder->Connect(*converter, *publisher);
-}
-
-void ConfigureVisualization(const SceneGraph<double>& scene_graph,
-                            systems::DiagramBuilder<double>* builder) {
-  scene_graph.ThrowIfContextAllocated("ConfigureVisualization");
-  DispatchLoadMessage(*scene_graph.initial_state_);
-  ConnectVisualization(scene_graph, builder);
 }
 
 }  // namespace geometry

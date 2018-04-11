@@ -13,11 +13,11 @@
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
-namespace systems {
 
-template <typename T> class DiagramBuilder;
-
-}  // namespace systems
+// Forward declarations to give LCM message publication appropriate access.
+namespace lcm {
+class DrakeLcmInterface;
+}  // namespace lcm
 
 namespace geometry {
 
@@ -386,9 +386,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
 
-  // Allow the load dispatch to peek into GeometrySystem.
-  friend void ConfigureVisualization(const SceneGraph<double>& scene_graph,
-                                     systems::DiagramBuilder<double>* builder);
+  // Allow the load dispatch to peek into SceneGraph.
+  friend void DispatchLoadMessage(const SceneGraph<double>&,
+                                  lcm::DrakeLcmInterface*);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject() const;
