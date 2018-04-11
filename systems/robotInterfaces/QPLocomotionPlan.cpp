@@ -357,7 +357,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     const Isometry3d& transform_task_to_world =
         body_motion.getTransformTaskToWorld();
     const Vector4d quat_task_to_world =
-        math::RotationMatrix<double>::ToQuaternionAsVector4(
+        drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
             transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
     eigenVectorToCArray(quat_task_to_world,

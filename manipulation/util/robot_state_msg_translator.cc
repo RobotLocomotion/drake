@@ -149,8 +149,9 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      const Vector4d quat =
-          math::RotationMatrix<double>::ToQuaternionAsVector4(X_JB.linear());
+      const Eigen::Vector4d quat =
+          drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+              X_JB.linear());
       q.segment<4>(position_start + 3) = quat;
 
       // Transform V_WB to the floating base's body frame (V_WB_B).
