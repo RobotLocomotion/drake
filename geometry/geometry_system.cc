@@ -98,9 +98,8 @@ GeometrySystem<T>::GeometrySystem(const GeometrySystem<U>& other)
   // system to persist the same state.
   if (other.initial_state_ != nullptr) {
     *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
-  } else {
-    initial_state_ = nullptr;
   }
+  context_has_been_allocated_ = other.context_has_been_allocated_;
 
   // We need to guarantee that the same source ids map to the same port indexes.
   // We'll do this by processing the source ids in monotonically increasing
@@ -240,10 +239,8 @@ void GeometrySystem<T>::CalcQueryObject(const Context<T>& context,
 }
 
 template <typename T>
-PoseBundle<T> GeometrySystem<T>::MakePoseBundle(
-    const Context<T>& context) const {
-  const auto& g_context = static_cast<const GeometryContext<T>&>(context);
-  const auto& g_state = g_context.get_geometry_state();
+PoseBundle<T> GeometrySystem<T>::MakePoseBundle() const {
+  const auto& g_state = *initial_state_;
   PoseBundle<T> bundle(g_state.get_num_frames());
   int i = 0;
   for (FrameId f_id : g_state.get_frame_ids()) {
@@ -337,7 +334,7 @@ void GeometrySystem<T>::FullPoseUpdate(
 template <typename T>
 std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
   // Disallow further geometry source additions.
-  initial_state_ = nullptr;
+  context_has_been_allocated_ = true;
   DRAKE_ASSERT(geometry_state_index_ >= 0);
   return make_unique<GeometryContext<T>>(geometry_state_index_);
 }
@@ -345,7 +342,7 @@ std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
 template <typename T>
 void GeometrySystem<T>::ThrowIfContextAllocated(
     const char* source_method) const {
-  if (initial_state_ == nullptr) {
+  if (context_has_been_allocated_) {
     throw std::logic_error(
         "The call to " + std::string(source_method) + " is invalid; a "
         "context has already been allocated.");
