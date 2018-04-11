@@ -87,10 +87,11 @@ class System : public SystemBase {
   /// These methods are used to allocate and initialize Context resources.
   //@{
 
-  /// Shadows AllocateContext to provide a more concrete return type
-  /// `Context<T>`.
+  /// Returns a `Context<T>` suitable for use with this `System<T>`.
+  // This is just an intentional shadowing of the base class method to return
+  // a more convenient type.
   std::unique_ptr<Context<T>> AllocateContext() const {
-    std::unique_ptr<ContextBase> context_base = SystemBase::AllocateContext();
+    std::unique_ptr<ContextBase> context_base(SystemBase::AllocateContext());
     DRAKE_DEMAND(dynamic_cast<Context<T>*>(context_base.get()) != nullptr);
     return std::unique_ptr<Context<T>>(
         static_cast<Context<T>*>(context_base.release()));
@@ -1087,6 +1088,7 @@ class System : public SystemBase {
   ///
   /// @throw exception unless `context` is valid for this system.
   /// @tparam T1 the scalar type of the Context to check.
+  // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
   void CheckValidContextT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with

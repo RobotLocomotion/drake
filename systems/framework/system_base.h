@@ -430,7 +430,6 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   SystemBase() = default;
 
-
   /** Allows Diagram to use private MakeContext() to invoke the same method
   on its children. */
   static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
@@ -444,7 +443,6 @@ class SystemBase : public internal::SystemMessageInterface {
     system.ValidateAllocatedContext(context);
   }
 
-
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
   diagrams. The base class allocates trackers for known resources and
@@ -454,13 +452,21 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Any derived class that imposes restrictions on the structure or content
   of an acceptable Context should enforce those restrictions by overriding
   this method. The supplied Context is guaranteed to have come from the
-  AllocateContext() sequence of this System so you don't need to check that. */
+  AllocateContext() sequence of this System so you don't need to check that.
+  This method is invoked _only_ during Context allocation and will not be
+  called during runtime use. It will _always_ be called as the final step in
+  Context allocation, even in Release builds.
+  @see DoCheckValidContext() for runtime checking. */
   virtual void DoValidateAllocatedContext(const ContextBase& context) const {
     unused(context);
   }
 
   /** Derived classes must implement this to verify that the supplied
-  context is suitable, and throw an exception if not. */
+  Context is suitable, and throw an exception if not. This is a runtime check
+  but may be expensive so is not guaranteed to be invoked except in Debug
+  builds.
+  @see DoValidateAllocatedContext() for one-time validity checking during
+       Context allocation. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:

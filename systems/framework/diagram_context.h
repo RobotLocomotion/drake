@@ -369,7 +369,7 @@ class DiagramContext final : public Context<T> {
     }
 
     clone->Finalize();
-    return std::move(clone);
+    return clone;
   }
 
   int num_subcontexts() const {

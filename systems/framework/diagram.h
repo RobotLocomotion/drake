@@ -220,9 +220,9 @@ class Diagram : public System<T>,
       const System<T>& sys = *registered_systems_[i];
       std::unique_ptr<ContextBase> subcontext_base =
           SystemBase::MakeContext(sys);
+      DRAKE_DEMAND(dynamic_cast<Context<T>*>(subcontext_base.get()) != nullptr);
       std::unique_ptr<Context<T>> subcontext(
-          dynamic_cast<Context<T>*>(subcontext_base.release()));
-      DRAKE_DEMAND(subcontext != nullptr);
+          static_cast<Context<T>*>(subcontext_base.release()));
       auto suboutput = sys.AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }
@@ -245,7 +245,7 @@ class Diagram : public System<T>,
     context->MakeState();
     context->MakeParameters();
 
-    return std::move(context);
+    return context;
   }
 
   // Permits child Systems to take a look at the completed Context to see

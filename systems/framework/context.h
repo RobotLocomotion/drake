@@ -54,9 +54,8 @@ class Context : public ContextBase {
   std::unique_ptr<Context<T>> Clone() const {
     std::unique_ptr<ContextBase> clone_base(ContextBase::Clone());
     DRAKE_DEMAND(dynamic_cast<Context<T>*>(clone_base.get()) != nullptr);
-    std::unique_ptr<Context<T>> clone(
-        static_cast<Context<T>*>(ContextBase::Clone().release()));
-    return clone;
+    return std::unique_ptr<Context<T>>(
+        static_cast<Context<T>*>(clone_base.release()));
   }
 
   ~Context() override = default;

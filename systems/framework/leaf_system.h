@@ -141,7 +141,7 @@ class LeafSystem : public System<T> {
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::move(context);
+    return context;
   }
 
   // Enforce some requirements on the fully-assembled Context.
