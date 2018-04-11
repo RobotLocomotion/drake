@@ -23,6 +23,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
 
+  // Install NumPy warning filtres.
+  // N.B. This may interfere with other code, but until that is a confirmed
+  // issue, we should agressively try to avoid these warnings.
+  py::module::import("pydrake.util.deprecation")
+      .attr("install_numpy_warning_filters")();
+
   m.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
@@ -343,7 +349,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__hash__",
            [](const Formula& self) { return std::hash<Formula>{}(self); })
       .def_static("True", &Formula::True)
-      .def_static("False", &Formula::False);
+      .def_static("False", &Formula::False)
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__nonzero__` on `Formula`. If you are trying "
+            "to make a map with `Variable`, `Expression`, or `Polynomial` as "
+            "keys and access the keys, please use "
+            "`pydrake.util.containers.EqualToDict`.");
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
