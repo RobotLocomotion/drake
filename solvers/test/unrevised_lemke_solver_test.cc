@@ -810,7 +810,10 @@ TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndex) {
   // now compute the ratios manually using component-wise division of the column
   // marked '1' over the column marked 'z1'.
   col << 0, 2, -1;
-  ratios << 3.0 / 0, 9.0 / 2, 2.0 / -1.0;
+  // NOTE: we replace 3.0 / 0 with infinity below to avoid divide by zero
+  // warnings from the compiler.
+  const double inf = std::numeric_limits<double>::infinity();
+  ratios << inf, 9.0 / 2, 2.0 / -1.0;
   ASSERT_TRUE(lcp_.FindBlockingIndex(zero_tol, col, ratios, &blocking_index));
   EXPECT_EQ(blocking_index, 2);  // Blocking index must be the last entry.
 
