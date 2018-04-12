@@ -139,8 +139,7 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
 }
 
 template <typename T>
-FramePoseVector<T> RigidBodyPlantBridge<T>::AllocateFramePoseOutput(
-    const MyContext&) const {
+FramePoseVector<T> RigidBodyPlantBridge<T>::AllocateFramePoseOutput() const {
   DRAKE_DEMAND(source_id_.is_valid());
   // Poses of the registered bodies in the world -- defaults to identity.
   std::vector<Isometry3<T>> X_WF(body_ids_.size(), Isometry3<T>::Identity());
@@ -172,8 +171,7 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
 }
 
 template <typename T>
-FrameIdVector RigidBodyPlantBridge<T>::AllocateFrameIdOutput(
-    const MyContext&) const {
+FrameIdVector RigidBodyPlantBridge<T>::AllocateFrameIdOutput() const {
   DRAKE_DEMAND(source_id_.is_valid());
   FrameIdVector ids(source_id_, body_ids_);
   return ids;

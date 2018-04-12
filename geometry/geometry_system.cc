@@ -209,8 +209,7 @@ void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
 }
 
 template <typename T>
-QueryObject<T> GeometrySystem<T>::MakeQueryObject(
-    const systems::Context<T>&) const {
+QueryObject<T> GeometrySystem<T>::MakeQueryObject() const {
   // Returns a null-initialized QueryObject to be compatible with context
   // allocation (see documentation on QueryObject).
   return QueryObject<T>();

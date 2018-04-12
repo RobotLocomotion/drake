@@ -289,8 +289,7 @@ class CacheEntry {
 
   // Check that an AbstractValue provided to Calc() is suitable for this cache
   // entry. (Very expensive; use in Debug only.)
-  void CheckValidAbstractValue(const ContextBase& context,
-                               const AbstractValue& proposed) const;
+  void CheckValidAbstractValue(const AbstractValue& proposed) const;
 
   // Provides an identifying prefix for error messages.
   std::string FormatName(const char* api) const;

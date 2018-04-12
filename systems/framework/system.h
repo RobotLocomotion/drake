@@ -134,9 +134,9 @@ class System : public SystemBase {
   /// Returns a container that can hold the values of all of this System's
   /// output ports. It is sized with the number of output ports and uses each
   /// output port's allocation method to provide an object of the right type
-  /// for that port. A Context is provided as
-  /// an argument to support some specialized use cases. Most typical
-  /// System implementations should ignore it.
+  /// for that port.
+  // TODO(sherm1) Get rid of context parameter. We are stuck with it for now
+  // because of the way DiagramOutput is implemented. Fixed in caching branch.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const = 0;
 

@@ -408,7 +408,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   friend void DispatchLoadMessage(const GeometrySystem<double>&);
 
   // Constructs a QueryObject for OutputPort allocation.
-  QueryObject<T> MakeQueryObject(const systems::Context<T>& context) const;
+  QueryObject<T> MakeQueryObject() const;
 
   // Sets the context into the output port value so downstream consumers can
   // perform queries.

@@ -13,10 +13,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-std::unique_ptr<AbstractValue> OutputPort<T>::Allocate(
-    const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
-  std::unique_ptr<AbstractValue> value = DoAllocate(context);
+std::unique_ptr<AbstractValue> OutputPort<T>::Allocate() const {
+  std::unique_ptr<AbstractValue> value = DoAllocate();
   if (value == nullptr) {
     throw std::logic_error("Allocate(): allocator returned a nullptr for " +
         GetPortIdString());
@@ -30,7 +28,7 @@ void OutputPort<T>::Calc(const Context<T>& context,
                          AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
   DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
-  DRAKE_ASSERT_VOID(CheckValidOutputType(context, *value));
+  DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
 
   DoCalc(context, value);
 }
@@ -90,10 +88,15 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   }
 }
 
+// See CacheEntry::CheckValidAbstractValue; treat both methods similarly.
 template <typename T>
-void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
-                                         const AbstractValue& proposed) const {
-  auto good = DoAllocate(context);  // Expensive!
+void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
+  // TODO(sherm1) Consider whether we can depend on there already being an
+  //              object of this type in the output port's CacheEntryValue so we
+  //              wouldn't have to allocate one here. If so could also store
+  //              a precomputed type_index there for further savings. Would
+  //              need to pass in a Context.
+  auto good = DoAllocate();  // Expensive!
   // Attempt to interpret these as BasicVectors.
   auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
   auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());
