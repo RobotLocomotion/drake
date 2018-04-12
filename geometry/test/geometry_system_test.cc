@@ -385,8 +385,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
 
  private:
   // Frame id output allocation and calculation.
-  FrameIdVector AllocateFrameIdOutput(
-      const Context<double>& context) const {
+  FrameIdVector AllocateFrameIdOutput() const {
     FrameIdVector ids(source_id_, frame_ids_);
     ids.AddFrameIds(extra_frame_ids_);
     return ids;
@@ -395,8 +394,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   void CalcFrameIdOutput(const Context<double> &context,
                                                FrameIdVector *) const {}
   // Frame pose output allocation.
-  FramePoseVector<double> AllocateFramePoseOutput(
-  const Context<double>& context) const {
+  FramePoseVector<double> AllocateFramePoseOutput() const {
     FramePoseVector<double> poses(source_id_);
     for (size_t i = 0; i < frame_ids_.size(); ++i) {
       poses.mutable_vector().push_back(Isometry3<double>::Identity());

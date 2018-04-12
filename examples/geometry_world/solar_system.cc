@@ -261,8 +261,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
 }
 
 template <typename T>
-FramePoseVector<T> SolarSystem<T>::AllocateFramePoseOutput(
-    const Context<T>&) const {
+FramePoseVector<T> SolarSystem<T>::AllocateFramePoseOutput() const {
   DRAKE_DEMAND(source_id_.is_valid());
   DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
   // NOTE: We initialize with the translational offset during allocation so that
@@ -285,7 +284,7 @@ void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
 }
 
 template <typename T>
-FrameIdVector SolarSystem<T>::AllocateFrameIdOutput(const MyContext&) const {
+FrameIdVector SolarSystem<T>::AllocateFrameIdOutput() const {
   DRAKE_DEMAND(source_id_.is_valid());
   DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
   FrameIdVector ids(source_id_);

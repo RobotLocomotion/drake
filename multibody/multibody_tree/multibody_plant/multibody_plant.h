@@ -885,15 +885,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
 
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
+  geometry::FrameIdVector AllocateFrameIdOutput() const;
 
   void CalcFrameIdOutput(
       const systems::Context<T>& context,
       geometry::FrameIdVector* id_set) const;
 
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
+  geometry::FramePoseVector<T> AllocateFramePoseOutput() const;
 
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;

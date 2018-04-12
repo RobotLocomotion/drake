@@ -746,7 +746,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   std::vector<std::unique_ptr<AbstractValue>> values;
   for (int i = 0; i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
-    values.emplace_back(out.Allocate(*context));
+    values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
   }
 
@@ -841,7 +841,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
     this->DeclareAbstractOutputPort(
-        [](const Context<double>&) {
+        []() {
           return AbstractValue::Make<int>(-2);
         },
         [](const Context<double>&, AbstractValue* out) {
@@ -869,7 +869,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   }
 
   // Explicit allocator method.
-  std::string MakeString(const Context<double>&) const {
+  std::string MakeString() const {
     return std::string("freshly made");
   }
 
