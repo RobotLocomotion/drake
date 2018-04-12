@@ -4,7 +4,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 
 using std::uniform_real_distribution;
@@ -130,7 +129,6 @@ bool PiecewiseTrajectory<T>::SegmentTimesEqual(
 
 // Explicit instantionations.
 template class PiecewiseTrajectory<double>;
-template class PiecewiseTrajectory<AutoDiffXd>;
 
 }  // namespace trajectories
 }  // namespace drake
