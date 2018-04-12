@@ -248,6 +248,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_name", &RigidBodyFrame<double>::get_name)
     .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
 
+  m.def("AddModelInstanceFromUrdfFile",
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &parsers::urdf::AddModelInstanceFromUrdfFile),
+        py::arg("urdf_filename"), py::arg("floating_base_type"),
+        py::arg("weld_to_frame"), py::arg("tree"));
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         py::overload_cast<const std::string&, const PackageMap&,
                           const std::string&, const FloatingBaseType,

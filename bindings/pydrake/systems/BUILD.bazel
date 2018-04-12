@@ -319,4 +319,15 @@ drake_py_unittest(
     ],
 )
 
+drake_py_binary(
+    name = "rgbd_camera_example",
+    srcs = ["rgbd_camera_example.py"],
+    data = [
+        "//multibody:models",
+    ],
+    deps = [
+        ":sensors_py",
+    ],
+)
+
 add_lint_tests()
