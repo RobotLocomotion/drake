@@ -418,7 +418,9 @@ class Context : public ContextBase {
   /// control all accuracy-dependent computations.
   // TODO(edrumwri) Invalidate all cached accuracy-dependent computations, and
   // propagate accuracy to all subcontexts in a diagram context.
-  void set_accuracy(const optional<double>& accuracy) { accuracy_ = accuracy; }
+  virtual void set_accuracy(const optional<double>& accuracy) {
+    accuracy_ = accuracy;
+  }
 
   /// Returns the accuracy setting (if any).
   /// @see set_accuracy() for details.

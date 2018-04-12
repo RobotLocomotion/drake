@@ -279,6 +279,17 @@ class DiagramContext final : public Context<T> {
     }
   }
 
+  /// Recursively sets the accuracy on this context and all subcontexts,
+  /// overwriting any accuracy value set in any subcontexts.
+  void set_accuracy(const optional<double>& accuracy) override {
+    Context<T>::set_accuracy(accuracy);
+    for (auto& subcontext : contexts_) {
+      if (subcontext != nullptr) {
+        subcontext->set_accuracy(accuracy);
+      }
+    }
+  }
+
   int get_num_input_ports() const override {
     return static_cast<int>(input_ids_.size());
   }
