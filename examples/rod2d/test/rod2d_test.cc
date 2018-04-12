@@ -811,7 +811,7 @@ class Rod2DDiscretizedTest : public ::testing::Test {
 };
 
 /// Verify that Rod 2D system eventually goes to rest using the
-/// first-order time stepping approach (this tests expected meta behavior).
+/// first-order discretization approach (this tests expected meta behavior).
 TEST_F(Rod2DDiscretizedTest, RodGoesToRest) {
   // Set the initial state to an inconsistent configuration.
   SetSecondInitialConfig();
@@ -947,7 +947,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   Simulator<double> simulator_ts(ts, std::move(context_ts));
 
   // Integrate forward by a single *large* dt. Note that the update rate
-  // is set by the time stepping system, so stepping to dt should yield
+  // is set by the discretized system, so stepping to dt should yield
   // exactly one step.
   simulator_ts.StepTo(dt);
   EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
@@ -1140,7 +1140,8 @@ TEST_F(Rod2DContinuousTest, NumWitnessFunctions) {
 
 // Verifies that output ports give expected values.
 GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
-  // Create two Rod2D systems, one time stepping, one with continuous state.
+  // Create two Rod2D systems, one time stepping (i.e., discretized),
+  // one with continuous state.
   const double dt = 1e-1;
   Rod2D<double> ts(Rod2D<double>::SystemType::kDiscretized, dt);
   Rod2D<double> pdae(Rod2D<double>::SystemType::kPiecewiseDAE, 0.0);

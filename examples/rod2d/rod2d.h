@@ -179,10 +179,10 @@ class Rod2D : public systems::LeafSystem<T> {
   /// continuous ordinary differential equation based approach.
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
-  /// @throws std::logic_error if @p dt is not positive and simulation_type is
-  ///         kDiscretized or @p dt is not zero and simulation_type is
+  /// @throws std::logic_error if @p dt is not positive and system_type is
+  ///         kDiscretized or @p dt is not zero and system_type is
   ///         kPiecewiseDAE or kContinuous.
-  explicit Rod2D(SystemType simulation_type, double dt);
+  explicit Rod2D(SystemType system_type, double dt);
 
   static const Rod2dStateVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
@@ -386,7 +386,7 @@ class Rod2D : public systems::LeafSystem<T> {
   double get_integration_step_size() const { return dt_; }
 
   /// Gets the model and simulation type for this system.
-  SystemType get_simulation_type() const { return system_type_; }
+  SystemType get_system_type() const { return system_type_; }
 
   /// Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
   /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,

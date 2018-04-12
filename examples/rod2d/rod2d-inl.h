@@ -27,11 +27,11 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
-Rod2D<T>::Rod2D(SystemType simulation_type, double dt)
-    : system_type_(simulation_type), dt_(dt) {
+Rod2D<T>::Rod2D(SystemType system_type, double dt)
+    : system_type_(system_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
-  if (simulation_type == SystemType::kDiscretized) {
+  if (system_type == SystemType::kDiscretized) {
     if (dt <= 0.0)
       throw std::logic_error(
           "Discretization approach must be constructed using"
