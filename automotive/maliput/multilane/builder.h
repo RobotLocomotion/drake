@@ -98,6 +98,48 @@ class Builder {
                             const Endpoint& start, const ArcOffset& arc,
                             const EndpointZ& z_end);
 
+  /// Creates a line Connection whose ID is `id` and has `num_lanes` lanes.
+  ///
+  /// `length` specifies the length of the reference curve which will be located
+  /// at `r_ref` lateral distance from `lane_ref_index` lane.
+  ///
+  /// Connection's `start_lane_index` lane will start at `start` and
+  /// connection's `end_lane_index` lane will end with `z_end` EndpointZ.
+  ///
+  /// `start_lane_index`, `end_lane_index`, `lane_ref_index` must be smaller
+  /// than `num_lanes` and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra lateral distances added to
+  /// the extents of the Segment after the first and last Lanes positions are
+  /// determined.
+  const Connection* Connect(const std::string& id, int num_lanes,
+                            double left_shoulder, double right_shoulder,
+                            int start_lane_index, const Endpoint& start,
+                            double length, int end_lane_index,
+                            const EndpointZ& z_end, double r_ref,
+                            int lane_ref_index);
+
+  /// Creates an arc Connection whose ID is `id` and has `num_lanes` lanes.
+  ///
+  /// `arc` specifies the shape of the reference curve which will be located
+  /// at `r_ref` lateral distance from `lane_ref_index` lane.
+  ///
+  /// Connection's `start_lane_index` lane will start at `start` and
+  /// connection's `end_lane_index` lane will end with `z_end` EndpointZ.
+  ///
+  /// `start_lane_index`, `end_lane_index`, `lane_ref_index` must be smaller
+  /// than `num_lanes` and non negative.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra lateral distances added to
+  /// the extents of the Segment after the first and last Lanes positions are
+  /// determined.
+  const Connection* Connect(const std::string& id, int num_lanes,
+                            double left_shoulder, double right_shoulder,
+                            int start_lane_index, const Endpoint& start,
+                            const ArcOffset& arc, int end_lane_index,
+                            const EndpointZ& z_end, double r_ref,
+                            int lane_ref_index);
+
   /// Sets the default branch for one end of a connection.
   ///
   /// The default branch for the `in_end` of connection `in` at Lane

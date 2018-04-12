@@ -48,6 +48,38 @@ const Connection* Builder::Connect(const std::string& id, int num_lanes,
   return connections_.back().get();
 }
 
+const Connection* Builder::Connect(const std::string& id, int num_lanes,
+                                   double left_shoulder, double right_shoulder,
+                                   int start_lane_index, const Endpoint& start,
+                                   double length, int end_lane_index,
+                                   const EndpointZ& z_end, double r_ref,
+                                   int lane_ref_index) {
+  DRAKE_DEMAND(start_lane_index < num_lanes && start_lane_index >= 0);
+  DRAKE_DEMAND(end_lane_index < num_lanes && end_lane_index >= 0);
+  DRAKE_DEMAND(lane_ref_index < num_lanes && lane_ref_index >= 0);
+  // Creates the connection.
+  connections_.push_back(std::make_unique<Connection>(
+      id, start, start_lane_index, z_end, end_lane_index, num_lanes, r_ref,
+      lane_ref_index, lane_width_, left_shoulder, right_shoulder, length));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id, int num_lanes,
+                                   double left_shoulder, double right_shoulder,
+                                   int start_lane_index, const Endpoint& start,
+                                   const ArcOffset& arc, int end_lane_index,
+                                   const EndpointZ& z_end, double r_ref,
+                                   int lane_ref_index) {
+  DRAKE_DEMAND(start_lane_index < num_lanes && start_lane_index >= 0);
+  DRAKE_DEMAND(end_lane_index < num_lanes && end_lane_index >= 0);
+  DRAKE_DEMAND(lane_ref_index < num_lanes && lane_ref_index >= 0);
+  // Creates the connection.
+  connections_.push_back(std::make_unique<Connection>(
+      id, start, start_lane_index, z_end, end_lane_index, num_lanes, r_ref,
+      lane_ref_index, lane_width_, left_shoulder, right_shoulder, arc));
+  return connections_.back().get();
+}
+
 void Builder::SetDefaultBranch(const Connection* in, int in_lane_index,
                                const api::LaneEnd::Which in_end,
                                const Connection* out, int out_lane_index,
