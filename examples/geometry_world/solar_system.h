@@ -125,15 +125,14 @@ class SolarSystem : public systems::LeafSystem<T> {
   void AllocateGeometry(geometry::GeometrySystem<T>* geometry_system);
 
   // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const MyContext& context) const;
+  geometry::FramePoseVector<T> AllocateFramePoseOutput() const;
 
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
                            geometry::FramePoseVector<T>* poses) const;
 
   // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(const MyContext& context) const;
+  geometry::FrameIdVector AllocateFrameIdOutput() const;
   // Calculate the id output.
   void CalcFrameIdOutput(const MyContext& context,
                          geometry::FrameIdVector* id_set) const;

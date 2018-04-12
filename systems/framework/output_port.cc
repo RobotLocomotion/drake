@@ -13,10 +13,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-std::unique_ptr<AbstractValue> OutputPort<T>::Allocate(
-    const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
-  std::unique_ptr<AbstractValue> value = DoAllocate(context);
+std::unique_ptr<AbstractValue> OutputPort<T>::Allocate() const {
+  std::unique_ptr<AbstractValue> value = DoAllocate();
   if (value == nullptr) {
     throw std::logic_error("Allocate(): allocator returned a nullptr for " +
         GetPortIdString());
@@ -91,9 +89,9 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
 }
 
 template <typename T>
-void OutputPort<T>::CheckValidOutputType(const Context<T>& context,
+void OutputPort<T>::CheckValidOutputType(const Context<T>&,
                                          const AbstractValue& proposed) const {
-  auto good = DoAllocate(context);  // Expensive!
+  auto good = DoAllocate();  // Expensive!
   // Attempt to interpret these as BasicVectors.
   auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
   auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());

@@ -220,12 +220,11 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const final {
+      const Context<T>&) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
-      output->add_port(std::make_unique<OutputPortValue>(
-          port.Allocate(context)));
+      output->add_port(std::make_unique<OutputPortValue>(port.Allocate()));
     }
     return std::move(output);
   }
@@ -1038,7 +1037,7 @@ class LeafSystem : public System<T> {
           // object needs a member field to maintain storage for our result.
           // We must use a shared_ptr not because we share storage, but because
           // our lambda must be copyable.  This will go away once Eval works.
-          storage = port.Allocate(context);
+          storage = port.Allocate();
           // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
           port.Calc(context, storage.get());
           return storage->GetValue<BasicVector<T>>();
@@ -1150,34 +1149,6 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued output port by specifying member functions to
   /// use both for the allocator and calculator. The signatures are:
   /// @code
-  /// OutputType MySystem::MakeOutputValue(const Context<T>&) const;
-  /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
-  /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// is any concrete type such that `Value<OutputType>` is permitted. See
-  /// alternate signature if your allocator method does not need a Context.
-  /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
-  template <class MySystem, typename OutputType>
-  const OutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)(const Context<T>&) const,
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>& context) {
-          return AbstractValue::Make((this_ptr->*make)(context));
-        },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        });
-    return port;
-  }
-
-  /// Declares an abstract-valued output port by specifying member functions to
-  /// use both for the allocator and calculator. The signatures are:
-  /// @code
   /// OutputType MySystem::MakeOutputValue() const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
@@ -1193,7 +1164,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>&) {  // Swallow the context.
+        [this_ptr, make]() {
           return AbstractValue::Make((this_ptr->*make)());
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
@@ -1587,7 +1558,7 @@ class LeafSystem : public System<T> {
     // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [model = std::move(owned_model)](const Context<T>&) {
+    return [model = std::move(owned_model)]() {
       return model->Clone();
     };
   }

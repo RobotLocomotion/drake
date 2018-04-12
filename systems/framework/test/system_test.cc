@@ -411,7 +411,7 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareAbstractInputPort();
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
-        [](const Context<T>&) { return AbstractValue::Make(std::string()); },
+        []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
         }));
@@ -424,7 +424,7 @@ class ValueIOTestSystem : public System<T> {
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
         *this,
         1,  // Vector size.
-        [](const Context<T>&) {
+        []() {
           return std::make_unique<Value<BasicVector<T>>>(1);
         },
         [this](const Context<T>& context, BasicVector<T>* output) {
@@ -518,8 +518,8 @@ class ValueIOTestSystem : public System<T> {
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(
         new LeafSystemOutput<T>);
-    output->add_port(this->get_output_port(0).Allocate(context));
-    output->add_port(this->get_output_port(1).Allocate(context));
+    output->add_port(this->get_output_port(0).Allocate());
+    output->add_port(this->get_output_port(1).Allocate());
     return std::move(output);
   }
 

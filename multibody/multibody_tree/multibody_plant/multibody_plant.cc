@@ -534,8 +534,7 @@ void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
 }
 
 template <typename T>
-FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput(
-    const Context<T>&) const {
+FrameIdVector MultibodyPlant<T>::AllocateFrameIdOutput() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(source_id_ != nullopt);
   // User must be done adding elements to the model.
@@ -553,8 +552,7 @@ void MultibodyPlant<T>::CalcFrameIdOutput(
 }
 
 template <typename T>
-FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput(
-    const Context<T>&) const {
+FramePoseVector<T> MultibodyPlant<T>::AllocateFramePoseOutput() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(source_id_ != nullopt);
   FramePoseVector<T> poses(source_id_.value());

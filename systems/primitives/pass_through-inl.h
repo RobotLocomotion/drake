@@ -36,7 +36,7 @@ PassThrough<T>::PassThrough(
     this->DeclareAbstractInputPort(*abstract_model_value_);
     // Use the std::function<> overloads to work with `AbstractValue` type
     // directly and maintain type erasure.
-    auto abstract_value_allocator = [this](const Context<T>&) {
+    auto abstract_value_allocator = [this]() {
       return abstract_model_value_->Clone();
     };
     namespace sp = std::placeholders;

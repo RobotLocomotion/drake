@@ -47,7 +47,7 @@ TEST_F(SingleOutputVectorSourceTest, OutputTest) {
   ASSERT_EQ(output_->get_num_ports(), 1);
 
   std::unique_ptr<AbstractValue> output =
-      source_->get_output_port(0).Allocate(*context_);
+      source_->get_output_port(0).Allocate();
   source_->get_output_port(0).Calc(*context_, output.get());
 
   const auto& output_vector = output->GetValueOrThrow<BasicVector<double>>();

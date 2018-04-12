@@ -21,7 +21,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
   void SetUpEigenModel() {
     source_ = make_unique<ConstantVectorSource<double>>(kConstantVectorSource);
     context_ = source_->CreateDefaultContext();
-    output_ = source_->get_output_port(0).Allocate(*context_);
+    output_ = source_->get_output_port(0).Allocate();
   }
 
   void SetUpBasicVectorModel() {
@@ -30,7 +30,7 @@ class ConstantVectorSourceTest : public ::testing::Test {
 
     source_ = make_unique<ConstantVectorSource<double>>(vec);
     context_ = source_->CreateDefaultContext();
-    output_ = source_->get_output_port(0).Allocate(*context_);
+    output_ = source_->get_output_port(0).Allocate();
   }
 
   const Matrix<double, 2, 1, Eigen::DontAlign> kConstantVectorSource{2.0, 1.5};

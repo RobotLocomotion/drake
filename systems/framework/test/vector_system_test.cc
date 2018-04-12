@@ -220,7 +220,7 @@ TEST_F(VectorSystemTest, OutputStateless) {
   TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
@@ -243,7 +243,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
@@ -266,7 +266,7 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   dut.set_prototype_discrete_state_count(1);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate(*context);
+  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
@@ -398,7 +398,7 @@ TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
 
   // The non-connected input is never evaluated.
   auto context = dut.CreateDefaultContext();
-  auto output = dut.get_output_port().Allocate(*context);
+  auto output = dut.get_output_port().Allocate();
   dut.get_output_port().Calc(*context, output.get());
   EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 0.0);
 }
@@ -415,7 +415,7 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   dut.CalcTimeDerivatives(*context, derivatives.get());
   EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), -1.0);
 
-  auto output = dut.get_output_port().Allocate(*context);
+  auto output = dut.get_output_port().Allocate();
   dut.get_output_port().Calc(*context, output.get());
   EXPECT_EQ(output->GetValueOrThrow<BasicVector<double>>().GetAtIndex(0), 1.0);
 
@@ -551,7 +551,7 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
   EXPECT_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()),
                std::exception);
 
-  auto output = dut.get_output_port().Allocate(*context);
+  auto output = dut.get_output_port().Allocate();
   EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
                std::exception);
 }
@@ -577,7 +577,7 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
       dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get()),
       std::exception);
 
-  auto output = dut.get_output_port().Allocate(*context);
+  auto output = dut.get_output_port().Allocate();
   EXPECT_THROW(dut.get_output_port().Calc(*context, output.get()),
                std::exception);
 }
