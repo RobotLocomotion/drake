@@ -871,7 +871,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
   ext_input = std::make_unique<BasicVector<double>>(fext);
   context_pdae->FixInputPort(0, std::move(ext_input));
 
-  // Init the simulator for the time stepping system.
+  // Init the simulator for the discretized (time stepping) system.
   Simulator<double> simulator_ts(ts, std::move(context_ts));
 
   // Integrate forward by a single *large* dt. Note that the update rate
