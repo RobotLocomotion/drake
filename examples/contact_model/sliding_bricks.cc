@@ -50,8 +50,8 @@ DEFINE_double(contact_radius, 1e-3,
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
-DEFINE_string(system_type, "continuous", "The type of system model to use "
-              "for simulating the system: 'continuous' or 'discretized'");
+DEFINE_string(system_type, "continuous", "The type of system to use: "
+              "'continuous' or 'discretized'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
               "'system_type=discretized' (ignored for "
               "'system_type=continuous'");
