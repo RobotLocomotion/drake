@@ -101,10 +101,14 @@ void RimlessWheel<T>::StepForwardReset(
   // only for efficiency, to avoid simulation at the Zeno).
   // Note: I already know that thetadot > 0 since the guard triggered.
   DRAKE_ASSERT(next_state.thetadot() >= 0.);
+
   // The threshold value below only impacts early termination.  Setting it
   // closer to zero will not cause the wheel to miss an event, but will cause
   // the simulator to perform arbitrarily more event detection calculations.
   // The threshold is multiplied by sqrt(g/l) to make it dimensionless.
+  // Note: the scaling factor below (100.0) is used to maintain the current
+  //       behavior of this system, with a context-set-accuracy of 1e-4. See
+  //       issue #
   const double tol = (context.get_accuracy()) ?
                      context.get_accuracy().value() : 1e-2;
   if (next_state.thetadot() < tol * sqrt(params.gravity() / params.length())) {
