@@ -409,7 +409,7 @@ TEST_F(RotationConversionTest, QuatRPY) {
     const Vector3d rpy = QuaternionToSpaceXYZ(qi);
     // rpy2quat should be the inversion of QuaternionToSpaceXYZ().
     const Vector4d quat4 = rpy2quat(rpy);
-    Eigen::Quaterniond q_expected(quat4(0), quat4(1), quat4(2), quat4(3));
+    const Eigen::Quaterniond q_expected(quat4(0), quat4(1), quat4(2), quat4(3));
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, q_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
@@ -468,9 +468,9 @@ TEST_F(RotationConversionTest, RPYRotmat) {
 // its output to a quaternion obtained from SpaceXYZAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RPYQuat) {
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(rpyi);
+    const Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(rpyi);
     const Vector4d quat4 = rpy2quat(rpyi);
-    Eigen::Quaterniond quat(quat4(0), quat4(1), quat4(2), quat4(3));
+    const Eigen::Quaterniond quat(quat4(0), quat4(1), quat4(2), quat4(3));
     EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, q));
     // QuaternionToSpaceXYZ() should be the inversion of rpy2quat.
     const Vector3d rpy_expected = QuaternionToSpaceXYZ(q);

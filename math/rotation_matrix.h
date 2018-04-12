@@ -461,7 +461,8 @@ class RotationMatrix {
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
-  static Eigen::Quaternion<T> ToQuaternion(const Matrix3<T>& M)  {
+  static Eigen::Quaternion<T> ToQuaternion(
+      const Eigen::Ref<const Matrix3<T>>& M) {
     T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
 
     const T trace = M.trace();

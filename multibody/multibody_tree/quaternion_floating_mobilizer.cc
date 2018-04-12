@@ -93,7 +93,7 @@ QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
-  Vector4<T> v4 = drake::math::RotationMatrix<T>::ToQuaternionAsVector4(R_FM);
+  const Vector4<T> v4 = math::RotationMatrix<T>::ToQuaternionAsVector4(R_FM);
   // Note: The storage order documented in get_quaternion() is consistent with
   // the order below, q[0] is the "scalar" part and q[1:3] is the "vector" part.
   q.template head<4>() = v4;

@@ -98,7 +98,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Eigen::Quaterniond quat = drake::math::UniformlyRandomQuaternion(generator);
+    const Eigen::Quaterniond quat = math::UniformlyRandomQuaternion(generator);
     T = quat * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
@@ -121,7 +121,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Eigen::Quaterniond quat = drake::math::UniformlyRandomQuaternion(generator);
+    const Eigen::Quaterniond quat = math::UniformlyRandomQuaternion(generator);
     T = quat * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
