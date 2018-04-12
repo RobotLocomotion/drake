@@ -7,7 +7,6 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
@@ -158,15 +157,13 @@ void testValueOutsideOfRange() {
                               1e-10, MatrixCompareType::absolute));
 }
 
-GTEST_TEST(testPiecewisePolynomial, AllTests) {
+GTEST_TEST(testPiecewisePolynomial, AllTests
+) {
 testIntegralAndDerivative<double>();
-testIntegralAndDerivative<AutoDiffXd>();
 
 testBasicFunctionality<double>();
-testBasicFunctionality<AutoDiffXd>();
 
 testValueOutsideOfRange<double>();
-testValueOutsideOfRange<AutoDiffXd>();
 }
 
 }  // namespace

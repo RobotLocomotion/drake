@@ -7,8 +7,6 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/random_polynomial_matrix.h"
 
@@ -83,48 +81,36 @@ void testOperators() {
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
-    EXPECT_NEAR(ExtractDoubleOrThrow(sum.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) +
-                                     poly2.EvaluateUnivariate(t)),
+    EXPECT_NEAR(sum.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) + poly2.EvaluateUnivariate(t),
                 1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(difference.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly2.EvaluateUnivariate(t) -
-                                     poly1.EvaluateUnivariate(t)),
+    EXPECT_NEAR(difference.EvaluateUnivariate(t),
+                poly2.EvaluateUnivariate(t) - poly1.EvaluateUnivariate(t),
                 1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(product.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) *
-                                     poly2.EvaluateUnivariate(t)),
+    EXPECT_NEAR(product.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) * poly2.EvaluateUnivariate(t),
                 1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(poly1_plus_scalar.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) + scalar),
+    EXPECT_NEAR(poly1_plus_scalar.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) + scalar, 1e-8);
+    EXPECT_NEAR(poly1_minus_scalar.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) - scalar, 1e-8);
+    EXPECT_NEAR(poly1_scaled.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) * scalar, 1e-8);
+    EXPECT_NEAR(poly1_div.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) / scalar, 1e-8);
+    EXPECT_NEAR(poly1_times_poly1.EvaluateUnivariate(t),
+                poly1.EvaluateUnivariate(t) * poly1.EvaluateUnivariate(t),
                 1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(poly1_minus_scalar.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) - scalar),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(poly1_scaled.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) * scalar),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(poly1_div.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) / scalar),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(poly1_times_poly1.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(poly1.EvaluateUnivariate(t) *
-                                     poly1.EvaluateUnivariate(t)),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(pow_poly1_3.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(pow(poly1.EvaluateUnivariate(t), 3)),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(pow_poly1_4.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(pow(poly1.EvaluateUnivariate(t), 4)),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(pow_poly1_10.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(pow(poly1.EvaluateUnivariate(t), 10)),
-                1e-8);
-    EXPECT_NEAR(ExtractDoubleOrThrow(pow_poly1_3.EvaluateUnivariate(t) *
-                                     pow_poly1_4.EvaluateUnivariate(t) *
-                                     pow_poly1_3.EvaluateUnivariate(t)),
-                ExtractDoubleOrThrow(pow_poly1_10.EvaluateUnivariate(t)),
-                1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 3), 1e-8);
+    EXPECT_NEAR(pow_poly1_4.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 4), 1e-8);
+    EXPECT_NEAR(pow_poly1_10.EvaluateUnivariate(t),
+                pow(poly1.EvaluateUnivariate(t), 10), 1e-8);
+    EXPECT_NEAR(pow_poly1_3.EvaluateUnivariate(t) *
+                    pow_poly1_4.EvaluateUnivariate(t) *
+                    pow_poly1_3.EvaluateUnivariate(t),
+                pow_poly1_10.EvaluateUnivariate(t), 1e-8);
 
     // Check the '==' operator.
     EXPECT_TRUE(poly1 + poly2 == sum);
@@ -138,7 +124,7 @@ void testRoots() {
   default_random_engine generator;
   std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
-  int num_tests = 5;
+  int num_tests = 50;
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
@@ -146,31 +132,70 @@ void testRoots() {
     EXPECT_EQ(roots.rows(), poly.GetDegree());
     for (int k = 0; k < roots.size(); k++) {
       auto value = poly.EvaluateUnivariate(roots[k]);
-      EXPECT_NEAR(ExtractDoubleOrThrow(abs(value)), 0.0, 1e-8);
+      EXPECT_NEAR(std::abs(value), 0.0, 1e-8);
     }
   }
 }
 
-template <typename CoefficientType>
 void testEvalType() {
   int max_num_coefficients = 6;
   default_random_engine generator;
   std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
   VectorXd coeffs = VectorXd::Random(int_distribution(generator));
-  Polynomial<CoefficientType> poly(coeffs);
+  Polynomial<double> poly(coeffs);
 
   auto valueIntInput = poly.EvaluateUnivariate(1);
-  EXPECT_EQ(typeid(decltype(valueIntInput)), typeid(CoefficientType));
+  EXPECT_EQ(typeid(decltype(valueIntInput)), typeid(double));
 
   auto valueComplexInput =
-      poly.EvaluateUnivariate(std::complex<CoefficientType>(1.0, 2.0));
-  EXPECT_EQ(typeid(decltype(valueComplexInput)),
-            typeid(std::complex<CoefficientType>));
+      poly.EvaluateUnivariate(std::complex<double>(1.0, 2.0));
+  EXPECT_EQ(typeid(decltype(valueComplexInput)), typeid(std::complex<double>));
+}
+
+template <typename CoefficientType>
+void testPolynomialMatrix() {
+  int max_matrix_rows_cols = 7;
+  int num_coefficients = 6;
+  default_random_engine generator;
+
+  uniform_int_distribution<> matrix_size_distribution(1, max_matrix_rows_cols);
+  int rows_A = matrix_size_distribution(generator);
+  int cols_A = matrix_size_distribution(generator);
+  int rows_B = cols_A;
+  int cols_B = matrix_size_distribution(generator);
+
+  auto A = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_A, cols_A);
+  auto B = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_B, cols_B);
+  auto C = test::RandomPolynomialMatrix<CoefficientType>(num_coefficients,
+                                                         rows_A, cols_A);
+  auto product = A * B;
+  auto sum = A + C;
+
+  uniform_real_distribution<double> uniform;
+  for (int row = 0; row < A.rows(); ++row) {
+    for (int col = 0; col < A.cols(); ++col) {
+      double t = uniform(generator);
+      EXPECT_NEAR(sum(row, col).evaluateUnivariate(t),
+                  A(row, col).evaluateUnivariate(t) +
+                  C(row, col).evaluateUnivariate(t), 1e-8);
+
+      double expected_product = 0.0;
+      for (int i = 0; i < A.cols(); ++i) {
+        expected_product += A(row, i).evaluateUnivariate(t) *
+                            B(i, col).evaluateUnivariate(t);
+      }
+      EXPECT_NEAR(product(row, col).evaluateUnivariate(t),
+                  expected_product, 1e-8);
+    }
+  }
+
+  C.setZero();  // this was a problem before
 }
 
 GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
   testIntegralAndDerivative<double>();
-  testIntegralAndDerivative<AutoDiffXd>();
 }
 
 GTEST_TEST(PolynomialTest, TestMakeMonomialsUnique) {
@@ -180,31 +205,15 @@ GTEST_TEST(PolynomialTest, TestMakeMonomialsUnique) {
   EXPECT_EQ(poly_squared.GetNumberOfCoefficients(), 3);
 }
 
-GTEST_TEST(PolynomialTest, Operators) {
-  testOperators<double>();
-  testOperators<AutoDiffXd>();
-}
+GTEST_TEST(PolynomialTest, Operators) { testOperators<double>(); }
 
-GTEST_TEST(PolynomialTest, Roots) {
-  testRoots<double>();
+GTEST_TEST(PolynomialTest, Roots) { testRoots<double>(); }
 
-  // TODO(sam.creasey) This test does not pass for AutoDiffXd for
-  // reasons which are not at all clear to me.  The `Roots` function
-  // is also never called anywhere in drake except this test.
-  VectorXd coefficients = VectorXd::Random(5);
-  Polynomial<AutoDiffXd> poly(coefficients);
-  EXPECT_THROW(poly.Roots(), std::runtime_error);
-}
+GTEST_TEST(PolynomialTest, EvalType) { testEvalType(); }
 
-GTEST_TEST(PolynomialTest, EvalType) {
-  testEvalType<double>();
-  testEvalType<AutoDiffXd>();
-}
-
-template <typename CoefficientType>
-void testIsAffine() {
-  Polynomial<CoefficientType> x("x");
-  Polynomial<CoefficientType> y("y");
+GTEST_TEST(PolynomialTest, IsAffine) {
+  Polynomiald x("x");
+  Polynomiald y("y");
 
   EXPECT_TRUE(x.IsAffine());
   EXPECT_TRUE(y.IsAffine());
@@ -216,11 +225,6 @@ void testIsAffine() {
   EXPECT_TRUE((2 + x + y).IsAffine());
   EXPECT_TRUE((2 + (2 * x) + y).IsAffine());
   EXPECT_FALSE((2 + (y * x) + y).IsAffine());
-}
-
-GTEST_TEST(PolynomialTest, IsAffine) {
-  testIsAffine<double>();
-  testIsAffine<AutoDiffXd>();
 }
 
 GTEST_TEST(PolynomialTest, VariableIdGeneration) {
@@ -355,20 +359,17 @@ GTEST_TEST(PolynomialTest, Conversion) {
   Polynomial<double> z = 3;
 }
 
-template <typename CoefficientType>
-void testEvaluatePartial() {
-  typedef Polynomial<CoefficientType> PolynomialT;
+GTEST_TEST(PolynomialTest, EvaluatePartial) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  Polynomiald dut = (5 * x * x * x) + (3 * x * y) + (2 * y) + 1;
 
-  PolynomialT x = PolynomialT("x");
-  PolynomialT y = PolynomialT("y");
-  PolynomialT dut = (5 * x * x * x) + (3 * x * y) + (2 * y) + 1;
-
-  typedef std::map<typename PolynomialT::VarType,
-                   CoefficientType> VarToCoeffMap;
-  const VarToCoeffMap eval_point_null;
-  const VarToCoeffMap eval_point_x = {{x.GetSimpleVariable(), 7}};
-  const VarToCoeffMap eval_point_y = {{y.GetSimpleVariable(), 11}};
-  const VarToCoeffMap eval_point_xy = {
+  const std::map<Polynomiald::VarType, double> eval_point_null;
+  const std::map<Polynomiald::VarType, double> eval_point_x = {
+    {x.GetSimpleVariable(), 7}};
+  const std::map<Polynomiald::VarType, double> eval_point_y = {
+    {y.GetSimpleVariable(), 11}};
+  const std::map<Polynomiald::VarType, double> eval_point_xy = {
     {x.GetSimpleVariable(), 7},
     {y.GetSimpleVariable(), 11}};
 
@@ -385,8 +386,7 @@ void testEvaluatePartial() {
 
   // Test that every order of partial and then complete evaluation gives the
   // same answer.
-  const CoefficientType expected_result =
-      dut.EvaluateMultivariate(eval_point_xy);
+  const double expected_result = dut.EvaluateMultivariate(eval_point_xy);
   EXPECT_EQ(
       dut.EvaluatePartial(eval_point_null).EvaluateMultivariate(eval_point_xy),
       expected_result);
@@ -402,14 +402,11 @@ void testEvaluatePartial() {
 
   // Test that zeroing out one term gives a sensible result.
   EXPECT_EQ(dut.EvaluatePartial(
-      VarToCoeffMap{{x.GetSimpleVariable(), 0}}), (2 * y) + 1);
+      std::map<Polynomiald::VarType, double>{{x.GetSimpleVariable(), 0}}),
+            (2 * y) + 1);
   EXPECT_EQ(dut.EvaluatePartial(
-      VarToCoeffMap{{y.GetSimpleVariable(), 0}}), (5 * x * x * x) + 1);
-}
-
-GTEST_TEST(PolynomialTest, EvaluatePartial) {
-  testEvaluatePartial<double>();
-  testEvaluatePartial<AutoDiffXd>();
+      std::map<Polynomiald::VarType, double>{{y.GetSimpleVariable(), 0}}),
+            (5 * x * x * x) + 1);
 }
 
 }  // anonymous namespace

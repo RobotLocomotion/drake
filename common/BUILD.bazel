@@ -779,7 +779,6 @@ drake_cc_googletest(
     name = "polynomial_test",
     deps = [
         ":essential",
-        ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:random_polynomial_matrix",
     ],
