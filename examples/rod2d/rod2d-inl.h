@@ -27,11 +27,11 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
-Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
-    : simulation_type_(simulation_type), dt_(dt) {
+Rod2D<T>::Rod2D(SystemType simulation_type, double dt)
+    : system_type_(simulation_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
-  if (simulation_type == SimulationType::kDiscretized) {
+  if (simulation_type == SystemType::kDiscretized) {
     if (dt <= 0.0)
       throw std::logic_error(
           "Discretization approach must be constructed using"
@@ -79,7 +79,7 @@ template <class T>
 int Rod2D<T>::DetermineNumWitnessFunctions(
     const systems::Context<T>&) const {
   // No witness functions if this is not a piecewise DAE model.
-  if (simulation_type_ != SimulationType::kPiecewiseDAE)
+  if (system_type_ != SystemType::kPiecewiseDAE)
     return 0;
 
   // TODO(edrumwri): Flesh out this stub.
@@ -97,7 +97,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
 ///          the halfspace.
 template <class T>
 int Rod2D<T>::get_k(const systems::Context<T>& context) const {
-  if (simulation_type_ != SimulationType::kPiecewiseDAE)
+  if (system_type_ != SystemType::kPiecewiseDAE)
     throw std::logic_error("'k' is only valid for piecewise DAE approach.");
   const int k = context.template get_abstract_state<int>(1);
   DRAKE_DEMAND(std::abs(k) <= 1);
@@ -492,7 +492,7 @@ template <typename T>
 void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
                             systems::BasicVector<T>* state_port_value) const {
   // Output port value is just the continuous or discrete state.
-  const VectorX<T> state = (simulation_type_ == SimulationType::kDiscretized)
+  const VectorX<T> state = (system_type_ == SystemType::kDiscretized)
                                ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state().CopyToVector();
   state_port_value->SetFromVector(state);
@@ -502,7 +502,7 @@ template <typename T>
 void Rod2D<T>::CopyPoseOut(
     const systems::Context<T>& context,
     systems::rendering::PoseVector<T>* pose_port_value) const {
-  const VectorX<T> state = (simulation_type_ == SimulationType::kDiscretized)
+  const VectorX<T> state = (system_type_ == SystemType::kDiscretized)
                                ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state().CopyToVector();
   ConvertStateToPose(state, pose_port_value);
@@ -903,7 +903,7 @@ template <class T>
 Vector3<T> Rod2D<T>::CalcCompliantContactForces(
     const systems::Context<T>& context) const {
   // Depends on continuous state being available.
-  DRAKE_DEMAND(simulation_type_ == SimulationType::kContinuous);
+  DRAKE_DEMAND(system_type_ == SystemType::kContinuous);
 
   using std::abs;
   using std::max;
@@ -1017,7 +1017,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   using std::abs;
 
   // Don't compute any derivatives if this is the discretized system.
-  if (simulation_type_ == SimulationType::kDiscretized) {
+  if (system_type_ == SystemType::kDiscretized) {
     DRAKE_ASSERT(derivatives->size() == 0);
     return;
   }
@@ -1037,7 +1037,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   f.SetAtIndex(2, thetadot);
 
   // Compute the velocity derivatives (accelerations).
-  if (simulation_type_ == SimulationType::kContinuous) {
+  if (system_type_ == SystemType::kContinuous) {
     return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
   } else {
     // TODO(edrumwri): Implement the piecewise DAE approach.
@@ -1049,11 +1049,11 @@ void Rod2D<T>::DoCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
     const {
-  if (simulation_type_ == SimulationType::kPiecewiseDAE) {
+  if (system_type_ == SystemType::kPiecewiseDAE) {
     // TODO(edrumwri): Allocate the abstract mode variables.
     return std::make_unique<systems::AbstractValues>();
   } else {
-    // Discretized and compliant approaches need no abstract variables.
+    // Discretized and continuous approaches need no abstract variables.
     return std::make_unique<systems::AbstractValues>();
   }
 }
@@ -1072,7 +1072,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (simulation_type_ == SimulationType::kDiscretized) {
+  if (system_type_ == SystemType::kDiscretized) {
     state->get_mutable_discrete_state().get_mutable_vector(0)
         .SetFromVector(x0);
   } else {
@@ -1080,7 +1080,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
     state->get_mutable_continuous_state().SetFromVector(x0);
 
     // Set abstract variables for piecewise DAE approach.
-    if (simulation_type_ == SimulationType::kPiecewiseDAE) {
+    if (system_type_ == SystemType::kPiecewiseDAE) {
       // TODO(edrumwri): Indicate that the rod is in the single contact
       // sliding mode.
 

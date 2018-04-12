@@ -50,11 +50,11 @@ DEFINE_double(contact_radius, 1e-3,
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
 DEFINE_bool(playback, true,
             "If true, enters looping playback after sim finished");
-DEFINE_string(simulation_type, "continuous", "The type of simulation to use: "
+DEFINE_string(system_type, "continuous", "The type of simulation to use: "
               "'continuous' or 'discretized'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
-              "'simulation_type=discretized' (ignored for "
-              "'simulation_type=continuous'");
+              "'system_type=discretized' (ignored for "
+              "'system_type=continuous'");
 
 namespace {
 const char* kSlidingBrickUrdf =
@@ -89,7 +89,7 @@ int main() {
   multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  if (FLAGS_simulation_type != "discretized")
+  if (FLAGS_system_type != "discretized")
     FLAGS_dt = 0.0;
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(
       move(tree_ptr), FLAGS_dt);

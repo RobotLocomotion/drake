@@ -39,8 +39,8 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta3Integrator;
 
 // Simulation parameters.
-DEFINE_string(simulation_type, "discretized",
-              "Type of simulation, valid values are "
+DEFINE_string(system_type, "discretized",
+              "Type of rod system, valid values are "
               "'discretized','continuous'");
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
@@ -75,14 +75,14 @@ int main(int argc, char* argv[]) {
 
   // Create the rod and add it to the diagram.
   Rod2D* rod;
-  if (FLAGS_simulation_type == "discretized") {
+  if (FLAGS_system_type == "discretized") {
     rod = builder.template AddSystem<Rod2D>(
-        Rod2D::SimulationType::kDiscretized, FLAGS_dt);
-  } else if (FLAGS_simulation_type == "continuous") {
-    rod = builder.template AddSystem<Rod2D>(Rod2D::SimulationType::kContinuous,
+        Rod2D::SystemType::kDiscretized, FLAGS_dt);
+  } else if (FLAGS_system_type == "continuous") {
+    rod = builder.template AddSystem<Rod2D>(Rod2D::SystemType::kContinuous,
                                             0.0);
   } else {
-    std::cerr << "Invalid simulation type '" << FLAGS_simulation_type
+    std::cerr << "Invalid simulation type '" << FLAGS_system_type
               << "'; note that types are case sensitive." << std::endl;
     return -1;
   }
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
-  if (FLAGS_simulation_type == "continuous") {
+  if (FLAGS_system_type == "continuous") {
     Context<double>& mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
                                                                 &mut_context);

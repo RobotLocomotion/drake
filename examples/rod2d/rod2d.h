@@ -156,18 +156,21 @@ class Rod2D : public systems::LeafSystem<T> {
  public:
   ~Rod2D() override {}
 
-  /// Simulation model and approach for the system.
-  enum class SimulationType {
-    /// For simulating the system using rigid contact, Coulomb friction, and
-    /// piecewise differential algebraic equations.
+  /// System model and approach for simulating the system.
+  enum class SystemType {
+    /// For modeling the system using rigid contact, Coulomb friction, and
+    /// hybrid mode variables and simulating the system through piecewise
+    /// solutions of differential algebraic equations.
     kPiecewiseDAE,
 
-    /// For simulating the system using rigid contact, Coulomb friction, and
-    /// a first-order discretization approach.
+    /// For modeling the system using either rigid or compliant contact,
+    /// Coulomb friction, and a first-order time discretization (which can
+    /// be applied to simulating the system without an integrator).
     kDiscretized,
 
-    /// For simulating the system using compliant contact, Coulomb friction,
-    /// and ordinary differential equations.
+    /// For modeling the system using compliant contact, Coulomb friction,
+    /// and ordinary differential equations and simulating the system
+    /// through standard algorithms for solving initial value problems.
     kContinuous
   };
 
@@ -179,7 +182,7 @@ class Rod2D : public systems::LeafSystem<T> {
   /// @throws std::logic_error if @p dt is not positive and simulation_type is
   ///         kDiscretized or @p dt is not zero and simulation_type is
   ///         kPiecewiseDAE or kContinuous.
-  explicit Rod2D(SimulationType simulation_type, double dt);
+  explicit Rod2D(SystemType simulation_type, double dt);
 
   static const Rod2dStateVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
@@ -383,7 +386,7 @@ class Rod2D : public systems::LeafSystem<T> {
   double get_integration_step_size() const { return dt_; }
 
   /// Gets the model and simulation type for this system.
-  SimulationType get_simulation_type() const { return simulation_type_; }
+  SystemType get_simulation_type() const { return system_type_; }
 
   /// Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
   /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
@@ -552,8 +555,8 @@ class Rod2D : public systems::LeafSystem<T> {
   // Solves linear complementarity problems for the discretized system.
   solvers::MobyLCPSolver<T> lcp_;
 
-  // The simulation type, unable to be changed after object construction.
-  const SimulationType simulation_type_;
+  // The system type, unable to be changed after object construction.
+  const SystemType system_type_;
 
   // TODO(edrumwri,sherm1) Document these defaults once they stabilize.
 

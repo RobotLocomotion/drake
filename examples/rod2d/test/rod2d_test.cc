@@ -36,7 +36,7 @@ class Rod2DDAETest : public ::testing::Test {
  protected:
   void SetUp() override {
     dut_ = std::make_unique<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+        Rod2D<double>::SystemType::kPiecewiseDAE, 0.0);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -764,7 +764,7 @@ class Rod2DDiscretizedTest : public ::testing::Test {
   void SetUp() override {
     const double dt = 1e-2;
     dut_ = std::make_unique<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kDiscretized, dt);
+        Rod2D<double>::SystemType::kDiscretized, dt);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -845,8 +845,8 @@ TEST_F(Rod2DDiscretizedTest, NumWitnessFunctions) {
 GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
   // Create two Rod2D systems.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
-  Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+  Rod2D<double> ts(Rod2D<double>::SystemType::kDiscretized, dt);
+  Rod2D<double> pdae(Rod2D<double>::SystemType::kPiecewiseDAE, 0.0);
 
   // Set the coefficient of friction to a small value for both.
   const double mu = 0.01;
@@ -905,8 +905,8 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
 GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   // Create two Rod2D systems.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
-  Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+  Rod2D<double> ts(Rod2D<double>::SystemType::kDiscretized, dt);
+  Rod2D<double> pdae(Rod2D<double>::SystemType::kPiecewiseDAE, 0.0);
 
   // Set the coefficient of friction to a large value for both.
   const double mu = 100.0;
@@ -972,7 +972,7 @@ class Rod2DContinuousTest : public ::testing::Test {
  protected:
   void SetUp() override {
     dut_ = std::make_unique<Rod2D<double>>(
-        Rod2D<double>::SimulationType::kContinuous, 0.0);
+        Rod2D<double>::SystemType::kContinuous, 0.0);
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -1142,8 +1142,8 @@ TEST_F(Rod2DContinuousTest, NumWitnessFunctions) {
 GTEST_TEST(Rod2DCrossValidationTest, Outputs) {
   // Create two Rod2D systems, one time stepping, one with continuous state.
   const double dt = 1e-1;
-  Rod2D<double> ts(Rod2D<double>::SimulationType::kDiscretized, dt);
-  Rod2D<double> pdae(Rod2D<double>::SimulationType::kPiecewiseDAE, 0.0);
+  Rod2D<double> ts(Rod2D<double>::SystemType::kDiscretized, dt);
+  Rod2D<double> pdae(Rod2D<double>::SystemType::kPiecewiseDAE, 0.0);
 
   // Create contexts for both.
   std::unique_ptr<Context<double>> context_ts = ts.CreateDefaultContext();
