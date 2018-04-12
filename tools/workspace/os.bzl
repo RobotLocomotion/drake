@@ -41,6 +41,10 @@ def _make_result(error = None,
     """Return a fully-populated struct result for determine_os, below."""
     return struct(
         error = error,
+        distribution = (
+            "ubuntu" if (ubuntu_release != None) else
+            "macos" if (macos_release != None) else
+            None),
         is_macos = (macos_release != None),
         is_ubuntu = (ubuntu_release != None),
         ubuntu_release = ubuntu_release,
@@ -109,6 +113,7 @@ def determine_os(repository_ctx):
     Result:
         a struct, with attributes:
         - error: str iff any error occurred, else None
+        - distribution: str either "ubuntu" or "macos" if no error
         - is_macos: True iff on a supported macOS release, else False
         - macos_release: str like "10.13" iff on a supported macOS, else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
