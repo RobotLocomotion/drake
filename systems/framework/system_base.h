@@ -61,8 +61,13 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns a Context suitable for use with this System. Context resources
   are allocated based on resource requests that were made during System
   construction. */
-  // TODO(sherm1) Split this into phases as needed for caching.
-  std::unique_ptr<ContextBase> AllocateContext() const;
+  std::unique_ptr<ContextBase> AllocateContext() const {
+    // Get a concrete Context of the right type and make connections.
+    std::unique_ptr<ContextBase> context = MakeContext();
+    // Validate that restrictions imposed by subsystems are satisfied.
+    ValidateAllocatedContext(*context);
+    return context;
+  }
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
@@ -161,7 +166,7 @@ class SystemBase : public internal::SystemMessageInterface {
   CacheIndex and DependencyTicket, which can be obtained from the returned
   %CacheEntry. The function signatures here are:
   @code
-    std::unique_ptr<AbstractValue> Alloc(const ContextBase&);
+    std::unique_ptr<AbstractValue> Alloc();
     void Calc(const ContextBase&, AbstractValue*);
   @endcode
   where the AbstractValue objects must resolve to the same concrete type.
@@ -194,7 +199,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Declares a cache entry by specifying member functions to use both for the
   allocator and calculator. The signatures are: @code
-    ValueType MySystem::MakeValueType(const MyContext&) const;
+    ValueType MySystem::MakeValueType() const;
     void MySystem::CalcCacheValue(const MyContext&, ValueType*) const;
   @endcode
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
@@ -207,7 +212,7 @@ class SystemBase : public internal::SystemMessageInterface {
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description,
-      ValueType (MySystem::*make)(const MyContext&) const,
+      ValueType (MySystem::*make)() const,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
       std::vector<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
@@ -425,18 +430,53 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   SystemBase() = default;
 
+  /** Allows Diagram to use private MakeContext() to invoke the same method
+  on its children. */
+  static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
+    return system.MakeContext();
+  }
+
+  /** Allows Diagram to use its private ValidateAllocatedContext() to invoke the
+  same method on its children. */
+  static void ValidateAllocatedContext(const SystemBase& system,
+                                       const ContextBase& context) {
+    system.ValidateAllocatedContext(context);
+  }
+
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
   diagrams. The base class allocates trackers for known resources and
-  intra-subcontext dependencies. No inter-subcontext dependencies should be
-  made in this step. */
+  intra-subcontext dependencies. */
   virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
 
+  /** Any derived class that imposes restrictions on the structure or content
+  of an acceptable Context should enforce those restrictions by overriding
+  this method. The supplied Context is guaranteed to have come from the
+  AllocateContext() sequence of this System so you don't need to check that.
+  This method is invoked _only_ during Context allocation and will not be
+  called during runtime use. It will _always_ be called as the final step in
+  Context allocation, even in Release builds.
+  @see DoCheckValidContext() for runtime checking. */
+  virtual void DoValidateAllocatedContext(const ContextBase& context) const = 0;
+
   /** Derived classes must implement this to verify that the supplied
-  context is suitable, and throw an exception if not. */
+  Context is suitable, and throw an exception if not. This is a runtime check
+  but may be expensive so is not guaranteed to be invoked except in Debug
+  builds.
+  @see DoValidateAllocatedContext() for one-time validity checking during
+       Context allocation. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:
+  // Obtains a context of the right concrete type, with all internal trackers
+  // allocated and internal wiring set up.
+  std::unique_ptr<ContextBase> MakeContext() const;
+
+  // Check that all subsystems are prepared to deal with a context like this.
+  void ValidateAllocatedContext(const ContextBase& context) const {
+    DoValidateAllocatedContext(context);
+  }
+
   // Assigns the next unused dependency ticket number, unique only within a
   // particular subsystem. Each call to this method increments the
   // ticket number.
@@ -469,7 +509,7 @@ class SystemBase : public internal::SystemMessageInterface {
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
-    ValueType (MySystem::*make)(const MyContext&) const,
+    ValueType (MySystem::*make)() const,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
     std::vector<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
@@ -478,9 +518,8 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked with a ContextBase-derived Context.");
   auto this_ptr = dynamic_cast<const MySystem*>(this);
   DRAKE_DEMAND(this_ptr != nullptr);
-  auto alloc_callback = [this_ptr, make](const ContextBase& context) {
-    const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    return AbstractValue::Make((this_ptr->*make)(typed_context));
+  auto alloc_callback = [this_ptr, make]() {
+    return AbstractValue::Make((this_ptr->*make)());
   };
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
@@ -515,7 +554,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   // allocator functor here.
   copyable_unique_ptr<AbstractValue> owned_model(
       new Value<ValueType>(model_value));
-  auto alloc_callback = [model = std::move(owned_model)](const ContextBase&) {
+  auto alloc_callback = [model = std::move(owned_model)]() {
     return model->Clone();
   };
   auto calc_callback = [this_ptr, calc](const ContextBase& context,

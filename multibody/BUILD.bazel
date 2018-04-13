@@ -339,8 +339,10 @@ drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//common:find_resource",
         "//common/test_utilities:measure_execution",
         "//multibody/parsers",
     ],

@@ -587,7 +587,7 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
   EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
                std::runtime_error);
 }
-GTEST_TEST(testGetSolution, testSetSolution1) {
+GTEST_TEST(testGetSolution, testGetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
   // 2. A dynamic-sized matrix of decision variables.
@@ -641,6 +641,44 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
                runtime_error);
   EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
                runtime_error);
+}
+
+GTEST_TEST(testGetSolution, testGetSolution2) {
+  // GetSolution of a symbolic expression/polynomial
+  MathematicalProgram prog;
+  const auto x = prog.NewIndeterminates<2>();
+  const auto a = prog.NewContinuousVariables<2>();
+
+  const Eigen::Vector2d a_val(1, 2);
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(a_val);
+  prog.SetSolverResult(solver_result);
+
+  symbolic::Variable b("b");
+
+  EXPECT_EQ(prog.SubstituteSolution(a(0) + a(1)), 3);
+
+  const symbolic::Expression e = a.cast<symbolic::Expression>().dot(x);
+  // `e` contains indeterminates
+  const auto e1 = prog.SubstituteSolution(e);
+  // All decision variables in the expression are also decision
+  // variables in the optimization program.
+  EXPECT_EQ(e1, a_val.dot(x));
+  const symbolic::Polynomial p = symbolic::Polynomial(
+      e, symbolic::Variables(x));
+  const auto p1 = prog.SubstituteSolution(p);
+
+  // All decision variables in the polynomial are also decision
+  // variables in the optimization program.
+  EXPECT_EQ(p1, symbolic::Polynomial(a_val.dot(x), symbolic::Variables(x)));
+
+  // Not all decision variables in the expression/polynomial are decision
+  // variables in the optimizatin program. b is a decision variable in the
+  // expression/polynomial, but not one in the optimization program.
+  EXPECT_THROW(prog.SubstituteSolution(e + b), std::runtime_error);
+  EXPECT_THROW(prog.SubstituteSolution(
+                   p + symbolic::Polynomial(b, symbolic::Variables())),
+               std::runtime_error);
 }
 
 namespace {
@@ -2839,6 +2877,49 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
       Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+}
+
+GTEST_TEST(testMathematicalProgram, testAddCallback) {
+  MathematicalProgram prog;
+
+  auto x = prog.NewContinuousVariables<2>();
+  bool was_called = false;
+  auto my_callback = [&was_called](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(v(0), 1.);
+    EXPECT_EQ(v(1), 2.);
+    was_called = true;
+  };
+
+  Binding<VisualizationCallback> b =
+      prog.AddVisualizationCallback(my_callback, x);
+  EXPECT_EQ(prog.visualization_callbacks().size(), 1);
+
+  const Vector2d test_x(1., 2.);
+
+  // Call it via EvalVisualizationCallbacks.
+  was_called = false;
+  prog.EvalVisualizationCallbacks(test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it via EvalBinding.
+  was_called = false;
+  prog.EvalBinding(b, test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the double interface.
+  VectorXd test_y(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x, test_y);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the autodiff interface.
+  const VectorX<AutoDiffXd> test_x_autodiff =
+      math::initializeAutoDiff(VectorXd{test_x});
+  VectorX<AutoDiffXd> test_y_autodiff(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x_autodiff, test_y_autodiff);
+  EXPECT_TRUE(was_called);
 }
 
 }  // namespace test

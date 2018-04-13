@@ -85,26 +85,18 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-# TODO(jamiesnape): Add SDFORMAT_STATIC_DEFINE to system_util.hh upstream.
-generate_export_header(
-    name = "system_util",
-    out = "include/sdf/system_util.hh",
-    export_macro_name = "SDFORMAT_VISIBLE",
-    lib = "sdformat",
-    no_export_macro_name = "SDFORMAT_HIDDEN",
-)
-
 SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Assert.hh",
     "include/sdf/Console.hh",
     "include/sdf/Element.hh",
+    "include/sdf/Error.hh",
     "include/sdf/Exception.hh",
     "include/sdf/Filesystem.hh",
     "include/sdf/Param.hh",
     "include/sdf/parser.hh",
     "include/sdf/SDFImpl.hh",
     "include/sdf/Types.hh",
-    ":system_util",
+    "include/sdf/system_util.hh",
 ]
 
 # Generates sdf.hh, which consists of #include statements for all of the public
@@ -140,6 +132,7 @@ cc_library(
         "src/Console.cc",
         "src/Converter.cc",
         "src/Element.cc",
+        "src/Error.cc",
         "src/Exception.cc",
         "src/Filesystem.cc",
         "src/Param.cc",

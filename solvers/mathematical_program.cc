@@ -103,7 +103,7 @@ AttributesSet kScsCapabilities =
 AttributesSet kGenericSolverCapabilities =
     (kGenericCost | kGenericConstraint | kQuadraticCost | kQuadraticConstraint |
      kLorentzConeConstraint | kRotatedLorentzConeConstraint | kLinearCost |
-     kLinearConstraint | kLinearEqualityConstraint);
+     kLinearConstraint | kLinearEqualityConstraint | kCallback);
 
 // Snopt solver capabilities.
 AttributesSet kSnoptCapabilities =
@@ -323,6 +323,16 @@ void MathematicalProgram::AddIndeterminates(
   indeterminates_.conservativeResize(num_old_indeterminates +
                                      new_indeterminates.rows());
   indeterminates_.tail(new_indeterminates.rows()) = new_indeterminates;
+}
+
+Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
+    const VisualizationCallback::CallbackFunction &callback,
+    const Eigen::Ref<const VectorXDecisionVariable> &vars) {
+  visualization_callbacks_.push_back(
+      internal::CreateBinding<VisualizationCallback>(
+          make_shared<VisualizationCallback>(vars.size(), callback), vars));
+  required_capabilities_ |= kCallback;
+  return visualization_callbacks_.back();
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Binding<Cost>& binding) {
@@ -783,6 +793,48 @@ MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
 
 double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
+}
+
+namespace {
+template <typename T>
+T GetSolutionForExpressionOrPolynomial(const MathematicalProgram& prog,
+                                       const T& p,
+                                       const symbolic::Variables vars) {
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : vars) {
+    map_decision_vars.emplace(var, prog.GetSolution(var));
+  }
+  return p.EvaluatePartial(symbolic::Environment(map_decision_vars));
+}
+}  // namespace
+
+symbolic::Expression MathematicalProgram::SubstituteSolution(
+    const symbolic::Expression& e) const {
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : e.GetVariables()) {
+    const auto it = decision_variable_index_.find(var.get_id());
+    if (it != decision_variable_index_.end()) {
+      map_decision_vars.emplace(var, x_values_[it->second]);
+    } else if (indeterminates_index_.find(var.get_id()) ==
+               indeterminates_index_.end()) {
+      // var is not a decision variable or an indeterminate in the optimization
+      // program.
+      std::ostringstream oss;
+      oss << var << " is not a decision variable or an indeterminate of the "
+                    "optimization program.\n";
+      throw std::runtime_error(oss.str());
+    }
+  }
+  return e.EvaluatePartial(symbolic::Environment(map_decision_vars));
+}
+
+symbolic::Polynomial MathematicalProgram::SubstituteSolution(
+    const symbolic::Polynomial& p) const {
+  symbolic::Environment::map map_decision_vars;
+  for (const auto& var : p.decision_variables()) {
+    map_decision_vars.emplace(var, GetSolution(var));
+  }
+  return p.EvaluatePartial(symbolic::Environment(map_decision_vars));
 }
 
 double MathematicalProgram::GetInitialGuess(

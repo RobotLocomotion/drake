@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
 namespace drake {
@@ -78,11 +79,40 @@ GTEST_TEST(RotationMatrix, RotationMatrixConstructor) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
 #ifdef DRAKE_ASSERT_IS_ARMED
-  // Bad matrix should throw exception.
+  // Really poor non-orthogonal matrix should throw an exception.
+  m << 1, 2,  3,
+       4, 5,  6,
+       7, 8, -10;
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                              "Error: Rotation matrix is not orthonormal.*")
+
+  // Barely non-orthogonal matrix should throw an exception.
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_THROW(RotationMatrix<double> R2(m), std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                              "Error: Rotation matrix is not orthonormal.*");
+
+  // Orthogonal matrix with determinant = -1 should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+                            "Error: Rotation matrix determinant is negative.*");
+
+  // Matrix with a NaN should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
+
+  // Matrix with an infinity should throw an exception.
+  m << 1, 0, 0,
+       0, 1, 0,
+       0, 0, std::numeric_limits<double>::infinity();
+  DRAKE_EXPECT_THROWS_MESSAGE(RotationMatrix<double>{m}, std::logic_error,
+        "Error: Rotation matrix contains an element that is infinity or NaN.*");
 #endif
 }
 
@@ -482,10 +512,45 @@ TEST_F(RotationMatrixConversionTests, QuaternionToRotationMatrix) {
   const Eigen::Quaterniond q_zero(0, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_bad(q_zero), std::logic_error);
 
-  // A NAN quaternion should throw an exception.
+  // A quaternion containing a NaN throw an exception.
   double nan = std::numeric_limits<double>::quiet_NaN();
   const Eigen::Quaterniond q_nan(nan, 0, 0, 0);
   EXPECT_THROW(const RotationMatrix<double> R_nan(q_nan), std::logic_error);
+#endif
+}
+
+TEST_F(RotationMatrixConversionTests, AngleAxisToRotationMatrix) {
+  for (const Eigen::Quaterniond& qi : quaternion_test_cases_) {
+    // Compute the rotation matrix R using the quaternion argument.
+    const RotationMatrix<double> R(qi);
+    // Compare R with the RotationMatrix constructor that uses Eigen::AngleAxis.
+    const Eigen::AngleAxisd angle_axis(qi);
+    const RotationMatrix<double> R_expected(angle_axis);
+    EXPECT_TRUE(R.IsNearlyEqualTo(R_expected, 200 * kEpsilon));
+
+    // Check that inverting this operation (calculating the AngleAxis from
+    // rotation matrix R_expected) corresponds to the same orientation.
+    // This check is done by comparing equivalent rotation matrices.
+    // Note: We do not compare the angle-axes directly. This is because the
+    // angle-axis has singularities for angles near 0 and 180 degree.
+    Eigen::AngleAxis<double> inverse_angle_axis;
+    inverse_angle_axis.fromRotationMatrix(R_expected.matrix());
+    const RotationMatrix<double> R_test(inverse_angle_axis);
+    EXPECT_TRUE(R.IsNearlyEqualTo(R_test, 200 * kEpsilon));
+    // Ensure the angle returned via Eigen's AngleAxis is between 0 and PI.
+    const double angle = inverse_angle_axis.angle();
+    EXPECT_TRUE(0 <= angle && angle <= M_PI);
+  }
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // An AngleAxis with a zero unit vector should throw an exception.
+  const Eigen::AngleAxisd aa_zero(5, Vector3d(0, 0, 0));
+  EXPECT_THROW(const RotationMatrix<double> R_zero(aa_zero), std::logic_error);
+
+  // An AngleAxis containing a NaN should throw an exception.
+  double nan = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::AngleAxisd aa_nan(nan, Vector3d(1, 0, 0));
+  EXPECT_THROW(const RotationMatrix<double> R_nan(aa_nan), std::logic_error);
 #endif
 }
 

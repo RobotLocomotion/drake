@@ -100,7 +100,7 @@ class InitialValueProblem {
   ///                       𝐱₀ ∈ ℝⁿ, and default parameter vector 𝐤 ∈ ℝᵐ.
   /// @pre An initial time @p default_values.t0 is given.
   /// @pre An initial state vector @p default_values.x0 is given.
-  /// @pre An parameter vector @p default_values.k is given.
+  /// @pre A parameter vector @p default_values.k is given.
   /// @throw std::logic_error if preconditions are not met.
   InitialValueProblem(const ODEFunction& ode_function,
                       const SpecifiedValues& default_values);

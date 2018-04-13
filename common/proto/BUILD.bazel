@@ -35,8 +35,8 @@ drake_cc_library(
     hdrs = ["call_matlab.h"],
     deps = [
         ":matlab_rpc",
+        ":rpc_pipe_temp_directory",
         "//common:essential",
-        "//common:temp_directory",
     ],
 )
 
@@ -55,8 +55,8 @@ drake_cc_library(
     hdrs = ["call_python.h"],
     deps = [
         ":call_matlab",
+        ":rpc_pipe_temp_directory",
         "//common:copyable_unique_ptr",
-        "//common:temp_directory",
     ],
 )
 
@@ -92,6 +92,17 @@ cc_library(
     hdrs = [_UBSAN_H],
     include_prefix = "drake/common/proto",
     strip_include_prefix = "/third_party/com_github_google_protobuf",
+)
+
+drake_cc_library(
+    name = "rpc_pipe_temp_directory",
+    srcs = ["rpc_pipe_temp_directory.cc"],
+    hdrs = ["rpc_pipe_temp_directory.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "@spruce",
+    ],
 )
 
 install(
@@ -142,6 +153,13 @@ drake_cc_googletest(
     deps = [
         ":protobuf",
         "//common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rpc_pipe_temp_directory_test",
+    deps = [
+        ":rpc_pipe_temp_directory",
     ],
 )
 

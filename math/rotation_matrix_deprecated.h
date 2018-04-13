@@ -23,46 +23,18 @@
 namespace drake {
 namespace math {
 /// (Deprecated), use @ref math::RotationMatrix::ToQuaternion
+// TODO(mitiguy) This code was deprecated on April 12, 2018.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use RotationMatrix::ToQuaternion.")
 Vector4<typename Derived::Scalar> rotmat2quat(
     const Eigen::MatrixBase<Derived>& M) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
   using Scalar = typename Derived::Scalar;
   const drake::math::RotationMatrix<Scalar> R((drake::Matrix3<Scalar>(M)));
-  const Eigen::Quaternion<Scalar> q = R.ToQuaternion();
-  return Vector4<Scalar>(q.w(), q.x(), q.y(), q.z());
-}
-
-/**
- * Computes the angle axis representation from a rotation matrix.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param R  the 3 x 3 rotation matrix.
- * @return angle-axis representation, 4 x 1 vector as [x, y, z, angle].
- * [x, y, z] is a unit vector and 0 <= angle <= PI.
- */
-template <typename Derived>
-Vector4<typename Derived::Scalar> rotmat2axis(
-    const Eigen::MatrixBase<Derived>& R) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-  Eigen::AngleAxis<typename Derived::Scalar> angle_axis(R);
-
-  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
-  // After  October 2016, Eigen calculates  0 <= angle <= PI.
-  // Ensure consistency between pre/post October 2016 Eigen versions.
-  using Scalar = typename Derived::Scalar;
-  Scalar& angle = angle_axis.angle();
-  Vector3<Scalar>& axis = angle_axis.axis();
-  if (angle >= M_PI) {
-    angle = 2 * M_PI - angle;
-    axis = -axis;
-  }
-
-  Eigen::Vector4d aa;
-  aa.head<3>() = axis;
-  aa(3) = angle_axis.angle();
-  DRAKE_ASSERT(0 <= aa(3) && aa(3) <= M_PI);
-  return aa;
+  return R.ToQuaternionAsVector4();
 }
 
 /**
@@ -146,20 +118,20 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   return drake::Vector3<Scalar>(theta3, theta2, theta1);
 }
 
+/// (Deprecated), use @ref math::RotationMatrix or @ref math::rotmat2rpy
+/// or @ref math::RotationMatrix::ToQuaternionAsVector4.
+// TODO(mitiguy) This code was deprecated on April 12, 2018.
+// Even prior to this date, there are no calls in drake to this function.
+// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use math::RotationMatrix(R) or math::rotmat2rpy(R) "
+                 "or math::RotationMatrix::ToQuaternionAsVector4.")
 VectorX<typename Derived::Scalar> rotmat2Representation(
     const Eigen::MatrixBase<Derived>& R, int rotation_type) {
-  typedef typename Derived::Scalar Scalar;
-  switch (rotation_type) {
-    case 0:
-      return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>(0, 1);
-    case 1:
-      return rotmat2rpy(R);
-    case 2:
-      return rotmat2quat(R);
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
+  throw std::runtime_error("This code is deprecated per issue #8323. "
+                           "Use math::RotationMatrix(R) or math::rotmat2rpy(R) "
+                           "or math::RotationMatrix::ToQuaternionAsVector4.");
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::MakeXRotation

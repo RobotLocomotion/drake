@@ -11,19 +11,19 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
-DEFINE_string(simulation_type, "compliant",
-              "Type of simulation, valid values are "
-              "'timestepping','compliant'");
+DEFINE_string(system_type, "continuous",
+              "Type of model for Valkyrie, valid values are "
+              "'discretized','continuous'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
-              "'simulation_type=timestepping' (ignored for "
-              "'simulation_type=compliant'");
+              "'system_type=discretized' (ignored for "
+              "'system_type=continuous'");
 
 namespace drake {
 namespace examples {
 namespace valkyrie {
 
 int main() {
-  if (FLAGS_simulation_type != "timestepping")
+  if (FLAGS_system_type != "discretized")
     FLAGS_dt = 0.0;
 
   // LCM communication.

@@ -27,9 +27,9 @@ int DoMain() {
   // Decode channel_x into msg_x.
   std::mutex msg_x_mutex;  // Guards msg_x.
   lcmt_acrobot_x msg_x{};
-  lcm.Subscribe(channel_x, [&](const void* buffer, int size) {
+  lcm::Subscribe<lcmt_acrobot_x>(&lcm, channel_x, [&](const auto& received) {
     std::lock_guard<std::mutex> lock(msg_x_mutex);
-    msg_x.decode(buffer, 0, size);
+    msg_x = received;
   });
 
   lcm.StartReceiveThread();

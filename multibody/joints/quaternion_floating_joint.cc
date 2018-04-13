@@ -67,11 +67,11 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
   q[2] = normal(generator);
 
   // orientation
-  Vector4d quat = drake::math::UniformlyRandomQuat(generator);
-  q[3] = quat(0);
-  q[4] = quat(1);
-  q[5] = quat(2);
-  q[6] = quat(3);
+  Eigen::Quaterniond quat = drake::math::UniformlyRandomQuaternion(&generator);
+  q[3] = quat.w();
+  q[4] = quat.x();
+  q[5] = quat.y();
+  q[6] = quat.z();
   return q;
 }
 

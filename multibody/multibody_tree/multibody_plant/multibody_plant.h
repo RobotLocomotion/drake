@@ -13,6 +13,7 @@
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -83,8 +84,7 @@ namespace multibody_plant {
 ///
 /// All modeling elements **must** be added pre-finalize.
 ///
-/// @section mbp_geometry_registration
-/// Registering geometry with a GeometrySystem
+/// @section geometry_registration Registering geometry with a GeometrySystem
 ///
 /// %MultibodyPlant users can register geometry with a GeometrySystem for
 /// essentially two purposes; a) visualization and, b) contact modeling.
@@ -96,9 +96,24 @@ namespace multibody_plant {
 /// plant will have assigned a valid geometry::SourceId.
 /// At Finalize(), %MultibodyPlant will declare input/output ports as
 /// appropriate to communicate with the GeometrySystem instance on which
-/// registrations took place.
+/// registrations took place. All geometry registration **must** be performed
+/// pre-finalize.
 ///
-/// All geometry registration **must** be performed pre-finalize.
+/// If %MultibodyPlant registers geometry with a GeometrySystem via calls to
+/// RegisterCollisionGeometry(), an input port for geometric queries will be
+/// declared at Finalize() time, see get_geometry_query_input_port(). Users must
+/// connect this input port to the output port for geometric queries of the
+/// GeometrySystem used for registration, which can be obtained with
+/// GeometrySystem::get_query_output_port().
+/// In summary, if %MultibodyPlant registers collision geometry, the setup
+/// process will include:
+/// 1. Call to RegisterAsSourceForGeometrySystem().
+/// 2. Calls to RegisterCollisionGeometry(), as many as needed.
+/// 3. Call to Finalize(), user is done specifying the model.
+/// 4. Connect GeometrySystem::get_query_output_port() to
+///    get_geometry_query_input_port().
+/// Refer to the documentation provided in each of the methods above for further
+/// details.
 ///
 /// @section Finalize() stage
 ///
@@ -315,6 +330,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   element. It must be the case that
   ///   `JointType<T>(args)` is a valid constructor.
   /// @tparam ForceElementType The type of the ForceElement to add.
+  /// This method can only be called once for elements of type
+  /// UniformGravityFieldElement. That is, gravity can only be specified once.
   /// @returns A constant reference to the new ForceElement just added, of type
   ///   `ForceElementType<T>` specialized on the scalar type T of `this`
   ///   %MultibodyPlant. It will remain valid for the lifetime of `this`
@@ -322,10 +339,34 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @see The ForceElement class's documentation for further details on how a
   /// force element is defined.
   template<template<typename Scalar> class ForceElementType, typename... Args>
-  const ForceElementType<T>& AddForceElement(Args&&... args) {
+#ifdef DRAKE_DOXYGEN_CXX
+  const ForceElementType<T>&
+#else
+  typename std::enable_if<!std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+#endif
+  AddForceElement(Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     return model_->template AddForceElement<ForceElementType>(
         std::forward<Args>(args)...);
+  }
+
+  // SFINAE overload for ForceElementType = UniformGravityFieldElement.
+  // This allow us to keep track of the gravity field parameters.
+  template<template<typename Scalar> class ForceElementType, typename... Args>
+  typename std::enable_if<std::is_same<
+      ForceElementType<T>,
+      UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
+  AddForceElement(Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    DRAKE_DEMAND(!gravity_field_.has_value());
+    // We save the force element so that we can grant users access to it for
+    // gravity field specific queries.
+    gravity_field_ =
+        &model_->template AddForceElement<UniformGravityFieldElement>(
+            std::forward<Args>(args)...);
+    return *gravity_field_.value();
   }
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
@@ -464,12 +505,46 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
       geometry::GeometrySystem<T>* geometry_system);
 
+  /// Registers geometry in a GeometrySystem with a given geometry::Shape to be
+  /// used for the contact modeling of a given `body`.
+  /// More than one geometry can be registered with a body, in which case the
+  /// body's contact geometry is the union of all geometries registered to that
+  /// body.
+  ///
+  /// @param[in] body
+  ///   The body for which geometry is being registered.
+  /// @param[in] X_BG
+  ///   The fixed pose of the geometry frame G in the body frame B.
+  /// @param[in] shape
+  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
+  ///   geometry::Cylinder, etc.
+  /// @param[out] geometry_system
+  ///   A valid, non-null pointer to a GeometrySystem on which geometry will get
+  ///   registered.
+  /// @throws std::exception if `geometry_system` is the nullptr.
+  /// @throws std::exception if called post-finalize.
+  /// @throws std::exception if `geometry_system` does not correspond to the
+  /// same instance with which RegisterAsSourceForGeometrySystem() was called.
+  // TODO(amcastro-tri): Augment API to specify friction coefficients.
+  void RegisterCollisionGeometry(
+      const Body<T>& body,
+      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      geometry::GeometrySystem<T>* geometry_system);
+
   /// Returns the number of geometries registered for visualization.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
   int get_num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
+  }
+
+  /// Returns the number of geometries registered for contact modeling.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  int get_num_collision_geometries() const {
+    return geometry_id_to_collision_index_.size();
   }
 
   /// @name Retrieving ports for communication with a GeometrySystem.
@@ -488,16 +563,28 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return source_id_;
   }
 
+  /// Returns a constant reference to the input port used to perform geometric
+  /// queries on a GeometrySystem. See GeometrySystem::get_query_output_port().
+  /// Refer to section @ref geometry_registration of this class's
+  /// documentation for further details on collision geometry registration and
+  /// connection with a GeometrySystem.
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
+  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
+
   /// Returns the output port of frame id's used to communicate poses to a
   /// GeometrySystem.
-  /// @throws if this system was not registered with a GeometrySystem.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
-  /// @throws if this system did not register geometry with a GeometrySystem.
-  /// @throws if called pre-finalize. See Finalize().
+  /// @throws std::exception if this system was not registered with a
+  /// GeometrySystem.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::OutputPort<T>& get_geometry_poses_output_port() const;
   /// @}
 
@@ -580,6 +667,115 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::logic_error if the %MultibodyPlant has already been
   /// finalized.
   void Finalize();
+
+  /// @anchor mbp_penalty_method
+  /// @name Contact by penalty method
+  ///
+  /// Currently %MultibodyPlant uses a rigid contact model that is, bodies in
+  /// the model are infinitely stiff or ideal rigid bodies. Therefore, the
+  /// mathematical description of the rigid contact model needs to include
+  /// non-penetration constraints among bodies in the formulation. There are
+  /// several numerical methods to impose and solve these constraints.
+  /// In a penalty method approach, we allow for a certain amount of
+  /// interpenetration and we compute contact forces according to a simple law
+  /// of the form: <pre>
+  ///   fₙ = k(1+dẋ)x
+  /// </pre>
+  /// where the normal contact force `fₙ` is made a continuous function of the
+  /// penetration distance x between the bodies (defined to be
+  /// positive when the bodies are in contact) and the penetration distance
+  /// rate ẋ (with ẋ > 0 meaning the penetration distance is increasing and
+  /// therefore the interpenetration between the bodies is also increasing).
+  /// k and d are the penalty method coefficients for stiffness and damping.
+  /// These are ad-hoc parameters which need to be tuned as a trade-off between:
+  /// - The accuracy of the numerical approximation to rigid contact, which
+  ///   requires a stiffness that approaches infinity, and
+  /// - the computational cost of the numerical integration, which will
+  ///   require smaller time steps for stiffer systems.
+  ///
+  /// There is no exact procedure for choosing these coefficients, and
+  /// estimating them manually can be cumbersome since in general they will
+  /// depend on the scale of the problem including masses, speeds and even
+  /// body sizes. However, %MultibodyPlant aids the estimation of these
+  /// coefficients using a heuristic function based on a user-supplied
+  /// "penetration allowance", see set_penetration_allowance(). The penetration
+  /// allowance is a number in meters that specifies the order of magnitude of
+  /// the average penetration between bodies in the system that the user is
+  /// willing to accept as reasonable for the problem being solved. For
+  /// instance, in the robotics manipulation of ordinary daily objects the user
+  /// might set this number to 1 millimeter. However, the user might want to
+  /// increase it for the simulation of heavy walking robots for which an
+  /// allowance of 1 millimeter would result in a very stiff system.
+  ///
+  /// As for the damping coefficient in the simple law above, %MultibodyPlant
+  /// chooses the damping coefficient d to model inelastic collisions and
+  /// therefore sets it so that the penetration distance x behaves as a
+  /// critically damped oscillator. That is, at the limit of ideal rigid contact
+  /// (very stiff penalty coefficient k or equivalently the penetration
+  /// allowance goes to zero), this method behaves as a unilateral constraint on
+  /// the penetration distance, which models a perfect inelastic collision. For
+  /// most applications, such as manipulation and walking, this is the desired
+  /// behavior.
+  ///
+  /// When set_penetration_allowance() is called, %MultibodyPlant will estimate
+  /// reasonable penalty method coefficients as a function of the input
+  /// penetration allowance. Users will want to run their simulation a number of
+  /// times and asses they are satisfied with the level of inter-penetration
+  /// actually observed in the simulation; if the observed penetration is too
+  /// large, the user will want to set a smaller penetration allowance. If the
+  /// system is too stiff and the time integration requires very small time
+  /// steps while at the same time the user can afford larger
+  /// inter-penetrations, the user will want to increase the penetration
+  /// allowance. Typically, the observed penetration will be
+  /// proportional to the penetration allowance. Thus scaling the penetration
+  /// allowance by say a factor of 0.5, would typically results in
+  /// inter-penetrations being reduced by the same factor of 0.5.
+  /// In summary, users should choose the largest penetration allowance that
+  /// results in inter-penetration levels that are acceptable for the particular
+  /// application (even when in theory this penetration should be zero for
+  /// perfectly rigid bodies.)
+  ///
+  /// For a given penetration allowance, the contact interaction that takes two
+  /// bodies with a non-zero approaching velocity to zero approaching velocity,
+  /// takes place in a finite amount of time (for ideal rigid contact this time
+  /// is zero.) A good estimate of this time period is given by a call to
+  /// get_contact_penalty_method_time_scale(). Users might want to query this
+  /// value to either set the maximum time step in error-controlled time
+  /// integration or to set the time step for fixed time step integration.
+  /// As a guidance, typical fixed time step integrators will become unstable
+  /// for time steps larger than about a tenth of this time scale.
+  /// @{
+
+  /// Sets the penetration allowance used to estimate the coefficients in the
+  /// penalty method used to impose non-penetration among bodies. Refer to the
+  /// section @ref mbp_penalty_method "Contact by penalty method" for further
+  /// details.
+  void set_penetration_allowance(double penetration_allowance = 0.001);
+
+  /// Returns a time-scale estimate `tc` based on the requested penetration
+  /// allowance δ set with set_penetration_allowance().
+  /// For the penalty method in use to enforce non-penetration, this time scale
+  /// relates to the time it takes the relative normal velocity between two
+  /// bodies to go to zero. This time scale `tc` is artificially introduced by
+  /// the penalty method and goes to zero in the limit to ideal rigid contact.
+  /// Since numerical integration methods for continuum systems must be able to
+  /// resolve a system's dynamics, the time step used by an integrator must in
+  /// general be much smaller than the time scale `tc`. How much smaller will
+  /// depend on the details of the problem and the convergence characteristics
+  /// of the integrator and should be tuned appropriately.
+  /// Another factor to take into account for setting up the simulation's time
+  /// step is the speed of the objects in your simulation. If `vn` represents a
+  /// reference velocity scale for the normal relative velocity between bodies,
+  /// the new time scale `tn = δ / vn` represents the time it would take for the
+  /// distance between two bodies approaching with relative normal velocity `vn`
+  /// to decrease by the penetration_allowance δ. In this case a user should
+  /// choose a time step for simulation that can resolve the smallest of the two
+  /// time scales `tc` and `tn`.
+  double get_contact_penalty_method_time_scale() const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return penalty_method_contact_parameters_.time_scale;
+  }
+  /// @}
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -702,8 +898,24 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  // Helper to evaluate if a GeometryId corresponds to a collision model.
+  bool is_collision_geometry(geometry::GeometryId id) const {
+    return geometry_id_to_collision_index_.count(id) > 0;
+  }
+
+  // Helper method to compute contact forces in the normal direction using a
+  // penalty method.
+  void CalcAndAddContactForcesByPenaltyMethod(
+      const systems::Context<T>& context,
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc,
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
+
+  // The gravity field force element.
+  optional<const UniformGravityFieldElement<T>*> gravity_field_;
 
   // Geometry source identifier for this system to interact with geometry
   // system. It is made optional for plants that do not register geometry
@@ -712,6 +924,31 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Frame Id's for each body in the model:
   // Not all bodies need to be in this map.
+
+  // Map provided at construction that tells how bodies (referenced by name),
+  // map to frame ids.
+  std::unordered_map<std::string, geometry::FrameId> body_name_to_frame_id_;
+
+  // This struct contains the parameters to compute forces to enforce
+  // no-interpenetration between bodies by a penalty method.
+  struct ContactByPenaltyMethodParameters {
+    // Penalty method coefficients used to compute contact forces.
+    // TODO(amcastro-tri): consider having these per body. That would allow us
+    // for instance to calibrate the stiffness at the fingers (stiffness related
+    // to the weight of the objects being manipulated) of a walking robot (
+    // stiffness related to the weight of the entire robot) with the same
+    // penetration allowance.
+    double stiffness{0};
+    double damping{0};
+    // An estimated time scale in which objects come to a relative stop during
+    // contact.
+    double time_scale{-1.0};
+    // Acceleration of gravity in the model. Used to estimate penalty method
+    // constants from a static equilibrium analysis.
+    optional<double> gravity;
+  };
+  ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
+
   // Iteraion order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
@@ -731,7 +968,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // used with the landing of visual properties in GeometrySystem.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
 
+  // Maps a GeometryId with a collision index. This allows, for instance, to
+  // find out collision properties (such as friction coefficient) for a given
+  // geometry.
+  std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
+
   // Port handles for geometry:
+  int geometry_query_port_{-1};
   int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 

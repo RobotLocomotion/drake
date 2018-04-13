@@ -158,6 +158,35 @@ enum BuiltInTicketNumbers {
   kNextAvailableTicket  = kXdhatTicket+1
 };
 
+// These are some utility methods that are reused within the framework.
+
+// Returns a vector of raw pointers that correspond placewise with the
+// unique_ptrs in the vector `in`.
+template<typename U>
+std::vector<U*> Unpack(const std::vector<std::unique_ptr<U>>& in) {
+  std::vector<U*> out(in.size());
+  std::transform(in.begin(), in.end(), out.begin(),
+                 [](const std::unique_ptr<U>& p) { return p.get(); });
+  return out;
+}
+
+// Checks a vector of pointer-like objects to make sure no entries are null,
+// return false otherwise. Use this as a Debug-only check:
+// @code{.cpp}
+//   std::vector<Thing*> things;
+//   std::vector<std::unique_ptr<Thing> owned_things;
+//   DRAKE_ASSERT(internal::IsNonNull(things));
+//   DRAKE_ASSERT(internal::IsNonNull(owned_things);
+// @endcode
+// This function can be applied to an std::vector of any type T that can be
+// meaningfully compared to `nullptr`.
+template <typename PtrType>
+bool IsNonNull(const std::vector<PtrType>& pointers) {
+  for (const PtrType& p : pointers)
+    if (p == nullptr) return false;
+  return true;
+}
+
 }  // namespace internal
 #endif
 

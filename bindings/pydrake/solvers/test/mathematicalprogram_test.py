@@ -234,6 +234,27 @@ class TestMathematicalProgram(unittest.TestCase):
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
+        # Test SubstituteSolution(sym.Expression)
+        # TODO(eric.cousineau): Expose `SymbolicTestCase` so that other tests
+        # can use the assertion utilities.
+        self.assertEqual(
+            prog.SubstituteSolution(d[0] + d[1]).Evaluate(),
+            prog.GetSolution(d[0]) + prog.GetSolution(d[1]))
+        # Test SubstituteSolution(sym.Polynomial)
+        poly = d[0]*x.dot(x)
+        poly_sub_actual = prog.SubstituteSolution(
+            sym.Polynomial(poly, sym.Variables(x)))
+        poly_sub_expected = sym.Polynomial(
+            prog.SubstituteSolution(d[0])*x.dot(x), sym.Variables(x))
+        # TODO(soonho): At present, these must be converted to `Expression` to
+        # compare, because as `Polynomial`s the comparison fails with
+        # `0*x(0)^2` != `0`, which indicates that simplification is not
+        # happening somewhere.
+        self.assertTrue(
+            poly_sub_actual.ToExpression().EqualTo(
+                poly_sub_expected.ToExpression()),
+            "{} != {}".format(poly_sub_actual, poly_sub_expected))
+
     def test_lcp(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 'x')

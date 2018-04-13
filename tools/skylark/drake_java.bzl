@@ -1,7 +1,5 @@
 # -*- python -*-
 
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
-
 MainClassInfo = provider()
 
 # Generate a launcher file to run installed java binaries
@@ -35,7 +33,6 @@ _drake_java_binary_install_launcher = rule(
 def drake_java_binary(
         name,
         main_class,
-        runtime_deps = [],
         **kwargs):
     """Creates a rule to declare a java binary and a MainClassInfo Provider
 
@@ -55,7 +52,6 @@ def drake_java_binary(
     native.java_binary(
         name = name,
         main_class = main_class,
-        runtime_deps = adjust_labels_for_drake_hoist(runtime_deps),
         **kwargs)
     launcher_name = name + "-launcher"
     _drake_java_binary_install_launcher(

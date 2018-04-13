@@ -73,8 +73,8 @@ void RigidBodyPlant<T>::initialize() {
           .get_index();
   if (is_state_discrete()) {
     // TODO(jwnimmer-tri) Add an implementation of the state derivative output
-    // port that works in timestepping mode.  For now, we just disable the port
-    // entirely and have a cautionary API comment on its accessor.
+    // port that works in the discretized mode.  For now, we just disable the
+    // port entirely and have a cautionary API comment on its accessor.
   } else {
     state_derivative_output_port_index_ =
         this->DeclareVectorOutputPort(
@@ -93,15 +93,15 @@ void RigidBodyPlant<T>::initialize() {
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
-  // @TODO(edrumwri): Remove this once the time stepping constraint force
+  // @TODO(edrumwri): Remove this once the discretization constraint "force"
   //                  results have been cached (which will allow us to compute
   //                  the contact force outputs the "proper" way and obviate the
   //                  need to initialize the generalized contact force vector in
   //                  this way).
-  time_stepping_contact_results_.set_generalized_contact_force(
+  discretized_system_contact_results_.set_generalized_contact_force(
       VectorX<T>::Zero(tree_->get_num_velocities()));
 
-  // Schedule time stepping update.
+  // Schedule discretization update.
   if (timestep_ > 0.0)
     this->DeclarePeriodicDiscreteUpdate(timestep_);
 }
@@ -1084,7 +1084,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
       // See whether the joint is currently violated or the *current* joint
       // velocity might lead to a limit violation. The latter is a heuristic to
-      // incorporate the joint limit into the time stepping calculations before
+      // incorporate the joint limit into the discretization calculations before
       // it is violated.
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.
@@ -1234,9 +1234,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
-  ComputeTimeSteppingContactResults(dt, contacts, data, kinematics_cache,
+  ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
                                     constraint_force,
-                                    &time_stepping_contact_results_);
+                                    &discretized_system_contact_results_);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
@@ -1250,7 +1250,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 // geometric data (`contacts`), the time stepping problem data, and the computed
 // contact force (impulse) solution.
 template <typename T>
-void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
+void RigidBodyPlant<T>::ComputeDiscretizedSystemContactResults(
     const T& dt,
     const std::vector<multibody::collision::PointPair<T>>& contacts,
     const multibody::constraint::ConstraintVelProblemData<T>& data,
@@ -1340,7 +1340,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
     drake::systems::DiscreteValues<U>*) const {
   throw std::runtime_error(
-      "RigidBodyPlant with discrete updates (time-stepping) currently only "
+      "Discretized RigidBodyPlant currently only "
           "supports T=double.");
 }
 
@@ -1463,11 +1463,10 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   contacts->set_generalized_contact_force(
       VectorX<T>::Zero(get_num_velocities()));
 
-  // If the state is discrete, we use the last contact results from the time
-  // stepping method, which we can do because the time stepping method
-  // progresses only forwards in time.
+  // If the state is discrete, we use the last contact results, which we can
+  // do because the discretized model only steps forward in time.
   if (is_state_discrete()) {
-    *contacts = time_stepping_contact_results_;
+    *contacts = discretized_system_contact_results_;
     return;
   }
 

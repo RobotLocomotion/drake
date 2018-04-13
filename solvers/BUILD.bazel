@@ -29,6 +29,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//math:autodiff",
         "//math:matrix_util",
     ],
 )
@@ -167,6 +168,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
+        ":unrevised_lemke_solver",
         "//common:essential",
     ],
 )
@@ -455,7 +457,8 @@ drake_cc_library(
     hdrs = ["unrevised_lemke_solver.h"],
     deps = [
         ":mathematical_program_api",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -956,7 +959,7 @@ drake_cc_googletest(
     deps = [
         ":mathematical_program",
         ":unrevised_lemke_solver",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

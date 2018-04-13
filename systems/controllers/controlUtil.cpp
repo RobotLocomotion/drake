@@ -365,7 +365,9 @@ Vector6d bodySpatialMotionPD(
   auto body_pose = r.relativeTransform(cache, 0, body_index);
   const auto& body_xyz = body_pose.translation();
   Vector3d body_xyz_task = T_world_to_task * body_xyz;
-  Vector4d body_quat = drake::math::rotmat2quat(body_pose.linear());
+  Vector4d body_quat =
+      drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+          body_pose.linear());
   std::vector<int> v_indices;
   auto J_geometric =
       r.geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);
@@ -393,9 +395,11 @@ Vector6d bodySpatialMotionPD(
 
   Matrix3d R_des = body_pose_des.linear();
   Matrix3d R_err_task = R_des * R_body_to_task.transpose();
-  Vector4d angleAxis_err_task = drake::math::rotmat2axis(R_err_task);
-  Vector3d angular_err_task =
-      angleAxis_err_task.head<3>() * angleAxis_err_task(3);
+  const drake::math::RotationMatrix<double> RR_err_task(R_err_task);
+  const Eigen::AngleAxis<double> angle_axis = RR_err_task.ToAngleAxis();
+  const Vector3d& lambda = angle_axis.axis();
+  const double theta = angle_axis.angle();
+  const Vector3d angular_err_task = theta * lambda;
 
   Vector3d xyzdot_err_task = body_v_des.head<3>() - body_xyzdot_task;
   Vector3d angular_vel_err_task = body_angular_vel_des - body_angular_vel_task;

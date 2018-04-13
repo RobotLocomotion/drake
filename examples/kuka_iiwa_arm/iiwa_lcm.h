@@ -39,12 +39,12 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   void set_initial_position(systems::Context<double>* context,
                             const Eigen::Ref<const VectorX<double>> x) const;
 
-  const systems::OutputPort<double>& get_commanded_state_input_port()
+  const systems::OutputPort<double>& get_commanded_state_output_port()
       const {
     return this->get_output_port(0);
   }
 
-  const systems::OutputPort<double>& get_commanded_torque_input_port()
+  const systems::OutputPort<double>& get_commanded_torque_output_port()
       const {
     return this->get_output_port(1);
   }

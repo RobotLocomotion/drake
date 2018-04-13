@@ -194,7 +194,8 @@ enum ProgramAttributes {
   kLorentzConeConstraint = 1 << 9,
   kRotatedLorentzConeConstraint = 1 << 10,
   kPositiveSemidefiniteConstraint = 1 << 11,
-  kBinaryVariable = 1 << 12
+  kBinaryVariable = 1 << 12,
+  kCallback = 1 << 13
 };
 typedef uint32_t AttributesSet;
 
@@ -760,6 +761,45 @@ class MathematicalProgram {
    */
   void AddIndeterminates(
       const Eigen::Ref<const VectorXIndeterminate>& new_indeterminates);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * optimization.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here may change will force MathematicalProgram::Solve to
+   * select a solver that support callbacks.  For instance, adding a
+   * visualization callback to a quadratic programming problem may result in
+   * using a nonlinear programming solver as the default solver.
+   *
+   * @param callback a std::function that accepts an Eigen::Vector of doubles
+   * representing the for the bound decision variables.
+   * @param vars the decision variables that should be passed to the callback.
+   */
+  Binding<VisualizationCallback> AddVisualizationCallback(
+      const VisualizationCallback::CallbackFunction& callback,
+      const VariableRefList& vars) {
+    return AddVisualizationCallback(callback,
+                                    ConcatenateVariableRefList((vars)));
+  }
 
   /**
    * Adds a generic cost to the optimization program.
@@ -1940,7 +1980,7 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix of symbolic
-   * espressions @p e. We create a new symmetric matrix of variables M being
+   * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
    * @tparam Derived An Eigen Matrix of symbolic expressions.
    * @param e Imposes constraint "e is positive semidefinite".
@@ -2227,6 +2267,14 @@ class MathematicalProgram {
   double GetLowerBoundCost() const { return lower_bound_cost_; }
 
   /**
+   * Getter for all callbacks.
+   */
+  const std::vector<Binding<VisualizationCallback>>& visualization_callbacks()
+      const {
+    return visualization_callbacks_;
+  }
+
+  /**
    * Getter for all generic costs.
    */
   const std::vector<Binding<Cost>>& generic_costs() const {
@@ -2413,6 +2461,30 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
+   * Replaces the variables in an expression with the solutions to the
+   * variables, returns the expression after substitution.
+   * @throw runtime error if some variables in the expression @p e are NOT
+   * decision variables or indeterminates in the optimization program.
+   * @note If the expression @p e contains both decision variables and
+   * indeterminates of the optimization program, then the decision variables
+   * will be substituted by its solutions in double values, but not the
+   * indeterminates.
+   */
+  symbolic::Expression SubstituteSolution(const symbolic::Expression& e) const;
+
+  /**
+   * Replaces the decision variables in a polynomial with the solutions to the
+   * variables, returns the polynomial after substitution.
+   * @throw runtime error if some decision variables in the polynomial @p p are
+   * NOT decision variables in the optimization program.
+   * @note If the polynomial @p p contains both decision variables and
+   * indeterminates of the optimization program, then the decision variables
+   * will be substituted by its solutions in double values, but not the
+   * indeterminates.
+   */
+  symbolic::Polynomial SubstituteSolution(const symbolic::Polynomial& p) const;
+
+  /**
    * Evaluates the value of some binding, for some input value for all
    * decision variables.
    * @param binding A Binding whose variables are decision variables in this
@@ -2441,6 +2513,38 @@ class MathematicalProgram {
     }
     binding.evaluator()->Eval(binding_x, binding_y);
     return binding_y;
+  }
+
+  /** Evaluates all visualization callbacks registered with the
+   * MathematicalProgram.
+   *
+   * @param prog_var_vals The value of all the decision variables in this
+   * program. @throw a logic error if the size does not match.
+   **/
+  void EvalVisualizationCallbacks(
+      const Eigen::Ref<const Eigen::VectorXd>& prog_var_vals) const {
+    if (prog_var_vals.rows() != num_vars()) {
+      std::ostringstream oss;
+      oss << "The input binding variable is not in the right size. Expects "
+          << num_vars() << " rows, but it actually has " << prog_var_vals.rows()
+          << " rows.\n";
+      throw std::logic_error(oss.str());
+    }
+
+    Eigen::VectorXd this_x;
+
+    for (auto const& binding : visualization_callbacks_) {
+      auto const& obj = binding.evaluator();
+
+      const int num_v_variables = binding.GetNumElements();
+      this_x.resize(num_v_variables);
+      for (int j = 0; j < num_v_variables; ++j) {
+        this_x(j) =
+            prog_var_vals(FindDecisionVariableIndex(binding.variables()(j)));
+      }
+
+      obj->EvalCallback(this_x);
+    }
   }
 
   /**
@@ -2502,6 +2606,8 @@ class MathematicalProgram {
 
   std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
   VectorXIndeterminate indeterminates_;
+
+  std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
 
   std::vector<Binding<Cost>> generic_costs_;
   std::vector<Binding<QuadraticCost>> quadratic_costs_;

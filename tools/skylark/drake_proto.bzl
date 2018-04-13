@@ -9,7 +9,6 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 def drake_cc_proto_library(
         name,
@@ -18,7 +17,6 @@ def drake_cc_proto_library(
         tags = [],
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
-    deps = adjust_labels_for_drake_hoist(deps)
     pb_hdrs = [x[:-len(".proto")] + ".pb.h" for x in srcs]
     pb_srcs = [x[:-len(".proto")] + ".pb.cc" for x in srcs]
     # Generate the h and cc file.

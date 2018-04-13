@@ -191,7 +191,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
         // The position order is x-y-z-qw-qx-qy-qz, namely translation
         // first, and quaternion second.
         q.segment<4>(body.get_position_start_index() + 3) =
-            math::rotmat2quat(normalized_rotmat.matrix());
+            normalized_rotmat.ToQuaternionAsVector4();
       }
       reconstruct_R_WB->at(body_idx) = normalized_rotmat.matrix();
     } else if (num_positions == 1) {

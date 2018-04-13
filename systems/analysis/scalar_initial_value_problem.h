@@ -60,7 +60,7 @@ class ScalarInitialValueProblem {
                           const VectorX<T>& k)> ScalarODEFunction;
 
   /// A collection of values i.e. initial time t₀, initial state x₀
-  /// and parameters vector 𝐤.to further specify the ODE system (in
+  /// and parameter vector 𝐤 to further specify the ODE system (in
   /// order to become a scalar initial value problem).
   struct SpecifiedValues {
     /// Default constructor, leaving all values unspecified.

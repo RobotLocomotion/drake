@@ -1,0 +1,53 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "make_bouncing_ball_plant",
+    srcs = [
+        "make_bouncing_ball_plant.cc",
+    ],
+    hdrs = [
+        "make_bouncing_ball_plant.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_system",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/multibody_plant",
+    ],
+)
+
+drake_cc_binary(
+    name = "bouncing_ball_run_dynamics",
+    srcs = ["bouncing_ball_run_dynamics.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        ":make_bouncing_ball_plant",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()

@@ -9,7 +9,6 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/math/axis_angle.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
 
@@ -29,6 +28,7 @@ using geometry::GeometrySystem;
 using geometry::Mesh;
 using geometry::SourceId;
 using geometry::Sphere;
+using geometry::VisualMaterial;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -107,7 +107,7 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
 // origin, and the top of the arm is positioned at the given height.
 template <class ParentId>
 void MakeArm(SourceId source_id, ParentId parent_id, double length,
-             double height, double radius,
+             double height, double radius, const VisualMaterial& material,
              GeometrySystem<double>* geometry_system) {
   Isometry3<double> arm_pose = Isometry3<double>::Identity();
   // tilt it horizontally
@@ -117,14 +117,14 @@ void MakeArm(SourceId source_id, ParentId parent_id, double length,
   geometry_system->RegisterGeometry(
       source_id, parent_id,
       make_unique<GeometryInstance>(
-          arm_pose, make_unique<Cylinder>(radius, length)));
+          arm_pose, make_unique<Cylinder>(radius, length), material));
 
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << length, 0, height/2;
   geometry_system->RegisterGeometry(
       source_id, parent_id,
       make_unique<GeometryInstance>(
-          post_pose, make_unique<Cylinder>(radius, height)));
+          post_pose, make_unique<Cylinder>(radius, height), material));
 }
 
 template <typename T>
@@ -133,6 +133,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   body_offset_.reserve(kBodyCount);
   axes_.reserve(kBodyCount);
 
+  VisualMaterial post_material{Vector4d(0.3, 0.15, 0.05, 1)};
   const double orrery_bottom = -1.5;
   const double pipe_radius = 0.05;
 
@@ -140,8 +141,9 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
   geometry_system->RegisterAnchoredGeometry(
-      source_id_, make_unique<GeometryInstance>(Isometry3<double>::Identity(),
-                                                make_unique<Sphere>(1.f)));
+      source_id_, make_unique<GeometryInstance>(
+                      Isometry3<double>::Identity(), make_unique<Sphere>(1.f),
+                      VisualMaterial(Vector4d(1, 1, 0, 1))));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;
@@ -150,7 +152,8 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   geometry_system->RegisterAnchoredGeometry(
       source_id_, make_unique<GeometryInstance>(
                       post_pose,
-                      make_unique<Cylinder>(pipe_radius, post_height)));
+                      make_unique<Cylinder>(pipe_radius, post_height),
+                      post_material));
 
   // Allocate the "celestial bodies": two planets orbiting on different planes,
   // each with a moon.
@@ -173,10 +176,11 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
       Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
   geometry_system->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f)));
+      make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f),
+                                    VisualMaterial(Vector4d(0, 0, 1, 1))));
   // Earth's orrery arm.
   MakeArm(source_id_, planet_id, kEarthOrbitRadius, -kEarthBottom, pipe_radius,
-          geometry_system);
+          post_material, geometry_system);
 
   // Luna's frame L is at the center of Earth's geometry (Ge). So, X_EL = X_EGe.
   const Isometry3<double>& X_EL = X_EGe;
@@ -196,8 +200,9 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
       Vector3<double>(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
   Isometry3<double> X_LGl{Translation3<double>{luna_position}};
   geometry_system->RegisterGeometry(
-      source_id_, luna_id,
-      make_unique<GeometryInstance>(X_LGl, make_unique<Sphere>(0.075f)));
+      source_id_, luna_id, make_unique<GeometryInstance>(
+                               X_LGl, make_unique<Sphere>(0.075f),
+                               VisualMaterial(Vector4d(0.5, 0.5, 0.35, 1))));
 
   // Mars's frame M lies directly *below* the sun (to account for the orrery
   // arm).
@@ -216,7 +221,8 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
       Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
   GeometryId mars_geometry_id = geometry_system->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize)));
+      make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize),
+                                    VisualMaterial(Vector4d(0.9, 0.1, 0, 1))));
 
   std::string rings_absolute_path =
       FindResourceOrThrow("drake/examples/geometry_world/planet_rings.obj");
@@ -225,11 +231,12 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   geometry_system->RegisterGeometry(
       source_id_, mars_geometry_id,
       make_unique<GeometryInstance>(
-          X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize)));
+          X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize),
+          VisualMaterial(Vector4d(0.45, 0.9, 0, 1))));
 
   // Mars's orrery arm.
   MakeArm(source_id_, planet_id, kMarsOrbitRadius, -orrery_bottom, pipe_radius,
-          geometry_system);
+          post_material, geometry_system);
 
   // Phobos's frame P is at the center of Mars's geometry (Gm).
   // So, X_MP = X_MGm. The normal of the plane is negated so it orbits in the
@@ -246,8 +253,9 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   const double kPhobosOrbitRadius = 0.34;
   Isometry3<double> X_PGp{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
   geometry_system->RegisterGeometry(
-      source_id_, phobos_id,
-      make_unique<GeometryInstance>(X_PGp, make_unique<Sphere>(0.06f)));
+      source_id_, phobos_id, make_unique<GeometryInstance>(
+                                 X_PGp, make_unique<Sphere>(0.06f),
+                                 VisualMaterial(Vector4d(0.65, 0.6, 0.8, 1))));
 
   DRAKE_DEMAND(static_cast<int>(body_ids_.size()) == kBodyCount);
 }

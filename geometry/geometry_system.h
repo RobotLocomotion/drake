@@ -417,8 +417,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
 
   // Constructs a PoseBundle of length equal to the concatenation of all inputs.
   // This is the method used by the allocator for the output port.
-  systems::rendering::PoseBundle<T> MakePoseBundle(
-      const systems::Context<T>& context) const;
+  systems::rendering::PoseBundle<T> MakePoseBundle() const;
 
   // Aggregates the input poses into the output PoseBundle, in the same order as
   // was used in allocation. Aborts if any inputs have a _different_ size than
@@ -468,7 +467,10 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   // property that source ids can only be added prior to context allocation.
   // This is mutable so that it can be cleared in the const method
   // AllocateContext().
-  mutable GeometryState<T>* initial_state_;
+  GeometryState<T>* initial_state_{};
+
+  // TODO(SeanCurtis-TRI): Get rid of this.
+  mutable bool context_has_been_allocated_{false};
 
   // The index of the geometry state in the context's abstract state.
   int geometry_state_index_{-1};

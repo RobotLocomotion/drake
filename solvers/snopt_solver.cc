@@ -401,6 +401,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   size_t grad_index = 0;
 
+  current_problem->EvalVisualizationCallbacks(xvec);
+
   EvaluateAllCosts(*current_problem, *cost_gradient_indices, F, G, &grad_index,
                    xvec);
 

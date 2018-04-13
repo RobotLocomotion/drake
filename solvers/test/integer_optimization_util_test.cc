@@ -109,8 +109,49 @@ TEST_F(IntegerOptimizationUtilTest, TestOr) {
   CheckLogicalOperand(LogicalOperand::kOr);
 }
 
-TEST_F(IntegerOptimizationUtilTest, TesXor) {
+TEST_F(IntegerOptimizationUtilTest, TestXor) {
   CheckLogicalOperand(LogicalOperand::kXor);
+}
+
+GTEST_TEST(TestBinaryCodeMatchConstraint, Test) {
+  MathematicalProgram prog;
+  const auto b = prog.NewContinuousVariables<3>();
+  auto b_constraint = prog.AddBoundingBoxConstraint(0, 1, b);
+
+  Eigen::Vector3i b_expected{0, 1, 1};
+
+  const auto match = prog.NewContinuousVariables<1>()(0);
+  prog.AddConstraint(CreateBinaryCodeMatchConstraint(b, b_expected, match));
+
+  auto match_constraint = prog.AddBoundingBoxConstraint(0, 1, match);
+
+  for (int b0_val : {0, 1}) {
+    for (int b1_val : {0, 1}) {
+      for (int b2_val : {0, 1}) {
+        for (double match_val : {-0.5, 0.0, 0.5, 1.0}) {
+          const Eigen::Vector3d b_val(b0_val, b1_val, b2_val);
+          b_constraint.evaluator()->UpdateLowerBound(b_val);
+          b_constraint.evaluator()->UpdateUpperBound(b_val);
+          match_constraint.evaluator()->UpdateUpperBound(Vector1d(match_val));
+          match_constraint.evaluator()->UpdateLowerBound(Vector1d(match_val));
+          const auto result = prog.Solve();
+          if (b0_val == 0 && b1_val == 1 && b2_val == 1) {
+            if (match_val == 1.0) {
+              EXPECT_EQ(result, SolutionResult::kSolutionFound);
+            } else {
+              EXPECT_NE(result, SolutionResult::kSolutionFound);
+            }
+          } else {
+            if (match_val == 0.0) {
+              EXPECT_EQ(result, SolutionResult::kSolutionFound);
+            } else {
+              EXPECT_NE(result, SolutionResult::kSolutionFound);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 }  // namespace
 }  // namespace solvers
