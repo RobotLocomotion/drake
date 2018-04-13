@@ -1,5 +1,6 @@
 #include "drake/automotive/agent_trajectory.h"
 
+#include <algorithm>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -14,6 +15,8 @@ namespace automotive {
 namespace {
 
 static constexpr double kTol = 1e-12;
+static constexpr double kDeltaT = 2.;  // The expected time interval to traverse
+                                       // a pair of waypoints.
 
 using math::IsQuaternionValid;
 using math::RollPitchYaw;
@@ -76,8 +79,7 @@ GTEST_TEST(AgentTrajectoryTest, InterpolationType) {
   const std::vector<double> times{0., 1., 2.};
   const Isometry3d dummy_value(Quaternion<double>::Identity());
   std::vector<Isometry3d> values{dummy_value, dummy_value, dummy_value};
-  for (const auto& type : {Type::kZeroOrderHold, Type::kFirstOrderHold,
-                           Type::kCubic, Type::kPchip}) {
+  for (const auto& type : {Type::kFirstOrderHold, Type::kCubic, Type::kPchip}) {
     EXPECT_NO_THROW(AgentTrajectory::Make(times, values, type));
   }
 }
@@ -135,6 +137,215 @@ GTEST_TEST(AgentTrajectoryTest, AgentTrajectory) {
     EXPECT_LT(0., actual.velocity().rotational().x());
     EXPECT_LT(0., actual.velocity().rotational().y());
     EXPECT_LT(0., actual.velocity().rotational().z());
+  }
+}
+
+enum class SpeedProfile { kPiecewiseConstant, kPiecewiseLinear };
+
+// Computes a vector of x-y-z positions (with y, z fixed), either under a
+// piecewise-constant or piecewise-linear interpolation of the vector of speeds,
+// enforcing the expected time increment `kDeltaT` between each waypoint.  Pose
+// starts from x-y-z position [1., 2., 3.].  Orientation is held constant at an
+// orientation (r-p-y) of [0., 0., 0.] unless otherwise specified.
+void MakePoses(const SpeedProfile speed_profile,
+               const std::vector<double>& speeds,
+               std::vector<Isometry3d>* poses,
+               const Vector3d& rpy = Vector3d{0., 0., 0.}) {
+  std::vector<Translation<double, 3>> translations(speeds.size());
+  std::vector<Quaternion<double>> rotations(speeds.size());
+  double displacement = 0.;
+  for (int i{0}; i < static_cast<int>(speeds.size()); i++) {
+    translations[i] = Translation<double, 3>(1. + displacement, 2., 3.);
+    rotations[i] = RollPitchYaw<double>(rpy).ToQuaternion();
+    poses->push_back(Isometry3d{translations[i]});
+    poses->back().rotate(rotations[i]);
+
+    if (i == static_cast<int>(speeds.size())) break;
+
+    double interval_speed{0.};
+    if (speed_profile == SpeedProfile::kPiecewiseConstant) {
+      interval_speed = speeds[i];
+    } else if (speed_profile == SpeedProfile::kPiecewiseLinear) {
+      interval_speed = 0.5 * (speeds[i] + speeds[i + 1]);
+    }
+    displacement += kDeltaT * interval_speed;
+  }
+}
+
+// Negative speeds are rejected.
+GTEST_TEST(AgentTrajectoryTest, NegativeSpeeds) {
+  std::vector<double> speeds{-1, 5.};
+  std::vector<Isometry3d> poses{};
+  MakePoses(SpeedProfile::kPiecewiseConstant, speeds, &poses);
+
+  EXPECT_THROW(AgentTrajectory::MakeCubicFromWaypoints(poses, speeds),
+               std::exception);
+  EXPECT_THROW(AgentTrajectory::MakeFromWaypoints(poses, -1.), std::exception);
+
+  speeds.pop_back();
+  EXPECT_THROW(AgentTrajectory::MakeFohFromWaypoints(poses, speeds),
+               std::exception);
+}
+
+// Deadlock detection rejects unreachable waypoints.
+GTEST_TEST(AgentTrajectoryTest, UnreachableCubicWaypoints) {
+  const std::vector<double> speeds{0., 0., 1.};
+  std::vector<Isometry3d> poses{};
+  MakePoses(SpeedProfile::kPiecewiseLinear, speeds, &poses);
+
+  EXPECT_THROW(AgentTrajectory::MakeCubicFromWaypoints(poses, speeds),
+               std::exception);
+}
+
+// Deadlock detection rejects unreachable waypoints.
+GTEST_TEST(AgentTrajectoryTest, UnreachableFohWaypoints) {
+  std::vector<double> speeds{0., 1., 1.};
+  std::vector<Isometry3d> poses{};
+  MakePoses(SpeedProfile::kPiecewiseConstant, speeds, &poses);
+  speeds.pop_back();
+  EXPECT_THROW(AgentTrajectory::MakeFohFromWaypoints(poses, speeds),
+               std::exception);
+}
+
+struct RpyCase {
+  RpyCase(const Vector3d& rpy, const Vector3d& vel)
+      : rpy_value(rpy), expected_velocity_basis(vel) {}
+  const Vector3d rpy_value{};
+  const Vector3d expected_velocity_basis{};  // Basis vector for velocity in
+                                             // x-y-z coordinates.
+};
+
+// Checks that the provided speeds and waypoints yield correctly-formed
+// trajectories using InterpolationType::kCubic on the linear quantities.
+GTEST_TEST(AgentTrajectoryTest, MakeCubicFromWaypoints) {
+  using std::max_element;
+  using std::min_element;
+
+  const std::vector<double> speeds{1., 5., 0.};
+  std::vector<RpyCase> rpy_cases{};
+  rpy_cases.push_back(RpyCase({0., 0., 0.}, {1., 0., 0.}));
+  rpy_cases.push_back(RpyCase({0., 0., M_PI_2}, {0., 1., 0.}));
+  rpy_cases.push_back(RpyCase({0., M_PI_2, 0.}, {0., 0., -1.}));
+  rpy_cases.push_back(RpyCase({M_PI_2, 0., 0.}, {1., 0., 0.}));
+
+  for (const auto& rpy_case : rpy_cases) {
+    std::vector<Eigen::Isometry3d> poses{};
+    MakePoses(SpeedProfile::kPiecewiseLinear, speeds, &poses,
+              rpy_case.rpy_value);
+
+    AgentTrajectory trajectory =
+        AgentTrajectory::MakeCubicFromWaypoints(poses, speeds);
+
+    double time{0.};
+    for (int i{0}; i < static_cast<int>(speeds.size()); i++, time += kDeltaT) {
+      // Evaluate at the expected time corresponding to the i-th waypoint.
+      const PoseVelocity actual_at = trajectory.value(time);
+      EXPECT_TRUE(CompareMatrices(actual_at.translation().vector(),
+                                  poses[i].translation(), kTol));
+      EXPECT_TRUE(CompareMatrices(actual_at.velocity().translational(),
+                                  rpy_case.expected_velocity_basis * speeds[i],
+                                  kTol));
+      EXPECT_NEAR(actual_at.speed(), speeds[i], kTol);
+      EXPECT_TRUE(CompareMatrices(actual_at.rotation().matrix(),
+                                  poses[i].rotation().matrix(), kTol));
+      EXPECT_TRUE(CompareMatrices(actual_at.velocity().rotational(),
+                                  Vector3d{0., 0., 0.}, kTol));
+
+      if (i == static_cast<int>(speeds.size()) - 1) break;
+
+      // Evaluate between waypoints i and i+1.
+      const PoseVelocity actual_between = trajectory.value(time + kDeltaT / 2.);
+      EXPECT_GT(actual_between.translation().x(), poses[i].translation().x());
+      EXPECT_LT(actual_between.translation().x(),
+                poses[i + 1].translation().x());
+      EXPECT_GT(actual_between.speed(),
+                *min_element(speeds.begin(), speeds.end()));
+      EXPECT_LT(actual_between.speed(),
+                *max_element(speeds.begin(), speeds.end()));
+      EXPECT_TRUE(CompareMatrices(actual_between.rotation().matrix(),
+                                  poses[i].rotation().matrix(), kTol));
+      EXPECT_TRUE(CompareMatrices(actual_between.velocity().rotational(),
+                                  Vector3d{0., 0., 0.}, kTol));
+    }
+  }
+}
+
+// Checks that the provided speeds and waypoints yield correctly-formed
+// trajectories using InterpolationType::kFirstOrderHold on the linear
+// quantities.
+GTEST_TEST(AgentTrajectoryTest, MakeFohFromWaypoints) {
+  std::vector<double> speeds{1., 5., 0.};
+  std::vector<Eigen::Isometry3d> poses{};
+  MakePoses(SpeedProfile::kPiecewiseConstant, speeds, &poses);
+  speeds.pop_back();  // Only pass the first two.
+
+  AgentTrajectory trajectory =
+      AgentTrajectory::MakeFohFromWaypoints(poses, speeds);
+
+  double time{0.};
+  for (int i{0}; i < static_cast<int>(speeds.size()); i++, time += kDeltaT) {
+    // Evaluate at the expected time corresponding to the i-th waypoint.
+    const PoseVelocity actual_at = trajectory.value(time);
+    EXPECT_TRUE(CompareMatrices(actual_at.translation().vector(),
+                                poses[i].translation(), kTol));
+    EXPECT_TRUE(CompareMatrices(actual_at.rotation().matrix(),
+                                poses[i].rotation().matrix(), kTol));
+
+    if (i == static_cast<int>(speeds.size()) - 1) break;
+
+    EXPECT_TRUE(CompareMatrices(actual_at.velocity().translational(),
+                                Vector3d{speeds[i], 0., 0.}, kTol));
+    EXPECT_NEAR(actual_at.speed(), speeds[i], kTol);
+    EXPECT_TRUE(CompareMatrices(actual_at.velocity().rotational(),
+                                Vector3d{0., 0., 0.}, kTol));
+
+    // Evaluate between waypoints i and i+1.
+    const PoseVelocity actual_between = trajectory.value(time + kDeltaT / 2.);
+    const Vector3d translation =
+        0.5 * (poses[i].translation() + poses[i + 1].translation());
+    EXPECT_TRUE(CompareMatrices(actual_between.translation().vector(),
+                                translation, kTol));
+    EXPECT_TRUE(CompareMatrices(actual_between.velocity().translational(),
+                                Vector3d{speeds[i], 0., 0.}, kTol));
+    EXPECT_NEAR(actual_between.speed(), speeds[i], kTol);
+    EXPECT_TRUE(CompareMatrices(actual_between.rotation().matrix(),
+                                poses[i].rotation().matrix(), kTol));
+    EXPECT_TRUE(CompareMatrices(actual_between.velocity().rotational(),
+                                Vector3d{0., 0., 0.}, kTol));
+  }
+}
+
+// Checks that the provided waypoints yield correctly-formed trajectories with
+// the constant-speed constructor.
+GTEST_TEST(AgentTrajectoryTest, MakeFromWaypointsWithConstantSpeed) {
+  using Type = AgentTrajectory::InterpolationType;
+
+  const double speed = 5.;
+  const std::vector<double> speeds{speed, speed};  // Only for sizing `poses`.
+  std::vector<Isometry3d> poses{};
+  MakePoses(SpeedProfile::kPiecewiseConstant, speeds, &poses);
+
+  for (const auto& interp_type : {Type::kFirstOrderHold, Type::kCubic}) {
+    AgentTrajectory trajectory =
+        AgentTrajectory::MakeFromWaypoints(poses, speed, interp_type);
+
+    const std::vector<double> expected_times{0., kDeltaT};
+    for (int i{0}; i < static_cast<int>(expected_times.size()); i++) {
+      const double time = expected_times[i];
+      // Evaluate at the expected time corresponding to the i-th waypoint.
+      const PoseVelocity actual_at = trajectory.value(time);
+      EXPECT_TRUE(CompareMatrices(actual_at.translation().vector(),
+                                  poses[i].translation(), kTol));
+      EXPECT_TRUE(CompareMatrices(actual_at.rotation().matrix(),
+                                  poses[i].rotation().matrix(), kTol));
+      EXPECT_EQ(actual_at.speed(), speed);
+
+      if (i == static_cast<int>(speeds.size()) - 1) break;
+
+      // Evaluate between waypoints i and i+1.
+      const PoseVelocity actual_between = trajectory.value(time + kDeltaT / 2.);
+      EXPECT_NEAR(actual_between.speed(), speed, kTol);
+    }
   }
 }
 

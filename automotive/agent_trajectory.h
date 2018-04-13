@@ -87,16 +87,11 @@ class AgentTrajectory final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AgentTrajectory)
 
-  /// An identifier for the type of interpolation to be used for the
-  /// interpolating the translational component of an AgentTrajectory.  These
-  /// types mirror the associated constructors for PiecewisePolynomial (see
+  /// An identifier for the type of valid types of interpolation used in
+  /// evaluating the translational component of an AgentTrajectory.  These types
+  /// mirror the associated constructors for PiecewisePolynomial (see
   /// common/trajectories/piecewise_polynomial.h for further details).
-  enum class InterpolationType {
-    kZeroOrderHold,
-    kFirstOrderHold,
-    kCubic,
-    kPchip
-  };
+  enum class InterpolationType { kFirstOrderHold, kCubic, kPchip };
 
   /// Makes an AgentTrajectory from a discrete set of time-indexed pose data
   /// under the specified interpolation scheme.
@@ -117,6 +112,73 @@ class AgentTrajectory final {
                               const std::vector<Eigen::Isometry3d>& knots,
                               const InterpolationType& interp_type =
                                   InterpolationType::kFirstOrderHold);
+
+  /// Makes an AgentTrajectory from a discrete set of (time-independent)
+  /// waypoints and a vector of speeds.  The resulting trajectory is assumed to
+  /// start at time time t = 0 and follow a line-of-sight (linear) path between
+  /// each waypoint (InterpolationType::kFirstOrderHold).  Velocity is therefore
+  /// a piecewise-constant function, whose value at a given waypoint is equal to
+  /// the value between the current and next waypoints.  Note that velocity is
+  /// computed independent of the rotation, hence it is possible to have
+  /// non-zero angle-of-attack with respect to the agent's orientation.
+  ///
+  /// @param waypoints a vector of waypoints containing a pose vector of
+  /// Isometry3d, whose length must match that of @p speeds.
+  /// @param speeds a vector of speeds to be applied at knot points and linearly
+  /// interpolated between waypoints.  All entries of @p speeds must be
+  /// strictly positive.
+  /// @throws std::exception if the size of `speeds` is not N-1, where N is the
+  /// size of `waypoints`, or if any element of `speeds` violates any of the
+  /// conditions enumerated above.
+  static AgentTrajectory MakeFohFromWaypoints(
+      const std::vector<Eigen::Isometry3d>& waypoints,
+      const std::vector<double>& speeds);
+
+  /// Makes an AgentTrajectory from a discrete set of (time-independent)
+  /// waypoints and a vector of speeds.  The resulting trajectory is assumed to
+  /// start at time time t = 0 and follow a cubic-spline profile
+  /// (InterpolationType::kCubic) for the translation elements, rendering speed
+  /// as a piecewise-quadratic function.  Since we do not make assumptions about
+  /// the accelerations at the knot points, we determine each break points (time
+  /// vector) from the time required to travel a Euclidean distance between
+  /// consecutive waypoints at the average speed between each.  Velocities at
+  /// each break point are computed from the given rotation of A with respect to
+  /// W.
+  ///
+  /// @param waypoints a vector of waypoints containing a pose vector of
+  /// Isometry3d, whose length must match that of @p speeds.
+  /// @param speeds a vector of speeds to be applied at knot points and linearly
+  /// interpolated between waypoints.  All entries of @p speeds must be
+  /// positive, and consecutive zero entries are disallowed (to avoid deadlock).
+  /// @throws std::exception if `waypoints` and `speeds` have different lengths,
+  /// or if any element of `speeds` violates any of the conditions enumerated
+  /// above.
+  //
+  // TODO(jadecastro) Compute the break points as the solution to an
+  // optimization problem or from additional user inputs.
+  static AgentTrajectory MakeCubicFromWaypoints(
+      const std::vector<Eigen::Isometry3d>& waypoints,
+      const std::vector<double>& speeds);
+
+  /// Makes an AgentTrajectory from a discrete set of (time-independent)
+  /// waypoints, based on a constant speed, under the specified interpolation
+  /// scheme.
+  ///
+  /// @param waypoints a vector of waypoints containing a pose vector of
+  /// Isometry3d.
+  /// @param speed a positive speed to be applied over the entirety of the
+  /// trajectory.
+  /// @param interp_type an InterpolationType with the interpolation scheme used
+  /// for building a piecewise polynomial trajectory for the translational
+  /// component.
+  /// @default InterpolationType::kFirstOrderHold.
+  /// @throws std::exception if `speed` is non-positive.
+  /// @throws std::logic_error if `interp_type` is not either
+  /// InterpolationType::kFirstOrderHold or InterpolationType::kCubic.
+  static AgentTrajectory MakeFromWaypoints(
+      const std::vector<Eigen::Isometry3d>& waypoints, double speed,
+      const InterpolationType& interp_type =
+          InterpolationType::kFirstOrderHold);
 
   /// Evaluates the AgentTrajectory at a given @p time, returning a packed
   /// PoseVelocity.
