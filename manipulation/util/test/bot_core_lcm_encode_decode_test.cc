@@ -25,20 +25,19 @@ GTEST_TEST(TestLcmUtil, testVector3d) {
 GTEST_TEST(TestLcmUtil, testQuaternion) {
   std::default_random_engine generator;
   generator.seed(0);
-  const auto quaternion = drake::math::UniformlyRandomQuat(generator);
+  const Eigen::Quaterniond q = math::UniformlyRandomQuaternion(&generator);
   bot_core::quaternion_t msg;
-  EncodeQuaternion(quaternion, msg);
+  EncodeQuaternion(q, msg);
   auto quat_back = DecodeQuaternion(msg);
-  EXPECT_TRUE(
-      CompareMatrices(quaternion, quat_back, 0.0, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(Eigen::Vector4d(q.w(), q.x(), q.y(), q.z()),
+                              quat_back, 0.0, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestLcmUtil, testPose) {
   std::default_random_engine generator;
   generator.seed(0);
   Eigen::Isometry3d pose;
-  pose.linear() =
-      drake::math::UniformlyRandomRotationMatrix(generator).matrix();
+  pose.linear() = math::UniformlyRandomRotationMatrix(&generator).matrix();
   pose.translation().setLinSpaced(0, drake::kSpaceDimension);
   pose.makeAffine();
   const Eigen::Isometry3d& const_pose = pose;

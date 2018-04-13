@@ -449,8 +449,20 @@ class RotationMatrix {
   /// returned by this method chooses the quaternion with q(0) >= 0.
   // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
-  Eigen::Quaternion<T> ToQuaternion() const {
-    const Matrix3<T>& M = R_AB_;
+  Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
+
+  /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
+  /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
+  /// returned by this method chooses the quaternion with q(0) >= 0.
+  /// @param[in] M 3x3 matrix to be made into a quaternion.
+  /// @returns a unit quaternion q.
+  /// @throws exception std::logic_error in debug builds if the quaternion `q`
+  /// returned by this method cannot construct a valid %RotationMatrix.
+  /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
+  // @internal This implementation is adapted from simbody at
+  // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
+  static Eigen::Quaternion<T> ToQuaternion(
+      const Eigen::Ref<const Matrix3<T>>& M) {
     T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
 
     const T trace = M.trace();
@@ -495,7 +507,23 @@ class RotationMatrix {
     // q must be normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
     const T scale = canonical_factor / q.norm();
     q.coeffs() *= scale;
+
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
     return q;
+  }
+
+  /// Utility method to return the Vector4 associated with ToQuaterion().
+  /// @see ToQuaternion().
+  Vector4<T> ToQuaternionAsVector4() const {
+    return ToQuaternionAsVector4(R_AB_);
+  }
+
+  /// Utility method to return the Vector4 associated with ToQuaterion(M).
+  /// @param[in] M 3x3 matrix to be made into a quaternion.
+  /// @see ToQuaternion().
+  static Vector4<T> ToQuaternionAsVector4(const Matrix3<T>& M)  {
+    const Eigen::Quaternion<T> q = ToQuaternion(M);
+    return Vector4<T>(q.w(), q.x(), q.y(), q.z());
   }
 
   /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit

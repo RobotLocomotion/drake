@@ -38,12 +38,15 @@ std::string QuaternionBallJoint::get_velocity_name(int index) const {
 }
 
 VectorXd QuaternionBallJoint::zeroConfiguration() const {
+  // TODO(mitiguy) Consider updating this method to return Eigen::Quaterniond.
   return Vector4d(1, 0, 0, 0);
 }
 
 VectorXd QuaternionBallJoint::randomConfiguration(
     std::default_random_engine& generator) const {
-  return drake::math::UniformlyRandomQuat(generator);
+  // TODO(mitiguy) Consider updating this method to return Eigen::Quaterniond.
+  Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(&generator);
+  return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
