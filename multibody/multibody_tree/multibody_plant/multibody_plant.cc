@@ -430,8 +430,8 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
       const CoulombFriction<double>& geometryB_friction =
           default_coulomb_friction_[collision_indexB];
       const CoulombFriction<double> combined_friction_coefficients =
-          geometryA_friction.CombineWithOtherFrictionCoefficients(
-              geometryB_friction);
+          CalcContactFrictionFromSurfaceProperties(
+              geometryA_friction, geometryB_friction);
       // Compute tangential velocity, that is, v_AcBc projected onto the tangent
       // plane with normal nhat_BA:
       const Vector3<double> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;

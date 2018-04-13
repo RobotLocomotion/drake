@@ -66,8 +66,8 @@ GTEST_TEST(CoulombFriction, EqualityOperator) {
       CoulombFriction<double>(0.8, 0.5) == CoulombFriction<double>(1.2, 0.6)));
 }
 
-// Verify CoulombFriction::CombineWithOtherFrictionCoefficients().
-GTEST_TEST(CoulombFriction, CombineWithOtherFrictionCoefficients) {
+// Verify CoulombFriction::CalcContactFrictionFromSurfaceProperties().
+GTEST_TEST(CoulombFriction, CalcContactFrictionFromSurfaceProperties) {
   auto combine_friction_coefficients = [](double mu1, double mu2) {
     return 2.0 * mu1 * mu2 / (mu1 + mu2);
   };
@@ -83,7 +83,7 @@ GTEST_TEST(CoulombFriction, CombineWithOtherFrictionCoefficients) {
 
   // Verify correctness.
   CoulombFriction<double> friction1_with_friction2 =
-      friction1.CombineWithOtherFrictionCoefficients(friction2);
+      CalcContactFrictionFromSurfaceProperties(friction1, friction2);
   EXPECT_EQ(friction1_with_friction2.static_friction(),
             combine_friction_coefficients(mu_s1, mu_s2));
   EXPECT_EQ(friction1_with_friction2.dynamic_friction(),
@@ -91,19 +91,21 @@ GTEST_TEST(CoulombFriction, CombineWithOtherFrictionCoefficients) {
 
   // Verify the operation is commutative.
   CoulombFriction<double> friction2_with_friction1 =
-      friction2.CombineWithOtherFrictionCoefficients(friction1);
+      CalcContactFrictionFromSurfaceProperties(friction2, friction1);
   EXPECT_TRUE(ExtractBoolOrThrow(
       friction1_with_friction2 == friction2_with_friction1));
 
   // Verify result when one of the surfaces is frictionless.
   CoulombFriction<double> friction1_with_frictionless =
-      friction1.CombineWithOtherFrictionCoefficients(CoulombFriction<double>());
+      CalcContactFrictionFromSurfaceProperties(friction1,
+                                               CoulombFriction<double>());
   EXPECT_TRUE(ExtractBoolOrThrow(
       friction1_with_frictionless == CoulombFriction<double>()));
 
   // Verify commutativity when one of the surfaces is frictionless.
   CoulombFriction<double> frictionless_with_friction1 =
-      CoulombFriction<double>().CombineWithOtherFrictionCoefficients(friction1);
+      CalcContactFrictionFromSurfaceProperties(CoulombFriction<double>(),
+                                               friction1);
   EXPECT_TRUE(ExtractBoolOrThrow(
       friction1_with_frictionless == frictionless_with_friction1));
 }

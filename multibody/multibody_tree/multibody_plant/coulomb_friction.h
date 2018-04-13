@@ -42,7 +42,7 @@ namespace multibody_plant {
 /// <pre>
 ///   μ = 2μₘμₙ/(μₘ + μₙ)
 /// </pre>
-/// See CombineWithOtherFrictionCoefficients(), which implements this law.
+/// See CalcContactFrictionFromSurfaceProperties(), which implements this law.
 /// More complex combination laws could also be a function of other parameters
 /// such as the mechanical properties of the interacting surfaces or even their
 /// roughnesses. For instance, if the the rubber surface above has metal studs
@@ -74,29 +74,6 @@ class CoulombFriction {
   /// negative or if `dynamic_friction > static_friction` (they can be equal.)
   CoulombFriction(const T& static_friction, const T& dynamic_friction);
 
-  /// Combines `this` friction coefficients for a surface M with `other` set of
-  /// friction coefficients for a surface N according to: <pre>
-  ///   μ = 2μₘμₙ/(μₘ + μₙ)
-  /// </pre>
-  /// where the operation above is performed separately on the static and
-  /// dynamic friction coefficients.
-  /// @returns the combined friction coefficients for the interacting surfaces.
-  CoulombFriction CombineWithOtherFrictionCoefficients(
-      const CoulombFriction& other) const {
-    // Simple utility to detect 0 / 0. As it is used in this method, denom
-    // can only be zero if num is also zero, so we'll simply return zero.
-    auto safe_divide = [](const T& num, const T& denom) {
-      return denom == 0.0 ? 0.0 : num / denom;
-    };
-    return CoulombFriction(
-        safe_divide(
-            2 * static_friction() * other.static_friction(),
-            static_friction() + other.static_friction()),
-        safe_divide(
-            2 * dynamic_friction() * other.dynamic_friction(),
-            dynamic_friction() + other.dynamic_friction()));
-  }
-
   /// Returns the coefficient of static friction.
   const T& static_friction() const { return static_friction_; }
 
@@ -117,6 +94,51 @@ class CoulombFriction {
   T static_friction_{0.0};
   T dynamic_friction_{0.0};
 };
+
+/// Given the surface properties of two different surfaces, this method computes
+/// the Coulomb's law coefficients of friction characterizing the interaction by
+/// friction of the given surface pair.
+/// The surface properties are specified by individual Coulomb's law
+/// coefficients of friction. As outlined in the class's documentation for
+/// CoulombFriction, friction coefficients characterize a surface pair and not
+/// individual surfaces. However, we find it useful in practice to associate the
+/// abstract __idea__ of friction coefficients to a single surface. Please refer
+/// to the documentation for CoulombFriction for details on this topic.
+///
+/// More specifically, this method computes the contact coefficients for the
+/// given surface pair as: <pre>
+///   μ = 2μₘμₙ/(μₘ + μₙ)
+/// </pre>
+/// where the operation above is performed separately on the static and
+/// dynamic friction coefficients.
+///
+/// @param[in] surface_properties1
+///   Surface properties for surface 1. Specified as an individual set of
+///   Coulomb's law coefficients of friction.
+/// @param[in] surface_properties2
+///   Surface properties for surface 2. Specified as an individual set of
+///   Coulomb's law coefficients of friction.
+/// @returns the combined friction coefficients for the interacting surfaces.
+template<typename T>
+CoulombFriction<T> CalcContactFrictionFromSurfaceProperties(
+    const CoulombFriction<T>& surface_properties1,
+    const CoulombFriction<T>& surface_properties2) {
+  // Aliases to shorten expressions below.
+  const auto& s1 = surface_properties1;
+  const auto& s2 = surface_properties2;
+  // Simple utility to detect 0 / 0. As it is used in this method, denom
+  // can only be zero if num is also zero, so we'll simply return zero.
+  auto safe_divide = [](const T& num, const T& denom) {
+    return denom == 0.0 ? 0.0 : num / denom;
+  };
+  return CoulombFriction<T>(
+      safe_divide(
+          2 * s1.static_friction() * s2.static_friction(),
+          s1.static_friction() + s2.static_friction()),
+      safe_divide(
+          2 * s1.dynamic_friction() * s2.dynamic_friction(),
+          s1.dynamic_friction() + s2.dynamic_friction()));
+}
 
 }  // namespace multibody_plant
 }  // namespace multibody
