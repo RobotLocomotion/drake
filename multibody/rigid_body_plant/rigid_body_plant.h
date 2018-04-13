@@ -88,10 +88,9 @@ namespace systems {
 /// addition, the model may contain loop constraints described by
 /// RigidBodyLoop instances in the multibody model. Even though loop constraints
 /// are a particular case of holonomic constraints, general holonomic
-/// constraints are not yet supported. For %RigidBodyPlant systems
-/// simulated using time stepping algorithms, an additional (discrete)
-/// scalar state variable stores the last time that the system's state was
-/// updated.
+/// constraints are not yet supported. For simulating discretized
+/// %RigidBodyPlant systems, an additional (discrete) scalar state variable
+/// stores the last time that the system's state was updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
@@ -147,7 +146,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// @param[in] timestep a non-negative value specifying the update period of
   ///   the model; 0.0 implies continuous-time dynamics with derivatives, and
   ///   values > 0.0 result in discrete-time dynamics implementing a
-  ///   time-stepping approximation to the dynamics.  @default 0.0.
+  ///   discretization of the dynamics equation.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<double>> tree,
@@ -582,7 +581,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   // Pointer to the class that encapsulates all the contact computations.
   const std::unique_ptr<CompliantContactModel<T>> compliant_contact_model_;
 
-  // Structure for storing joint limit data for time stepping.
+  // Structure for storing joint limit data for the discretized version of the
+  // plant.
   struct JointLimit {
     // The index for the joint limit.
     int v_index{-1};
