@@ -576,6 +576,13 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   return true;
 }
 
+// Checks to see whether a given variable is the artificial variable.
+template <class T>
+bool UnrevisedLemkeSolver<T>::IsArtificial(const LCPVariable& v) const {
+  const int n = static_cast<int>(dep_variables_.size());
+  return v.is_z() && v.index() == n;
+}
+
 // Method for finding the index of the complement of an LCP variable in
 // a tuple (strictly speaking, an unsorted vector) of independent variables.
 // Aborts if the index is not found in the set or the variable is the artificial
@@ -666,7 +673,7 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     if (matrix_col[i] < -zero_tol) {
       DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
       if (ratios[i] < min_ratio + zero_tol) {
-        if (dep_variables_[i].is_z() && dep_variables_[i].index() == n) {
+        if (IsArtificial(dep_variables_[i])) {
           // *Always* select the artificial variable, if multiple choices are
           // possible ([Cottle 1992] p. 280).
           *blocking_index = i;

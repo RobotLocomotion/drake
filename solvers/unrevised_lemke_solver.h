@@ -193,6 +193,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
   bool FindBlockingIndex(
       const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
       int* blocking_index) const;
+  bool IsArtificial(const LCPVariable& v) const;
 
   typedef std::vector<LCPVariable> LCPVariableVector;
 

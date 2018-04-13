@@ -90,12 +90,15 @@ GTEST_TEST(TestUnrevisedLemke, TestSimple) {
 // Tests that the artificial variable is always selected in a tie
 // (Example 4.4.16 in [Cottle 1992]). We know Lemke's algorithm can solve
 // this one since the matrix is symmetric and positive semi-definite.
+// Lemke implementations without the necessary special-case code can terminate
+// on an unblocked variable (i.e., fail to find the solution when one is known
+// to exist).
 GTEST_TEST(TestUnrevisedLemke, TestPSD) {
   MatrixX<double> M(2, 2);
   M << 1, -1,
       -1, 1;
 
-  Eigen::Matrix<double, 2, 1> q;
+  Eigen::Vector2d q;
   q << 1, -1;
 
   Eigen::VectorXd expected_z(2);
