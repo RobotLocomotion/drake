@@ -96,10 +96,10 @@ GTEST_TEST(TestUnrevisedLemke, TestPSD) {
       -1, 1;
 
   Eigen::Matrix<double, 2, 1> q;
-  q << 1, -1; 
+  q << 1, -1;
 
   Eigen::VectorXd expected_z(2);
-  expected_z << 0, 1; 
+  expected_z << 0, 1;
   RunLCP(M, q, expected_z);
 }
 
