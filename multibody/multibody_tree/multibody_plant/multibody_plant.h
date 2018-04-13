@@ -556,6 +556,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
+  // TODO(amcastro-tri): This API might change or disappear completely as GS
+  // provides support for the specification of surface properties.
   const CoulombFriction<double>& default_coulomb_friction(
       geometry::GeometryId id) const {
     DRAKE_DEMAND(is_collision_geometry(id));
