@@ -20,8 +20,7 @@ namespace math {
 /// uniformly on n-dimensional spheres. Commun. ACM 2, 4 (April 1959), 19-20.
 /// DOI=http://dx.doi.org/10.1145/377939.377946
 template <class Generator>
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-Eigen::AngleAxisd UniformlyRandomAngleAxis(Generator& generator) {
+Eigen::AngleAxisd UniformlyRandomAngleAxis(const Generator& generator) {
   std::normal_distribution<double> normal;
   std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
   const double angle = uniform(generator);
@@ -34,8 +33,7 @@ Eigen::AngleAxisd UniformlyRandomAngleAxis(Generator& generator) {
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
 template <class Generator>
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-Eigen::Quaterniond UniformlyRandomQuaternion(Generator& generator) {
+Eigen::Quaterniond UniformlyRandomQuaternion(const Generator& generator) {
   const Eigen::AngleAxisd angle_axis = UniformlyRandomAngleAxis(generator);
   return Eigen::Quaterniond(angle_axis);
 }
@@ -44,8 +42,8 @@ Eigen::Quaterniond UniformlyRandomQuaternion(Generator& generator) {
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
 template <class Generator>
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-RotationMatrix<double> UniformlyRandomRotationMatrix(Generator& generator) {
+RotationMatrix<double> UniformlyRandomRotationMatrix(
+    const Generator& generator) {
   const Eigen::AngleAxisd angle_axis = UniformlyRandomAngleAxis(generator);
   return RotationMatrix<double>(angle_axis);
 }
@@ -54,8 +52,7 @@ RotationMatrix<double> UniformlyRandomRotationMatrix(Generator& generator) {
 /// point on the unit sphere to another point on the unit sphere with a uniform
 /// distribution over the sphere.
 template <class Generator>
-// TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-Eigen::Vector3d UniformlyRandomRPY(Generator& generator) {
+Eigen::Vector3d UniformlyRandomRPY(const Generator& generator) {
   const Eigen::Quaterniond q = UniformlyRandomQuaternion(generator);
   return QuaternionToSpaceXYZ(q);
 }
