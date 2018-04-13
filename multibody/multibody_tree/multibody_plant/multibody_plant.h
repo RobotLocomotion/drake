@@ -814,9 +814,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// `v_stiction` defaults to a value of 1 millimeter per second.
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
-    DRAKE_DEMAND(v_stiction > 0);
-    stribeck_model_.v_stiction_tolerance = v_stiction;
-    stribeck_model_.inv_v_stiction_tolerance = 1.0 / v_stiction;
+    stribeck_model_.set_stiction_tolerance(v_stiction);
   }
   /// @}
 
@@ -993,27 +991,49 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
   // Stribeck model of friction.
-  struct StribeckModel {
-    // Computes the friction coefficient based on the relative tangential
-    // *speed* of the contact point on A relative to B (expressed in B), v_BAc.
-    //
-    // See contact_model_doxygen.h @section tangent_force for details.
+  class StribeckModel {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StribeckModel)
+
+    /// Creates an uninitialized Stribeck model with an invalid value (negative)
+    /// of the stiction tolerance.
+    StribeckModel() = default;
+
+    /// Computes the friction coefficient based on the relative tangential
+    /// *speed* of the contact point on A relative to B (expressed in B), v_BAc.
+    ///
+    /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
         const T& v_tangent_BAc,
         const CoulombFriction<T>& friction) const;
 
-    // Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
-    // the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
-    // f(1) = 1.
+    /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
+    /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
+    /// f(1) = 1.
     static T step5(const T& x);
 
+    /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
+    /// `v_stiction` must be specified in m/s (meters per second.)
+    /// @throws std::exception if `v_stiction` is non-positive.
+    void set_stiction_tolerance(double v_stiction) {
+      DRAKE_DEMAND(v_stiction > 0);
+      v_stiction_tolerance_ = v_stiction;
+      inv_v_stiction_tolerance_ = 1.0 / v_stiction;
+    }
+
+    /// Returns the value of the stiction tolerance for `this` model.
+    /// It returns a negative value when the stiction tolerance has not been set
+    /// previously with set_stiction_tolerance().
+    double stiction_tolerance() const { return v_stiction_tolerance_; }
+
+   private:
     // Stiction velocity tolerance for the Stribeck model.
     // A negative value indicates it was not properly initialized.
-    double v_stiction_tolerance{-1};
-    // Note: this is the *inverse* of the v_stiction_tolerance parameter to
+    double v_stiction_tolerance_{-1};
+    // Note: this is the *inverse* of the v_stiction_tolerance_ parameter to
     // optimize for the division.
     // A negative value indicates it was not properly initialized.
-    double inv_v_stiction_tolerance{-1};
+    double inv_v_stiction_tolerance_{-1};
   };
   StribeckModel stribeck_model_;
 

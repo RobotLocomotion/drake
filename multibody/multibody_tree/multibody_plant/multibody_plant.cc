@@ -199,7 +199,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
   if (get_num_collision_geometries() > 0 &&
-      stribeck_model_.v_stiction_tolerance < 0)
+      stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
 }
 
@@ -710,7 +710,7 @@ T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
   DRAKE_ASSERT(v_tangent_BAc >= 0);
   const T& mu_d = friction.dynamic_friction();
   const T& mu_s = friction.static_friction();
-  const T v = v_tangent_BAc * inv_v_stiction_tolerance;
+  const T v = v_tangent_BAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
     return mu_d;
   } else if (v >= 1) {
