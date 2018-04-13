@@ -16,7 +16,10 @@ namespace drake {
 using geometry::GeometrySystem;
 using multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using systems::Context;
+using systems::Diagram;
 using systems::DiagramBuilder;
+using systems::IntegratorBase;
+using systems::Simulator;
 
 namespace multibody {
 namespace multibody_plant {
@@ -27,7 +30,7 @@ namespace {
 // test verifies the numerical solution against analytical results obtained from
 // an energy conservation analysis.
 GTEST_TEST(MultibodyPlant, RollingSphereTest) {
-  systems::DiagramBuilder<double> builder;
+  DiagramBuilder<double> builder;
 
   GeometrySystem<double>& geometry_system =
       *builder.AddSystem<GeometrySystem>();
@@ -87,22 +90,21 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
                   plant.get_geometry_query_input_port());
 
   // And build the Diagram:
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:
-  std::unique_ptr<systems::Context<double>> diagram_context =
+  std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-  systems::Context<double>& plant_context =
+  Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // This will set a default initial condition with the sphere located at
   // p_WBcm = (0; 0; 0) and zero spatial velocity.
   model.SetDefaultContext(&plant_context);
 
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  systems::IntegratorBase<double>* integrator =
-      simulator.get_mutable_integrator();
+  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
   integrator->set_maximum_step_size(max_time_step);
   integrator->set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);

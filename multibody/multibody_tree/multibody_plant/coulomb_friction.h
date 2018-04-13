@@ -19,7 +19,7 @@ namespace multibody_plant {
 ///
 /// Even though the Coulomb's law coefficients of friction characterize a pair
 /// of surfaces interacting by friction, we associate the abstract __idea__ of
-/// friction coefficients to a single material by considering the coefficients
+/// friction coefficients to a single surface by considering the coefficients
 /// for contact between two identical surfaces. For this case of two identical
 /// surfaces, the friction coefficients that describe the surface pair are taken
 /// to equal those of one of the identical surfaces. We extend this idea to the
@@ -48,7 +48,9 @@ namespace multibody_plant {
 /// roughnesses. For instance, if the the rubber surface above has metal studs
 /// (somehow making the surface "rougher"), it will definitely have a better
 /// grip on an ice surface. Therefore this new variable should be taken into
-/// account in the combination law.
+/// account in the combination law. Notice that in this example, this new
+/// combination law model for tires, will have a different set of requirements
+/// from the ones stated above.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -90,7 +92,7 @@ class CoulombFriction {
   static void ThrowForBadFriction(const T& static_friction,
                                   const T& dynamic_friction);
 
-  // Default values are for an ideal frictionless material.
+  // Default values are for an ideal frictionless surface.
   T static_friction_{0.0};
   T dynamic_friction_{0.0};
 };
