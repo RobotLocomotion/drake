@@ -45,7 +45,7 @@ VectorXd QuaternionBallJoint::zeroConfiguration() const {
 VectorXd QuaternionBallJoint::randomConfiguration(
     std::default_random_engine& generator) const {
   // TODO(mitiguy) Consider updating this method to return Eigen::Quaterniond.
-  Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(generator);
+  Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(&generator);
   return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
