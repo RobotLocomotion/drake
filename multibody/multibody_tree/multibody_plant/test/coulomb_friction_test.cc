@@ -27,14 +27,14 @@ GTEST_TEST(CoulombFriction, ConstructionFromFrictionCoefficients) {
       CoulombFriction<double>(-kStaticFriction, kDynamicFriction),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
-      "Given static friction is negative: .*");
+      "The given static friction is negative: .*");
 
   // Verify constructor throws for a negative dynamic friction coefficient.
   DRAKE_EXPECT_THROWS_MESSAGE(
       CoulombFriction<double>(kStaticFriction, -kDynamicFriction),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
-      "Given dynamic friction is negative: .*");
+      "The given dynamic friction is negative: .*");
 
   // Verify constructor throws when the dynamic friction coefficient is larger
   // than the static friction coefficient.
@@ -42,8 +42,9 @@ GTEST_TEST(CoulombFriction, ConstructionFromFrictionCoefficients) {
       CoulombFriction<double>(kDynamicFriction, kStaticFriction),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
-      "Given dynamic friction \\(.*\\) is greater than given static "
-      "friction \\(.*\\). Must be less than or equal.");
+      "The given dynamic friction \\(.*\\) is greater than the given static "
+      "friction \\(.*\\); dynamic friction must be less than or equal to "
+      "static friction.");
 
   CoulombFriction<double> friction(kStaticFriction, kDynamicFriction);
   EXPECT_EQ(friction.static_friction(), kStaticFriction);

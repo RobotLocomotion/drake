@@ -23,19 +23,19 @@ void CoulombFriction<T>::ThrowForBadFriction(const T& static_friction,
   using std::stringstream;
   if (dynamic_friction < 0) {
     stringstream stream;
-    stream << "Given dynamic friction is negative: "  << dynamic_friction;
+    stream << "The given dynamic friction is negative: "  << dynamic_friction;
     throw runtime_error(stream.str());
   }
   if (static_friction < 0) {
     stringstream stream;
-    stream << "Given static friction is negative: " << static_friction;
+    stream << "The given static friction is negative: " << static_friction;
     throw runtime_error(stream.str());
   }
   if (dynamic_friction > static_friction) {
     stringstream stream;
-    stream << "Given dynamic friction (" << dynamic_friction <<
-           ") is greater than given static friction (" << static_friction <<
-           "). Must be less than or equal.";
+    stream << "The given dynamic friction (" << dynamic_friction <<
+           ") is greater than the given static friction (" << static_friction <<
+           "); dynamic friction must be less than or equal to static friction.";
     throw runtime_error(stream.str());
   }
 }

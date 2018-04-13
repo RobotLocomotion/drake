@@ -14,7 +14,7 @@ namespace multibody_plant {
 ///   relative motion.
 /// The coefficients of friction are an empirical property of the pair of
 /// contacting surfaces which depend upon the mechanical properties of the
-/// surfaces's materials and on the roughness of the surfaces. Friction
+/// surfaces' materials and on the roughness of the surfaces. Friction
 /// coefficients are determined experimentally.
 ///
 /// Even though the Coulomb's law coefficients of friction characterize a pair
@@ -31,14 +31,14 @@ namespace multibody_plant {
 ///   coefficient of one of the surfaces.
 /// - The combination law is commutative. That is, surface A combined with
 ///   surface B gives the same results as surface B combined with surface A.
-/// - For two surface M an N with very different friction coefficients, say
+/// - For two surfaces M and N with very different friction coefficients, say
 ///   `μₘ ≪ μₙ`, the combined friction coefficient should be in the order of
 ///   magnitude of the smallest friction coefficient (in the example μₘ). To
 ///   understand this requirement, consider rubber (high friction coefficient)
 ///   sliding on ice (low friction coefficient). We'd like the surface pair
 ///   to be defined by a friction coefficient close to that of ice, since rubber
 ///   will easily slide on ice.
-/// This requirements are set forth in the following ad-hoc combination law:
+/// These requirements are met by the following ad-hoc combination law:
 /// <pre>
 ///   μ = 2μₘμₙ/(μₘ + μₙ)
 /// </pre>
