@@ -96,8 +96,7 @@ void BouncingBallPlant<T>::CopyStateToOutput(
 }
 
 template <typename T>
-FramePoseVector<T> BouncingBallPlant<T>::AllocateFramePoseOutput(
-    const Context<T>&) const {
+FramePoseVector<T> BouncingBallPlant<T>::AllocateFramePoseOutput() const {
   FramePoseVector<T> poses(source_id_);
   poses.mutable_vector().push_back(Isometry3<T>::Identity());
   return poses;
@@ -115,16 +114,15 @@ void BouncingBallPlant<T>::CalcFramePoseOutput(
 }
 
 template <typename T>
-FrameIdVector BouncingBallPlant<T>::AllocateFrameIdOutput(
-    const systems::Context<T>&) const {
+FrameIdVector BouncingBallPlant<T>::AllocateFrameIdOutput() const {
   return FrameIdVector(source_id_,
                        std::vector<geometry::FrameId>{ball_frame_id_});
 }
 
 template <typename T>
-void BouncingBallPlant<T>::CalcFrameIdOutput(const systems::Context<T>& context,
+void BouncingBallPlant<T>::CalcFrameIdOutput(const systems::Context<T>&,
                                              FrameIdVector* frame_ids) const {
-  *frame_ids = AllocateFrameIdOutput(context);
+  *frame_ids = AllocateFrameIdOutput();
 }
 
 // Compute the actual physics.

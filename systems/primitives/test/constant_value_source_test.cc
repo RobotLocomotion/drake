@@ -23,7 +23,7 @@ class ConstantValueSourceTest : public ::testing::Test {
     std::unique_ptr<AbstractValue> value(new Value<std::string>("foo"));
     source_ = make_unique<ConstantValueSource<double>>(std::move(value));
     context_ = source_->CreateDefaultContext();
-    output_ = source_->get_output_port(0).Allocate(*context_);
+    output_ = source_->get_output_port(0).Allocate();
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 

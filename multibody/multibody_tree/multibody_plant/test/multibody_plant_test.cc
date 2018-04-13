@@ -306,14 +306,14 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       plant_->CreateDefaultContext();
 
   std::unique_ptr<AbstractValue> ids_value =
-      plant_->get_geometry_ids_output_port().Allocate(*context);
+      plant_->get_geometry_ids_output_port().Allocate();
   EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
   const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
   EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
   EXPECT_EQ(ids.size(), 2);  // Only two frames move.
 
   std::unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate(*context);
+      plant_->get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
@@ -399,14 +399,14 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       context.get());
 
   std::unique_ptr<AbstractValue> ids_value =
-      plant.get_geometry_ids_output_port().Allocate(*context);
+      plant.get_geometry_ids_output_port().Allocate();
   EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
   const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
   EXPECT_EQ(ids.get_source_id(), plant.get_source_id());
   EXPECT_EQ(ids.size(), 2);  // Only two frames move.
 
   std::unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate(*context);
+      plant.get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
@@ -494,7 +494,7 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   elbow_->set_angular_rate(context.get(), 2.5);
 
   std::unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate(*context);
+      plant_->get_continuous_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->GetValueOrThrow<BasicVector<double>>();

@@ -36,14 +36,11 @@ void LeafOutputPort<T>::set_calculation_function(
 }
 
 template <typename T>
-std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate(
-    const Context<T>& context) const {
+std::unique_ptr<AbstractValue> LeafOutputPort<T>::DoAllocate() const {
   std::unique_ptr<AbstractValue> result;
 
-  // Use the allocation function if available, otherwise clone the model
-  // value.
   if (alloc_function_) {
-    result = alloc_function_(context);
+    result = alloc_function_();
   } else {
     throw std::logic_error(
         "LeafOutputPort::DoAllocate(): " + this->GetPortIdString() +
