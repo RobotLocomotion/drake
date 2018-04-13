@@ -159,6 +159,8 @@ drake_pybind_library(
     ],
 )
 
+# TODO(eric.cousineau): Put this under test once `pydot` is in
+# `install_prereqs.sh`.
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -211,11 +213,9 @@ drake_py_unittest(
     ],
 )
 
-# TODO(eric.cousineau): Convert this to a workflow test once `pydot` is added
-# to `install_prereqs.sh`.
 drake_py_binary(
-    name = "graphviz_example",
-    srcs = ["test/graphviz_example.py"],
+    name = "drawing_graphviz_example",
+    srcs = ["drawing_graphviz_example.py"],
     deps = [
         ":drawing_py",
         ":framework_py",
@@ -316,6 +316,17 @@ drake_py_unittest(
     deps = [
         ":trajectory_optimization_py",
         "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_binary(
+    name = "rgbd_camera_example",
+    srcs = ["rgbd_camera_example.py"],
+    data = [
+        "//multibody:models",
+    ],
+    deps = [
+        ":sensors_py",
     ],
 )
 

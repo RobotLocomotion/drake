@@ -10,10 +10,12 @@ from pydrake.forwarddiff import jacobian
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
+    RigidBodyFrame,
     RigidBodyTree,
     FloatingBaseType
     )
 import pydrake.multibody.shapes as shapes
+from pydrake.util.eigen_geometry import Isometry3
 
 
 class TestRigidBodyTree(unittest.TestCase):
@@ -75,6 +77,20 @@ class TestRigidBodyTree(unittest.TestCase):
             [-1, 0, 0, 0],
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
+
+    def test_frame_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
+        # xyz + rpy
+        frame = RigidBodyFrame(
+            name="frame_1", body=tree.world(),
+            xyz=[0, 0, 0], rpy=[0, 0, 0])
+        self.assertEqual(frame.get_name(), "frame_1")
+        tree.addFrame(frame)
+        self.assertTrue(frame.get_frame_index() < 0, frame.get_frame_index())
+        self.assertTrue(frame.get_rigid_body() is tree.world())
+        self.assertIsInstance(frame.get_transform_to_body(), Isometry3)
+        self.assertTrue(tree.findFrame(frame_name="frame_1") is frame)
 
     def test_flat_terrain(self):
         tree = RigidBodyTree(FindResourceOrThrow(
