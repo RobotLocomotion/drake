@@ -77,10 +77,25 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "van_der_pol_py",
+    cc_deps = [
+        "//examples/van_der_pol",
+    ],
+    cc_so_name = "van_der_pol",
+    cc_srcs = ["van_der_pol_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":pendulum_py",
     ":rimless_wheel_py",
+    ":van_der_pol_py",
 ]
 
 PY_LIBRARIES = [
@@ -121,6 +136,14 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":rimless_wheel_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "van_der_pol_test",
+    size = "small",
+    deps = [
+        ":van_der_pol_py",
     ],
 )
 
