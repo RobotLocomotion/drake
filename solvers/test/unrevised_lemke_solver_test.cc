@@ -87,6 +87,22 @@ GTEST_TEST(TestUnrevisedLemke, TestSimple) {
   RunLCP(M, q, expected_z);
 }
 
+// Tests that the artificial variable is always selected in a tie
+// (Example 4.4.16 in [Cottle 1992]). We know Lemke's algorithm can solve
+// this one since the matrix is symmetric and positive semi-definite.
+GTEST_TEST(TestUnrevisedLemke, TestPSD) {
+  MatrixX<double> M(2, 2);
+  M << 1, -1,
+      -1, 1;
+
+  Eigen::Matrix<double, 2, 1> q;
+  q << 1, -1; 
+
+  Eigen::VectorXd expected_z(2);
+  expected_z << 0, 1; 
+  RunLCP(M, q, expected_z);
+}
+
 GTEST_TEST(TestUnrevisedLemke, TestProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
   // Local and Global Optimization".

@@ -640,9 +640,10 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
   DRAKE_DEMAND(ratios.size() == matrix_col.size());
   DRAKE_DEMAND(zero_tol > 0);
 
+  const int n = matrix_col.size();
   T min_ratio = std::numeric_limits<double>::infinity();
   *blocking_index = -1;
-  for (int i = 0; i < matrix_col.size(); ++i) {
+  for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
       DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
       if (ratios[i] < min_ratio) {
@@ -657,13 +658,22 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     return false;
   }
 
-  // Determine all variables within the zero tolerance of the minimum ratio.
+  // Determine all variables within the zero tolerance of the minimum ratio,
+  // while simultaneously looking for the presence of the artificial variable
+  // among the (possible multiple) minima.
   std::vector<int> blocking_indices;
-  for (int i = 0; i < matrix_col.size(); ++i) {
+  for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
       DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
-      if (ratios[i] < min_ratio + zero_tol)
+      if (ratios[i] < min_ratio + zero_tol) {
+        if (dep_variables_[i].is_z() && dep_variables_[i].index() == n) {
+          // *Always* select the artificial variable, if multiple choices are
+          // possible ([Cottle 1992] p. 280).
+          *blocking_index = i;
+          return true;
+        }
         blocking_indices.push_back(i);
+      }
     }
   }
 
