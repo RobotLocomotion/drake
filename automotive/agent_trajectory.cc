@@ -1,5 +1,7 @@
 #include "drake/automotive/agent_trajectory.h"
 
+#include <algorithm>
+
 namespace drake {
 namespace automotive {
 
@@ -41,10 +43,6 @@ AgentTrajectory AgentTrajectory::Make(
   const PiecewiseQuaternionSlerp<double> rotation(times, knots_rotation);
   PiecewisePolynomial<double> translation;
   switch (interp_type) {
-    case InterpolationType::kZeroOrderHold:
-      translation =
-          PiecewisePolynomial<double>::ZeroOrderHold(times, knots_translation);
-      break;
     case InterpolationType::kFirstOrderHold:
       translation =
           PiecewisePolynomial<double>::FirstOrderHold(times, knots_translation);
@@ -61,6 +59,57 @@ AgentTrajectory AgentTrajectory::Make(
       throw std::logic_error("The provided interp_type is not supported.");
   }
   return AgentTrajectory{translation, rotation};
+}
+
+AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
+    const std::vector<Eigen::Isometry3d>& waypoints,
+    const std::vector<double>& speeds) {
+  DRAKE_THROW_UNLESS(speeds.size() == waypoints.size());
+  std::vector<double> times(waypoints.size());
+  times[0] = 0.;
+  // Populate the segment times given a piecewise-linear travel time estimate.
+  for (int i{0}; i < static_cast<int>(speeds.size()) - 1; i++) {
+    DRAKE_THROW_UNLESS(speeds[i] >= 0.);
+    // speed_k == 0. ⇒ speed_k+1 > 0., ∀ k = 0..N-1
+    DRAKE_THROW_UNLESS(speeds[i + 1] > 0. || speeds[i] != 0.);
+    const double distance =
+        (waypoints[i].translation() - waypoints[i + 1].translation()).norm();
+    const double average_speed = 0.5 * (speeds[i] + speeds[i + 1]);
+    const double delta_t = distance / average_speed;
+    times[i + 1] = delta_t + times[i];
+  }
+
+  std::vector<Eigen::Quaternion<double>> knots_rotation(times.size());
+  std::vector<Eigen::MatrixXd> knots_translation(times.size());
+  for (int i{0}; i < static_cast<int>(times.size()); ++i) {
+    knots_rotation[i] = waypoints[i].rotation();
+    knots_translation[i] = waypoints[i].translation();
+  }
+  const PiecewiseQuaternionSlerp<double> rotation(times, knots_rotation);
+
+  // Starting with a piecewise-linear estimate of spline segment lengths, make
+  // a loop that refines the segment lengths based on the constructed spline,
+  // iterating until a tolerance is met.
+  std::vector<Eigen::MatrixXd> linear_velocities(times.size());
+  for (int i{0}; i < static_cast<int>(times.size()); i++) {
+    const Eigen::Matrix3d rotation_matrix =
+        math::RotationMatrix<double>(knots_rotation[i]).matrix();
+    // Represent forward speed in frame A as velocity in frame W.
+    linear_velocities[i] = rotation_matrix * Eigen::Vector3d{speeds[i], 0., 0.};
+  }
+  const PiecewisePolynomial<double> translation =
+      PiecewisePolynomial<double>::Cubic(times, knots_translation,
+                                         linear_velocities);
+
+  return AgentTrajectory(translation, rotation);
+}
+
+AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
+    const std::vector<Eigen::Isometry3d>& waypoints, double speed) {
+  DRAKE_THROW_UNLESS(speed > 0.);
+  std::vector<double> speeds(waypoints.size());
+  std::fill(speeds.begin(), speeds.end(), speed);
+  return MakeCubicFromWaypoints(waypoints, speeds);
 }
 
 AgentTrajectory::AgentTrajectory(
