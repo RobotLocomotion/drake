@@ -452,7 +452,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     VectorX<T>* q_prime) const {
   DRAKE_DEMAND(q_prime);
 
-  const int kArtificial = M.rows();  // Artificial variable index.
+  const int kArtificial = M.rows();
   DRAKE_DEMAND(driving_index >= 0 && driving_index <= kArtificial);
 
   // Verify that each member in the independent and dependent sets is unique.
@@ -461,10 +461,8 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 
   // If the driving index does not correspond to the artificial variable,
   // M_prime_col must be non-null.
-  if (!indep_variables_[driving_index].is_z() ||
-      indep_variables_[driving_index].index() != kArtificial) {
+  if (!IsArtificial(indep_variables_[driving_index]))
     DRAKE_DEMAND(M_prime_col);
-  }
 
   // Determine the sets.
   DetermineIndexSets();
@@ -592,8 +590,7 @@ int UnrevisedLemkeSolver<T>::FindComplementIndex(
     const LCPVariable& query,
     const std::vector<LCPVariable>& indep_variables) const {
   // Verify that the query is not the artificial variable.
-  const int kArtificial = static_cast<int>(indep_variables.size() - 1);
-  DRAKE_DEMAND(!(query.is_z() && query.index() == kArtificial));
+  DRAKE_DEMAND(!IsArtificial(query));
 
   const auto iter = indep_variables_indices_.find(query.Complement());
   DRAKE_DEMAND(iter != indep_variables_indices_.end());
@@ -788,10 +785,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     int zn_index = -1;
     for (int i = 0;
          i < static_cast<int>(indep_variables_.size()) && zn_index < 0; ++i) {
-      if (indep_variables_[i].is_z() &&
-          indep_variables_[i].index() == kArtificial) {
+      if (IsArtificial(indep_variables_[i]))
         zn_index = i;
-      }
     }
 
     if (zn_index >= 0) {
