@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 
-#include <sstream>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
 
@@ -20,23 +21,19 @@ template <typename T>
 void CoulombFriction<T>::ThrowForBadFriction(const T& static_friction,
                                              const T& dynamic_friction) {
   using std::runtime_error;
-  using std::stringstream;
   if (dynamic_friction < 0) {
-    stringstream stream;
-    stream << "The given dynamic friction is negative: "  << dynamic_friction;
-    throw runtime_error(stream.str());
+    throw runtime_error(fmt::format(
+        "The given dynamic friction is negative: {}", dynamic_friction));
   }
   if (static_friction < 0) {
-    stringstream stream;
-    stream << "The given static friction is negative: " << static_friction;
-    throw runtime_error(stream.str());
+    throw runtime_error(fmt::format(
+        "The given static friction is negative: {}", static_friction));
   }
   if (dynamic_friction > static_friction) {
-    stringstream stream;
-    stream << "The given dynamic friction (" << dynamic_friction <<
-           ") is greater than the given static friction (" << static_friction <<
-           "); dynamic friction must be less than or equal to static friction.";
-    throw runtime_error(stream.str());
+    throw runtime_error(fmt::format(
+        "The given dynamic friction ({}) is greater than the given static "
+        "friction ({}); dynamic friction must be less than or equal to static "
+        "friction.", dynamic_friction, static_friction));
   }
 }
 
