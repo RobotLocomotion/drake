@@ -57,6 +57,18 @@ drake_cc_vector_gen_translator_library(
 )
 
 drake_cc_library(
+    name = "agent_trajectory",
+    srcs = ["agent_trajectory.cc"],
+    hdrs = ["agent_trajectory.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_quaternion",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/math:spatial_velocity",
+    ],
+)
+
+drake_cc_library(
     name = "bicycle_car",
     srcs = ["bicycle_car.cc"],
     hdrs = ["bicycle_car.h"],
@@ -495,6 +507,15 @@ drake_cc_library(
     deps = [
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "agent_trajectory_test",
+    deps = [
+        "//automotive:agent_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework/test_utilities",
     ],
 )
 
