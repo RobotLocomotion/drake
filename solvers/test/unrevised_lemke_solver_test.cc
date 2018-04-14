@@ -806,7 +806,7 @@ TEST_F(UnrevisedLemkePrivateTests, FindComplementIndex) {
 
   // Since the indices of the LCP variables from SetUp()
   // correspond to their array indices, verification is straightforward.
-  EXPECT_EQ(lcp_.FindComplementIndex(query, lcp_.indep_variables_), 1);
+  EXPECT_EQ(lcp_.FindComplementIndex(query), 1);
 }
 
 TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndex) {

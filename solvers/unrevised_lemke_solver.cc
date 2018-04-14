@@ -587,8 +587,7 @@ bool UnrevisedLemkeSolver<T>::IsArtificial(const LCPVariable& v) const {
 // variable (it never should be).
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
-    const LCPVariable& query,
-    const std::vector<LCPVariable>& indep_variables) const {
+    const LCPVariable& query) const {
   // Verify that the query is not the artificial variable.
   DRAKE_DEMAND(!IsArtificial(query));
 
@@ -917,7 +916,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
         driving_index;
 
     // Make the driving variable the complement of the blocking variable.
-    driving_index = FindComplementIndex(blocking, indep_variables_);
+    driving_index = FindComplementIndex(blocking);
 
     DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
         to_string(indep_variables_));
