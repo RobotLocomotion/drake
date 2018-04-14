@@ -84,6 +84,12 @@ drake_pybind_library(
     py_deps = [":module_py"],
 )
 
+drake_cc_library(
+    name = "numpy_dtypes_pybind",
+    hdrs = ["numpy_dtypes_pybind.h"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",

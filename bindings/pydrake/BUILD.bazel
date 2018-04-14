@@ -60,6 +60,7 @@ drake_pybind_library(
     name = "autodiffutils_py",
     cc_deps = [
         ":autodiff_types_pybind",
+        "//bindings/pydrake/util:numpy_dtypes_pybind",
         "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
@@ -210,7 +211,6 @@ drake_py_library(
     srcs = ["test/algebra_test_util.py"],
 )
 
-# Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "autodiffutils_test_util_py",
     testonly = 1,
