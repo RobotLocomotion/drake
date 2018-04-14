@@ -81,5 +81,31 @@ auto WrapCallbacks(Func&& func) {
   return WrapFunction<detail::wrap_callback, false>(std::forward<Func>(func));
 }
 
+/// Mirror ufunc loop definitions from NumPy to `math`
+template <typename PyClass>
+class UfuncMirrorDef {
+ public:
+  UfuncMirrorDef(PyClass* cls, py::module math)
+    : cls_(cls), math_(math) {}
+
+  template <typename Func>
+  UfuncMirrorDef& def_loop(
+      const char* cls_name, const char* math_name, const Func& func) {
+    cls_->def_loop(cls_name, func);
+    math_.def(math_name, func);
+    return *this;
+  }
+
+  template <typename Func>
+  UfuncMirrorDef& def_loop(
+      const char* name, const Func& func) {
+    return def_loop(name, name, func);
+  }
+
+ private:
+  PyClass* const cls_{};
+  py::module math_;
+};
+
 }  // namespace pydrake
 }  // namespace drake

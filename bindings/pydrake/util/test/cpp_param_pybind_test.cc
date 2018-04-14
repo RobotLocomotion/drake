@@ -9,9 +9,22 @@
 #include <gtest/gtest.h>
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"
+#include "pybind11/numpy_dtypes_user.h"
 #include "pybind11/pybind11.h"
 
 using std::string;
+
+namespace drake {
+namespace pydrake {
+
+class CustomDType {
+  int value{};
+};
+
+}  // namespace pydrake
+}  // namespace drake
+
+PYBIND11_NUMPY_DTYPE_USER(drake::pydrake::CustomDType);
 
 namespace drake {
 namespace pydrake {
@@ -56,6 +69,8 @@ GTEST_TEST(CppParamTest, CustomTypes) {
   EXPECT_THROW(
       CheckPyParam<CustomCppTypeUnregistered>("CustomCppTypeUnregistered"),
       std::runtime_error);
+  // Test numpy dtype.
+  ASSERT_TRUE(CheckPyParam<CustomDType>("CustomDType,"));
 }
 
 template <typename T, T Value>
@@ -85,6 +100,15 @@ int main(int argc, char** argv) {
 
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
+
+  // Define custom dtype.
+  py::dtype_user<CustomDType>(m, "CustomDType")
+    .def("__str__", [](const CustomDType*) {
+      return py::str("<CustomDType>");
+    })
+    .def("__repr__", [](const CustomDType*) {
+      return py::str("<CustomDType>");
+    });
 
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
