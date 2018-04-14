@@ -128,6 +128,7 @@ drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
         ":symbolic_types_pybind",
+        "//bindings/pydrake/util:numpy_dtypes_pybind",
         "//bindings/pydrake/util:wrap_pybind",
         "@fmt",
     ],

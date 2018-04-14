@@ -6,6 +6,7 @@ import unittest
 
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
+from pydrake.symbolic import Expression
 from pydrake.systems.primitives import LinearSystem
 from pydrake.systems.trajectory_optimization import (
     AddDirectCollocationConstraint, DirectCollocation,
@@ -27,18 +28,19 @@ class TestTrajectoryOptimization(unittest.TestCase):
         t = dircol.time()
         dt = dircol.timestep(0)
         x = dircol.state()
+        xe = x.astype(Expression)
         x2 = dircol.state(2)
         x0 = dircol.initial_state()
         xf = dircol.final_state()
         u = dircol.input()
         u2 = dircol.input(2)
 
-        dircol.AddRunningCost(x.dot(x))
+        dircol.AddRunningCost(xe.dot(xe))
         dircol.AddConstraintToAllKnotPoints(u[0] == 0)
         dircol.AddTimeIntervalBounds(0.3, 0.4)
         dircol.AddEqualTimeIntervalsConstraints()
         dircol.AddDurationBounds(.3*21, 0.4*21)
-        dircol.AddFinalCost(2*x.dot(x))
+        dircol.AddFinalCost(2*xe.dot(xe))
 
         initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
                                                       np.zeros((1, 2)))
@@ -90,15 +92,16 @@ class TestTrajectoryOptimization(unittest.TestCase):
         t = dirtran.time()
         dt = dirtran.fixed_timestep()
         x = dirtran.state()
+        xe = x.astype(Expression)
         x2 = dirtran.state(2)
         x0 = dirtran.initial_state()
         xf = dirtran.final_state()
         u = dirtran.input()
         u2 = dirtran.input(2)
 
-        dirtran.AddRunningCost(x.dot(x))
+        dirtran.AddRunningCost(xe.dot(xe))
         dirtran.AddConstraintToAllKnotPoints(u[0] == 0)
-        dirtran.AddFinalCost(2*x.dot(x))
+        dirtran.AddFinalCost(2*xe.dot(xe))
 
         initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
                                                       np.zeros((1, 2)))

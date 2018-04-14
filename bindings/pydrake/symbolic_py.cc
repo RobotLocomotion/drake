@@ -4,12 +4,14 @@
 #include "fmt/format.h"
 #include "fmt/ostream.h"
 #include "pybind11/eigen.h"
+#include "pybind11/eval.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/numpy_dtypes_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
 
 namespace drake {
@@ -37,7 +39,12 @@ PYBIND11_MODULE(_symbolic_py, m) {
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
 
-  py::class_<Variable>(m, "Variable")
+  // Predeclare all custom dtypes.
+  py::dtype_user<Variable> var_cls(m, "Variable");
+  py::dtype_user<Expression> expr_cls(m, "Expression");
+  py::dtype_user<Formula> formula_cls(m, "Formula");
+
+  var_cls
       .def(py::init<const string&>())
       .def("get_id", &Variable::get_id)
       .def("__str__", &Variable::to_string)
@@ -49,69 +56,77 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Variable& self) { return std::hash<Variable>{}(self); })
       .def("__copy__", [](const Variable& self) -> Variable { return self; })
       // Addition.
-      .def(py::self + py::self)
-      .def(py::self + double())
-      .def(double() + py::self)
+      .def_loop(py::self + py::self)
+      .def_loop(py::self + double())
+      .def_loop(double() + py::self)
       // Subtraction.
-      .def(py::self - py::self)
-      .def(py::self - double())
-      .def(double() - py::self)
+      .def_loop(py::self - py::self)
+      .def_loop(py::self - double())
+      .def_loop(double() - py::self)
       // Multiplication.
-      .def(py::self * py::self)
-      .def(py::self * double())
-      .def(double() * py::self)
+      .def_loop(py::self * py::self)
+      .def_loop(py::self * double())
+      .def_loop(double() * py::self)
       // Division.
-      .def(py::self / py::self)
-      .def(py::self / double())
-      .def(double() / py::self)
+      .def_loop(py::self / py::self)
+      .def_loop(py::self / double())
+      .def_loop(double() / py::self)
+      // N.B. Since arithmetic is not closed for `Variable`, we cannot define
+      // `dot` for NumPy since it expects a closed operation.
+      // TODO(eric.cousineau): See if `dot` can be defined at some point.
       // Pow.
-      .def("__pow__",
-           [](const Variable& self, double other) { return pow(self, other); },
-           py::is_operator())
-      .def("__pow__",
+      .def_loop("__pow__",
+           [](const Variable& self, double other) { return pow(self, other); })
+      .def_loop("__pow__",
            [](const Variable& self, const Variable& other) {
              return pow(self, other);
-           },
-           py::is_operator())
-      .def("__pow__",
+           })
+      .def_loop("__pow__",
            [](const Variable& self, const Expression& other) {
              return pow(self, other);
-           },
-           py::is_operator())
+           })
+      // See comment about `np.square` in AutoDiff<> bindings.
+      .def_loop("square", [](const Variable& self) {
+        return self * self;
+      })
       // We add `EqualTo` instead of `equal_to` to maintain consistency among
       // symbolic classes (Variable, Expression, Formula, Polynomial) on Python
       // side. This enables us to achieve polymorphism via ducktyping in Python.
       .def("EqualTo", &Variable::equal_to)
       // Unary Plus.
-      .def(+py::self)
+      .def(+py::self)  // Not present in NumPy?
       // Unary Minus.
-      .def(-py::self)
+      .def_loop(-py::self)
       // LT(<).
-      // Note that for `double < Variable` case, the reflected op ('>' in this
-      // case) is called. For example, `1 < x` will return `x > 1`.
-      .def(py::self < Expression())
-      .def(py::self < py::self)
-      .def(py::self < double())
+      // Note that while pybind reflects `double < Variable`, NumPy UFunc loops
+      // require both orders to be explicitly specified.
+      .def_loop(py::self < Expression())
+      .def_loop(py::self < py::self)
+      .def_loop(py::self < double())
+      .def_loop(double() < py::self, py::dtype_method::ufunc_only())
       // LE(<=).
-      .def(py::self <= Expression())
-      .def(py::self <= py::self)
-      .def(py::self <= double())
+      .def_loop(py::self <= Expression())
+      .def_loop(py::self <= py::self)
+      .def_loop(py::self <= double())
+      .def_loop(double() <= py::self, py::dtype_method::ufunc_only())
       // GT(>).
-      .def(py::self > Expression())
-      .def(py::self > py::self)
-      .def(py::self > double())
+      .def_loop(py::self > Expression())
+      .def_loop(py::self > py::self)
+      .def_loop(py::self > double())
+      .def_loop(double() > py::self, py::dtype_method::ufunc_only())
       // GE(>=).
-      .def(py::self >= Expression())
-      .def(py::self >= py::self)
-      .def(py::self >= double())
+      .def_loop(py::self >= Expression())
+      .def_loop(py::self >= py::self)
+      .def_loop(py::self >= double())
+      .def_loop(double() >= py::self, py::dtype_method::ufunc_only())
       // EQ(==).
-      .def(py::self == Expression())
-      .def(py::self == py::self)
-      .def(py::self == double())
+      .def_loop(py::self == Expression())
+      .def_loop(py::self == py::self)
+      .def_loop(py::self == double())
       // NE(!=).
-      .def(py::self != Expression())
-      .def(py::self != py::self)
-      .def(py::self != double());
+      .def_loop(py::self != Expression())
+      .def_loop(py::self != py::self)
+      .def_loop(py::self != double());
 
   py::class_<Variables>(m, "Variables")
       .def(py::init<>())
@@ -161,10 +176,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
     return intersect(vars1, vars2);
   });
 
-  py::class_<Expression>(m, "Expression")
+  DefImplicitConversionsFromNumericTypes(&expr_cls);
+  expr_cls
       .def(py::init<>())
       .def(py::init<double>())
       .def(py::init<const Variable&>())
+      // Casting
+      .def_loop(py::dtype_method::implicit_conversion<Variable, Expression>())
+      // Methods
       .def("__str__", &Expression::to_string)
       .def("__repr__",
            [](const Expression& self) {
@@ -190,128 +209,155 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Expression& self, const Substitution& s) {
              return self.Substitute(s);
            })
-      .def("EqualTo", &Expression::EqualTo)
       // Addition
-      .def(py::self + py::self)
-      .def(py::self + Variable())
-      .def(py::self + double())
-      .def(Variable() + py::self)
-      .def(double() + py::self)
+      .def_loop(py::self + py::self)
+      .def_loop(py::self + Variable())
+      .def_loop(py::self + double())
+      .def_loop(Variable() + py::self)
+      .def_loop(double() + py::self)
       .def(py::self += py::self)
       .def(py::self += Variable())
       .def(py::self += double())
       // Subtraction.
-      .def(py::self - py::self)
-      .def(py::self - Variable())
-      .def(py::self - double())
-      .def(Variable() - py::self)
-      .def(double() - py::self)
+      .def_loop(py::self - py::self)
+      .def_loop(py::self - Variable())
+      .def_loop(py::self - double())
+      .def_loop(Variable() - py::self)
+      .def_loop(double() - py::self)
       .def(py::self -= py::self)
       .def(py::self -= Variable())
       .def(py::self -= double())
       // Multiplication.
-      .def(py::self * py::self)
-      .def(py::self * Variable())
-      .def(py::self * double())
-      .def(Variable() * py::self)
-      .def(double() * py::self)
+      .def_loop(py::self * py::self)
+      .def_loop(py::self * Variable())
+      .def_loop(py::self * double())
+      .def_loop(Variable() * py::self)
+      .def_loop(double() * py::self)
       .def(py::self *= py::self)
       .def(py::self *= Variable())
       .def(py::self *= double())
       // Division.
-      .def(py::self / py::self)
-      .def(py::self / Variable())
-      .def(py::self / double())
-      .def(Variable() / py::self)
-      .def(double() / py::self)
+      .def_loop(py::self / py::self)
+      .def_loop(py::self / Variable())
+      .def_loop(py::self / double())
+      .def_loop(Variable() / py::self)
+      .def_loop(double() / py::self)
       .def(py::self /= py::self)
       .def(py::self /= Variable())
       .def(py::self /= double())
-      // Pow.
-      .def("__pow__", [](const Expression& self,
-                         const double other) { return pow(self, other); })
-      .def("__pow__", [](const Expression& self,
-                         const Variable& other) { return pow(self, other); })
-      .def("__pow__", [](const Expression& self,
-                         const Expression& other) { return pow(self, other); })
+      // Dot-product.
+      .def_loop(py::dtype_method::dot())
       // Unary Plus.
-      .def(+py::self)
+      .def(+py::self)  // Not present in NumPy?
       // Unary Minus.
-      .def(-py::self)
+      .def_loop(-py::self)
       // LT(<).
-      //
-      // Note that for `double < Expression` case, the reflected op ('>' in this
-      // case) is called. For example, `1 < x * y` will return `x * y > 1`.
-      .def(py::self < py::self)
-      .def(py::self < Variable())
-      .def(py::self < double())
+      // See notes for `Variable` about reversible operations.
+      .def_loop(py::self < py::self)
+      .def_loop(py::self < Variable())
+      .def_loop(py::self < double())
+      .def_loop(double() < py::self, py::dtype_method::ufunc_only())
       // LE(<=).
-      .def(py::self <= py::self)
-      .def(py::self <= Variable())
-      .def(py::self <= double())
+      .def_loop(py::self <= py::self)
+      .def_loop(py::self <= Variable())
+      .def_loop(py::self <= double())
+      .def_loop(double() <= py::self, py::dtype_method::ufunc_only())
       // GT(>).
-      .def(py::self > py::self)
-      .def(py::self > Variable())
-      .def(py::self > double())
+      .def_loop(py::self > py::self)
+      .def_loop(py::self > Variable())
+      .def_loop(py::self > double())
+      .def_loop(double() > py::self, py::dtype_method::ufunc_only())
       // GE(>=).
-      .def(py::self >= py::self)
-      .def(py::self >= Variable())
-      .def(py::self >= double())
+      .def_loop(py::self >= py::self)
+      .def_loop(py::self >= Variable())
+      .def_loop(py::self >= double())
+      .def_loop(double() >= py::self, py::dtype_method::ufunc_only())
       // EQ(==).
-      .def(py::self == py::self)
-      .def(py::self == Variable())
-      .def(py::self == double())
+      .def_loop(py::self == py::self)
+      .def_loop(py::self == Variable())
+      .def_loop(py::self == double())
       // NE(!=)
-      .def(py::self != py::self)
-      .def(py::self != Variable())
-      .def(py::self != double())
+      .def_loop(py::self != py::self)
+      .def_loop(py::self != Variable())
+      .def_loop(py::self != double())
+      // See comment about `np.square` in AutoDiff<> bindings.
+      .def_loop("square", [](const Expression& self) {
+        return self * self;
+      })
       .def("Differentiate", &Expression::Differentiate)
-      .def("Jacobian", &Expression::Jacobian)
+      .def("Jacobian", &Expression::Jacobian);
+
+  // Define a `self` method and a ufunc flavor of certain methods.
+  // TODO(eric.cousineau): Figure out how to make this play well with `self`
+  // overloads. Bind the ufunc as a method?
+  // TODO(eric.cousineau): Consider defining a general `equal_to` method, with
+  // overloads for other types.
+  expr_cls.def("EqualTo", &Expression::EqualTo);
+  py::ufunc(expr_cls, "equal_to").def_loop<Expression>(&Expression::EqualTo);
+
+  // TODO(eric.cousineau): Consider deprecating the aliases in `math`?
+  auto math = py::module::import("pydrake.math");
+  UfuncMirrorDef<decltype(expr_cls)>(&expr_cls, math)
       // TODO(eric.cousineau): Figure out how to consolidate with the below
       // methods.
-      .def("log", &symbolic::log)
-      .def("__abs__", &symbolic::abs)
-      .def("exp", &symbolic::exp)
-      .def("sqrt", &symbolic::sqrt)
+      // Pow.
+      .def_loop("__pow__", "pow", [](const Expression& self,
+                         const double other) { return pow(self, other); })
+      .def_loop("__pow__", "pow", [](const Expression& self,
+                         const Variable& other) { return pow(self, other); })
+      .def_loop("__pow__", "pow", [](const Expression& self,
+                         const Expression& other) { return pow(self, other); })
+      .def_loop("log", &symbolic::log)
+      .def_loop("__abs__", "abs", &symbolic::abs)
+      .def_loop("exp", &symbolic::exp)
+      .def_loop("sqrt", &symbolic::sqrt)
       // TODO(eric.cousineau): Move `__pow__` here.
-      .def("sin", &symbolic::sin)
-      .def("cos", &symbolic::cos)
-      .def("tan", &symbolic::tan)
-      .def("arcsin", &symbolic::asin)
-      .def("arccos", &symbolic::acos)
-      .def("arctan2", &symbolic::atan2)
-      .def("sinh", &symbolic::sinh)
-      .def("cosh", &symbolic::cosh)
-      .def("tanh", &symbolic::tanh)
-      .def("min", &symbolic::min)
-      .def("max", &symbolic::max)
-      .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor);
+      .def_loop("sin", &symbolic::sin)
+      .def_loop("cos", &symbolic::cos)
+      .def_loop("tan", &symbolic::tan)
+      .def_loop("arcsin", "asin", &symbolic::asin)
+      .def_loop("arccos", "acos", &symbolic::acos)
+      .def_loop("arctan2", "atan2", &symbolic::atan2)
+      .def_loop("sinh", &symbolic::sinh)
+      .def_loop("cosh", &symbolic::cosh)
+      .def_loop("tanh", &symbolic::tanh)
+      .def_loop("fmin", "min", &symbolic::min)
+      .def_loop("fmax", "max", &symbolic::max)
+      .def_loop("ceil", &symbolic::ceil)
+      .def_loop("floor", &symbolic::floor);
 
-  // TODO(eric.cousineau): Consider deprecating these methods?
-  auto math = py::module::import("pydrake.math");
-  MirrorDef<py::module, py::module>(&math, &m)
-      .def("log", &symbolic::log)
-      .def("abs", &symbolic::abs)
-      .def("exp", &symbolic::exp)
-      .def("sqrt", &symbolic::sqrt)
-      .def("pow", py::overload_cast<const Expression&, const Expression&>(
-                      &symbolic::pow))
-      .def("sin", &symbolic::sin)
-      .def("cos", &symbolic::cos)
-      .def("tan", &symbolic::tan)
-      .def("asin", &symbolic::asin)
-      .def("acos", &symbolic::acos)
-      .def("atan", &symbolic::atan)
-      .def("atan2", &symbolic::atan2)
-      .def("sinh", &symbolic::sinh)
-      .def("cosh", &symbolic::cosh)
-      .def("tanh", &symbolic::tanh)
-      .def("min", &symbolic::min)
-      .def("max", &symbolic::max)
-      .def("ceil", &symbolic::ceil)
-      .def("floor", &symbolic::floor);
+  MirrorDef<decltype(expr_cls), py::module>(&expr_cls, &math)
+      .def("atan", &symbolic::atan);
 
+  // Import aliases.
+  // TODO(eric.cousineau): Deprecate, then remove these in lieu of `np.{func}`
+  py::exec(R"""(
+from pydrake.math import (
+    log,
+    abs,
+    exp,
+    pow,
+    sqrt,
+    sin,
+    cos,
+    tan,
+    asin,
+    acos,
+    atan,
+    atan2,
+    sinh,
+    cosh,
+    tanh,
+    min,
+    max,
+    ceil,
+    floor
+)
+)""");
+
+  m.def("if_then_else", [](bool cond, double true_value, double false_value) {
+    return cond ? true_value : false_value;
+  });
   m.def("if_then_else", &symbolic::if_then_else);
 
   m.def("Jacobian", [](const Eigen::Ref<const VectorX<Expression>>& f,
@@ -319,7 +365,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
     return Jacobian(f, vars);
   });
 
-  py::class_<Formula>(m, "Formula")
+  formula_cls
       .def("GetFreeVariables", &Formula::GetFreeVariables)
       .def("EqualTo", &Formula::EqualTo)
       .def("Evaluate",
@@ -346,12 +392,20 @@ PYBIND11_MODULE(_symbolic_py, m) {
            [](const Formula& self) {
              return fmt::format("<Formula \"{}\">", self.to_string());
            })
-      .def("__eq__", [](const Formula& self,
+      .def_loop("__eq__", [](const Formula& self,
                         const Formula& other) { return self.EqualTo(other); })
       .def("__ne__", [](const Formula& self,
                         const Formula& other) { return !self.EqualTo(other); })
       .def("__hash__",
            [](const Formula& self) { return std::hash<Formula>{}(self); })
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__nonzero__` on `Formula`. If you are trying "
+            "to make a map with `Variable`, `Expression`, or `Polynomial` as "
+            "keys and access the keys, please use "
+            "`pydrake.util.containers.EqualToDict`.");
+      });
+  formula_cls.cls()
       .def_static("True", &Formula::True)
       .def_static("False", &Formula::False)
       .def("__nonzero__", [](const Formula&) {
@@ -474,13 +528,6 @@ PYBIND11_MODULE(_symbolic_py, m) {
         return p.Jacobian(vars);
       });
 
-  // We have this line because pybind11 does not permit transitive
-  // conversions. See
-  // https://github.com/pybind/pybind11/blob/289e5d9cc2a4545d832d3c7fb50066476bce3c1d/include/pybind11/pybind11.h#L1629.
-  py::implicitly_convertible<int, drake::symbolic::Expression>();
-  py::implicitly_convertible<double, drake::symbolic::Expression>();
-  py::implicitly_convertible<drake::symbolic::Variable,
-                             drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Monomial,
                              drake::symbolic::Polynomial>();
 }
