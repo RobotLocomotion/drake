@@ -93,6 +93,12 @@ GTEST_TEST(TestUnrevisedLemke, TestSimple) {
 // Lemke implementations without the necessary special-case code can terminate
 // on an unblocked variable (i.e., fail to find the solution when one is known
 // to exist).
+// NOTE: This is a necessary but not sufficient test that the special-case code
+// is working. This test failed before the special-case code was added, but it's
+// possible that the test could succeed using other strategies for selecting
+// one of multiple valid blocking indices. For example, Miranda and Fackler's
+// Lemke solver uses a random blocking variable selection when multiple are
+// possible.
 GTEST_TEST(TestUnrevisedLemke, TestPSD) {
   MatrixX<double> M(2, 2);
   M << 1, -1,
