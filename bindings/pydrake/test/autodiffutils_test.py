@@ -16,6 +16,8 @@ from pydrake.test.autodiffutils_test_util import (
     autodiff_scalar_pass_through,
     autodiff_vector_pass_through,
     autodiff_vector3_pass_through,
+    AutoDiffContainer,
+    autodiff_increment,
 )
 
 # Use convenience abbreviation.
@@ -40,7 +42,7 @@ class TestAutoDiffXd(unittest.TestCase):
         expected = np.array(expected)
         self.assertEqual(actual.dtype, expected.dtype)
         self.assertEqual(actual.shape, expected.shape)
-        if actual.dtype == object:
+        if actual.dtype == object or actual.dtype == AD:
             for a, b in zip(actual.flat, expected.flat):
                 self._check_scalar(a, b)
         else:
@@ -76,23 +78,51 @@ class TestAutoDiffXd(unittest.TestCase):
         a = AD(1, [1., 0])
         b = AD(2, [0, 1.])
         x = np.array([a, b])
-        self.assertEqual(x.dtype, object)
+        self.assertEqual(x.dtype, AD)
         # Idempotent check.
         self._check_array(x, x)
-        # Conversion.
+
+    def test_array_casting(self):
+        a = AD(1, [1., 0])
+        b = AD(2, [0, 1.])
+        x = np.array([a, b])
+        # Explicit casting using `astype`.
+        xf = x.astype(dtype=np.float)
+        self._check_array(xf, [1., 2])
+        x0 = np.zeros((3, 3), dtype=AD)
+        self.assertTrue(isinstance(x0[0, 0], AD))
+        xI = np.eye(3).astype(AD)
+        self.assertTrue(isinstance(xI[0, 0], AD))
+
+        # Promotion (upcasting? downcasting?) is implicitly castable.
+        x[0] = 0
+        x[0] = 0.
+        x[0] = False
+        # Assign via slicing with implicit casting.
+        # N.B. This requires numpy/numpy#11076.
+        x[:] = 0
+        x[:] = 0.
+        x[:] = False
+
+        # Assigning via slicing is an explicit cast.
+        xf = np.zeros(2, dtype=np.float)
+        xf[:] = x
+        # Assigning via an element is an implicit cast.
         with self.assertRaises(TypeError):
-            # Avoid implicit coercion, as this will imply information loss.
-            xf = np.zeros(2, dtype=np.float)
-            xf[:] = x
+            xf[0] = x[0]
+        # Try `int`; we do not have an explicit caster registered.
+        xi = np.zeros(2, dtype=np.int)
+        with self.assertRaises(ValueError):
+            xi[:] = x
+        # TODO(eric.cousineau): Fix this.
         with self.assertRaises(TypeError):
-            # We could define `__float__` to allow this, but then that will
-            # enable implicit coercion, which we should avoid.
-            xf = x.astype(dtype=np.float)
-        # Presently, does not convert.
+            xi[0] = x[0]
+        # Converts.
         x = np.zeros((3, 3), dtype=AD)
-        self.assertFalse(isinstance(x[0, 0], AD))
+        self.assertTrue(isinstance(x[0, 0], AD))
         x = np.eye(3).astype(AD)
-        self.assertFalse(isinstance(x[0, 0], AD))
+        self.assertTrue(isinstance(x[0, 0], AD))
+
         # Test implicit conversion.
         self._check_array(
             autodiff_vector_pass_through([1, 2]),  # int
@@ -156,20 +186,8 @@ class TestAutoDiffXd(unittest.TestCase):
         algebra.check_value(algebra.tanh(c), AD(0, [1, 0]))
         algebra.check_value(algebra.min(a, b), a_scalar)
         algebra.check_value(algebra.max(a, b), b_scalar)
-        # Because `ceil` and `floor` return `double`, we have to special case
-        # this comparison since the matrix is `dtype=object`, even though the
-        # elements are all doubles. We must cast it to float.
-        # N.B. This would be fixed if we registered a UFunc for these
-        # methods, so NumPy would have already returned a `float` array.
-        ceil_a = algebra.ceil(a)
-        floor_a = algebra.floor(a)
-        if isinstance(algebra, VectorizedAlgebra):
-            self.assertEqual(ceil_a.dtype, object)
-            self.assertIsInstance(ceil_a[0], float)
-            ceil_a = ceil_a.astype(float)
-            floor_a = floor_a.astype(float)
-        algebra.check_value(ceil_a, a_scalar.value())
-        algebra.check_value(floor_a, a_scalar.value())
+        algebra.check_value(algebra.ceil(a), a_scalar.value())
+        algebra.check_value(algebra.floor(a), a_scalar.value())
         # Return value so it can be inspected.
         return a
 
@@ -221,3 +239,17 @@ class TestAutoDiffXd(unittest.TestCase):
         Xinv_float = np.linalg.inv(X_float)
         Xinv = drake_math.inv(X)
         np.testing.assert_equal(to_value(Xinv), Xinv_float)
+
+    def test_array_reference(self):
+        # Test referencing from Python to C++.
+        x = np.array([
+            AD(1, [1., 0]),
+            AD(2, [0, 1.])])
+        autodiff_increment(x)
+        self._check_array(x, [AD(2, [1., 0]), AD(3, [0, 1.])])
+        # Test referencing from C++ to Python.
+        c = AutoDiffContainer()
+        self._check_array(c.value(), [[AD(10, [1., 0]), AD(100, [0, 1.])]])
+        xc = c.value()
+        xc *= 2
+        self._check_array(c.value(), [[AD(20, [2., 0]), AD(200, [0, 2.])]])

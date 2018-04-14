@@ -72,10 +72,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "function_inference",
+    hdrs = ["function_inference.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [":type_pack"],
+)
+
+drake_cc_library(
     name = "wrap_function",
     hdrs = ["wrap_function.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = [":function_inference"],
 )
 
 drake_cc_library(
@@ -132,6 +141,14 @@ drake_pybind_library(
     py_deps = [":module_py"],
 )
 
+drake_cc_library(
+    name = "numpy_dtypes_pybind",
+    hdrs = ["numpy_dtypes_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",
@@ -141,6 +158,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":type_pack",
+        "//bindings/pybind11_ext:numpy_dtypes_user",
         "//bindings/pydrake:pydrake_pybind",
         "@pybind11",
     ],
@@ -287,6 +305,13 @@ drake_cc_googletest(
     deps = [
         ":type_pack",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "function_inference_test",
+    deps = [
+        ":function_inference",
     ],
 )
 

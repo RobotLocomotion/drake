@@ -12,6 +12,9 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_copyable.h"
 
+// TODO(eric.cousineau): Figure out how to make this automatically hidden.
+#pragma GCC visibility push(hidden)
+
 namespace drake {
 namespace pydrake {
 
@@ -66,6 +69,10 @@ template <typename Signature>
 struct wrap_callback<std::function<Signature>>
     : public wrap_callback<const std::function<Signature>&> {};
 
+struct greedy_arg_no_check {
+    static bool run(py::handle) { return true; }
+};
+
 }  // namespace detail
 
 /// Ensures that any `std::function<>` arguments are wrapped such that any `T&`
@@ -100,5 +107,72 @@ void DefReadWriteKeepAlive(PyClass* cls, const char* name, T Class::*member) {
           py::keep_alive<1, 2>()));
 }
 
+/// Mirror ufunc loop definitions from NumPy to `math`
+template <typename PyClass>
+class UfuncMirrorDef {
+ public:
+  UfuncMirrorDef(PyClass* cls, py::module math)
+    : cls_(cls), math_(math) {}
+
+  template <typename Func>
+  UfuncMirrorDef& def_loop(
+      const char* cls_name, const char* math_name, const Func& func) {
+    cls_->def_loop(cls_name, func);
+    math_.def(math_name, func);
+    return *this;
+  }
+
+  template <typename Func>
+  UfuncMirrorDef& def_loop(
+      const char* name, const Func& func) {
+    return def_loop(name, name, func);
+  }
+
+ private:
+  PyClass* const cls_{};
+  py::module math_;
+};
+
+/// Provides a mechanism to have an argument immediately attempt conversion,
+/// even during the "no converion" pass during function dispatch, with an
+/// additional check to prevent it from being *too* greedy.
+/// This should be used if you are overloading a function with both an array
+/// *and* scalar, as NumPy arrays can sometimes be interperted as scalars, and
+/// due to possible conversions, the wrong overload may be selected.
+/// For more information, see https://github.com/pybind/pybind11/issues/1392
+/// This solution comes from the posted workaround.
+template <typename T, typename Check = detail::greedy_arg_no_check>
+class greedy_arg {
+ public:
+  // NOLINTNEXTLINE[runtime/explicit]: This is desirable.
+  greedy_arg(T&& value) : value_(std::move(value)) {}
+  // TODO(eric.cousineau): Figure out how to handle referencing properly.
+  T&& operator*() {
+    return std::move(value_);
+  }
+ private:
+  T value_;
+};
+
 }  // namespace pydrake
 }  // namespace drake
+
+namespace pybind11 {
+namespace detail {
+
+template <typename T, typename Check>
+struct type_caster<drake::pydrake::greedy_arg<T, Check>> : type_caster<T> {
+  using base = type_caster<T>;
+  bool load(handle src, bool /*convert*/) {
+    if (!Check::run(src))
+      return false;
+    return base::load(src, true);
+  }
+  template <typename>
+  using cast_op_type = T&&;
+};
+
+}  // namespace detail
+}  // namespace pybind11
+
+#pragma GCC visibility pop

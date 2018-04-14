@@ -104,6 +104,9 @@ drake_cc_library(
     hdrs = ["autodiff_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pybind11_ext:numpy_dtypes_user",
+    ],
 )
 
 drake_pybind_library(
@@ -111,6 +114,7 @@ drake_pybind_library(
     cc_deps = [
         ":autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:numpy_dtypes_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
@@ -204,6 +208,7 @@ drake_cc_library(
     hdrs = ["symbolic_types_pybind.h"],
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
+    deps = ["//bindings/pybind11_ext:numpy_dtypes_user"],
 )
 
 drake_pybind_library(
@@ -211,6 +216,7 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:numpy_dtypes_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["symbolic_py.cc"],
@@ -313,7 +319,6 @@ drake_py_library(
     visibility = ["//visibility:private"],
 )
 
-# Test ODR (One Definition Rule).
 drake_pybind_library(
     name = "autodiffutils_test_util_py",
     testonly = 1,

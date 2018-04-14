@@ -253,6 +253,9 @@ struct Impl {
         int input_size, int output_size, optional<bool> direct_feedthrough)
         : Base(input_size, output_size, direct_feedthrough) {}
 
+    VectorSystemPublic(SystemScalarConverter converter, int inputs, int outputs)
+        : Base(std::move(converter), inputs, outputs) {}
+
     using Base::EvalVectorInput;
     using Base::GetVectorState;
 

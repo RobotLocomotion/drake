@@ -374,6 +374,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
+        ":scalar_conversion_py",
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
     ],

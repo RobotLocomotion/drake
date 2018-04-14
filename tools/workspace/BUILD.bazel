@@ -49,6 +49,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcmtypes_robotlocomotion",
     "meshcat",
     "meshcat_python",
+    "numpy_py",
     "octomap",
     "osqp",
     "pybind11",

@@ -38,22 +38,44 @@ GTEST_TEST(TypeUtilTest, TypeAt) {
 GTEST_TEST(TypeUtilTest, TypeTags) {
   // Ensure that we can default-construct tags for types that are not
   // default-constructible.
-  auto tag_obj = type_tag<void>{};
-  EXPECT_TRUE((std::is_same<decltype(tag_obj), type_tag<void>>::value));
-  auto pack_obj_empty = type_pack<>{};
-  EXPECT_TRUE((std::is_same<decltype(pack_obj_empty), type_pack<>>::value));
-  auto pack_obj = type_pack<void, void>{};
-  EXPECT_TRUE((std::is_same<decltype(pack_obj), type_pack<void, void>>::value));
+  auto tag_check = type_tag<void>{};
+  EXPECT_TRUE((std::is_same<
+      decltype(tag_check), type_tag<void>>::value));
+  auto pack_check_empty = type_pack<>{};
+  EXPECT_TRUE((std::is_same<
+      decltype(pack_check_empty), type_pack<>>::value));
+  auto pack_check = type_pack<void, void>{};
+  EXPECT_TRUE((std::is_same<
+      decltype(pack_check), type_pack<void, void>>::value));
+}
+
+GTEST_TEST(TypeUtilTest, Concat) {
+  using A = type_pack<int, double>;
+  using B = type_pack<char, void>;
+  using AB = type_pack<int, double, char, void>;
+  EXPECT_TRUE((std::is_same<
+      decltype(type_pack_concat(A{}, B{})), AB>::value));
+}
+
+// Adds a pointer to a given type.
+template <typename T>
+using Ptr = T*;
+
+GTEST_TEST(TypeUtilTest, Apply) {
+  using A = type_pack<int, double>;
+  using B = type_pack<int*, double*>;
+  EXPECT_TRUE((std::is_same<
+      decltype(type_pack_apply<Ptr>(A{})), B>::value));
 }
 
 GTEST_TEST(TypeUtilTest, Bind) {
   using T_0 = Pack::bind<SimpleTemplate>;
-  using T_0_expected = SimpleTemplate<int, double, char, void>;
-  EXPECT_TRUE((std::is_same<T_0, T_0_expected>::value));
+  EXPECT_TRUE((std::is_same<
+      T_0, SimpleTemplate<int, double, char, void>>::value));
   Pack pack;
   using T_1 = decltype(type_bind<SimpleTemplate>(pack));
-  using T_1_expected = SimpleTemplate<int, double, char, void>;
-  EXPECT_TRUE((std::is_same<T_1, T_1_expected>::value));
+  EXPECT_TRUE((std::is_same<
+      T_1, SimpleTemplate<int, double, char, void>>::value));
 }
 
 GTEST_TEST(TypeUtilTest, Extract) {
@@ -64,11 +86,8 @@ GTEST_TEST(TypeUtilTest, Extract) {
 
 /// Example usages of `type_visit`.
 GTEST_TEST(TypeUtilTest, Visit) {
-  using PackTags = type_pack<  // BR
-      type_tag<int>,           //
-      type_tag<double>,        //
-      type_tag<char>,          //
-      type_tag<void>>;
+  using PackTags = type_pack<
+      type_tag<int>, type_tag<double>, type_tag<char>, type_tag<void>>;
   vector<string> names;
   const vector<string> names_expected = {"int", "double", "char", "void"};
 

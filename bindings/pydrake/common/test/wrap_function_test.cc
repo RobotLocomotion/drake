@@ -10,6 +10,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace {
 
 // N.B. Anonymous namespace not used as it makes failure messages
 // (static_assert) harder to interpret.
@@ -73,10 +74,10 @@ GTEST_TEST(WrapFunction, Methods) {
   EXPECT_EQ(WrapIdentity(&MyClass::MethodStatic)(value), 2);
   // Wrapped signature: int (MyClass*, int)
   auto method_mutable = WrapIdentity(&MyClass::MethodMutable);
-  EXPECT_EQ(method_mutable(&c, value), 12);
+  EXPECT_EQ(method_mutable(c, value), 12);
   // method_mutable(&c_const, value);  // Should fail.
   // Wrapped signature: int (const MyClass*, int)
-  EXPECT_EQ(WrapIdentity(&MyClass::MethodConst)(&c_const, value), 20);
+  EXPECT_EQ(WrapIdentity(&MyClass::MethodConst)(c_const, value), 20);
 }
 
 // Move-only arguments.
@@ -235,17 +236,18 @@ void check_type() {
 }
 
 // Checks signature of a generic functor.
-template <typename RetExpected, typename... ArgsExpected>
+template <typename ReturnExpected, typename... ArgsExpected>
 struct check_signature {
   template <typename FuncActual>
   static void run(const FuncActual& func) {
     run_impl(detail::infer_function_info(func));
   }
 
-  template <typename RetActual, typename... ArgsActual, typename FuncActual>
+  template <typename ReturnActual, typename... ArgsActual, typename FuncActual>
   static void run_impl(
-      const detail::function_info<FuncActual, RetActual, ArgsActual...>& info) {
-    check_type<RetActual, RetExpected>();
+      const detail::function_inference::info<
+          FuncActual, ReturnActual, ArgsActual...>& info) {
+    check_type<ReturnActual, ReturnExpected>();
     using Dummy = int[];
     (void)Dummy{(check_type<ArgsActual, ArgsExpected>(), 0)...};
   }
@@ -392,5 +394,6 @@ GTEST_TEST(WrapFunction, ChangeCallbackOnly) {
   check_expected::run(wrapped);
 }
 
+}  // namespace
 }  // namespace pydrake
 }  // namespace drake

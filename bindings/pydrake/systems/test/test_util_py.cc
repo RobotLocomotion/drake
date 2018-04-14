@@ -14,19 +14,21 @@ using std::unique_ptr;
 namespace drake {
 
 using systems::BasicVector;
+using systems::Context;
 using systems::LeafSystem;
 using systems::Simulator;
+using systems::System;
 
 namespace pydrake {
 namespace {
 
-using T = double;
+using D = double;
 
 // Informs listener when this class is deleted.
-class DeleteListenerSystem : public LeafSystem<T> {
+class DeleteListenerSystem : public LeafSystem<D> {
  public:
   explicit DeleteListenerSystem(std::function<void()> delete_callback)
-      : LeafSystem<T>(), delete_callback_(delete_callback) {}
+      : LeafSystem<D>(), delete_callback_(delete_callback) {}
 
   ~DeleteListenerSystem() override { delete_callback_(); }
 
@@ -34,10 +36,10 @@ class DeleteListenerSystem : public LeafSystem<T> {
   std::function<void()> delete_callback_;
 };
 
-class DeleteListenerVector : public BasicVector<T> {
+class DeleteListenerVector : public BasicVector<D> {
  public:
   explicit DeleteListenerVector(std::function<void()> delete_callback)
-      : BasicVector(VectorX<T>::Constant(1, 0.)),
+      : BasicVector(VectorX<D>::Constant(1, 0.)),
         delete_callback_(delete_callback) {}
 
   ~DeleteListenerVector() override { delete_callback_(); }
@@ -66,18 +68,35 @@ class MoveOnlyType {
 struct UnknownType {};
 
 // A simple 2-dimensional subclass of BasicVector for testing.
-template <typename T>
-class MyVector2 : public BasicVector<T> {
+template <typename D>
+class MyVector2 : public BasicVector<D> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MyVector2)
 
-  explicit MyVector2(const Vector2<T>& data) : BasicVector<T>(data) {}
+  explicit MyVector2(const Vector2<D>& data) : BasicVector<D>(data) {}
 
  private:
   MyVector2* DoClone() const override {
     return new MyVector2(this->get_value());
   }
 };
+
+// Stolen from `Simulator::Initialize`.
+// TODO(eric.cousineau): Somehow leverage `Simulator` bits, factoring that
+// functionality out.
+template <typename D>
+void DispatchInitializationEvents(const System<D>& system,
+                                  const Context<D>& context) {
+  // Process all the initialization events.
+  auto init_events = system.AllocateCompositeEventCollection();
+  system.GetInitializationEvents(context, init_events.get());
+  DRAKE_DEMAND(!init_events->get_unrestricted_update_events().HasEvents());
+  DRAKE_DEMAND(!init_events->get_discrete_update_events().HasEvents());
+  auto& pub_events = init_events->get_publish_events();
+  if (pub_events.HasEvents()) {
+    system.Publish(context, pub_events);
+  }
+}
 
 }  // namespace
 
@@ -89,9 +108,9 @@ PYBIND11_MODULE(test_util, m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
 
-  py::class_<DeleteListenerSystem, LeafSystem<T>>(m, "DeleteListenerSystem")
+  py::class_<DeleteListenerSystem, LeafSystem<D>>(m, "DeleteListenerSystem")
       .def(py::init<std::function<void()>>());
-  py::class_<DeleteListenerVector, BasicVector<T>>(m, "DeleteListenerVector")
+  py::class_<DeleteListenerVector, BasicVector<D>>(m, "DeleteListenerVector")
       .def(py::init<std::function<void()>>());
 
   py::class_<MoveOnlyType>(m, "MoveOnlyType")
@@ -102,91 +121,91 @@ PYBIND11_MODULE(test_util, m) {
   pysystems::AddValueInstantiation<MoveOnlyType>(m);
 
   // A 2-dimensional subclass of BasicVector.
-  py::class_<MyVector2<T>, BasicVector<T>>(m, "MyVector2")
+  py::class_<MyVector2<D>, BasicVector<D>>(m, "MyVector2")
       .def(py::init<const Eigen::Vector2d&>(), py::arg("data"));
 
   m.def("make_unknown_abstract_value",
-      []() { return AbstractValue::Make(UnknownType{}); });
+        []() { return AbstractValue::Make(UnknownType{}); });
 
   // Call overrides to ensure a custom Python class can override these methods.
+  auto bind_common_scalar_types = [&m](auto dummy) {
+    using T = decltype(dummy);
 
-  auto clone_vector = [](const VectorBase<T>& vector) {
-    auto copy = std::make_unique<BasicVector<T>>(vector.size());
-    copy->SetFrom(vector);
-    return copy;
+    auto clone_vector = [](const VectorBase<T>& vector) {
+      auto copy = std::make_unique<BasicVector<T>>(vector.size());
+      copy->SetFrom(vector);
+      return copy;
+    };
+
+    m.def("call_leaf_system_overrides", [clone_vector](
+                                            const LeafSystem<T>& system) {
+      py::dict results;
+      auto context = system.AllocateContext();
+      // Check initialization events.
+      DispatchInitializationEvents(system, *context);
+
+      {
+        // Call `Publish` to test `DoPublish`.
+        auto events =
+            LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+        system.Publish(*context, *events);
+      }
+      {
+        // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.
+        results["has_direct_feedthrough"] = system.HasDirectFeedthrough(0, 0);
+      }
+      {
+        // Call `CalcTimeDerivatives` to test `DoCalcTimeDerivatives`
+        auto& state = context->get_mutable_continuous_state();
+        ContinuousState<T> state_copy(clone_vector(state.get_vector()));
+        system.CalcTimeDerivatives(*context, &state_copy);
+      }
+      {
+        // Call `CalcDiscreteVariableUpdates` to test
+        // `DoCalcDiscreteVariableUpdates`.
+        auto& state = context->get_mutable_discrete_state();
+        DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+        system.CalcDiscreteVariableUpdates(*context, &state_copy);
+
+        // From t=0, return next update time for testing discrete time.
+        // If there is an abstract / unrestricted update, this assumes that
+        // `dt_discrete < dt_abstract`.
+        systems::LeafCompositeEventCollection<T> events;
+        results["discrete_next_t"] =
+            system.CalcNextUpdateTime(*context, &events);
+      }
+      return results;
+    });
+
+    m.def("call_vector_system_overrides",
+          [clone_vector](const VectorSystem<T>& system, Context<T>* context,
+                         bool is_discrete, double dt) {
+            // While this is not convention, update state first to ensure that
+            // our output incorporates it correctly, for testing purposes.
+            // TODO(eric.cousineau): Add (Continuous|Discrete)State::Clone().
+            if (is_discrete) {
+              auto& state = context->get_mutable_discrete_state();
+              DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+              system.CalcDiscreteVariableUpdates(*context, &state_copy);
+              state.CopyFrom(state_copy);
+            } else {
+              auto& state = context->get_mutable_continuous_state();
+              ContinuousState<T> state_dot(
+                  clone_vector(state.get_vector()),
+                  state.get_generalized_position().size(),
+                  state.get_generalized_velocity().size(),
+                  state.get_misc_continuous_state().size());
+              system.CalcTimeDerivatives(*context, &state_dot);
+              state.SetFromVector(state.CopyToVector() +
+                                  dt * state_dot.CopyToVector());
+            }
+            // Calculate output.
+            auto output = system.AllocateOutput();
+            system.CalcOutput(*context, output.get());
+            return output;
+          });
   };
-
-  m.def("call_leaf_system_overrides", [clone_vector](
-                                          const LeafSystem<T>& system) {
-    py::dict results;
-    auto context = system.AllocateContext();
-    {
-      // Leverage simulator to call initialization events.
-      // TODO(eric.cousineau): Simplify as part of #10015.
-      Simulator<T> simulator(system);
-      // Do not publish at initialization because we want to track publishes
-      // from only events of trigger type `kInitialization`.
-      simulator.set_publish_at_initialization(false);
-      simulator.Initialize();
-    }
-    {
-      // Call `Publish` to test `DoPublish`.
-      auto events =
-          LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-      system.Publish(*context, *events);
-    }
-    {
-      // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.
-      results["has_direct_feedthrough"] = system.HasDirectFeedthrough(0, 0);
-    }
-    {
-      // Call `CalcTimeDerivatives` to test `DoCalcTimeDerivatives`
-      auto& state = context->get_mutable_continuous_state();
-      ContinuousState<T> state_copy(clone_vector(state.get_vector()));
-      system.CalcTimeDerivatives(*context, &state_copy);
-    }
-    {
-      // Call `CalcDiscreteVariableUpdates` to test
-      // `DoCalcDiscreteVariableUpdates`.
-      auto& state = context->get_mutable_discrete_state();
-      DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
-      system.CalcDiscreteVariableUpdates(*context, &state_copy);
-
-      // From t=0, return next update time for testing discrete time.
-      // If there is an abstract / unrestricted update, this assumes that
-      // `dt_discrete < dt_abstract`.
-      systems::LeafCompositeEventCollection<double> events;
-      results["discrete_next_t"] = system.CalcNextUpdateTime(*context, &events);
-    }
-    return results;
-  });
-
-  m.def("call_vector_system_overrides",
-      [clone_vector](const VectorSystem<T>& system, Context<T>* context,
-          bool is_discrete, double dt) {
-        // While this is not convention, update state first to ensure that our
-        // output incorporates it correctly, for testing purposes.
-        // TODO(eric.cousineau): Add (Continuous|Discrete)State::Clone().
-        if (is_discrete) {
-          auto& state = context->get_mutable_discrete_state();
-          DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
-          system.CalcDiscreteVariableUpdates(*context, &state_copy);
-          state.SetFrom(state_copy);
-        } else {
-          auto& state = context->get_mutable_continuous_state();
-          ContinuousState<T> state_dot(clone_vector(state.get_vector()),
-              state.get_generalized_position().size(),
-              state.get_generalized_velocity().size(),
-              state.get_misc_continuous_state().size());
-          system.CalcTimeDerivatives(*context, &state_dot);
-          state.SetFromVector(
-              state.CopyToVector() + dt * state_dot.CopyToVector());
-        }
-        // Calculate output.
-        auto output = system.AllocateOutput();
-        system.CalcOutput(*context, output.get());
-        return output;
-      });
+  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
 }
 
 }  // namespace pydrake

@@ -110,6 +110,18 @@ struct type_pack {
   using type_at = typename drake::type_at<I, Ts...>::type;
 };
 
+/// Concatenates two packs.
+template <typename... A, typename... B>
+auto type_pack_concat(type_pack<A...> = {}, type_pack<B...> = {}) {
+  return type_pack<A..., B...>{};
+}
+
+/// Applys a template to the parameters of a pack.
+template <template <typename> class Apply, typename... T>
+auto type_pack_apply(type_pack<T...> = {}) {
+  return type_pack<Apply<T>...>{};
+}
+
 /// Returns an expression (only to be used in `decltype`) for inferring
 /// and binding a parameter pack to a template.
 template <template <typename...> class Tpl, typename... Ts>

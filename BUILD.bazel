@@ -56,6 +56,7 @@ install(
     docs = ["LICENSE.TXT"],
     deps = [
         "//automotive/models:install_data",
+        "//bindings/pybind11_ext:install",
         "//bindings/pydrake:install",
         "//common:install",
         "//common/proto:install",

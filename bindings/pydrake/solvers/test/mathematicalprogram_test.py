@@ -113,10 +113,11 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
         x = prog.NewBinaryVariables(3, "x")
+        xe = x.astype(sym.Expression)
         c = np.array([-1.0, -1.0, -2.0])
-        prog.AddLinearCost(c.dot(x))
+        prog.AddLinearCost(c.dot(xe))
         a = np.array([1.0, 2.0, 3.0])
-        prog.AddLinearConstraint(a.dot(x) <= 4)
+        prog.AddLinearConstraint(a.dot(xe) <= 4)
         prog.AddLinearConstraint(x[0] + x[1], 1, np.inf)
         solver = GurobiSolver()
         result = solver.Solve(prog, None, None)
@@ -384,15 +385,17 @@ class TestMathematicalProgram(unittest.TestCase):
         # d(1)*x^2 is SOS.
         prog = mp.MathematicalProgram()
         x = prog.NewIndeterminates(1, "x")
+        xe = x.astype(sym.Expression)
         poly = prog.NewFreePolynomial(sym.Variables(x), 1)
         (poly, binding) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=2)
         y = prog.NewIndeterminates(1, "y")
+        ye = y.astype(sym.Expression)
         (poly, binding) = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(y[0])))
         d = prog.NewContinuousVariables(2, "d")
-        prog.AddSosConstraint(d[0]*x.dot(x))
-        prog.AddSosConstraint(d[1]*x.dot(x), [sym.Monomial(x[0])])
+        prog.AddSosConstraint(d[0]*xe.dot(xe))
+        prog.AddSosConstraint(d[1]*xe.dot(xe), [sym.Monomial(x[0])])
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
 
@@ -405,11 +408,11 @@ class TestMathematicalProgram(unittest.TestCase):
                 prog.SubstituteSolution(d[0] + d[1]).Evaluate(),
                 prog.GetSolution(d[0]) + prog.GetSolution(d[1]))
             # Test SubstituteSolution(sym.Polynomial)
-            poly = d[0]*x.dot(x)
+            poly = d[0]*xe.dot(xe)
             poly_sub_actual = prog.SubstituteSolution(
                 sym.Polynomial(poly, sym.Variables(x)))
             poly_sub_expected = sym.Polynomial(
-                prog.SubstituteSolution(d[0])*x.dot(x), sym.Variables(x))
+                prog.SubstituteSolution(d[0])*xe.dot(xe), sym.Variables(x))
             # TODO(soonho): At present, these must be converted to `Expression`
             # to compare, because as `Polynomial`s the comparison fails with
             # `0*x(0)^2` != `0`, which indicates that simplification is not

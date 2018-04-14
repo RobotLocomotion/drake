@@ -2,6 +2,8 @@
 
 #include "pybind11/eval.h"
 
+#include "drake/bindings/pybind11_ext/numpy_dtypes_user.h"
+
 namespace drake {
 namespace pydrake {
 namespace internal {
@@ -71,15 +73,27 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
     // erroring out if it's not registered.
     // WARNING: Internal API :(
     auto* info = py::detail::get_type_info(tinfo);
-    if (!info) {
+    py::handle cls;
+    if (info) {
+      cls = reinterpret_cast<PyObject*>(info->type);
+    } else {
+      // Try registered NumPy dtypes.
+      // TODO(eric.cousineau): Rather than doing this, consider explicitly
+      // aliasing / registering custom dtypes.
+      std::type_index id(tinfo);
+      auto* dtype_info = py::detail::dtype_info::maybe_get_entry(id);
+      if (dtype_info) {
+        cls = dtype_info->cls;
+      }
+    }
+    if (!cls) {
       // TODO(eric.cousineau): Use NiceTypeName::Canonicalize(...Demangle(...))
       // once simpler dependencies are used (or something else is used to
       // justify linking in `libdrake.so`).
       const std::string name = tinfo.name();
       throw std::runtime_error("C++ type is not registered in pybind: " + name);
     }
-    py::handle h(reinterpret_cast<PyObject*>(info->type));
-    return py::reinterpret_borrow<py::object>(h);
+    return py::reinterpret_borrow<py::object>(cls);
   }
 }
 

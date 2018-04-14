@@ -31,7 +31,6 @@ libyaml-cpp0.5v5
 python
 python-lxml
 python-matplotlib
-python-numpy
 python-pydot
 python-scipy
 python-six

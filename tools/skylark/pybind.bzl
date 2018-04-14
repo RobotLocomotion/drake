@@ -71,6 +71,10 @@ def pybind_py_library(
         **kwargs
     )
 
+    # Ensure that we're always using our custom NumPy version.
+    if "@numpy_py" not in py_deps:
+        py_deps = py_deps + ["@numpy_py"]
+
     # Add Python library.
     py_library_rule(
         name = py_name,

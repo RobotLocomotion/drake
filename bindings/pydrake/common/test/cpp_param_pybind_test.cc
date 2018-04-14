@@ -11,9 +11,22 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pybind11_ext/numpy_dtypes_user.h"
 #include "drake/bindings/pydrake/test/test_util_pybind.h"
 
 using std::string;
+
+namespace drake {
+namespace pydrake {
+
+struct CustomDType {
+  int value{};
+};
+
+}  // namespace pydrake
+}  // namespace drake
+
+PYBIND11_NUMPY_DTYPE_USER(drake::pydrake::CustomDType);
 
 namespace drake {
 namespace pydrake {
@@ -58,6 +71,8 @@ GTEST_TEST(CppParamTest, CustomTypes) {
   EXPECT_THROW(
       CheckPyParam<CustomCppTypeUnregistered>("CustomCppTypeUnregistered"),
       std::runtime_error);
+  // Test numpy dtype.
+  ASSERT_TRUE(CheckPyParam<CustomDType>("CustomDType,"));
 }
 
 template <typename T, T Value>
@@ -89,6 +104,19 @@ int main(int argc, char** argv) {
   py::class_<CustomCppType>(m, "CustomCppType");
 
   test::SynchronizeGlobalsForPython3(m);
+
+  // Define custom dtype.
+  py::dtype_user<CustomDType>(m, "CustomDType")
+    .def("value", [](const CustomDType* self) {
+      return self->value;
+    })
+    .def("__str__", [](const CustomDType*) {
+      return py::str("<CustomDType>");
+    })
+    .def("__repr__", [](const CustomDType*) {
+      return py::str("<CustomDType>");
+    });
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -227,17 +227,8 @@ class TestGeneral(unittest.TestCase):
                 output = system.AllocateOutput()
                 self.assertEqual(output.num_ports(), 1)
                 system.CalcOutput(context, output)
-                if T == float:
-                    value = output.get_vector_data(0).get_value()
-                    self.assertTrue(np.allclose([1], value))
-                elif T == AutoDiffXd:
-                    value = output.get_vector_data(0)._get_value_copy()
-                    # TODO(eric.cousineau): Define `isfinite` ufunc, if
-                    # possible, to use for `np.allclose`.
-                    self.assertEqual(value.shape, (1,))
-                    self.assertEqual(value[0], AutoDiffXd(1.))
-                else:
-                    raise RuntimeError("Bad T: {}".format(T))
+                value = output.get_vector_data(0).get_value()
+                self.assertTrue(np.allclose([1], value))
 
             # Create simulator with basic constructor.
             simulator = Simulator_[T](system)
