@@ -71,6 +71,9 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
     docs = ["wrapt/LICENSE"],
     doc_dest = "share/doc",
+    deps = [
+        "@numpy_py//:install",
+    ],
 )
 
 add_lint_tests()

@@ -142,8 +142,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlopt" not in excludes:
         nlopt_repository(name = "nlopt")
-    if "numpy" not in excludes:
-        numpy_repository(name = "numpy")
+    if "numpy_py" not in excludes:
+        numpy_repository(name = "numpy_py")
     if "octomap" not in excludes:
         octomap_repository(name = "octomap", mirrors = mirrors)
     if "optitrack_driver" not in excludes:
