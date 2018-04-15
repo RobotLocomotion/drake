@@ -509,7 +509,7 @@ class TestSymbolicExpression(SymbolicTestCase):
             # warnings causes the previous filters to be lost. Re-install
             # here.
             # TODO(eric.cousineau): Figure out better hook for this, or better
-            # way to restore warning filters at import time.
+            # way to restore warning filters from when everything's imported.
             from pydrake.util.deprecation import install_numpy_warning_filters
             install_numpy_warning_filters(force=True)
         # - All false.
