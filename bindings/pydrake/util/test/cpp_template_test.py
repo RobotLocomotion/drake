@@ -1,6 +1,7 @@
 from __future__ import absolute_import, print_function
 
 import unittest
+import six
 from types import ModuleType
 
 import pydrake.util.cpp_template as m
@@ -116,8 +117,13 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(str(DummyC.method),
                           "<unbound TemplateMethod DummyC.method>")
         self.assertEqual(DummyC.method[int], DummyC.dummy_c)
-        self.assertEqual(str(DummyC.method[int]),
-                          "<unbound method DummyC.dummy_c>")
+        if six.PY2:
+            self.assertEqual(str(DummyC.method[int]),
+                              "<unbound method DummyC.dummy_c>")
+        else:
+            self.assertTrue(str(DummyC.method[int]).startswith(
+                "<function DummyC.dummy_c at "),
+                str(DummyC.method[int]))
 
         obj = DummyC()
         self.assertTrue(

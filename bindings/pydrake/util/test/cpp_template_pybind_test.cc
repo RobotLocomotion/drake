@@ -53,6 +53,7 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
@@ -74,6 +75,7 @@ GTEST_TEST(CppTemplateTest, TemplateFunction) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
   CheckValue("SimpleFunction[int]()", expected_1);
   CheckValue("SimpleFunction[int, float]()", expected_2);
 }
@@ -100,6 +102,7 @@ GTEST_TEST(CppTemplateTest, TemplateMethod) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
+  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
   CheckValue("SimpleType().SimpleMethod[int]()", expected_1);
   CheckValue("SimpleType().SimpleMethod[int, float]()", expected_2);
 }

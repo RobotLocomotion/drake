@@ -1,6 +1,7 @@
 """Provides containers for tracking instantiations of C++ templates. """
 
 import inspect
+import six
 from types import MethodType
 
 from pydrake.util.cpp_param import get_param_names, get_param_canonical
@@ -63,7 +64,7 @@ class TemplateBase(object):
             module_name = _get_module_name_from_stack()
         self._module_name = module_name
 
-    def __getitem__(self, param):
+    def __getitem__(self, *param):
         """Gets concrete class associate with the given arguments.
 
         Can be one of the following forms:
@@ -73,6 +74,9 @@ class TemplateBase(object):
             template[[param0, param1, ...]]
             template[None]   (first instantiation, if `allow_default` is True)
         """
+        # For compatibility with Python3.
+        if len(param) == 1:
+            param = param[0]
         return self.get_instantiation(param)[0]
 
     def get_instantiation(self, param=None, throw_error=True):
@@ -117,7 +121,7 @@ class TemplateBase(object):
 
         @returns A set of instantiations. """
         param_list = []
-        for param, check in self._instantiation_map.iteritems():
+        for param, check in six.iteritems(self._instantiation_map):
             if check == instantiation:
                 param_list.append(param)
         return set(param_list)
@@ -164,6 +168,12 @@ class TemplateClass(TemplateBase):
         # Update class name for easier debugging.
         if self._override_meta:
             cls.__name__ = self._instantiation_name(param)
+            if six.PY3:
+                # N.B. Will not handle nested *template* classes.
+                orig = cls.__qualname__
+                pieces = orig.split('.')
+                pieces[-1] = cls.__name__
+                cls.__qualname__ = ".".join(pieces)
             cls.__module__ = self._module_name
 
 
@@ -203,7 +213,10 @@ class TemplateMethod(TemplateBase):
 
         def __getitem__(self, param):
             unbound = self._tpl[param]
-            bound = MethodType(unbound, self._obj, self._tpl._cls)
+            if six.PY2:
+                bound = MethodType(unbound, self._obj, self._tpl._cls)
+            else:
+                bound = MethodType(unbound, self._obj)
             return bound
 
         def __str__(self):
