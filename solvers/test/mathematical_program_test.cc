@@ -2841,7 +2841,7 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
 
-GTEST_TEST(testMathematicalProgram, testAddCallback) {
+GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
   MathematicalProgram prog;
 
   auto x = prog.NewContinuousVariables<2>();
