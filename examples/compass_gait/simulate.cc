@@ -1,0 +1,96 @@
+#include <memory>
+
+#include <gflags/gflags.h>
+
+#include "drake/common/find_resource.h"
+#include "drake/examples/compass_gait/compass_gait.h"
+#include "drake/lcm/drake_lcm.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram_builder.h"
+
+namespace drake {
+namespace examples {
+namespace compass_gait {
+namespace {
+
+DEFINE_double(initial_stance_velocity, 0.4,
+              "Initial angular velocity of the stance leg.");
+DEFINE_double(initial_swing_velocity, -2.0,
+              "Initial angular velocity of the swing leg.");
+DEFINE_double(target_realtime_rate, 1.0,
+              "Playback speed.  See documentation for "
+              "Simulator::set_target_realtime_rate() for details.");
+
+/// Simulates the rimless wheel from various initial velocities (accepted as
+/// command-line arguments.  Run drake-visualizer to watch the results.
+int DoMain() {
+  systems::DiagramBuilder<double> builder;
+  auto compass_gait = builder.AddSystem<CompassGait>();
+  compass_gait->set_name("compass_gait");
+
+  lcm::DrakeLcm lcm;
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      FindResourceOrThrow("drake/examples/compass_gait/CompassGait.urdf"),
+      multibody::joints::kRollPitchYaw, tree.get());
+
+  double ramp_pitch = CompassGaitParams<double>().slope();
+  {  // Add ramp
+    // TODO(russt): Consider moving/reusing this block (useful for all passive
+    // walkers).
+    DrakeShapes::Box geom(Eigen::Vector3d(100, 1, 10));
+    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
+    T_element_to_link.translation() << 0, 0,
+        -10. / 2;  // Top of the box is at z = 0.
+    T_element_to_link.rotate(
+        math::RotationMatrix<double>::MakeYRotation(ramp_pitch).matrix());
+
+    // Defines a color called "desert sand" according to htmlcsscolor.com.
+    Eigen::Vector4d color;
+    color << 0.9297, 0.7930, 0.6758, 1;
+
+    RigidBody<double>& world = tree->world();
+    world.AddVisualElement(
+        DrakeShapes::VisualElement(geom, T_element_to_link, color));
+    tree->addCollisionElement(
+        drake::multibody::collision::Element(geom, T_element_to_link, &world),
+        world, "terrain");
+    tree->compile();
+  }
+  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
+  publisher->set_name("publisher");
+
+  builder.Connect(compass_gait->get_floating_base_state_output_port(),
+                  publisher->get_input_port(0));
+  auto diagram = builder.Build();
+
+  systems::Simulator<double> simulator(*diagram);
+  systems::Context<double>& rw_context = diagram->GetMutableSubsystemContext(
+      *compass_gait, &simulator.get_mutable_context());
+  CompassGaitContinuousState<double>& state =
+      compass_gait->get_mutable_continuous_state(&rw_context);
+  state.set_stance(0.0);
+  state.set_swing(0.0);
+  state.set_stancedot(FLAGS_initial_stance_velocity);
+  state.set_swingdot(FLAGS_initial_swing_velocity);
+
+  simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
+  simulator.get_mutable_context().set_accuracy(1e-4);
+  simulator.StepTo(10);
+
+  return 0;
+}
+
+}  // namespace
+}  // namespace compass_gait
+}  // namespace examples
+}  // namespace drake
+
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::compass_gait::DoMain();
+}
