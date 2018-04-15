@@ -3,7 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/examples/rimless_wheel/rimless_wheel.h"
+#include "drake/examples/compass_gait/compass_gait.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -14,16 +14,13 @@
 
 namespace drake {
 namespace examples {
-namespace rimless_wheel {
+namespace compass_gait {
 namespace {
 
-DEFINE_double(accuracy, 1e-4, "Accuracy of the rimless wheel system (unitless);"
-    " must be positive.");
-DEFINE_double(initial_angle, 0.0, "Initial angle of the wheel (rad).  Must be"
-    " in the interval (slope - alpha, slope + alpha), as described in "
-    "http://underactuated.mit.edu/underactuated.html?chapter=simple_legs .");
-DEFINE_double(initial_angular_velocity, 5.0,
-              "Initial angular velocity of the wheel (rad/sec).");
+DEFINE_double(initial_stance_velocity, 0.4,
+              "Initial angular velocity of the stance leg.");
+DEFINE_double(initial_swing_velocity, -2.0,
+              "Initial angular velocity of the swing leg.");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
@@ -32,19 +29,17 @@ DEFINE_double(target_realtime_rate, 1.0,
 /// command-line arguments.  Run drake-visualizer to watch the results.
 int DoMain() {
   systems::DiagramBuilder<double> builder;
-  auto rimless_wheel = builder.AddSystem<RimlessWheel>();
-  rimless_wheel->set_name("rimless_wheel");
+  auto compass_gait = builder.AddSystem<CompassGait>();
+  compass_gait->set_name("compass_gait");
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/rimless_wheel/RimlessWheel.urdf"),
+      FindResourceOrThrow("drake/examples/compass_gait/CompassGait.urdf"),
       multibody::joints::kRollPitchYaw, tree.get());
 
-  double ramp_pitch = RimlessWheelParams<double>().slope();
+  double ramp_pitch = CompassGaitParams<double>().slope();
   {  // Add ramp
-    // TODO(russt): Consider moving/reusing this block (useful for all passive
-    // walkers).
     DrakeShapes::Box geom(Eigen::Vector3d(100, 1, 10));
 
     // In the following use W for world frame and B for box frame.
@@ -67,44 +62,33 @@ int DoMain() {
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
   publisher->set_name("publisher");
 
-  builder.Connect(rimless_wheel->get_floating_base_state_output_port(),
+  builder.Connect(compass_gait->get_floating_base_state_output_port(),
                   publisher->get_input_port(0));
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
   systems::Context<double>& rw_context = diagram->GetMutableSubsystemContext(
-      *rimless_wheel, &simulator.get_mutable_context());
-  RimlessWheelContinuousState<double>& state =
-      rimless_wheel->get_mutable_continuous_state(&rw_context);
-
-  // Check that command line argument puts the wheel above the ground.
-  const RimlessWheelParams<double>& params =
-      rimless_wheel->get_parameters(rw_context);
-  const double alpha = rimless_wheel->calc_alpha(params);
-  DRAKE_DEMAND(FLAGS_initial_angle > params.slope() - alpha);
-  DRAKE_DEMAND(FLAGS_initial_angle < params.slope() + alpha);
-
-  state.set_theta(FLAGS_initial_angle);
-  state.set_thetadot(FLAGS_initial_angular_velocity);
+      *compass_gait, &simulator.get_mutable_context());
+  CompassGaitContinuousState<double>& state =
+      compass_gait->get_mutable_continuous_state(&rw_context);
+  state.set_stance(0.0);
+  state.set_swing(0.0);
+  state.set_stancedot(FLAGS_initial_stance_velocity);
+  state.set_swingdot(FLAGS_initial_swing_velocity);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.get_mutable_context().set_accuracy(FLAGS_accuracy);
+  simulator.get_mutable_context().set_accuracy(1e-4);
   simulator.StepTo(10);
-
-  // Check that the state is still inside the expected region (I did not miss
-  // any collisions).
-  DRAKE_DEMAND(state.theta() >= params.slope() - alpha);
-  DRAKE_DEMAND(state.theta() <= params.slope() + alpha);
 
   return 0;
 }
 
 }  // namespace
-}  // namespace rimless_wheel
+}  // namespace compass_gait
 }  // namespace examples
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::rimless_wheel::DoMain();
+  return drake::examples::compass_gait::DoMain();
 }
