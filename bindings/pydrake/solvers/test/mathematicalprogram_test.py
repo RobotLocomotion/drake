@@ -268,3 +268,20 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddConstraint(constraint, [0.], [2.], x)
         prog.Solve()
         self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
+
+    def test_visualization_callback(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+
+        global was_called
+        was_called = False
+
+        def callback(x):
+            global was_called
+            was_called = True
+
+        prog.AddVisualizationCallback(callback, x)
+        prog.AddConstraint(x.dot(x) <= 1.)
+
+        prog.Solve()
+        self.assertTrue(was_called)
