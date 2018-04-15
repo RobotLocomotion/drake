@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 """This script creates build_components.bzl.new with new contents based on the
 current source tree.  It should be used to regularly update the version of

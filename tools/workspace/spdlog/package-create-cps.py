@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from drake.tools.install.cpsutils import read_version_defs, read_requires
 

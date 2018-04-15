@@ -120,6 +120,11 @@ cc_library(
     repository_ctx.file("BUILD.bazel", content = file_content,
                         executable = False)
 
+    content = """
+def lib_install_prefix():
+    return "lib/python
+"""
+
 python_repository = repository_rule(
     _impl,
     attrs = {"version": attr.string(default = "2")},

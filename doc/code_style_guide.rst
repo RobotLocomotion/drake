@@ -84,7 +84,7 @@ Additional Rules
   ``stderr``, but are otherwise ignored, and thus may escape notice.
 * Executable files should use the following "shebang" line::
 
-    #!/usr/bin/env python2
+    #!/usr/bin/env python
 
   Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 2.7
   executable. On macOS systems configured for Drake, this gives a better result
