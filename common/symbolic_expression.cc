@@ -837,6 +837,15 @@ const Expression& get_else_expression(const Expression& e) {
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
 
+VectorX<Variable> get_variable_vector(
+    const Eigen::Ref<const VectorX<Expression>>& evec) {
+  VectorX<Variable> vec(evec.size());
+  for (int i = 0; i < evec.size(); i++) {
+    vec(i) = get_variable(evec(i));
+  }
+  return vec;
+}
+
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const vector<Variable>& vars) {
   DRAKE_DEMAND(!vars.empty());
