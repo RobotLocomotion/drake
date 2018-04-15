@@ -44,6 +44,9 @@ filegroup(
 # do not have any such files, although we once did.)
 filegroup(
     name = "universal_toolchain_deps",
+    srcs = [
+        "//tools/dynamic_analysis:sanitizer_blacklists",
+    ],
     visibility = ["//visibility:private"],
 )
 
