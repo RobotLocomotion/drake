@@ -767,10 +767,10 @@ class MathematicalProgram {
    * optimization.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    *
    * @param callback a std::function that accepts an Eigen::Vector of doubles
    * representing the bound decision variables.
@@ -785,10 +785,10 @@ class MathematicalProgram {
    * optimization.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    *
    * @param callback a std::function that accepts an Eigen::Vector of doubles
    * representing the for the bound decision variables.

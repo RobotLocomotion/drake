@@ -195,10 +195,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * the input trajectory at the break points in each column.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    */
   solvers::Binding<solvers::VisualizationCallback>
   AddInputTrajectoryCallback(const TrajectoryCallback& callback);
@@ -212,10 +212,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
    * the state trajectory at the break points in each column.
    *
    * Note: Just like other costs/constraints, not all solvers support callbacks.
-   * Adding a callback here may change will force MathematicalProgram::Solve to
-   * select a solver that support callbacks.  For instance, adding a
-   * visualization callback to a quadratic programming problem may result in
-   * using a nonlinear programming solver as the default solver.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
    */
   solvers::Binding<solvers::VisualizationCallback>
   AddStateTrajectoryCallback(const TrajectoryCallback& callback);
@@ -341,7 +341,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   const double fixed_timestep_{0.0};
 
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
-  // input/state sample or the empty vector (if timesteps are fixed).
+                                             // input/state sample or the empty
+                                             // vector (if timesteps are fixed).
   const solvers::VectorXDecisionVariable x_vars_;
   const solvers::VectorXDecisionVariable u_vars_;
 
