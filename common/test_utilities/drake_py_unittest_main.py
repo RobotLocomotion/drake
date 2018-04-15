@@ -103,6 +103,7 @@ if __name__ == '__main__':
         unittest.main(module=test_name, argv=unittest_argv)
 
     if not args.nostdout_to_stderr:
+        sys.stdout.flush()
         sys.stdout = sys.stderr
 
     if args.trace != "none":
