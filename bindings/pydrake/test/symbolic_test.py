@@ -505,6 +505,8 @@ class TestSymbolicExpression(SymbolicTestCase):
         # values. For this reason, `pydrake.symbolic` will automatically
         # promote these warnings to errors.
         # - All false.
+        from pydrake.util.deprecation import install_numpy_warning_filters
+        install_numpy_warning_filters(force=True)
         with self.assertRaises(DeprecationWarning):
             value = (e_xv == e_yv)
         # - True + False.
