@@ -1,0 +1,72 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_binary",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_vector_gen_library(
+    name = "compass_gait_vector_types",
+    srcs = [
+        "compass_gait_continuous_state.named_vector",
+        "compass_gait_params.named_vector",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "compass_gait",
+    srcs = ["compass_gait.cc"],
+    hdrs = [
+        "compass_gait.h",
+    ],
+    deps = [
+        ":compass_gait_vector_types",
+        "//common:default_scalars",
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "simulate",
+    srcs = ["simulate.cc"],
+    add_test_rule = 1,
+    data = ["CompassGait.urdf"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    deps = [
+        ":compass_gait",
+        "//common:find_resource",
+        "//lcm",
+        "//math:geometric_transform",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis:simulator",
+        "@gflags",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compass_gait_test",
+    data = ["CompassGait.urdf"],
+    deps = [
+        ":compass_gait",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
