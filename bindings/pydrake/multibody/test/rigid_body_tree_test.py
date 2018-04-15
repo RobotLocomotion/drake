@@ -138,25 +138,25 @@ class TestRigidBodyTree(unittest.TestCase):
 
         num_q = num_v = 7
         num_u = tree.get_num_actuators()
-        self.assertEquals(num_u, 1)
+        self.assertEqual(num_u, 1)
         q = np.zeros(num_q)
         v = np.zeros(num_v)
         # Update kinematics.
         kinsol = tree.doKinematics(q, v)
         # Sanity checks:
         # - Actuator map.
-        self.assertEquals(tree.B.shape, (num_v, num_u))
+        self.assertEqual(tree.B.shape, (num_v, num_u))
         B_expected = np.zeros((num_v, num_u))
         B_expected[-1] = 1
         self.assertTrue(np.allclose(tree.B, B_expected))
         # - Mass matrix.
         H = tree.massMatrix(kinsol)
-        self.assertEquals(H.shape, (num_v, num_v))
+        self.assertEqual(H.shape, (num_v, num_v))
         assert_sane(H)
         self.assertTrue(np.allclose(H[-1, -1], 0.25))
         # - Bias terms.
         C = tree.dynamicsBiasTerm(kinsol, {})
-        self.assertEquals(C.shape, (num_v,))
+        self.assertEqual(C.shape, (num_v,))
         assert_sane(C)
         # - Inverse dynamics.
         vd = np.zeros(num_v)

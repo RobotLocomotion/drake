@@ -157,7 +157,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # Test deprecated method.
         with warnings.catch_warnings(record=True) as w:
             c = binding.constraint()
-            self.assertEquals(len(w), 1)
+            self.assertEqual(len(w), 1)
 
     def test_eval_binding(self):
         qp = TestQP()
