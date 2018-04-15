@@ -504,9 +504,15 @@ class TestSymbolicExpression(SymbolicTestCase):
         # produces a DeprecationWarning, in addition to effectively garbage
         # values. For this reason, `pydrake.symbolic` will automatically
         # promote these warnings to errors.
+        if six.PY3:
+            # For some reason, something in how `unittest` tries to scope
+            # warnings causes the previous filters to be lost. Re-install
+            # here.
+            # TODO(eric.cousineau): Figure out better hook for this, or better
+            # way to restore warning filters at import time.
+            from pydrake.util.deprecation import install_numpy_warning_filters
+            install_numpy_warning_filters(force=True)
         # - All false.
-        from pydrake.util.deprecation import install_numpy_warning_filters
-        install_numpy_warning_filters(force=True)
         with self.assertRaises(DeprecationWarning):
             value = (e_xv == e_yv)
         # - True + False.
