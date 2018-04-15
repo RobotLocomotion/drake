@@ -12,8 +12,9 @@ load(
     "drake_py_library",
     "drake_py_test",
 )
+load("@python//:python.bzl", "python_version_major_minor")
 
-_PY_VERSION = "2.7"
+_PY_VERSION = python_version_major_minor()
 
 # TODO(eric.cousineau): Consider making a `PybindProvider`, to sort
 # out dependencies, sources, etc, and simplify installation
