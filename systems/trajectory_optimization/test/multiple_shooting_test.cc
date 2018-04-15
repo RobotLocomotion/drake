@@ -258,15 +258,16 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
   const int kNumSampleTimes{3};
   const double kFixedTimeStep{0.1};
 
-  bool was_called = false;
-  auto my_input_callback = [&was_called](
+  bool input_callback_was_called = false;
+  auto my_input_callback = [&input_callback_was_called](
                                const Eigen::Ref<const Eigen::VectorXd>& t,
                                const Eigen::Ref<const Eigen::MatrixXd>& u) {
     EXPECT_TRUE(CompareMatrices(t, Eigen::Vector3d(0., .1, .2)));
     EXPECT_TRUE(CompareMatrices(u, Eigen::RowVector3d(1., 2., 3.)));
-    was_called = true;
+    input_callback_was_called = true;
   };
-  auto my_state_callback = [&was_called](
+  bool state_callback_was_called = false;
+  auto my_state_callback = [&state_callback_was_called](
                                const Eigen::Ref<const Eigen::VectorXd>& t,
                                const Eigen::Ref<const Eigen::MatrixXd>& x) {
     EXPECT_TRUE(CompareMatrices(t, Eigen::Vector3d(0., .1, .2)));
@@ -276,7 +277,7 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
                   5., 7., 9.;
     // clang-format on
     EXPECT_TRUE(CompareMatrices(x, x_expected));
-    was_called = true;
+    state_callback_was_called = true;
   };
 
   // Test *without* timesteps as decision variables.
@@ -287,15 +288,15 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
   solvers::Binding<solvers::VisualizationCallback> b =
       prog.AddInputTrajectoryCallback(my_input_callback);
   EXPECT_EQ(prog.visualization_callbacks().size(), 1);
-  was_called = false;
+  input_callback_was_called = false;
   prog.EvalBindingAtInitialGuess(b);
-  EXPECT_TRUE(was_called);
+  EXPECT_TRUE(input_callback_was_called);
 
   b = prog.AddStateTrajectoryCallback(my_state_callback);
   EXPECT_EQ(prog.visualization_callbacks().size(), 2);
-  was_called = false;
+  state_callback_was_called = false;
   prog.EvalBindingAtInitialGuess(b);
-  EXPECT_TRUE(was_called);
+  EXPECT_TRUE(state_callback_was_called);
 
   // Test with timesteps as decision variables.
   MyDirectTrajOpt prog2(kNumInputs, kNumStates, kNumSampleTimes, kFixedTimeStep,
@@ -307,15 +308,15 @@ GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
 
   b = prog2.AddInputTrajectoryCallback(my_input_callback);
   EXPECT_EQ(prog2.visualization_callbacks().size(), 1);
-  was_called = false;
+  input_callback_was_called = false;
   prog2.EvalBindingAtInitialGuess(b);
-  EXPECT_TRUE(was_called);
+  EXPECT_TRUE(input_callback_was_called);
 
   b = prog2.AddStateTrajectoryCallback(my_state_callback);
   EXPECT_EQ(prog2.visualization_callbacks().size(), 2);
-  was_called = false;
+  state_callback_was_called = false;
   prog2.EvalBindingAtInitialGuess(b);
-  EXPECT_TRUE(was_called);
+  EXPECT_TRUE(state_callback_was_called);
 }
 
 GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
