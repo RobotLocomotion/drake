@@ -4,6 +4,7 @@ from pydrake.util.deprecation import DrakeDeprecationWarning
 
 import pydoc
 import unittest
+import six
 import sys
 from types import ModuleType
 import warnings
@@ -62,7 +63,7 @@ class TestDeprecation(unittest.TestCase):
     def test_module_import_exec(self):
         # Test `exec` workflow.
         temp = {}
-        exec "from deprecation_example import *" in temp
+        six.exec_("from deprecation_example import *", temp, temp)
         self.assertIsInstance(temp["sub_module"], str)
 
     def _check_warning(
@@ -82,6 +83,8 @@ class TestDeprecation(unittest.TestCase):
         # At this point, no other deprecations should have been thrown, so we
         # will test with the default `once` filter.
         with warnings.catch_warnings(record=True) as w:
+            # TODO(eric.cousineau): Also different behavior here...
+            # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
             obj = ExampleClass()
             # Call each deprecated method / propery repeatedly; it should only
@@ -100,8 +103,7 @@ class TestDeprecation(unittest.TestCase):
                 # The next line will not show a warning.
                 self.assertEqual(prop.__get__(obj), 2)
             self.assertEqual(prop.__doc__, ExampleClass.doc_prop)
-            # Check warnings.
-            self.assertEqual(len(w), 2)
+            self.assertEqual(len(w), 2, "\n".join(map(str, w)))
             self._check_warning(w[0], ExampleClass.message_method)
             self._check_warning(w[1], ExampleClass.message_prop)
 
