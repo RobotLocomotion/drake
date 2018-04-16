@@ -14,14 +14,14 @@ def gurobi_test_tags(gurobi_required = True):
 
     Gurobi checks a license file, and may need to contact a license server to
     check out a license. Therefore, tests that use Gurobi must have the tag
-    "local", because they are non-hermetic. For the moment, we also require
-    the tag "exclusive", to rate-limit license servers with a small number of
-    licenses.
+    "no-sandbox", because they are non-hermetic. For the moment, we also
+    require the tag "exclusive", to rate-limit license servers with a small
+    number of licenses.
     """
     # TODO(david-german-tri): Find a better fix for the license server problem.
     nominal_tags = [
-        "exclusive",
-        "local",
+        "exclusive",  # implies "local"
+        "no-sandbox",
     ]
     if gurobi_required:
         return nominal_tags + ["gurobi"]
@@ -36,10 +36,10 @@ def mosek_test_tags(mosek_required = True):
 
     MOSEK checks a license file, and may need to contact a license server to
     check out a license. Therefore, tests that use MOSEK must have the tag
-    "local", because they are non-hermetic.
+    "no-sandbox", because they are non-hermetic.
     """
     nominal_tags = [
-        "local",
+        "no-sandbox",
     ]
     if mosek_required:
         return nominal_tags + ["mosek"]

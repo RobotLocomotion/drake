@@ -93,8 +93,7 @@ drake_py_unittest(
     name = "util_test",
     tags = [
         # This test looks outside the sandbox.
-        "external",
-        "local",
+        "no-sandbox",
     ],
     deps = [":util"],
 )
