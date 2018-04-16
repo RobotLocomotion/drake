@@ -551,8 +551,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.size();
   }
 
-  /// Returns the default friction coefficients provided during geometry
-  /// registration for the given geometry `id`.
+  /// Returns the friction coefficients provided during geometry registration
+  /// for the given geometry `id`. We call these the "default" coefficients but
+  /// note that we mean user-supplied per-geometry default, not something more
+  /// global.
   /// @throws std::exception if `id` does not correspond to a geometry in `this`
   /// model registered for contact modeling.
   /// @see RegisterCollisionGeometry() for details on geometry registration.
@@ -804,8 +806,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// need to specify complementarity constraints. While this results in a
   /// simpler model immediately tractable with standard numerical methods for
   /// integration of ODE's, it often leads to stiff dynamics that require
-  /// the integrator to take very small time steps. It is therefore recommended
-  /// to use error controlled integrators when using this model.
+  /// an explicit integrator to take very small time steps. It is therefore
+  /// recommended to use error controlled integrators when using this model.
   /// See @ref tangent_force for a detailed discussion of the Stribeck model.
   /// @{
 
@@ -1017,7 +1019,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// `v_stiction` must be specified in m/s (meters per second.)
     /// @throws std::exception if `v_stiction` is non-positive.
     void set_stiction_tolerance(double v_stiction) {
-      DRAKE_DEMAND(v_stiction > 0);
+      DRAKE_THROW_UNLESS(v_stiction > 0);
       v_stiction_tolerance_ = v_stiction;
       inv_v_stiction_tolerance_ = 1.0 / v_stiction;
     }
@@ -1038,7 +1040,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   };
   StribeckModel stribeck_model_;
 
-  // Iteraion order on this map DOES matter, and therefore we use an std::map.
+  // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
   // Vector of FrameId ordered by BodyIndex. Const post-finalize.

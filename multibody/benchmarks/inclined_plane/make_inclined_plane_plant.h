@@ -33,8 +33,7 @@ std::unique_ptr<multibody_plant::MultibodyPlant<double>>
 MakeInclinedPlanePlant(
     double radius, double mass, double slope,
     const multibody_plant::CoulombFriction<double>& surface_friction,
-    double gravity,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+    double gravity, geometry::GeometrySystem<double>* geometry_system);
 
 }  // namespace inclined_plane
 }  // namespace benchmarks

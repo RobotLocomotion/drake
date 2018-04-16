@@ -20,17 +20,17 @@ CoulombFriction<T>::CoulombFriction(const T& static_friction,
 template <typename T>
 void CoulombFriction<T>::ThrowForBadFriction(const T& static_friction,
                                              const T& dynamic_friction) {
-  using std::runtime_error;
+  using std::logic_error;
   if (dynamic_friction < 0) {
-    throw runtime_error(fmt::format(
+    throw logic_error(fmt::format(
         "The given dynamic friction is negative: {}", dynamic_friction));
   }
   if (static_friction < 0) {
-    throw runtime_error(fmt::format(
+    throw logic_error(fmt::format(
         "The given static friction is negative: {}", static_friction));
   }
   if (dynamic_friction > static_friction) {
-    throw runtime_error(fmt::format(
+    throw logic_error(fmt::format(
         "The given dynamic friction ({}) is greater than the given static "
         "friction ({}); dynamic friction must be less than or equal to static "
         "friction.", dynamic_friction, static_friction));

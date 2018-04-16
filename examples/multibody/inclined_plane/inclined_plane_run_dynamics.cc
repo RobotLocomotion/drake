@@ -70,9 +70,10 @@ int do_main() {
   plant.set_penetration_allowance(0.001);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
-  // Hint the integrator's time step based on the contact time scale.
-  // A fraction of this time scale is used which is chosen so that the fixed
-  // time step integrators are stable.
+  // Choose a maximum time step based on the fastest dynamics of the system. For
+  // this case, the fastest dynamics corresponds to the time scale introduced by
+  // the penalty method. Thus we set the maximum time step to a fraction of this
+  // time scale.
   const double max_time_step =
       plant.get_contact_penalty_method_time_scale() / 30;
 

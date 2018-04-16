@@ -12,10 +12,11 @@ namespace multibody_plant {
 ///   each other.
 /// - Dynamic (or kinematic) friction coefficient, for a pair of surfaces in
 ///   relative motion.
-/// The coefficients of friction are an empirical property of the pair of
-/// contacting surfaces which depend upon the mechanical properties of the
-/// surfaces' materials and on the roughness of the surfaces. Friction
-/// coefficients are determined experimentally.
+/// These coefficients are an empirical property that characterizes the
+/// interaction by friction between a pair of contacting surfaces. Friction
+/// coefficients depend upon the mechanical properties of the surfaces'
+/// materials and on the roughness of the surfaces. They are determined
+/// experimentally.
 ///
 /// Even though the Coulomb's law coefficients of friction characterize a pair
 /// of surfaces interacting by friction, we associate the abstract __idea__ of
@@ -72,7 +73,7 @@ class CoulombFriction {
 
   /// Specifies both the static and dynamic friction coefficients for a given
   /// surface.
-  /// @throws std::runtime_error if any of the friction coefficients are
+  /// @throws std::logic_error if any of the friction coefficients are
   /// negative or if `dynamic_friction > static_friction` (they can be equal.)
   CoulombFriction(const T& static_friction, const T& dynamic_friction);
 
@@ -82,13 +83,14 @@ class CoulombFriction {
   /// Returns the coefficient of dynamic friction.
   const T& dynamic_friction() const { return dynamic_friction_; }
 
+  /// Performs a bitwise-identical comparison, not done to any tolerance.
   Bool<T> operator==(const CoulombFriction& other) const;
 
  private:
   // Confirms two properties on the friction coefficient pair:
   //  1. Both values non-negative.
   //  2. static_friction >= dynamic_friction.
-  // Throws std::runtime_error on failure of these tests.
+  // Throws std::logic_error on failure of these tests.
   static void ThrowForBadFriction(const T& static_friction,
                                   const T& dynamic_friction);
 
