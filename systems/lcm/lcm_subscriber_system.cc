@@ -53,7 +53,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     // Use the "advanced" method to construct explicit non-member functors
     // to deal with the unusual methods we have available.
     DeclareAbstractOutputPort(
-        [this](const Context<double>&) {
+        [this]() {
           return this->AllocateSerializerOutputValue();
         },
         [this](const Context<double>& context, AbstractValue* out) {

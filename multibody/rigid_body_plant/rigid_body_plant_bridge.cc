@@ -6,6 +6,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/visual_material.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 
@@ -14,7 +15,6 @@ namespace systems {
 
 using geometry::Cylinder;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
@@ -22,6 +22,7 @@ using geometry::GeometrySystem;
 using geometry::Mesh;
 using geometry::Shape;
 using geometry::Sphere;
+using geometry::VisualMaterial;
 
 template <typename T>
 RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
@@ -36,21 +37,13 @@ RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
       tree->get_num_positions() + tree->get_num_velocities();
   plant_state_port_ =
       this->DeclareInputPort(kVectorValued, vector_size).get_index();
-
-  geometry_id_port_ = this->DeclareAbstractOutputPort(
-                              &RigidBodyPlantBridge::AllocateFrameIdOutput,
-                              &RigidBodyPlantBridge::CalcFrameIdOutput)
-                          .get_index();
-  geometry_pose_port_ = this->DeclareAbstractOutputPort(
-                                &RigidBodyPlantBridge::AllocateFramePoseOutput,
-                                &RigidBodyPlantBridge::CalcFramePoseOutput)
-                            .get_index();
   RegisterTree(geometry_system);
-}
 
-template <typename T>
-const OutputPort<T>& RigidBodyPlantBridge<T>::geometry_id_output_port() const {
-  return this->get_output_port(geometry_id_port_);
+  // Now that the frames have been registered, instantiate the output port.
+  geometry_pose_port_ = this->DeclareAbstractOutputPort(
+          FramePoseVector<T>(source_id_, body_ids_),
+          &RigidBodyPlantBridge::CalcFramePoseOutput)
+      .get_index();
 }
 
 template <typename T>
@@ -81,6 +74,9 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
     body_ids_.reserve(body_count - 1);
     for (int i = 1; i < body_count; ++i) {
       const RigidBody<T>& body = *tree_->get_bodies()[i];
+      // TODO(SeanCurtis-TRI): Possibly account for the fact that some frames
+      // may be rigidly affixed to other frames or frames without geometry
+      // likewise wouldn't be registered.
       FrameId body_id = geometry_system->RegisterFrame(
           source_id_,
           GeometryFrame(body.get_name(), Isometry3<double>::Identity(),
@@ -120,10 +116,13 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
                                "are supported by RigidBodyPlantBridge");
         }
         if (shape) {
+          // Visual element's "material" is simply the diffuse rgba values.
+          const Vector4<double>& diffuse = visual_element.getMaterial();
           geometry_system->RegisterGeometry(
               source_id_, body_id,
               std::make_unique<GeometryInstance>(
-                  X_FG, std::move(shape)));
+                  X_FG, std::move(shape),
+                  VisualMaterial(diffuse)));
           DRAKE_DEMAND(shape == nullptr);
         }
       }
@@ -134,19 +133,10 @@ void RigidBodyPlantBridge<T>::RegisterTree(GeometrySystem<T>* geometry_system) {
 }
 
 template <typename T>
-FramePoseVector<T> RigidBodyPlantBridge<T>::AllocateFramePoseOutput(
-    const MyContext&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  // Poses of the registered bodies in the world -- defaults to identity.
-  std::vector<Isometry3<T>> X_WF(body_ids_.size(), Isometry3<T>::Identity());
-  return FramePoseVector<T>(source_id_, X_WF);
-}
-
-template <typename T>
 void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
     const MyContext& context, FramePoseVector<T>* poses) const {
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  DRAKE_ASSERT(poses->vector().size() == body_ids_.size());
+  DRAKE_DEMAND(source_id_.is_valid());
+  DRAKE_DEMAND(poses->size() == static_cast<int>(body_ids_.size()));
 
   const BasicVector<T>& input_vector = *this->EvalVectorInput(context, 0);
   // Obtains the generalized positions from vector_base.
@@ -161,24 +151,14 @@ void RigidBodyPlantBridge<T>::CalcFramePoseOutput(
   // TODO(SeanCurtis-TRI): When I start skipping rigidly fixed bodies, modify
   // this loop to account for them.
   const int world_body = 0;
+  poses->clear();
+  // NOTE: This relies on the definition that body i has its frame id at i - 1.
+  // When we start skipping welded frames, or frames without geometry, this
+  // mapping won't be so trivial.
   for (size_t i = 1; i < tree_->get_bodies().size(); ++i) {
-    pose_data[i - 1] = tree_->relativeTransform(cache, world_body, i);
+    poses->set_value(body_ids_[i - 1],
+                     tree_->relativeTransform(cache, world_body, i));
   }
-}
-
-template <typename T>
-FrameIdVector RigidBodyPlantBridge<T>::AllocateFrameIdOutput(
-    const MyContext&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  FrameIdVector ids(source_id_, body_ids_);
-  return ids;
-}
-
-template <typename T>
-void RigidBodyPlantBridge<T>::CalcFrameIdOutput(
-    const MyContext&, FrameIdVector* frame_ids) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  *frame_ids = FrameIdVector(source_id_, body_ids_);
 }
 
 // Explicitly instantiates on the most common scalar types.

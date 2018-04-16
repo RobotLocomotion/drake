@@ -4,6 +4,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
+    "drake_cc_googletest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -31,6 +32,14 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_googletest(
+    name = "van_der_pol_test",
+    deps = [
+        ":van_der_pol",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

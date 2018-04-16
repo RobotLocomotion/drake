@@ -69,14 +69,13 @@ class DiagramOutputPort : public OutputPort<T> {
   }
 
  private:
-  // These forward to the source system output port, passing in just the source
-  // System's Context, not the whole Diagram context we're given.
-  std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>& context) const final {
-    const Context<T>& subcontext = get_subcontext(context);
-    return source_output_port_->Allocate(subcontext);
+  // These forward to the source system output port.
+  std::unique_ptr<AbstractValue> DoAllocate() const final {
+    return source_output_port_->Allocate();
   }
 
+  // Pass in just the source System's Context, not the whole Diagram context
+  // we're given.
   void DoCalc(
       const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);
@@ -207,37 +206,6 @@ class Diagram : public System<T>,
 
     return std::make_unique<DiagramCompositeEventCollection<T>>(
         std::move(subevents));
-  }
-
-  std::unique_ptr<Context<T>> AllocateContext() const override {
-    const int num_systems = num_subsystems();
-    // Reserve inputs as specified during Diagram initialization.
-    auto context = std::make_unique<DiagramContext<T>>(num_systems);
-
-    // Add each constituent system to the Context.
-    for (SubsystemIndex i(0); i < num_systems; ++i) {
-      const System<T>* const sys = registered_systems_[i].get();
-      auto subcontext = sys->AllocateContext();
-      auto suboutput = sys->AllocateOutput(*subcontext);
-      context->AddSystem(i, std::move(subcontext), std::move(suboutput));
-    }
-
-    // Wire up the Diagram-internal inputs and outputs.
-    for (const auto& connection : connection_map_) {
-      const OutputPortLocator& src = connection.second;
-      const InputPortLocator& dest = connection.first;
-      context->Connect(ConvertToContextPortIdentifier(src),
-                       ConvertToContextPortIdentifier(dest));
-    }
-
-    // Declare the Diagram-external inputs.
-    for (const InputPortLocator& id : input_port_ids_) {
-      context->ExportInput(ConvertToContextPortIdentifier(id));
-    }
-
-    context->MakeState();
-    context->MakeParameters();
-    return std::move(context);
   }
 
   void SetDefaultState(const Context<T>& context,
@@ -1014,6 +982,58 @@ class Diagram : public System<T>,
   }
 
  private:
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    const int num_systems = num_subsystems();
+    // Reserve inputs as specified during Diagram initialization.
+    auto context = std::make_unique<DiagramContext<T>>(num_systems);
+
+    // Recursively construct each constituent system and its subsystems,
+    // then add to this diagram Context.
+    for (SubsystemIndex i(0); i < num_systems; ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      std::unique_ptr<ContextBase> subcontext_base =
+          SystemBase::MakeContext(sys);
+      DRAKE_DEMAND(dynamic_cast<Context<T>*>(subcontext_base.get()) != nullptr);
+      std::unique_ptr<Context<T>> subcontext(
+          static_cast<Context<T>*>(subcontext_base.release()));
+      auto suboutput = sys.AllocateOutput(*subcontext);
+      context->AddSystem(i, std::move(subcontext), std::move(suboutput));
+    }
+
+    // TODO(sherm1) Move to separate interconnection phase.
+    // Wire up the Diagram-internal inputs and outputs.
+    for (const auto& connection : connection_map_) {
+      const OutputPortLocator& src = connection.second;
+      const InputPortLocator& dest = connection.first;
+      context->Connect(ConvertToContextPortIdentifier(src),
+                       ConvertToContextPortIdentifier(dest));
+    }
+
+    // Declare the Diagram-external inputs.
+    for (const InputPortLocator& id : input_port_ids_) {
+      context->ExportInput(ConvertToContextPortIdentifier(id));
+    }
+
+    // TODO(sherm1) Move to final resource allocation phase.
+    context->MakeState();
+    context->MakeParameters();
+
+    return context;
+  }
+
+  // Permits child Systems to take a look at the completed Context to see
+  // if they have any objections.
+  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
+    auto& context = dynamic_cast<const DiagramContext<T>&>(context_base);
+
+    // Depth-first validation of Context to make sure restrictions are met.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      const Context<T>& subcontext = context.GetSubsystemContext(i);
+      SystemBase::ValidateAllocatedContext(sys, subcontext);
+    }
+  }
+
   // Returns true if there might be direct feedthrough from the given
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
   bool DoHasDirectFeedthrough(int input_port, int output_port) const {

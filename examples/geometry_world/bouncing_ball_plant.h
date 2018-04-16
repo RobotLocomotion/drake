@@ -45,7 +45,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
   /** Returns the port to output state. */
   const systems::OutputPort<T>& get_state_output_port() const;
-  const systems::OutputPort<T>& get_geometry_id_output_port() const;
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
   void set_z(systems::Context<T>* context, const T& z) const {
@@ -82,21 +81,9 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   void CopyStateToOutput(const systems::Context<T>& context,
                          BouncingBallVector<T>* state_output_vector) const;
 
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
-
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the id output.
-  void CalcFrameIdOutput(const systems::Context<T>& context,
-                         geometry::FrameIdVector* frame_ids) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
@@ -138,7 +125,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   // The id for the ball's geometry.
   geometry::GeometryId ball_id_;
 
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
   int state_port_{-1};
   int geometry_query_port_{-1};

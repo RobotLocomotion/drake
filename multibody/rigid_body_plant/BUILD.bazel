@@ -84,6 +84,7 @@ drake_cc_library(
     deps = [
         "//geometry:geometry_ids",
         "//geometry:geometry_system",
+        "//geometry:materials",
         "//multibody:rigid_body_tree",
     ],
 )

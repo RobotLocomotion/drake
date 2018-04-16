@@ -93,6 +93,15 @@ class LeafSystem : public System<T> {
     return std::make_unique<LeafCompositeEventCollection<T>>();
   }
 
+  /// Shadows System<T>::AllocateContext to provide a more concrete return
+  /// type LeafContext<T>.
+  std::unique_ptr<LeafContext<T>> AllocateContext() const {
+    std::unique_ptr<Context<T>> context = System<T>::AllocateContext();
+    DRAKE_DEMAND(dynamic_cast<Context<T>*>(context.get()) != nullptr);
+    return std::unique_ptr<LeafContext<T>>(
+        static_cast<LeafContext<T>*>(context.release()));
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -117,7 +126,7 @@ class LeafSystem : public System<T> {
   }
   /// @endcond
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
@@ -129,35 +138,42 @@ class LeafSystem : public System<T> {
     // Reserve parameters via delegation to subclass.
     context->set_parameters(this->AllocateParameters());
 
-    // Enforce some requirements on the fully-assembled Context.
-    // -- The continuous state must be contiguous, i.e., a valid BasicVector.
-    //    (In general, a System's Context's continuous state can be any kind of
-    //    VectorBase including scatter-gather implementations like Supervector.
-    //    But for a LeafSystem with LeafContext, we only allow BasicVectors,
-    //    which are guaranteed to have a linear storage layout.)  If the xc is
-    //    not BasicVector, the dynamic_cast will yield nullptr, and the
-    //    invariant-checker will complain.
-    const VectorBase<T>* const xc = &context->get_continuous_state_vector();
-    detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
-    // -- The discrete state must all be valid BasicVectors.
-    for (const BasicVector<T>* group :
-         context->get_state().get_discrete_state().get_data()) {
-      detail::CheckBasicVectorInvariants(group);
-    }
-    // -- The numeric parameters must all be valid BasicVectors.
-    const int num_numeric_parameters = context->num_numeric_parameters();
-    for (int i = 0; i < num_numeric_parameters; ++i) {
-      const BasicVector<T>& group = context->get_numeric_parameter(i);
-      detail::CheckBasicVectorInvariants(&group);
-    }
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
 
-    return std::move(context);
+    return context;
+  }
+
+  // Enforce some requirements on the fully-assembled Context.
+  // -- The continuous state must be contiguous, i.e., a valid BasicVector.
+  //    (In general, a System's Context's continuous state can be any kind of
+  //    VectorBase including scatter-gather implementations like Supervector.
+  //    But for a LeafSystem with LeafContext, we only allow BasicVectors,
+  //    which are guaranteed to have a linear storage layout.)  If the xc is
+  //    not BasicVector, the dynamic_cast will yield nullptr, and the
+  //    invariant-checker will complain.
+  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
+    auto& context = dynamic_cast<const LeafContext<T>&>(context_base);
+    const VectorBase<T>* const xc = &context.get_continuous_state_vector();
+    detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
+    // -- The discrete state must all be valid BasicVectors.
+    for (const BasicVector<T>* group :
+        context.get_state().get_discrete_state().get_data()) {
+      detail::CheckBasicVectorInvariants(group);
+    }
+    // -- The numeric parameters must all be valid BasicVectors.
+    const int num_numeric_parameters = context.num_numeric_parameters();
+    for (int i = 0; i < num_numeric_parameters; ++i) {
+      const BasicVector<T>& group = context.get_numeric_parameter(i);
+      detail::CheckBasicVectorInvariants(&group);
+    }
+
+    // Allow derived LeafSystem to validate allocated Context.
+    DoValidateAllocatedLeafContext(context);
   }
 
   /// Default implementation: sets all continuous state to the model vector
-  /// given in DeclareContinousState (or zero if no model vector was given) and
+  /// given in DeclareContinuousState (or zero if no model vector was given) and
   /// discrete states to zero.  This method makes no attempt to set abstract
   /// state values.  Overrides must not change the number of state variables.
   // TODO(sherm/russt): Initialize the discrete state from the model vector
@@ -204,12 +220,11 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const final {
+      const Context<T>&) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
-      output->add_port(std::make_unique<OutputPortValue>(
-          port.Allocate(context)));
+      output->add_port(std::make_unique<OutputPortValue>(port.Allocate()));
     }
     return std::move(output);
   }
@@ -298,13 +313,19 @@ class LeafSystem : public System<T> {
   /// leaf systems with custom derived leaf system contexts should override this
   /// to provide a context of the appropriate type. The returned context should
   /// be "empty"; invoked by AllocateContext(), the caller will take the
-  /// responsibility to initialize the core LeafContext data.
-  // TODO(SeanCurtis-TRI): This currently assumes that derived LeafContext
-  // classes do *not* add new data members. If that changes, e.g., with the
-  // advent of the cache, this documentation should be changed to include the
-  // initialization of the sub-class's *unique* data members.
+  /// responsibility to initialize the core LeafContext data. The default
+  /// implementation provides a default-constructed `LeafContext<T>`.
   virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  /// Derived classes that impose restrictions on what resources are permitted
+  /// should check those restrictions by implementing this. For example, a
+  /// derived class might require a single input and single output. The default
+  /// implementation does nothing.
+  virtual void DoValidateAllocatedLeafContext(
+      const LeafContext<T>& context) const {
+    unused(context);
   }
 
   // =========================================================================
@@ -1016,7 +1037,7 @@ class LeafSystem : public System<T> {
           // object needs a member field to maintain storage for our result.
           // We must use a shared_ptr not because we share storage, but because
           // our lambda must be copyable.  This will go away once Eval works.
-          storage = port.Allocate(context);
+          storage = port.Allocate();
           // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
           port.Calc(context, storage.get());
           return storage->GetValue<BasicVector<T>>();
@@ -1128,34 +1149,6 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued output port by specifying member functions to
   /// use both for the allocator and calculator. The signatures are:
   /// @code
-  /// OutputType MySystem::MakeOutputValue(const Context<T>&) const;
-  /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
-  /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// is any concrete type such that `Value<OutputType>` is permitted. See
-  /// alternate signature if your allocator method does not need a Context.
-  /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
-  template <class MySystem, typename OutputType>
-  const OutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)(const Context<T>&) const,
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>& context) {
-          return AbstractValue::Make((this_ptr->*make)(context));
-        },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        });
-    return port;
-  }
-
-  /// Declares an abstract-valued output port by specifying member functions to
-  /// use both for the allocator and calculator. The signatures are:
-  /// @code
   /// OutputType MySystem::MakeOutputValue() const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
@@ -1171,7 +1164,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>&) {  // Swallow the context.
+        [this_ptr, make]() {
           return AbstractValue::Make((this_ptr->*make)());
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
@@ -1565,7 +1558,7 @@ class LeafSystem : public System<T> {
     // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [model = std::move(owned_model)](const Context<T>&) {
+    return [model = std::move(owned_model)]() {
       return model->Clone();
     };
   }
@@ -1607,25 +1600,25 @@ class LeafSystem : public System<T> {
   // Update or Publish events that need to be handled at system initialization.
   LeafCompositeEventCollection<T> initialization_events_;
 
-  // A model continuous state to be used in AllocateDefaultContext.
+  // A model continuous state to be used during Context allocation.
   std::unique_ptr<BasicVector<T>> model_continuous_state_vector_;
   int num_generalized_positions_{0};
   int num_generalized_velocities_{0};
   int num_misc_continuous_states_{0};
 
-  // A model discrete state to be used in AllocateDefaultContext.
+  // A model discrete state to be used during Context allocation.
   std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
 
-  // A model abstract state to be used in AllocateAbstractState.
+  // A model abstract state to be used during Context allocation.
   detail::ModelValues model_abstract_states_;
 
-  // Model inputs to be used in AllocateOutput{Vector,Abstract}.
+  // Model inputs to be used in AllocateInput{Vector,Abstract}.
   detail::ModelValues model_input_values_;
 
-  // Model numeric parameters to be used in AllocateParameters.
+  // Model numeric parameters to be used during Context allocation.
   detail::ModelValues model_numeric_parameters_;
 
-  // Model abstract parameters to be used in AllocateParameters.
+  // Model abstract parameters to be used during Context allocation.
   detail::ModelValues model_abstract_parameters_;
 };
 

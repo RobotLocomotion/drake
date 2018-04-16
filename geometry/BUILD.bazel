@@ -31,11 +31,9 @@ drake_cc_library(
 drake_cc_library(
     name = "frame_kinematics",
     srcs = [
-        "frame_id_vector.cc",
         "frame_kinematics_vector.cc",
     ],
     hdrs = [
-        "frame_id_vector.h",
         "frame_kinematics_vector.h",
     ],
     deps = [
@@ -85,10 +83,21 @@ drake_cc_library(
     hdrs = ["geometry_instance.h"],
     deps = [
         ":geometry_ids",
+        ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
     ],
+)
+
+drake_cc_library(
+    # NOTE: The material library and file name don't appear to match. This
+    # library will eventually contain multiple types of materials (e.g.,
+    # contact, rendering, depth, etc.)
+    name = "materials",
+    srcs = ["visual_material.cc"],
+    hdrs = ["visual_material.h"],
+    deps = ["//common"],
 )
 
 drake_cc_library(
@@ -158,6 +167,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
+        ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -185,14 +195,6 @@ drake_cc_googletest(
     deps = [
         ":proximity_engine",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frame_id_vector_test",
-    deps = [
-        ":frame_kinematics",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -235,6 +237,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geometry_visualization_test",
+    deps = [
+        ":geometry_visualization",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "identifier_test",
     deps = [":identifier"],
 )
@@ -252,6 +262,13 @@ drake_cc_googletest(
     deps = [
         ":shape_specification",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "visual_material_test",
+    deps = [
+        ":materials",
     ],
 )
 

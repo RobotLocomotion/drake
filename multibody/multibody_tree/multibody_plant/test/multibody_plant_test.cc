@@ -29,7 +29,6 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
 using geometry::GeometrySystem;
@@ -154,13 +153,6 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Verify that methods with pre-Finalize() conditions throw accordingly.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->get_geometry_ids_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
-
-    DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_geometry_poses_output_port(),
         std::logic_error,
         /* Verify this method is throwing for the right reasons. */
@@ -178,10 +170,6 @@ class AcrobotPlantTests : public ::testing::Test {
     // GeometrySystem.
     plant_->Finalize();
 
-    builder.Connect(
-        plant_->get_geometry_ids_output_port(),
-        geometry_system_->get_source_frame_id_port(
-            plant_->get_source_id().value()));
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
         geometry_system_->get_source_pose_port(
@@ -306,20 +294,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   std::unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant_->get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
   std::unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate(*context);
+      plant_->get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -331,8 +312,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
     const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = poses.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
@@ -406,20 +386,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
       context.get());
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant.get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
   std::unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate(*context);
+      plant.get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
-  const FramePoseVector<double>& poses =
+  const FramePoseVector<double>& pose_data =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -431,8 +404,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = pose_data.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
@@ -510,7 +482,7 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   elbow_->set_angular_rate(context.get(), 2.5);
 
   std::unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate(*context);
+      plant_->get_continuous_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->GetValueOrThrow<BasicVector<double>>();

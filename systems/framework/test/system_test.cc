@@ -44,10 +44,6 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> AllocateContext() const override {
-    return nullptr;
-  }
-
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -212,6 +208,12 @@ class TestSystem : public System<double> {
   }
 
  private:
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    return std::make_unique<LeafContext<double>>();
+  }
+
+  void DoValidateAllocatedContext(const ContextBase&) const final {}
+
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
   mutable std::vector<int> published_numbers_;
@@ -409,7 +411,7 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareAbstractInputPort();
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
-        [](const Context<T>&) { return AbstractValue::Make(std::string()); },
+        []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
         }));
@@ -422,7 +424,7 @@ class ValueIOTestSystem : public System<T> {
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
         *this,
         1,  // Vector size.
-        [](const Context<T>&) {
+        []() {
           return std::make_unique<Value<BasicVector<T>>>(1);
         },
         [this](const Context<T>& context, BasicVector<T>* output) {
@@ -465,11 +467,13 @@ class ValueIOTestSystem : public System<T> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::move(context);
   }
+
+  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
@@ -514,8 +518,8 @@ class ValueIOTestSystem : public System<T> {
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(
         new LeafSystemOutput<T>);
-    output->add_port(this->get_output_port(0).Allocate(context));
-    output->add_port(this->get_output_port(1).Allocate(context));
+    output->add_port(this->get_output_port(0).Allocate());
+    output->add_port(this->get_output_port(1).Allocate());
     return std::move(output);
   }
 

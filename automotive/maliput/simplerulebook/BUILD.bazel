@@ -15,6 +15,7 @@ drake_cc_library(
     hdrs = [],
     deps = [
         ":simple_rulebook",
+        ":yaml_io",
     ],
 )
 
@@ -35,6 +36,20 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "yaml_io",
+    srcs = [
+        "yaml_io.cc",
+    ],
+    hdrs = [
+        "yaml_io.h",
+    ],
+    deps = [
+        ":simple_rulebook",
+        "@yaml_cpp",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -43,6 +58,16 @@ drake_cc_googletest(
     deps = [
         ":simple_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "yaml_io_test",
+    size = "small",
+    deps = [
+        ":yaml_io",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

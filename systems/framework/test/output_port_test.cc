@@ -40,13 +40,13 @@ class DummySystem : public LeafSystem<double> {
 // These functions match the signatures required by LeafOutputPort.
 
 // AllocCallback that returns a string in an AbstractValue.
-unique_ptr<AbstractValue> alloc_string(const Context<double>&) {
+unique_ptr<AbstractValue> alloc_string() {
   return AbstractValue::Make(string("from alloc_string"));
 }
 
 // AllocCallback that returns a MyVector3d(-1,-2,-3), wrapped in a
 // Value<BasicVector>.
-unique_ptr<AbstractValue> alloc_myvector3(const Context<double>&) {
+unique_ptr<AbstractValue> alloc_myvector3() {
   return Value<BasicVector<double>>(MyVector3d::Make(-1., -2., -3.)).Clone();
 }
 
@@ -105,7 +105,7 @@ class LeafOutputPortTest : public ::testing::Test {
 void AbstractPortCheck(const Context<double>& context,
                        const LeafOutputPort<double>& port,
                        string alloc_string) {
-  unique_ptr<AbstractValue> val = port.Allocate(context);
+  unique_ptr<AbstractValue> val = port.Allocate();
   EXPECT_EQ(val->GetValueOrThrow<string>(), alloc_string);
   port.Calc(context, val.get());
   EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
@@ -125,7 +125,7 @@ void VectorPortCheck(const Context<double>& context,
                      Vector3d alloc_value) {
   // Treat the vector-valued port as a BasicVector, which
   // should have MyVector3d as concrete type.
-  unique_ptr<AbstractValue> val = port.Allocate(context);
+  unique_ptr<AbstractValue> val = port.Allocate();
   auto& basic = val->template GetMutableValueOrThrow<BasicVector<double>>();
   MyVector3d& myvector3 = dynamic_cast<MyVector3d&>(basic);
   EXPECT_EQ(basic.get_value(), alloc_value);
@@ -143,7 +143,7 @@ TEST_F(LeafOutputPortTest, VectorPorts) {
 }
 
 // AllocCallback that returns an illegal null value.
-unique_ptr<AbstractValue> alloc_null(const Context<double>&) {
+unique_ptr<AbstractValue> alloc_null() {
   return nullptr;
 }
 
@@ -151,7 +151,7 @@ unique_ptr<AbstractValue> alloc_null(const Context<double>&) {
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
   LeafOutputPort<double> null_port{dummy_, alloc_null, calc_string};
-  EXPECT_THROW(null_port.Allocate(*context_), std::logic_error);
+  EXPECT_THROW(null_port.Allocate(), std::logic_error);
 }
 
 // Check that Debug builds catch bad output types. We can't run these tests
@@ -160,14 +160,14 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
 #ifndef DRAKE_ASSERT_IS_DISARMED
 TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   // The abstract port is a string; let's give it an int.
-  auto good_out = absport_general_.Allocate(*context_);
+  auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
   EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
   EXPECT_THROW(absport_general_.Calc(*context_, bad_out.get()),
                std::logic_error);
 
   // The vector port is a MyVector<3,double>, we'll give it a shorter one.
-  auto good_vec = vecport_general_.Allocate(*context_);
+  auto good_vec = vecport_general_.Allocate();
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
   EXPECT_THROW(vecport_general_.Calc(*context_, bad_vec.get()),
@@ -230,8 +230,8 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   auto context = diagram.CreateDefaultContext();
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
-  auto value0 = out0.Allocate(*context);  // unique_ptr<AbstractValue>
-  auto value1 = out1.Allocate(*context);
+  auto value0 = out0.Allocate();  // unique_ptr<AbstractValue>
+  auto value1 = out1.Allocate();
   const int* int0{};
   const int* int1{};
   EXPECT_NO_THROW(int0 = &value0->GetValueOrThrow<int>());
@@ -250,9 +250,9 @@ GTEST_TEST(DiagramOutputPortTest, Nested) {
   auto& out0 = diagram.get_output_port(0);
   auto& out1 = diagram.get_output_port(1);
   auto& out2 = diagram.get_output_port(2);
-  auto value0 = out0.Allocate(*context);  // unique_ptr<AbstractValue>
-  auto value1 = out1.Allocate(*context);
-  auto value2 = out2.Allocate(*context);
+  auto value0 = out0.Allocate();  // unique_ptr<AbstractValue>
+  auto value1 = out1.Allocate();
+  auto value2 = out2.Allocate();
   const int* int0{};
   const int* int1{};
   const int* int2{};

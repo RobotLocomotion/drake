@@ -1,4 +1,4 @@
-#include "drake/systems/framework/cache.h"
+#include "drake/systems/framework/cache_entry.h"
 
 // Tests the System (const) side of caching, which consists of a CacheEntry
 // objects that can be provided automatically or defined by users. When a
@@ -32,13 +32,13 @@ namespace systems {
 namespace {
 
 // Free functions suitable for defining cache entries.
-auto Alloc3 = [](const ContextBase&) { return AbstractValue::Make<int>(3); };
+auto Alloc3 = []() { return AbstractValue::Make<int>(3); };
 auto Calc99 = [](const ContextBase&, AbstractValue* result) {
   result->SetValue(99);
 };
 
 // This one is fatally flawed since null is not allowed.
-auto AllocNull = [](const ContextBase&) {
+auto AllocNull = []() {
   return std::unique_ptr<AbstractValue>();
 };
 
@@ -120,7 +120,7 @@ class MySystemBase final : public SystemBase {
   const CacheEntry& vector_entry() const { return vector_entry_; }
 
   // For use as an allocator.
-  int MakeInt1(const MyContextBase&) const { return 1; }
+  int MakeInt1() const { return 1; }
   // For use as a cache entry calculator.
   void CalcInt98(const MyContextBase& my_context, int* out) const {
     *out = 98;
@@ -133,11 +133,13 @@ class MySystemBase final : public SystemBase {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<MyContextBase>();
   }
 
-  void DoCheckValidContext(const ContextBase&) const override {}
+  void DoValidateAllocatedContext(const ContextBase& context) const final {}
+
+  void DoCheckValidContext(const ContextBase&) const final {}
 
   const CacheEntry& entry0_;
   const CacheEntry& entry1_;

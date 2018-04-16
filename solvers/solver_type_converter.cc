@@ -12,6 +12,7 @@
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/unrevised_lemke_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -40,6 +41,8 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return SnoptSolver::id();
     case SolverType::kScs:
       return ScsSolver::id();
+    case SolverType::kUnrevisedLemke:
+      return UnrevisedLemkeSolverId::id();
   }
   DRAKE_ABORT();
 }
@@ -67,6 +70,8 @@ optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kOsqp;
   } else if (solver_id == ScsSolver::id()) {
     return SolverType::kScs;
+  } else if (solver_id == UnrevisedLemkeSolverId::id()) {
+    return SolverType::kUnrevisedLemke;
   } else {
     return nullopt;
   }

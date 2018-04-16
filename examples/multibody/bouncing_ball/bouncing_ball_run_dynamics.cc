@@ -109,10 +109,6 @@ int do_main() {
   DRAKE_DEMAND(!!plant.get_source_id());
 
   builder.Connect(
-      plant.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          plant.get_source_id().value()));
-  builder.Connect(
       plant.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(geometry_system.get_query_output_port(),
@@ -140,7 +136,7 @@ int do_main() {
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, z0);

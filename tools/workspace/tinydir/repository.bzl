@@ -8,8 +8,8 @@ def tinydir_repository(
     github_archive(
         name = name,
         repository = "cxong/tinydir",
-        commit = "3aae9224376b5e1a23fd824f19d9501162620b53",
-        sha256 = "fa7eec0baaa5f6c57df1a38b064ec3a4f098f477f0a64d97c646a4470ffdd3b6",  # noqa
+        commit = "677733daa2859c963da953872f8d591251c2ae5e",
+        sha256 = "ac87282bf2a127df61fabe2eb2e4cbe2adb2050ecf3c4b9885ffddd4bf887125",  # noqa
         build_file = "@drake//tools/workspace/tinydir:package.BUILD.bazel",
         mirrors = mirrors,
     )

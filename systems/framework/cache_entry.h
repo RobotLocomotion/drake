@@ -47,7 +47,7 @@ class CacheEntry {
   a value of a particular cache entry. The result is always returned as an
   AbstractValue but must contain the correct concrete type. */
   using AllocCallback =
-      std::function<std::unique_ptr<AbstractValue>(const ContextBase&)>;
+      std::function<std::unique_ptr<AbstractValue>()>;
 
   /** Signature of a function suitable for calculating a value of a particular
   cache entry, given a place to put the value. */
@@ -97,10 +97,8 @@ class CacheEntry {
   /** Invokes this cache entry's allocator function to allocate a concrete
   object suitable for holding the value to be held in this cache entry, and
   returns that as an AbstractValue. The returned object will never be null.
-  @pre `context` is a subcontext that is compatible with the subsystem that owns
-       this cache entry.
   @throws std::logic_error if the allocator function returned null. */
-  std::unique_ptr<AbstractValue> Allocate(const ContextBase& context) const;
+  std::unique_ptr<AbstractValue> Allocate() const;
 
   /** Unconditionally computes the value this cache entry should have given a
   particular context, into an already-allocated object.
@@ -291,8 +289,7 @@ class CacheEntry {
 
   // Check that an AbstractValue provided to Calc() is suitable for this cache
   // entry. (Very expensive; use in Debug only.)
-  void CheckValidAbstractValue(const ContextBase& context,
-                               const AbstractValue& proposed) const;
+  void CheckValidAbstractValue(const AbstractValue& proposed) const;
 
   // Provides an identifying prefix for error messages.
   std::string FormatName(const char* api) const;
