@@ -38,20 +38,18 @@ class LineRoadCurve : public RoadCurve {
   /// @param computation_policy Policy to guide all computations. If geared
   /// towards speed, computations will make use of analytical expressions even
   /// if not actually correct for the curve as specified.
+  /// @throw std::runtime_error if @p linear_tolerance is not a positive number.
+  /// @throw std::runtime_error if @p scale_length is not a positive number.
   explicit LineRoadCurve(
       const Vector2<double>& xy0, const Vector2<double>& dxy,
       const CubicPolynomial& elevation,
       const CubicPolynomial& superelevation,
-      double linear_tolerance = 0.01, double scale_length = 1.0,
-      const ComputationPolicy computation_policy =
-         ComputationPolicy::kPreferAccuracy)
+      double linear_tolerance, double scale_length,
+      ComputationPolicy computation_policy)
       : RoadCurve(linear_tolerance, scale_length,
                   elevation, superelevation,
                   computation_policy),
         p0_(xy0), dp_(dxy), heading_(std::atan2(dxy.y(), dxy.x())) {
-    // TODO(hidmic): Remove default values in trailing arguments, which were
-    // added in the first place to defer the need to propagate changes upwards
-    // in the class hierarchy.
     DRAKE_DEMAND(dxy.norm() > kMinimumNorm);
   }
 
