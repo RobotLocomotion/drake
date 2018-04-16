@@ -40,9 +40,6 @@ int do_main() {
   publisher->set_publish_period(1 / 60.0);
 
   builder.Connect(
-      solar_system->get_geometry_id_output_port(),
-      geometry_system->get_source_frame_id_port(solar_system->source_id()));
-  builder.Connect(
       solar_system->get_geometry_pose_output_port(),
       geometry_system->get_source_pose_port(solar_system->source_id()));
 

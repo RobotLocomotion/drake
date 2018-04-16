@@ -105,10 +105,6 @@ int do_main() {
   DRAKE_DEMAND(!!plant.get_source_id());
 
   builder.Connect(
-      plant.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          plant.get_source_id().value()));
-  builder.Connect(
       plant.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(geometry_system.get_query_output_port(),

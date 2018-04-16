@@ -113,7 +113,6 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
 
   geometry::SourceId source_id() const { return source_id_; }
 
-  const systems::OutputPort<T>& geometry_id_output_port() const;
   const systems::OutputPort<T>& geometry_pose_output_port() const;
   const systems::InputPortDescriptor<T>& rigid_body_plant_state_input_port()
       const;
@@ -128,18 +127,9 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
     return true;
   }
 
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput() const;
-
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
                            geometry::FramePoseVector<T>* poses) const;
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput() const;
-  // Calculate the id output.
-  void CalcFrameIdOutput(const MyContext& context,
-                         geometry::FrameIdVector* id_set) const;
 
   // The tree used to populate GeometrySystem and evaluate body kinematics.
   const RigidBodyTree<T>* const tree_{nullptr};
@@ -148,11 +138,13 @@ class RigidBodyPlantBridge : public systems::LeafSystem<T> {
   geometry::SourceId source_id_;
 
   // Port handles
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
   int plant_state_port_{-1};
 
-  // Registered data
+  // Registered frames. In this incarnation, body i's frame_id is stored in
+  // element i - 1. This is because *all* frames are currently being registered
+  // (regardless of weldedness or whether it has geometry) and we skip the
+  // world body (index 0).
   std::vector<geometry::FrameId> body_ids_;
 };
 }  // namespace systems
