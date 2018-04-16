@@ -30,6 +30,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
+using geometry::GeometryId;
 using geometry::GeometrySystem;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
@@ -344,21 +345,28 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   plant.RegisterAsSourceForGeometrySystem(&geometry_system);
 
   // A half-space for the ground geometry.
-  plant.RegisterCollisionGeometry(
+  CoulombFriction<double> ground_friction(0.5, 0.3);
+  GeometryId ground_id = plant.RegisterCollisionGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), &geometry_system);
+      geometry::HalfSpace(),
+      ground_friction, &geometry_system);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere1, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  GeometryId sphere1_id = plant.RegisterCollisionGeometry(
+      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere1_friction, &geometry_system);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere2, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere2_friction(0.7, 0.6);
+  GeometryId sphere2_id = plant.RegisterCollisionGeometry(
+      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere2_friction, &geometry_system);
+
   // We are done defining the model.
   plant.Finalize();
 
@@ -401,6 +409,14 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
+
+  // Verify we can retrieve friction coefficients.
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(ground_id) == ground_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere1_id) == sphere1_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {

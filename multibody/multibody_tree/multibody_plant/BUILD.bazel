@@ -21,11 +21,26 @@ drake_cc_library(
         "multibody_plant.h",
     ],
     deps = [
+        ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
         "//geometry:geometry_system",
         "//multibody/multibody_tree",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "coulomb_friction",
+    srcs = [
+        "coulomb_friction.cc",
+    ],
+    hdrs = [
+        "coulomb_friction.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:drake_bool",
     ],
 )
 
@@ -39,6 +54,26 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
         "//multibody/benchmarks/pendulum:make_pendulum_plant",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "coulomb_friction_test",
+    size = "small",
+    deps = [
+        ":coulomb_friction",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inclined_plane_test",
+    size = "medium",
+    timeout = "long",
+    deps = [
+        ":multibody_plant",
+        "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",
+        "//systems/analysis:simulator",
     ],
 )
 
