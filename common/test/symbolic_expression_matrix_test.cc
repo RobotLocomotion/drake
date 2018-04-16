@@ -74,6 +74,14 @@ TEST_F(SymbolicExpressionMatrixTest, EigenAdd) {
   EXPECT_EQ(M, M_expected);
 }
 
+TEST_F(SymbolicExpressionMatrixTest, GetVariableVector) {
+  const Vector3<Expression> evec(x_, y_, z_);
+  const VectorX<Variable> vec = get_variable_vector(evec);
+  EXPECT_EQ(vec(0), x_);
+  EXPECT_EQ(vec(1), y_);
+  EXPECT_EQ(vec(2), z_);
+}
+
 TEST_F(SymbolicExpressionMatrixTest, EigenSub1) {
   auto const M(A_ - A_);
   Eigen::Matrix<Expression, 3, 2> M_expected;
