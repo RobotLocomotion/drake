@@ -705,12 +705,12 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 
 template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
-    const T& v_tangent_BAc,
+    const T& speed_BcAc,
     const CoulombFriction<T>& friction) const {
-  DRAKE_ASSERT(v_tangent_BAc >= 0);
+  DRAKE_ASSERT(speed_BcAc >= 0);
   const T& mu_d = friction.dynamic_friction();
   const T& mu_s = friction.static_friction();
-  const T v = v_tangent_BAc * inv_v_stiction_tolerance_;
+  const T v = speed_BcAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
     return mu_d;
   } else if (v >= 1) {
