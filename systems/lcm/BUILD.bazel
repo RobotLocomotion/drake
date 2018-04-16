@@ -171,4 +171,8 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    # We need to more seriously refactor and deprecate some names here before
+    # we can start following package_library conventions.
+    enable_library_lint = False,
+)
