@@ -398,12 +398,12 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("SetInitialGuess",
           [](MathematicalProgram& prog,
              const MatrixXDecisionVariable& decision_variable_mat,
-             const Eigen::MatrixXd x0) {
+             const Eigen::MatrixXd& x0) {
             prog.SetInitialGuess(decision_variable_mat, x0);
           })
       .def("SetInitialGuessForAllVariables",
           [](MathematicalProgram& prog,
-             const Eigen::VectorXd x0) {
+             const Eigen::VectorXd& x0) {
             prog.SetInitialGuessForAllVariables(x0);
           })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
