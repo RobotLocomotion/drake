@@ -185,7 +185,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .value("kLinearSystem", SolverType::kLinearSystem)
       .value("kMobyLCP", SolverType::kMobyLCP)
       .value("kMosek", SolverType::kMosek)
-      .value("kNlopt", SolverType::kNlopt)
+      .value("kNlopt", SolverTypeConverterype::kNlopt)
       .value("kSnopt", SolverType::kSnopt);
 
   py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram");
@@ -389,6 +389,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
             const symbolic::Polynomial& p) {
           return prog.SubstituteSolution(p);
           })
+      .def("SetInitialGuess", &MathematicalProgram::SetInitialGuess)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
