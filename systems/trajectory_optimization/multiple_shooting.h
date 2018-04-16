@@ -218,13 +218,16 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// each knot point at the solution.
   Eigen::MatrixXd GetStateSamples() const;
 
-  /// Gets the input trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.
+  /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.  Requires that the system has at least one input
+  /// port.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
-  /// Gets the state trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.
+  /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
+  /// order of the trajectory will be determined by the integrator used in
+  /// the dynamic constraints.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 

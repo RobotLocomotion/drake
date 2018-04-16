@@ -182,6 +182,7 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructInputTrajectory()
     const {
+  DRAKE_DEMAND(context_->get_num_input_ports() > 0);
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> inputs(N());
@@ -204,8 +205,10 @@ DirectCollocation::ReconstructStateTrajectory()
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
     states[i] = GetSolution(state(i));
-    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
-        GetSolution(input(i)));
+    if (context_->get_num_input_ports() > 0) {
+      input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+          GetSolution(input(i)));
+    }
     context_->get_mutable_continuous_state().SetFromVector(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();
