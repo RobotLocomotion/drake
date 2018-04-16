@@ -291,6 +291,9 @@ filegroup(
 )
 
 add_lint_tests(
+    # We need to more seriously refactor and deprecate some names here before
+    # we can start following package_library conventions.
+    enable_library_lint = False,
     python_lint_extra_srcs = glob([
         "visualization/*.py",
     ]),
