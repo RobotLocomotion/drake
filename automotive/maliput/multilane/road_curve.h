@@ -300,7 +300,7 @@ class RoadCurve {
   RoadCurve(double linear_tolerance, double scale_length,
             const CubicPolynomial& elevation,
             const CubicPolynomial& superelevation,
-            const ComputationPolicy computation_policy);
+            ComputationPolicy computation_policy);
 
  private:
   // Computes the minimum radius of curvature along a parallel curve at a

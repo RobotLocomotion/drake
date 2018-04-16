@@ -38,13 +38,18 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   const double kTheta1{3.0 * M_PI / 4.0};
   const double kDTheta{kTheta1 - kTheta0};
   const Vector2<double> kCenter{10.0, 10.0};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const CubicPolynomial zp(0., 0., 0., 0.);
   const double kP0{0.};
   const double kP1{1.};
   const double kR{0.};
   const double kH{0.};
 
-  const ArcRoadCurve rc(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+  const ArcRoadCurve rc(kCenter, kRadius, kTheta0, kDTheta, zp, zp,
+                        kLinearTolerance, kScaleLength, kComputationPolicy);
 
   // A k = 0 order approximation uses a single segment, as n = 2^k,
   // where n is the segment count.
@@ -125,17 +130,69 @@ std::vector<CubicPolynomial> GetCubicPolynomials() {
     {1.0, 1.0, 1.0, 1.0}};
 }
 
+// Returns a collection of ArcRoadCurve instances for testing
+// that are simple enough for fast analytical computations to be
+// accurate.
+std::vector<std::shared_ptr<RoadCurve>> GetSimpleLineRoadCurves() {
+  const Vector2<double> kStart{1., 1.};
+  const Vector2<double> kEnd{10., -8.};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const CubicPolynomial zp{0., 0., 0., 0.};
+
+  std::vector<std::shared_ptr<RoadCurve>> road_curves;
+  for (const auto& elevation_polynomial : GetCubicPolynomials()) {
+    if (elevation_polynomial.order() <= 1) {
+      road_curves.push_back(std::make_shared<LineRoadCurve>(
+          kStart, kEnd - kStart, elevation_polynomial,
+          zp, kLinearTolerance, kScaleLength,
+          ComputationPolicy::kPreferSpeed));
+    }
+  }
+  return road_curves;
+}
+
+
 // Returns a collection of LineRoadCurve instances for testing.
 std::vector<std::shared_ptr<RoadCurve>> GetLineRoadCurves() {
   const Vector2<double> kStart{0., 0.};
   const Vector2<double> kEnd{10., -8.};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
 
   std::vector<std::shared_ptr<RoadCurve>> road_curves;
   for (const auto& elevation_polynomial : GetCubicPolynomials()) {
     for (const auto& superelevation_polynomial : GetCubicPolynomials()) {
       road_curves.push_back(std::make_shared<LineRoadCurve>(
           kStart, kEnd - kStart, elevation_polynomial,
-          superelevation_polynomial));
+          superelevation_polynomial, kLinearTolerance, kScaleLength,
+          ComputationPolicy::kPreferAccuracy));
+    }
+  }
+  return road_curves;
+}
+
+
+// Returns a collection of ArcRoadCurve instances for testing
+// that are simple enough for fast analytical computations to be
+// accurate.
+std::vector<std::shared_ptr<RoadCurve>> GetSimpleArcRoadCurves() {
+  const Vector2<double> kCenter{1., 1.};
+  const double kRadius{12.0};
+  const double kTheta0{M_PI / 9.};
+  const double kDTheta{M_PI / 3.};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const CubicPolynomial zp{0., 0., 0., 0.};
+
+  std::vector<std::shared_ptr<RoadCurve>> road_curves;
+  for (const auto& elevation_polynomial : GetCubicPolynomials()) {
+    if (elevation_polynomial.order() <= 1) {
+      road_curves.push_back(std::make_shared<ArcRoadCurve>(
+          kCenter, kRadius, kTheta0, kDTheta,
+          elevation_polynomial, zp,
+          kLinearTolerance, kScaleLength,
+          ComputationPolicy::kPreferSpeed));
     }
   }
   return road_curves;
@@ -147,21 +204,34 @@ std::vector<std::shared_ptr<RoadCurve>> GetArcRoadCurves() {
   const double kRadius{10.0};
   const double kTheta0{M_PI / 6.};
   const double kDTheta{M_PI / 2.};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
 
   std::vector<std::shared_ptr<RoadCurve>> road_curves;
   for (const auto& elevation_polynomial : GetCubicPolynomials()) {
     for (const auto& superelevation_polynomial : GetCubicPolynomials()) {
       road_curves.push_back(std::make_shared<ArcRoadCurve>(
         kCenter, kRadius, kTheta0, kDTheta,
-        elevation_polynomial, superelevation_polynomial));
+        elevation_polynomial, superelevation_polynomial,
+        kLinearTolerance, kScaleLength,
+        ComputationPolicy::kPreferAccuracy));
     }
   }
   return road_curves;
 }
 
+
+INSTANTIATE_TEST_CASE_P(SimpleAndFastLineRoadCurveAccuracyTest,
+                        RoadCurveAccuracyTest,
+                        ::testing::ValuesIn(GetSimpleLineRoadCurves()));
+
 INSTANTIATE_TEST_CASE_P(ExhaustiveLineRoadCurveAccuracyTest,
                         RoadCurveAccuracyTest,
                         ::testing::ValuesIn(GetLineRoadCurves()));
+
+INSTANTIATE_TEST_CASE_P(SimpleAndFastArcRoadCurveAccuracyTest,
+                        RoadCurveAccuracyTest,
+                        ::testing::ValuesIn(GetSimpleArcRoadCurves()));
 
 INSTANTIATE_TEST_CASE_P(ExhaustiveArcRoadCurveAccuracyTest,
                         RoadCurveAccuracyTest,

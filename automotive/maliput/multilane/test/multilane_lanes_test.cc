@@ -43,6 +43,9 @@ class MultilaneLanesParamTest : public ::testing::TestWithParam<double> {
     r0 = this->GetParam();
   }
 
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const CubicPolynomial zp{0., 0., 0., 0.};
   const double kHalfWidth{10.};
   const double kMaxHeight{5.};
@@ -67,7 +70,8 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   RoadGeometry rg(api::RoadGeometryId{"apple"},
                   kLinearTolerance, kAngularTolerance);
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<LineRoadCurve>(
-      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   const Vector3<double> s_vector = Vector3<double>(100., 50., 0.).normalized();
   const Vector3<double> r_vector = Vector3<double>(-50, 100., 0.).normalized();
   const Vector3<double> r_offset_vector = r0 * r_vector;
@@ -166,7 +170,8 @@ TEST_P(MultilaneLanesParamTest, FlatLineLane) {
   const double length = std::sqrt(std::pow(100, 2.) + std::pow(50, 2.));
   std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<LineRoadCurve>(
       Vector2<double>(100., -75.), Vector2<double>(100., 50.),
-      CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp);
+      CubicPolynomial(elevation / length, 0.0, 0.0, 0.0), zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -380,14 +385,13 @@ TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
   // Road curve's scale length is computed as
   // half the path length of a single corkscrew
   // turn.
-  const double kScaleLength =
+  const double kCorkscrewScaleLength =
       corkscrew_curve.length() / (2 * kTurns);
   std::unique_ptr<RoadCurve> road_curve =
       std::make_unique<LineRoadCurve>(
-          Vector2<double>(0., 0.),
-          Vector2<double>(kLength, 0.),
-          zp, corkscrew_polynomial,
-          kLinearTolerance, kScaleLength);
+          Vector2<double>(0., 0.), Vector2<double>(kLength, 0.),
+          zp, corkscrew_polynomial, kLinearTolerance,
+          kCorkscrewScaleLength, kComputationPolicy);
 
   RoadGeometry rg(api::RoadGeometryId{"corkscrew"},
                   kLinearTolerance,
@@ -489,7 +493,9 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double offset_radius = radius - r0;
 
   std::unique_ptr<RoadCurve> road_curve_1 =
-      std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp);
+      std::make_unique<ArcRoadCurve>(center, radius, theta0, d_theta, zp, zp,
+                                     kLinearTolerance, kScaleLength,
+                                     kComputationPolicy);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -601,7 +607,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double elevation = 10.;
   std::unique_ptr<RoadCurve> road_curve_2 = std::make_unique<ArcRoadCurve>(
       center, radius, theta0, d_theta,
-      CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp);
+      CubicPolynomial(elevation / radius / d_theta, 0.0, 0.0, 0.0), zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s2 = rg.NewJunction(api::JunctionId{"j2"})
                     ->NewSegment(api::SegmentId{"s2"}, std::move(road_curve_2),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -629,7 +636,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   // The result should be identical to Case 1.
   const double d_theta_overlap = 3 * M_PI;
   std::unique_ptr<RoadCurve> road_curve_3 = std::make_unique<ArcRoadCurve>(
-      center, radius, theta0, d_theta_overlap, zp, zp);
+      center, radius, theta0, d_theta_overlap, zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s3 =
       rg.NewJunction(api::JunctionId{"j3"})
       ->NewSegment(api::SegmentId{"s3"}, std::move(road_curve_3),
@@ -661,7 +669,8 @@ TEST_P(MultilaneLanesParamTest, FlatArcLane) {
   const double theta0_wrap = 1.2 * M_PI;
   const double d_theta_wrap = -0.4 * M_PI;
   std::unique_ptr<RoadCurve> road_curve_4 = std::make_unique<ArcRoadCurve>(
-      center, radius, theta0_wrap, d_theta_wrap, zp, zp);
+      center, radius, theta0_wrap, d_theta_wrap, zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s4 = rg.NewJunction(api::JunctionId{"j4"})
                     ->NewSegment(api::SegmentId{"s4"}, std::move(road_curve_4),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -779,7 +788,9 @@ TEST_P(MultilaneLanesParamTest, HillIntegration) {
                                         (-2. * (z1 - z0) / p_scale));
   std::unique_ptr<RoadCurve> road_curve_1 =
       std::make_unique<ArcRoadCurve>(Vector2<double>(-100., -100.), radius,
-                                     theta0, d_theta, kHillPolynomial, zp);
+                                     theta0, d_theta, kHillPolynomial, zp,
+                                     kLinearTolerance, kScaleLength,
+                                     kComputationPolicy);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
                                  -kHalfWidth + r0, kHalfWidth + r0,
@@ -836,6 +847,9 @@ INSTANTIATE_TEST_CASE_P(Offset, MultilaneLanesParamTest,
 
 GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
   CubicPolynomial zp{0., 0., 0., 0.};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kTheta = 0.10 * M_PI;  // superelevation
   const double kR0 = 0.;
   const double kHalfWidth = 10.;
@@ -846,7 +860,8 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
                   kLinearTolerance, kAngularTolerance);
   std::unique_ptr<RoadCurve> road_curve_1 = std::make_unique<ArcRoadCurve>(
       Vector2<double>(100., -75.), 100.0, 0.25 * M_PI, 1.5 * M_PI, zp,
-      CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.));
+      CubicPolynomial((kTheta) / (100. * 1.5 * M_PI), 0., 0., 0.),
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s1 = rg.NewJunction(api::JunctionId{"j1"})
                     ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve_1),
                                  -kHalfWidth + kR0, kHalfWidth + kR0,
@@ -940,6 +955,9 @@ GTEST_TEST(MultilaneLanesTest, ArcLaneWithConstantSuperelevation) {
 class MultilaneMultipleLanesTest : public ::testing::Test {
  protected:
   const CubicPolynomial zp{0., 0., 0., 0.};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kR0{10.};
   const double kRSpacing{15.};
   const double kRMin{2.};
@@ -953,7 +971,8 @@ TEST_F(MultilaneMultipleLanesTest, MultipleLineLanes) {
   RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
                   kAngularTolerance);
   std::unique_ptr<RoadCurve> road_curve = std::make_unique<LineRoadCurve>(
-      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp);
+      Vector2<double>(100., -75.), Vector2<double>(100., 50.), zp, zp,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
           ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kRMin,
@@ -1088,7 +1107,8 @@ TEST_F(MultilaneMultipleLanesTest, MultipleArcLanes) {
   RoadGeometry rg(api::RoadGeometryId{"apple"}, kLinearTolerance,
                   kAngularTolerance);
   std::unique_ptr<RoadCurve> road_curve = std::make_unique<ArcRoadCurve>(
-      kCenter, kRadius, kTheta0, kDTheta, zp, zp);
+      kCenter, kRadius, kTheta0, kDTheta, zp, zp, kLinearTolerance,
+      kScaleLength, kComputationPolicy);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
           ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve), kRMin,

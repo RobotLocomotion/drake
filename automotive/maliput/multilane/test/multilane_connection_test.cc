@@ -102,6 +102,10 @@ class MultilaneConnectionTest : public ::testing::Test {
   const EndpointXy kStartXy{20., 30., kHeading};
   const Endpoint kStartEndpoint{kStartXy, kLowFlatZ};
   const double kZeroTolerance{0.};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const double kVeryExact{1e-12};
 };
 
@@ -113,7 +117,8 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   const Endpoint kEndEndpoint{{40., 30., kHeading + kDTheta}, kLowFlatZ};
 
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
-                       kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset);
+                       kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset,
+                       kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_EQ(dut.type(), Connection::Type::kArc);
   EXPECT_EQ(dut.id(), kId);
   EXPECT_TRUE(
@@ -144,7 +149,8 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
 
   const double kLineLength{30. * std::sqrt(2.)};
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
-                       kLaneWidth, kLeftShoulder, kRightShoulder, kLineLength);
+                       kLaneWidth, kLeftShoulder, kRightShoulder, kLineLength,
+                       kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_EQ(dut.type(), Connection::Type::kLine);
   EXPECT_EQ(dut.id(), kId);
   EXPECT_TRUE(
@@ -191,7 +197,8 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
 
   const Connection flat_dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                             kLaneWidth, kLeftShoulder, kRightShoulder,
-                            kArcOffset);
+                            kArcOffset, kLinearTolerance, kScaleLength,
+                            kComputationPolicy);
   std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
   EXPECT_NE(dynamic_cast<ArcRoadCurve*>(road_curve.get()), nullptr);
   // Checks that the road curve starts and ends at given endpoints.
@@ -229,7 +236,8 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
                                       {5., 1., M_PI / 6., 1.}};
   const Connection complex_dut(kId, kStartEndpoint, kEndElevatedEndpoint.z(),
                                kNumLanes, kR0, kLaneWidth, kLeftShoulder,
-                               kRightShoulder, kArcOffset);
+                               kRightShoulder, kArcOffset, kLinearTolerance,
+                               kScaleLength, kComputationPolicy);
   std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
   // Checks that the road curve starts and ends at given endpoints.
   const Vector3<double> complex_origin =
@@ -272,7 +280,8 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
   const double kLineLength{30. * std::sqrt(2.)};
   const Connection flat_dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                             kLaneWidth, kLeftShoulder, kRightShoulder,
-                            kLineLength);
+                            kLineLength, kLinearTolerance, kScaleLength,
+                            kComputationPolicy);
   std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
   EXPECT_NE(dynamic_cast<LineRoadCurve*>(road_curve.get()), nullptr);
 
@@ -311,7 +320,8 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
                                       {5., 1., M_PI / 6., 1.}};
   const Connection complex_dut(kId, kStartEndpoint, kEndElevatedEndpoint.z(),
                                kNumLanes, kR0, kLaneWidth, kLeftShoulder,
-                               kRightShoulder, kLineLength);
+                               kRightShoulder, kLineLength, kLinearTolerance,
+                               kScaleLength, kComputationPolicy);
   std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
 
   // Checks that the road curve starts and ends at given endpoints.
@@ -397,6 +407,10 @@ class MultilaneConnectionEndpointZTest
   const double kLaneWidth{2.};
   const double kHeading{-M_PI / 4.};
   const EndpointXy kStartXy{20., 30., kHeading};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   EndpointZ start_z{};
   EndpointZ end_z{};
   double r0{};
@@ -413,7 +427,8 @@ TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {
   const double kDTheta{M_PI / 2.};
   const ArcOffset kArcOffset(kRadius, kDTheta);
   const Connection dut(kId, start_endpoint, end_z, num_lanes, r0, kLaneWidth,
-                       kLeftShoulder, kRightShoulder, kArcOffset);
+                       kLeftShoulder, kRightShoulder, kArcOffset,
+                       kLinearTolerance, kScaleLength, kComputationPolicy);
   const double kTheta0{kHeading - M_PI / 2.};
 
   // Wraps angles in [-π, π) range.
@@ -454,7 +469,8 @@ TEST_P(MultilaneConnectionEndpointZTest, LineLaneEndpoints) {
   const std::string kId{"line_connection"};
   const double kLineLength{25. * std::sqrt(2.)};
   const Connection dut(kId, start_endpoint, end_z, num_lanes, r0, kLaneWidth,
-                       kLeftShoulder, kRightShoulder, kLineLength);
+                       kLeftShoulder, kRightShoulder, kLineLength,
+                       kLinearTolerance, kScaleLength, kComputationPolicy);
   const Vector2<double> kDirection{45. - kStartXy.x(), 5. - kStartXy.y()};
   const Vector2<double> kNormalDirection =
       Vector2<double>(kDirection.y(), -kDirection.x()).normalized();

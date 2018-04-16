@@ -35,7 +35,9 @@ std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset) {
 Connection::Connection(const std::string& id, const Endpoint& start,
                        const EndpointZ& end_z, int num_lanes, double r0,
                        double lane_width, double left_shoulder,
-                       double right_shoulder, double line_length)
+                       double right_shoulder, double line_length,
+                       double linear_tolerance, double scale_length,
+                       ComputationPolicy computation_policy)
     : type_(kLine),
       id_(id),
       start_(start),
@@ -47,12 +49,17 @@ Connection::Connection(const std::string& id, const Endpoint& start,
       r_min_(r0 - lane_width / 2. - right_shoulder),
       r_max_(r0 + lane_width * (static_cast<double>(num_lanes - 1) + 0.5) +
              left_shoulder),
+      linear_tolerance_(linear_tolerance),
+      scale_length_(scale_length),
+      computation_policy_(computation_policy),
       line_length_(line_length) {
   DRAKE_DEMAND(num_lanes_ > 0);
   DRAKE_DEMAND(lane_width_ >= 0);
   DRAKE_DEMAND(left_shoulder_ >= 0);
   DRAKE_DEMAND(right_shoulder_ >= 0);
   DRAKE_DEMAND(r_max_ >= r_min_);
+  DRAKE_DEMAND(linear_tolerance_ > 0.);
+  DRAKE_DEMAND(scale_length_ > 0.);
   DRAKE_DEMAND(line_length_ > 0.);
   // Computes end Endpoint and RoadCurve.
   end_ = Endpoint(
@@ -70,7 +77,9 @@ Connection::Connection(const std::string& id, const Endpoint& start,
 Connection::Connection(const std::string& id, const Endpoint& start,
                        const EndpointZ& end_z, int num_lanes, double r0,
                        double lane_width, double left_shoulder,
-                       double right_shoulder, const ArcOffset& arc_offset)
+                       double right_shoulder, const ArcOffset& arc_offset,
+                       double linear_tolerance, double scale_length,
+                       ComputationPolicy computation_policy)
     : type_(kArc),
       id_(id),
       start_(start),
@@ -82,6 +91,9 @@ Connection::Connection(const std::string& id, const Endpoint& start,
       r_min_(r0 - lane_width / 2. - right_shoulder),
       r_max_(r0 + lane_width * (static_cast<double>(num_lanes - 1) + 0.5) +
              left_shoulder),
+      linear_tolerance_(linear_tolerance),
+      scale_length_(scale_length),
+      computation_policy_(computation_policy),
       radius_(arc_offset.radius()),
       d_theta_(arc_offset.d_theta()) {
   DRAKE_DEMAND(num_lanes_ > 0);
@@ -89,6 +101,8 @@ Connection::Connection(const std::string& id, const Endpoint& start,
   DRAKE_DEMAND(left_shoulder_ >= 0);
   DRAKE_DEMAND(right_shoulder_ >= 0);
   DRAKE_DEMAND(r_max_ >= r_min_);
+  DRAKE_DEMAND(linear_tolerance_ > 0.);
+  DRAKE_DEMAND(scale_length_ > 0.);
   DRAKE_DEMAND(radius_ > 0);
   // Fills arc related parameters, computes end Endpoint and creates the
   // RoadCurve.
@@ -221,8 +235,10 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           end_.z().theta() - start_.z().theta(),
           start_.z().theta_dot(),
           end_.z().theta_dot()));
-      return
-        std::make_unique<LineRoadCurve>(xy0, dxy, elevation, superelevation);
+      return std::make_unique<LineRoadCurve>(
+          xy0, dxy, elevation, superelevation,
+          linear_tolerance_, scale_length_,
+          computation_policy_);
     };
     case Connection::kArc: {
       const Vector2<double> center(cx_, cy_);
@@ -240,7 +256,8 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           start_.z().theta_dot(),
           end_.z().theta_dot()));
       return std::make_unique<ArcRoadCurve>(
-          center, radius_, theta0_, d_theta_, elevation, superelevation);
+          center, radius_, theta0_, d_theta_, elevation, superelevation,
+          linear_tolerance_, scale_length_, computation_policy_);
     };
     default: {
       DRAKE_ABORT();
