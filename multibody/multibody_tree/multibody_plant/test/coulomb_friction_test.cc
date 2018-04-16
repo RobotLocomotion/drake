@@ -107,6 +107,40 @@ GTEST_TEST(CoulombFriction, CalcContactFrictionFromSurfaceProperties) {
       friction1_with_frictionless == frictionless_with_friction1));
 }
 
+// Verify that the result of combining two identical surfaces returns the
+// Coulomb friction coefficients of the interacting surfaces.
+GTEST_TEST(CoulombFriction, SurfacesAreIdentical) {
+  CoulombFriction<double> surface1(0.8, 0.3);
+  CoulombFriction<double> surface2(surface1);  // A second identical surface.
+  CoulombFriction<double> surface1_with_surface2 =
+      CalcContactFrictionFromSurfaceProperties(surface1, surface2);
+  EXPECT_NEAR(
+      surface1.static_friction(), surface1_with_surface2.static_friction(),
+      5 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(
+      surface1.dynamic_friction(), surface1_with_surface2.dynamic_friction(),
+      5 * std::numeric_limits<double>::epsilon());
+}
+
+// Verify the implementation handles the case of two frictionless surfaces
+// correctly (handling of a 0/0 division).
+GTEST_TEST(CoulombFriction, BothSurfacesAreFrictionless) {
+  CoulombFriction<double> frictionless_surface1;
+  CoulombFriction<double> frictionless_surface2;
+  // Verify the surfaces are indeed frictionless.
+  EXPECT_EQ(frictionless_surface1.dynamic_friction(), 0);
+  EXPECT_EQ(frictionless_surface1.static_friction(), 0);
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      frictionless_surface1 == frictionless_surface2));
+
+  CoulombFriction<double> frictionless_with_frictionless =
+      CalcContactFrictionFromSurfaceProperties(frictionless_surface1,
+                                               frictionless_surface2);
+  // The result should be that of a frictionless surface pair.
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      frictionless_with_frictionless == CoulombFriction<double>()));
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
