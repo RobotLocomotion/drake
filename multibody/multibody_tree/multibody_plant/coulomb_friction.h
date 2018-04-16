@@ -12,7 +12,7 @@ namespace multibody_plant {
 ///   each other.
 /// - Dynamic (or kinematic) friction coefficient, for a pair of surfaces in
 ///   relative motion.
-/// These coefficients are an empirical property that characterize the
+/// These coefficients are an empirical property characterizing the
 /// interaction by friction between a pair of contacting surfaces. Friction
 /// coefficients depend upon the mechanical properties of the surfaces'
 /// materials and on the roughness of the surfaces. They are determined
