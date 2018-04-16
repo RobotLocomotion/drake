@@ -37,8 +37,9 @@ element {
 }
 element {
     name: "slope"
-    doc: "The angle of the ramp on which the compass gait is walking.  Must be non-negative so that forward == downhill (an assumption used in the foot collision witness function)."
+    doc: "The angle of the ramp on which the compass gait is walking.  Must have 0 <= slope < PI/2 so that forward == downhill (an assumption used in the foot collision witness function)."
     doc_units: "radians"
     default_value: "0.0525"
     min_value: "0.0"
+    max_value: "1.5707"
 }
