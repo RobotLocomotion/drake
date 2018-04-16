@@ -1001,11 +1001,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// of the stiction tolerance.
     StribeckModel() = default;
 
-    /// Computes the friction coefficient based on the relative tangential
-    /// *speed* `speed_BcAc` of the contact point on A relative to the
-    /// contact point on B. That is, `speed_BcAc = ‖vt_BcAc‖`, where `vt_BcAc`
-    /// is the tangential component of the velocity `v_BcAc` of contact point
-    /// frame `Ac` on A measured in frame `Bc` on B.
+    /// Computes the friction coefficient based on the tangential *speed*
+    /// `speed_BcAc` of the contact point `Ac` on A relative to the
+    /// contact point `Bc` on B. That is, `speed_BcAc = ‖vt_BcAc‖`, where
+    /// `vt_BcAc` is the tangential component of the velocity `v_BcAc` of
+    /// contact point `Ac` relative to point `Bc`.
     ///
     /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
