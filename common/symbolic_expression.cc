@@ -71,7 +71,8 @@ Expression NegateMultiplication(const Expression& e) {
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
-Expression::Expression(shared_ptr<ExpressionCell> ptr) : ptr_{std::move(ptr)} {}
+Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
+    : ptr_{std::move(ptr)} {}
 
 ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -836,6 +837,15 @@ const Expression& get_else_expression(const Expression& e) {
 
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
+
+VectorX<Variable> get_variable_vector(
+    const Eigen::Ref<const VectorX<Expression>>& evec) {
+  VectorX<Variable> vec(evec.size());
+  for (int i = 0; i < evec.size(); i++) {
+    vec(i) = get_variable(evec(i));
+  }
+  return vec;
+}
 
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const vector<Variable>& vars) {
