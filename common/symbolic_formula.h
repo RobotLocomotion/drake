@@ -105,9 +105,9 @@ formula.
 \note Formula class has an explicit conversion operator to bool. It evaluates a
 symbolic formula under an empty environment. If a symbolic formula includes
 variables, the conversion operator throws an exception. This operator is only
-intended for third-party code doing things like <tt>(imag(SymbolicExpression(0))
-== SymbolicExpression(0)) { ... };<tt> that we found in Eigen3 codebase. In
-general, a user of this class should explicitly call \c Evaluate from within
+intended for third-party code doing things like `(imag(SymbolicExpression(0))
+== SymbolicExpression(0)) { ... };` that we found in Eigen3 codebase. In
+general, a user of this class should explicitly call `Evaluate` from within
 Drake for readability.
 
 */
