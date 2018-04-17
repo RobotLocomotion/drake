@@ -22,6 +22,8 @@ Argument:
     name: A unique name for this rule.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
+
 def _impl(repository_ctx):
     mosek_major_version = 7
     mosek_minor_version = 1
@@ -48,7 +50,7 @@ def _impl(repository_ctx):
     platform_prefix = "tools/platform/{}".format(mosek_platform)
 
     if repository_ctx.os.name == "mac os x":
-        install_name_tool = repository_ctx.which("install_name_tool")
+        install_name_tool = which(repository_ctx, "install_name_tool")
 
         files = [
             "bin/libiomp5.dylib",
