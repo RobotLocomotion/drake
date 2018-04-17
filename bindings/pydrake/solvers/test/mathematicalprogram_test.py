@@ -306,7 +306,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # Test setting matrix values using both
         # 1d and 2d np arrays.
         init_1d = np.array([1, -1])
-        init_2d = np.array([[1],[-1]])
+        init_2d = np.array([[1], [-1]])
         prog.SetInitialGuess(x, init_1d)
         prog.SetInitialGuess(x, init_2d)
 
