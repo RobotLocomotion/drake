@@ -289,3 +289,18 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddConstraint(constraint, [0.], [2.], x)
         prog.Solve()
         self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
+
+    def test_set_initial_guess(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, 'x')
+
+        # Test setting individual variables
+        prog.SetInitialGuess(x[0], 0.5)
+        prog.SetInitialGuess(x[1], -0.1)
+        prog.SetInitialGuess(x[0], np.nan)
+
+        # Test setting matrix values
+        prog.SetInitialGuess(x, np.array([1, -1]))
+
+        # Test setting all values
+        prog.SetInitialGuessForAllVariables(np.array([1, -1]))
