@@ -464,7 +464,7 @@ TEST_F(PoseSelectorDragwayTest, EgoOrientation) {
 
   for (double yaw = -M_PI; yaw <= M_PI; yaw += 0.1) {
     // N.B. 0 corresponds to "aligned with the lane along the s-direction".
-    math::RollPitchYaw<double> rpy(0., 0., yaw)
+    math::RollPitchYaw<double> rpy(0., 0., yaw);
     ego_pose.set_rotation(rpy.ToQuaternion());
 
     const std::map<AheadOrBehind, const ClosestPose<double>> closest_poses =
