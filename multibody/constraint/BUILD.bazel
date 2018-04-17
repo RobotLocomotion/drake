@@ -1,26 +1,17 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
+    "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
+    "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
-    name = "constraint",
-    deps = [
-        ":constraint_problem_data",
-        ":constraint_solver",
-    ],
-)
-
 drake_cc_library(
-    name = "constraint_problem_data",
+    name = "constraint",
     hdrs = [
         "constraint_problem_data.h",
     ],
@@ -36,7 +27,7 @@ drake_cc_library(
         "constraint_solver.h",
     ],
     deps = [
-        ":constraint_problem_data",
+        ":constraint",
         "//solvers:mathematical_program",
     ],
 )

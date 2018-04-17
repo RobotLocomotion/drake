@@ -1,10 +1,9 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -20,9 +19,11 @@ exports_files([
 
 # This should encompass every cc_library in this package, except for items that
 # should only ever be linked into main() programs.
-drake_cc_package_library(
+drake_cc_library(
     name = "test_utilities",
     testonly = 1,
+    srcs = [],
+    hdrs = [],
     deps = [
         ":eigen_geometry_compare",
         ":eigen_matrix_compare",
@@ -33,6 +34,8 @@ drake_cc_package_library(
         ":random_polynomial_matrix",
         ":symbolic_test_util",
     ],
+    # Intentionally excluded items:
+    # - drake_cc_googletest_main
 )
 
 drake_cc_library(
@@ -102,15 +105,12 @@ drake_cc_library(
     ],
 )
 
+# This is only intended to be used by the drake_cc_googletest() macro.
+# Do not add it to ":test_utilities".
 drake_cc_library(
     name = "drake_cc_googletest_main",
     testonly = 1,
     srcs = ["drake_cc_googletest_main.cc"],
-    tags = [
-        # This is only intended to be used by the drake_cc_googletest() macro.
-        # Don't add this library into the ":test_utilities" package library.
-        "exclude_from_package",
-    ],
     deps = [
         "//common:text_logging_gflags",
         "@gtest//:without_main",

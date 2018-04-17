@@ -76,12 +76,6 @@ drake_py_binary(
     deps = [":formatter"],
 )
 
-drake_py_binary(
-    name = "library_lint_reporter",
-    testonly = 1,
-    srcs = ["library_lint_reporter.py"],
-)
-
 # === test ===
 
 drake_py_unittest(

@@ -342,42 +342,6 @@ def drake_cc_library(
         install_hdrs_exclude = install_hdrs_exclude,
         **kwargs)
 
-def _check_package_library_name(name):
-    # Assert that :name is the default library for native.package_name().
-    expected_name = native.package_name().split("/")[-1]
-    if name != expected_name:
-        fail(("The drake_cc_package_library(name = \"{}\", ...) " +
-              "should be named \"{}\"").format(name, expected_name))
-
-def drake_cc_package_library(
-        name,
-        deps = [],
-        testonly = 0,
-        visibility = ["//visibility:public"]):
-    """Creates a rule to declare a C++ "package" library -- a library whose
-    target name matches the current package and whose dependencies are
-    (usually) all of the other drake_cc_library targets in the current package.
-    In short, a library named //foo/bar (short for //foo/bar:bar) that
-    conveniently provides all of the C++ code from the //foo/bar package in one
-    place.
-
-    Using this macro documents the intent that the library is a summation of
-    everything in the current package and enables Drake's linter rules to
-    confirm that all of the drake_cc_library targets have been listed as deps.
-
-    The name must be the same as the final element of the current package.
-    This rule does not accept srcs, hdrs, etc. -- only deps.
-    The testonly argument has the same meaning as the native cc_library.
-    By default, this target has public visibility, but that may be overridden.
-    """
-    _check_package_library_name(name)
-    drake_cc_library(
-        name = name,
-        testonly = testonly,
-        tags = ["drake_cc_package_library"],
-        visibility = visibility,
-        deps = deps)
-
 def drake_cc_binary(
         name,
         srcs = [],

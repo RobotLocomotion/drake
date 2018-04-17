@@ -1,30 +1,14 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
-)
-
-drake_cc_package_library(
-    name = "multibody_tree",
-    deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree_context",
-        ":multibody_tree_core",
-        ":multibody_tree_element",
-        ":multibody_tree_indexes",
-        ":multibody_tree_topology",
-        ":rotational_inertia",
-        ":spatial_inertia",
-        ":unit_inertia",
-    ],
 )
 
 drake_cc_library(
@@ -85,7 +69,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_core",
+    name = "multibody_tree",
     srcs = [
         "body.cc",
         "body_node_impl.cc",
@@ -123,9 +107,6 @@ drake_cc_library(
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
     ],
-    # Hide this library outside of this package; users shoud depend on
-    # ":multibody_tree" broadly, not just ":multibody_tree_core".
-    visibility = ["//visibility:private"],
     deps = [
         ":multibody_tree_context",
         ":multibody_tree_element",

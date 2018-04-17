@@ -1,24 +1,12 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_package_library",
-)
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
-    name = "api",
-    deps = [
-        ":everything",
-    ],
-)
-
 drake_cc_library(
-    name = "everything",
+    name = "api",
     srcs = [
         "lane.cc",
         "lane_data.cc",
@@ -37,7 +25,6 @@ drake_cc_library(
         "segment.h",
         "type_specific_identifier.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//common:default_scalars",
         "//common:essential",
