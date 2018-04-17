@@ -30,10 +30,11 @@ Arguments:
     to be found.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
-    python_config = repository_ctx.which("python{}-config".format(
+    python_config = which(repository_ctx, "python{}-config".format(
         repository_ctx.attr.version))
 
     if not python_config:
