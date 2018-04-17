@@ -292,18 +292,27 @@ class TestMathematicalProgram(unittest.TestCase):
 
     def test_set_initial_guess(self):
         prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(2, 'x')
+        # Make the decision variable matrix explicitely
+        # 2x1 -- otherwise it is interpreted as a row
+        # vector under the hood, making the vector-value
+        # SetInitialGuess calls fail for 1d arrays.
+        x = prog.NewContinuousVariables(2, 1, 'x')
 
         # Test setting individual variables
-        prog.SetInitialGuess(x[0], 0.5)
-        prog.SetInitialGuess(x[1], -0.1)
-        prog.SetInitialGuess(x[0], np.nan)
+        prog.SetInitialGuess(x[0, 0], 0.5)
+        prog.SetInitialGuess(x[1, 0], -0.1)
+        prog.SetInitialGuess(x[0, 0], np.nan)
 
-        # Test setting matrix values
-        prog.SetInitialGuess(x, np.array([1, -1]))
+        # Test setting matrix values using both
+        # 1d and 2d np arrays.
+        init_1d = np.array([1, -1])
+        init_2d = np.array([[1], [-1]])
+        prog.SetInitialGuess(x, init_1d)
+        prog.SetInitialGuess(x, init_2d)
 
-        # Test setting all values
-        prog.SetInitialGuessForAllVariables(np.array([1, -1]))
+        # Test setting all values at once.
+        prog.SetInitialGuessForAllVariables(init_1d)
+        prog.SetInitialGuessForAllVariables(init_2d)
 
     def test_visualization_callback(self):
         prog = mp.MathematicalProgram()
