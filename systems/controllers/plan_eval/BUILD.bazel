@@ -23,7 +23,7 @@ drake_cc_library(
         "//manipulation/util:trajectory_utils",
         "//multibody:rigid_body_tree_alias_groups",
         "//systems/controllers:setpoint",
-        "//systems/controllers/qp_inverse_dynamics",
+        "//systems/controllers/qp_inverse_dynamics:control",
         "//systems/controllers/qp_inverse_dynamics:param_parser",
         "//systems/framework:value",
     ],
