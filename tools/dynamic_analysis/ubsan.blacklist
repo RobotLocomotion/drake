@@ -1,0 +1,2 @@
+# Blacklist file for UBSan
+# http://releases.llvm.org/4.0.1/tools/clang/SanitizerSpecialCaseList.html
