@@ -109,9 +109,7 @@ class Constraint : public EvaluatorBase {
    * @note if the users want to expose this method in a sub-class, do
    * using Constraint::UpdateLowerBound, as in LinearConstraint.
    */
-  template <typename Derived>
-  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
-  UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
+  void UpdateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& new_lb) {
     if (new_lb.rows() != num_constraints()) {
       throw std::logic_error("Lower bound has invalid dimension.");
     }
@@ -122,9 +120,7 @@ class Constraint : public EvaluatorBase {
    * @note if the users want to expose this method in a sub-class, do
    * using Constraint::UpdateUpperBound, as in LinearConstraint.
    */
-  template <typename Derived>
-  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
-  UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
+  void UpdateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
     if (new_ub.rows() != num_constraints()) {
       throw std::logic_error("Upper bound has invalid dimension.");
     }
@@ -138,11 +134,8 @@ class Constraint : public EvaluatorBase {
    * @note If the users want to expose this method in a sub-class, do
    * using Constraint::set_bounds, as in LinearConstraint.
    */
-  template <typename DerivedL, typename DerivedU>
-  typename std::enable_if<is_eigen_vector_of<DerivedL, double>::value &&
-                          is_eigen_vector_of<DerivedU, double>::value>::type
-  set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
-             const Eigen::MatrixBase<DerivedU>& upper_bound) {
+  void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+             const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
     if (lower_bound.rows() != num_constraints() ||
         upper_bound.rows() != num_constraints()) {
       throw std::runtime_error("Bounds have invalid dimensions.");
