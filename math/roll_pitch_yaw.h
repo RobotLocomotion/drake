@@ -65,7 +65,7 @@ class RollPitchYaw {
   /// Constructs a %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy roll, pitch, yaw angles (units of radians).
   /// @throws exception std::logic_error in debug builds if !IsValid(rpy).
-  explicit RollPitchYaw(const Vector3<T>& rpy) : roll_pitch_yaw_(rpy) {
+  explicit RollPitchYaw(const Vector3<T>& rpy) {
     SetOrThrowIfNotValidInDebugBuild(rpy);
   }
 
@@ -130,11 +130,8 @@ class RollPitchYaw {
   /// @throws exception std::logic_error in debug builds if rpy fails
   /// IsValid(rpy).
   void SetOrThrowIfNotValidInDebugBuild(const Vector3<T>& rpy) {
-#ifdef DRAKE_ASSERT_IS_ARMED
-    ThrowIfNotValid(rpy);
-#else
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(rpy));
     roll_pitch_yaw_ = rpy;
-#endif
   }
 
   // Stores the underlying roll-pitch-yaw angles.
