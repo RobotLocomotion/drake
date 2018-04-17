@@ -4,8 +4,10 @@ load("@drake//tools/workspace:execute.bzl", "path", "which")
 
 def _impl(repository_ctx):
     command = repository_ctx.attr.command
-    found_command = which(repository_ctx, command)
-
+    found_command = which(
+        repository_ctx,
+        command,
+        repository_ctx.attr.additional_search_paths)
     if not found_command:
         fail("Could not find {} on PATH={}".format(
             command, path(repository_ctx)))
@@ -23,6 +25,7 @@ exports_files(["{}"])
 which_repository = repository_rule(
     attrs = {
         "command": attr.string(mandatory = True),
+        "additional_search_paths": attr.string_list(),
     },
     local = True,
     implementation = _impl,
@@ -42,4 +45,6 @@ changes.
 
 Args:
     command (:obj:`str`): Short name of command, e.g., "cat".
+    additional_search_paths (:obj:`list` of :obj:`str`): List of additional
+        search paths.
 """
