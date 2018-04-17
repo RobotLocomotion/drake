@@ -879,8 +879,9 @@ namespace drake {
 namespace symbolic {
 
 /// Constructs a vector of variables from the vector of variable expressions.
-/// \pre{@p evec is a vector of variable expressions.}
-VectorX<Variable> get_variable_vector(
+/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// variable.
+VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec);
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
