@@ -182,6 +182,44 @@ class MultipleShooting : public solvers::MathematicalProgram {
     AddFinalCost(e(0, 0));
   }
 
+  typedef std::function<
+      void(const Eigen::Ref<const Eigen::VectorXd>& sample_times,
+           const Eigen::Ref<const Eigen::MatrixXd>& values)> TrajectoryCallback;
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * trajectory optimization.  The callback should be of the form
+   *   MyVisualization(sample_times, values),
+   * where breaks is a N-by-1 VectorXd of sample times, and values is a
+   * num_inputs-by-N MatrixXd representing the current (intermediate) value of
+   * the input trajectory at the break points in each column.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
+   */
+  solvers::Binding<solvers::VisualizationCallback>
+  AddInputTrajectoryCallback(const TrajectoryCallback& callback);
+
+  /**
+   * Adds a callback method to visualize intermediate results of the
+   * trajectory optimization.  The callback should be of the form
+   *   MyVisualization(sample_times, values),
+   * where sample_times is a N-by-1 VectorXd of sample times, and values is a
+   * num_states-by-N MatrixXd representing the current (intermediate) value of
+   * the state trajectory at the break points in each column.
+   *
+   * Note: Just like other costs/constraints, not all solvers support callbacks.
+   * Adding a callback here will force MathematicalProgram::Solve to select a
+   * solver that support callbacks.  For instance, adding a visualization
+   * callback to a quadratic programming problem may result in using a nonlinear
+   * programming solver as the default solver.
+   */
+  solvers::Binding<solvers::VisualizationCallback>
+  AddStateTrajectoryCallback(const TrajectoryCallback& callback);
+
   /// Set the initial guess for the trajectory decision variables.
   ///
   /// @param traj_init_u Initial guess for trajectory for control
@@ -206,9 +244,15 @@ class MultipleShooting : public solvers::MathematicalProgram {
       const trajectories::PiecewisePolynomial<double>& traj_init_u,
       const trajectories::PiecewisePolynomial<double>& traj_init_x);
 
+  /// Returns a vector containing the elapsed time at each knot point.
+  Eigen::VectorXd GetSampleTimes(
+      const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const;
+
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
-  Eigen::VectorXd GetSampleTimes() const;
+  Eigen::VectorXd GetSampleTimes() const {
+    return GetSampleTimes(this->GetSolution(h_vars_));
+  }
 
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
@@ -297,9 +341,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   const double fixed_timestep_{0.0};
 
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
-  // input/state sample or the
-  // empty vector (if timesteps
-  // are fixed).
+                                             // input/state sample or the empty
+                                             // vector (if timesteps are fixed).
   const solvers::VectorXDecisionVariable x_vars_;
   const solvers::VectorXDecisionVariable u_vars_;
 
