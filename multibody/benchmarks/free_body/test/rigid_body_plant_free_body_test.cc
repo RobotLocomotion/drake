@@ -326,7 +326,7 @@ void  TestDrakeSolutionForVariousInitialValues(
   for (double thetaX = 0; thetaX <= 2*M_PI; thetaX += 0.02*M_PI) {
     for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.05*M_PI) {
       const math::RollPitchYaw<double> spaceXYZ_angles(thetaX, thetaY, 0);
-      const Eigen::Quaterniond quat_NB_initial = spaceXYZ_angles.ToQuaternion();
+      quat_NB_initial = spaceXYZ_angles.ToQuaternion();
       torque_free_cylinder_exact.set_quat_NB_initial(quat_NB_initial);
 
       // Since there are 100*20 = 2000 total tests of initial conditions, only

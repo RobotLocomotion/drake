@@ -464,7 +464,8 @@ TEST_F(PoseSelectorDragwayTest, EgoOrientation) {
 
   for (double yaw = -M_PI; yaw <= M_PI; yaw += 0.1) {
     // N.B. 0 corresponds to "aligned with the lane along the s-direction".
-    ego_pose.set_rotation(RollPitchYaw<double>(0., 0., yaw).ToQuaternion());
+    math::RollPitchYaw<double> rpy(0., 0., yaw)
+    ego_pose.set_rotation(rpy.ToQuaternion());
 
     const std::map<AheadOrBehind, const ClosestPose<double>> closest_poses =
         PoseSelector<double>::FindClosestPair(get_lane(ego_pose, *road_),
@@ -839,7 +840,7 @@ void AddToTrafficPosesAt(int index,
   rpy.x() = (traffic_polarity == LanePolarity::kWithS) ? rpy.x() : -rpy.x();
   rpy.y() = (traffic_polarity == LanePolarity::kWithS) ? rpy.y() : -rpy.y();
   rpy.z() -= (traffic_polarity == LanePolarity::kWithS) ? 0. : M_PI;
-  isometry.rotate(RollPitchYaw<double(rpy).ToQuaternion());
+  isometry.rotate(math::RollPitchYaw<double>(rpy).ToQuaternion());
 
   traffic_poses->set_pose(index, isometry);
 
@@ -875,7 +876,7 @@ void SetDefaultOnrampPoses(const Lane* ego_lane,
       ego_rotation.yaw() - ((ego_polarity == LanePolarity::kWithS) ? 0. : M_PI);
   const Rotation new_rotation = Rotation::FromRpy(ego_roll, ego_pitch, ego_yaw);
   const Vector3<double> new_rpy = new_rotation.rpy();
-  ego_pose->set_rotation(RollPitchYaw<double>(new_rpy).ToQuaternion());
+  ego_pose->set_rotation(math::RollPitchYaw<double>(new_rpy).ToQuaternion());
 
   const Eigen::Matrix3d ego_rotmat = math::rpy2rotmat(new_rpy);
   drake::Vector6<double> velocity{};
