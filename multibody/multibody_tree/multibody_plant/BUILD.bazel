@@ -16,12 +16,13 @@ package(
 drake_cc_package_library(
     name = "multibody_plant",
     deps = [
-        ":everything",
+        ":coulomb_friction",
+        ":multibody_plant_core",
     ],
 )
 
 drake_cc_library(
-    name = "everything",
+    name = "multibody_plant_core",
     srcs = [
         "multibody_plant.cc",
     ],
