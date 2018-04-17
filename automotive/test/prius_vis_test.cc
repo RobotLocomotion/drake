@@ -184,7 +184,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
   // its +X axis. In other words, the vehicle is leaning to its right side due
   // to the lane being severely cambered.
   const Eigen::Isometry3d X_WM_W_45_about_x =
-      math::RollPitchYaw<double(Eigen::Vector3d(M_PI_4, 0, 0)).ToQuaternion() *
+      math::RollPitchYaw<double>(Eigen::Vector3d(M_PI_4, 0, 0)).ToQuaternion() *
           Eigen::Isometry3d::Identity();
   const Isometry3<double> floor_pose_severe_camber =
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_45_about_x));

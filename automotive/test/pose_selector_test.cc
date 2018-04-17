@@ -166,7 +166,7 @@ static void SetPoses(const T& s_offset, const T& r_offset,
   // Create poses for one traffic car and one ego car.
   ego_pose->set_translation(Translation3<T>(
       T(kEgoSPosition) /* s */, T(kEgoRPosition) /* r */, T(0.) /* h */));
-  const math::RollPitchYaw rpy(T(0.), T(0.), T(yaw));
+  const math::RollPitchYaw<T> rpy(T(0.), T(0.), T(yaw));
   ego_pose->set_rotation(rpy.ToQuaternion());
 
   const Translation3<T> translation(T(kEgoSPosition) + s_offset /* s */,

@@ -84,7 +84,7 @@ class RollPitchYaw {
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
-  Eigen::Quaternion<T> ToQuaternion() {
+  Eigen::Quaternion<T> ToQuaternion() const {
     using std::cos;
     using std::sin;
     const T q0Half = roll_pitch_yaw_(0) / 2;
