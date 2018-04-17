@@ -107,20 +107,28 @@ class Constraint : public EvaluatorBase {
  protected:
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::set_bounds, as in LinearConstraint.
+   * using Constraint::UpdateLowerBound, as in LinearConstraint.
    */
   template <typename Derived>
-  void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
-    set_bounds(new_lb, upper_bound_);
+  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
+  UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
+    if (new_lb.rows() != num_constraints()) {
+      throw std::logic_error("Lower bound has invalid dimension.");
+    }
+    lower_bound_ = new_lb;
   }
 
   /** Updates the upper bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::set_bounds, as in LinearConstraint.
+   * using Constraint::UpdateUpperBound, as in LinearConstraint.
    */
   template <typename Derived>
-  void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
-    set_bounds(lower_bound_, new_ub);
+  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
+  UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
+    if (new_ub.rows() != num_constraints()) {
+      throw std::logic_error("Upper bound has invalid dimension.");
+    }
+    upper_bound_ = new_ub;
   }
 
   /**
@@ -131,12 +139,13 @@ class Constraint : public EvaluatorBase {
    * using Constraint::set_bounds, as in LinearConstraint.
    */
   template <typename DerivedL, typename DerivedU>
-  void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
-                  const Eigen::MatrixBase<DerivedU>& upper_bound) {
+  typename std::enable_if<is_eigen_vector_of<DerivedL, double>::value &&
+                          is_eigen_vector_of<DerivedU, double>::value>::type
+  set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
+             const Eigen::MatrixBase<DerivedU>& upper_bound) {
     if (lower_bound.rows() != num_constraints() ||
-        upper_bound.rows() != num_constraints() || lower_bound.cols() != 1 ||
-        upper_bound.cols() != 1) {
-      throw std::runtime_error("New constraints have invalid dimensions.");
+        upper_bound.rows() != num_constraints()) {
+      throw std::runtime_error("Bounds have invalid dimensions.");
     }
 
     lower_bound_ = lower_bound;
