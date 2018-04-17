@@ -1,11 +1,6 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
-    "drake_cc_package_library",
-)
+load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -21,22 +16,14 @@ filegroup(
     ]),
 )
 
-drake_cc_package_library(
-    name = "free_body",
-    deps = [
-        ":everything",
-    ],
-)
-
 drake_cc_library(
-    name = "everything",
+    name = "free_body",
     srcs = [
         "free_body.cc",
     ],
     hdrs = [
         "free_body.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//common",
         "//math:geometric_transform",

@@ -1,11 +1,10 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
+    "//tools:drake.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
+    "drake_cc_binary",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -15,15 +14,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
-    name = "utility",
-    deps = [
-        ":everything",
-    ],
-)
-
 drake_cc_library(
-    name = "everything",
+    name = "utility",
     srcs = [
         "generate_obj.cc",
         "generate_urdf.cc",
@@ -32,7 +24,6 @@ drake_cc_library(
         "generate_obj.h",
         "generate_urdf.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//automotive/maliput/api",
         "//math:geometric_transform",

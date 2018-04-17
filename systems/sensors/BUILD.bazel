@@ -1,11 +1,10 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_package_library",
 )
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -15,24 +14,18 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_package_library(
+drake_cc_library(
     name = "sensors",
+    srcs = [],
+    hdrs = [],
     deps = [
         ":accelerometer",
         ":beam_model",
-        ":beam_model_params",
         ":camera_info",
         ":depth_sensor",
-        ":depth_sensor_to_lcm_point_cloud_message",
-        ":gyroscope",
-        ":image",
-        ":image_to_lcm_image_array_t",
-        ":optitrack_encoder",
-        ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
         ":rotary_encoders",
-        ":vtk_util",
     ],
 )
 

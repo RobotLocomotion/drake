@@ -2,7 +2,6 @@
 
 load("//tools/lint:bazel_lint.bzl", "bazel_lint")
 load("//tools/lint:cpplint.bzl", "cpplint")
-load("//tools/lint:library_lint.bzl", "library_lint")
 load("//tools/lint:python_lint.bzl", "python_lint")
 
 def add_lint_tests(
@@ -12,8 +11,7 @@ def add_lint_tests(
         python_lint_exclude = None,
         python_lint_extra_srcs = None,
         bazel_lint_ignore = None,
-        bazel_lint_extra_srcs = None,
-        enable_library_lint = True):
+        bazel_lint_extra_srcs = None):
     """For every rule in the BUILD file so far, and for all Bazel files in this
     directory, adds test rules that run Drake's standard lint suite over the
     sources.  Thus, BUILD file authors should call this function at the *end*
@@ -38,6 +36,3 @@ def add_lint_tests(
     bazel_lint(
         ignore = bazel_lint_ignore,
         extra_srcs = bazel_lint_extra_srcs)
-    if enable_library_lint:
-        library_lint(
-            existing_rules = existing_rules)
