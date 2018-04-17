@@ -18,8 +18,6 @@ namespace {
 
 using std::make_unique;
 
-using drake::math::rpy2quat;
-
 // Tests the basic functionality of the translator.
 GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // Creates a `RigidBodyTree` with `kNumBodies` rigid bodies.
@@ -82,13 +80,13 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
 
   std::vector<float> body0_position = {1, 2, 3};
 
-  Vector3<double> body0_rpy = {M_PI, 0, 0};
-  Vector4<double> body0_quaternion_eigen = rpy2quat(body0_rpy);
+  const math::RollPitchYaw<double> body0_rpy(M_PI, 0, 0);
+  const Eigen::Quaterniond body0_quaternion_eigen = body0_rpy.ToQuaternion();
   std::vector<float> body0_quaternion(4);
-  body0_quaternion[0] = static_cast<float>(body0_quaternion_eigen(0));
-  body0_quaternion[1] = static_cast<float>(body0_quaternion_eigen(1));
-  body0_quaternion[2] = static_cast<float>(body0_quaternion_eigen(2));
-  body0_quaternion[3] = static_cast<float>(body0_quaternion_eigen(3));
+  body0_quaternion[0] = static_cast<float>(body0_quaternion_eigen.w());
+  body0_quaternion[1] = static_cast<float>(body0_quaternion_eigen.x());
+  body0_quaternion[2] = static_cast<float>(body0_quaternion_eigen.y());
+  body0_quaternion[3] = static_cast<float>(body0_quaternion_eigen.z());
 
   lcmt_viewer_draw expected_message;
   expected_message.timestamp = static_cast<int64_t>(time * 1000);

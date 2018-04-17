@@ -20,12 +20,9 @@
 
 namespace drake {
 namespace math {
-/**
- * Computes the quaternion representation from Euler angles.
- * @param rpy 3 x 1 vector with SpaceXYZ Euler angles.
- * @return 4 x 1 unit length quaternion @p quaternion = [w; x; y; z].
- * @see rpy2rotmat
- */
+
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
+// TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
 template <typename Derived>
 Vector4<typename Derived::Scalar> rpy2quat(
     const Eigen::MatrixBase<Derived>& rpy) {
