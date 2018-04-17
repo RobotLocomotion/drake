@@ -159,7 +159,7 @@ class TestMathOverloads(unittest.TestCase):
                 y_builtin = f_builtin(*args_float)
                 y_float = f_drake(*args_float)
                 debug_print(" - - Float Eval:", repr(y_builtin), repr(y_float))
-                self.assertEquals(y_float, y_builtin)
+                self.assertEqual(y_float, y_builtin)
                 self.assertIsInstance(y_float, float)
                 # Test method current overload, and ensure value is accurate.
                 y_T = f_drake(*args_T)
@@ -167,7 +167,7 @@ class TestMathOverloads(unittest.TestCase):
                 debug_print(" - - Overload Eval:", repr(y_T), repr(y_T_float))
                 self.assertIsInstance(y_T, overload.T)
                 # - Ensure the translated value is accurate.
-                self.assertEquals(y_T_float, y_float)
+                self.assertEqual(y_T_float, y_float)
 
         debug_print("\n\nOverload: ", qualname(type(overload)))
         float_overload = FloatOverloads()
@@ -203,6 +203,6 @@ class TestMathOverloads(unittest.TestCase):
                 args = [sys.executable, sys.argv[0], str(i)]
                 subprocess.check_call(args)
         else:
-            self.assertEquals(len(sys.argv), 2)
+            self.assertEqual(len(sys.argv), 2)
             i = int(sys.argv[1])
             self._check_overloads(orders[i])
