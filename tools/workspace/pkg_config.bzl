@@ -7,7 +7,10 @@ _DEFAULT_STATIC = False
 def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
     """Run command_line with PKG_CONFIG_PATH = pkg_config_paths and return its
     tokenized output."""
-    pkg_config_path = ":".join(pkg_config_paths)
+    extra_paths = []
+    if repository_ctx.attr.use_environ:
+        extra_paths = repository_ctx.os.environ.get("PKG_CONFIG_PATH").split(":")
+    pkg_config_path = ":".join(pkg_config_paths + extra_paths)
     result = repository_ctx.execute(command_line,
                                     environment = {
                                         "PKG_CONFIG_PATH": pkg_config_path,
@@ -224,6 +227,7 @@ pkg_config_repository = repository_rule(
         "extra_linkopts": attr.string_list(),
         "extra_deps": attr.string_list(),
         "pkg_config_paths": attr.string_list(),
+        "use_environ": attr.bool(default = False),
     },
     environ = [
         "PATH",
@@ -274,5 +278,9 @@ Args:
     extra_deps: (Optional) Extra items to add to the library target.
     pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
                       that we ignore the enviornment variable PKG_CONFIG_PATH
-                      set by the user.
+                      set by the user unless `use_environ` is True.
+    use_environ:
+        (Optional) Use `PKG_CONFIG_PATH` environment variable.
+        WARNING: This does not invalidate cache based the environment variable,
+        so only use this if your system is non-hermetic from the get-go.
 """
