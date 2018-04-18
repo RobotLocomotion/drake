@@ -29,21 +29,29 @@ class SystemBase : public internal::SystemMessageInterface {
 
   ~SystemBase() override;
 
-  /** Sets the name of the system. Do not use the path delimiter character '/'
+  /** Sets the name of the system. Do not use the path delimiter character ':'
   in the name. When creating a Diagram, names of sibling subsystems should be
   unique. */
   // TODO(sherm1) Enforce reasonable naming policies.
   void set_name(const std::string& name) { name_ = name; }
 
+  /** Returns the name last supplied to set_name(). */
+  std::string get_name() const { return name_; }
+
   /** Returns the name last supplied to set_name(), or a default name if
   set_name() was never called. Systems with an empty name that are added to a
   Diagram will have a default name automatically assigned. Systems created
   by copying with a scalar type change have the same name as the source
-  system. */
-  const std::string& GetSystemName() const final { return name_; }
+  system. Hand-built systems with no default name at all will be given the
+  dummy name "_" (a lone underscore). */
+  const std::string& GetSystemName() const final {
+    static never_destroyed<std::string> dummy("_");
+    return name_.empty() ? dummy.access() : name_;
+  }
 
   /** Generates and returns the full path name of this subsystem, starting from
-  the root System, with '/' delimiters between parent and child subsystems. */
+  the root System, with "::" delimiters between parent and child subsystems. */
+  // TODO(sherm1) Change to more conventional "/" delimiter.
   std::string GetSystemPathname() const final;
 
   /** Returns the most-derived type of this concrete System object as a
@@ -427,6 +435,34 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
+  /** Returns a string suitable for identifying this particular %System in
+  error messages, when it is a subsystem of a larger Diagram. This method
+  captures human-readable subsystem identification best practice; the
+  specifics of that are likely to change over time. However it will always
+  be formatted like "System xxx" or "adjective System xxx" so that the
+  remainder of the error message will continue to make sense. Currently it
+  returns "system_type_name System subsystem_pathname". */
+  // TODO(sherm1) Remove the system type noise once the subsystem path is
+  // a fully reliable identifier.
+  std::string GetSystemIdString() const {
+    return NiceTypeName::Get(*this) + " System " + GetSystemPathname();
+  }
+
+  // Declares that `parent` is the immediately enclosing
+  // Diagram. The enclosing Diagram is needed for interactions between peer
+  // subsystems via input and output ports. Aborts if the parent has already
+  // been set to something else.
+  void set_parent(const SystemBase* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+
+  // Returns a pointer to the immediately enclosing Diagram
+  // if one has been set, otherwise nullptr.
+  const SystemBase* get_parent_base() const {
+    return parent_;
+  }
+
  protected:
   SystemBase() = default;
 
@@ -498,6 +534,9 @@ class SystemBase : public internal::SystemMessageInterface {
   // ones. This gets incremented as tickets are handed out for the optional
   // entities above.
   DependencyTicket next_available_ticket_{internal::kNextAvailableTicket};
+
+  // The enclosing Diagram. Null/invalid when this is the root system.
+  const SystemBase* parent_{nullptr};
 
   // Name of this subsystem.
   std::string name_;

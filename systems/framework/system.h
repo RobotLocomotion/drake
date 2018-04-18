@@ -23,7 +23,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_base.h"
@@ -399,9 +398,13 @@ class System : public SystemBase {
     static_assert(
         std::is_base_of<BasicVector<T>, Vec<T>>::value,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return dynamic_cast<const Vec<T>*>(
-        context.EvalVectorInput(parent_, get_input_port(port_index)));
+    const AbstractValue* abstract_value =
+        EvalAbstractInput(context, port_index);
+    if (abstract_value == nullptr) return nullptr;
+    const BasicVector<T>& basic_value =
+        abstract_value->GetValue<BasicVector<T>>();
+    const Vec<T>& value = dynamic_cast<const Vec<T>&>(basic_value);
+    return &value;
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
@@ -427,7 +430,17 @@ class System : public SystemBase {
   const AbstractValue* EvalAbstractInput(const Context<T>& context,
                                          int port_index) const {
     DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+    const InputPortValue* port_value =
+        context.GetInputPortValue(InputPortIndex(port_index));
+    if (port_value == nullptr)
+      return nullptr;  // Unconnected input port.
+    auto free_port_value =
+        dynamic_cast<const FreestandingInputPortValue*>(port_value);
+    if (free_port_value != nullptr)
+      return free_port_value->get_abstract_data();  // A fixed input port.
+    DRAKE_DEMAND(get_parent() != nullptr);  // Can't happen?
+    return get_parent()->EvalConnectedSubsystemInputPort(
+        *context.get_parent(), get_input_port(port_index));
   }
 
   /// Causes the abstract-valued input port with the given `port_index` to
@@ -437,9 +450,8 @@ class System : public SystemBase {
   /// @tparam V The type of data expected.
   template <typename V>
   const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(parent_,
-                                              get_input_port(port_index));
+    const AbstractValue* port_value = EvalAbstractInput(context, port_index);
+    return port_value ? &port_value->GetValue<V>() : nullptr;
   }
   //@}
 
@@ -937,18 +949,6 @@ class System : public SystemBase {
   /// @name                      Utility methods
   //@{
 
-  /// Sets the name of the system. It is recommended that the name not include
-  /// the character ':', since the path delimiter is "::". When creating a
-  /// Diagram, names of sibling subsystems should be unique.
-  void set_name(const std::string& name) { name_ = name; }
-
-  /// Returns the name last supplied to set_name(), or empty if set_name() was
-  /// never called.  Systems with an empty name that are added to a Diagram
-  /// will have a default name automatically assigned.  Systems created through
-  /// transmogrification have by default an identical name to the system they
-  /// were created from.
-  std::string get_name() const { return name_; }
-
   /// Returns a name for this %System based on a stringification of its type
   /// name and memory address.  This is intended for use in diagnostic output
   /// and should not be used for behavioral logic, because the stringification
@@ -957,24 +957,6 @@ class System : public SystemBase {
   std::string GetMemoryObjectName() const {
     return SystemImpl::GetMemoryObjectName(NiceTypeName::Get(*this),
                                            GetGraphvizId());
-  }
-
-  /// Writes the full path of this System in the tree of Systems to @p output.
-  /// The path has the form (::ancestor_system_name)*::this_system_name.
-  void GetPath(std::stringstream* output) const {
-    // If this System has a parent, that parent's path is a prefix to this
-    // System's path. Otherwise, this is the root system and there is no prefix.
-    if (parent_ != nullptr) {
-      parent_->GetPath(output);
-    }
-    *output << "::" << (get_name().empty() ? "_" : get_name());
-  }
-
-  // Returns the full path of the System in the tree of Systems.
-  std::string GetPath() const {
-    std::stringstream path;
-    GetPath(&path);
-    return path.str();
   }
 
   /// Returns the number of input ports of the system.
@@ -1099,26 +1081,15 @@ class System : public SystemBase {
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      context.VerifyInputPort(this->get_input_port(i));
+      const InputPortDescriptor<T>& port = this->get_input_port(i);
+      context.VerifyInputPort(port.get_index(), port.get_data_type(),
+                              port.size());
     }
   }
 
   /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
     return context.get_continuous_state().CopyToVector();
-  }
-
-  /// Declares that `parent` is the immediately enclosing Diagram. The
-  /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
-  /// the parent has already been set to something else.
-  ///
-  /// This is a dangerous implementation detail. Conceptually, a System
-  /// ought to be completely ignorant of its parent Diagram. However, we
-  /// need this pointer so that we can cause our inputs to be evaluated.
-  /// See https://github.com/RobotLocomotion/drake/pull/3455.
-  void set_parent(const detail::InputPortEvaluatorInterface<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
   }
   //@}
 
@@ -1374,18 +1345,15 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  /// Returns a string suitable for identifying this particular %System in
-  /// error messages, when it is a subsystem of a larger Diagram. This method
-  /// captures human-readable subsystem identification best practice; the
-  /// specifics of that are likely to change over time. However it will always
-  /// be formatted like "System xxx" or "adjective System xxx" so that the
-  /// remainder of the error message will continue to make sense. Currently it
-  /// returns "system_type_name System subsystem_pathname".
-  // TODO(sherm1) Remove the system type noise once the subsystem path is
-  // a fully reliable identifier.
-  std::string GetSystemIdString() const {
-    return NiceTypeName::Get(*this) + " System " + GetPath();
+  /// (Internal use only) Returns the parent %System or `nullptr` if this is
+  /// the root %System.
+  // Diagram builder ensures we have the same scalar type all the way up.
+  const System<T>* get_parent() const {
+    return static_cast<const System<T>*>(get_parent_base());
   }
+
+  // Promote so we don't need "this->" everywhere.
+  using SystemBase::get_name;
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1818,6 +1786,17 @@ class System : public SystemBase {
     return error.norm();
   }
 
+  /// (Internal use only) Diagram systems must reimplement this to evaluate the
+  /// input port in the given `context`. The subsystem having
+  /// the input port must be owned by this Diagram. The default implementation
+  /// just aborts.
+  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
+      const Context<T>& context,
+      const InputPortDescriptor<T>& input_port) const {
+    unused(context, input_port);
+    DRAKE_ABORT_MSG("EvaluateSubsystemInputPort(): not implemented");
+  }
+
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
@@ -1835,15 +1814,6 @@ class System : public SystemBase {
     DRAKE_ASSERT(output_vector->size() == get_output_port(port_index).size());
 
     return output_vector->get_mutable_value();
-  }
-
-  /// Causes an InputPortValue in the @p context to become up-to-date,
-  /// delegating to the parent Diagram if necessary.
-  ///
-  /// This is a framework implementation detail. User code should never call it.
-  void EvalInputPort(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    context.EvalInputPort(parent_, get_input_port(port_index));
   }
   //@}
 
@@ -1889,12 +1859,10 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
-  std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
   std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
-  const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
