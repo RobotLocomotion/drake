@@ -395,6 +395,21 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
             const symbolic::Polynomial& p) {
           return prog.SubstituteSolution(p);
           })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const symbolic::Variable& decision_variable) {
+            return prog.GetInitialGuess(decision_variable);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const VectorXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const MatrixXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
+          })
       .def("SetInitialGuess",
           [](MathematicalProgram& prog,
              const symbolic::Variable& decision_variable,
