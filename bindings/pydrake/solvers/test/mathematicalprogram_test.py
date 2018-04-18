@@ -296,6 +296,7 @@ class TestMathematicalProgram(unittest.TestCase):
         # 2x1 -- otherwise it is interpreted as a row
         # vector under the hood, making the vector-value
         # SetInitialGuess calls fail for 1d arrays.
+        # See Drake issue #8620.
         x = prog.NewContinuousVariables(2, 1, 'x')
 
         # Test setting individual variables
