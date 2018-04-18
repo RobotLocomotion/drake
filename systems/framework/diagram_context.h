@@ -11,7 +11,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/parameters.h"
@@ -362,8 +361,7 @@ class DiagramContext final : public Context<T> {
     const InputPortIdentifier& id = input_ids_[index];
     const SubsystemIndex system_index = id.first;
     const InputPortIndex port_index = id.second;
-    return Context<T>::GetInputPortValue(GetSubsystemContext(system_index),
-                                         port_index);
+    return GetSubsystemContext(system_index).GetInputPortValue(port_index);
   }
 
  private:
