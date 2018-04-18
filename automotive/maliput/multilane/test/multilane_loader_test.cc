@@ -32,6 +32,8 @@ using ::testing::Return;
 using ::testing::Sequence;
 using ::testing::Truly;
 
+using drake::maliput::multilane::test::Matches;
+
 namespace drake {
 namespace maliput {
 namespace multilane {
@@ -168,6 +170,7 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
 )R";
 
   const double kLaneWidth{4.};
+  const double kZeroTolerance{0.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.5 * M_PI / 180.};
   const api::HBounds kElevationBounds{0., 5.};
@@ -177,10 +180,9 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   BuilderMock* builder_mock = local_builder_mock.get();
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
 
-  Matcher<const api::HBounds&> hbounds_matcher =
-      MakeMatcher(new test::HBoundsMatcher({0., 5.}, 0.));
-  EXPECT_CALL(builder_factory_mock, Make(kLaneWidth, hbounds_matcher,
-                                         kLinearTolerance, kAngularTolerance));
+  EXPECT_CALL(builder_factory_mock,
+              Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
+                   kLinearTolerance, kAngularTolerance));
 
   EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId("empty_road_geometry")));
 
@@ -347,273 +349,187 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
 
   ExpectationSet prebuild_expectations;
 
-  Matcher<const api::HBounds&> hbounds_matcher =
-      MakeMatcher(new test::HBoundsMatcher(kElevationBounds, kZeroTolerance));
   prebuild_expectations += EXPECT_CALL(
       builder_factory_mock,
-      Make(kLaneWidth, hbounds_matcher, kLinearTolerance, kAngularTolerance));
-
-  Matcher<const EndReferenceSpec&> flat_end_reference_spec_matcher =
-      MakeMatcher(new test::EndReferenceSpecMatcher(
-          EndReference().z_at(kEndpointZZero, Direction::kForward),
-          kLinearTolerance));
-  Matcher<const EndReferenceSpec&> elevated_end_reference_spec_matcher =
-      MakeMatcher(new test::EndReferenceSpecMatcher(
-          EndReference().z_at(kEndpointZElevated, Direction::kForward),
-          kLinearTolerance));
+      Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
+           kLinearTolerance, kAngularTolerance));
 
   // Connection expectations.
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kThreeLanes, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at(kEndpointA, Direction::kForward),
-            kLinearTolerance));
-    Matcher<const LineOffset&> line_offset_matcher = MakeMatcher(
-        new test::LineOffsetMatcher(LineOffset(50), kZeroTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s1", lane_layout_matcher, start_reference_spec_matcher,
-                line_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s1",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kThreeLanes, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at(kEndpointA, Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher = MakeMatcher(
-        new test::LaneLayoutMatcher({kCustomLeftShoulder, kDefaultRightShoulder,
-                                     kOneLane, kRefLane, 5.},
-                                    kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{50., 5., 0.}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s2", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s2", Matches(LaneLayout(kCustomLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, 5.),
+                        kZeroTolerance),
+          Matches(StartReference().at({{50., 5., 0.}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(15., M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher = MakeMatcher(
-        new test::LaneLayoutMatcher({kDefaultLeftShoulder, kCustomRightShoulder,
-                                     kOneLane, kRefLane, 5.},
-                                    kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{50., 35., M_PI}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const LineOffset&> line_offset_matcher = MakeMatcher(
-        new test::LineOffsetMatcher(LineOffset(50), kZeroTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s3", lane_layout_matcher, start_reference_spec_matcher,
-                line_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s3",
+              Matches(LaneLayout(kDefaultLeftShoulder, kCustomRightShoulder,
+                                 kOneLane, kRefLane, 5.),
+                      kZeroTolerance),
+              Matches(StartReference().at({{50., 35., M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             5.},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{0., 35., M_PI}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s4", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s4", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, 5.),
+                        kZeroTolerance),
+          Matches(StartReference().at({{0., 35., M_PI}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(15., M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kTwoLanes, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{50., 0., 0.}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s5", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s5", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kTwoLanes, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(StartReference().at({{50., 0., 0.}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., -M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kTwoLanes, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{50., -40., -M_PI}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const LineOffset&> line_offset_matcher = MakeMatcher(
-        new test::LineOffsetMatcher(LineOffset(50), kZeroTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s6", lane_layout_matcher, start_reference_spec_matcher,
-                line_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s6",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kTwoLanes, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at({{50., -40., -M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kTwoLanes, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{0., -40., -M_PI}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s7", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s7", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kTwoLanes, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(StartReference().at({{0., -40., -M_PI}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., -M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{0., -45., -M_PI}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s8", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s8",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kOneLane, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at({{0., -45., -M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                      kAngularTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{-20., -65., -M_PI / 2.}, kEndpointZZero},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s9", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, elevated_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s9", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(
+              StartReference().at({{-20., -65., -M_PI / 2.}, kEndpointZZero},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{0, -85., 0}, kEndpointZElevated},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s10", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, elevated_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s10", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(StartReference().at({{0, -85., 0}, kEndpointZElevated},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{20., -65., M_PI / 2.}, {10., 0., 0., 0.}},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s11", lane_layout_matcher, start_reference_spec_matcher,
-                arc_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s11", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -65., M_PI / 2.}, {10., 0., 0., 0.}},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{20., -65., M_PI / 2.}, kEndpointZElevated},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const LineOffset&> line_offset_matcher = MakeMatcher(
-        new test::LineOffsetMatcher(LineOffset(30.), kZeroTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s12", lane_layout_matcher, start_reference_spec_matcher,
-                line_offset_matcher, elevated_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s12", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -65., M_PI / 2.}, kEndpointZElevated},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(LineOffset(30.), kZeroTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const LaneLayout&> lane_layout_matcher =
-        MakeMatcher(new test::LaneLayoutMatcher(
-            {kDefaultLeftShoulder, kDefaultRightShoulder, kOneLane, kRefLane,
-             kZeroRRef},
-            kZeroTolerance));
-    Matcher<const StartReferenceSpec&> start_reference_spec_matcher =
-        MakeMatcher(new test::StartReferenceSpecMatcher(
-            StartReference().at({{20., -35., M_PI / 2.}, kEndpointZElevated},
-                                Direction::kForward),
-            kLinearTolerance));
-    Matcher<const LineOffset&> line_offset_matcher = MakeMatcher(
-        new test::LineOffsetMatcher(LineOffset(15.), kZeroTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s13", lane_layout_matcher, start_reference_spec_matcher,
-                line_offset_matcher, flat_end_reference_spec_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s13", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -35., M_PI / 2.}, kEndpointZElevated},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(LineOffset(15.), kZeroTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
   // Group expectations.
   {

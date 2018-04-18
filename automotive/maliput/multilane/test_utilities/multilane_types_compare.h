@@ -12,6 +12,7 @@ namespace maliput {
 namespace multilane {
 namespace test {
 
+using ::testing::Matcher;
 using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 
@@ -100,6 +101,10 @@ class HBoundsMatcher : public MatcherInterface<const api::HBounds&> {
   const double tolerance_{};
 };
 
+/// @return A Matcher<const api::HBounds&> of type HBoundsMatcher.
+Matcher<const api::HBounds&> Matches(const api::HBounds& elevation_bounds,
+                                     double tolerance);
+
 /// Wraps an ArcOffset comparison into a MatcherInterface.
 class ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
  public:
@@ -127,6 +132,11 @@ class ArcOffsetMatcher : public MatcherInterface<const ArcOffset&> {
   const double angular_tolerance_{};
 };
 
+/// @return A Matcher<const ArcOffset&> of type ArcOffsetMatcher.
+Matcher<const ArcOffset&> Matches(const ArcOffset& arc_offset,
+                                  double linear_tolerance,
+                                  double angular_tolerance);
+
 /// Wraps a LineOffset comparison into a MatcherInterface.
 class LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
  public:
@@ -148,6 +158,10 @@ class LineOffsetMatcher : public MatcherInterface<const LineOffset&> {
   const LineOffset line_offset_{};
   const double tolerance_{};
 };
+
+/// @return A Matcher<const LineOffset&> of type LineOffsetMatcher.
+Matcher<const LineOffset&> Matches(const LineOffset& line_offset,
+                                   double tolerance);
 
 /// Wraps a LineOffset comparison into a MatcherInterface.
 class LaneLayoutMatcher : public MatcherInterface<const LaneLayout&> {
@@ -185,6 +199,10 @@ class LaneLayoutMatcher : public MatcherInterface<const LaneLayout&> {
   const double tolerance_{};
 };
 
+/// @return A Matcher<const LaneLayout&> of type LaneLayoutMatcher.
+Matcher<const LaneLayout&> Matches(const LaneLayout& lane_layout,
+                                   double tolerance);
+
 /// Wraps a StartReferenceSpec comparison into a MatcherInterface.
 class StartReferenceSpecMatcher
     : public MatcherInterface<const StartReferenceSpec&> {
@@ -209,6 +227,11 @@ class StartReferenceSpecMatcher
   const double tolerance_{};
 };
 
+/// @return A Matcher<const StartReferenceSpec&> of type
+/// StartReferenceSpecMatcher.
+Matcher<const StartReferenceSpec&> Matches(
+    const StartReferenceSpec& start_reference, double tolerance);
+
 /// Wraps a EndReferenceSpec comparison into a MatcherInterface.
 class EndReferenceSpecMatcher
     : public MatcherInterface<const EndReferenceSpec&> {
@@ -232,6 +255,11 @@ class EndReferenceSpecMatcher
   const EndReferenceSpec end_reference_;
   const double tolerance_{};
 };
+
+/// @return A Matcher<const EndReferenceSpec&> of type
+/// EndReferenceSpecMatcher.
+Matcher<const EndReferenceSpec&> Matches(const EndReferenceSpec& end_reference,
+                                         double tolerance);
 
 }  // namespace test
 }  // namespace multilane
