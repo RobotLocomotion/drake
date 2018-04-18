@@ -17,6 +17,7 @@ drake_cc_binary(
         "--simulation_time=0.1",
         "--target_realtime_rate=0.0",
     ],
+    test_rule_size = "medium",
     deps = [
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
