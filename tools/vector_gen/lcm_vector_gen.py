@@ -88,7 +88,7 @@ INDICES_END = """
 
 INDICIES_NAMES_ACCESSOR_IMPL_START = """
 const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
-  static const never_destroyed<std::vector<std::string>> coordinates(
+  static const drake::never_destroyed<std::vector<std::string>> coordinates(
       std::vector<std::string>{
 """
 INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\",  // BR"""
@@ -120,8 +120,8 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
 # named_vector details, we will either use this variant or the subsequent one.)
 DEFAULT_CTOR_ZEROS = """
   /// Default constructor.  Sets all rows to zero.
-  %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(VectorX<T>::Zero(K::kNumCoordinates));
+  %(camel)s() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
+    this->SetFromVector(drake::VectorX<T>::Zero(K::kNumCoordinates));
   }
 """
 # A second variant of a default constructor (field-by-field setting).
@@ -132,7 +132,7 @@ DEFAULT_CTOR_CUSTOM_FIELD_API = """
   /// @arg @c %(field)s defaults to %(default_value)s %(units_suffix)s.
 """
 DEFAULT_CTOR_CUSTOM_BEGIN_BODY = """
-  %(camel)s() : systems::BasicVector<T>(K::kNumCoordinates) {
+  %(camel)s() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
 """
 DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
     this->set_%(field)s(%(default_value)s);
@@ -260,7 +260,7 @@ GET_COORDINATE_NAMES = """
 
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
-  Bool<T> IsValid() const {
+  drake::Bool<T> IsValid() const {
     using std::isnan;
     auto result = (T(0) == T(0));
 """
@@ -297,7 +297,7 @@ def generate_is_valid(hh, caller_context, fields):
 
 CALC_INEQUALITY_CONSTRAINT_BEGIN = """
   // VectorBase override.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
+  void CalcInequalityConstraint(drake::VectorX<T>* value) const override {
     value->resize(%(num_constraints)d);
 """
 CALC_INEQUALITY_CONSTRAINT_MIN_VALUE = """
@@ -365,7 +365,7 @@ VECTOR_CLASS_BEGIN = """
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class %(camel)s : public systems::BasicVector<T> {
+class %(camel)s : public drake::systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
   typedef %(indices)s K;
@@ -412,15 +412,16 @@ TRANSLATOR_CLASS_DECL = """
  * %(camel)s type.
  */
 class %(camel)sTranslator
-    : public systems::lcm::LcmAndVectorBaseTranslator {
+    : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
       : LcmAndVectorBaseTranslator(%(indices)s::kNumCoordinates) {}
-  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
+  std::unique_ptr<drake::systems::BasicVector<double>> AllocateOutputVector()
       const override;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-      systems::VectorBase<double>* vector_base) const override;
-  void Serialize(double time, const systems::VectorBase<double>& vector_base,
+      drake::systems::VectorBase<double>* vector_base) const override;
+  void Serialize(double time,
+      const drake::systems::VectorBase<double>& vector_base,
       std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 """
@@ -446,7 +447,7 @@ TRANSLATOR_CC_POSTAMBLE = """
 """
 
 ALLOCATE_OUTPUT_VECTOR = """
-std::unique_ptr<systems::BasicVector<double>>
+std::unique_ptr<drake::systems::BasicVector<double>>
 %(camel)sTranslator::AllocateOutputVector() const {
   return std::make_unique<%(camel)s<double>>();
 }
@@ -460,7 +461,7 @@ def generate_allocate_output_vector(cc, caller_context, fields):
 
 DESERIALIZE_BEGIN = """
 void %(camel)sTranslator::Serialize(
-    double time, const systems::VectorBase<double>& vector_base,
+    double time, const drake::systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector =
       dynamic_cast<const %(camel)s<double>*>(&vector_base);
@@ -491,7 +492,7 @@ def generate_deserialize(cc, caller_context, fields):
 SERIALIZE_BEGIN = """
 void %(camel)sTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
-    systems::VectorBase<double>* vector_base) const {
+    drake::systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
   auto* const my_vector = dynamic_cast<%(camel)s<double>*>(vector_base);
   DRAKE_DEMAND(my_vector != nullptr);
