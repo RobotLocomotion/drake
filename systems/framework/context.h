@@ -6,7 +6,6 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
@@ -265,88 +264,6 @@ class Context : public ContextBase {
     return FixInputPort(index, std::move(vec));
   }
 
-  /// Evaluates and returns the value of the input port identified by
-  /// @p descriptor, using the given @p evaluator, which should be the Diagram
-  /// containing the System that allocated this Context. The evaluation will be
-  /// performed in this Context's parent. It is a recursive operation that may
-  /// invoke long chains of evaluation through all the Systems that are
-  /// prerequisites to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected to a value source. Aborts if
-  /// the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it.
-  const InputPortValue* EvalInputPort(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value =
-        GetInputPortValue(descriptor.get_index());
-    if (port_value == nullptr) return nullptr;
-    if (port_value->requires_evaluation()) {
-      DRAKE_DEMAND(evaluator != nullptr);
-      evaluator->EvaluateSubsystemInputPort(parent_, descriptor);
-    }
-    return port_value;
-  }
-
-  /// Evaluates and returns the vector value of the input port with the given
-  /// @p descriptor. This is a recursive operation that may invoke long chains
-  /// of evaluation through all the Systems that are prerequisite to the
-  /// specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalVectorInput instead.
-  const BasicVector<T>* EvalVectorInput(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value = EvalInputPort(evaluator, descriptor);
-    if (port_value == nullptr) return nullptr;
-    return port_value->template get_vector_data<T>();
-  }
-
-  /// Evaluates and returns the abstract value of the input port with the given
-  /// @p descriptor. This is a recursive operation that may invoke long chains
-  /// of evaluation through all the Systems that are prerequisite to the
-  /// specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalAbstractInput instead.
-  const AbstractValue* EvalAbstractInput(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value = EvalInputPort(evaluator, descriptor);
-    if (port_value == nullptr) return nullptr;
-    return port_value->get_abstract_data();
-  }
-
-  /// Evaluates and returns the data of the input port at @p index.
-  /// This is a recursive operation that may invoke long chains of evaluation
-  /// through all the Systems that are prerequisite to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port does not have type V.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalInputValue instead.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const AbstractValue* value = EvalAbstractInput(evaluator, descriptor);
-    if (value == nullptr) return nullptr;
-    return &(value->GetValue<V>());
-  }
-
   // =========================================================================
   // Accessors and Mutators for Parameters.
 
@@ -457,28 +374,36 @@ class Context : public ContextBase {
     parent_ = parent;
   }
 
-  /// Throws an exception unless the given @p descriptor matches the inputs
+  /// Throws an exception unless the given port information matches the inputs
   /// actually connected to this context in shape.
-  /// Supports any scalar type of `descriptor`, but expects T by default.
-  ///
-  /// @tparam T1 the scalar type of the InputPortDescriptor to check.
-  template<typename T1 = T>
-  void VerifyInputPort(const InputPortDescriptor<T1>& descriptor) const {
-    const int i = descriptor.get_index();
+  void VerifyInputPort(InputPortIndex i, PortDataType data_type,
+                       int size) const {
     const InputPortValue* port_value = GetInputPortValue(i);
     // If the port isn't connected, we don't have anything else to check.
-    if (port_value == nullptr) { return; }
+    if (port_value == nullptr)
+      return;
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
-    if (descriptor.get_data_type() == kVectorValued) {
+    if (data_type == kVectorValued) {
       const BasicVector<T>* input_vector =
           port_value->template get_vector_data<T>();
       DRAKE_THROW_UNLESS(input_vector != nullptr);
-      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.size());
+      DRAKE_THROW_UNLESS(input_vector->size() == size);
     }
     // In the abstract-valued case, there is nothing else to check.
   }
+
+  /// (Internal use only) Returns the parent %Context or `nullptr` if this is
+  /// the root %Context.
+  const Context<T>* get_parent() const {
+    return parent_;
+  }
+
+  /// Returns the InputPortValue at the given @p index, which may be nullptr if
+  /// it has never been set with SetInputPortValue().
+  /// Asserts if @p index is out of range.
+  virtual const InputPortValue* GetInputPortValue(int index) const = 0;
 
  protected:
   Context() = default;
@@ -517,17 +442,6 @@ class Context : public ContextBase {
   /// TODO(david-german-tri) Invalidate all cached time- and step-dependent
   /// computations.
   StepInfo<T>* get_mutable_step_info() { return &step_info_; }
-
-  /// Returns the InputPortValue at the given @p index, which may be nullptr if
-  /// it has never been set with SetInputPortValue().
-  /// Asserts if @p index is out of range.
-  virtual const InputPortValue* GetInputPortValue(int index) const = 0;
-
-  /// Allows derived classes to invoke the protected method on subcontexts.
-  static const InputPortValue* GetInputPortValue(const Context<T>& context,
-                                                 int index) {
-    return context.GetInputPortValue(index);
-  }
 
   /// Connects the input port at @p index to the value source @p port_value.
   /// Disconnects whatever value source was previously there, and de-registers
