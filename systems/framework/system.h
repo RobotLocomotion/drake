@@ -23,7 +23,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_base.h"
@@ -362,6 +361,12 @@ class System : public SystemBase {
   /// `Calc` method from the "Calculations" group. Evaluations of input ports
   /// instead delegate to the containing Diagram, which arranges to have the
   /// appropriate subsystem evaluate the source output port.
+  ///
+  /// Methods in this group that specify preconditions operate as follows:
+  /// The preconditions will be checked in Debug builds but some or all might
+  /// not be checked in Release builds for performance reasons. If we do check
+  /// and a precondition is violated, an std::logic_error will be thrown with
+  /// a helpful message.
   //@{
 
   /// Returns a reference to the cached value of the conservative power. If
@@ -383,13 +388,18 @@ class System : public SystemBase {
     return fake_cache_nonconservative_power_;
   }
 
-  /// Causes the vector-valued input port with the given `port_index` to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value, or nullptr if the port is not connected.
+  /// Returns the value of the vector-valued input port with the given
+  /// `port_index` as a BasicVector or a specific subclass `Vec` derived from
+  /// BasicVector. Causes the value to become up to date first if necessary. See
+  /// EvalAbstractInput() for more information.
   ///
-  /// Throws std::bad_cast if the port is not vector-valued. Returns nullptr if
-  /// the port is vector valued, but not of type Vec. Aborts if the port
-  /// does not exist.
+  /// The result is returned as a pointer to the input port's value of type
+  /// `Vec<T>` or nullptr if the port is not connected.
+  ///
+  /// @pre `port_index` must be non-negative.
+  /// @pre `port_index` must designate an existing input port.
+  /// @pre the port must have been declared to be vector-valued.
+  /// @pre the port's value must be of type Vec<T>.
   ///
   /// @tparam Vec The template type of the input vector, which must be a
   ///             subclass of BasicVector.
@@ -399,47 +409,101 @@ class System : public SystemBase {
     static_assert(
         std::is_base_of<BasicVector<T>, Vec<T>>::value,
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return dynamic_cast<const Vec<T>*>(
-        context.EvalVectorInput(parent_, get_input_port(port_index)));
+
+    // The API allows an int but we'll use InputPortIndex internally.
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex iport_index(port_index);
+
+    const BasicVector<T>* const basic_value =
+        EvalBasicVectorInputImpl(__func__, context, iport_index);
+    if (basic_value == nullptr) return nullptr;  // An unconnected port.
+
+    // It's a BasicVector, but we're fussy about the subtype here.
+    const Vec<T>* const value = dynamic_cast<const Vec<T>*>(basic_value);
+    if (value == nullptr) {
+      ThrowInputPortHasWrongType(__func__, iport_index,
+                                 NiceTypeName::Get<Vec<T>>(),
+                                 NiceTypeName::Get(*basic_value));
+    }
+
+    return value;
   }
 
-  /// Causes the vector-valued input port with the given `port_index` to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns the
-  /// port's value as an %Eigen expression. Throws an exception if the input
-  /// port is not connected.
+  /// Returns the value of the vector-valued input port with the given
+  /// `port_index` as an %Eigen vector. Causes the value to become up to date
+  /// first if necessary. See EvalAbstractInput() for more information.
+  ///
+  /// @pre `port_index` must be non-negative.
+  /// @pre `port_index` must designate an existing input port.
+  /// @pre the port must have been declared to be vector-valued.
+  /// @pre the port must be evaluable (connected or freestanding).
+  ///
+  /// @see EvalVectorInput()
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
-    const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    if (input_vector == nullptr) {
-      throw std::logic_error(
-          "System " + get_name() + ": Port index " +
-          std::to_string(port_index) + " is not connected.");
-    }
-    DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
-    return input_vector->get_value();
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex port(port_index);
+
+    const BasicVector<T>* const basic_value =
+        EvalBasicVectorInputImpl(__func__, context, port);
+    if (basic_value == nullptr)
+      ThrowCantEvaluateInputPort(__func__, port);
+
+    return basic_value->get_value();
   }
 
-  /// Causes the abstract-valued input port with the given `port_index` to
-  /// become up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value pointer, or nullptr if the port is not
-  /// connected.
+  /// Returns the value of the input port with the given `port_index` as an
+  /// AbstractValue, regardless of the port's type. Causes the value to become
+  /// up to date first if necessary, delegating to our parent Diagram. Returns
+  /// a pointer to the port's value, or nullptr if the port is not connected.
+  /// If you know the actual type, use one of the more-specific signatures.
+  ///
+  /// @pre `port_index` must be non-negative.
+  /// @pre `port_index` must designate an existing input port.
+  ///
+  /// @see EvalInputValue(), EvalVectorInput(), EvalEigenVectorInput()
   const AbstractValue* EvalAbstractInput(const Context<T>& context,
                                          int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.EvalAbstractInput(parent_, get_input_port(port_index));
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex port(port_index);
+    return EvalAbstractInputImpl(__func__, context, port);
   }
 
-  /// Causes the abstract-valued input port with the given `port_index` to
-  /// become up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's abstract value, or nullptr if the port is not connected.
+  /// Returns the value of an abstract-valued input port with the given
+  /// `port_index` as a value of known type `V`. Causes the value to become
+  /// up to date first if necessary. See EvalAbstractInput() for
+  /// more information.
+  ///
+  /// The result is returned as a pointer to the input port's value of type `V`,
+  /// or nullptr if the port is not connected.
+  ///
+  /// @pre `port_index` must be non-negative.
+  /// @pre `port_index` must designate an existing input port.
+  /// @pre the port's value must be retrievable from the stored abstract value
+  ///      using `AbstractValue::GetValue<V>`.
   ///
   /// @tparam V The type of data expected.
   template <typename V>
   const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    return context.template EvalInputValue<V>(parent_,
-                                              get_input_port(port_index));
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex port(port_index);
+
+    const AbstractValue* const abstract_value =
+        EvalAbstractInputImpl(__func__, context, port);
+    if (abstract_value == nullptr) return nullptr;  // An unconnected port.
+
+    // We have a value, is it a V?
+    const V* const value = abstract_value->MaybeGetValue<V>();
+    if (value == nullptr) {
+      ThrowInputPortHasWrongType(__func__, port, NiceTypeName::Get<V>(),
+                                 abstract_value->GetNiceTypeName());
+    }
+
+    return value;
   }
   //@}
 
@@ -937,18 +1001,6 @@ class System : public SystemBase {
   /// @name                      Utility methods
   //@{
 
-  /// Sets the name of the system. It is recommended that the name not include
-  /// the character ':', since the path delimiter is "::". When creating a
-  /// Diagram, names of sibling subsystems should be unique.
-  void set_name(const std::string& name) { name_ = name; }
-
-  /// Returns the name last supplied to set_name(), or empty if set_name() was
-  /// never called.  Systems with an empty name that are added to a Diagram
-  /// will have a default name automatically assigned.  Systems created through
-  /// transmogrification have by default an identical name to the system they
-  /// were created from.
-  std::string get_name() const { return name_; }
-
   /// Returns a name for this %System based on a stringification of its type
   /// name and memory address.  This is intended for use in diagnostic output
   /// and should not be used for behavioral logic, because the stringification
@@ -957,24 +1009,6 @@ class System : public SystemBase {
   std::string GetMemoryObjectName() const {
     return SystemImpl::GetMemoryObjectName(NiceTypeName::Get(*this),
                                            GetGraphvizId());
-  }
-
-  /// Writes the full path of this System in the tree of Systems to @p output.
-  /// The path has the form (::ancestor_system_name)*::this_system_name.
-  void GetPath(std::stringstream* output) const {
-    // If this System has a parent, that parent's path is a prefix to this
-    // System's path. Otherwise, this is the root system and there is no prefix.
-    if (parent_ != nullptr) {
-      parent_->GetPath(output);
-    }
-    *output << "::" << (get_name().empty() ? "_" : get_name());
-  }
-
-  // Returns the full path of the System in the tree of Systems.
-  std::string GetPath() const {
-    std::stringstream path;
-    GetPath(&path);
-    return path.str();
   }
 
   /// Returns the number of input ports of the system.
@@ -988,14 +1022,9 @@ class System : public SystemBase {
   }
 
   /// Returns the descriptor of the input port at index @p port_index.
+  /// Throws std::out_of_range if @p port_index doesn't select an existing port.
   const InputPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index < 0 || port_index >= get_num_input_ports()) {
-      throw std::out_of_range(
-          "System " + get_name() + ": Port index " +
-          std::to_string(port_index) + " is out of range. There are only " +
-          std::to_string(get_num_input_ports()) + " input ports.");
-    }
-    return *input_ports_[port_index];
+    return GetInputPortOrThrow(__func__, port_index);
   }
 
   /// Returns the output port at index @p port_index.
@@ -1099,26 +1128,15 @@ class System : public SystemBase {
     // Checks that the size of the input ports in the context matches the
     // declarations made by the system.
     for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      context.VerifyInputPort(this->get_input_port(i));
+      const InputPortDescriptor<T>& port = this->get_input_port(i);
+      context.VerifyInputPort(port.get_index(), port.get_data_type(),
+                              port.size());
     }
   }
 
   /// Returns a copy of the continuous state vector `xc` into an Eigen vector.
   VectorX<T> CopyContinuousStateVector(const Context<T>& context) const {
     return context.get_continuous_state().CopyToVector();
-  }
-
-  /// Declares that `parent` is the immediately enclosing Diagram. The
-  /// enclosing Diagram is needed to evaluate inputs recursively. Aborts if
-  /// the parent has already been set to something else.
-  ///
-  /// This is a dangerous implementation detail. Conceptually, a System
-  /// ought to be completely ignorant of its parent Diagram. However, we
-  /// need this pointer so that we can cause our inputs to be evaluated.
-  /// See https://github.com/RobotLocomotion/drake/pull/3455.
-  void set_parent(const detail::InputPortEvaluatorInterface<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
   }
   //@}
 
@@ -1374,18 +1392,8 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  /// Returns a string suitable for identifying this particular %System in
-  /// error messages, when it is a subsystem of a larger Diagram. This method
-  /// captures human-readable subsystem identification best practice; the
-  /// specifics of that are likely to change over time. However it will always
-  /// be formatted like "System xxx" or "adjective System xxx" so that the
-  /// remainder of the error message will continue to make sense. Currently it
-  /// returns "system_type_name System subsystem_pathname".
-  // TODO(sherm1) Remove the system type noise once the subsystem path is
-  // a fully reliable identifier.
-  std::string GetSystemIdString() const {
-    return NiceTypeName::Get(*this) + " System " + GetPath();
-  }
+  // Promote so we don't need "this->" everywhere.
+  using SystemBase::get_name;
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1836,15 +1844,6 @@ class System : public SystemBase {
 
     return output_vector->get_mutable_value();
   }
-
-  /// Causes an InputPortValue in the @p context to become up-to-date,
-  /// delegating to the parent Diagram if necessary.
-  ///
-  /// This is a framework implementation detail. User code should never call it.
-  void EvalInputPort(const Context<T>& context, int port_index) const {
-    DRAKE_ASSERT(0 <= port_index && port_index < get_num_input_ports());
-    context.EvalInputPort(parent_, get_input_port(port_index));
-  }
   //@}
 
   const EventCollection<PublishEvent<T>>&
@@ -1889,12 +1888,80 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
-  std::string name_;
+  // Shared code for updating an input port and returning a pointer to its
+  // abstract value, or nullptr if the port is not connected. `func` should
+  // be the user-visible API function name obtained with __func__.
+  const AbstractValue* EvalAbstractInputImpl(const char* func,
+                                             const Context<T>& context,
+                                             InputPortIndex port_index) const {
+    if (port_index >= get_num_input_ports())
+      ThrowInputPortIndexOutOfRange(func, port_index, get_num_input_ports());
+
+    const FreestandingInputPortValue* free_port_value =
+        context.MaybeGetFixedInputPortValue(port_index);
+    if (free_port_value != nullptr)
+      return free_port_value->get_abstract_data();  // A fixed input port.
+
+    // The only way to satisfy an input port of a root System is to make
+    // it freestanding. Since it wasn't freestanding, it is unconnected.
+    if (get_parent_service() == nullptr) return nullptr;
+
+    // This is not the root System, and the port isn't freestanding, so ask
+    // our parent to evaluate it.
+    return get_parent_service()->EvalConnectedSubsystemInputPort(
+        *detail::SystemContextAttorney<T>::get_parent(context),
+        get_input_port(port_index));
+  }
+
+  // Shared code for updating a vector input port and returning a pointer to its
+  // value as a BasicVector<T>, or nullptr if the port is not connected. Throws
+  // a logic_error if the port_index is out of range or if the input port is not
+  // declared to be a vector-valued port. `func` should be the user-visible API
+  // function name obtained with __func__.
+  const BasicVector<T>* EvalBasicVectorInputImpl(
+      const char* func, const Context<T>& context,
+      InputPortIndex port_index) const {
+    // Make sure this is the right kind of port before worrying about whether
+    // it is connected up properly.
+    const InputPortDescriptor<T>& port = GetInputPortOrThrow(func, port_index);
+    if (port.get_data_type() != kVectorValued)
+      ThrowNotAVectorInputPort(func, port_index);
+
+    // If there is no value at all, the port is not connected which is not
+    // a problem here.
+    const AbstractValue* const abstract_value =
+        EvalAbstractInputImpl(func, context, port_index);
+    if (abstract_value == nullptr) return nullptr;
+
+    // We have a vector port with a value, it better be a BasicVector!
+    const BasicVector<T>* const basic_value =
+        abstract_value->MaybeGetValue<BasicVector<T>>();
+    DRAKE_DEMAND(basic_value != nullptr);
+
+    // Shouldn't have been possible to create this vector-valued port with
+    // the wrong size.
+    DRAKE_DEMAND(basic_value->size() == port.size());
+
+    return basic_value;
+  }
+
+  // Returns the descriptor of the input port at index @p port_index, throwing
+  // std::out_of_range we don't like the port index. The message is reported
+  // as though issued by API method @p func.
+  const InputPortDescriptor<T>& GetInputPortOrThrow(const char* func,
+                                                    int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(func, port_index);
+    const InputPortIndex port(port_index);
+    if (port_index >= get_num_input_ports())
+      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
+    return *input_ports_[port];
+  }
+
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references
   // to the descriptors will remain valid even if the vector is resized.
   std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
   std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
-  const detail::InputPortEvaluatorInterface<T>* parent_{nullptr};
 
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
