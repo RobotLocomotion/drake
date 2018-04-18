@@ -135,14 +135,9 @@ class Constraint : public EvaluatorBase {
    * using Constraint::set_bounds, as in LinearConstraint.
    */
   void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-             const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
-    if (lower_bound.rows() != num_constraints() ||
-        upper_bound.rows() != num_constraints()) {
-      throw std::runtime_error("Bounds have invalid dimensions.");
-    }
-
-    lower_bound_ = lower_bound;
-    upper_bound_ = upper_bound;
+                  const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
+    UpdateLowerBound(lower_bound);
+    UpdateUpperBound(upper_bound);
   }
 
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
