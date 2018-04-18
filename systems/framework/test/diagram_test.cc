@@ -12,6 +12,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/adder.h"
@@ -509,8 +510,12 @@ TEST_F(DiagramTest, Topology) {
 }
 
 TEST_F(DiagramTest, Path) {
-  const std::string path = adder0()->GetPath();
+  const std::string path = adder0()->GetSystemPathname();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+
+  // Just the root.
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!",
+            diagram_->GetSystemPathname());
 }
 
 TEST_F(DiagramTest, Graphviz) {
@@ -615,7 +620,7 @@ TEST_F(DiagramTest, AllocateInputs) {
   }
 }
 
-/// Tests that a diagram can be transmogrified to AutoDiffXd.
+// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
       diagram_->ToAutoDiffXd();
