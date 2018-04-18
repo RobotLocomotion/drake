@@ -22,8 +22,6 @@ build:kcov_everything --define=WITH_SNOPT=ON
 build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
 
-test:kcov_everything --test_env=GRB_LICENSE_FILE
-test:kcov_everything --test_env=HOME
 test:kcov_everything --spawn_strategy=standalone
 test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 test:kcov_everything --local_test_jobs=1
@@ -59,8 +57,6 @@ build:asan_everything --copt -O1
 build:asan_everything --copt -fno-omit-frame-pointer
 build:asan_everything --linkopt -fsanitize=address
 
-test:asan_everything --test_env=GRB_LICENSE_FILE
-test:asan_everything --test_env=HOME
 # LSan is run with ASan by default
 test:asan_everything --test_tag_filters=-no_asan,-no_lsan
 test:asan_everything --run_under=//tools/dynamic_analysis:asan
@@ -94,8 +90,6 @@ build:lsan_everything --copt -O1
 build:lsan_everything --copt -fno-omit-frame-pointer
 build:lsan_everything --linkopt -fsanitize=leak
 
-test:lsan_everything --test_env=GRB_LICENSE_FILE
-test:lsan_everything --test_env=HOME
 test:lsan_everything --test_tag_filters=-no_lsan
 test:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 test:lsan_everything --test_env=LSAN_OPTIONS
@@ -129,8 +123,6 @@ build:msan_everything --copt -O1
 build:msan_everything --copt -fno-omit-frame-pointer
 build:msan_everything --linkopt -fsanitize=memory
 
-test:msan_everything --test_env=GRB_LICENSE_FILE
-test:msan_everything --test_env=HOME
 test:msan_everything --test_tag_filters=-no_msan
 test:msan_everything --run_under=//tools/dynamic_analysis:msan
 test:msan_everything --test_lang_filters=-sh,-py
@@ -176,8 +168,6 @@ build:tsan_everything --copt -fno-omit-frame-pointer
 build:tsan_everything --noforce_pic
 build:tsan_everything --linkopt -fsanitize=thread
 
-test:tsan_everything --test_env=GRB_LICENSE_FILE
-test:tsan_everything --test_env=HOME
 test:tsan_everything --test_tag_filters=-no_tsan
 test:tsan_everything --run_under=//tools/dynamic_analysis:tsan
 test:tsan_everything --test_env=TSAN_OPTIONS
@@ -219,8 +209,6 @@ build:ubsan_everything --linkopt -fsanitize=undefined
 # https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
 build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a
 build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
-test:ubsan_everything --test_env=GRB_LICENSE_FILE
-test:ubsan_everything --test_env=HOME
 test:ubsan_everything --test_tag_filters=-no_ubsan
 test:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan_everything --test_env=UBSAN_OPTIONS
@@ -246,8 +234,6 @@ build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
 build:memcheck_everything --copt -O1
 
-test:memcheck_everything --test_env=GRB_LICENSE_FILE
-test:memcheck_everything --test_env=HOME
 test:memcheck_everything --test_tag_filters=-no_memcheck
 test:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 test:memcheck_everything --test_lang_filters=-sh,-py
