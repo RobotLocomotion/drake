@@ -43,9 +43,9 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   const Vector3<double> point_W = -normal_W * radius;
 
   // A half-space for the inclined plane geometry.
-  plant->RegisterCollisionGeometry(
-      plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
-      surface_friction, scene_graph);
+  plant->RegisterCollisionGeometry(plant->world_body(),
+                                   HalfSpace::MakePose(normal_W, point_W),
+                                   HalfSpace(), surface_friction, scene_graph);
 
   // Add sphere geometry for the ball.
   plant->RegisterCollisionGeometry(

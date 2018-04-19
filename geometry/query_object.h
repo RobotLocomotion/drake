@@ -10,7 +10,8 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> class SceneGraph;
+template <typename T>
+class SceneGraph;
 
 /** The %QueryObject serves as a mechanism to perform geometry queries on the
  world's geometry. The SceneGraph has an abstract-valued port that contains

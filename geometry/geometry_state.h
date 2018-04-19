@@ -71,7 +71,8 @@ class GeometryFrame;
 
 class GeometryInstance;
 
-template <typename T> class SceneGraph;
+template <typename T>
+class SceneGraph;
 
 /** @name Structures for maintaining the entity relationships */
 //@{

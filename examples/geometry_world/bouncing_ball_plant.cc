@@ -17,13 +17,13 @@ namespace bouncing_ball {
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
-using geometry::SceneGraph;
 using geometry::PenetrationAsPointPair;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
+using std::make_unique;
 using systems::Context;
 using systems::Value;
-using std::make_unique;
 
 template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
@@ -44,8 +44,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   static_assert(BouncingBallVectorIndices::kNumCoordinates == 1 + 1, "");
 
   ball_frame_id_ = scene_graph->RegisterFrame(
-      source_id, GeometryFrame("ball_frame",
-                               Isometry3<double>::Identity()));
+      source_id, GeometryFrame("ball_frame", Isometry3<double>::Identity()));
   ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/

@@ -17,9 +17,11 @@ namespace geometry {
 
 class GeometryInstance;
 
-template <typename T> class GeometryContext;
+template <typename T>
+class GeometryContext;
 
-template <typename T> class QueryObject;
+template <typename T>
+class QueryObject;
 
 /** SceneGraph serves as the nexus for all geometry (and geometry-based
  operations) in a Diagram. Through SceneGraph, other systems that introduce
@@ -224,7 +226,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::logic_error if a context has already been allocated for this
                             %SceneGraph.
    @see GeometryState::RegisterNewSource() */
-  SourceId RegisterSource(const std::string &name = "");
+  SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
    @param id       The id of the source to query. */
@@ -321,8 +323,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              2. the `frame_id` doesn't belong to the source,
                              3. the `geometry` is equal to `nullptr`,
                              4. a context has been allocated. */
-  GeometryId RegisterGeometry(SourceId source_id,
-                              FrameId frame_id,
+  GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
@@ -340,8 +341,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
                             2. the `geometry_id` doesn't belong to the source,
                             3. the `geometry` is equal to `nullptr`, or
                             4. a context has been allocated. */
-  GeometryId RegisterGeometry(SourceId source_id,
-                              GeometryId geometry_id,
+  GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
@@ -353,8 +353,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
                              source or a context has been allocated. */
   GeometryId RegisterAnchoredGeometry(
-      SourceId source_id,
-      std::unique_ptr<GeometryInstance> geometry);
+      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   //@}
 
@@ -418,7 +417,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // Asserts the given source_id is registered, throwing an exception whose
   // message is the given message with the source_id appended if not.
-  void ThrowUnlessRegistered(SourceId source_id, const char *message) const;
+  void ThrowUnlessRegistered(SourceId source_id, const char* message) const;
 
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
@@ -461,10 +460,10 @@ namespace scalar_conversion {
 template <>
 struct Traits<geometry::SceneGraph> {
   template <typename T, typename U>
-  using supported = typename std::conditional<
-      !std::is_same<T, symbolic::Expression>::value &&
-          std::is_same<U, double>::value,
-      std::true_type, std::false_type>::type;
+  using supported =
+      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
+                                    std::is_same<U, double>::value,
+                                std::true_type, std::false_type>::type;
 };
 }  // namespace scalar_conversion
 }  // namespace systems

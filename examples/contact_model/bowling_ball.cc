@@ -141,9 +141,8 @@ int main() {
   auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
   scene_graph->set_name("scene_graph");
 
-  auto rbt_gs_bridge =
-      builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
-          &tree, scene_graph);
+  auto rbt_gs_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+      &tree, scene_graph);
 
   DrakeLcm lcm;
 

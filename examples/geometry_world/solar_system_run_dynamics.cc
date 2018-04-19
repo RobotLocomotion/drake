@@ -39,9 +39,8 @@ int do_main() {
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
   publisher->set_publish_period(1 / 60.0);
 
-  builder.Connect(
-      solar_system->get_geometry_pose_output_port(),
-      scene_graph->get_source_pose_port(solar_system->source_id()));
+  builder.Connect(solar_system->get_geometry_pose_output_port(),
+                  scene_graph->get_source_pose_port(solar_system->source_id()));
 
   builder.Connect(scene_graph->get_pose_bundle_output_port(),
                   converter->get_input_port(0));

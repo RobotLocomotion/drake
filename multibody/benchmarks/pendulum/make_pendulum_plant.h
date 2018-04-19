@@ -94,9 +94,8 @@ class PendulumParameters {
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakePendulumPlant(
-    const PendulumParameters& default_parameters,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+MakePendulumPlant(const PendulumParameters& default_parameters,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum
 }  // namespace benchmarks

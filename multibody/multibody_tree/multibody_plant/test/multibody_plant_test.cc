@@ -145,8 +145,8 @@ class AcrobotPlantTests : public ::testing::Test {
     scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
-    plant_ = builder.AddSystem(
-        MakeAcrobotPlant(parameters_, false, scene_graph_));
+    plant_ =
+        builder.AddSystem(MakeAcrobotPlant(parameters_, false, scene_graph_));
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
@@ -172,8 +172,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(
-            plant_->get_source_id().value()));
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -350,8 +349,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(),
-      ground_friction, &scene_graph);
+      geometry::HalfSpace(), ground_friction, &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =

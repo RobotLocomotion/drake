@@ -9,8 +9,7 @@ namespace geometry {
 
 template <typename T>
 QueryObject<T>::QueryObject(const QueryObject&)
-    : context_{nullptr},
-      scene_graph_{nullptr} {}
+    : context_{nullptr}, scene_graph_{nullptr} {}
 
 template <typename T>
 QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>&) {

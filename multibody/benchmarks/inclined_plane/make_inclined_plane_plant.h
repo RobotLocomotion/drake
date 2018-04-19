@@ -29,8 +29,7 @@ namespace inclined_plane {
 ///   for this geometry system and it will also register geometry for contact
 ///   modeling.
 /// @throws std::exception if scene_graph is nullptr.
-std::unique_ptr<multibody_plant::MultibodyPlant<double>>
-MakeInclinedPlanePlant(
+std::unique_ptr<multibody_plant::MultibodyPlant<double>> MakeInclinedPlanePlant(
     double radius, double mass, double slope,
     const multibody_plant::CoulombFriction<double>& surface_friction,
     double gravity, geometry::SceneGraph<double>* scene_graph);

@@ -37,16 +37,15 @@ MakeBouncingBallPlant(double radius, double mass,
 
     // A half-space for the ground geometry.
     plant->RegisterCollisionGeometry(
-        plant->world_body(),
-        HalfSpace::MakePose(normal_W, point_W), HalfSpace(), surface_friction,
-        scene_graph);
+        plant->world_body(), HalfSpace::MakePose(normal_W, point_W),
+        HalfSpace(), surface_friction, scene_graph);
 
     // Add sphere geometry for the ball.
     plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
-        Isometry3<double>::Identity(),
-        Sphere(radius), surface_friction, scene_graph);
+        Isometry3<double>::Identity(), Sphere(radius), surface_friction,
+        scene_graph);
   }
 
   // Gravity acting in the -z direction.

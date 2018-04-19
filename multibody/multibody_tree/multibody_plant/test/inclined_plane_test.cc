@@ -56,9 +56,8 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   // Stribeck approximation stiction velocity tolerance, [m/s].
   const double stiction_tolerance = 0.001;
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem(MakeInclinedPlanePlant(
-          radius, mass, slope, surface_friction, g, &scene_graph));
+  MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
+      radius, mass, slope, surface_friction, g, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance);
