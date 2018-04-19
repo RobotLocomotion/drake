@@ -25,22 +25,24 @@ Argument:
 load("@drake//tools/workspace:execute.bzl", "which")
 
 def _impl(repository_ctx):
-    mosek_major_version = 7
+    mosek_major_version = 8
     mosek_minor_version = 1
+    mosek_patch_version = 0
+    mosek_idle_version = 51
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
-        sha256 = "26c5bc0be667c92d1a5f81d2a1f7694de1fb0a3e9e9064c17f98e425db0a3c64"  # noqa
+        sha256 = "00aed5ca62acca6689b579503ad19aedb100b4a37dfd6b95e52f52dee414520e"  # noqa
     elif repository_ctx.os.name == "linux":
         mosek_platform = "linux64x86"
-        sha256 = "9b2bfcba7bcdd24b7e87ecdcccc11222302ced7b3d2a2af7090bdf625ab7cfae"  # noqa
+        sha256 = "ab2f39c1668105acbdfbe6835f59f547dd8b076378d9943ab40839c70e1141a2"  # noqa
     else:
         fail("Operating system is NOT supported",
              attr = repository_ctx.os.name)
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
-    url = "http://download.mosek.com/stable/{}/mosektools{}.tar.bz2".format(
-        mosek_major_version, mosek_platform)
+    url = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2".format(
+        mosek_major_version, mosek_minor_version, mosek_patch_version, mosek_idle_version, mosek_platform)
     root_path = repository_ctx.path("")
     strip_prefix = "mosek/{}".format(mosek_major_version)
 
@@ -129,7 +131,7 @@ install_files(
 
 install(
    name = "install",
-   docs = ["license.pdf"],
+   docs = ["mosek-eula.pdf"],
    deps = [":install_libraries"],
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
