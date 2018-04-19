@@ -284,11 +284,12 @@ int do_main() {
   simulator.StepTo(kTimes.back());
 
   // test final simulation state.
-  Eigen::Vector3d position_final_expected(0.3279, 0.1950, 0.8081);
-  Eigen::Vector3d rpy_final_expected(2.2039, -0.0770, -0.0252);
+  const Eigen::Vector3d position_final_expected(0.3279, 0.1950, 0.8081);
+  const Eigen::Vector3d rpy_final_expected(2.2039, -0.0770, -0.0252);
 
-  Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
-  Eigen::Vector4d quaternion_final = q_final.tail(4);
+  const Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
+  const Eigen::Quaterniond quaternion_final(q_final[3], q_final[4], q_final[5],
+                                            q_final[6]);
   Eigen::Vector3d rpy_final = math::QuaternionToSpaceXYZ(quaternion_final);
   EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head(3), 1e-3,
                               MatrixCompareType::absolute));
