@@ -19,7 +19,7 @@ typedef int FrameIndex;
  * structure), the world frame, and the camera frame. This is used to for
  * posing things such as an ICP formulation.
  */
-// TODO(eric.cousineau): Replace with GeometrySystem when it becomes available
+// TODO(eric.cousineau): Replace with SceneGraph when it becomes available
 // Presently, RigidBodyTree<> can function as a (dense) scene graph of sorts.
 class Scene {
  public:

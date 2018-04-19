@@ -71,7 +71,8 @@ class GeometryFrame;
 
 class GeometryInstance;
 
-template <typename T> class GeometrySystem;
+template <typename T>
+class SceneGraph;
 
 /** @name Structures for maintaining the entity relationships */
 //@{
@@ -82,10 +83,10 @@ using FrameIdSet = std::unordered_set<FrameId>;
 //@}
 
 /**
- The context-dependent state of GeometrySystem. This serves as an AbstractValue
- in the context. GeometrySystem's time-dependent state includes more than just
+ The context-dependent state of SceneGraph. This serves as an AbstractValue
+ in the context. SceneGraph's time-dependent state includes more than just
  values; objects can be added to or removed from the world over time. Therefore,
- GeometrySystem's context-dependent state includes values (the poses) and
+ SceneGraph's context-dependent state includes values (the poses) and
  structure (the topology of the world).
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -436,8 +437,8 @@ class GeometryState {
   // mechanism.
   friend class internal::GeometryVisualizationImpl;
 
-  // Allow GeometrySystem unique access to the state members to perform queries.
-  friend class GeometrySystem<T>;
+  // Allow SceneGraph unique access to the state members to perform queries.
+  friend class SceneGraph<T>;
 
   // Friend declaration so that the internals of the state can be confirmed in
   // unit tests.

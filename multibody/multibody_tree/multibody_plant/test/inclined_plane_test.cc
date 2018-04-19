@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -13,7 +13,7 @@
 
 namespace drake {
 
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
 using systems::Context;
 using systems::Diagram;
@@ -32,9 +32,8 @@ namespace {
 GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   DiagramBuilder<double> builder;
 
-  GeometrySystem<double>& geometry_system =
-      *builder.AddSystem<GeometrySystem>();
-  geometry_system.set_name("geometry_system");
+  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
+  scene_graph.set_name("scene_graph");
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
@@ -57,9 +56,8 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   // Stribeck approximation stiction velocity tolerance, [m/s].
   const double stiction_tolerance = 0.001;
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem(MakeInclinedPlanePlant(
-          radius, mass, slope, surface_friction, g, &geometry_system));
+  MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
+      radius, mass, slope, surface_friction, g, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance);
@@ -81,8 +79,8 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
 
   builder.Connect(
       plant.get_geometry_poses_output_port(),
-      geometry_system.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(geometry_system.get_query_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
+  builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
   // And build the Diagram:

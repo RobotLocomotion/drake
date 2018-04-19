@@ -117,14 +117,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "geometry_system",
+    name = "scene_graph",
     srcs = [
-        "geometry_system.cc",
         "query_object.cc",
+        "scene_graph.cc",
     ],
     hdrs = [
-        "geometry_system.h",
         "query_object.h",
+        "scene_graph.h",
     ],
     deps = [
         ":geometry_context",
@@ -142,7 +142,7 @@ drake_cc_library(
     hdrs = ["geometry_visualization.h"],
     deps = [
         ":geometry_state",
-        ":geometry_system",
+        ":scene_graph",
         "//lcm",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
@@ -228,10 +228,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "geometry_system_test",
+    name = "scene_graph_test",
     deps = [
-        ":geometry_system",
         ":geometry_visualization",
+        ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -252,7 +252,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "query_object_test",
     deps = [
-        ":geometry_system",
+        ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],
 )

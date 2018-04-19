@@ -10,15 +10,16 @@
 namespace drake {
 namespace geometry {
 
-template <typename T> class GeometrySystem;
+template <typename T>
+class SceneGraph;
 
 /** The %QueryObject serves as a mechanism to perform geometry queries on the
- world's geometry. The GeometrySystem has an abstract-valued port that contains
+ world's geometry. The SceneGraph has an abstract-valued port that contains
  a  %QueryObject (i.e., a %QueryObject-valued output port).
 
- To perform geometry queries on GeometrySystem:
+ To perform geometry queries on SceneGraph:
    - a LeafSystem must have a %QueryObject-valued input port and connect it to
-     the corresponding query output port on GeometrySystem,
+     the corresponding query output port on SceneGraph,
    - the querying LeafSystem can evaluate the input port, retrieving a `const
      QueryObject&` in return, and, finally,
    - invoke the appropriate method on the %QueryObject.
@@ -38,7 +39,7 @@ template <typename T> class GeometrySystem;
  copy will throw an exception.
 
  A %QueryObject _cannot_ be converted to a different scalar type. A %QueryObject
- of scalar type S can only be acquired from the output port of a GeometrySystem
+ of scalar type S can only be acquired from the output port of a SceneGraph
  of type S evaluated on a corresponding GeometryContext, also of type S.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -56,7 +57,7 @@ class QueryObject {
   // The result will always be a "default" QueryObject (i.e., all pointers are
   // null). There is no public constructor, the assumption is that the only way
   // to acquire a reference/instance of QueryObject is through the
-  // GeometrySystem output port. The GeometrySystem is responsible for
+  // SceneGraph output port. The SceneGraph is responsible for
   // guaranteeing the returned QueryObject is "live" (via CalcQueryObject()).
   QueryObject(const QueryObject& other);
   QueryObject& operator=(const QueryObject&);
@@ -119,18 +120,18 @@ class QueryObject {
   //@}
 
  private:
-  // GeometrySystem is the only class that can instantiate QueryObjects.
-  friend class GeometrySystem<T>;
+  // SceneGraph is the only class that can instantiate QueryObjects.
+  friend class SceneGraph<T>;
   // Convenience class for testing.
   friend class QueryObjectTester;
 
-  // Only the GeometrySystem<T> can instantiate this class - it gets
+  // Only the SceneGraph<T> can instantiate this class - it gets
   // instantiated into a *copyable* default instance (to facilitate allocation
   // in contexts).
   QueryObject() = default;
 
   void ThrowIfDefault() const {
-    if (!(context_ && system_)) {
+    if (!(context_ && scene_graph_)) {
       throw std::runtime_error(
           "Attempting to perform query on invalid QueryObject. "
           "Did you copy the QueryObject?");
@@ -146,11 +147,11 @@ class QueryObject {
   // diagram. The context shares the same index in the parent diagram context.
   // Then the LeafSystem desiring to perform a query would pass itself and its
   // own context in (along with the query parameters). The QueryObject would
-  // use those and the index to get the GeometrySystem and GeometryContext.
+  // use those and the index to get the SceneGraph and GeometryContext.
   //
   // Several issues:
   //  1. Leads to a clunky API (passing self and context into *every* query).
-  //  2. The index value would be insufficient if the GeometrySystem were buried
+  //  2. The index value would be insufficient if the SceneGraph were buried
   //     in a diagram with its query object port exported in the diagram.
   // This is documented for future consideration, and should not necessarily be
   // interpreted as a guaranteed task.
@@ -161,7 +162,7 @@ class QueryObject {
   // be null for "baked" contexts (e.g., the result of copying a "live"
   // context).
   const GeometryContext<T>* context_{nullptr};
-  const GeometrySystem<T>* system_{nullptr};
+  const SceneGraph<T>* scene_graph_{nullptr};
 };
 
 }  // namespace geometry
