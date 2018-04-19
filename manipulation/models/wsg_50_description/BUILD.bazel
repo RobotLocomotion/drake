@@ -17,7 +17,6 @@ drake_cc_googletest(
     name = "wsg_50_mesh_collision_test",
     srcs = ["urdf/test/wsg50_mesh_collision_test.cc"],
     data = [":models"],
-    local = 1,
     deps = [
         "//common:find_resource",
         "//multibody/parsers",

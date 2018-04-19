@@ -21,6 +21,7 @@ drake_cc_library(
     srcs = ["multilane_types_compare.cc"],
     hdrs = ["multilane_types_compare.h"],
     deps = [
+        "//automotive/maliput/api/test_utilities",
         "//automotive/maliput/multilane",
         "//common:essential",
         "//math:geometric_transform",

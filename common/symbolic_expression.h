@@ -877,6 +877,13 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 namespace drake {
 namespace symbolic {
+
+/// Constructs a vector of variables from the vector of variable expressions.
+/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// variable.
+VectorX<Variable> GetVariableVector(
+    const Eigen::Ref<const VectorX<Expression>>& evec);
+
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
 ///

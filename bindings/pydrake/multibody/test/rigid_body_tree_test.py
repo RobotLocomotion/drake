@@ -10,10 +10,12 @@ from pydrake.forwarddiff import jacobian
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
+    RigidBodyFrame,
     RigidBodyTree,
     FloatingBaseType
     )
 import pydrake.multibody.shapes as shapes
+from pydrake.util.eigen_geometry import Isometry3
 
 
 class TestRigidBodyTree(unittest.TestCase):
@@ -75,6 +77,51 @@ class TestRigidBodyTree(unittest.TestCase):
             [-1, 0, 0, 0],
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
+
+        # Geometric Jacobian.
+        # Construct a new tree with a quaternion floating base.
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"),
+            floating_base_type=FloatingBaseType.kQuaternion)
+        num_q = 8
+        num_v = 7
+        self.assertEqual(tree.number_of_positions(), num_q)
+        self.assertEqual(tree.number_of_velocities(), num_v)
+
+        q = tree.getZeroConfiguration()
+        kinsol = tree.doKinematics(q)
+        # - Sanity check sizes.
+        J_default, v_indices_default = tree.geometricJacobian(kinsol, 0, 2, 0)
+        self.assertEqual(J_default.shape[0], 6)
+        self.assertEqual(J_default.shape[1], num_v)
+        self.assertEqual(len(v_indices_default), num_v)
+
+        # - Check that default value for in_terms_of_qdot is false.
+        J_not_in_terms_of_q_dot, v_indices_not_in_terms_of_qdot = \
+            tree.geometricJacobian(kinsol, 0, 2, 0, False)
+        self.assertTrue((J_default == J_not_in_terms_of_q_dot).all())
+        self.assertEqual(v_indices_default, v_indices_not_in_terms_of_qdot)
+
+        # - Check with in_terms_of_qdot set to True.
+        J_in_terms_of_q_dot, v_indices_in_terms_of_qdot = \
+            tree.geometricJacobian(kinsol, 0, 2, 0, True)
+        self.assertEqual(J_in_terms_of_q_dot.shape[0], 6)
+        self.assertEqual(J_in_terms_of_q_dot.shape[1], num_q)
+        self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
+
+    def test_frame_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
+        # xyz + rpy
+        frame = RigidBodyFrame(
+            name="frame_1", body=tree.world(),
+            xyz=[0, 0, 0], rpy=[0, 0, 0])
+        self.assertEqual(frame.get_name(), "frame_1")
+        tree.addFrame(frame)
+        self.assertTrue(frame.get_frame_index() < 0, frame.get_frame_index())
+        self.assertTrue(frame.get_rigid_body() is tree.world())
+        self.assertIsInstance(frame.get_transform_to_body(), Isometry3)
+        self.assertTrue(tree.findFrame(frame_name="frame_1") is frame)
 
     def test_flat_terrain(self):
         tree = RigidBodyTree(FindResourceOrThrow(
@@ -203,6 +250,12 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertFalse(sphere_geometry.hasFaces())
         with self.assertRaises(RuntimeError):
             sphere_geometry.getFaces()
+
+        # Add a visual element just to test the spelling of AddVisualElement.
+        tree.world().AddVisualElement(sphere_visual_element)
+
+        # Test that I can call compile.
+        tree.compile()
 
     def test_atlas_parsing(self):
         # Sanity check on parsing.

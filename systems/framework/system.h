@@ -26,6 +26,7 @@
 #include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/witness_function.h"
@@ -33,7 +34,7 @@
 namespace drake {
 namespace systems {
 
-/** @cond */
+#if !defined(DRAKE_DOXYGEN_CXX)
 // Private helper class for System.
 class SystemImpl {
  public:
@@ -59,7 +60,7 @@ class SystemImpl {
     return system->system_scalar_converter_;
   }
 };
-/** @endcond */
+#endif  // DRAKE_DOXYGEN_CXX
 
 /// Defines the implementation of the stdc++ concept UniformRandomBitGenerator
 /// to be used by the Systems classes.  This is provided as a work-around to
@@ -69,28 +70,32 @@ class SystemImpl {
 // a templated class that exposes the required methods from the concept.
 typedef std::mt19937 RandomGenerator;
 
-/// A superclass template for systems that receive input, maintain state, and
-/// produce output of a given mathematical type T.
+/// Base class for all System functionality that is dependent on the templatized
+/// scalar type T for input, state, parameters, and outputs.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 template <typename T>
-class System {
+class System : public SystemBase {
  public:
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  virtual ~System() {}
+  ~System() override = default;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
   /// These methods are used to allocate and initialize Context resources.
   //@{
 
-  /// Allocates a context, initialized with the correct numbers of concrete
-  /// input ports and state variables for this System.  Since input port
-  /// pointers are not owned by the context, they should simply be initialized
-  /// to nullptr.
-  virtual std::unique_ptr<Context<T>> AllocateContext() const = 0;
+  /// Returns a Context<T> suitable for use with this System<T>.
+  // This is just an intentional shadowing of the base class method to return
+  // a more convenient type.
+  std::unique_ptr<Context<T>> AllocateContext() const {
+    std::unique_ptr<ContextBase> context_base(SystemBase::AllocateContext());
+    DRAKE_DEMAND(dynamic_cast<Context<T>*>(context_base.get()) != nullptr);
+    return std::unique_ptr<Context<T>>(
+        static_cast<Context<T>*>(context_base.release()));
+  }
 
   /// Allocates a CompositeEventCollection for this system. The allocated
   /// instance is used for registering events; for example, Simulator passes
@@ -129,9 +134,9 @@ class System {
   /// Returns a container that can hold the values of all of this System's
   /// output ports. It is sized with the number of output ports and uses each
   /// output port's allocation method to provide an object of the right type
-  /// for that port. A Context is provided as
-  /// an argument to support some specialized use cases. Most typical
-  /// System implementations should ignore it.
+  /// for that port.
+  // TODO(sherm1) Get rid of context parameter. We are stuck with it for now
+  // because of the way DiagramOutput is implemented. Fixed in caching branch.
   virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
       const Context<T>& context) const = 0;
 
@@ -1068,10 +1073,10 @@ class System {
 
     // Checks the validity of each output port.
     for (int i = 0; i < get_num_output_ports(); ++i) {
-      // TODO(amcastro-tri): add appropriate checks for kAbstractValued ports
-      // once abstract ports are implemented in 3164.
+      // TODO(sherm1): consider adding (very expensive) validation of the
+      // abstract ports also.
       if (get_output_port(i).get_data_type() == kVectorValued) {
-        const VectorBase<T>* output_vector = output->get_vector_data(i);
+        const BasicVector<T>* output_vector = output->get_vector_data(i);
         DRAKE_THROW_UNLESS(output_vector != nullptr);
         DRAKE_THROW_UNLESS(output_vector->size() == get_output_port(i).size());
       }
@@ -1083,8 +1088,9 @@ class System {
   ///
   /// @throw exception unless `context` is valid for this system.
   /// @tparam T1 the scalar type of the Context to check.
+  // TODO(sherm1) This method needs to be unit tested.
   template <typename T1 = T>
-  void CheckValidContext(const Context<T1>& context) const {
+  void CheckValidContextT(const Context<T1>& context) const {
     // Checks that the number of input ports in the context is consistent with
     // the number of ports declared by the System.
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
@@ -1296,10 +1302,10 @@ class System {
   void FixInputPortsFrom(const System<double>& other_system,
                          const Context<double>& other_context,
                          Context<T>* target_context) const {
-    DRAKE_ASSERT_VOID(CheckValidContext(other_context));
+    DRAKE_ASSERT_VOID(CheckValidContextT(other_context));
     DRAKE_ASSERT_VOID(CheckValidContext(*target_context));
     DRAKE_ASSERT_VOID(other_system.CheckValidContext(other_context));
-    DRAKE_ASSERT_VOID(other_system.CheckValidContext(*target_context));
+    DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
 
     for (int i = 0; i < get_num_input_ports(); ++i) {
       const auto& descriptor = get_input_port(i);
@@ -1539,19 +1545,18 @@ class System {
   //@{
 
   /// Override this if you have any continuous state variables `xc` in your
-  /// concrete %System to calculate their time derivatives.
-  /// The `derivatives` vector will correspond elementwise with the state
-  /// vector Context.state.continuous_state.get_state(). Thus, if the state in
-  /// the Context has second-order structure `xc=[q,v,z]`, that same structure
+  /// concrete %System to calculate their time derivatives. The `derivatives`
+  /// vector will correspond elementwise with the state vector
+  /// `Context.state.continuous_state.get_state()`. Thus, if the state in the
+  /// Context has second-order structure `xc=[q,v,z]`, that same structure
   /// applies to the derivatives.
   ///
   /// This method is called only from the public non-virtual
-  /// CalcTimeDerivatives() which will already have error-checked
-  /// the parameters so you don't have to.
-  /// In particular, implementations may assume that the given Context is valid
-  /// for this %System; that the `derivatives` pointer is non-null, and that
-  /// the referenced object has the same constituent structure as was
-  /// produced by AllocateTimeDerivatives().
+  /// CalcTimeDerivatives() which will already have error-checked the parameters
+  /// so you don't have to. In particular, implementations may assume that the
+  /// given Context is valid for this %System; that the `derivatives` pointer is
+  /// non-null, and that the referenced object has the same constituent
+  /// structure as was produced by AllocateTimeDerivatives().
   ///
   /// The default implementation does nothing if the `derivatives` vector is
   /// size zero and aborts otherwise.
@@ -1876,6 +1881,13 @@ class System {
   // Attorney-Client idiom to expose a subset of private elements of System.
   // Refer to SystemImpl comments for details.
   friend class SystemImpl;
+
+  // SystemBase override checks a Context of same type T.
+  void DoCheckValidContext(const ContextBase& context_base) const final {
+    const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
+    DRAKE_THROW_UNLESS(context != nullptr);
+    CheckValidContextT(*context);
+  }
 
   std::string name_;
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references

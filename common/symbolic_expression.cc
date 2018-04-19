@@ -12,6 +12,8 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -23,6 +25,7 @@
 namespace drake {
 namespace symbolic {
 
+using std::logic_error;
 using std::make_shared;
 using std::map;
 using std::numeric_limits;
@@ -71,7 +74,8 @@ Expression NegateMultiplication(const Expression& e) {
 Expression::Expression(const Variable& var)
     : ptr_{make_shared<ExpressionVar>(var)} {}
 Expression::Expression(const double d) : ptr_{make_cell(d)} {}
-Expression::Expression(shared_ptr<ExpressionCell> ptr) : ptr_{std::move(ptr)} {}
+Expression::Expression(std::shared_ptr<ExpressionCell> ptr)
+    : ptr_{std::move(ptr)} {}
 
 ExpressionKind Expression::get_kind() const {
   DRAKE_ASSERT(ptr_ != nullptr);
@@ -836,6 +840,20 @@ const Expression& get_else_expression(const Expression& e) {
 
 Expression operator+(const Variable& var) { return Expression{var}; }
 Expression operator-(const Variable& var) { return -Expression{var}; }
+
+VectorX<Variable> GetVariableVector(
+    const Eigen::Ref<const VectorX<Expression>>& evec) {
+  VectorX<Variable> vec(evec.size());
+  for (int i = 0; i < evec.size(); i++) {
+    const Expression e_i{evec(i)};
+    if (is_variable(e_i)) {
+      vec(i) = get_variable(e_i);
+    } else {
+      throw logic_error(fmt::format("{} is not a variable.", e_i));
+    }
+  }
+  return vec;
+}
 
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const vector<Variable>& vars) {

@@ -14,7 +14,13 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-find_package(Bazel 0.10.1 MODULE REQUIRED)
+if(APPLE)
+  set(MINIMUM_BAZEL_VERSION 0.12.0)
+else()
+  set(MINIMUM_BAZEL_VERSION 0.10.1)
+endif()
+
+find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)

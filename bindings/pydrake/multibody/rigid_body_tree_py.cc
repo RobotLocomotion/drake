@@ -92,6 +92,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         }),
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
+    .def("compile", &RigidBodyTree<double>::compile)
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
       std::default_random_engine generator(std::random_device {}());
       return tree.getRandomConfiguration(generator);
@@ -129,6 +130,21 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          py::arg("cache"),
          py::arg("model_instance_id_set") =
            RigidBodyTreeConstants::default_model_instance_id_set,
+         py::arg("in_terms_of_qdot") = false)
+    .def("geometricJacobian",
+         [](const RigidBodyTree<double>& tree,
+            const KinematicsCache<double>& cache, int base_body_or_frame_ind,
+            int end_effector_body_or_frame_ind,
+            int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
+           std::vector<int> v_indices;
+           auto J = tree.geometricJacobian(
+               cache, base_body_or_frame_ind, end_effector_body_or_frame_ind,
+               expressed_in_body_or_frame_ind, in_terms_of_qdot, &v_indices);
+           return py::make_tuple(J, v_indices);
+         },
+         py::arg("cache"), py::arg("base_body_or_frame_ind"),
+         py::arg("end_effector_body_or_frame_ind"),
+         py::arg("expressed_in_body_or_frame_ind"),
          py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
@@ -175,7 +191,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       return tree.relativeTransform(cache, base_or_frame_ind,
         body_or_frame_ind).matrix();
     })
-    .def("addFrame", &RigidBodyTree<double>::addFrame)
+    .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
                         const std::string& model_name = "",
@@ -223,7 +239,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_name", &RigidBody<double>::get_name)
     .def("get_body_index", &RigidBody<double>::get_body_index)
     .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
-    .def("get_visual_elements", &RigidBody<double>::get_visual_elements);
+    .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
+    .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
 
   py::class_<RigidBodyFrame<double>,
              shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
@@ -244,8 +261,21 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         py::arg("name"), py::arg("body"),
         py::arg("transform_to_body"))
     .def("get_name", &RigidBodyFrame<double>::get_name)
-    .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index);
+    .def("get_frame_index", &RigidBodyFrame<double>::get_frame_index)
+    .def("get_rigid_body", &RigidBodyFrame<double>::get_rigid_body,
+         py_reference,
+         // Keep alive: `this` keeps `return` alive.
+         py::keep_alive<1, 0>())
+    .def("get_transform_to_body",
+         &RigidBodyFrame<double>::get_transform_to_body);
 
+  m.def("AddModelInstanceFromUrdfFile",
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &parsers::urdf::AddModelInstanceFromUrdfFile),
+        py::arg("urdf_filename"), py::arg("floating_base_type"),
+        py::arg("weld_to_frame"), py::arg("tree"));
   m.def("AddModelInstanceFromUrdfStringSearchingInRosPackages",
         py::overload_cast<const std::string&, const PackageMap&,
                           const std::string&, const FloatingBaseType,

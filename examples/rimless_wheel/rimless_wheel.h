@@ -31,6 +31,8 @@ namespace rimless_wheel {
 /// Outputs:
 ///   0) continuous (minimal coordinates) state output (theta and thetadot only)
 ///   1) floating-base state output
+/// Parameters: mass, length, number of spokes, etc, are all set as Context
+///   parameters using RimlessWheelParams.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 /// Instantiated templates for the following scalar types @p T are provided:

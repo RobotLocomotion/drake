@@ -46,7 +46,7 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   }
 
   Map<Vector3d> rpy(&q[3]);
-  rpy = drake::math::UniformlyRandomRPY(generator);
+  rpy = drake::math::UniformlyRandomRPY(&generator);
   return q;
 }
 

@@ -17,6 +17,12 @@ namespace pydrake {
 PYBIND11_MODULE(_autodiffutils_py, m) {
   m.doc() = "Bindings for Eigen AutoDiff Scalars";
 
+  // Install NumPy warning filtres.
+  // N.B. This may interfere with other code, but until that is a confirmed
+  // issue, we should agressively try to avoid these warnings.
+  py::module::import("pydrake.util.deprecation")
+      .attr("install_numpy_warning_filters")();
+
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
   autodiff
     .def(py::init<const double&, const Eigen::VectorXd&>())

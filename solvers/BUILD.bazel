@@ -168,6 +168,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
+        ":unrevised_lemke_solver",
         "//common:essential",
     ],
 )
@@ -456,6 +457,7 @@ drake_cc_library(
     hdrs = ["unrevised_lemke_solver.h"],
     deps = [
         ":mathematical_program_api",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -864,6 +866,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "gurobi_solver_grb_license_file_test",
+    tags = gurobi_test_tags(),
+    deps = [
+        ":gurobi_solver",
+        ":mathematical_program",
+    ],
+)
+
+drake_cc_googletest(
     name = "integer_optimization_util_test",
     deps = [
         ":integer_optimization_util",
@@ -975,6 +986,15 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mosek_solver_moseklm_license_file_test",
+    tags = mosek_test_tags(),
+    deps = [
+        ":mathematical_program",
+        ":mosek_solver",
     ],
 )
 

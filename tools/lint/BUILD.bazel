@@ -92,9 +92,13 @@ drake_py_unittest(
 drake_py_unittest(
     name = "util_test",
     tags = [
-        # This test looks outside the sandbox.
+        # This test's pass/fail result depends on the presence of files in the
+        # source tree beyond what is declared in its `deps`; thus, we need to
+        # re-run the test anytime the source tree might have changed, for which
+        # "external" is the closest semantic match.
         "external",
-        "local",
+        # This test looks outside the sandbox.
+        "no-sandbox",
     ],
     deps = [":util"],
 )

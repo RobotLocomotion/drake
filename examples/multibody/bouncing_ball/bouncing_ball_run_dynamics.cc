@@ -46,6 +46,7 @@ using Eigen::Vector3d;
 using geometry::GeometrySystem;
 using geometry::SourceId;
 using lcm::DrakeLcm;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
@@ -73,10 +74,13 @@ int do_main() {
   const double mass = 0.1;      // kg
   const double g = 9.81;        // m/s^2
   const double z0 = 0.3;        // Initial height.
+  const CoulombFriction<double> coulomb_friction(
+      0.8 /* static friction */, 0.3 /* dynamic friction */);
 
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeBouncingBallPlant(
-          radius, mass, -g * Vector3d::UnitZ(), &geometry_system));
+          radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
+          &geometry_system));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
@@ -105,10 +109,6 @@ int do_main() {
   DRAKE_DEMAND(!!plant.get_source_id());
 
   builder.Connect(
-      plant.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          plant.get_source_id().value()));
-  builder.Connect(
       plant.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(geometry_system.get_query_output_port(),
@@ -136,7 +136,7 @@ int do_main() {
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
   model.SetDefaultContext(&plant_context);
-  Matrix3d R_WB = math::UniformlyRandomRotmat(generator);
+  Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, z0);

@@ -11,6 +11,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/multibody/multibody_tree/force_element.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -518,6 +519,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
+  /// @param[in] coulomb_friction
+  ///   Coulomb's law of friction coefficients to model friction on the
+  ///   surface of `shape` for the given `body`.
   /// @param[out] geometry_system
   ///   A valid, non-null pointer to a GeometrySystem on which geometry will get
   ///   registered.
@@ -525,10 +529,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if called post-finalize.
   /// @throws std::exception if `geometry_system` does not correspond to the
   /// same instance with which RegisterAsSourceForGeometrySystem() was called.
-  // TODO(amcastro-tri): Augment API to specify friction coefficients.
-  void RegisterCollisionGeometry(
+  geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body,
       const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      const CoulombFriction<double>& coulomb_friction,
       geometry::GeometrySystem<T>* geometry_system);
 
   /// Returns the number of geometries registered for visualization.
@@ -545,6 +549,22 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Post-finalize calls will always return the same value.
   int get_num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
+  }
+
+  /// Returns the friction coefficients provided during geometry registration
+  /// for the given geometry `id`. We call these the "default" coefficients but
+  /// note that we mean user-supplied per-geometry default, not something more
+  /// global.
+  /// @throws std::exception if `id` does not correspond to a geometry in `this`
+  /// model registered for contact modeling.
+  /// @see RegisterCollisionGeometry() for details on geometry registration.
+  // TODO(amcastro-tri): This API might change or disappear completely as GS
+  // provides support for the specification of surface properties.
+  const CoulombFriction<double>& default_coulomb_friction(
+      geometry::GeometryId id) const {
+    DRAKE_DEMAND(is_collision_geometry(id));
+    const int collision_index = geometry_id_to_collision_index_.at(id);
+    return default_coulomb_friction_[collision_index];
   }
 
   /// @name Retrieving ports for communication with a GeometrySystem.
@@ -572,13 +592,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// GeometrySystem.
   /// @throws std::exception if called pre-finalize. See Finalize().
   const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
-
-  /// Returns the output port of frame id's used to communicate poses to a
-  /// GeometrySystem.
-  /// @throws std::exception if this system was not registered with a
-  /// GeometrySystem.
-  /// @throws std::exception if called pre-finalize. See Finalize().
-  const systems::OutputPort<T>& get_geometry_ids_output_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// GeometrySystem.
@@ -777,6 +790,29 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
   /// @}
 
+  /// @anchor mbp_stribeck_model
+  /// @name Stribeck model of friction
+  ///
+  /// Currently %MultibodyPlant uses the Stribeck approximation to model dry
+  /// friction. The Stribeck model of friction is an approximation to Coulomb's
+  /// law of friction that allows using continuous time integration without the
+  /// need to specify complementarity constraints. While this results in a
+  /// simpler model immediately tractable with standard numerical methods for
+  /// integration of ODE's, it often leads to stiff dynamics that require
+  /// an explicit integrator to take very small time steps. It is therefore
+  /// recommended to use error controlled integrators when using this model.
+  /// See @ref tangent_force for a detailed discussion of the Stribeck model.
+  /// @{
+
+  /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
+  /// `v_stiction` must be specified in m/s (meters per second.)
+  /// `v_stiction` defaults to a value of 1 millimeter per second.
+  /// @throws std::exception if `v_stiction` is non-positive.
+  void set_stiction_tolerance(double v_stiction = 0.001) {
+    stribeck_model_.set_stiction_tolerance(v_stiction);
+  }
+  /// @}
+
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
   /// @throws if called pre-finalize. See Finalize().
@@ -885,16 +921,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // with a GeometrySystem.
   void DeclareGeometrySystemPorts();
 
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  void CalcFrameIdOutput(
-      const systems::Context<T>& context,
-      geometry::FrameIdVector* id_set) const;
-
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
-
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
@@ -949,13 +975,58 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   };
   ContactByPenaltyMethodParameters penalty_method_contact_parameters_;
 
-  // Iteraion order on this map DOES matter, and therefore we use an std::map.
-  std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
+  // Stribeck model of friction.
+  class StribeckModel {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(StribeckModel)
 
-  // Vector of FrameId ordered by BodyIndex. Const post-finalize.
-  // This is the output of CalcFrameIdOutput(). Poses in CalcFramePoseOutput()
-  // correspond to frame ids in the same order as arranged in ids_.
-  std::vector<geometry::FrameId> ids_;
+    /// Creates an uninitialized Stribeck model with an invalid value (negative)
+    /// of the stiction tolerance.
+    StribeckModel() = default;
+
+    /// Computes the friction coefficient based on the tangential *speed*
+    /// `speed_BcAc` of the contact point `Ac` on A relative to the
+    /// contact point `Bc` on B. That is, `speed_BcAc = ‖vt_BcAc‖`, where
+    /// `vt_BcAc` is the tangential component of the velocity `v_BcAc` of
+    /// contact point `Ac` relative to point `Bc`.
+    ///
+    /// See contact_model_doxygen.h @section tangent_force for details.
+    T ComputeFrictionCoefficient(
+        const T& speed_BcAc,
+        const CoulombFriction<T>& friction) const;
+
+    /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
+    /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
+    /// f(1) = 1.
+    static T step5(const T& x);
+
+    /// Sets the stiction tolerance `v_stiction` for the Stribeck model, where
+    /// `v_stiction` must be specified in m/s (meters per second.)
+    /// @throws std::exception if `v_stiction` is non-positive.
+    void set_stiction_tolerance(double v_stiction) {
+      DRAKE_THROW_UNLESS(v_stiction > 0);
+      v_stiction_tolerance_ = v_stiction;
+      inv_v_stiction_tolerance_ = 1.0 / v_stiction;
+    }
+
+    /// Returns the value of the stiction tolerance for `this` model.
+    /// It returns a negative value when the stiction tolerance has not been set
+    /// previously with set_stiction_tolerance().
+    double stiction_tolerance() const { return v_stiction_tolerance_; }
+
+   private:
+    // Stiction velocity tolerance for the Stribeck model.
+    // A negative value indicates it was not properly initialized.
+    double v_stiction_tolerance_{-1};
+    // Note: this is the *inverse* of the v_stiction_tolerance_ parameter to
+    // optimize for the division.
+    // A negative value indicates it was not properly initialized.
+    double inv_v_stiction_tolerance_{-1};
+  };
+  StribeckModel stribeck_model_;
+
+  // Iteration order on this map DOES matter, and therefore we use an std::map.
+  std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
 
   // Map from GeometryId to BodyIndex. During contact queries, it allows to find
   // out to which body a given geometry corresponds to.
@@ -973,9 +1044,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // geometry.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_collision_index_;
 
+  // Friction coefficients ordered by collision index.
+  // See geometry_id_to_collision_index_.
+  std::vector<CoulombFriction<double>> default_coulomb_friction_;
+
   // Port handles for geometry:
   int geometry_query_port_{-1};
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 
   // For geometry registration with a GS, we save a pointer to the GS instance
@@ -988,7 +1062,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
 
-  // Temporary solution for fake cache entries to help statbilize the API.
+  // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
   std::unique_ptr<PositionKinematicsCache<T>> pc_;
   std::unique_ptr<VelocityKinematicsCache<T>> vc_;

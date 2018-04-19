@@ -365,7 +365,9 @@ Vector6d bodySpatialMotionPD(
   auto body_pose = r.relativeTransform(cache, 0, body_index);
   const auto& body_xyz = body_pose.translation();
   Vector3d body_xyz_task = T_world_to_task * body_xyz;
-  Vector4d body_quat = drake::math::rotmat2quat(body_pose.linear());
+  Vector4d body_quat =
+      drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+          body_pose.linear());
   std::vector<int> v_indices;
   auto J_geometric =
       r.geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);

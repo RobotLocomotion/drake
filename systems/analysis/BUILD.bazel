@@ -132,6 +132,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "antiderivative_function",
+    srcs = [
+        "antiderivative_function.cc",
+    ],
+    hdrs = [
+        "antiderivative_function.h",
+    ],
+    deps = [
+        ":scalar_initial_value_problem",
+        "//common:essential",
+        "//common:unused",
+    ],
+)
+
+drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
@@ -236,6 +251,14 @@ drake_cc_googletest(
     size = "small",
     deps = [
         ":scalar_initial_value_problem",
+    ],
+)
+
+drake_cc_googletest(
+    name = "antiderivative_function_test",
+    size = "small",
+    deps = [
+        ":antiderivative_function",
     ],
 )
 

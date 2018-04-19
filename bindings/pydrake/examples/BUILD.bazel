@@ -63,9 +63,39 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "rimless_wheel_py",
+    cc_deps = [
+        "//examples/rimless_wheel",
+    ],
+    cc_so_name = "rimless_wheel",
+    cc_srcs = ["rimless_wheel_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
+    name = "van_der_pol_py",
+    cc_deps = [
+        "//examples/van_der_pol",
+    ],
+    cc_so_name = "van_der_pol",
+    cc_srcs = ["van_der_pol_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":pendulum_py",
+    ":rimless_wheel_py",
+    ":van_der_pol_py",
 ]
 
 PY_LIBRARIES = [
@@ -86,6 +116,14 @@ install(
 )
 
 drake_py_unittest(
+    name = "acrobot_test",
+    size = "small",
+    deps = [
+        ":acrobot_py",
+    ],
+)
+
+drake_py_unittest(
     name = "pendulum_test",
     size = "small",
     deps = [
@@ -94,10 +132,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "acrobot_test",
+    name = "rimless_wheel_test",
     size = "small",
     deps = [
-        ":acrobot_py",
+        ":rimless_wheel_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "van_der_pol_test",
+    size = "small",
+    deps = [
+        ":van_der_pol_py",
     ],
 )
 

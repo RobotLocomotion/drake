@@ -19,6 +19,8 @@ namespace bouncing_ball {
 ///   The radius of the ball.
 /// @param[in] mass
 ///   The mass of the ball.
+/// @param[in] surface_friction
+///   The Coulomb's law coefficients of friction.
 /// @param[in] gravity_W
 ///   The acceleration of gravity vector, expressed in the world frame W.
 /// @param geometry_system
@@ -28,7 +30,9 @@ namespace bouncing_ball {
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeBouncingBallPlant(
-    double radius, double mass, const Vector3<double>& gravity_W,
+    double radius, double mass,
+    const drake::multibody::multibody_plant::CoulombFriction<double>&
+    surface_friction, const Vector3<double>& gravity_W,
     geometry::GeometrySystem<double>* geometry_system = nullptr);
 
 }  // namespace bouncing_ball

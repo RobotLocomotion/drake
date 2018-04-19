@@ -10,6 +10,7 @@ namespace bouncing_ball {
 using geometry::GeometrySystem;
 using geometry::Sphere;
 using geometry::HalfSpace;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
@@ -18,6 +19,7 @@ using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeBouncingBallPlant(double radius, double mass,
+                      const CoulombFriction<double>& surface_friction,
                       const Vector3<double>& gravity_W,
                       geometry::GeometrySystem<double>* geometry_system) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
@@ -36,14 +38,15 @@ MakeBouncingBallPlant(double radius, double mass,
     // A half-space for the ground geometry.
     plant->RegisterCollisionGeometry(
         plant->world_body(),
-        HalfSpace::MakePose(normal_W, point_W), HalfSpace(), geometry_system);
+        HalfSpace::MakePose(normal_W, point_W), HalfSpace(), surface_friction,
+        geometry_system);
 
     // Add sphere geometry for the ball.
     plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3<double>::Identity(),
-        Sphere(radius), geometry_system);
+        Sphere(radius), surface_friction, geometry_system);
   }
 
   // Gravity acting in the -z direction.

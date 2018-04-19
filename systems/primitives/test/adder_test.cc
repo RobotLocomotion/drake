@@ -21,7 +21,7 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->get_output_port().Allocate(*context_);
+    output_ = adder_->get_output_port().Allocate();
     input0_.reset(new BasicVector<double>(3 /* size */));
     input1_.reset(new BasicVector<double>(3 /* size */));
   }

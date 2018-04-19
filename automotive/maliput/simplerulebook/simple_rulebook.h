@@ -26,6 +26,9 @@ class SimpleRulebook : public api::rules::RoadRulebook {
 
   ~SimpleRulebook() override;
 
+  /// Removes all rules.
+  void RemoveAll();
+
   /// Adds a new RightOfWayRule.
   ///
   /// Throws std::runtime_error if a rule with the same ID already exists

@@ -264,18 +264,21 @@ class VisualizationCallback : public EvaluatorBase {
       : EvaluatorBase(0, num_inputs, description), callback_(callback) {}
 
   void EvalCallback(const Eigen::Ref<const Eigen::VectorXd>& x) const {
+    DRAKE_ASSERT(x.size() == num_vars());
     callback_(x);
   }
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override {
+    DRAKE_ASSERT(x.size() == num_vars());
     y.resize(0);
     callback_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
+    DRAKE_ASSERT(x.size() == num_vars());
     y.resize(0);
     callback_(math::autoDiffToValueMatrix(x));
   }

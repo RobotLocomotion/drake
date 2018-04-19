@@ -18,15 +18,18 @@ namespace test {
  * Translates between LCM message objects and VectorBase objects for the
  * Sample type.
  */
-class SampleTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
+class SampleTranslator
+    : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   SampleTranslator()
       : LcmAndVectorBaseTranslator(SampleIndices::kNumCoordinates) {}
-  std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
+  std::unique_ptr<drake::systems::BasicVector<double>> AllocateOutputVector()
       const override;
-  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-                   systems::VectorBase<double>* vector_base) const override;
-  void Serialize(double time, const systems::VectorBase<double>& vector_base,
+  void Deserialize(
+      const void* lcm_message_bytes, int lcm_message_length,
+      drake::systems::VectorBase<double>* vector_base) const override;
+  void Serialize(double time,
+                 const drake::systems::VectorBase<double>& vector_base,
                  std::vector<uint8_t>* lcm_message_bytes) const override;
 };
 
