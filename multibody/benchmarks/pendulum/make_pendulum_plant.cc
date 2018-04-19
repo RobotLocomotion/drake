@@ -25,9 +25,8 @@ using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakePendulumPlant(
-    const PendulumParameters& params,
-    SceneGraph<double>* scene_graph) {
+MakePendulumPlant(const PendulumParameters& params,
+                  SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // Position of the com of the pendulum's body (in this case a point mass) in

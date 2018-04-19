@@ -140,10 +140,10 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << 0, 0, (orrery_bottom + post_height / 2);
   scene_graph->RegisterAnchoredGeometry(
-      source_id_, make_unique<GeometryInstance>(
-                      post_pose,
-                      make_unique<Cylinder>(pipe_radius, post_height),
-                      post_material));
+      source_id_,
+      make_unique<GeometryInstance>(
+          post_pose, make_unique<Cylinder>(pipe_radius, post_height),
+          post_material));
 
   // Allocate the "celestial bodies": two planets orbiting on different planes,
   // each with a moon.
@@ -154,8 +154,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // orrery arm).
   const double kEarthBottom = orrery_bottom + 0.25;
   Isometry3<double> X_SE{Translation3<double>{0, 0, kEarthBottom}};
-  FrameId planet_id = scene_graph->RegisterFrame(
-      source_id_, GeometryFrame("Earth", X_SE));
+  FrameId planet_id =
+      scene_graph->RegisterFrame(source_id_, GeometryFrame("Earth", X_SE));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SE);
   axes_.push_back(Vector3<double>::UnitZ());
@@ -174,8 +174,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
 
   // Luna's frame L is at the center of Earth's geometry (Ge). So, X_EL = X_EGe.
   const Isometry3<double>& X_EL = X_EGe;
-  FrameId luna_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("Luna", X_EL));
+  FrameId luna_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                               GeometryFrame("Luna", X_EL));
   body_ids_.push_back(luna_id);
   body_offset_.push_back(X_EL);
   Vector3<double> plane_normal{1, 1, 1};
@@ -197,8 +197,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Mars's frame M lies directly *below* the sun (to account for the orrery
   // arm).
   Isometry3<double> X_SM{Translation3<double>{0, 0, orrery_bottom}};
-  planet_id = scene_graph->RegisterFrame(
-      source_id_, GeometryFrame("Mars", X_SM));
+  planet_id =
+      scene_graph->RegisterFrame(source_id_, GeometryFrame("Mars", X_SM));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SM);
   plane_normal << 0, 0.1, 1;
@@ -232,8 +232,8 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // So, X_MP = X_MGm. The normal of the plane is negated so it orbits in the
   // opposite direction.
   const Isometry3<double>& X_MP = X_MGm;
-  FrameId phobos_id = scene_graph->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("phobos", X_MP));
+  FrameId phobos_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                                 GeometryFrame("phobos", X_MP));
   body_ids_.push_back(phobos_id);
   body_offset_.push_back(X_MP);
   plane_normal << 0, 0, -1;

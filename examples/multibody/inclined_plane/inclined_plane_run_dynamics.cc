@@ -61,9 +61,8 @@ int do_main() {
   const CoulombFriction<double> surface_friction(FLAGS_static_friction,
                                                  FLAGS_dynamic_friction);
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem(MakeInclinedPlanePlant(
-          radius, mass, slope, surface_friction, g, &scene_graph));
+  MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
+      radius, mass, slope, surface_friction, g, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);

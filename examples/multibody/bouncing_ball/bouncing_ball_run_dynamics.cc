@@ -61,8 +61,7 @@ using drake::systems::SemiExplicitEulerIntegrator;
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph =
-      *builder.AddSystem<SceneGraph>();
+  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
   // The target accuracy determines the size of the actual time steps taken
@@ -77,10 +76,8 @@ int do_main() {
   const CoulombFriction<double> coulomb_friction(
       0.8 /* static friction */, 0.3 /* dynamic friction */);
 
-  MultibodyPlant<double>& plant =
-      *builder.AddSystem(MakeBouncingBallPlant(
-          radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
-          &scene_graph));
+  MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
+      radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);

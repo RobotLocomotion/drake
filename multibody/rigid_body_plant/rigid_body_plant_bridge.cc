@@ -25,8 +25,8 @@ using geometry::Sphere;
 using geometry::VisualMaterial;
 
 template <typename T>
-RigidBodyPlantBridge<T>::RigidBodyPlantBridge(
-    const RigidBodyTree<T>* tree, SceneGraph<T>* scene_graph)
+RigidBodyPlantBridge<T>::RigidBodyPlantBridge(const RigidBodyTree<T>* tree,
+                                              SceneGraph<T>* scene_graph)
     : tree_(tree) {
   DRAKE_THROW_UNLESS(tree_ != nullptr);
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
@@ -120,9 +120,8 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
           const Vector4<double>& diffuse = visual_element.getMaterial();
           scene_graph->RegisterGeometry(
               source_id_, body_id,
-              std::make_unique<GeometryInstance>(
-                  X_FG, std::move(shape),
-                  VisualMaterial(diffuse)));
+              std::make_unique<GeometryInstance>(X_FG, std::move(shape),
+                                                 VisualMaterial(diffuse)));
           DRAKE_DEMAND(shape == nullptr);
         }
       }

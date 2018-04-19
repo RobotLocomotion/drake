@@ -32,7 +32,8 @@ std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeBouncingBallPlant(
     double radius, double mass,
     const drake::multibody::multibody_plant::CoulombFriction<double>&
-    surface_friction, const Vector3<double>& gravity_W,
+        surface_friction,
+    const Vector3<double>& gravity_W,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace bouncing_ball

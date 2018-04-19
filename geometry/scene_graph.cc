@@ -91,8 +91,7 @@ SceneGraph<T>::SceneGraph()
 
 template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
-    : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   // NOTE: If other.initial_state_ is not null, it means we're converting a
   // system that hasn't had its context allocated yet. We want the converted
   // system to persist the same state.
@@ -128,7 +127,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
 }
 
 template <typename T>
-SourceId SceneGraph<T>::RegisterSource(const std::string &name) {
+SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   SourceId source_id = initial_state_->RegisterNewSource(name);
   MakeSourcePorts(source_id);
@@ -141,10 +140,9 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
-SceneGraph<T>::get_source_pose_port(SourceId id) {
-  ThrowUnlessRegistered(
-      id, "Can't acquire pose port for unknown source id: ");
+const systems::InputPortDescriptor<T>& SceneGraph<T>::get_source_pose_port(
+    SourceId id) {
+  ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].pose_port);
 }
 
@@ -157,7 +155,7 @@ FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
 
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                         const GeometryFrame& frame) {
+                                     const GeometryFrame& frame) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterFrame(source_id, parent_id, frame);
 }
@@ -182,8 +180,7 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
-    SourceId source_id,
-    std::unique_ptr<GeometryInstance> geometry) {
+    SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
@@ -207,7 +204,7 @@ QueryObject<T> SceneGraph<T>::MakeQueryObject() const {
 
 template <typename T>
 void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
-                                        QueryObject<T>* output) const {
+                                    QueryObject<T>* output) const {
   // NOTE: This is an exception to the style guide. It takes a const reference
   // but then hangs onto a const pointer. The guide says the parameter should
   // itself be a const pointer. We're breaking the guide to satisfy the
@@ -248,7 +245,7 @@ PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
 
 template <typename T>
 void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
-                                       PoseBundle<T>* output) const {
+                                   PoseBundle<T>* output) const {
   // NOTE: Adding/removing frames during discrete updates will
   // change the size/composition of the pose bundle. This calculation will *not*
   // explicitly test this. It is assumed the discrete update will also be
@@ -268,8 +265,7 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
 }
 
 template <typename T>
-void SceneGraph<T>::FullPoseUpdate(
-    const GeometryContext<T>& context) const {
+void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
   // TODO(SeanCurtis-TRI): Update this when the cache is available.
   // This method is const and the context is const. Ultimately, this will pull
   // cached entities to do the query work. For now, we have to const cast the
@@ -281,9 +277,10 @@ void SceneGraph<T>::FullPoseUpdate(
   GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
 
   auto throw_error = [](SourceId source_id, const std::string& origin) {
-    throw std::logic_error(
-        "Source " + to_string(source_id) + " has registered frames "
-            "but does not provide " + origin + " values on the input port.");
+    throw std::logic_error("Source " + to_string(source_id) +
+                           " has registered frames "
+                           "but does not provide " +
+                           origin + " values on the input port.");
   };
 
   for (const auto& pair : state.source_frame_id_map_) {
@@ -317,18 +314,17 @@ std::unique_ptr<LeafContext<T>> SceneGraph<T>::DoMakeLeafContext() const {
 }
 
 template <typename T>
-void SceneGraph<T>::ThrowIfContextAllocated(
-    const char* source_method) const {
+void SceneGraph<T>::ThrowIfContextAllocated(const char* source_method) const {
   if (context_has_been_allocated_) {
-    throw std::logic_error(
-        "The call to " + std::string(source_method) + " is invalid; a "
-        "context has already been allocated.");
+    throw std::logic_error("The call to " + std::string(source_method) +
+                           " is invalid; a "
+                           "context has already been allocated.");
   }
 }
 
 template <typename T>
 void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
-                                              const char* message) const {
+                                          const char* message) const {
   using std::to_string;
   if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
     throw std::logic_error(message + to_string(source_id) + ".");

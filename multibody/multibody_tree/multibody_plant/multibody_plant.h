@@ -501,10 +501,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// which RegisterAsSourceForSceneGraph() was called.
   // TODO(amcastro-tri): When GS supports it, provide argument to specify
   // visual properties.
-  void RegisterVisualGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::SceneGraph<T>* scene_graph);
+  void RegisterVisualGeometry(const Body<T>& body,
+                              const Isometry3<double>& X_BG,
+                              const geometry::Shape& shape,
+                              geometry::SceneGraph<T>* scene_graph);
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
@@ -530,8 +530,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `scene_graph` does not correspond to the
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
   geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape,
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -892,10 +892,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
-  geometry::GeometryId RegisterGeometry(
-      const Body<T>& body,
-      const Isometry3<double>& X_BG, const geometry::Shape& shape,
-      geometry::SceneGraph<T>* scene_graph);
+  geometry::GeometryId RegisterGeometry(const Body<T>& body,
+                                        const Isometry3<double>& X_BG,
+                                        const geometry::Shape& shape,
+                                        geometry::SceneGraph<T>* scene_graph);
 
   // Helper method to register anchored geometry to the world, either visual or
   // collision. This associates a GeometryId with the world body.

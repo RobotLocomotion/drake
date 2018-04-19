@@ -81,11 +81,11 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   return source_id_.value();
 }
 
-template<typename T>
-void MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body,
-    const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    SceneGraph<T>* scene_graph) {
+template <typename T>
+void MultibodyPlant<T>::RegisterVisualGeometry(const Body<T>& body,
+                                               const Isometry3<double>& X_BG,
+                                               const geometry::Shape& shape,
+                                               SceneGraph<T>* scene_graph) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
@@ -107,10 +107,10 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   geometry_id_to_visual_index_[id] = visual_index;
 }
 
-template<typename T>
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body,
-    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    const Body<T>& body, const Isometry3<double>& X_BG,
+    const geometry::Shape& shape,
     const CoulombFriction<double>& coulomb_friction,
     SceneGraph<T>* scene_graph) {
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -138,23 +138,21 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   return id;
 }
 
-template<typename T>
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
-    const Body<T>& body,
-    const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    SceneGraph<T>* scene_graph) {
+    const Body<T>& body, const Isometry3<double>& X_BG,
+    const geometry::Shape& shape, SceneGraph<T>* scene_graph) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(scene_graph == scene_graph_);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
-    body_index_to_frame_id_[body.index()] =
-        scene_graph->RegisterFrame(
-            source_id_.value(),
-            GeometryFrame(
-                body.name(),
-                /* Initial pose: Not really used by GS. Will get removed. */
-                Isometry3<double>::Identity()));
+    body_index_to_frame_id_[body.index()] = scene_graph->RegisterFrame(
+        source_id_.value(),
+        GeometryFrame(
+            body.name(),
+            /* Initial pose: Not really used by GS. Will get removed. */
+            Isometry3<double>::Identity()));
   }
 
   // Register geometry in the body frame.
@@ -165,7 +163,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   return geometry_id;
 }
 
-template<typename T>
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
     SceneGraph<T>* scene_graph) {
@@ -561,7 +559,7 @@ MultibodyPlant<T>::get_continuous_state_output_port() const {
   return this->get_output_port(continuous_state_output_port_);
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   // This presupposes that the source id has been assigned and _all_ frames have

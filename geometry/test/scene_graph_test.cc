@@ -58,8 +58,8 @@ class SceneGraphTester {
   template <typename T>
   static bool HasDirectFeedthrough(const SceneGraph<T>& scene_graph,
                                    int input_port, int output_port) {
-    return scene_graph.DoHasDirectFeedthrough(
-        input_port, output_port).value_or(true);
+    return scene_graph.DoHasDirectFeedthrough(input_port, output_port)
+        .value_or(true);
   }
 
   template <typename T>
@@ -152,8 +152,7 @@ TEST_F(SceneGraphTest, RegisterSourceSpecifiedName) {
 TEST_F(SceneGraphTest, PoseContextSourceRegistration) {
   AllocateContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterSource(),
-      std::logic_error,
+      scene_graph_.RegisterSource(), std::logic_error,
       "The call to RegisterSource is invalid; a context has already been "
       "allocated.");
 }
@@ -173,8 +172,7 @@ TEST_F(SceneGraphTest, SourceIsRegistered) {
 TEST_F(SceneGraphTest, InputPortsForInvalidSource) {
   SourceId fake_source = SourceId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.get_source_pose_port(fake_source),
-      std::logic_error,
+      scene_graph_.get_source_pose_port(fake_source), std::logic_error,
       "Can't acquire pose port for unknown source id: \\d+.");
 }
 
@@ -218,19 +216,19 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
 
   // Attach geometry to frame.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(
-          id, FrameId::get_new_id(), make_sphere_instance()),
+      scene_graph_.RegisterGeometry(id, FrameId::get_new_id(),
+                                    make_sphere_instance()),
       std::logic_error,
       "The call to RegisterGeometry is invalid; a context has already been "
       "allocated.");
 
   // Attach geometry to another geometry.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(
-          id, GeometryId::get_new_id(), make_sphere_instance()),
+      scene_graph_.RegisterGeometry(id, GeometryId::get_new_id(),
+                                    make_sphere_instance()),
       std::logic_error,
       "The call to RegisterGeometry is invalid; a context has already been "
-          "allocated.");
+      "allocated.");
 
   // Attach anchored geometry to world.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -318,8 +316,8 @@ TEST_F(SceneGraphTest, TransmogrifyPorts) {
 TEST_F(SceneGraphTest, TransmogrifyContext) {
   SourceId s_id = scene_graph_.RegisterSource();
   // Register geometry that should be successfully transmogrified.
-  GeometryId g_id = scene_graph_.RegisterAnchoredGeometry(s_id,
-                                                     make_sphere_instance());
+  GeometryId g_id =
+      scene_graph_.RegisterAnchoredGeometry(s_id, make_sphere_instance());
   AllocateContext();
   std::unique_ptr<System<AutoDiffXd>> system_ad = scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad =
@@ -371,9 +369,7 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
   }
   // Method used to bring frame ids and poses out of sync. Adds a pose in
   // addition to all of the default poses.
-  void add_extra_pose() {
-    extra_poses_.push_back(Isometry3<double>());
-  }
+  void add_extra_pose() { extra_poses_.push_back(Isometry3<double>()); }
 
  private:
   // Populate with the pose data.
@@ -420,8 +416,7 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateConnected) {
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph,
-                                          diagram_context.get()));
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
   EXPECT_NO_THROW(
       SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context));
 }
@@ -438,13 +433,12 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph,
-                                          diagram_context.get()));
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
-          "the input port.");
+      "the input port.");
 }
 
 // Adversarial test case: Missing all port connections.
@@ -459,13 +453,12 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateNoConnections) {
   auto diagram_context = diagram->AllocateContext();
   diagram->SetDefaultContext(diagram_context.get());
   auto& geometry_context = dynamic_cast<GeometryContext<double>&>(
-      diagram->GetMutableSubsystemContext(*scene_graph,
-                                          diagram_context.get()));
+      diagram->GetMutableSubsystemContext(*scene_graph, diagram_context.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       SceneGraphTester::FullPoseUpdate(*scene_graph, geometry_context),
       std::logic_error,
       "Source \\d+ has registered frames but does not provide pose values on "
-          "the input port.");
+      "the input port.");
 }
 
 // Confirms that the SceneGraph can be instantiated on AutoDiff type.

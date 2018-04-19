@@ -25,9 +25,8 @@ using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlant(
-    const AcrobotParameters& params, bool finalize,
-    SceneGraph<double>* scene_graph) {
+MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
+                 SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // COM's positions in each link (L1/L2) frame:
@@ -72,8 +71,7 @@ MakeAcrobotPlant(
 
     // Register some (anchored) geometry to the world.
     plant->RegisterVisualGeometry(
-        plant->world_body(),
-        Isometry3d::Identity(), /* X_WG */
+        plant->world_body(), Isometry3d::Identity(), /* X_WG */
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
         scene_graph);
   }
