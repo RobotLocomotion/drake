@@ -1,16 +1,19 @@
+#include <gtest/gtest.h>
+
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/dev/quasistatic_system.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/multiplexer.h"
@@ -65,13 +68,13 @@ std::unique_ptr<RigidBodyTreed> BuildSimWorld() {
 
 const std::vector<double> kTimes{0.0, 2.0, 4.0, 6.0, 12.0};
 
+// Creates a basic pointwise IK trajectory for moving the iiwa arm.
+// It starts in the zero configuration (straight up).
 PiecewisePolynomial<double> MakePlan() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
 
-  // Creates a basic pointwise IK trajectory for moving the iiwa arm.
-  // It starts in the zero configuration (straight up).
   VectorXd zero_conf = tree->getZeroConfiguration();
   VectorXd joint_lb = zero_conf - VectorXd::Constant(7, 0.005);
   VectorXd joint_ub = zero_conf + VectorXd::Constant(7, 0.005);
@@ -278,8 +281,19 @@ int do_main() {
   simulator.set_target_realtime_rate(0);
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-
   simulator.StepTo(kTimes.back());
+
+  // test final simulation state.
+  Eigen::Vector3d position_final_expected(0.3279, 0.1950, 0.8081);
+  Eigen::Vector3d rpy_final_expected(2.2039, -0.0770, -0.0252);
+
+  Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
+  Eigen::Vector4d quaternion_final = q_final.tail(4);
+  Eigen::Vector3d rpy_final = math::QuaternionToSpaceXYZ(quaternion_final);
+  EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head(3), 1e-3,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(rpy_final_expected, rpy_final, 1e-3,
+                              MatrixCompareType::absolute));
 
   return 0;
 }
