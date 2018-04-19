@@ -157,7 +157,11 @@ def setup_pkg_config_repository(repository_ctx):
     # relative paths for them as required by cc_library's attributes.
     includes = []
     hdrs_path = repository_ctx.path("include")
+    seen = []
     for item in absolute_includes:
+        if item in seen:
+            continue
+        seen.append(item)
         if item == "/usr/include" or item == "/usr/local/include":
             print(("pkg-config of {} returned an include path that " +
                    "contains {} that may contain unrelated headers").format(
