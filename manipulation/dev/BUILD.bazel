@@ -92,8 +92,8 @@ drake_cc_binary(
     deps = [
         ":quasistatic_system",
         "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//lcm",
         "//manipulation/util:sim_diagram_builder",
