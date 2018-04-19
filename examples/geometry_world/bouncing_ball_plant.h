@@ -6,8 +6,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/geometry_world/gen/bouncing_ball_vector.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {

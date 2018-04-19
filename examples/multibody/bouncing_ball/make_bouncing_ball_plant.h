@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 namespace drake {

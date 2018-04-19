@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"

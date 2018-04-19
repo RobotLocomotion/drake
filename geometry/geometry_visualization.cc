@@ -5,8 +5,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"

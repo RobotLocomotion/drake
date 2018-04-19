@@ -3,8 +3,8 @@
 
 #include "drake/examples/geometry_world/bouncing_ball_plant.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"

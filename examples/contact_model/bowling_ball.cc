@@ -30,8 +30,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"

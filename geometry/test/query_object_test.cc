@@ -6,7 +6,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 
 namespace drake {
 namespace geometry {

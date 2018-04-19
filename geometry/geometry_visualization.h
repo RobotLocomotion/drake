@@ -5,7 +5,7 @@
 #pragma once
 
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcmt_viewer_load_robot.hpp"
 
 namespace drake {

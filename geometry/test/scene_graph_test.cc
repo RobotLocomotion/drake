@@ -1,4 +1,4 @@
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 
 #include <memory>
 #include <utility>
