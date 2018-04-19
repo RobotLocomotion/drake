@@ -7,9 +7,9 @@ namespace examples {
 namespace multibody {
 namespace bouncing_ball {
 
-using geometry::GeometrySystem;
 using geometry::Sphere;
 using geometry::HalfSpace;
+using geometry::SceneGraph;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RigidBody;
@@ -21,7 +21,7 @@ std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeBouncingBallPlant(double radius, double mass,
                       const CoulombFriction<double>& surface_friction,
                       const Vector3<double>& gravity_W,
-                      geometry::GeometrySystem<double>* geometry_system) {
+                      SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
@@ -29,8 +29,8 @@ MakeBouncingBallPlant(double radius, double mass,
 
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
 
-  if (geometry_system != nullptr) {
-    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+  if (scene_graph != nullptr) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
 
     Vector3<double> normal_W(0, 0, 1);
     Vector3<double> point_W(0, 0, 0);
@@ -39,14 +39,14 @@ MakeBouncingBallPlant(double radius, double mass,
     plant->RegisterCollisionGeometry(
         plant->world_body(),
         HalfSpace::MakePose(normal_W, point_W), HalfSpace(), surface_friction,
-        geometry_system);
+        scene_graph);
 
     // Add sphere geometry for the ball.
     plant->RegisterCollisionGeometry(
         ball,
         /* Pose X_BG of the geometry frame G in the ball frame B. */
         Isometry3<double>::Identity(),
-        Sphere(radius), surface_friction, geometry_system);
+        Sphere(radius), surface_friction, scene_graph);
   }
 
   // Gravity acting in the -z direction.

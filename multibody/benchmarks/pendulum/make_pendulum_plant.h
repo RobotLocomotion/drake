@@ -88,15 +88,15 @@ class PendulumParameters {
 /// @param[in] default_parameters
 ///   Default parameters of the model set at construction. Refer to the
 ///   documentation of PendulumParameters for further details.
-/// @param geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
+/// @param scene_graph
+///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakePendulumPlant(
     const PendulumParameters& default_parameters,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum
 }  // namespace benchmarks

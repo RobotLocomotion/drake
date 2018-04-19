@@ -12,7 +12,7 @@ namespace drake {
 namespace geometry {
 
 /** A %FrameKinematicsVector is used to report kinematics data for registered
- frames (identified by unique FrameId values) to GeometrySystem.
+ frames (identified by unique FrameId values) to SceneGraph.
  It serves as the basis of FramePoseVector, FrameVelocityVector, and
  FrameAccelerationVector.
 
@@ -31,7 +31,7 @@ namespace geometry {
  Attempting to write more frames than the vector was constructed for is
  considered an error and will throw an exception. Failing to set data for every
  registered frame will be considered an error when the %FrameKinematicsVector
- is consumed by GeometrySystem.
+ is consumed by SceneGraph.
 
  <!--
    TODO: The FrameVelocityVector and FrameAccelerationVector are still to come.
@@ -145,7 +145,7 @@ class FrameKinematicsVector {
    @param source_id  The source id of the owning geometry source.
    @param ids        The set of *all* frames owned by this geometry source. All
                      of these ids must have values provided in the output port
-                     calculation and _only_ these ids. GeometrySystem will
+                     calculation and _only_ these ids. SceneGraph will
                      validate the ids to confirm that they are all owned by
                      the source with the given `source_id`. */
   FrameKinematicsVector(SourceId source_id, const std::vector<FrameId>& ids);
@@ -163,7 +163,7 @@ class FrameKinematicsVector {
       invocations.
 
    If this isn't invoked for _every_ frame id provided at construction, it will
-   lead to a subsequent exception when GeometrySystem consumes the data. */
+   lead to a subsequent exception when SceneGraph consumes the data. */
   void set_value(FrameId id, const KinematicsValue& value);
 
   SourceId source_id() const { return source_id_; }
@@ -198,7 +198,7 @@ class FrameKinematicsVector {
   int64_t version_{0};
 };
 
-/** Class for communicating _pose_ information to GeometrySystem for registered
+/** Class for communicating _pose_ information to SceneGraph for registered
  frames.
 
  @tparam T The scalar type. Must be a valid Eigen scalar.

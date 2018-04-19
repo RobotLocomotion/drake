@@ -10,12 +10,12 @@ namespace geometry {
 template <typename T>
 QueryObject<T>::QueryObject(const QueryObject&)
     : context_{nullptr},
-      system_{nullptr} {}
+      scene_graph_{nullptr} {}
 
 template <typename T>
 QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>&) {
   context_ = nullptr;
-  system_ = nullptr;
+  scene_graph_ = nullptr;
   return *this;
 }
 
@@ -37,7 +37,7 @@ QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfDefault();
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
-  system_->FullPoseUpdate(*context_);
+  scene_graph_->FullPoseUpdate(*context_);
   const GeometryState<T>& state = context_->get_geometry_state();
   return state.ComputePointPairPenetration();
 }

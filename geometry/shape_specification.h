@@ -11,7 +11,7 @@
 
 /** @file
  Provides the classes through which geometric shapes are introduced into
- GeometrySystem. This includes the specific classes which specify shapes as well
+ SceneGraph. This includes the specific classes which specify shapes as well
  as an interface for _processing_ those specifications.
  */
 

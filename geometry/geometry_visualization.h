@@ -29,10 +29,10 @@ class GeometryVisualizationImpl {
 
 /** Dispatches an LCM load message based on the registered geometry. It should
  be invoked _after_ registration is complete, but before context allocation.
- @param system      The system whose geometry will be sent in an LCM message.
+ @param scene_graph    The system whose geometry will be sent in an LCM message.
  @throws std::logic_error if the system has already had its context allocated.
  */
-void DispatchLoadMessage(const GeometrySystem<double>& system);
+void DispatchLoadMessage(const SceneGraph<double>& scene_graph);
 
 }  // namespace geometry
 }  // namespace drake

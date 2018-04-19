@@ -43,7 +43,7 @@ using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using drake::multibody::multibody_plant::CoulombFriction;
@@ -61,9 +61,9 @@ using drake::systems::SemiExplicitEulerIntegrator;
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  GeometrySystem<double>& geometry_system =
-      *builder.AddSystem<GeometrySystem>();
-  geometry_system.set_name("geometry_system");
+  SceneGraph<double>& scene_graph =
+      *builder.AddSystem<SceneGraph>();
+  scene_graph.set_name("scene_graph");
 
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
@@ -80,7 +80,7 @@ int do_main() {
   MultibodyPlant<double>& plant =
       *builder.AddSystem(MakeBouncingBallPlant(
           radius, mass, coulomb_friction, -g * Vector3d::UnitZ(),
-          &geometry_system));
+          &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
@@ -94,7 +94,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  // Boilerplate used to connect the plant to a GeometrySystem for
+  // Boilerplate used to connect the plant to a SceneGraph for
   // visualization.
   DrakeLcm lcm;
   const PoseBundleToDrawMessage& converter =
@@ -110,17 +110,17 @@ int do_main() {
 
   builder.Connect(
       plant.get_geometry_poses_output_port(),
-      geometry_system.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(geometry_system.get_query_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
+  builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  builder.Connect(geometry_system.get_pose_bundle_output_port(),
+  builder.Connect(scene_graph.get_pose_bundle_output_port(),
                   converter.get_input_port(0));
   builder.Connect(converter, publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(geometry_system);
+  geometry::DispatchLoadMessage(scene_graph);
 
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
@@ -224,7 +224,7 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "A simple acrobot demo using Drake's MultibodyTree,"
-      "with GeometrySystem visualization. "
+      "with SceneGraph visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();

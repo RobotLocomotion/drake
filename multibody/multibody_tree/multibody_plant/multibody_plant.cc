@@ -27,8 +27,8 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::GeometrySystem;
 using geometry::PenetrationAsPointPair;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using systems::InputPortDescriptor;
 using systems::OutputPort;
@@ -69,15 +69,15 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
 }
 
 template <typename T>
-geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForGeometrySystem(
-    geometry::GeometrySystem<T>* geometry_system) {
-  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
+    SceneGraph<T>* scene_graph) {
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(!geometry_source_is_registered());
-  source_id_ = geometry_system->RegisterSource();
+  source_id_ = scene_graph->RegisterSource();
   // Save the GS pointer so that on later geometry registrations we can verify
   // the user is making calls on the same GS instance. Only used for that
   // purpose, it gets nullified at Finalize().
-  geometry_system_ = geometry_system;
+  scene_graph_ = scene_graph;
   return source_id_.value();
 }
 
@@ -85,23 +85,23 @@ template<typename T>
 void MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    geometry::GeometrySystem<T>* geometry_system) {
+    SceneGraph<T>* scene_graph) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  if (geometry_system != geometry_system_) {
+  if (scene_graph != scene_graph_) {
     throw std::logic_error(
         "Geometry registration calls must be performed on the SAME instance of "
-        "GeometrySystem used on the first call to "
-        "RegisterAsSourceForGeometrySystem()");
+        "SceneGraph used on the first call to "
+        "RegisterAsSourceForSceneGraph()");
   }
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
+    id = RegisterAnchoredGeometry(X_BG, shape, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, geometry_system);
+    id = RegisterGeometry(body, X_BG, shape, scene_graph);
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
@@ -112,23 +112,23 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
     const CoulombFriction<double>& coulomb_friction,
-    geometry::GeometrySystem<T>* geometry_system) {
+    SceneGraph<T>* scene_graph) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  if (geometry_system != geometry_system_) {
+  if (scene_graph != scene_graph_) {
     throw std::logic_error(
         "Geometry registration calls must be performed on the SAME instance of "
-        "GeometrySystem used on the first call to "
-        "RegisterAsSourceForGeometrySystem()");
+        "SceneGraph used on the first call to "
+        "RegisterAsSourceForSceneGraph()");
   }
   GeometryId id;
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
+    id = RegisterAnchoredGeometry(X_BG, shape, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, geometry_system);
+    id = RegisterGeometry(body, X_BG, shape, scene_graph);
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
@@ -142,14 +142,14 @@ template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body,
     const Isometry3<double>& X_BG, const geometry::Shape& shape,
-    geometry::GeometrySystem<T>* geometry_system) {
+    SceneGraph<T>* scene_graph) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
-  DRAKE_ASSERT(geometry_system == geometry_system_);
+  DRAKE_ASSERT(scene_graph == scene_graph_);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
     body_index_to_frame_id_[body.index()] =
-        geometry_system->RegisterFrame(
+        scene_graph->RegisterFrame(
             source_id_.value(),
             GeometryFrame(
                 body.name(),
@@ -158,7 +158,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   }
 
   // Register geometry in the body frame.
-  GeometryId geometry_id = geometry_system->RegisterGeometry(
+  GeometryId geometry_id = scene_graph->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
   geometry_id_to_body_index_[geometry_id] = body.index();
@@ -168,11 +168,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 template<typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
-    geometry::GeometrySystem<T>* geometry_system) {
+    SceneGraph<T>* scene_graph) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
-  DRAKE_ASSERT(geometry_system == geometry_system_);
-  GeometryId geometry_id = geometry_system->RegisterAnchoredGeometry(
+  DRAKE_ASSERT(scene_graph == scene_graph_);
+  GeometryId geometry_id = scene_graph->RegisterAnchoredGeometry(
       source_id_.value(),
       std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
   geometry_id_to_body_index_[geometry_id] = world_index();
@@ -188,11 +188,11 @@ void MultibodyPlant<T>::Finalize() {
 template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
-  // Only declare ports to communicate with a GeometrySystem if the plant is
+  // Only declare ports to communicate with a SceneGraph if the plant is
   // provided with a valid source id.
-  if (source_id_) DeclareGeometrySystemPorts();
+  if (source_id_) DeclareSceneGraphPorts();
   DeclareCacheEntries();
-  geometry_system_ = nullptr;  // must not be used after Finalize().
+  scene_graph_ = nullptr;  // must not be used after Finalize().
   if (get_num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
@@ -362,7 +362,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const GeometryId geometryA_id = penetration.id_A;
     const GeometryId geometryB_id = penetration.id_B;
 
-    // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
+    // TODO(amcastro-tri): Request SceneGraph to do this filtering for us
     // when that capability lands.
     // TODO(amcastro-tri): consider allowing this id's to belong to a third
     // external system when they correspond to anchored geometry.
@@ -562,7 +562,7 @@ MultibodyPlant<T>::get_continuous_state_output_port() const {
 }
 
 template<typename T>
-void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
+void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   // This presupposes that the source id has been assigned and _all_ frames have
   // been registered.
