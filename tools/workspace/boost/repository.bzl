@@ -58,4 +58,7 @@ cc_library(
     repository_ctx.file("BUILD.bazel", content = file_content,
                         executable = False)
 
-boost_repository = repository_rule(implementation = _impl)
+boost_repository = repository_rule(
+    local = True,
+    implementation = _impl,
+)
