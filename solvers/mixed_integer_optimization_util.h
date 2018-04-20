@@ -176,10 +176,13 @@ enum class IntervalBinning {
  * @param binning Determine whether to use linear binning or
  * logarithmic binning.
  * @return lambda The auxiliary continuous variables.
+ *
+ * The constraint we impose are
  * x = φxᵀ * (λ.rowwise().sum())
  * y = φyᵀ * (λ.colwise().sum())
  * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
  * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
+ *
  * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),
  * λ(M + 1, N), λ(M, N + 1) and λ(M+1, N+1) can be strictly positive, all other
  * λ(i, j) are zero.
@@ -254,6 +257,37 @@ AddBilinearProductMcCormickEnvelopeSos2(
       break;
   }
   return lambda;
+}
+
+/**
+ * Add constraints to the optimization program, such that the bilinear product
+ * x * y is approximated by w.
+ * To do so, we assume that the range of x is [x_min, x_max], and the range of y
+ * is [y_min, y_max]. We first consider two arrays
+ * x_min = φx(0) < φx(1) < ... < φx(n-1) = x_max
+ * y_min = φy(0) < φy(1) < ... < φy(m-1) = y_max
+ * , and divide the range of x to small intervals [φx(0), φx(1)],
+ * [φx(1), φx(2)], ... , [φx(n - 2), φx(n - 1)], and the range of y to small
+ * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(m-2), φy(m-1)]. The xy
+ * plane is thus cut into grids, with each rectangle as
+ * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
+ * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
+ * the bilinear product x * y, with w, such that (x, y, w) is in one of the
+ * tetrahedrons.
+ * @param prog The optimization problem to which the constraints will be added.
+ * @param x A variable in the bilinear product.
+ * @param y A variable in the bilinear product.
+ * @param w The expression that will approximates the bilinear product x * y.
+ * @param phi_x φx in the documentation above. Will be used to cut the range of
+ * x into small intervals.
+ * @param phi_y φy in the documentation above. Will be used to cut the range of
+ * y into small intervals.
+ */
+void AddBilinearProductMcCormickEnvelopeMultipleChoice(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x, const Eigen::Ref<const Eigen::VectorXd>& phi_y, const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& By) {
 }
 
 }  // namespace solvers
