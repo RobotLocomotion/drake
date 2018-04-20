@@ -283,18 +283,19 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(kTimes.back());
 
-  // test final simulation state.
-  const Eigen::Vector3d position_final_expected(0.3279, 0.1950, 0.8081);
-  const Eigen::Vector3d rpy_final_expected(2.2039, -0.0770, -0.0252);
-
+  // Comparing the final xyz position of the object in world frame to a desired
+  // value.
+  // desired_object_CG_final_position =
+  // end_effector_final_position + [0.12, 0, 0]
+  Eigen::Vector3d position_final_expected(0.32, 0.2, 0.8);
   const Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
-  const Eigen::Quaterniond quaternion_final(q_final[3], q_final[4], q_final[5],
-                                            q_final[6]);
-  Eigen::Vector3d rpy_final = math::QuaternionToSpaceXYZ(quaternion_final);
-  EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head(3), 1e-3,
+
+  // The tolerance (5e-2) is large because the tolerances in the trajectory
+  // optimization (MakePlan) are large. The large tolerances are needed for
+  // IPOPT to return feasible solutions.
+  EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head(3), 5e-2,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(rpy_final_expected, rpy_final, 1e-3,
-                              MatrixCompareType::absolute));
+
 
   return 0;
 }
