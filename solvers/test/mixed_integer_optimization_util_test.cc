@@ -402,6 +402,27 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(std::vector<IntervalBinning>{
                            IntervalBinning::kLogarithmic,
                            IntervalBinning::kLinear})));*/
+/*
+GTEST_TEST(BilinearProductMcCormickEnvelopeMultipleChoiceTest, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>("x")(0);
+  auto y = prog.NewContinuousVariables<1>("y")(0);
+  auto w = prog.NewContinuousVariables<1>("w")(0);
+  auto Bx = prog.NewBinaryVariables<1>();
+  auto By = prog.NewBinaryVariables<2>();
+  const Eigen::Vector2d phi_x(0, 1);
+  const Eigen::Vector3d phi_y(0, 0.5, 1);
+  MatrixXDecisionVariable xij, yij, wij;
+  std::tie(xij, yij, wij) = AddBilinearProductMcCormickEnvelopeMultipleChoice(&prog, x, y, +w, phi_x, phi_y, Bx.cast<symbolic::Expression>(), By.cast<symbolic::Expression>());
+  prog.AddBoundingBoxConstraint(1, 1, Bx(0));
+  prog.AddBoundingBoxConstraint(1, 1, By(0));
+  prog.AddBoundingBoxConstraint(0, 0, By(1));
+
+  GurobiSolver solver;
+  const auto result = solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  std::cout << "xij:\n" << prog.GetSolution(xij) << "\nyij:\n" << prog.GetSolution(yij) << "\nwij:\n" << prog.GetSolution(wij) << "\n";
+}*/
 
 class BilinearProductMcCormickEnvelopeMultipleChoiceTest
     : public ::testing::TestWithParam<std::tuple<int, int>> {
@@ -419,7 +440,10 @@ class BilinearProductMcCormickEnvelopeMultipleChoiceTest
         phi_x_{Eigen::VectorXd::LinSpaced(num_interval_x_ + 1, 0, 1)},
         phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
         Bx_{prog_.NewBinaryVariables(num_interval_x_)},
-        By_{prog_.NewBinaryVariables(num_interval_y_)} {}
+        By_{prog_.NewBinaryVariables(num_interval_y_)} {
+          prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_x_), 1, Bx_);
+          prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_y_), 1, By_);
+        }
 
  protected:
   MathematicalProgram prog_;

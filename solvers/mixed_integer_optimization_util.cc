@@ -101,35 +101,50 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
   const int n = phi_y.rows();
   DRAKE_ASSERT(Bx.rows() == m - 1);
   DRAKE_ASSERT(By.rows() == n - 1);
-  const auto xij = prog->NewContinuousVariables(m - 1, n-1,  x.get_name() + "xij");
-  const auto yij = prog->NewContinuousVariables(m-1, n - 1, y.get_name() + "yij");
-  const auto wij = prog->NewContinuousVariables(
-      m - 1, n - 1, x.get_name() + y.get_name() + "wij");
-  const auto Bxy = prog->NewContinuousVariables(m-1, n-1, x.get_name() + y.get_name() + "Bxy");
-  prog->AddLinearEqualityConstraint(xij.cast<symbolic::Expression>().rowwise().sum().sum() - x,
-                                    0);
-  prog->AddLinearEqualityConstraint(yij.cast<symbolic::Expression>().rowwise().sum().sum() - y,
-                                    0);
+  const auto xij =
+      prog->NewContinuousVariables(m - 1, n - 1, x.get_name() + "_xij");
+  const auto yij =
+      prog->NewContinuousVariables(m - 1, n - 1, y.get_name() + "_yij");
   prog->AddLinearEqualityConstraint(
-      wij.cast<symbolic::Expression>().rowwise().sum().sum() - w, 0);
-  prog->AddLinearEqualityConstraint(Bxy.cast<symbolic::Expression>().rowwise().sum().sum(), 1);
+      xij.cast<symbolic::Expression>().rowwise().sum().sum() - x, 0);
+  prog->AddLinearEqualityConstraint(
+      yij.cast<symbolic::Expression>().rowwise().sum().sum() - y, 0);
+
+  const auto Bxy = prog->NewContinuousVariables(
+      m - 1, n - 1, x.get_name() + "_" + y.get_name() + "_Bxy");
+  prog->AddLinearEqualityConstraint(
+      Bxy.cast<symbolic::Expression>().rowwise().sum().sum(), 1);
+  // The right-hand side of the constraint on w, we will implement
+  // w >= w_constraint_rhs(0)
+  // w >= w_constraint_rhs(1)
+  // w <= w_constraint_rhs(2)
+  // w <= w_constraint_rhs(3)
+  Vector4<symbolic::Expression> w_constraint_rhs(0, 0, 0, 0);
   for (int i = 0; i < m - 1; ++i) {
     for (int j = 0; j < n - 1; ++j) {
-      prog->AddConstraint(CreateLogicalAndConstraint(Bx(i), By(j), Bxy(i, j)));
-      prog->AddLinearConstraint(wij(i, j) >= xij(i, j) * phi_y(j) +
-                                                 phi_x(i) * yij(i, j) -
-                                                 phi_x(i) * phi_y(j) * Bxy(i, j));
-      prog->AddLinearConstraint(wij(i, j) >= xij(i, j) * phi_y(j + 1) +
-                                                 phi_x(i + 1) * yij(i, j) -
-                                                 phi_x(i + 1) * phi_y(j + 1) * Bxy(i, j));
-      prog->AddLinearConstraint(wij(i, j) <= xij(i, j) * phi_y(j) +
-                                                 phi_x(i + 1) * yij(i, j) -
-                                                 phi_x(i + 1) * phi_y(j) * Bxy(i, j));
-      prog->AddLinearConstraint(wij(i, j) <= xij(i, j) * phi_y(j + 1) +
-                                                 phi_x(i) * yij(i, j) -
-                                                 phi_x(i) * phi_y(j + 1) * Bxy(i, j));
+      prog->AddLinearConstraint(xij(i, j) >= phi_x(i) * Bxy(i, j));
+      prog->AddLinearConstraint(xij(i, j) <= phi_x(i + 1) * Bxy(i, j));
+      prog->AddLinearConstraint(yij(i, j) >= phi_y(j) * Bxy(i, j));
+      prog->AddLinearConstraint(yij(i, j) <= phi_y(j + 1) * Bxy(i, j));
+
+      prog->AddConstraint(
+          CreateLogicalAndConstraint(+Bx(i), +By(j), +Bxy(i, j)));
+
+      w_constraint_rhs(0) += xij(i, j) * phi_y(j) + phi_x(i) * yij(i, j) -
+                             phi_x(i) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(1) += xij(i, j) * phi_y(j + 1) +
+                             phi_x(i + 1) * yij(i, j) -
+                             phi_x(i + 1) * phi_y(j + 1) * Bxy(i, j);
+      w_constraint_rhs(2) += xij(i, j) * phi_y(j) + phi_x(i + 1) * yij(i, j) -
+                             phi_x(i + 1) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(3) += xij(i, j) * phi_y(j + 1) + phi_x(i) * yij(i, j) -
+                             phi_x(i) * phi_y(j + 1) * Bxy(i, j);
     }
   }
+  prog->AddLinearConstraint(w >= w_constraint_rhs(0));
+  prog->AddLinearConstraint(w >= w_constraint_rhs(1));
+  prog->AddLinearConstraint(w <= w_constraint_rhs(2));
+  prog->AddLinearConstraint(w <= w_constraint_rhs(3));
 }
 }  // namespace solvers
 }  // namespace drake

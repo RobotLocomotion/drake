@@ -290,22 +290,27 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * The constraint we impose is
  * x = ∑ᵢⱼ xij(i, j)
  * y = ∑ᵢⱼ yij(i, j)
- * w = ∑ᵢⱼ wij(i, j)
+ * Bxy(i, j) = Bx(i) & By(j)
+ * ∑ᵢⱼ Bxy(i, j) = 1
+ * φx(i)Bxy(i, j) ≤ xij(i, j) ≤ φx(i+1)Bxy(i, j)
+ * φy(j)Bxy(i, j) ≤ yij(i, j) ≤ φy(j+1)Bxy(i, j)
+ * w ≥ ∑ᵢⱼ (xij(i, j)*φy(j) + φx(i)*yij(i, j) - φx(i)*φy(j) * Bxy(i, j))
+ * w ≥ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j+1) * Bxy(i, j))
+ * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j) * Bxy(i, j))
+ * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i)*yij(i, j) - φx(i)*φy(j+1) * Bxy(i, j))
+ *
+ * The "logical and" constraint Bxy(i, j) = Bx(i) & By(j) can be imposed as
  * Bxy(i, j) ≥ Bx(i) + By(j) - 1
  * Bxy(i, j) ≤ Bx(i)
  * Bxy(i, j) ≤ By(j)
- * 0 ≤ Bxy(i, j) ≤ 1 
- * ∑ᵢⱼ Bxy(i, j) = 1
- * wij(i, j) ≥ xij(i, j)*φy(j) + φx(i)*yij(i, j) - φx(i)*φy(j) * Bxy(i, j)
- * wij(i, j) ≥ xij(i, j)*φy(j+1) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j+1) * Bxy(i, j)
- * wij(i, j) ≤ xij(i, j)*φy(j) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j) * Bxy(i, j)
- * wij(i, j) ≤ xij(i, j)*φy(j+1) + φx(i)*yij(i, j) - φx(i)*φy(j+1) * Bxy(i, j)
+ * 0 ≤ Bxy(i, j) ≤ 1
+ *
  * In section 3.3 of
  * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
  * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
  * this formulation is called "Multiple Choice Model"
  * @note We DO NOT add the constraint
- * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
+ * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}.
  * in this function. It is the user's responsibility to ensure that these
  * constraints are enforced.
  */
