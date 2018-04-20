@@ -264,11 +264,11 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * x * y is approximated by w.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays
- * x_min = φx(0) < φx(1) < ... < φx(n-1) = x_max
- * y_min = φy(0) < φy(1) < ... < φy(m-1) = y_max
+ * x_min = φx(0) < φx(1) < ... < φx(m-1) = x_max
+ * y_min = φy(0) < φy(1) < ... < φy(n-1) = y_max
  * , and divide the range of x to small intervals [φx(0), φx(1)],
- * [φx(1), φx(2)], ... , [φx(n - 2), φx(n - 1)], and the range of y to small
- * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(m-2), φy(m-1)]. The xy
+ * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
+ * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(n-1), φy(n)]. The xy
  * plane is thus cut into grids, with each rectangle as
  * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
  * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
@@ -282,13 +282,37 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * x into small intervals.
  * @param phi_y φy in the documentation above. Will be used to cut the range of
  * y into small intervals.
+ * @param Bx The binary-valued expression indicating which interval x is in.
+ * Bx(i) = 1 => φx(i) <= x <= φx(i + 1).
+ * @param By The binary-valued expression indicating which interval y is in.
+ * By(i) = 1 => φy(i) <= y <= φy(i + 1).
+ *
+ * The constraint we impose is
+ * x = ∑ᵢ xi(i)
+ * y = ∑ⱼ yj(j)
+ * w = ∑ᵢⱼ wij(i, j)
+ * φx(i)*Bx(i) ≤ xi(i) ≤ φx(i+1)*Bx(i)
+ * φy(j)*By(j) ≤ yj(j) ≤ φy(j+1)*By(j)
+ * wij(i, j) ≥ xi(i)*φy(j) + φx(i)*yj(j) - φx(i)*φy(j)
+ * wij(i, j) ≥ xi(i)*φy(j+1) + φx(i+1)*yj(j) - φx(i+1)*φy(j+1)
+ * wij(i, j) ≤ xi(i)*φy(j) + φx(i+1)*yj(j) - φx(i+1)*φy(j)
+ * wij(i, j) ≤ xi(i)*φy(j+1) + φx(i)*yj(j) - φx(i)*φy(j+1)
+ * In section 3.3 of
+ * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
+ * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
+ * this formulation is called "Multiple Choice Model"
+ * @note We DO NOT add the constraint
+ * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}, ∑ᵢ Bx(i) = 1, ∑ⱼ By(j) = 1
+ * in this function. It is the user's responsibility to ensure that these
+ * constraints are enforced.
  */
-void AddBilinearProductMcCormickEnvelopeMultipleChoice(
+std::tuple<VectorXDecisionVariable, VectorXDecisionVariable, MatrixXDecisionVariable> AddBilinearProductMcCormickEnvelopeMultipleChoice(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,
-    const Eigen::Ref<const Eigen::VectorXd>& phi_x, const Eigen::Ref<const Eigen::VectorXd>& phi_y, const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& By) {
-}
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& By); 
 
 }  // namespace solvers
 }  // namespace drake

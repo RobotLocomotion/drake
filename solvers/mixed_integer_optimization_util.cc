@@ -87,5 +87,51 @@ void AddLogarithmicSos1Constraint(
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
 }
+
+std::tuple<VectorXDecisionVariable, VectorXDecisionVariable, MatrixXDecisionVariable> AddBilinearProductMcCormickEnvelopeMultipleChoice(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& By) {
+  const int m = phi_x.rows();
+  const int n = phi_y.rows();
+  DRAKE_ASSERT(Bx.rows() == m - 1);
+  DRAKE_ASSERT(By.rows() == n - 1);
+  const auto xi = prog->NewContinuousVariables(m - 1, x.get_name() + "xi");
+  const auto yj = prog->NewContinuousVariables(n - 1, y.get_name() + "yj");
+  const auto wij = prog->NewContinuousVariables(
+      m - 1, n - 1, x.get_name() + y.get_name() + "wij");
+  prog->AddLinearEqualityConstraint(xi.cast<symbolic::Expression>().sum() - x,
+                                    0);
+  prog->AddLinearEqualityConstraint(yj.cast<symbolic::Expression>().sum() - y,
+                                    0);
+  prog->AddLinearEqualityConstraint(
+      wij.cast<symbolic::Expression>().rowwise().sum().sum() - w, 0);
+  for (int i = 0; i < m - 1; ++i) {
+    prog->AddLinearConstraint(xi(i) >= phi_x(i) * Bx(i));
+    prog->AddLinearConstraint(xi(i) <= phi_x(i + 1) * Bx(i));
+    for (int j = 0; j < n - 1; ++j) {
+      prog->AddLinearConstraint(wij(i, j) >= xi(i) * phi_y(j) +
+                                                 phi_x(i) * yj(j) -
+                                                 phi_x(i) * phi_y(j));
+      prog->AddLinearConstraint(wij(i, j) >= xi(i) * phi_y(j + 1) +
+                                                 phi_x(i + 1) * yj(j) -
+                                                 phi_x(i + 1) * phi_y(j + 1));
+      /*prog->AddLinearConstraint(wij(i, j) <= xi(i) * phi_y(j) +
+                                                 phi_x(i + 1) * yj(j) -
+                                                 phi_x(i + 1) * phi_y(j));
+      prog->AddLinearConstraint(wij(i, j) <= xi(i) * phi_y(j + 1) +
+                                                 phi_x(i) * yj(j) -
+                                                 phi_x(i) * phi_y(j + 1));*/
+    }
+  }
+  for (int j = 0; j < n - 1; ++j) {
+    prog->AddLinearConstraint(yj(j) >= phi_y(j) * By(j));
+    prog->AddLinearConstraint(yj(j) <= phi_y(j + 1) * By(j));
+  }
+  return std::make_tuple(xi, yj, wij);
+}
 }  // namespace solvers
 }  // namespace drake

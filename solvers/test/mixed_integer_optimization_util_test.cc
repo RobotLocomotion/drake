@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 namespace {
-GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
+/*GTEST_TEST(TestMixedIntegerUtil, TestCeilLog2) {
   // Check that CeilLog2(j) returns i + 1 for all j = 2ⁱ + 1, 2ⁱ + 2, ... , 2ⁱ⁺¹
   const int kMaxExponent = 15;
   EXPECT_EQ(0, CeilLog2(1));
@@ -401,7 +401,118 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(std::vector<int>{2, 3}),
                        ::testing::ValuesIn(std::vector<IntervalBinning>{
                            IntervalBinning::kLogarithmic,
-                           IntervalBinning::kLinear})));
+                           IntervalBinning::kLinear})));*/
+
+class BilinearProductMcCormickEnvelopeMultipleChoiceTest
+    : public ::testing::TestWithParam<std::tuple<int, int>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
+      BilinearProductMcCormickEnvelopeMultipleChoiceTest)
+
+  BilinearProductMcCormickEnvelopeMultipleChoiceTest()
+      : prog_{},
+        num_interval_x_{std::get<0>(GetParam())},
+        num_interval_y_{std::get<1>(GetParam())},
+        w_{prog_.NewContinuousVariables<1>()(0)},
+        x_{prog_.NewContinuousVariables<1>()(0)},
+        y_{prog_.NewContinuousVariables<1>()(0)},
+        phi_x_{Eigen::VectorXd::LinSpaced(num_interval_x_ + 1, 0, 1)},
+        phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
+        Bx_{prog_.NewBinaryVariables(num_interval_x_)},
+        By_{prog_.NewBinaryVariables(num_interval_y_)} {
+    prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_x_),
+                                      1, Bx_);
+    prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_y_),
+                                      1, By_);
+  }
+
+ protected:
+  MathematicalProgram prog_;
+  const int num_interval_x_;
+  const int num_interval_y_;
+  const symbolic::Variable w_;
+  const symbolic::Variable x_;
+  const symbolic::Variable y_;
+  const Eigen::VectorXd phi_x_;
+  const Eigen::VectorXd phi_y_;
+  const VectorXDecisionVariable Bx_;
+  const VectorXDecisionVariable By_;
+};
+
+TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest,
+       LinearObjectiveTest) {
+  // Solve the program min aᵀ * [x;y;w]
+  // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
+  // We fix x and y to each intervals.
+  // We expect the optimum obtained at one of the vertices of the tetrahedron.
+  VectorXDecisionVariable xi, yj;
+  MatrixXDecisionVariable wij;
+  std::tie(xi, yj, wij) = AddBilinearProductMcCormickEnvelopeMultipleChoice(
+      &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
+      By_.cast<symbolic::Expression>());
+
+  // We will assign the binary variables Bx_ and By_ to determine which interval
+  // is active. If we use logarithmic binning, then Bx_ and By_ take values in
+  // the gray code, representing integer i and j, such that x is constrained in
+  // [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
+  auto Bx_constraint =
+      prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
+                                     Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
+  auto By_constraint =
+      prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(By_.rows()),
+                                     Eigen::VectorXd::Zero(By_.rows()), By_);
+  VectorDecisionVariable<3> xyw{x_, y_, w_};
+  auto cost = prog_.AddLinearCost(Eigen::Vector3d::Zero(), xyw);
+  Eigen::Matrix<double, 3, 8> a;
+  // clang-format off
+  a << 1, 1, 1, 1, -1, -1, -1, -1,
+       1, 1, -1, -1, 1, 1, -1, -1,
+       1, -1, 1, -1, 1, -1, 1, -1;
+  // clang-format on
+  for (int i = 0; i < num_interval_x_; ++i) {
+    Eigen::VectorXd Bx_val(Bx_.rows());
+    Bx_val.setZero();
+    Bx_val(i) = 1;
+
+    Bx_constraint.evaluator()->UpdateLowerBound(Bx_val);
+    Bx_constraint.evaluator()->UpdateUpperBound(Bx_val);
+    for (int j = 0; j < num_interval_y_; ++j) {
+      Eigen::VectorXd By_val(By_.rows());
+      By_val.setZero();
+      By_val(j) = 1;
+      By_constraint.evaluator()->UpdateLowerBound(By_val);
+      By_constraint.evaluator()->UpdateUpperBound(By_val);
+
+      // vertices.col(l) is the l'th vertex of the tetrahedron.
+      Eigen::Matrix<double, 3, 4> vertices;
+      vertices.row(0) << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1);
+      vertices.row(1) << phi_y_(j), phi_y_(j + 1), phi_y_(j), phi_y_(j + 1);
+      vertices.row(2) = vertices.row(0).cwiseProduct(vertices.row(1));
+      for (int k = 0; k < a.cols(); ++k) {
+        cost.evaluator()->UpdateCoefficients(a.col(k));
+        GurobiSolver gurobi_solver;
+        if (gurobi_solver.available()) {
+          prog_.SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
+          const auto result = gurobi_solver.Solve(prog_);
+          EXPECT_EQ(result, SolutionResult::kSolutionFound);
+          Eigen::Matrix<double, 1, 4> cost_at_vertices =
+              a.col(k).transpose() * vertices;
+          EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(), 1E-4);
+          std::cout << "i: " << i << " j: " << j << "\n";
+          std::cout << "xyw: " << prog_.GetSolution(xyw).transpose() << "\n";
+          std::cout << "xi: " << prog_.GetSolution(xi).transpose() << "\n";
+          std::cout << "yj: " << prog_.GetSolution(yj).transpose() << "\n";
+          std::cout << "wij: \n" << prog_.GetSolution(wij) << "\n";
+        }
+      }
+    }
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeMultipleChoiceTest,
+    ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
+                       ::testing::ValuesIn(std::vector<int>{2, 3})));
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
