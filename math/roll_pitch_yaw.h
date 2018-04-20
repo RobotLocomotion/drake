@@ -43,8 +43,9 @@ namespace math {
 /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
 /// Note: B and A are no longer aligned.
 /// The monogram notation for the rotation matrix relating A to D is `R_AD`.
-/// See @ref multibody_quantities for monogram notation for dynamics.
-/// See @ref orientation_discussion "a discussion on rotation matrices".
+///
+/// @see @ref multibody_quantities for monogram notation for dynamics and
+/// @ref orientation_discussion "a discussion on rotation matrices".
 ///
 /// @note This class does not store the frames associated with this rotation
 /// sequence.
@@ -64,7 +65,7 @@ class RollPitchYaw {
 
   /// Constructs a %RollPitchYaw from a 3x1 array of angles.
   /// @param[in] rpy roll, pitch, yaw angles (units of radians).
-  /// @throws exception std::logic_error in debug builds if !IsValid(rpy).
+  /// @throws std::logic_error in debug builds if !IsValid(rpy).
   explicit RollPitchYaw(const Vector3<T>& rpy) {
     SetOrThrowIfNotValidInDebugBuild(rpy);
   }
@@ -73,7 +74,7 @@ class RollPitchYaw {
   /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
-  /// @throws exception std::logic_error in debug builds if
+  /// @throws std::logic_error in debug builds if
   /// !IsValid(Vector3<T>(roll, pitch, yaw)).
   explicit RollPitchYaw(const T& roll, const T& pitch, const T& yaw) {
     const Vector3<T> rpy(roll, pitch, yaw);
@@ -82,6 +83,15 @@ class RollPitchYaw {
 
   /// Returns the Vector3 underlying a %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
+
+  /// Returns the roll-angle underlying a %RollPitchYaw.
+  const T& get_roll_angle() const { return roll_pitch_yaw_(0); }
+
+  /// Returns the pitch-angle underlying a %RollPitchYaw.
+  const T& get_pitch_angle() const { return roll_pitch_yaw_(1); }
+
+  /// Returns the yaw-angle underlying a %RollPitchYaw.
+  const T& get_yaw_angle() const { return roll_pitch_yaw_(2); }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const {
@@ -106,8 +116,9 @@ class RollPitchYaw {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  bool IsNearlyEqualTo(const Vector3<T>& other, double tolerance) const {
-    return IsNearlyEqualTo(vector(), other.matrix(), tolerance);
+  bool IsNearlyEqualTo(const RollPitchYaw<T>& other, double tolerance) const {
+    const Vector3<T> difference = vector() - other.vector();
+    return difference.template lpNorm<Eigen::Infinity>() <= tolerance;
   }
 
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
@@ -127,8 +138,7 @@ class RollPitchYaw {
 
   /// Sets `this` %RollPitchYaw from a Vector3.
   /// @param[in] rpy allegedly valid roll-pitch-yaw angles.
-  /// @throws exception std::logic_error in debug builds if rpy fails
-  /// IsValid(rpy).
+  /// @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
   void SetOrThrowIfNotValidInDebugBuild(const Vector3<T>& rpy) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(rpy));
     roll_pitch_yaw_ = rpy;

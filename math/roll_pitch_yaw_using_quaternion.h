@@ -12,6 +12,7 @@
  */
 #pragma once
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 
@@ -21,6 +22,8 @@ namespace math {
 /// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use RollPitchYaw::ToQuaternion().")
 Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
         const Eigen::MatrixBase<Derived>& rpy) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
