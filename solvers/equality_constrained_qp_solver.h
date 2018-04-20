@@ -24,7 +24,7 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
    *  variables) should satisfy their constraints, with error no
    *  larger than this value. The default is Eigen::dummy_precision().
    */
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionResult DoSolve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
 

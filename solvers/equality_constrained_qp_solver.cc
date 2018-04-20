@@ -64,7 +64,7 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
   }
 }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(
+SolutionResult EqualityConstrainedQPSolver::DoSolve(
     MathematicalProgram& prog) const {
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:

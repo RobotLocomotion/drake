@@ -91,7 +91,7 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
 
   bool available() const override { return true; }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionResult DoSolve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
 

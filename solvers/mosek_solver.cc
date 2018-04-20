@@ -639,7 +639,7 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
 
 bool MosekSolver::available() const { return true; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult MosekSolver::DoSolve(MathematicalProgram& prog) const {
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode;

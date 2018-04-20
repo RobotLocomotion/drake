@@ -201,7 +201,7 @@ void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
 
 bool OsqpSolver::available() const { return true; }
 
-SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult OsqpSolver::DoSolve(MathematicalProgram& prog) const {
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u

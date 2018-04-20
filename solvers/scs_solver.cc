@@ -501,7 +501,7 @@ void SetScsProblemData(int A_row_count, int num_vars,
 
 bool ScsSolver::available() const { return true; }
 
-SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult ScsSolver::DoSolve(MathematicalProgram& prog) const {
   // SCS solves the problem in this form
   // min  cᵀx
   // s.t A x + s = b

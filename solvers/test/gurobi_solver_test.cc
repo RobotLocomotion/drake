@@ -233,6 +233,14 @@ TEST_P(TestFindSpringEquilibrium, TestSOCP) {
 INSTANTIATE_TEST_CASE_P(
     GurobiTest, TestFindSpringEquilibrium,
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+GTEST_TEST(GurobiTest, TestEmptyProblem) {
+  MathematicalProgram prog;
+  GurobiSolver gurobi_solver;
+  if (gurobi_solver.available()) {
+    EXPECT_EQ(gurobi_solver.Solve(prog), SolutionResult::kSolutionFound);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

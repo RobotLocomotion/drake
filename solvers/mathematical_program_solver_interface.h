@@ -108,10 +108,14 @@ class MathematicalProgramSolverInterface {
   ///  * If no solver is available, throws std::runtime_error
   ///  * If the solver returns an error, returns a nonzero SolutionResult.
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
+  SolutionResult Solve(MathematicalProgram& prog) const;
 
   /// Returns the identifier of this solver.
   virtual SolverId solver_id() const = 0;
+
+ private:
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual SolutionResult DoSolve(MathematicalProgram& prog) const = 0;
 };
 
 }  // namespace solvers

@@ -599,7 +599,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 
 bool SnoptSolver::available() const { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult SnoptSolver::DoSolve(MathematicalProgram& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   const std::unordered_set<int> cost_gradient_indices =
       GetCostNonzeroGradientIndices(prog);

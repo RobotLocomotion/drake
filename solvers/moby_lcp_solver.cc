@@ -149,7 +149,7 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
 }
 
 template <>
-SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::DoSolve(
   // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
     MathematicalProgram&) const {
   DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
@@ -161,7 +161,7 @@ SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
 // MobyLcpMathematicalProgram class.
 template <typename T>
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
+SolutionResult MobyLCPSolver<T>::DoSolve(MathematicalProgram& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
