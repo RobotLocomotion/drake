@@ -19,7 +19,7 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
   // SNOPT was available during compilation.
   bool available() const override;
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  SolutionResult DoSolve(MathematicalProgram& prog) const override;
 
   SolverId solver_id() const override;
 

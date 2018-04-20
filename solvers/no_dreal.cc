@@ -10,7 +10,7 @@ namespace drake {
 namespace solvers {
 bool DrealSolver::available() const { return false; }
 
-SolutionResult DrealSolver::Solve(MathematicalProgram&) const {
+SolutionResult DrealSolver::DoSolve(MathematicalProgram&) const {
   throw std::runtime_error(
       "The Dreal bindings were not compiled.  You'll need to use a different "
       "solver.");

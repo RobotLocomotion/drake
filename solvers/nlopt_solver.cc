@@ -320,7 +320,7 @@ bool IsVectorOfConstraintsSatisfiedAtSolution(
 
 bool NloptSolver::available() const { return true; }
 
-SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult NloptSolver::DoSolve(MathematicalProgram& prog) const {
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.

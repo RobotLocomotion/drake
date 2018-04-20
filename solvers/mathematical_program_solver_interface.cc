@@ -1,5 +1,7 @@
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
+#include "drake/solvers/mathematical_program.h"
+
 namespace drake {
 namespace solvers {
 std::string to_string(SolutionResult solution_result) {
@@ -29,6 +31,14 @@ std::string to_string(SolutionResult solution_result) {
 std::ostream& operator<<(std::ostream& os, SolutionResult solution_result) {
   os << to_string(solution_result);
   return os;
+}
+
+SolutionResult MathematicalProgramSolverInterface::Solve(
+    MathematicalProgram& prog) const {
+  if (prog.num_vars() == 0) {
+    return SolutionResult::kSolutionFound;
+  }
+  return DoSolve(prog);
 }
 }  // namespace solvers
 }  // namespace drake

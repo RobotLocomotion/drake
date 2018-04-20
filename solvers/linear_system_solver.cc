@@ -14,7 +14,7 @@ namespace solvers {
 
 bool LinearSystemSolver::available() const { return true; }
 
-SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult LinearSystemSolver::DoSolve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.evaluator()->A().rows();

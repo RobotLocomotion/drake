@@ -605,7 +605,7 @@ void AddSecondOrderConeVariables(
 
 bool GurobiSolver::available() const { return true; }
 
-SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult GurobiSolver::DoSolve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
 

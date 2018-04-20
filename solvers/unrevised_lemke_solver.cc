@@ -98,7 +98,7 @@ MatrixX<double> LinearSolver<double>::Solve(
 
 template <>
 SolutionResult
-    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::DoSolve(
     MathematicalProgram&) const {
   DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
                   "MathematicalProgram while templatized as an AutoDiff");
@@ -107,7 +107,7 @@ SolutionResult
 
 template <>
 SolutionResult
-    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
+    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::DoSolve(
     MathematicalProgram&) const {
   DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
                   "MathematicalProgram while templatized as an AutoDiff");
@@ -115,8 +115,9 @@ SolutionResult
 }
 
 template <typename T>
+SolutionResult UnrevisedLemkeSolver<T>::DoSolve(
 // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
+    MathematicalProgram& prog) const {
   // This solver imposes restrictions that its problem:
   //
   // (1) Contains only linear complementarity constraints,

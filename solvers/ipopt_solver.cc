@@ -504,7 +504,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
 bool IpoptSolver::available() const { return true; }
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
+SolutionResult IpoptSolver::DoSolve(MathematicalProgram& prog) const {
   DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
