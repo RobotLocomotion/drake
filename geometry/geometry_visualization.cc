@@ -5,8 +5,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_geometry_data.hpp"
@@ -158,7 +158,7 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     SourceId s_id = state.get_source_id(frame.get_id());
     const std::string& src_name = state.get_source_name(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
-    // in the update message. Make sure this code and the GeometrySystem output
+    // in the update message. Make sure this code and the SceneGraph output
     // use a common code-base to translate (source_id, frame) -> name.
     message.link[link_index].name = src_name + "::" + frame.get_name();
     message.link[link_index].robot_num = frame.get_frame_group();
@@ -196,9 +196,9 @@ void DispatchLoadMessage(const GeometryState<double>& state) {
   Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void DispatchLoadMessage(const GeometrySystem<double>& system) {
-  system.ThrowIfContextAllocated("DisplatchLoadMessage");
-  DispatchLoadMessage(*system.initial_state_);
+void DispatchLoadMessage(const SceneGraph<double>& scene_graph) {
+  scene_graph.ThrowIfContextAllocated("DisplatchLoadMessage");
+  DispatchLoadMessage(*scene_graph.initial_state_);
 }
 
 }  // namespace geometry

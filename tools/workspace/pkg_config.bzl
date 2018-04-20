@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/workspace:execute.bzl", "path", "which")
+
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
 _DEFAULT_STATIC = False
@@ -27,11 +29,11 @@ def setup_pkg_config_repository(repository_ctx):
     intended to be called directly from the WORKSPACE file, or from a macro
     that was called by the WORKSPACE file.
     """
-    # First locate pkg-config on the $PATH.
-    tool_path = repository_ctx.which("pkg-config")
+    # First locate pkg-config.
+    tool_path = which(repository_ctx, "pkg-config")
     if not tool_path:
         return struct(error = "Could not find pkg-config on PATH={}".format(
-            repository_ctx.os.environ["PATH"]))
+            path(repository_ctx)))
     args = [tool_path, repository_ctx.attr.modname]
 
     pkg_config_paths = getattr(repository_ctx.attr,
@@ -225,9 +227,6 @@ pkg_config_repository = repository_rule(
         "extra_deps": attr.string_list(),
         "pkg_config_paths": attr.string_list(),
     },
-    environ = [
-        "PATH",
-    ],
     local = True,
     implementation = _impl,
 )

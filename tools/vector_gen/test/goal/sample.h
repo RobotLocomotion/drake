@@ -38,7 +38,7 @@ struct SampleIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class Sample : public systems::BasicVector<T> {
+class Sample : public drake::systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
   typedef SampleIndices K;
@@ -47,7 +47,7 @@ class Sample : public systems::BasicVector<T> {
   /// @arg @c x defaults to 42.0 m/s.
   /// @arg @c two_word defaults to 0.0 with unknown units.
   /// @arg @c absone defaults to 0.0 with unknown units.
-  Sample() : systems::BasicVector<T>(K::kNumCoordinates) {
+  Sample() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_x(42.0);
     this->set_two_word(0.0);
     this->set_absone(0.0);
@@ -90,7 +90,7 @@ class Sample : public systems::BasicVector<T> {
   }
 
   /// Returns whether the current values of this vector are well-formed.
-  Bool<T> IsValid() const {
+  drake::Bool<T> IsValid() const {
     using std::isnan;
     auto result = (T(0) == T(0));
     result = result && !isnan(x());
@@ -103,7 +103,7 @@ class Sample : public systems::BasicVector<T> {
   }
 
   // VectorBase override.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
+  void CalcInequalityConstraint(drake::VectorX<T>* value) const override {
     value->resize(3);
     (*value)[0] = x() - T(0.0);
     (*value)[1] = absone() - T(-1.0);

@@ -17,20 +17,20 @@ namespace bouncing_ball {
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
-using geometry::GeometrySystem;
 using geometry::PenetrationAsPointPair;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
+using std::make_unique;
 using systems::Context;
 using systems::Value;
-using std::make_unique;
 
 template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
-                                        GeometrySystem<T>* geometry_system,
+                                        SceneGraph<T>* scene_graph,
                                         const Vector2<double>& p_WB)
     : source_id_(source_id), p_WB_(p_WB) {
-  DRAKE_DEMAND(geometry_system != nullptr);
+  DRAKE_DEMAND(scene_graph != nullptr);
   DRAKE_DEMAND(source_id_.is_valid());
 
   geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
@@ -43,10 +43,9 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
                                1 /* num_v */, 0 /* num_z */);
   static_assert(BouncingBallVectorIndices::kNumCoordinates == 1 + 1, "");
 
-  ball_frame_id_ = geometry_system->RegisterFrame(
-      source_id, GeometryFrame("ball_frame",
-                               Isometry3<double>::Identity()));
-  ball_id_ = geometry_system->RegisterGeometry(
+  ball_frame_id_ = scene_graph->RegisterFrame(
+      source_id, GeometryFrame("ball_frame", Isometry3<double>::Identity()));
+  ball_id_ = scene_graph->RegisterGeometry(
       source_id, ball_frame_id_,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
                                     make_unique<Sphere>(diameter_ / 2.0)));

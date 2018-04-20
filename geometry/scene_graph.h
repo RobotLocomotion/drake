@@ -17,30 +17,32 @@ namespace geometry {
 
 class GeometryInstance;
 
-template <typename T> class GeometryContext;
+template <typename T>
+class GeometryContext;
 
-template <typename T> class QueryObject;
+template <typename T>
+class QueryObject;
 
-/** GeometrySystem serves as the nexus for all geometry (and geometry-based
- operations) in a Diagram. Through GeometrySystem, other systems that introduce
+/** SceneGraph serves as the nexus for all geometry (and geometry-based
+ operations) in a Diagram. Through SceneGraph, other systems that introduce
  geometry can _register_ that geometry as part of a common global domain,
  including it in geometric queries (e.g., cars controlled by one LeafSystem can
- be observed by a different sensor system). GeometrySystem provides the
+ be observed by a different sensor system). SceneGraph provides the
  interface for registering the geometry, updating its position based on the
  current context, and performing geometric queries.
 
- Only registered "geometry sources" can introduce geometry into %GeometrySystem.
+ Only registered "geometry sources" can introduce geometry into %SceneGraph.
  Geometry sources will typically be other leaf systems, but, in the case of
  _anchored_ (i.e., stationary) geometry, it could also be some other block of
  code (e.g., adding a common ground plane with which all systems' geometries
  interact). For dynamic geometry (geometry whose pose depends on a Context), the
  geometry source must also provide pose values for all of the geometries the
- source owns, via a port connection on %GeometrySystem.
+ source owns, via a port connection on %SceneGraph.
 
- The basic workflow for interacting with %GeometrySystem is:
+ The basic workflow for interacting with %SceneGraph is:
    - Register as a geometry source, acquiring a unique SourceId.
    - Register geometry (anchored and dynamic) with the system.
-   - Connect source's geometry output ports to the corresponding %GeometrySystem
+   - Connect source's geometry output ports to the corresponding %SceneGraph
      input ports.
      - Implement appropriate `Calc*` methods on the geometry output ports to
        update geometry pose values.
@@ -68,15 +70,15 @@ template <typename T> class QueryObject;
 
  @section geom_sys_outputs Outputs
 
- %GeometrySystem has two output ports:
+ %SceneGraph has two output ports:
 
  __query port__: An abstract-valued port containing an instance of QueryObject.
  It provides a "ticket" for downstream LeafSystem instances to perform geometric
- queries on the %GeometrySystem. To perform geometric queries, downstream
- LeafSystem instances acquire the QueryObject from %GeometrySystem's output port
- and provide it as a parameter to one of %GeometrySystem's query methods (e.g.,
- GeometrySystem::ComputeContact()). This assumes that the querying system has
- access to a const pointer to the connected %GeometrySystem instance. Use
+ queries on the %SceneGraph. To perform geometric queries, downstream
+ LeafSystem instances acquire the QueryObject from %SceneGraph's output port
+ and provide it as a parameter to one of %SceneGraph's query methods (e.g.,
+ SceneGraph::ComputeContact()). This assumes that the querying system has
+ access to a const pointer to the connected %SceneGraph instance. Use
  get_query_output_port() to acquire the output port for the query handle.
 
  __lcm visualization port__: An abstract-valued port containing an instance of
@@ -85,43 +87,43 @@ template <typename T> class QueryObject;
  geometry. Additional uses of this port are strongly discouraged; instead, use
  an appropriate geometric query to obtain the state of the world's geometry.
 
- @section geom_sys_workflow Working with GeometrySystem
+ @section geom_sys_workflow Working with SceneGraph
 
- LeafSystem instances can relate to GeometrySystem in one of two ways: as a
+ LeafSystem instances can relate to SceneGraph in one of two ways: as a
  _consumer_ that performs queries, or as a _producer_ that introduces geometry
  into the shared world and defines its context-dependent kinematics values.
  It is reasonable for systems to perform either role singly, or both.
 
  __Consumer__
 
- Consumers perform geometric queries upon the world geometry. %GeometrySystem
+ Consumers perform geometric queries upon the world geometry. %SceneGraph
  _serves_ those queries. As indicated above, in order for a LeafSystem to act
  as a consumer, it must:
-   1. define a QueryObject-valued input port and connect it to %GeometrySystem's
+   1. define a QueryObject-valued input port and connect it to %SceneGraph's
    corresponding output port, and
-   2. have a reference to the connected %GeometrySystem instance.
+   2. have a reference to the connected %SceneGraph instance.
 
  With those two requirements satisfied, a LeafSystem can perform geometry
  queries by:
    1. evaluating the QueryObject input port, and
    2. passing the returned query object into the appropriate query method on
-   GeometrySystem (e.g., GeometrySystem::ComputeContact()).
+   SceneGraph (e.g., SceneGraph::ComputeContact()).
 
  __Producer__
 
  All producers introduce geometry into the shared geometric world. This is
  called _registering_ geometry. Depending on what exactly has been registered,
  a producer may also have to _update kinematics_. Producers themselves must be
- registered with %GeometrySystem as producers (a.k.a. _geometry sources_). They
- do this by acquiring a SourceId (via GeometrySystem::RegisterSource()). The
+ registered with %SceneGraph as producers (a.k.a. _geometry sources_). They
+ do this by acquiring a SourceId (via SceneGraph::RegisterSource()). The
  SourceId serves as a unique handle through which the producer's identity is
  validated and its ownership of its registered geometry is maintained.
 
  _Registering Geometry_
 
- %GeometrySystem cannot know what geometry _should_ be part of the shared world.
+ %SceneGraph cannot know what geometry _should_ be part of the shared world.
  Other systems are responsible for introducing geometry into the world. This
- process (defining geometry and informing %GeometrySystem) is called
+ process (defining geometry and informing %SceneGraph) is called
  _registering_ the geometry. The source that registers the geometry "owns" the
  geometry; the source's unique SourceId is required to perform any operations
  on the geometry registered with that SourceId. Geometry can be registered as
@@ -135,7 +137,7 @@ template <typename T> class QueryObject;
  basis for repositioning geometry in the shared world. The geometry source is
  responsible for providing up-to-date kinematics values for those registered
  frames upon request (via an appropriate output port on the source LeafSystem
- connecting to the appropriate input port on %GeometrySystem). The work flow is
+ connecting to the appropriate input port on %SceneGraph). The work flow is
  as follows:
    1. A LeafSystem registers itself as a geometry source, acquiring a SourceId
       (RegisterSource()).
@@ -158,7 +160,7 @@ template <typename T> class QueryObject;
  _Updating Kinematics_
 
  Registering _dynamic_ geometry implies a contract between the geometry source
- and %GeometrySystem. The geometry source must do the following:
+ and %SceneGraph. The geometry source must do the following:
    - It must provide, populate, and connect two output ports: the "id" port and
    the "pose" port.
    - The id port must contain _all_ the frame ids returned as a result of frame
@@ -185,27 +187,27 @@ template <typename T> class QueryObject;
  They are already available to link against in the containing library.
  No other values for T are currently supported.  */
 template <typename T>
-class GeometrySystem final : public systems::LeafSystem<T> {
+class SceneGraph final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometrySystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
-  GeometrySystem();
+  SceneGraph();
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types. */
   template <typename U>
-  explicit GeometrySystem(const GeometrySystem<U>& other);
+  explicit SceneGraph(const SceneGraph<U>& other);
 
-  ~GeometrySystem() override {}
+  ~SceneGraph() override {}
 
   /** @name       Port management
-   Access to GeometrySystem's input/output ports. This topic includes
+   Access to SceneGraph's input/output ports. This topic includes
    registration of geometry sources because the input ports are mapped to
    registered geometry sources.
 
    A source that registers frames and geometries _must_ connect outputs to
    the inputs associated with that source. Failure to do so will be treated as
-   a runtime error during the evaluation of %GeometrySystem. %GeometrySystem
+   a runtime error during the evaluation of %SceneGraph. %SceneGraph
    will detect that frames have been registered but no values have been
    provided. */
   //@{
@@ -220,11 +222,11 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    See get_source_pose_port().
    @param name          The optional name of the source. If none is provided
                         (or the empty string) a unique name will be defined by
-                        GeometrySystem's logic.
+                        SceneGraph's logic.
    @throws std::logic_error if a context has already been allocated for this
-                            %GeometrySystem.
+                            %SceneGraph.
    @see GeometryState::RegisterNewSource() */
-  SourceId RegisterSource(const std::string &name = "");
+  SourceId RegisterSource(const std::string& name = "");
 
   /** Reports if the given source id is registered.
    @param id       The id of the source to query. */
@@ -259,12 +261,12 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    Eventually, the API will expand to include modifications of the topology
    during discrete updates.
 
-   The initialization phase begins with the instantiation of a %GeometrySystem
-   and ends when a context is allocated by the %GeometrySystem instance. This is
-   the only phase when geometry sources can be registered with %GeometrySystem.
+   The initialization phase begins with the instantiation of a %SceneGraph
+   and ends when a context is allocated by the %SceneGraph instance. This is
+   the only phase when geometry sources can be registered with %SceneGraph.
    Once a source is registered, it can register frames and geometries. Any
    frames and geometries registered during this phase become part of the
-   _default_ context state for %GeometrySystem and calls to
+   _default_ context state for %SceneGraph and calls to
    CreateDefaultContext() will produce identical contexts.
 
    Every geometry must ultimately be associated with a parent frame.
@@ -321,8 +323,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
                              2. the `frame_id` doesn't belong to the source,
                              3. the `geometry` is equal to `nullptr`,
                              4. a context has been allocated. */
-  GeometryId RegisterGeometry(SourceId source_id,
-                              FrameId frame_id,
+  GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
@@ -340,8 +341,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
                             2. the `geometry_id` doesn't belong to the source,
                             3. the `geometry` is equal to `nullptr`, or
                             4. a context has been allocated. */
-  GeometryId RegisterGeometry(SourceId source_id,
-                              GeometryId geometry_id,
+  GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
@@ -353,18 +353,17 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    @throws std::logic_error  If the `source_id` does _not_ map to a registered
                              source or a context has been allocated. */
   GeometryId RegisterAnchoredGeometry(
-      SourceId source_id,
-      std::unique_ptr<GeometryInstance> geometry);
+      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   //@}
 
  private:
   // Friend class to facilitate testing.
-  friend class GeometrySystemTester;
+  friend class SceneGraphTester;
 
-  // GeometrySystem of different scalar types can all access each other's data.
+  // SceneGraph of different scalar types can all access each other's data.
   template <typename>
-  friend class GeometrySystem;
+  friend class SceneGraph;
 
   // Give (at least temporarily) QueryObject access to the system API to
   // evaluate inputs on the context.
@@ -381,8 +380,8 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   // Helper class to register input ports for a source id.
   void MakeSourcePorts(SourceId source_id);
 
-  // Allow the load dispatch to peek into GeometrySystem.
-  friend void DispatchLoadMessage(const GeometrySystem<double>&);
+  // Allow the load dispatch to peek into SceneGraph.
+  friend void DispatchLoadMessage(const SceneGraph<double>&);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject() const;
@@ -418,7 +417,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
 
   // Asserts the given source_id is registered, throwing an exception whose
   // message is the given message with the source_id appended if not.
-  void ThrowUnlessRegistered(SourceId source_id, const char *message) const;
+  void ThrowUnlessRegistered(SourceId source_id, const char* message) const;
 
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
@@ -459,12 +458,12 @@ class GeometrySystem final : public systems::LeafSystem<T> {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<geometry::GeometrySystem> {
+struct Traits<geometry::SceneGraph> {
   template <typename T, typename U>
-  using supported = typename std::conditional<
-      !std::is_same<T, symbolic::Expression>::value &&
-          std::is_same<U, double>::value,
-      std::true_type, std::false_type>::type;
+  using supported =
+      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
+                                    std::is_same<U, double>::value,
+                                std::true_type, std::false_type>::type;
 };
 }  // namespace scalar_conversion
 }  // namespace systems

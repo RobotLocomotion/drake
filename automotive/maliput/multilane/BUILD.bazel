@@ -149,10 +149,6 @@ drake_cc_googletest(
     name = "multilane_loader_test",
     size = "small",
     srcs = ["test/multilane_loader_test.cc"],
-    # TODO(agalbachicar):  UBSan test makes this test fail (likely) because of
-    # a missing `-fsanitize-blacklist` flag when compiling GMock.
-    # See issue #8572.
-    tags = ["no_ubsan"],
     deps = [
         ":loader",
         "//automotive/maliput/api/test_utilities",

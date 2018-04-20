@@ -131,6 +131,21 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          py::arg("model_instance_id_set") =
            RigidBodyTreeConstants::default_model_instance_id_set,
          py::arg("in_terms_of_qdot") = false)
+    .def("geometricJacobian",
+         [](const RigidBodyTree<double>& tree,
+            const KinematicsCache<double>& cache, int base_body_or_frame_ind,
+            int end_effector_body_or_frame_ind,
+            int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
+           std::vector<int> v_indices;
+           auto J = tree.geometricJacobian(
+               cache, base_body_or_frame_ind, end_effector_body_or_frame_ind,
+               expressed_in_body_or_frame_ind, in_terms_of_qdot, &v_indices);
+           return py::make_tuple(J, v_indices);
+         },
+         py::arg("cache"), py::arg("base_body_or_frame_ind"),
+         py::arg("end_effector_body_or_frame_ind"),
+         py::arg("expressed_in_body_or_frame_ind"),
+         py::arg("in_terms_of_qdot") = false)
     .def("get_num_bodies", &RigidBodyTree<double>::get_num_bodies)
     .def("get_num_frames", &RigidBodyTree<double>::get_num_frames)
     .def("get_num_actuators", &RigidBodyTree<double>::get_num_actuators)

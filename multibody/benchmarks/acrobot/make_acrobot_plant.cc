@@ -14,7 +14,7 @@ using Eigen::Vector3d;
 
 using geometry::Cylinder;
 using geometry::FrameId;
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::Sphere;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RevoluteJoint;
@@ -25,9 +25,8 @@ using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlant(
-    const AcrobotParameters& params, bool finalize,
-    geometry::GeometrySystem<double>* geometry_system) {
+MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
+                 SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // COM's positions in each link (L1/L2) frame:
@@ -55,27 +54,26 @@ MakeAcrobotPlant(
   const RigidBody<double>& link2 = plant->AddRigidBody(
       params.link2_name(), M2_L2o);
 
-  if (geometry_system != nullptr) {
-    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+  if (scene_graph != nullptr) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
 
     // Pose of the geometry for link 1 in the link's frame.
     const Isometry3d X_L1G1{
         Translation3d(-params.l1() / 2.0 * Vector3d::UnitZ())};
     plant->RegisterVisualGeometry(
-        link1, X_L1G1, Cylinder(params.r1(), params.l1()), geometry_system);
+        link1, X_L1G1, Cylinder(params.r1(), params.l1()), scene_graph);
 
     // Pose of the geometry for link 2 in the link's frame.
     const Isometry3d X_L2G2{
         Translation3d(-params.l2() / 2.0 * Vector3d::UnitZ())};
     plant->RegisterVisualGeometry(
-        link2, X_L2G2, Cylinder(params.r2(), params.l2()), geometry_system);
+        link2, X_L2G2, Cylinder(params.r2(), params.l2()), scene_graph);
 
     // Register some (anchored) geometry to the world.
     plant->RegisterVisualGeometry(
-        plant->world_body(),
-        Isometry3d::Identity(), /* X_WG */
+        plant->world_body(), Isometry3d::Identity(), /* X_WG */
         Sphere(params.l1() / 8.0), /* Arbitrary radius to decorate the model. */
-        geometry_system);
+        scene_graph);
   }
 
   plant->AddJoint<RevoluteJoint>(

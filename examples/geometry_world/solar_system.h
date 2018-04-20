@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -93,7 +93,7 @@ class SolarSystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolarSystem)
 
-  explicit SolarSystem(geometry::GeometrySystem<T>* geometry_system);
+  explicit SolarSystem(geometry::SceneGraph<T>* scene_graph);
   ~SolarSystem() override = default;
 
   using MyContext = systems::Context<T>;
@@ -120,7 +120,7 @@ class SolarSystem : public systems::LeafSystem<T> {
 
  private:
   // Allocate all of the geometry.
-  void AllocateGeometry(geometry::GeometrySystem<T>* geometry_system);
+  void AllocateGeometry(geometry::SceneGraph<T>* scene_graph);
 
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,

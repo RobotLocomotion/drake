@@ -24,7 +24,7 @@ drake_cc_library(
         ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//multibody/multibody_tree",
         "//systems/framework:leaf_system",
     ],

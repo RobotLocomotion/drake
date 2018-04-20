@@ -290,17 +290,37 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.Solve()
         self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
 
-    def test_set_initial_guess(self):
+    def test_initial_guess(self):
         prog = mp.MathematicalProgram()
-        x = prog.NewContinuousVariables(2, 'x')
+        count = 6
+        shape = (2, 3)
+        x = prog.NewContinuousVariables(count, 'x')
+        x_matrix = x.reshape(shape)
+        x0 = np.arange(count)
+        x0_matrix = x0.reshape(shape)
+        all_nan = np.full(x.shape, np.nan)
+        self.assertTrue(np.isnan(prog.GetInitialGuess(x)).all())
+
+        def check_and_reset():
+            self.assertTrue((prog.GetInitialGuess(x) == x0).all())
+            self.assertTrue(
+                (prog.GetInitialGuess(x_matrix) == x0_matrix).all())
+            prog.SetInitialGuess(x, all_nan)
+            self.assertTrue(np.isnan(prog.GetInitialGuess(x)).all())
 
         # Test setting individual variables
-        prog.SetInitialGuess(x[0], 0.5)
-        prog.SetInitialGuess(x[1], -0.1)
-        prog.SetInitialGuess(x[0], np.nan)
+        for i in xrange(count):
+            prog.SetInitialGuess(x[i], x0[i])
+            self.assertEqual(prog.GetInitialGuess(x[i]), x0[i])
+        check_and_reset()
 
-        # Test setting matrix values
-        prog.SetInitialGuess(x, np.array([1, -1]))
+        # Test setting matrix values using both
+        # 1d and 2d np arrays.
+        prog.SetInitialGuess(x, x0)
+        check_and_reset()
+        prog.SetInitialGuess(x_matrix, x0_matrix)
+        check_and_reset()
 
-        # Test setting all values
-        prog.SetInitialGuessForAllVariables(np.array([1, -1]))
+        # Test setting all values at once.
+        prog.SetInitialGuessForAllVariables(x0)
+        check_and_reset()

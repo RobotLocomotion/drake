@@ -68,8 +68,8 @@ drake_cc_binary(
     ],
     deps = [
         "//common:find_resource",
-        "//geometry:geometry_system",
         "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
         "//lcm",
         "//multibody:rigid_body_tree_construction",
         "//multibody/parsers",

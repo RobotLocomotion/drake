@@ -136,6 +136,9 @@ class BulletModel : public Model {
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;
 
+  static std::unique_ptr<btCollisionShape> newBulletBoxShape(
+      const DrakeShapes::Box& geometry, bool use_margins);
+
  private:
   enum DispatchMethod {
     kNotYetDecided,
@@ -157,8 +160,6 @@ class BulletModel : public Model {
       ElementId idA, ElementId idB, bool use_margins);
 
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
-  static std::unique_ptr<btCollisionShape> newBulletBoxShape(
-      const DrakeShapes::Box& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletSphereShape(
       const DrakeShapes::Sphere& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletCylinderShape(

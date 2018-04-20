@@ -22,8 +22,13 @@ def _get_drake_distro():
 
 def _run_doxygen(args):
     # Find our programs.
-    doxygen = subprocess.check_output(["which", "doxygen"]).strip()
-    dot = subprocess.check_output(["which", "dot"]).strip()
+    if sys.platform == "darwin":
+        path = "/usr/local/bin:/usr/bin:/bin"
+    else:
+        path = "/usr/bin:/bin"
+    env = {"PATH": path}
+    doxygen = subprocess.check_output(["which", "doxygen"], env=env).strip()
+    dot = subprocess.check_output(["which", "dot"], env=env).strip()
 
     # Compute the definitions dict needed by Doxygen_CXX.in.
     drake_distro = _get_drake_distro()

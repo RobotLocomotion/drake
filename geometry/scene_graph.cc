@@ -1,4 +1,4 @@
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 
 #include <algorithm>
 #include <string>
@@ -72,27 +72,26 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-GeometrySystem<T>::GeometrySystem()
-    : LeafSystem<T>(SystemTypeTag<geometry::GeometrySystem>{}) {
+SceneGraph<T>::SceneGraph()
+    : LeafSystem<T>(SystemTypeTag<geometry::SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
   initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
   bundle_port_index_ =
-      this->DeclareAbstractOutputPort(&GeometrySystem::MakePoseBundle,
-                                      &GeometrySystem::CalcPoseBundle)
+      this->DeclareAbstractOutputPort(&SceneGraph::MakePoseBundle,
+                                      &SceneGraph::CalcPoseBundle)
           .get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort(&GeometrySystem::MakeQueryObject,
-                                      &GeometrySystem::CalcQueryObject)
+      this->DeclareAbstractOutputPort(&SceneGraph::MakeQueryObject,
+                                      &SceneGraph::CalcQueryObject)
           .get_index();
 }
 
 template <typename T>
 template <typename U>
-GeometrySystem<T>::GeometrySystem(const GeometrySystem<U>& other)
-    : GeometrySystem() {
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   // NOTE: If other.initial_state_ is not null, it means we're converting a
   // system that hasn't had its context allocated yet. We want the converted
   // system to persist the same state.
@@ -128,7 +127,7 @@ GeometrySystem<T>::GeometrySystem(const GeometrySystem<U>& other)
 }
 
 template <typename T>
-SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
+SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   SourceId source_id = initial_state_->RegisterNewSource(name);
   MakeSourcePorts(source_id);
@@ -136,34 +135,33 @@ SourceId GeometrySystem<T>::RegisterSource(const std::string &name) {
 }
 
 template <typename T>
-bool GeometrySystem<T>::SourceIsRegistered(SourceId id) const {
+bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
   return input_source_ids_.count(id) > 0;
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
-GeometrySystem<T>::get_source_pose_port(SourceId id) {
-  ThrowUnlessRegistered(
-      id, "Can't acquire pose port for unknown source id: ");
+const systems::InputPortDescriptor<T>& SceneGraph<T>::get_source_pose_port(
+    SourceId id) {
+  ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].pose_port);
 }
 
 template <typename T>
-FrameId GeometrySystem<T>::RegisterFrame(SourceId source_id,
-                                         const GeometryFrame& frame) {
+FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
+                                     const GeometryFrame& frame) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterFrame(source_id, frame);
 }
 
 template <typename T>
-FrameId GeometrySystem<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
-                                         const GeometryFrame& frame) {
+FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
+                                     const GeometryFrame& frame) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterFrame(source_id, parent_id, frame);
 }
 
 template <typename T>
-GeometryId GeometrySystem<T>::RegisterGeometry(
+GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
@@ -172,7 +170,7 @@ GeometryId GeometrySystem<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId GeometrySystem<T>::RegisterGeometry(
+GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
@@ -181,16 +179,15 @@ GeometryId GeometrySystem<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId GeometrySystem<T>::RegisterAnchoredGeometry(
-    SourceId source_id,
-    std::unique_ptr<GeometryInstance> geometry) {
+GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
+    SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
 }
 
 template <typename T>
-void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
+void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
@@ -199,15 +196,15 @@ void GeometrySystem<T>::MakeSourcePorts(SourceId source_id) {
 }
 
 template <typename T>
-QueryObject<T> GeometrySystem<T>::MakeQueryObject() const {
+QueryObject<T> SceneGraph<T>::MakeQueryObject() const {
   // Returns a null-initialized QueryObject to be compatible with context
   // allocation (see documentation on QueryObject).
   return QueryObject<T>();
 }
 
 template <typename T>
-void GeometrySystem<T>::CalcQueryObject(const Context<T>& context,
-                                        QueryObject<T>* output) const {
+void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
+                                    QueryObject<T>* output) const {
   // NOTE: This is an exception to the style guide. It takes a const reference
   // but then hangs onto a const pointer. The guide says the parameter should
   // itself be a const pointer. We're breaking the guide to satisfy the
@@ -224,11 +221,11 @@ void GeometrySystem<T>::CalcQueryObject(const Context<T>& context,
   DRAKE_DEMAND(geom_context);
   // The result of calling calc should *always* produce a live query object.
   output->context_ = geom_context;
-  output->system_ = this;
+  output->scene_graph_ = this;
 }
 
 template <typename T>
-PoseBundle<T> GeometrySystem<T>::MakePoseBundle() const {
+PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
   PoseBundle<T> bundle(g_state.get_num_frames());
   int i = 0;
@@ -247,8 +244,8 @@ PoseBundle<T> GeometrySystem<T>::MakePoseBundle() const {
 }
 
 template <typename T>
-void GeometrySystem<T>::CalcPoseBundle(const Context<T>& context,
-                                       PoseBundle<T>* output) const {
+void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
+                                   PoseBundle<T>* output) const {
   // NOTE: Adding/removing frames during discrete updates will
   // change the size/composition of the pose bundle. This calculation will *not*
   // explicitly test this. It is assumed the discrete update will also be
@@ -268,8 +265,7 @@ void GeometrySystem<T>::CalcPoseBundle(const Context<T>& context,
 }
 
 template <typename T>
-void GeometrySystem<T>::FullPoseUpdate(
-    const GeometryContext<T>& context) const {
+void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
   // TODO(SeanCurtis-TRI): Update this when the cache is available.
   // This method is const and the context is const. Ultimately, this will pull
   // cached entities to do the query work. For now, we have to const cast the
@@ -281,9 +277,10 @@ void GeometrySystem<T>::FullPoseUpdate(
   GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
 
   auto throw_error = [](SourceId source_id, const std::string& origin) {
-    throw std::logic_error(
-        "Source " + to_string(source_id) + " has registered frames "
-            "but does not provide " + origin + " values on the input port.");
+    throw std::logic_error("Source " + to_string(source_id) +
+                           " has registered frames "
+                           "but does not provide " +
+                           origin + " values on the input port.");
   };
 
   for (const auto& pair : state.source_frame_id_map_) {
@@ -309,7 +306,7 @@ void GeometrySystem<T>::FullPoseUpdate(
 }
 
 template <typename T>
-std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
+std::unique_ptr<LeafContext<T>> SceneGraph<T>::DoMakeLeafContext() const {
   // Disallow further geometry source additions.
   context_has_been_allocated_ = true;
   DRAKE_ASSERT(geometry_state_index_ >= 0);
@@ -317,18 +314,17 @@ std::unique_ptr<LeafContext<T>> GeometrySystem<T>::DoMakeLeafContext() const {
 }
 
 template <typename T>
-void GeometrySystem<T>::ThrowIfContextAllocated(
-    const char* source_method) const {
+void SceneGraph<T>::ThrowIfContextAllocated(const char* source_method) const {
   if (context_has_been_allocated_) {
-    throw std::logic_error(
-        "The call to " + std::string(source_method) + " is invalid; a "
-        "context has already been allocated.");
+    throw std::logic_error("The call to " + std::string(source_method) +
+                           " is invalid; a "
+                           "context has already been allocated.");
   }
 }
 
 template <typename T>
-void GeometrySystem<T>::ThrowUnlessRegistered(SourceId source_id,
-                                              const char* message) const {
+void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
+                                          const char* message) const {
   using std::to_string;
   if (input_source_ids_.find(source_id) == input_source_ids_.end()) {
     throw std::logic_error(message + to_string(source_id) + ".");
@@ -336,8 +332,8 @@ void GeometrySystem<T>::ThrowUnlessRegistered(SourceId source_id,
 }
 
 // Explicitly instantiates on the most common scalar types.
-template class GeometrySystem<double>;
-template class GeometrySystem<AutoDiffXd>;
+template class SceneGraph<double>;
+template class SceneGraph<AutoDiffXd>;
 
 // Don't leave the macro defined.
 #undef GS_THROW_IF_CONTEXT_ALLOCATED

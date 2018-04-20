@@ -25,7 +25,7 @@ struct PoseVelocityInputPortDescriptors {
 
 
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
-// GeometrySystem as it becomes available.
+// SceneGraph as it becomes available.
 
 // TODO(david-german-tri): Rename PoseAggregator to KinematicsAggregator, since
 // it includes both poses and velocities now.

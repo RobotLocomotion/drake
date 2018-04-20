@@ -5,9 +5,12 @@
 i.e., rules used by WORKSPACE files, not BUILD files.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
+
 def exec_using_which(repository_ctx, command):
-    """Run the given command (a list), using which to locate the executable named
-    by the zeroth index of `command`.
+    """Run the given command (a list), using the which() function in
+    execute.bzl to locate the executable named by the zeroth index of
+    `command`.
 
     Return struct with attributes:
     - error (None when success, or else str message)
@@ -15,7 +18,7 @@ def exec_using_which(repository_ctx, command):
     """
 
     # Find the executable.
-    fullpath = repository_ctx.which(command[0])
+    fullpath = which(repository_ctx, command[0])
     if fullpath == None:
         return struct(
             stdout = "",

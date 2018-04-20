@@ -42,6 +42,7 @@ using solvers::SolverTypeConverter;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::VectorXIndeterminate;
+using solvers::VisualizationCallback;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Monomial;
@@ -353,6 +354,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Expression&)>(
                &MathematicalProgram::AddSosConstraint))
+      .def("AddVisualizationCallback",
+          static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
+              const VisualizationCallback::CallbackFunction&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddVisualizationCallback))
       .def("Solve", &MathematicalProgram::Solve)
       .def("GetSolverId", &MathematicalProgram::GetSolverId)
       .def("linear_constraints", &MathematicalProgram::linear_constraints)
@@ -388,6 +394,21 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
           [](const MathematicalProgram& prog,
             const symbolic::Polynomial& p) {
           return prog.SubstituteSolution(p);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const symbolic::Variable& decision_variable) {
+            return prog.GetInitialGuess(decision_variable);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const VectorXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const MatrixXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
           })
       .def("SetInitialGuess",
           [](MathematicalProgram& prog,
@@ -479,6 +500,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
   RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
+
+  py::class_<VisualizationCallback, EvaluatorBase,
+             std::shared_ptr<VisualizationCallback>>(m,
+                                                     "VisualizationCallback");
+
+  RegisterBinding<VisualizationCallback>(&m, &prog_cls,
+                                         "VisualizationCallback");
 }
 
 }  // namespace pydrake

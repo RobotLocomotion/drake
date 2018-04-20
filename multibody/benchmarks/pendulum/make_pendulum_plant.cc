@@ -14,7 +14,7 @@ using Eigen::Vector3d;
 
 using geometry::Cylinder;
 using geometry::FrameId;
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::Sphere;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::RevoluteJoint;
@@ -25,9 +25,8 @@ using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakePendulumPlant(
-    const PendulumParameters& params,
-    geometry::GeometrySystem<double>* geometry_system) {
+MakePendulumPlant(const PendulumParameters& params,
+                  SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
   // Position of the com of the pendulum's body (in this case a point mass) in
@@ -48,20 +47,20 @@ MakePendulumPlant(
   const RigidBody<double>& point_mass =
       plant->AddRigidBody(params.body_name(), M_Bo);
 
-  if (geometry_system != nullptr) {
-    plant->RegisterAsSourceForGeometrySystem(geometry_system);
+  if (scene_graph != nullptr) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
     // Pose of the sphere used to visualize the point mass in the body frame B.
     const Isometry3d X_BGs{
         Translation3d(-params.l() * Vector3d::UnitZ())};
     plant->RegisterVisualGeometry(
-        point_mass, X_BGs, Sphere(params.point_mass_radius()), geometry_system);
+        point_mass, X_BGs, Sphere(params.point_mass_radius()), scene_graph);
 
     // Pose of the cylinder used to visualize the massless rod in frame B.
     const Isometry3d X_BGc{
         Translation3d(-params.l() / 2.0 * Vector3d::UnitZ())};
     plant->RegisterVisualGeometry(
         point_mass, X_BGc, Cylinder(params.massless_rod_radius(), params.l()),
-        geometry_system);
+        scene_graph);
   }
 
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
