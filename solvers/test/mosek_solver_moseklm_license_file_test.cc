@@ -18,6 +18,9 @@ GTEST_TEST(MoseklmLicenseFileTest, MoseklmLicenseFileSet) {
   ASSERT_STRNE(nullptr, moseklm_license_file);
 
   MathematicalProgram program;
+  // Add a dummy variable here, to avoid "Solve" function terminating without
+  // calling the external Mosek solver.
+  const auto x = program.NewContinuousVariables<1>();
   MosekSolver solver;
 
   EXPECT_NO_THROW(solver.Solve(program));
@@ -31,6 +34,9 @@ GTEST_TEST(MoseklmLicenseFileTest, MoseklmLicenseFileUnset) {
   ASSERT_EQ(0, unsetenv_result);
 
   MathematicalProgram program;
+  // Add a dummy variable here, to avoid "Solve" function terminating without
+  // calling the external Mosek solver.
+  const auto x = program.NewContinuousVariables<1>();
   MosekSolver solver;
 
   try {
