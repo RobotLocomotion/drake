@@ -31,7 +31,13 @@ struct ModelInstanceInfo {
 template <typename T>
 class WorldSimTreeBuilder {
  public:
-  WorldSimTreeBuilder();
+  /// @param compile_tree Specifies whether a call to any of the add model
+  /// instance functions should compile the tree. Defaults to true. Setting this
+  /// parameter to false will cause the parser to bypass tree compilation such
+  /// that modifications to the tree can be made at run time (e.g.,
+  /// programmatically adding collision elements to the tree). The user is
+  /// responsible for calling compile() on the tree.
+  explicit WorldSimTreeBuilder(bool compile_tree = true);
 
   ~WorldSimTreeBuilder();
 
@@ -139,6 +145,15 @@ class WorldSimTreeBuilder {
     return *rigid_body_tree_;
   }
 
+  /// Returns a pointer to the (not yet built) mutable tree. This is useful for
+  /// cases where one needs to programmatically modify the tree (e.g., when
+  /// programmatically adding collision elements to the un-compiled tree).
+  /// @pre Build() must not have been called yet.
+  RigidBodyTree<T>* get_mutable_tree() {
+    DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
+    return rigid_body_tree_.get();
+  }
+
   ModelInstanceInfo<T> get_model_info_for_instance(int id) {
     return instance_id_to_model_info_.at(id);
   }
@@ -158,6 +173,7 @@ class WorldSimTreeBuilder {
       std::make_unique<RigidBodyTree<T>>()};
 
   bool built_{false};
+  bool compile_tree_{true};
 
   // Maps between models (stored as filename strings in the map) and their
   // user-supplied names (keys in the map). Instances of these models can be

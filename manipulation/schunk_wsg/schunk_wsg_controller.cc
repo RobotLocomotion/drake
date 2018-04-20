@@ -12,7 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgController::SchunkWsgController() {
+SchunkWsgController::SchunkWsgController(double kp, double ki, double kd) {
   systems::DiagramBuilder<double> builder;
 
   auto wsg_trajectory_generator =
@@ -32,12 +32,10 @@ SchunkWsgController::SchunkWsgController() {
                   wsg_trajectory_generator->get_state_input_port());
 
   const int kWsgActDim = kSchunkWsgNumActuators;
-  // The p gain here is somewhat arbitrary.  The goal is to make sure
-  // that the maximum force is generated except when very close to the
-  // target.
-  const Eigen::VectorXd wsg_kp = Eigen::VectorXd::Constant(kWsgActDim, 2000.0);
-  const Eigen::VectorXd wsg_ki = Eigen::VectorXd::Constant(kWsgActDim, 0.0);
-  const Eigen::VectorXd wsg_kd = Eigen::VectorXd::Constant(kWsgActDim, 5.0);
+
+  const Eigen::VectorXd wsg_kp = Eigen::VectorXd::Constant(kWsgActDim, kp);
+  const Eigen::VectorXd wsg_ki = Eigen::VectorXd::Constant(kWsgActDim, ki);
+  const Eigen::VectorXd wsg_kd = Eigen::VectorXd::Constant(kWsgActDim, kd);
 
   auto wsg_controller =
       builder.AddSystem<systems::controllers::PidController<double>>(
