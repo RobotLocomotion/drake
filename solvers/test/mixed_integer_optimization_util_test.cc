@@ -419,12 +419,7 @@ class BilinearProductMcCormickEnvelopeMultipleChoiceTest
         phi_x_{Eigen::VectorXd::LinSpaced(num_interval_x_ + 1, 0, 1)},
         phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
         Bx_{prog_.NewBinaryVariables(num_interval_x_)},
-        By_{prog_.NewBinaryVariables(num_interval_y_)} {
-    prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_x_),
-                                      1, Bx_);
-    prog_.AddLinearEqualityConstraint(Eigen::RowVectorXd::Ones(num_interval_y_),
-                                      1, By_);
-  }
+        By_{prog_.NewBinaryVariables(num_interval_y_)} {}
 
  protected:
   MathematicalProgram prog_;
@@ -445,9 +440,7 @@ TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest,
   // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
   // We fix x and y to each intervals.
   // We expect the optimum obtained at one of the vertices of the tetrahedron.
-  VectorXDecisionVariable xi, yj;
-  MatrixXDecisionVariable wij;
-  std::tie(xi, yj, wij) = AddBilinearProductMcCormickEnvelopeMultipleChoice(
+  AddBilinearProductMcCormickEnvelopeMultipleChoice(
       &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
       By_.cast<symbolic::Expression>());
 
@@ -498,11 +491,6 @@ TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest,
           Eigen::Matrix<double, 1, 4> cost_at_vertices =
               a.col(k).transpose() * vertices;
           EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(), 1E-4);
-          std::cout << "i: " << i << " j: " << j << "\n";
-          std::cout << "xyw: " << prog_.GetSolution(xyw).transpose() << "\n";
-          std::cout << "xi: " << prog_.GetSolution(xi).transpose() << "\n";
-          std::cout << "yj: " << prog_.GetSolution(yj).transpose() << "\n";
-          std::cout << "wij: \n" << prog_.GetSolution(wij) << "\n";
         }
       }
     }

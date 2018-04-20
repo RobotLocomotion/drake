@@ -716,6 +716,7 @@ drake_cc_library(
     srcs = ["mixed_integer_optimization_util.cc"],
     hdrs = ["mixed_integer_optimization_util.h"],
     deps = [
+        ":integer_optimization_util",
         ":mathematical_program",
         "//math:gray_code",
     ],

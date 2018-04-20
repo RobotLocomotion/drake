@@ -288,25 +288,28 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * By(i) = 1 => φy(i) <= y <= φy(i + 1).
  *
  * The constraint we impose is
- * x = ∑ᵢ xi(i)
- * y = ∑ⱼ yj(j)
+ * x = ∑ᵢⱼ xij(i, j)
+ * y = ∑ᵢⱼ yij(i, j)
  * w = ∑ᵢⱼ wij(i, j)
- * φx(i)*Bx(i) ≤ xi(i) ≤ φx(i+1)*Bx(i)
- * φy(j)*By(j) ≤ yj(j) ≤ φy(j+1)*By(j)
- * wij(i, j) ≥ xi(i)*φy(j) + φx(i)*yj(j) - φx(i)*φy(j)
- * wij(i, j) ≥ xi(i)*φy(j+1) + φx(i+1)*yj(j) - φx(i+1)*φy(j+1)
- * wij(i, j) ≤ xi(i)*φy(j) + φx(i+1)*yj(j) - φx(i+1)*φy(j)
- * wij(i, j) ≤ xi(i)*φy(j+1) + φx(i)*yj(j) - φx(i)*φy(j+1)
+ * Bxy(i, j) ≥ Bx(i) + By(j) - 1
+ * Bxy(i, j) ≤ Bx(i)
+ * Bxy(i, j) ≤ By(j)
+ * 0 ≤ Bxy(i, j) ≤ 1 
+ * ∑ᵢⱼ Bxy(i, j) = 1
+ * wij(i, j) ≥ xij(i, j)*φy(j) + φx(i)*yij(i, j) - φx(i)*φy(j) * Bxy(i, j)
+ * wij(i, j) ≥ xij(i, j)*φy(j+1) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j+1) * Bxy(i, j)
+ * wij(i, j) ≤ xij(i, j)*φy(j) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j) * Bxy(i, j)
+ * wij(i, j) ≤ xij(i, j)*φy(j+1) + φx(i)*yij(i, j) - φx(i)*φy(j+1) * Bxy(i, j)
  * In section 3.3 of
  * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
  * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
  * this formulation is called "Multiple Choice Model"
  * @note We DO NOT add the constraint
- * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}, ∑ᵢ Bx(i) = 1, ∑ⱼ By(j) = 1
+ * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
  * in this function. It is the user's responsibility to ensure that these
  * constraints are enforced.
  */
-std::tuple<VectorXDecisionVariable, VectorXDecisionVariable, MatrixXDecisionVariable> AddBilinearProductMcCormickEnvelopeMultipleChoice(
+void AddBilinearProductMcCormickEnvelopeMultipleChoice(
     MathematicalProgram* prog, const symbolic::Variable& x,
     const symbolic::Variable& y, const symbolic::Expression& w,
     const Eigen::Ref<const Eigen::VectorXd>& phi_x,
