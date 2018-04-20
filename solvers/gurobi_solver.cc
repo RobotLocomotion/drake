@@ -605,8 +605,10 @@ void AddSecondOrderConeVariables(
 bool GurobiSolver::available() const { return true; }
 
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
-  // We only process quadratic costs and linear / bounding box
-  // constraints.
+  // If no decision variables, then return kSolutionFound.
+  if (prog.num_vars() == 0) {
+    return SolutionResult::kSolutionFound;
+  }  
 
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);
