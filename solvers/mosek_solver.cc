@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <list>
 #include <stdexcept>
@@ -589,13 +588,6 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
 class MosekSolver::License {
  public:
   License() {
-    const char* moseklm_license_file = std::getenv("MOSEKLM_LICENSE_FILE");
-    if (moseklm_license_file == nullptr) {
-      throw std::runtime_error(
-          "Could not locate MOSEK license file because MOSEKLM_LICENSE_FILE "
-          "environment variable was not set.");
-    }
-
     MSKrescodee rescode = MSK_makeenv(&mosek_env_, nullptr);
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error("Could not create MOSEK environment.");
