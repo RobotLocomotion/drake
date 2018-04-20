@@ -19,20 +19,20 @@ class TrivialRightOfWayStateProvider final
 
   ~TrivialRightOfWayStateProvider() final = default;
 
-  /// Adds a dynamic state to this manager.
+  /// Adds a dynamic state to this provider.
   ///
   /// Throws std::logic_error if a RightOfWayRule with an ID of @p id
-  /// already exists in this manager.
+  /// already exists in this provider.
   ///
   /// Throws std::runtime_error if the dynamic state failed to be added.
   void AddState(
       const maliput::api::rules::RightOfWayRule::Id& id,
       const maliput::api::rules::RightOfWayRule::DynamicState& initial_state);
 
-  /// Sets the dynamic state of a RightOfWayRule within this manager.
+  /// Sets the dynamic state of a RightOfWayRule within this provider.
   ///
   /// Throws std::out_of_range if no dynamic state with @p id exists in this
-  /// manager.
+  /// provider.
   void SetState(const maliput::api::rules::RightOfWayRule::Id& id,
                 const maliput::api::rules::RightOfWayRule::DynamicState& state);
 
