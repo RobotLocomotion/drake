@@ -364,6 +364,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "trivial_right_of_way_state_provider",
+    srcs = [
+        "trivial_right_of_way_state_provider.cc",
+    ],
+    hdrs = [
+        "trivial_right_of_way_state_provider.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
@@ -379,6 +393,7 @@ drake_cc_library(
         ":pure_pursuit_controller",
         ":simple_car",
         ":trajectory_car",
+        ":trivial_right_of_way_state_provider",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
@@ -687,6 +702,13 @@ drake_cc_googletest(
         "//common/proto:call_matlab",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/trajectory_optimization:direct_collocation",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trivial_right_of_way_state_provider_test",
+    deps = [
+        ":trivial_right_of_way_state_provider",
     ],
 )
 
