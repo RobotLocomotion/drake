@@ -287,7 +287,7 @@ int do_main() {
   // value.
   // desired_object_CG_final_position =
   // end_effector_final_position + [0.12, 0, 0]
-  Eigen::Vector3d position_final_expected(0.32, 0.2, 0.8);
+  const Eigen::Vector3d position_final_expected(0.32, 0.2, 0.8);
   const Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
 
   // The tolerance (5e-2) is large because the tolerances in the trajectory
