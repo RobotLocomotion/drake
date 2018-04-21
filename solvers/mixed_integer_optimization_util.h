@@ -149,13 +149,23 @@ enum class IntervalBinning {
 };
 
 /**
- * Constrain `w` to approximate the bilinear product x * y. We know
- * that x is in one of the intervals [φx(i), φx(i+1)], y is in one of the
- * intervals [φy(j), φy(j+1)]. The variable `w` is constrained to be in the
- * convex hull of x * y for x in [φx(i), φx(i+1)], y in [φy(j), φy(j+1)], namely
- * (x, y, w) is in the tetrahedron, with vertices [φx(i), φy(j), φx(i)*φy(j)],
- * [φx(i+1), φy(j), φx(i+1)*φy(j)], [φx(i), φy(j+1), φx(i)*φy(j+1)] and
- * [φx(i+1), φy(j+1), φx(i+1)*φy(j+1)]
+ * Add constraints to the optimization program, such that the bilinear product
+ * x * y is approximated by w.
+ * To do so, we assume that the range of x is [x_min, x_max], and the range of y
+ * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
+ * <pre>
+ * x_min = φx(0) < φx(1) < ... < φx(m-1) = x_max
+ * y_min = φy(0) < φy(1) < ... < φy(n-1) = y_max
+ * </pre>
+ * , and divide the range of x to small intervals [φx(0), φx(1)],
+ * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
+ * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(n-1), φy(n)]. The xy
+ * plane is thus cut into grids, with each rectangle as
+ * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
+ * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
+ * the bilinear product x * y with w, such that (x, y, w) is in one of the
+ * tetrahedrons.
+ *
  * We use two different encoding schemes on the binary variables, to determine
  * which interval is active. We can choose either linear or logarithmic binning.
  * When using linear binning, for a variable with N intervals, we
@@ -178,14 +188,21 @@ enum class IntervalBinning {
  * @return lambda The auxiliary continuous variables.
  *
  * The constraint we impose are
+ * <pre>
  * x = φxᵀ * (λ.rowwise().sum())
  * y = φyᵀ * (λ.colwise().sum())
  * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
  * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
+ * </pre>
  *
  * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),
  * λ(M + 1, N), λ(M, N + 1) and λ(M+1, N+1) can be strictly positive, all other
  * λ(i, j) are zero.
+ *
+ * @note We DO NOT add the constraint
+ * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
+ * in this function. It is the user's responsibility to ensure that these
+ * constraints are enforced.
  */
 template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
     typename DerivedBy>
@@ -263,16 +280,18 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * Add constraints to the optimization program, such that the bilinear product
  * x * y is approximated by w.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
- * is [y_min, y_max]. We first consider two arrays
+ * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
+ * <pre>
  * x_min = φx(0) < φx(1) < ... < φx(m-1) = x_max
  * y_min = φy(0) < φy(1) < ... < φy(n-1) = y_max
+ * </pre>
  * , and divide the range of x to small intervals [φx(0), φx(1)],
  * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
  * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(n-1), φy(n)]. The xy
  * plane is thus cut into grids, with each rectangle as
  * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
  * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
- * the bilinear product x * y, with w, such that (x, y, w) is in one of the
+ * the bilinear product x * y with w, such that (x, y, w) is in one of the
  * tetrahedrons.
  * @param prog The optimization problem to which the constraints will be added.
  * @param x A variable in the bilinear product.
@@ -288,6 +307,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * By(i) = 1 => φy(i) <= y <= φy(i + 1).
  *
  * The constraint we impose is
+ * <pre>
  * x = ∑ᵢⱼ xij(i, j)
  * y = ∑ᵢⱼ yij(i, j)
  * Bxy(i, j) = Bx(i) & By(j)
@@ -298,19 +318,22 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * w ≥ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j+1) * Bxy(i, j))
  * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j) * Bxy(i, j))
  * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i)*yij(i, j) - φx(i)*φy(j+1) * Bxy(i, j))
+ * </pre>
  *
  * The "logical and" constraint Bxy(i, j) = Bx(i) & By(j) can be imposed as
+ * <pre>
  * Bxy(i, j) ≥ Bx(i) + By(j) - 1
  * Bxy(i, j) ≤ Bx(i)
  * Bxy(i, j) ≤ By(j)
  * 0 ≤ Bxy(i, j) ≤ 1
+ * </pre>
  *
  * In section 3.3 of
  * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
  * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
  * this formulation is called "Multiple Choice Model"
  * @note We DO NOT add the constraint
- * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}.
+ * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
  * in this function. It is the user's responsibility to ensure that these
  * constraints are enforced.
  */
