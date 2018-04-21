@@ -320,7 +320,7 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
     const Eigen::Ref<const Eigen::VectorXd>& phi_x,
     const Eigen::Ref<const Eigen::VectorXd>& phi_y,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
-    const Eigen::Ref<const VectorX<symbolic::Expression>>& By); 
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& By);
 
 }  // namespace solvers
 }  // namespace drake

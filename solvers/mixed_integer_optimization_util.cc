@@ -1,7 +1,6 @@
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
 #include "drake/math/gray_code.h"
-
 #include "drake/solvers/integer_optimization_util.h"
 
 namespace drake {
