@@ -167,7 +167,7 @@ class Context : public ContextBase {
   }
 
   /// Returns a mutable reference to the _only_ discrete state vector.
-  /// @sa get_discrete_state_vector(). 
+  /// @sa get_discrete_state_vector().
   BasicVector<T>& get_mutable_discrete_state_vector() {
     return get_mutable_discrete_state().get_mutable_vector();
   }

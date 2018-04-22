@@ -150,13 +150,6 @@ class TestSystem : public LeafSystem<T> {
       return unrestricted_update_callback_called_;
   }
 
-  // Resets the callback flags, so repeated tests can be run.
-  void ResetCallbackFlags() {
-    publish_callback_called_ = false;
-    discrete_update_callback_called_ = false;
-    unrestricted_update_callback_called_ = false;
-  }
-
  private:
   // This dummy witness function exists only to test that the
   // DeclareWitnessFunction() interface works as promised.
@@ -182,14 +175,6 @@ class TestSystem : public LeafSystem<T> {
   // appropriate DeclareWitnessFunction() interface works as promised.
   void UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
-    unrestricted_update_callback_called_ = true;
-  }
-
-  // Unrestricted update callback function, which serves to test whether the
-  // appropriate DeclareWitnessFunction() interface works as promised.
-  void DoCalcUnrestrictedUpdate(
-      const Context<T>&, const std::vector<const UnrestrictedUpdateEvent<T>*>&,
-      State<T>*) const override {
     unrestricted_update_callback_called_ = true;
   }
 
@@ -248,7 +233,6 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(pe);
   pe->handle(context_);
   EXPECT_TRUE(system_.publish_callback_called());
-  system_.ResetCallbackFlags();
 
   auto witness4 = system_.DeclareWitnessWithDiscreteUpdate();
   ASSERT_TRUE(witness4);
@@ -262,7 +246,6 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(de);
   de->handle(context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
-  system_.ResetCallbackFlags();
 
   auto witness5 = system_.DeclareWitnessWithUnrestrictedUpdate();
   ASSERT_TRUE(witness5);
@@ -276,7 +259,6 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(ue);
   ue->handle(context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
-  system_.ResetCallbackFlags();
 
   auto witness6 = system_.DeclareLambdaWitnessWithoutEvent();
   ASSERT_TRUE(witness6);
@@ -295,9 +277,6 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
       witness7->get_event());
   ASSERT_TRUE(ue);
-  ue->handle(context_, nullptr);
-  EXPECT_TRUE(system_.unrestricted_update_callback_called());
-  system_.ResetCallbackFlags();
 }
 
 // Tests that if no update events are configured, none are reported.
