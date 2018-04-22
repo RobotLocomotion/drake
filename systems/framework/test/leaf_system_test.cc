@@ -125,6 +125,22 @@ class TestSystem : public LeafSystem<T> {
         &TestSystem<double>::UnrestrictedUpdateCallback);
   }
 
+  // Sixth testing type: lambda function with no event specified.
+  std::unique_ptr<WitnessFunction<T>> DeclareLambdaWitnessWithoutEvent() const {
+    return this->DeclareWitnessFunction(
+        "dummy6", WitnessFunctionDirection::kCrossesZero,
+        [](const Context<double>&) -> double { return 7.0; });
+  }
+
+  // Seventh testing type: lambda function with event specified.
+  std::unique_ptr<WitnessFunction<T>>
+      DeclareLambdaWitnessWithUnrestrictedUpdate() const {
+    return this->DeclareWitnessFunction(
+        "dummy7", WitnessFunctionDirection::kPositiveThenNonPositive,
+        [](const Context<double>&) -> double { return 11.0; },
+        UnrestrictedUpdateEvent<double>());
+  }
+
   // Indicates whether various callbacks have been called.
   bool publish_callback_called() const { return publish_callback_called_; }
   bool discrete_update_callback_called() const {
@@ -132,6 +148,13 @@ class TestSystem : public LeafSystem<T> {
   }
   bool unrestricted_update_callback_called() const {
       return unrestricted_update_callback_called_;
+  }
+
+  // Resets the callback flags, so repeated tests can be run.
+  void ResetCallbackFlags() {
+    publish_callback_called_ = false;
+    discrete_update_callback_called_ = false;
+    unrestricted_update_callback_called_ = false;
   }
 
  private:
@@ -159,6 +182,14 @@ class TestSystem : public LeafSystem<T> {
   // appropriate DeclareWitnessFunction() interface works as promised.
   void UnrestrictedUpdateCallback(const Context<T>&,
       const UnrestrictedUpdateEvent<T>&, State<T>*) const {
+    unrestricted_update_callback_called_ = true;
+  }
+
+  // Unrestricted update callback function, which serves to test whether the
+  // appropriate DeclareWitnessFunction() interface works as promised.
+  void DoCalcUnrestrictedUpdate(
+      const Context<T>&, const std::vector<const UnrestrictedUpdateEvent<T>*>&,
+      State<T>*) const override {
     unrestricted_update_callback_called_ = true;
   }
 
@@ -217,6 +248,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(pe);
   pe->handle(context_);
   EXPECT_TRUE(system_.publish_callback_called());
+  system_.ResetCallbackFlags();
 
   auto witness4 = system_.DeclareWitnessWithDiscreteUpdate();
   ASSERT_TRUE(witness4);
@@ -230,6 +262,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(de);
   de->handle(context_, nullptr);
   EXPECT_TRUE(system_.discrete_update_callback_called());
+  system_.ResetCallbackFlags();
 
   auto witness5 = system_.DeclareWitnessWithUnrestrictedUpdate();
   ASSERT_TRUE(witness5);
@@ -243,6 +276,28 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(ue);
   ue->handle(context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
+  system_.ResetCallbackFlags();
+
+  auto witness6 = system_.DeclareLambdaWitnessWithoutEvent();
+  ASSERT_TRUE(witness6);
+  EXPECT_EQ(witness6->description(), "dummy6");
+  EXPECT_EQ(witness6->direction_type(),
+            WitnessFunctionDirection::kCrossesZero);
+  EXPECT_EQ(witness6->CalcWitnessValue(context_), 7.0);
+
+  auto witness7 = system_.DeclareLambdaWitnessWithUnrestrictedUpdate();
+  ASSERT_TRUE(witness7);
+  EXPECT_EQ(witness7->description(), "dummy7");
+  EXPECT_EQ(witness7->direction_type(),
+            WitnessFunctionDirection::kPositiveThenNonPositive);
+  EXPECT_TRUE(witness7->get_event());
+  EXPECT_EQ(witness7->CalcWitnessValue(context_), 11.0);
+  ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
+      witness7->get_event());
+  ASSERT_TRUE(ue);
+  ue->handle(context_, nullptr);
+  EXPECT_TRUE(system_.unrestricted_update_callback_called());
+  system_.ResetCallbackFlags();
 }
 
 // Tests that if no update events are configured, none are reported.

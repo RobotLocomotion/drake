@@ -65,6 +65,8 @@ enum class WitnessFunctionDirection {
 ///                         0   if w(t₀, x(t₀)) = 0 or
 ///                                w(t₀, x(t₀))⋅w(t₁, x(t₁)) > 0
 /// </pre>
+/// where `x(tₑ)` for some `tₑ ≥ t₀` is the solution to the ODE or DAE initial
+/// value problem `ẋ = f(t, x)` for initial condition `x(t₀) = x₀` at time `tₑ`.
 /// We wish for the witness function to trigger if the trigger function
 /// evaluates to one. The trigger function can be further modified, if
 /// desired, to incorporate the constraint that the witness function should
@@ -122,6 +124,25 @@ class WitnessFunction final {
 
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
+  // logging), direction type, and specified calculation function; and with no
+  // event type.
+  // @note Constructing a witness function with no corresponding event forces
+  //       Simulator's integration of an ODE to end a step at the witness
+  //       isolation time. For example, isolating a function's minimum or
+  //       maximum values can be realized with a witness that triggers on a sign
+  //       change of the function's time derivative, ensuring that the actual
+  //       extreme value is present in the discretized trajectory.
+  // @warning the pointer to the System must be valid as long or longer than
+  // the lifetime of the witness function.
+  WitnessFunction(const System<T>* system,
+                  const std::string& description,
+                  const WitnessFunctionDirection& direction,
+                  std::function<T(const Context<T>&)> calc)
+      : WitnessFunction(system, description, direction, calc,
+                        std::unique_ptr<Event<T>>()) {}
+
+  // Constructs the witness function with the pointer to the given non-null
+  // System; with the given description (used primarily for debugging and
   // logging), direction type, and calculation function, and with a unique
   // pointer to the event that is to be dispatched when this witness function
   // triggers. Example events are publish, discrete variable update,
@@ -143,7 +164,30 @@ class WitnessFunction final {
     DRAKE_DEMAND(dynamic_cast<const MySystem*>(system));
     set_calculation_function(calc);
   }
-#endif
+
+  // Constructs the witness function with the pointer to the given non-null
+  // System; with the given description (used primarily for debugging and
+  // logging), direction type, and calculation function, and with a unique
+  // pointer to the event that is to be dispatched when this witness function
+  // triggers. Example events are publish, discrete variable update,
+  // unrestricted update events.
+  // @tparam EventType a class derived from Event<T>
+  // @warning the pointer to the System must be valid as long or longer than
+  // the lifetime of the witness function.
+  template <class EventType>
+  WitnessFunction(const System<T>* system,
+                  const std::string& description,
+                  const WitnessFunctionDirection& direction,
+                  std::function<T(const Context<T>&)> calc,
+                  std::unique_ptr<EventType> e) :
+      system_(system), description_(description),
+      direction_type_(direction), event_(std::move(e)) {
+    static_assert(std::is_base_of<Event<T>, EventType>::value,
+                  "EventType must be a descendant of Event");
+    DRAKE_DEMAND(system);
+    calc_function_ = calc;
+  }
+  #endif
 
   /// Gets the description of this witness function (used primarily for logging
   /// and debugging).
