@@ -1,0 +1,9 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# See https://scipy.github.io/devdocs/building/macosx.html
+
+# BLAS and LAPACK should be covered by `veclib`.
+brew 'cython'
+brew 'gcc'  # Per `numpy` formula, should install `gfortran`
+brew 'python@2'
