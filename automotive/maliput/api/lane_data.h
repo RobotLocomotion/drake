@@ -69,7 +69,7 @@ class Rotation {
   /// expressing a roll around X, followed by pitch around Y,
   /// followed by yaw around Z (with all angles in radians).
   static Rotation FromRpy(const Vector3<double>& rpy) {
-    return Rotation(math::RollPitchYawToQuaternion(rpy));
+    return Rotation(math::RollPitchYaw<double>(rpy).ToQuaternion());
   }
 
   /// Constructs a Rotation expressing a @p roll around X, followed by

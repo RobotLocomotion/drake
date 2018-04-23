@@ -349,6 +349,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "roll_pitch_yaw_test",
+    deps = [
+        ":geometric_transform",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "rotation_matrix_test",
     deps = [
         ":geometric_transform",

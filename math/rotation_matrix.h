@@ -45,7 +45,7 @@ class RotationMatrix {
 
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws exception std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::logic_error in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
 #ifdef DRAKE_ASSERT_IS_ARMED
     SetOrThrowIfNotValid(R);
@@ -57,7 +57,7 @@ class RotationMatrix {
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
   /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
-  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// @throws std::logic_error in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
   /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
   /// @note This method has the effect of normalizing its `quaternion` argument,
@@ -80,7 +80,7 @@ class RotationMatrix {
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
   /// direction herein called `lambda`) is non-zero and finite, but which may or
   /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
-  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// @throws std::logic_error in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   // @internal In general, the %RotationMatrix constructed by passing a non-unit
@@ -260,7 +260,7 @@ class RotationMatrix {
 
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
-  /// @throws exception std::logic_error in debug builds if R fails IsValid(R).
+  /// @throws std::logic_error in debug builds if R fails IsValid(R).
   void SetOrThrowIfNotValid(const Matrix3<T>& R) {
     ThrowIfNotValid(R);
     SetUnchecked(R);
@@ -410,7 +410,7 @@ class RotationMatrix {
   /// bases related by matrix M does not span 3D space (when M multiples a unit
   /// vector, a vector of magnitude as small as 0 may result).
   /// @returns proper orthonormal matrix R that is closest to M.
-  /// @throws exception std::logic_error if R fails IsValid(R).
+  /// @throws std::logic_error if R fails IsValid(R).
   /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
   /// Institute) proved that for this problem, the same R that minimizes the
   /// Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
@@ -456,7 +456,7 @@ class RotationMatrix {
   /// returned by this method chooses the quaternion with q(0) >= 0.
   /// @param[in] M 3x3 matrix to be made into a quaternion.
   /// @returns a unit quaternion q.
-  /// @throws exception std::logic_error in debug builds if the quaternion `q`
+  /// @throws std::logic_error in debug builds if the quaternion `q`
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   // @internal This implementation is adapted from simbody at
