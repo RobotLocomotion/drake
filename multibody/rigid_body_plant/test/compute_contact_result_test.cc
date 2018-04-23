@@ -165,6 +165,28 @@ TEST_P(ContactResultTest, SingleCollision) {
       CompareMatrices(detail_force.get_application_point(), expected_point));
 }
 
+// Gets the forces for the specified sphere from the stool in contact with the
+// ground.
+ContactInfo<double> GetContactInfo(
+    const ContactResults<double>& contact_results,
+    const RigidBodyTree<double>& tree,
+    const std::string& sphere_name) {
+  for (int i = 0; i < contact_results.get_num_contacts(); ++i) {
+    const auto info = contact_results.get_contact_info(i);
+
+    // Confirms that the proper bodies are in contact.
+    drake::multibody::collision::ElementId e1 = info.get_element_id_1();
+    drake::multibody::collision::ElementId e2 = info.get_element_id_2();
+    const RigidBody<double>* b1 = tree.FindBody(e1);
+    const RigidBody<double>* b2 = tree.FindBody(e2);
+    if (b1->get_name() == sphere_name || b2->get_name() == sphere_name)
+      return info;
+  }
+
+  DRAKE_ABORT();
+  return contact_results.get_contact_info(0);
+}
+
 // Simulates and visualizes the three legged stool.
 GTEST_TEST(AllReportingTest, ThreeLeggedStool) {
   const char* kThreeLeggedStoolSdf =
@@ -219,55 +241,59 @@ GTEST_TEST(AllReportingTest, ThreeLeggedStool) {
 
   // Verify the correct number of contacts.
   const auto& tree = plant.get_rigid_body_tree();
-  ASSERT_EQ(contact_results.get_num_contacts(), 1);
-  const auto info = contact_results.get_contact_info(0);
+  ASSERT_EQ(contact_results.get_num_contacts(), 3);
 
-  // Confirms that the proper bodies are in contact.
-  drake::multibody::collision::ElementId e1 = info.get_element_id_1();
-  drake::multibody::collision::ElementId e2 = info.get_element_id_2();
-  const RigidBody<double>* b1 = tree.FindBody(e1);
-  const RigidBody<double>* b2 = tree.FindBody(e2);
-  ASSERT_NE(e1, e2);
-  const std::string& n1 = b1->get_name();
-  const std::string& n2 = b2->get_name();
-  std::cout << "body 1: " << n1 << std::endl;
-  std::cout << "body 2: " << n2 << std::endl;
-//  ASSERT_TRUE((b1 == body1_ && b2 == body2_) || (b1 == body2_ && b2 == body1_));
+  // Get the various contact infos.
+  ContactInfo<double> info1 = GetContactInfo(contact_results, tree, "SphereA");
+  ContactInfo<double> info2 = GetContactInfo(contact_results, tree, "SphereB");
+  ContactInfo<double> info3 = GetContactInfo(contact_results, tree, "SphereC");
 
-  // The direction of the force depends on which body is 1 and which is 2. We
-  // assume b1 is body1_, if not, we reverse the sign of the force.
-  double force_sign = -1;
-  /*
-  if (b2 == body1_) {
-    force_sign = 1;
-  }
-*/
+  // Determine force signs.
+  double force_sign1 = 1, force_sign2 = 1, force_sign3 = 1;
+  if (tree.FindBody(info1.get_element_id_1())->get_name() == "world")
+    force_sign1 = -1;
+  if (tree.FindBody(info2.get_element_id_1())->get_name() == "world")
+    force_sign2 = -1;
+  if (tree.FindBody(info3.get_element_id_1())->get_name() == "world")
+    force_sign3 = -1;
+
   // Confirms the contact details are as expected.
-  const auto& resultant = info.get_resultant_force();
-  SpatialForce<double> expected_spatial_force;
-  // Note: This is fragile. It assumes a particular collision model.  Once the
-  // model has been generalized, this will have to adapt to account for that.
+  const auto& resultant1 = info1.get_resultant_force();
+  const auto& resultant2 = info2.get_resultant_force();
+  const auto& resultant3 = info3.get_resultant_force();
+  SpatialForce<double> expected_spatial_force1, expected_spatial_force2,
+      expected_spatial_force3;
 
-  // NOTE: the *effective* Young's modulus of the contact is half of the
-  // material Young's modulus.
-//  const double effective_elasticity = kYoungsModulus * 0.5;
-  // NOTE: Because there is zero velocity, there is no frictional force and no
-  // damping on the normal force.  Simply the kx term.  Penetration is twice
-  // the offset.
-  double force = 0.0;
-  expected_spatial_force << 0, 0, 0, force_sign * force, 0, 0;
-  ASSERT_TRUE(CompareMatrices(resultant.get_spatial_force(),
-                              expected_spatial_force));
+  const double force1 = 97.200897152135468;
+  const double force2 = 92.215878945867672;
+  const double force3 = 96.613655587101306;
+  expected_spatial_force1 << 0, 0, 0, 0, 0, force_sign1 * force1;
+  expected_spatial_force2 << 0, 0, 0, 0, 0, force_sign2 * force2;
+  expected_spatial_force3 << 0, 0, 0, 0, 0, force_sign3 * force3;
+  EXPECT_TRUE(CompareMatrices(resultant1.get_spatial_force(),
+                              expected_spatial_force1));
+  EXPECT_TRUE(CompareMatrices(resultant2.get_spatial_force(),
+                              expected_spatial_force2));
+  EXPECT_TRUE(CompareMatrices(resultant3.get_spatial_force(),
+                              expected_spatial_force3));
 
-  const auto& details = info.get_contact_details();
-  ASSERT_EQ(details.size(), 1u);
-  auto detail_force = details[0]->ComputeContactForce();
-  ASSERT_TRUE(CompareMatrices(detail_force.get_spatial_force(),
-                              expected_spatial_force));
-  Vector3<double> expected_point;
-  expected_point << 0, 0, 0;
-  ASSERT_TRUE(
-      CompareMatrices(detail_force.get_application_point(), expected_point));
+  const auto& details1 = info1.get_contact_details();
+  ASSERT_EQ(details1.size(), 1u);
+  auto detail_force1 = details1[0]->ComputeContactForce();
+  EXPECT_TRUE(CompareMatrices(detail_force1.get_spatial_force(),
+                              expected_spatial_force1));
+
+  const auto& details2 = info2.get_contact_details();
+  ASSERT_EQ(details2.size(), 1u);
+  auto detail_force2 = details2[0]->ComputeContactForce();
+  EXPECT_TRUE(CompareMatrices(detail_force2.get_spatial_force(),
+                              expected_spatial_force2));
+
+  const auto& details3 = info3.get_contact_details();
+  ASSERT_EQ(details3.size(), 1u);
+  auto detail_force3 = details3[0]->ComputeContactForce();
+  EXPECT_TRUE(CompareMatrices(detail_force3.get_spatial_force(),
+                              expected_spatial_force3));
 }
 
 GTEST_TEST(AdditionalContactResultsTest, AutoDiffTest) {
@@ -306,7 +332,7 @@ void Simulate() {
   drake::multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
-  const double dt = 1e-18;
+  const double dt = 1e-4;
   auto& plant = *builder.AddSystem<drake::systems::RigidBodyPlant<double>>(
       move(tree_ptr), dt);
   plant.set_name("plant");
@@ -382,6 +408,11 @@ void Simulate() {
   const double simulation_duration = 1.0;
   simulator->StepTo(simulation_duration);
 
-  while (true) visualizer_publisher->ReplayCachedSimulation();
+//  while (true) { visualizer_publisher->ReplayCachedSimulation(); sleep(1); }
+}
+
+int main() {
+  Simulate();
 }
 */
+

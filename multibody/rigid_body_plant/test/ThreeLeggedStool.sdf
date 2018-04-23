@@ -2,57 +2,71 @@
 <sdf version="1.6">
   <model name="ThreeLeggedStool">
     <static>false</static>
-    <link name="SphereA">
+    <link name="Seat">
       <inertial>
-        <mass>2.000000e-002</mass>
+        <mass>2.000000e+000</mass>
         <inertia>
-          <ixx>3.200000e-006</ixx>
+          <ixx>4.506667e-002</ixx>
           <ixy>0.000000e+000</ixy>
           <ixz>0.000000e+000</ixz>
-          <iyy>3.200000e-006</iyy>
+          <iyy>4.506667e-002</iyy>
           <iyz>0.000000e+000</iyz>
-          <izz>3.200000e-006</izz>
+          <izz>9.000000e-002</izz>
         </inertia>
         <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
       </inertial>
-      <pose frame="">-3.000000e-001 0.000000e+000 1.99999999999995e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <pose frame="">0.000000e+000 0.000000e+000 6.200000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
       <visual name="visual">
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
-          <sphere>
-            <radius>2.000000e-002</radius>
-          </sphere>
+          <cylinder>
+            <radius>3.000000e-001</radius>
+            <length>2.000000e-002</length>
+          </cylinder>
         </geometry>
         <material>
           <lighting>1</lighting>
-          <ambient>1.000000 0.500000 0.000000 1</ambient>
-          <diffuse>1.000000 0.500000 0.000000 1</diffuse>
+          <ambient>0.000000 0.000000 1.000000 1</ambient>
+          <diffuse>0.000000 0.000000 1.000000 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
         </material>
-        <transparency>0.000000e+000</transparency>
+        <transparency>4.000000e-001</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
-      <collision name="collision">
+    </link>
+    <link name="LegC">
+      <inertial>
+        <mass>1.000000e+000</mass>
+        <inertia>
+          <ixx>3.010000e-002</ixx>
+          <ixy>0.000000e+000</ixy>
+          <ixz>0.000000e+000</ixz>
+          <iyy>3.010000e-002</iyy>
+          <iyz>0.000000e+000</iyz>
+          <izz>2.000000e-004</izz>
+        </inertia>
+        <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
+      </inertial>
+      <pose frame="">1.500000e-001 -2.598100e-001 3.200000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <visual name="visual">
+        <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
-          <sphere>
+          <cylinder>
             <radius>2.000000e-002</radius>
-          </sphere>
+            <length>6.000000e-001</length>
+          </cylinder>
         </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>1</mu>
-              <mu2>1</mu2>
-            </ode>
-          </friction>
-          <contact>
-            <ode>
-              <min_depth>0.005</min_depth>
-            </ode>
-          </contact>
-        </surface>
-      </collision>
+        <material>
+          <lighting>1</lighting>
+          <ambient>0.000000 0.000000 1.000000 1</ambient>
+          <diffuse>0.000000 0.000000 1.000000 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+        <transparency>4.000000e-001</transparency>
+        <cast_shadows>1</cast_shadows>
+      </visual>
     </link>
     <link name="LegA">
       <inertial>
@@ -86,83 +100,8 @@
         <transparency>4.000000e-001</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
-      <collision name="collision">
-        <geometry>
-          <cylinder>
-            <radius>2.000000e-002</radius>
-            <length>6.000000e-001</length>
-          </cylinder>
-        </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>1</mu>
-              <mu2>1</mu2>
-            </ode>
-          </friction>
-          <contact>
-            <ode>
-              <min_depth>0.005</min_depth>
-            </ode>
-          </contact>
-        </surface>
-      </collision>
     </link>
-    <link name="Seat">
-      <inertial>
-        <mass>2.000000e+000</mass>
-        <inertia>
-          <ixx>4.506667e-002</ixx>
-          <ixy>0.000000e+000</ixy>
-          <ixz>0.000000e+000</ixz>
-          <iyy>4.506667e-002</iyy>
-          <iyz>0.000000e+000</iyz>
-          <izz>9.000000e-002</izz>
-        </inertia>
-        <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
-      </inertial>
-      <pose frame="">0.000000e+000 0.000000e+000 6.200000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
-      <visual name="visual">
-        <pose frame="">0 0 0 0 0 0</pose>
-        <geometry>
-          <cylinder>
-            <radius>3.000000e-001</radius>
-            <length>2.000000e-002</length>
-          </cylinder>
-        </geometry>
-        <material>
-          <lighting>1</lighting>
-          <ambient>0.000000 0.000000 1.000000 1</ambient>
-          <diffuse>0.000000 0.000000 1.000000 1</diffuse>
-          <specular>0.01 0.01 0.01 1</specular>
-          <emissive>0 0 0 1</emissive>
-        </material>
-        <transparency>4.000000e-001</transparency>
-        <cast_shadows>1</cast_shadows>
-      </visual>
-      <collision name="collision">
-        <geometry>
-          <cylinder>
-            <radius>3.000000e-001</radius>
-            <length>2.000000e-002</length>
-          </cylinder>
-        </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>1</mu>
-              <mu2>1</mu2>
-            </ode>
-          </friction>
-          <contact>
-            <ode>
-              <min_depth>0.005</min_depth>
-            </ode>
-          </contact>
-        </surface>
-      </collision>
-    </link>
-    <link name="SphereB">
+    <link name="SphereA">
       <inertial>
         <mass>2.000000e-002</mass>
         <inertia>
@@ -175,7 +114,7 @@
         </inertia>
         <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
       </inertial>
-      <pose frame="">1.500000e-001 2.598076e-001 2.000000e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <pose frame="">-3.000000e-001 0.000000e+000 1.999999999999e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
       <visual name="visual">
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
@@ -227,7 +166,7 @@
         </inertia>
         <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
       </inertial>
-      <pose frame="">1.500000e-001 -2.598100e-001 2.000000e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <pose frame="">1.500000e-001 -2.598100e-001 1.999999999999e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
       <visual name="visual">
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
@@ -266,44 +205,42 @@
         </surface>
       </collision>
     </link>
-    <link name="LegC">
+    <link name="SphereB">
       <inertial>
-        <mass>1.000000e+000</mass>
+        <mass>2.000000e-002</mass>
         <inertia>
-          <ixx>3.010000e-002</ixx>
+          <ixx>3.200000e-006</ixx>
           <ixy>0.000000e+000</ixy>
           <ixz>0.000000e+000</ixz>
-          <iyy>3.010000e-002</iyy>
+          <iyy>3.200000e-006</iyy>
           <iyz>0.000000e+000</iyz>
-          <izz>2.000000e-004</izz>
+          <izz>3.200000e-006</izz>
         </inertia>
         <pose frame="">0.000000e+000 0.000000e+000 0.000000e+000 0 0 0</pose>
       </inertial>
-      <pose frame="">1.500000e-001 -2.598100e-001 3.200000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <pose frame="">1.500000e-001 2.598076e-001 1.999999999999e-002 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
       <visual name="visual">
         <pose frame="">0 0 0 0 0 0</pose>
         <geometry>
-          <cylinder>
+          <sphere>
             <radius>2.000000e-002</radius>
-            <length>6.000000e-001</length>
-          </cylinder>
+          </sphere>
         </geometry>
         <material>
           <lighting>1</lighting>
-          <ambient>0.000000 0.000000 1.000000 1</ambient>
-          <diffuse>0.000000 0.000000 1.000000 1</diffuse>
+          <ambient>1.000000 0.500000 0.000000 1</ambient>
+          <diffuse>1.000000 0.500000 0.000000 1</diffuse>
           <specular>0.01 0.01 0.01 1</specular>
           <emissive>0 0 0 1</emissive>
         </material>
-        <transparency>4.000000e-001</transparency>
+        <transparency>0.000000e+000</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
       <collision name="collision">
         <geometry>
-          <cylinder>
+          <sphere>
             <radius>2.000000e-002</radius>
-            <length>6.000000e-001</length>
-          </cylinder>
+          </sphere>
         </geometry>
         <surface>
           <friction>
@@ -352,27 +289,6 @@
         <transparency>4.000000e-001</transparency>
         <cast_shadows>1</cast_shadows>
       </visual>
-      <collision name="collision">
-        <geometry>
-          <cylinder>
-            <radius>2.000000e-002</radius>
-            <length>6.000000e-001</length>
-          </cylinder>
-        </geometry>
-        <surface>
-          <friction>
-            <ode>
-              <mu>1</mu>
-              <mu2>1</mu2>
-            </ode>
-          </friction>
-          <contact>
-            <ode>
-              <min_depth>0.005</min_depth>
-            </ode>
-          </contact>
-        </surface>
-      </collision>
     </link>
     <joint name="WeldLegAToSphereA" type="fixed">
       <parent>LegA</parent>
@@ -395,14 +311,14 @@
       <pose frame="">-3.000000e-001 0.000000e+000 0.000000e+000 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
     </joint>
     <joint name="WeldSeatToLegB" type="fixed">
-      <parent>Seat</parent>
-      <child>LegB</child>
-      <pose frame="">0.000000e+000 0.000000e+000 3.000000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <parent>LegB</parent>
+      <child>Seat</child>
+      <pose frame="">1.500000e-001 2.598076e-001 0.000000e+000 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
     </joint>
     <joint name="WeldSeatToLegC" type="fixed">
-      <parent>Seat</parent>
-      <child>LegC</child>
-      <pose frame="">0.000000e+000 0.000000e+000 3.000000e-001 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
+      <parent>LegC</parent>
+      <child>Seat</child>
+      <pose frame="">1.500000e-001 -2.598100e-001 0.000000e+000 0.000000e+000 -0.000000e+000 0.000000e+000</pose>
     </joint>
     <static>0</static>
     <allow_auto_disable>1</allow_auto_disable>
