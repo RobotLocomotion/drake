@@ -12,9 +12,12 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace math {
+
+template <typename T> class RollPitchYaw;
 
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
@@ -96,6 +99,12 @@ class RotationMatrix {
     R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
+
+  /// Constructs a %RotationMatrix from an %RollPitchYaw.
+  /// @param[in] rpy a RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
+  /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
+  /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy);
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.

@@ -4,9 +4,11 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace math {
+
 template<typename T>
 void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
   if (!R.allFinite()) {
@@ -35,6 +37,30 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
                                "It is possible a basis is left-handed");
   }
 }
+
+template<typename T>
+RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
+  const T& r = rpy.get_roll_angle();
+  const T& p = rpy.get_pitch_angle();
+  const T& y = rpy.get_yaw_angle();
+  using std::sin;
+  using std::cos;
+  const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
+  const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
+  const T Rxx = c2 * c1;
+  const T Rxy = c2 * s1 * s0 - s2 * c0;
+  const T Rxz = c2 * s1 * c0 + s2 * s0;
+  const T Ryx = s2 * c1;
+  const T Ryy = s2 * s1 * s0 + c2 * c0;
+  const T Ryz = s2 * s1 * c0 - c2 * s0;
+  const T Rzx = -s1;
+  const T Rzy = c1 * s0;
+  const T Rzz = c1 * c0;
+  R_AB_.row(0) << Rxx, Rxy, Rxz;
+  R_AB_.row(1) << Ryx, Ryy, Ryz;
+  R_AB_.row(2) << Rzx, Rzy, Rzz;
+}
+
 }  // namespace math
 }  // namespace drake
 
