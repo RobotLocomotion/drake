@@ -881,7 +881,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, calculator function, and
   /// publish event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -905,7 +905,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, calculator function, and
   /// discrete update event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -929,7 +929,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, calculator function, and
   /// unrestricted update event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -953,10 +953,10 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculation
-  /// function, and with a unique pointer to the event that is to be dispatched
-  /// when this witness function triggers. Example types of event objects are
-  /// publish, discrete variable update, unrestricted update events.
+  /// for debugging and logging), direction type, and calculator
+  /// function, and with an object corresponding to the event that is to be
+  /// dispatched when this witness function triggers. Example types of event
+  /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   template <class MySystem>
@@ -972,10 +972,10 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculation
-  /// function, and with a unique pointer to the event that is to be dispatched
-  /// when this witness function triggers. Example types of event objects are
-  /// publish, discrete variable update, unrestricted update events.
+  /// for debugging and logging), direction type, and calculator
+  /// function, and with an object corresponding to the event that is to be
+  /// dispatched when this witness function triggers. Example types of event
+  /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
