@@ -30,5 +30,10 @@ class TestCommon(unittest.TestCase):
             )
 
     def test_temp_directory(self):
-        self.assertEqual(os.environ.get('TEST_TMPDIR'),
-                         pydrake.common.temp_directory())
+        bazel_test_tmpdir = os.environ.get('TEST_TMPDIR')
+        drake_tmpdir = pydrake.common.temp_directory()
+        if bazel_test_tmpdir is not None:
+            self.assertEqual(bazel_test_tmpdir, drake_tmpdir)
+        else:
+            self.assertTrue(
+                drake_tmpdir.startswith('/tmp/robotlocomotion_drake_'))
