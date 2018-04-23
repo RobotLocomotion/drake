@@ -278,6 +278,55 @@ class BilinearProductMcCormickEnvelopeTest {
     return b;
   }
 
+  void TestFeasiblePoint() {
+    auto x_constraint = prog_.AddBoundingBoxConstraint(0, 0, x_);
+    auto y_constraint = prog_.AddBoundingBoxConstraint(0, 0, y_);
+    auto w_constraint = prog_.AddBoundingBoxConstraint(0, 0, w_);
+
+    auto IsFeasible = [&x_constraint, &y_constraint, &w_constraint](
+        MathematicalProgram* prog, double x_val, double y_val, double w_val,
+        bool is_feasible) {
+      auto UpdateBound = [](Binding<BoundingBoxConstraint>* constraint,
+                            double val) {
+        constraint->evaluator()->UpdateLowerBound(Vector1d(val));
+        constraint->evaluator()->UpdateUpperBound(Vector1d(val));
+      };
+      UpdateBound(&x_constraint, x_val);
+      UpdateBound(&y_constraint, y_val);
+      UpdateBound(&w_constraint, w_val);
+
+      prog->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
+
+      GurobiSolver solver;
+      if (solver.available()) {
+        const auto result = solver.Solve(*prog);
+        EXPECT_EQ(result,
+                  is_feasible ? SolutionResult::kSolutionFound
+                              : SolutionResult::kInfeasibleConstraints);
+      }
+    };
+
+    // Feasible points
+    IsFeasible(&prog_, 0, 0, 0, true);
+    IsFeasible(&prog_, 0, 1, 0, true);
+    IsFeasible(&prog_, 1, 0, 0, true);
+    IsFeasible(&prog_, 1, 1, 1, true);
+    IsFeasible(&prog_, 0.5, 1, 0.5, true);
+    IsFeasible(&prog_, 1, 0.5, 0.5, true);
+    IsFeasible(&prog_, 0.5, 0.5, 0.25, true);
+
+    if (num_interval_x_ == 2 && num_interval_y_ == 2) {
+      IsFeasible(&prog_, 0.5, 0.5, 0.26, false);
+      IsFeasible(&prog_, 0.25, 0.25, 0.1, true);
+      IsFeasible(&prog_, 0.25, 0.25, 0.126, false);
+      IsFeasible(&prog_, 0.5, 0.6, 0.301, false);
+    }
+    if (num_interval_x_ == 3 && num_interval_y_ == 3) {
+      IsFeasible(&prog_, 1.0 / 3, 1.0 / 3, 0.1, false);
+      IsFeasible(&prog_, 0.5, 0.5, 0.26, true);
+    }
+  }
+
   void TestLinearObjective() {
     // We will assign the binary variables Bx_ and By_ to determine which
     // interval is active. If we use logarithmic binning, then Bx_ and By_ take
@@ -427,6 +476,10 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
   TestLinearObjective();
 }
 
+TEST_P(BilinearProductMcCormickEnvelopeSos2Test, FeasiblePointTest) {
+  TestFeasiblePoint();
+}
+
 INSTANTIATE_TEST_CASE_P(
     TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeSos2Test,
     ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
@@ -461,6 +514,10 @@ class BilinearProductMcCormickEnvelopeMultipleChoiceTest
 TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest,
        LinearObjectiveTest) {
   TestLinearObjective();
+}
+
+TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest, FeasiblePointTest) {
+  TestFeasiblePoint();
 }
 
 INSTANTIATE_TEST_CASE_P(
