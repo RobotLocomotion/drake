@@ -162,8 +162,16 @@ class WorldSimTreeBuilder {
   /// cases where one needs to programmatically modify the tree (e.g., when
   /// programmatically adding collision elements to the un-compiled tree).
   /// @pre Build() must not have been called yet.
+  /// @pre Constructor must have been called with compile_tree set to false.
   RigidBodyTree<T>* get_mutable_tree() {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
+
+    if (compile_tree_) {
+      throw std::runtime_error(
+          "WorldSimTreeBuilder::get_mutable_tree(): "
+              "Attempting to return a mutable tree on an already "
+              "compiled tree.");
+    }
     return rigid_body_tree_.get();
   }
 
