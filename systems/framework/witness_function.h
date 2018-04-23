@@ -165,7 +165,7 @@ class WitnessFunction final {
                   std::unique_ptr<EventType> e) :
       system_(system), description_(std::move(description)),
       direction_type_(direction), event_(std::move(e)),
-      calc_function_{std::move(calc)} {
+      calc_function_(std::move(calc)) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
