@@ -1,0 +1,35 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses([
+    "notice",  # BSD-2-Clause AND BSD-3-Clause AND MIT AND Python-2.0
+    "unencumbered",  # Public-Domain
+])
+
+# Interpret `numpy` sources as data to simplify handling.
+filegroup(
+    name = "data",
+    srcs = glob(["numpy/**/*"]),
+    visibility = ["//visibility:private"],
+)
+
+py_library(
+    name = "numpy_py",
+    data = [":data"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    install_tests = [
+        "@drake//tools/workspace/numpy:test/numpy_install_test.py",
+    ],
+    data = [":data"],
+    data_dest = "lib/python2.7/site-packages",
+    visibility = ["//visibility:public"],
+)
