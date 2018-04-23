@@ -44,6 +44,7 @@ drake_pybind_library(
     py_deps = [
         "//bindings/pydrake/util:deprecation_py",
         "//bindings:bazel_workaround_4594_libdrake_py",
+        "@numpy_py",
     ],
     py_srcs = [
         "__init__.py",
