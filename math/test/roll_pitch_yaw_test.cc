@@ -10,19 +10,19 @@
 
 namespace drake {
 namespace math {
-namespace roll_pitch_yaw_test {
+namespace {
 
-const double kepsilon = std::numeric_limits<double>::epsilon();
+const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // This tests the RollPitchYaw constructors and IsNearlyEqualTo().
 GTEST_TEST(RollPitchYaw, testConstructorsAndIsNearlyEqualTo) {
   const RollPitchYaw<double> a(0.1, 0.2, -0.3);
   const RollPitchYaw<double> b(0.1, 0.2, -0.4);
   const RollPitchYaw<double> c(Eigen::Vector3d(0.1, 0.2, -0.3));
-  EXPECT_FALSE(a.IsNearlyEqualTo(b, kepsilon));
-  EXPECT_TRUE(a.IsNearlyEqualTo(c, kepsilon));
-  EXPECT_FALSE(a.IsNearlyEqualTo(b, 0.1 - 10*kepsilon));
-  EXPECT_TRUE(a.IsNearlyEqualTo(b, 0.1 + 10*kepsilon));
+  EXPECT_FALSE(a.IsNearlyEqualTo(b, kEpsilon));
+  EXPECT_TRUE(a.IsNearlyEqualTo(c, kEpsilon));
+  EXPECT_FALSE(a.IsNearlyEqualTo(b, 0.1 - 10*kEpsilon));
+  EXPECT_TRUE(a.IsNearlyEqualTo(b, 0.1 + 10*kEpsilon));
 }
 
 // This tests the RollPitchYaw access methods.
@@ -44,7 +44,7 @@ GTEST_TEST(RollPitchYaw, testToQuaternion) {
   const RotationMatrix<double> R1 =
       RotationMatrix<double>::MakeSpaceXYZRotation(rpy.vector());
   const RotationMatrix<double> R2(quat);
-  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kepsilon));
+  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon));
 }
 
 // This tests the RollPitchYaw.IsValid() method.
@@ -58,6 +58,6 @@ GTEST_TEST(RollPitchYaw, testIsValid) {
   EXPECT_FALSE(RollPitchYaw<double>::IsValid(c));
 }
 
-}  // namespace roll_pitch_yaw_test
+}  // namespace
 }  // namespace math
 }  // namespace drake
