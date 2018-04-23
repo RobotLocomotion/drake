@@ -230,11 +230,13 @@ const OutputPort<T>& FeedforwardNeuralNetwork<T>::output() const {
 template <typename T>
 const VectorX<T> FeedforwardNeuralNetwork<T>::ReadInput(
     const Context<T>& context) const {
+  // This is an abstract-valued port that happens to contain a vector.
   const BasicVector<T>* input =
-      this->template EvalVectorInput<BasicVector>(context, input_index_);
+      this->template EvalInputValue<BasicVector<T>>(context, input_index_);
   DRAKE_ASSERT((input != nullptr));
   return input->get_value();
 }
+
 template <typename T>
 void FeedforwardNeuralNetwork<T>::WriteOutput(const VectorX<T> value,
                                               BasicVector<T>* output) const {

@@ -14,6 +14,7 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_value_source.h"
@@ -618,9 +619,9 @@ TEST_F(DiagramTest, AllocateInputs) {
 
 // A BasicVector-derived type we can complain about in the next test.
 template <typename T>
-class WrongVector : public BasicVector<T> {
+class WrongVector : public MyVector<2, T> {
  public:
-  using BasicVector<T>::BasicVector;
+  using MyVector<2, T>::MyVector;
 };
 
 // A System with an abstract input port we can use for error checking.
@@ -699,12 +700,14 @@ TEST_F(DiagramTest, EvalInputErrors) {
   EXPECT_NO_THROW(abstract_system.EvalAbstractInput(*abstract_context, 0));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       abstract_system.EvalVectorInput(*abstract_context, 0), std::logic_error,
-      ".*EvalVectorInput.*expected.*BasicVector.*input port.*0.*actual.*int.*");
+      ".*EvalVectorInput.*vector port required.*input port.*0.*"
+      "was declared abstract.*");
+
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       abstract_system.EvalEigenVectorInput(*abstract_context, 0),
       std::logic_error,
-      ".*EvalEigenVectorInput.*expected.*BasicVector.*input port.*0"
-      ".*actual.*int.*");
+      ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
+      "was declared abstract.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       abstract_system.EvalInputValue<double>(*abstract_context, 0),
