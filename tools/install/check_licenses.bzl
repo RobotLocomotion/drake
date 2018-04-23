@@ -8,7 +8,7 @@ LICENSE_LITERALS = [
     "COPYING",
     "Copyright.txt",  # vtk
     "EULA.pdf",  # gurobi
-    "license.pdf",  # mosek
+    "mosek-eula.pdf",  # mosek
     "LICENSE",
 ]
 
