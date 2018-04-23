@@ -119,8 +119,8 @@ class WitnessFunction final {
                   std::string description,
                   const WitnessFunctionDirection& direction,
                   T (MySystem::*calc)(const Context<T>&) const)
-      : WitnessFunction(system, description, direction, calc,
-          std::unique_ptr<Event<T>>()) {}
+      : WitnessFunction(system, std::move(description), direction,
+                        std::move(calc), std::unique_ptr<Event<T>>()) {}
 
   // See documentation for above constructor, which applies here without
   // reservations.
@@ -128,8 +128,8 @@ class WitnessFunction final {
                   std::string description,
                   const WitnessFunctionDirection& direction,
                   std::function<T(const Context<T>&)> calc)
-      : WitnessFunction(system, description, direction, calc,
-                        std::unique_ptr<Event<T>>()) {}
+      : WitnessFunction(system, std::move(description), direction,
+                        std::move(calc), std::unique_ptr<Event<T>>()) {}
 
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
@@ -171,7 +171,8 @@ class WitnessFunction final {
                   std::function<T(const Context<T>&)> calc,
                   std::unique_ptr<EventType> e) :
       system_(system), description_(std::move(description)),
-      direction_type_(direction), event_(std::move(e)), calc_function_{calc} {
+      direction_type_(direction), event_(std::move(e)),
+      calc_function_{std::move(calc)} {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
