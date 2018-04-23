@@ -42,6 +42,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/util:deprecation_py",
+        "@numpy_py",
     ],
     py_srcs = [
         "__init__.py",
