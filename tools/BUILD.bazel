@@ -21,6 +21,9 @@ py_binary(
         "//lcmtypes:lcmtypes_py",
         "//tools/workspace/drake_visualizer:stub_pydrake",
         "@drake_visualizer//:drake_visualizer_python_deps",
+        # TODO(eric.cousineau): Move `numpy_py` dependency to a `vtk` Python
+        # library.
+        "@numpy_py",
         "@optitrack_driver//lcmtypes:py_optitrack_lcmtypes",
     ],
 )
