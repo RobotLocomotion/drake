@@ -92,22 +92,14 @@ class LeafContextTest : public ::testing::Test {
   // Returns nullptr if the port is not connected.
   const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
                                                  int index) {
-    const InputPortValue* value =
-        context.GetInputPortValue(InputPortIndex(index));
-    if (value == nullptr) return nullptr;  // Not connected.
-    auto free_value = dynamic_cast<const FreestandingInputPortValue*>(value);
-    EXPECT_NE(free_value, nullptr);
+    auto const free_value = MaybeGetFreestandingValue(context, index);
     return free_value ? free_value->get_vector_data<double>() : nullptr;
   }
 
   // Reads a FreestandingInputPortValue connected to @p context at @p index.
   const std::string* ReadStringInputPort(const Context<double>& context,
                                          int index) {
-    const InputPortValue* value =
-        context.GetInputPortValue(InputPortIndex(index));
-    if (value == nullptr) return nullptr;  // Not connected.
-    auto free_value = dynamic_cast<const FreestandingInputPortValue*>(value);
-    EXPECT_NE(free_value, nullptr);
+    auto const free_value = MaybeGetFreestandingValue(context, index);
     return free_value
                ? &free_value->get_abstract_data()->GetValue<std::string>()
                : nullptr;
@@ -116,16 +108,24 @@ class LeafContextTest : public ::testing::Test {
   // Reads a FreestandingInputPortValue connected to @p context at @p index.
   const AbstractValue* ReadAbstractInputPort(const Context<double>& context,
                                              int index) {
-    const InputPortValue* value =
-        context.GetInputPortValue(InputPortIndex(index));
-    if (value == nullptr) return nullptr;  // Not connected.
-    auto free_value = dynamic_cast<const FreestandingInputPortValue*>(value);
-    EXPECT_NE(free_value, nullptr);
+    auto const free_value = MaybeGetFreestandingValue(context, index);
     return free_value ? free_value->get_abstract_data() : nullptr;
   }
 
   LeafContext<double> context_;
   std::unique_ptr<AbstractValue> abstract_state_;
+
+ private:
+  const FreestandingInputPortValue* MaybeGetFreestandingValue(
+      const Context<double>& context, int index) {
+    const InputPortValue* const value =
+        context.GetInputPortValue(InputPortIndex(index));
+    if (value == nullptr) return nullptr;  // Not connected.
+    auto const free_value =
+        dynamic_cast<const FreestandingInputPortValue*>(value);
+    EXPECT_NE(free_value, nullptr);
+    return free_value;
+  }
 };
 
 // Verifies that @p state is a clone of the state constructed in
