@@ -479,6 +479,36 @@ class SystemBase : public internal::SystemMessageInterface {
     system.ValidateAllocatedContext(context);
   }
 
+  /** Throws std::out_of_range apparently from API function `func` which has
+  been given this negative input port index. */
+  // We're taking an int here for the index; InputPortIndex can't be negative.
+  [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
+                                                int port_index) const;
+
+  /** Throws std::out_of_range to report bad port_index that was passed to
+  API method `func`. */
+  [[noreturn]] void ThrowInputPortIndexOutOfRange(const char* func,
+                                                  InputPortIndex port_index,
+                                                  int num_input_ports) const;
+
+  /** Throws std::logic_error because someone misused API method `func`, that is
+  only allowed for declared-vector input ports, on an abstract port whose
+  index is given here. */
+  [[noreturn]] void ThrowNotAVectorInputPort(const char* func,
+                                             InputPortIndex port_index) const;
+
+  /** Throws std::logic_error because someone called API method `func` claiming
+  the input port had some value type that was wrong. */
+  [[noreturn]] void ThrowInputPortHasWrongType(
+      const char* func, InputPortIndex port_index,
+      const std::string& expected_type, const std::string& actual_type) const;
+
+  /** Throws std::logic_error because someone called API method `func`, that
+  requires this input port to be evaluatable, but the port was neither
+  freestanding nor connected. */
+  [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
+                                               InputPortIndex port_index) const;
+
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
   diagrams. The base class allocates trackers for known resources and
