@@ -2036,7 +2036,7 @@ void MinDistanceConstraint::eval(const double* t,
         MatrixXd::Zero(num_pts, getRobotPointer()->get_num_positions());
 
     // Compute Jacobian of closest distance vector
-    scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
+    scaleDistance(dist, min_distance_, scaled_dist, dscaled_dist_ddist);
     penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
 
     std::vector<std::vector<int>> orig_idx_of_pt_on_bodyA(
@@ -2092,17 +2092,17 @@ void MinDistanceConstraint::eval(const double* t,
 }
 
 void MinDistanceConstraint::scaleDistance(
-    const Eigen::VectorXd& dist, Eigen::VectorXd& scaled_dist,
-    Eigen::MatrixXd& dscaled_dist_ddist) const {
+    const Eigen::VectorXd& dist, double distance_threshold, Eigen::VectorXd& scaled_dist,
+    Eigen::MatrixXd& dscaled_dist_ddist) {
   int nd = static_cast<int>(dist.size());
-  double recip_min_dist = 1 / min_distance_;
+  double recip_min_dist = 1 / distance_threshold;
   scaled_dist = recip_min_dist * dist - VectorXd::Ones(nd, 1);
   dscaled_dist_ddist = recip_min_dist * MatrixXd::Identity(nd, nd);
 }
 
 void MinDistanceConstraint::penalty(const Eigen::VectorXd& dist,
                                     Eigen::VectorXd& cost,
-                                    Eigen::MatrixXd& dcost_ddist) const {
+                                    Eigen::MatrixXd& dcost_ddist) {
   int nd = static_cast<int>(dist.size());
   cost = VectorXd::Zero(nd, 1);
   dcost_ddist = MatrixXd::Zero(nd, nd);
