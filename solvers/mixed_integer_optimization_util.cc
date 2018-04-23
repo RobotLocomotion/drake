@@ -3,6 +3,8 @@
 #include "drake/math/gray_code.h"
 #include "drake/solvers/integer_optimization_util.h"
 
+using drake::symbolic::Expression;
+
 namespace drake {
 namespace solvers {
 void AddLogarithmicSos2Constraint(
@@ -96,48 +98,55 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
     const Eigen::Ref<const Eigen::VectorXd>& phi_y,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& By) {
-  const int m = phi_x.rows();
-  const int n = phi_y.rows();
-  DRAKE_ASSERT(Bx.rows() == m - 1);
-  DRAKE_ASSERT(By.rows() == n - 1);
-  const auto xij =
-      prog->NewContinuousVariables(m - 1, n - 1, x.get_name() + "_xij");
-  const auto yij =
-      prog->NewContinuousVariables(m - 1, n - 1, y.get_name() + "_yij");
-  prog->AddLinearEqualityConstraint(
-      xij.cast<symbolic::Expression>().rowwise().sum().sum() - x, 0);
-  prog->AddLinearEqualityConstraint(
-      yij.cast<symbolic::Expression>().rowwise().sum().sum() - y, 0);
+  const int m = phi_x.rows() - 1;
+  const int n = phi_y.rows() - 1;
+  DRAKE_ASSERT(Bx.rows() == m);
+  DRAKE_ASSERT(By.rows() == n);
+  const auto xj = prog->NewContinuousVariables(n, x.get_name() + "_xj");
+  const auto yi = prog->NewContinuousVariables(m, y.get_name() + "_yi");
+  prog->AddLinearEqualityConstraint(xj.cast<Expression>().sum() - x, 0);
+  prog->AddLinearEqualityConstraint(yi.cast<Expression>().sum() - y, 0);
 
   const auto Bxy = prog->NewContinuousVariables(
-      m - 1, n - 1, x.get_name() + "_" + y.get_name() + "_Bxy");
+      m, n, x.get_name() + "_" + y.get_name() + "_Bxy");
   prog->AddLinearEqualityConstraint(
-      Bxy.cast<symbolic::Expression>().rowwise().sum().sum(), 1);
+      Bxy.cast<Expression>().rowwise().sum().sum(), 1);
+
+  for (int i = 0; i < m; ++i) {
+    prog->AddLinearConstraint(
+        yi(i) >= phi_y.head(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+    prog->AddLinearConstraint(
+        yi(i) <= phi_y.tail(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+  }
+  for (int j = 0; j < n; ++j) {
+    prog->AddLinearConstraint(xj(j) >=
+                              phi_x.head(m).dot(Bxy.col(j).cast<Expression>()));
+    prog->AddLinearConstraint(xj(j) <=
+                              phi_x.tail(m).dot(Bxy.col(j).cast<Expression>()));
+  }
   // The right-hand side of the constraint on w, we will implement
   // w >= w_constraint_rhs(0)
   // w >= w_constraint_rhs(1)
   // w <= w_constraint_rhs(2)
   // w <= w_constraint_rhs(3)
   Vector4<symbolic::Expression> w_constraint_rhs(0, 0, 0, 0);
-  for (int i = 0; i < m - 1; ++i) {
-    for (int j = 0; j < n - 1; ++j) {
-      prog->AddLinearConstraint(xij(i, j) >= phi_x(i) * Bxy(i, j));
-      prog->AddLinearConstraint(xij(i, j) <= phi_x(i + 1) * Bxy(i, j));
-      prog->AddLinearConstraint(yij(i, j) >= phi_y(j) * Bxy(i, j));
-      prog->AddLinearConstraint(yij(i, j) <= phi_y(j + 1) * Bxy(i, j));
-
+  w_constraint_rhs(0) = xj.cast<Expression>().dot(phi_y.head(n)) +
+                        yi.cast<Expression>().dot(phi_x.head(m));
+  w_constraint_rhs(1) = xj.cast<Expression>().dot(phi_y.tail(n)) +
+                        yi.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(2) = xj.cast<Expression>().dot(phi_y.head(n)) +
+                        yi.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(3) = xj.cast<Expression>().dot(phi_y.tail(n)) +
+                        yi.cast<Expression>().dot(phi_x.head(m));
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) {
       prog->AddConstraint(
           CreateLogicalAndConstraint(+Bx(i), +By(j), +Bxy(i, j)));
 
-      w_constraint_rhs(0) += xij(i, j) * phi_y(j) + phi_x(i) * yij(i, j) -
-                             phi_x(i) * phi_y(j) * Bxy(i, j);
-      w_constraint_rhs(1) += xij(i, j) * phi_y(j + 1) +
-                             phi_x(i + 1) * yij(i, j) -
-                             phi_x(i + 1) * phi_y(j + 1) * Bxy(i, j);
-      w_constraint_rhs(2) += xij(i, j) * phi_y(j) + phi_x(i + 1) * yij(i, j) -
-                             phi_x(i + 1) * phi_y(j) * Bxy(i, j);
-      w_constraint_rhs(3) += xij(i, j) * phi_y(j + 1) + phi_x(i) * yij(i, j) -
-                             phi_x(i) * phi_y(j + 1) * Bxy(i, j);
+      w_constraint_rhs(0) -= phi_x(i) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(1) -= phi_x(i + 1) * phi_y(j + 1) * Bxy(i, j);
+      w_constraint_rhs(2) -= phi_x(i + 1) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(3) -= phi_x(i) * phi_y(j + 1) * Bxy(i, j);
     }
   }
   prog->AddLinearConstraint(w >= w_constraint_rhs(0));

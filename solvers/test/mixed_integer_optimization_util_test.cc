@@ -324,6 +324,9 @@ class BilinearProductMcCormickEnvelopeTest {
     if (num_interval_x_ == 3 && num_interval_y_ == 3) {
       IsFeasible(&prog_, 1.0 / 3, 1.0 / 3, 0.1, false);
       IsFeasible(&prog_, 0.5, 0.5, 0.26, true);
+      IsFeasible(&prog_, 1.0 / 3, 2.0 / 3, 2.0 / 9, true);
+      IsFeasible(&prog_, 0.5, 0.5, 5.0 / 18, true);
+      IsFeasible(&prog_, 0.5, 0.5, 5.0 / 18 + 0.001, false);
     }
   }
 

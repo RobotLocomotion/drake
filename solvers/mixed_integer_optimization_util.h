@@ -154,8 +154,8 @@ enum class IntervalBinning {
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
  * <pre>
- * x_min = φx(0) < φx(1) < ... < φx(m-1) = x_max
- * y_min = φy(0) < φy(1) < ... < φy(n-1) = y_max
+ * x_min = φx(0) < φx(1) < ... < φx(m) = x_max
+ * y_min = φy(0) < φy(1) < ... < φy(n) = y_max
  * </pre>
  * , and divide the range of x to small intervals [φx(0), φx(1)],
  * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
@@ -282,8 +282,8 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
  * <pre>
- * x_min = φx(0) < φx(1) < ... < φx(m-1) = x_max
- * y_min = φy(0) < φy(1) < ... < φy(n-1) = y_max
+ * x_min = φx(0) < φx(1) < ... < φx(m) = x_max
+ * y_min = φy(0) < φy(1) < ... < φy(n) = y_max
  * </pre>
  * , and divide the range of x to small intervals [φx(0), φx(1)],
  * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
@@ -306,7 +306,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * @param By The binary-valued expression indicating which interval y is in.
  * By(i) = 1 => φy(i) <= y <= φy(i + 1).
  *
- * The constraint we impose is
+ * One formulation of the constraint is
  * <pre>
  * x = ∑ᵢⱼ xij(i, j)
  * y = ∑ᵢⱼ yij(i, j)
@@ -328,14 +328,37 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * 0 ≤ Bxy(i, j) ≤ 1
  * </pre>
  *
+ * We can further simplify these constraints, by defining two vectors
+ * xj ∈ ℝⁿ, yi ∈ ℝᵐ as
+ * xj(j) = ∑ᵢ xij(i, j)
+ * yi(i) = ∑ⱼ yij(i, j)
+ * and the constraints above can be re-formulated using xj and yi as
+ * <pre>
+ * x = ∑ⱼ xj(j)
+ * y = ∑ᵢ yi(i)
+ * Bxy(i, j) = Bx(i) & By(j)
+ * ∑ᵢⱼ Bxy(i, j) = 1
+ * ∑ᵢ φx(i)Bxy(i, j) ≤ xj(j) ≤ ∑ᵢ φx(i+1)Bxy(i, j)
+ * ∑ⱼ φy(j)Bxy(i, j) ≤ yi(i) ≤ ∑ⱼ φy(j+1)Bxy(i, j)
+ * w ≥ ∑ⱼ xj(j)*φy(j) + ∑ᵢ φx(i)*yi(i) - ∑ᵢⱼ φx(i)*φy(j) * Bxy(i, j)
+ * w ≥ ∑ⱼ xj(j)*φy(j+1) + ∑ᵢ φx(i+1)*yi(i) - ∑ᵢⱼ φx(i+1)*φy(j+1) * Bxy(i, j)
+ * w ≤ ∑ⱼ xj(j)*φy(j) + ∑ᵢ φx(i+1)*yi(j) - ∑ᵢⱼ φx(i+1)*φy(j) * Bxy(i, j)
+ * w ≤ ∑ⱼ xj(j)*φy(j+1) + ∑ᵢ φx(i)*yi(i) - ∑ᵢⱼ φx(i)*φy(j+1) * Bxy(i, j)
+ * </pre>
+ * In this formulation, we introduce new continuous variables xj, yi, Bxy. The
+ * total number of new variables is m + n + m * n.
+ *
  * In section 3.3 of
  * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
  * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
  * this formulation is called "Multiple Choice Model"
  * @note We DO NOT add the constraint
  * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
- * in this function. It is the user's responsibility to ensure that these
- * constraints are enforced.
+ * in this function. It is the user's responsibility to ensure that these binary
+ * constraints are enforced. The users can also add cutting planes ∑ᵢBx(i) = 1,
+ * ∑ⱼBy(j) = 1. Without these two cutting planes, (x, y, w) is still in the
+ * McCormick envelope of z = xy, but these two cutting planes "might" improve
+ * the computation speed in the mixed-integer solver.
  */
 void AddBilinearProductMcCormickEnvelopeMultipleChoice(
     MathematicalProgram* prog, const symbolic::Variable& x,
