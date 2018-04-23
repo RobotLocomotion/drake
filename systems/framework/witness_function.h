@@ -155,15 +155,8 @@ class WitnessFunction final {
     set_calculator_function(calc);
   }
 
-  // Constructs the witness function with the pointer to the given non-null
-  // System; with the given description (used primarily for debugging and
-  // logging), direction type, and calculator function, and with a unique
-  // pointer to the event that is to be dispatched when this witness function
-  // triggers. Example events are publish, discrete variable update,
-  // unrestricted update events.
-  // @tparam EventType a class derived from Event<T>
-  // @warning the pointer to the System must be valid as long or longer than
-  // the lifetime of the witness function.
+  // See documentation for above constructor, which applies here without
+  // reservations.
   template <class EventType>
   WitnessFunction(const System<T>* system,
                   std::string description,
