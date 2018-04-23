@@ -31,16 +31,14 @@ struct ModelInstanceInfo {
 template <typename T>
 class WorldSimTreeBuilder {
  public:
-  /// Constructs a WorldSimTreeBuilder object and specifies whether it should
-  /// compile the tree.
+  /// Constructs a WorldSimTreeBuilder object and specifies whether a call to
+  /// any of the add model instance functions should compile the tree.
   ///
-  /// @param compile_tree Specifies whether a call to any of the add model
-  /// instance functions should compile the tree. Defaults to true. Setting this
-  /// parameter to false will cause the parser to bypass tree compilation such
-  /// that modifications to the tree can be made at run time (e.g.,
-  /// programmatically adding collision elements to the tree). The user is
-  /// responsible for calling compile() on the tree. Take the following snippet
-  /// as an example:
+  /// Setting @p compile_tree to false will cause the parser to bypass tree
+  /// compilation such that modifications to the tree can be made at run time
+  /// (e.g., programmatically adding collision elements to the tree). The user
+  /// is responsible for calling compile() on the tree. Take the following
+  /// snippet as an example:
   /// ```
   /// auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>(false);
   /// tree_builder->StoreDrakeModel("mymodel", kModelUrdf);
@@ -49,6 +47,9 @@ class WorldSimTreeBuilder {
   /// //  modify the tree here
   /// mtree->compile();
   /// ```
+  ///
+  /// @param compile_tree Specifies whether the tree should be automatically
+  /// compiled. Defaults to true.
   explicit WorldSimTreeBuilder(bool compile_tree = true);
 
   ~WorldSimTreeBuilder();
