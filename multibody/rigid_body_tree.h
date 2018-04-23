@@ -114,9 +114,14 @@ class RigidBodyTree {
 
   /**
    * Returns a deep clone of this RigidBodyTree<double>. Currently, everything
-   * *except* for collision and visual elements are cloned.
+   * *except* for collision and visual elements are cloned.  Only supported for
+   * T = double.
    */
-  std::unique_ptr<RigidBodyTree<double>> Clone() const;
+  std::unique_ptr<RigidBodyTree<double>> Clone() const {
+    // N.B. We specialize this method below for T = double.  This method body
+    // is the default implementation for all _other_ values of T.
+    throw std::logic_error("RigidBodyTree::Clone only supports T = double");
+  }
 
   /**
    * Adds a new model instance to this `RigidBodyTree`. The model instance is
@@ -1727,5 +1732,15 @@ class RigidBodyTree {
   drake::multibody::collision::CollisionFilterGroupManager<T>
       collision_group_manager_{};
 };
+
+// This template method specialization is defined in the cc file.
+template <>
+std::unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const;
+
+
+// To mitigate compilation time, only one `*.o` file will instantiate the
+// methods of RigidBodyTree that are templated only on `T` (and not on, e.g.,
+// `Scalar`).  Refer to the the rigid_body_tree.cc comments for details.
+extern template class RigidBodyTree<double>;
 
 typedef RigidBodyTree<double> RigidBodyTreed;
