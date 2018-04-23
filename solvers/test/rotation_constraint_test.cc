@@ -184,7 +184,14 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return (prog->Solve() == kSolutionFound);
+  // Mosek solver has some numerical issue, that it can return "floating point
+  // exception" in this test.
+  GurobiSolver solver;
+  if (solver.available()) {
+    return (prog->Solve() == kSolutionFound);
+  } else {
+    throw std::runtime_error("Gurobi solver is not available.");
+  }
 }
 /*
 GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
@@ -332,7 +339,9 @@ TEST_P(TestMcCormick, TestExactRotationMatrix) {
   std::mt19937 generator(41);
   for (int i = 0; i < 40; i++) {
     R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
-    EXPECT_TRUE(IsFeasible(R_test));
+    const bool is_feasible = IsFeasible(R_test);
+    std::cout << i << " " << is_feasible << "\n";
+    EXPECT_TRUE(is_feasible);
   }
 }
 /*

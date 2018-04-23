@@ -1243,7 +1243,6 @@ void GetCRposAndCRnegForLogarithmicBinning(
     const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
     MathematicalProgram* prog, std::vector<Matrix3<Expression>>* CRpos,
     std::vector<Matrix3<Expression>>* CRneg) {
-  DRAKE_DEMAND(is_power_of_two(num_intervals_per_half_axis));
 
   if (num_intervals_per_half_axis > 1) {
     const auto gray_codes = math::CalculateReflectedGrayCodes(
