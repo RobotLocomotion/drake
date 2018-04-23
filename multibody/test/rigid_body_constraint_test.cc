@@ -53,9 +53,9 @@ GTEST_TEST(MinDistanceConstraintTests, PenaltyTest) {
   symbolic::Expression penalty_below_threshold{
       (1 - distance_symbolic / distance_threshold_symbolic) *
       exp(1 / (distance_symbolic / distance_threshold_symbolic - 1))};
-  auto penalty_symbolic =
-      symbolic::if_then_else(distance_symbolic < distance_threshold_symbolic,
-                             penalty_below_threshold, penalty_above_threshold);
+  auto penalty_symbolic = symbolic::if_then_else(
+      distance_symbolic < distance_threshold_symbolic,
+      penalty_below_threshold, penalty_above_threshold);
   auto dpenalty_ddistance_symbolic = symbolic::if_then_else(
       distance_symbolic < distance_threshold_symbolic,
       penalty_below_threshold.Differentiate(distance_symbolic),
@@ -65,20 +65,10 @@ GTEST_TEST(MinDistanceConstraintTests, PenaltyTest) {
       VectorX<double>::LinSpaced(num_evaluation_points, -1, 1);
   VectorX<double> penalty;
   VectorX<double> dpenalty_ddistance;
-  MatrixX<double> dpenalty_dscaled_distance;
-  VectorX<double> scaled_distance;
-  MatrixX<double> dscaled_distance_ddistance;
-  // This tolerance is the smallest integer multiple of epsilon for which the
-  // test passes.
   double tolerance = 64 * std::numeric_limits<double>::epsilon();
   for (double distance_threshold_numeric : {0.01, 0.1, 1.}) {
-    MinDistanceConstraint::scaleDistance(
-        distance_numeric, distance_threshold_numeric, scaled_distance,
-        dscaled_distance_ddistance);
-    MinDistanceConstraint::penalty(scaled_distance, penalty,
-                                   dpenalty_dscaled_distance);
-    dpenalty_ddistance =
-        (dpenalty_dscaled_distance * dscaled_distance_ddistance).diagonal();
+    MinDistanceConstraint::Penalty(distance_numeric, distance_threshold_numeric,
+                                   &penalty, &dpenalty_ddistance);
     for (int i = 0; i < num_evaluation_points; ++i) {
       EXPECT_NEAR(
           penalty(i),
