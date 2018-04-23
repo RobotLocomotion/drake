@@ -11,7 +11,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
-
+/*
 TEST_P(LinearProgramTest, TestLP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);
@@ -102,7 +102,7 @@ GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
   if (mosek_solver.available()) {
     FindCommonLyapunov(mosek_solver, 1E-8);
   }
-}
+}*/
 
 GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
   MosekSolver mosek_solver;
@@ -110,13 +110,13 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
     FindOuterEllipsoid(mosek_solver, 1E-6);
   }
 }
-
+/*
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
     SolveEigenvalueProblem(mosek_solver, 1E-7);
   }
-}
+}*/
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
