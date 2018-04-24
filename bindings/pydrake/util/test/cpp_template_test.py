@@ -97,6 +97,26 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
             _TEST_MODULE))
 
+    def test_user_class(self):
+
+        @m.TemplateClass.define("MyTemplate", param_list=((int,), (float,)))
+        def MyTemplate(param):
+            T, = param
+
+            class MyTemplateInstantiation(object):
+                def __init__(self):
+                    self.T = T
+
+            return MyTemplateInstantiation
+
+        self.assertIsInstance(MyTemplate, m.TemplateClass)
+        MyDefault = MyTemplate[None]
+        MyInt = MyTemplate[int]
+        self.assertEqual(MyDefault, MyInt)
+        self.assertEqual(MyInt().T, int)
+        MyFloat = MyTemplate[float]
+        self.assertEqual(MyFloat().T, float)
+
     def test_function(self):
         template = m.TemplateFunction("func")
 

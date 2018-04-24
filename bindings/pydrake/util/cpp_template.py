@@ -105,9 +105,15 @@ class TemplateBase(object):
         return param
 
     def add_instantiations(self, instantiation_func, param_list):
-        """Adds a set of instantiations given a function of the form
-        `instantiation_func(param)`, for a given set of parmeters
-        `param_list`.
+        """Adds a set of instantiations given a function and a list of
+        parameter sets.
+
+        @param instantiation_func Function of the form `f(param)`, where
+        `param` is the parameter set for the current instantiation.
+        @param param_list Ordered container of parameter sets to produce
+        instantiations. This list will be iterated through, the wrapped
+        function will be called, and the inner method will return a class (or
+        method).
         """
         for param in param_list:
             self.add_instantiation(param, instantiation_func(param))
@@ -150,6 +156,40 @@ class TemplateBase(object):
     def _on_add(self, param, instantiation):
         # To be overridden by child classes.
         pass
+
+    @classmethod
+    def define(cls, name, param_list, *args, **kwargs):
+        """Provides a decorator for functions that defines a template using
+        `name`. The template instantiations are added using
+        `add_instantiations`, where the instantiation function is the decorated
+        function.
+
+        @param name Name of the template. This should generally match the name
+        of the object being decorated for clarity.
+        @param param_list Ordered container of parameter sets. For more
+        information, see `add_instantiations`.
+
+        Note that the name of the inner class will not matter as it will be
+        overritten with the template instantiation name.
+        In the below example, ``MyTemplateInstantiation` will be renamed to
+        `MyTemplate[int]` when `param=(int,)`.
+
+        Example:
+        @TemplateClass.define("MyTemplate", param_list=[(int,), (float,)])
+        def MyTemplate(param):
+            T, = param
+            class MyTemplateInstantiation(object):
+                def __init__(self):
+                    self.T = T
+            return MyTemplateInstantiation
+        """
+
+        def decorator(instantiation_func):
+            tpl = cls(name, *args, **kwargs)
+            tpl.add_instantiations(instantiation_func, param_list)
+            return tpl
+
+        return decorator
 
 
 class TemplateClass(TemplateBase):
