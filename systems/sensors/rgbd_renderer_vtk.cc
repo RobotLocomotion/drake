@@ -385,6 +385,15 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
 
     pipeline->window->SetSize(parent_->config().width,
                               parent_->config().height);
+    // Disable multi sampling that has a bug with on-screen rendering
+    // with NVidia drivers on Ubuntu 16.04: In certain very specific
+    // cases (camera position, scene, triangle drawing order, normal
+    // orientation), a plane surface has partial background pixels
+    // bleeding through it which changes the color of the center pixel.
+    // TODO(fbudin69500) Find other solution that does not involve
+    // disabling anti-aliasing to solve this bug. Continue talking with
+    // NVidia to solve this issue.
+    pipeline->window->SetMultiSamples(0);
     pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
     pipeline->filter->SetInput(pipeline->window.GetPointer());
 #if VTK_MAJOR_VERSION == 8 && VTK_MINOR_VERSION == 0
