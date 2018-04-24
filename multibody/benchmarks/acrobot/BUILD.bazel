@@ -37,7 +37,7 @@ drake_cc_library(
         "make_acrobot_plant_sdf.h",
     ],
     deps = [
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
         "@sdformat",
     ],

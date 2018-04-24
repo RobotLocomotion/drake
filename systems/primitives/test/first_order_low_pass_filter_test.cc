@@ -22,7 +22,7 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
         kTimeConstant, kSignalSize);
     context_ = filter_->CreateDefaultContext();
     derivatives_ = filter_->AllocateTimeDerivatives();
-    output_ = filter_->get_output_port().Allocate(*context_);
+    output_ = filter_->get_output_port().Allocate();
 
     // Sets the state to zero initially.
     filter_->set_initial_output_value(
@@ -34,7 +34,7 @@ class FirstOrderLowPassFilterTest : public ::testing::Test {
     filter_ = std::make_unique<FirstOrderLowPassFilter<double>>(time_constants);
     context_ = filter_->CreateDefaultContext();
     derivatives_ = filter_->AllocateTimeDerivatives();
-    output_ = filter_->get_output_port().Allocate(*context_);
+    output_ = filter_->get_output_port().Allocate();
 
     // Sets the state to zero initially.
     ContinuousState<double>& xc = continuous_state();

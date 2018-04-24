@@ -268,7 +268,8 @@ GeometryId GeometryState<T>::RegisterGeometry(
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
-                       geometry->pose(), engine_index));
+                       geometry->pose(), engine_index,
+                       geometry->visual_material()));
   // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
@@ -354,8 +355,9 @@ GeometryId GeometryState<T>::RegisterAnchoredGeometry(
   anchored_geometry_index_id_map_.push_back(geometry_id);
   anchored_geometries_.emplace(
       geometry_id,
-      InternalAnchoredGeometry(geometry->release_shape(), geometry_id,
-                               geometry->pose(), engine_index));
+      InternalAnchoredGeometry(
+          geometry->release_shape(), geometry_id, geometry->pose(),
+          engine_index, geometry->visual_material()));
   return geometry_id;
 }
 
@@ -404,51 +406,38 @@ std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
       new GeometryState<AutoDiffXd>(*this));
 }
 template <typename T>
-void GeometryState<T>::SetFramePoses(const FrameIdVector& ids,
-                                     const FramePoseVector<T>& poses) {
-  ValidateFramePoses(ids, poses);
+void GeometryState<T>::SetFramePoses(const FramePoseVector<T>& poses) {
+  // TODO(SeanCurtis-TRI): Down the road, make this validation depend on
+  // ASSERT_ARMED.
+  ValidateFrameIds(poses);
   const Isometry3<T> world_pose = Isometry3<T>::Identity();
-  for (auto frame_id : source_root_frame_map_[ids.get_source_id()]) {
-    UpdatePosesRecursively(frames_[frame_id], world_pose, ids, poses);
+  for (auto frame_id : source_root_frame_map_[poses.source_id()]) {
+    UpdatePosesRecursively(frames_[frame_id], world_pose, poses);
   }
 }
 
 template <typename T>
-void GeometryState<T>::ValidateFrameIds(const FrameIdVector& ids) const {
-  SourceId source_id = ids.get_source_id();
+template <typename ValueType>
+void GeometryState<T>::ValidateFrameIds(
+    const FrameKinematicsVector<ValueType>& kinematics_data) const {
+  SourceId source_id = kinematics_data.source_id();
   auto& frames = GetFramesForSource(source_id);
   const int ref_frame_count = static_cast<int>(frames.size());
-  if (ref_frame_count != ids.size()) {
+  if (ref_frame_count != kinematics_data.size()) {
     // TODO(SeanCurtis-TRI): Determine if more specific information is required.
     // e.g., which frames are missing/added.
-    throw std::logic_error(
+    throw std::runtime_error(
         "Disagreement in expected number of frames (" +
         to_string(frames.size()) + ") and the given number of frames (" +
-        to_string(ids.size()) + ").");
-  } else {
-    for (auto id : ids) {
-      FindOrThrow(id, frames, [id, source_id]() {
-        return "Frame id provided in kinematics data (" + to_string(id) + ") "
-            "does not belong to the source (" + to_string(source_id) +
-            "). At least one required frame id is also missing.";
-      });
+        to_string(kinematics_data.size()) + ").");
+  }
+  for (auto id : frames) {
+    if (!kinematics_data.has_id(id)) {
+      throw std::runtime_error(
+          "Registered frame id (" + to_string(id) + ") belonging to source " +
+          to_string(source_id) +
+          " was not found in the provided kinematics data.");
     }
-  }
-}
-
-template <typename T>
-void GeometryState<T>::ValidateFramePoses(
-    const FrameIdVector& ids, const FramePoseVector<T>& poses) const {
-  if (ids.get_source_id() != poses.get_source_id()) {
-    throw std::logic_error(
-        "Error setting poses for given ids; the ids and poses belong to "
-        "different geometry sources (" + to_string(ids.get_source_id()) +
-        " and " + to_string(poses.get_source_id()) + ", respectively).");
-  }
-  if (ids.size() != static_cast<int>(poses.vector().size())) {
-    throw std::logic_error("Different number of ids and poses. " +
-        to_string(ids.size()) + " ids and " + to_string(poses.vector().size()) +
-        " poses.");
   }
 }
 
@@ -461,10 +450,9 @@ SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
 template <typename T>
 void GeometryState<T>::UpdatePosesRecursively(
     const internal::InternalFrame& frame, const Isometry3<T>& X_WP,
-    const FrameIdVector& ids, const FramePoseVector<T>& poses) {
+    const FramePoseVector<T>& poses) {
   const auto frame_id = frame.get_id();
-  int index = ids.GetIndex(frame_id);
-  const auto& X_PF = poses.vector().at(index);
+  const auto& X_PF = poses.value(frame_id);
   // Cache this transform for later use.
   X_PF_[frame.get_pose_index()] = X_PF;
   Isometry3<T> X_WF = X_WP * X_PF;
@@ -482,7 +470,7 @@ void GeometryState<T>::UpdatePosesRecursively(
     // TODO(SeanCurtis-TRI): See note above about replacing this when we have a
     // transform that supports autodiff * double.
     X_FG_[child_index].makeAffine();
-    // TODO(SeanCurtis-TRI): These matrix() shennigans are here because I can't
+    // TODO(SeanCurtis-TRI): These matrix() shenanigans are here because I can't
     // assign a an Isometry3<double> to an Isometry3<AutoDiffXd>. Replace this
     // when I can.
     X_WG_[child_index].matrix() = X_WF.matrix() * X_FG_[child_index].matrix();
@@ -491,7 +479,7 @@ void GeometryState<T>::UpdatePosesRecursively(
   // Update each child frame.
   for (auto child_id : frame.get_child_frames()) {
     auto& child_frame = frames_[child_id];
-    UpdatePosesRecursively(child_frame, X_WF, ids, poses);
+    UpdatePosesRecursively(child_frame, X_WF, poses);
   }
 }
 

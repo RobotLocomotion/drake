@@ -27,17 +27,17 @@ namespace examples {
 namespace rod2d {
 
 template <typename T>
-Rod2D<T>::Rod2D(SimulationType simulation_type, double dt)
-    : simulation_type_(simulation_type), dt_(dt) {
+Rod2D<T>::Rod2D(SystemType system_type, double dt)
+    : system_type_(system_type), dt_(dt) {
   // Verify that the simulation approach is either piecewise DAE or
   // compliant ODE.
-  if (simulation_type == SimulationType::kTimeStepping) {
+  if (system_type == SystemType::kDiscretized) {
     if (dt <= 0.0)
       throw std::logic_error(
-          "Time stepping approach must be constructed using"
+          "Discretization approach must be constructed using"
           " strictly positive step size.");
 
-    // Time stepping approach requires three position variables and
+    // Discretization approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
     this->DeclarePeriodicDiscreteUpdate(dt);
     this->DeclareDiscreteState(6);
@@ -79,7 +79,7 @@ template <class T>
 int Rod2D<T>::DetermineNumWitnessFunctions(
     const systems::Context<T>&) const {
   // No witness functions if this is not a piecewise DAE model.
-  if (simulation_type_ != SimulationType::kPiecewiseDAE)
+  if (system_type_ != SystemType::kPiecewiseDAE)
     return 0;
 
   // TODO(edrumwri): Flesh out this stub.
@@ -89,7 +89,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
 
 /// Gets the integer variable 'k' used to determine the point of contact
 /// indicated by the current mode.
-/// @throws std::logic_error if this is a time-stepping system (implying that
+/// @throws std::logic_error if this is a discretized system (implying that
 ///         modes are unused).
 /// @returns the value -1 to indicate the bottom of the rod (when theta = pi/2),
 ///          +1 to indicate the top of the rod (when theta = pi/2), or 0 to
@@ -97,7 +97,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
 ///          the halfspace.
 template <class T>
 int Rod2D<T>::get_k(const systems::Context<T>& context) const {
-  if (simulation_type_ != SimulationType::kPiecewiseDAE)
+  if (system_type_ != SystemType::kPiecewiseDAE)
     throw std::logic_error("'k' is only valid for piecewise DAE approach.");
   const int k = context.template get_abstract_state<int>(1);
   DRAKE_DEMAND(std::abs(k) <= 1);
@@ -492,7 +492,7 @@ template <typename T>
 void Rod2D<T>::CopyStateOut(const systems::Context<T>& context,
                             systems::BasicVector<T>* state_port_value) const {
   // Output port value is just the continuous or discrete state.
-  const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
+  const VectorX<T> state = (system_type_ == SystemType::kDiscretized)
                                ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state().CopyToVector();
   state_port_value->SetFromVector(state);
@@ -502,14 +502,14 @@ template <typename T>
 void Rod2D<T>::CopyPoseOut(
     const systems::Context<T>& context,
     systems::rendering::PoseVector<T>* pose_port_value) const {
-  const VectorX<T> state = (simulation_type_ == SimulationType::kTimeStepping)
+  const VectorX<T> state = (system_type_ == SystemType::kDiscretized)
                                ? context.get_discrete_state(0).CopyToVector()
                                : context.get_continuous_state().CopyToVector();
   ConvertStateToPose(state, pose_port_value);
 }
 
 /// Integrates the Rod 2D example forward in time using a
-/// half-explicit time stepping scheme.
+/// half-explicit discretization scheme.
 template <class T>
 void Rod2D<T>::DoCalcDiscreteVariableUpdates(
     const systems::Context<T>& context,
@@ -536,7 +536,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Two contact points, corresponding to the two rod endpoints, are always
   // used, regardless of whether any part of the rod is in contact with the
-  // halfspace. This practice is standard in time stepping approaches with
+  // halfspace. This practice is standard in discretization approaches with
   // constraint stabilization. See:
   // M. Anitescu and G. Hart. A Constraint-Stabilized Time-Stepping Approach
   // for Rigid Multibody Dynamics with Joints, Contact, and Friction. Intl.
@@ -903,7 +903,7 @@ template <class T>
 Vector3<T> Rod2D<T>::CalcCompliantContactForces(
     const systems::Context<T>& context) const {
   // Depends on continuous state being available.
-  DRAKE_DEMAND(simulation_type_ == SimulationType::kCompliant);
+  DRAKE_DEMAND(system_type_ == SystemType::kContinuous);
 
   using std::abs;
   using std::max;
@@ -1016,8 +1016,8 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   using std::cos;
   using std::abs;
 
-  // Don't compute any derivatives if this is the time stepping system.
-  if (simulation_type_ == SimulationType::kTimeStepping) {
+  // Don't compute any derivatives if this is the discretized system.
+  if (system_type_ == SystemType::kDiscretized) {
     DRAKE_ASSERT(derivatives->size() == 0);
     return;
   }
@@ -1037,7 +1037,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
   f.SetAtIndex(2, thetadot);
 
   // Compute the velocity derivatives (accelerations).
-  if (simulation_type_ == SimulationType::kCompliant) {
+  if (system_type_ == SystemType::kContinuous) {
     return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
   } else {
     // TODO(edrumwri): Implement the piecewise DAE approach.
@@ -1049,11 +1049,11 @@ void Rod2D<T>::DoCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractValues> Rod2D<T>::AllocateAbstractState()
     const {
-  if (simulation_type_ == SimulationType::kPiecewiseDAE) {
+  if (system_type_ == SystemType::kPiecewiseDAE) {
     // TODO(edrumwri): Allocate the abstract mode variables.
     return std::make_unique<systems::AbstractValues>();
   } else {
-    // Time stepping and compliant approaches need no abstract variables.
+    // Discretized and continuous approaches need no abstract variables.
     return std::make_unique<systems::AbstractValues>();
   }
 }
@@ -1072,7 +1072,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
   VectorX<T> x0(6);
   const double r22 = sqrt(2) / 2;
   x0 << half_len * r22, half_len * r22, M_PI / 4.0, -1, 0, 0;  // Initial state.
-  if (simulation_type_ == SimulationType::kTimeStepping) {
+  if (system_type_ == SystemType::kDiscretized) {
     state->get_mutable_discrete_state().get_mutable_vector(0)
         .SetFromVector(x0);
   } else {
@@ -1080,7 +1080,7 @@ void Rod2D<T>::SetDefaultState(const systems::Context<T>&,
     state->get_mutable_continuous_state().SetFromVector(x0);
 
     // Set abstract variables for piecewise DAE approach.
-    if (simulation_type_ == SimulationType::kPiecewiseDAE) {
+    if (system_type_ == SystemType::kPiecewiseDAE) {
       // TODO(edrumwri): Indicate that the rod is in the single contact
       // sliding mode.
 

@@ -102,11 +102,13 @@ class WitnessFunction final {
 #ifndef DRAKE_DOXYGEN_CXX
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
-  // logging), direction type, and specified calculation function; and with no
-  // event type.
+  // logging), direction type, and specified calculator function; and with no
+  // event type (i.e., no event will be called when this witness function
+  // triggers).
   // @note Constructing a witness function with no corresponding event forces
   //       Simulator's integration of an ODE to end a step at the witness
-  //       isolation time. For example, isolating a function's minimum or
+  //       isolation time, as it would if there were an event, but then take no
+  //       other action. For example, isolating a function's minimum or
   //       maximum values can be realized with a witness that triggers on a sign
   //       change of the function's time derivative, ensuring that the actual
   //       extreme value is present in the discretized trajectory.
@@ -114,15 +116,24 @@ class WitnessFunction final {
   // the lifetime of the witness function.
   template <class MySystem>
   WitnessFunction(const System<T>* system,
-                  const std::string& description,
+                  std::string description,
                   const WitnessFunctionDirection& direction,
                   T (MySystem::*calc)(const Context<T>&) const)
-      : WitnessFunction(system, description, direction, calc,
-          std::unique_ptr<Event<T>>()) {}
+      : WitnessFunction(system, std::move(description), direction,
+                        std::move(calc), std::unique_ptr<Event<T>>()) {}
+
+  // See documentation for above constructor, which applies here without
+  // reservations.
+  WitnessFunction(const System<T>* system,
+                  std::string description,
+                  const WitnessFunctionDirection& direction,
+                  std::function<T(const Context<T>&)> calc)
+      : WitnessFunction(system, std::move(description), direction,
+                        std::move(calc), std::unique_ptr<Event<T>>()) {}
 
   // Constructs the witness function with the pointer to the given non-null
   // System; with the given description (used primarily for debugging and
-  // logging), direction type, and calculation function, and with a unique
+  // logging), direction type, and calculator function, and with a unique
   // pointer to the event that is to be dispatched when this witness function
   // triggers. Example events are publish, discrete variable update,
   // unrestricted update events.
@@ -131,19 +142,35 @@ class WitnessFunction final {
   // the lifetime of the witness function.
   template <class EventType, class MySystem>
   WitnessFunction(const System<T>* system,
-                  const std::string& description,
+                  std::string description,
                   const WitnessFunctionDirection& direction,
                   T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<EventType> e) :
-                  system_(system), description_(description),
+                  system_(system), description_(std::move(description)),
                   direction_type_(direction), event_(std::move(e)) {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
         "EventType must be a descendant of Event");
     DRAKE_DEMAND(system);
     DRAKE_DEMAND(dynamic_cast<const MySystem*>(system));
-    set_calculation_function(calc);
+    set_calculator_function(calc);
   }
-#endif
+
+  // See documentation for above constructor, which applies here without
+  // reservations.
+  template <class EventType>
+  WitnessFunction(const System<T>* system,
+                  std::string description,
+                  const WitnessFunctionDirection& direction,
+                  std::function<T(const Context<T>&)> calc,
+                  std::unique_ptr<EventType> e) :
+      system_(system), description_(std::move(description)),
+      direction_type_(direction), event_(std::move(e)),
+      calc_function_(std::move(calc)) {
+    static_assert(std::is_base_of<Event<T>, EventType>::value,
+                  "EventType must be a descendant of Event");
+    DRAKE_DEMAND(system);
+  }
+  #endif
 
   /// Gets the description of this witness function (used primarily for logging
   /// and debugging).
@@ -203,10 +230,10 @@ class WitnessFunction final {
   Event<T>* get_mutable_event() { return event_.get(); }
 
  private:
-  // Sets or replaces the calculation function for this witness function, using
+  // Sets or replaces the calculator function for this witness function, using
   // a function that returns a value of type T.
   template <class MySystem>
-  void set_calculation_function(T (MySystem::*calc)(const Context<T>&) const) {
+  void set_calculator_function(T (MySystem::*calc)(const Context<T>&) const) {
     calc_function_ = [this, calc](const Context<T>& context) {
       auto system_ptr = dynamic_cast<const MySystem*>(system_);
       return (system_ptr->*calc)(context);
@@ -226,7 +253,7 @@ class WitnessFunction final {
   // Unique pointer to the event.
   const std::unique_ptr<Event<T>> event_;
 
-  // The witness function calculation function pointer.
+  // The witness function calculator function pointer.
   CalcCallback calc_function_;
 };
 

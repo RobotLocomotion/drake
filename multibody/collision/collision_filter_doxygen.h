@@ -51,7 +51,7 @@ are @ref collision_filter_mapping "related but complementary".
 Before looking at the details of the collision filter mechanisms, there are a
 few key principles to make note of.
 
- <!-- TODO(SeanCurtis-TRI): Change this with the advent of GeometrySystem to
+ <!-- TODO(SeanCurtis-TRI): Change this with the advent of SceneGraph to
  reflect current state -->
 \section collision_elements Collision Elements
 

@@ -17,7 +17,6 @@ using maliput::api::LaneEnd;
 using maliput::api::LanePosition;
 using maliput::api::RoadPosition;
 using maliput::api::Rotation;
-using math::RollPitchYawToQuaternion;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
@@ -36,13 +35,14 @@ void SetOnrampPoses(const Lane* lane, LanePolarity polarity,
   const GeoPosition xyz = lane->ToGeoPosition(kSomeLanePosition);
   pose->set_translation(Translation3<T>(T(xyz.x()), T(xyz.y()), T(xyz.z())));
   const Rotation rotation = lane->GetOrientation(kSomeLanePosition);
+  const double roll = rotation.roll();
+  const double pitch = rotation.pitch();
   const double yaw =
       rotation.yaw() - ((polarity == LanePolarity::kWithS) ? 0. : M_PI);
-  const Rotation new_rotation =
-      Rotation::FromRpy(rotation.roll(), rotation.pitch(), yaw);
-  pose->set_rotation(RollPitchYawToQuaternion(new_rotation.rpy()));
+  const math::RollPitchYaw<double> new_rotation(roll, pitch, yaw);
+  pose->set_rotation(new_rotation.ToQuaternion());
 
-  const Matrix3<T> rotmat = math::rpy2rotmat(new_rotation.rpy());
+  const Matrix3<T> rotmat = math::rpy2rotmat(new_rotation.vector());
   Vector6<T> velocity_vector{};
   velocity_vector.head(3) = Vector3<T>::Zero();         /* ω */
   velocity_vector.tail(3) = speed * rotmat.leftCols(1); /* v */

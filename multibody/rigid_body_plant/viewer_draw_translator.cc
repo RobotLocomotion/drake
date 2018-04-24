@@ -61,7 +61,9 @@ void ViewerDrawTranslator::Serialize(double time,
   // Saves the poses of each body in the lcmt_viewer_draw message.
   for (size_t i = 0; i < tree_.get_bodies().size(); ++i) {
     auto transform = tree_.relativeTransform(cache, 0, i);
-    auto quat = drake::math::rotmat2quat(transform.linear());
+
+    const Eigen::Vector4d quat =
+        math::RotationMatrix<double>::ToQuaternionAsVector4(transform.linear());
     std::vector<float>& position = message.position[i];
 
     auto translation = transform.translation();

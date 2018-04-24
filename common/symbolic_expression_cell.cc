@@ -598,7 +598,7 @@ ExpressionAddFactory::ExpressionAddFactory(
     : constant_{constant}, expr_to_coeff_map_{std::move(expr_to_coeff_map)} {}
 
 ExpressionAddFactory::ExpressionAddFactory(
-    const shared_ptr<const ExpressionAdd>& ptr)
+    const std::shared_ptr<const ExpressionAdd>& ptr)
     : ExpressionAddFactory{ptr->get_constant(), ptr->get_expr_to_coeff_map()} {}
 
 void ExpressionAddFactory::AddExpression(const Expression& e) {
@@ -630,7 +630,7 @@ void ExpressionAddFactory::Add(const shared_ptr<const ExpressionAdd>& ptr) {
 }
 
 ExpressionAddFactory& ExpressionAddFactory::operator=(
-    const shared_ptr<ExpressionAdd>& ptr) {
+    const std::shared_ptr<ExpressionAdd>& ptr) {
   constant_ = ptr->get_constant();
   expr_to_coeff_map_ = ptr->get_expr_to_coeff_map();
   return *this;
@@ -889,7 +889,7 @@ ExpressionMulFactory::ExpressionMulFactory(
       base_to_exponent_map_{std::move(base_to_exponent_map)} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
-    const shared_ptr<const ExpressionMul>& ptr)
+    const std::shared_ptr<const ExpressionMul>& ptr)
     : ExpressionMulFactory{ptr->get_constant(),
                            ptr->get_base_to_exponent_map()} {}
 
@@ -911,7 +911,7 @@ void ExpressionMulFactory::Add(const shared_ptr<const ExpressionMul>& ptr) {
 }
 
 ExpressionMulFactory& ExpressionMulFactory::operator=(
-    const shared_ptr<ExpressionMul>& ptr) {
+    const std::shared_ptr<ExpressionMul>& ptr) {
   constant_ = ptr->get_constant();
   base_to_exponent_map_ = ptr->get_base_to_exponent_map();
   return *this;

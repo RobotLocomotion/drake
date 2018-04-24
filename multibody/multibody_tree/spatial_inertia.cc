@@ -1,13 +1,6 @@
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace multibody {
-
-// Explicitly instantiates on the most common scalar types.
-template class SpatialInertia<double>;
-template class SpatialInertia<AutoDiffXd>;
-
-}  // namespace multibody
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::SpatialInertia)

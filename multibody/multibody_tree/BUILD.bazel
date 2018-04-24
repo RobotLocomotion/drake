@@ -122,7 +122,8 @@ drake_cc_library(
     srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
-        "//common:autodiff",
+        "//common:default_scalars",
+        "//common:drake_bool",
         "//common:essential",
         "//common:extract_double",
     ],
@@ -133,8 +134,12 @@ drake_cc_library(
     srcs = ["spatial_inertia.cc"],
     hdrs = ["spatial_inertia.h"],
     deps = [
+        ":rotational_inertia",
         ":unit_inertia",
-        "//math:gradient",
+        "//common:default_scalars",
+        "//common:drake_bool",
+        "//common:essential",
+        "//math:vector3_util",
         "//multibody/multibody_tree/math:spatial_algebra",
     ],
 )
@@ -145,6 +150,8 @@ drake_cc_library(
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -155,8 +162,10 @@ drake_cc_library(
     deps = [
         ":spatial_inertia",
         "//common:default_scalars",
+        "//common:essential",
         "//common:nice_type_name",
         "//common:symbolic",
+        "//math:vector3_util",
         "//multibody/multibody_tree/math:spatial_algebra",
     ],
 )
@@ -222,6 +231,8 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//math:gradient",
         "//multibody/benchmarks/acrobot",
     ],
 )
@@ -253,6 +264,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//common/test_utilities",
+        "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
@@ -281,6 +293,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//math:gradient",
     ],
 )
 
@@ -304,6 +317,10 @@ drake_cc_googletest(
     deps = [
         ":articulated_body_inertia",
         ":multibody_tree",
+        ":rotational_inertia",
+        ":unit_inertia",
+        "//math:autodiff",
+        "//math:gradient",
     ],
 )
 

@@ -1,0 +1,6 @@
+# Blacklist file for UBSan
+# http://releases.llvm.org/4.0.1/tools/clang/SanitizerSpecialCaseList.html
+
+# Relates #8572
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63345#c10
+src:*bits/stl_tree.h

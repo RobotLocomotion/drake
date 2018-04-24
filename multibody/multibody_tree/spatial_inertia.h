@@ -6,6 +6,7 @@
 #include <limits>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
@@ -73,6 +74,13 @@ namespace multibody {
 /// of this class to keep track of frames in which operations are performed. We
 /// suggest doing that using disciplined notation, as described above.
 ///
+/// @note Several methods in this class throw a std::exception for invalid
+/// rotational inertia operations in debug releases only.  This provides speed
+/// in a release build while facilitating debugging in debug builds.
+/// In addition, these validity tests are only performed for scalar types for
+/// which drake::is_numeric<T> is `true`. For instance, validity checks are not
+/// performed when T is symbolic::Expression.
+///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
@@ -81,6 +89,7 @@ namespace multibody {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
@@ -192,12 +201,10 @@ class SpatialInertia {
 
   /// Returns `true` if any of the elements in this spatial inertia is NaN
   /// and `false` otherwise.
-  bool IsNaN() const {
+  Bool<T> IsNaN() const {
     using std::isnan;
-    if (isnan(mass_)) return true;
-    if (G_SP_E_.IsNaN()) return true;
-    if (p_PScm_E_.array().isNaN().any()) return true;
-    return false;
+    return isnan(mass_) || G_SP_E_.IsNaN() ||
+        any_of(p_PScm_E_, [](auto x){ return isnan(x); });
   }
 
   /// Performs a number of checks to verify that this is a physically valid
@@ -216,14 +223,11 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  bool IsPhysicallyValid() const {
-    if (IsNaN()) return false;
-    if (mass_ < T(0)) return false;
+  Bool<T> IsPhysicallyValid() const {
     // The tests in RotationalInertia become a sufficient condition when
     // performed on a rotational inertia computed about a body's center of mass.
     const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    if (!G_SScm_E.CouldBePhysicallyValid()) return false;
-    return true;  // All tests passed.
+    return !IsNaN() && mass_ >= T(0) && G_SScm_E.CouldBePhysicallyValid();
   }
 
   /// Copy to a full 6x6 matrix representation.
@@ -429,6 +433,26 @@ class SpatialInertia {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
+  // Checks that the SpatialInertia is physically valid and throws an
+  // exception if not. This is mostly used in Debug builds to throw an
+  // appropriate exception.
+  // Since this method is used within assertions or demands, we do not try to
+  // attempt a smart way throw based on a given symbolic::Formula but instead we
+  // make these methods a no-op for non-numeric types.
+  template <typename T1 = T>
+  typename std::enable_if<is_numeric<T1>::value>::type CheckInvariants() const {
+    if (!IsPhysicallyValid().value()) {
+      throw std::runtime_error(
+          "The resulting spatial inertia is not physically valid. "
+              "See SpatialInertia::IsPhysicallyValid()");
+    }
+  }
+
+  // SFINAE for non-numeric types. See documentation in the implementation for
+  // numeric types.
+  template <typename T1 = T>
+  typename std::enable_if<!is_numeric<T1>::value>::type CheckInvariants() {}
+
   // Mass of the body or composite body.
   T mass_{nan()};
   // Position vector from point P to the center of mass of body or composite
@@ -437,17 +461,6 @@ class SpatialInertia {
   // Rotational inertia of body or composite body S computed about point P and
   // expressed in a frame E.
   UnitInertia<T> G_SP_E_{};  // Defaults to NaN initialized inertia.
-
-  // Checks that the SpatialInertia is physically valid and throws an
-  // exception if not. This is mostly used in Debug builds to throw an
-  // appropriate exception.
-  void CheckInvariants() const {
-    if (!IsPhysicallyValid()) {
-      throw std::runtime_error(
-          "The resulting spatial inertia is not physically valid. "
-              "See SpatialInertia::IsPhysicallyValid()");
-    }
-  }
 };
 
 /// Insertion operator to write SpatialInertia objects into a `std::ostream`.

@@ -53,6 +53,15 @@ class LeafContextTest : public ::testing::Test {
         kGeneralizedPositionSize, kGeneralizedVelocitySize,
         kMiscContinuousStateSize));
 
+    // Reserve a discrete state with a single element of size 1, and verify
+    // that we can change it using get_mutable_discrete_state_vector().
+    std::vector<std::unique_ptr<BasicVector<double>>> xd_single;
+    xd_single.push_back(BasicVector<double>::Make({128.0}));
+    context_.set_discrete_state(
+        std::make_unique<DiscreteValues<double>>(std::move(xd_single)));
+    context_.get_mutable_discrete_state_vector()[0] = 192.0;
+    EXPECT_EQ(context_.get_discrete_state().get_vector()[0], 192.0);
+
     // Reserve a discrete state with two elements, of size 1 and size 2.
     std::vector<std::unique_ptr<BasicVector<double>>> xd;
     xd.push_back(BasicVector<double>::Make({128.0}));

@@ -177,8 +177,8 @@ bool ConstraintRelaxingIk::SolveIk(
 
   // Adds a rotation constraint.
   WorldQuatConstraint quat_con(robot_.get(), end_effector_body_idx_,
-                               math::rotmat2quat(waypoint.pose.linear()),
-                               rot_tol, Vector2<double>::Zero());
+    math::RotationMatrix<double>::ToQuaternionAsVector4(waypoint.pose.linear()),
+    rot_tol, Vector2<double>::Zero());
   if (waypoint.constrain_orientation) {
     constraint_array.push_back(&quat_con);
   }

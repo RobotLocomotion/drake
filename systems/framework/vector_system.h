@@ -50,31 +50,6 @@ class VectorSystem : public LeafSystem<T> {
   // Don't use the indexed get_output_port when calling this system directly.
   void get_output_port(int) = delete;
 
-  // Confirms the VectorSystem invariants when allocating the context.
-  std::unique_ptr<Context<T>> AllocateContext() const final {
-    auto result = LeafSystem<T>::AllocateContext();
-
-    // N.B. The DRAKE_THROW_UNLESS conditions can be triggered by subclass
-    // mistakes, so are part of our unit tests.  The DRAKE_DEMAND conditions
-    // should be invariants guaranteed by the framework, so are asserted.
-
-    // Exactly one input and output.
-    DRAKE_THROW_UNLESS(this->get_num_input_ports() <= 1);
-    DRAKE_THROW_UNLESS(this->get_num_output_ports() <= 1);
-    DRAKE_DEMAND(result->get_num_input_ports() <= 1);
-
-    // At most one of either continuous xor discrete state.
-    DRAKE_THROW_UNLESS(result->get_num_abstract_states() == 0);
-    const int continuous_size = result->get_continuous_state().size();
-    const int num_discrete_groups = result->get_num_discrete_state_groups();
-    DRAKE_DEMAND(continuous_size >= 0);
-    DRAKE_DEMAND(num_discrete_groups >= 0);
-    DRAKE_THROW_UNLESS(num_discrete_groups <= 1);
-    DRAKE_THROW_UNLESS((continuous_size == 0) || (num_discrete_groups == 0));
-
-    return result;
-  }
-
  protected:
   /// Creates a system with one input port and one output port of the given
   /// sizes, when the sizes are non-zero.  Either size can be zero, in which
@@ -288,6 +263,29 @@ class VectorSystem : public LeafSystem<T> {
       Eigen::VectorBlock<VectorX<T>>* next_state) const {
     unused(context, input, state);
     DRAKE_THROW_UNLESS(next_state->size() == 0);
+  }
+
+ private:
+  // Confirms the VectorSystem invariants when allocating the context.
+  void DoValidateAllocatedLeafContext(
+      const LeafContext<T>& context) const final {
+    // N.B. The DRAKE_THROW_UNLESS conditions can be triggered by subclass
+    // mistakes, so are part of our unit tests.  The DRAKE_DEMAND conditions
+    // should be invariants guaranteed by the framework, so are asserted.
+
+    // Exactly one input and output.
+    DRAKE_THROW_UNLESS(this->get_num_input_ports() <= 1);
+    DRAKE_THROW_UNLESS(this->get_num_output_ports() <= 1);
+    DRAKE_DEMAND(context.get_num_input_ports() <= 1);
+
+    // At most one of either continuous or discrete state.
+    DRAKE_THROW_UNLESS(context.get_num_abstract_states() == 0);
+    const int continuous_size = context.get_continuous_state().size();
+    const int num_discrete_groups = context.get_num_discrete_state_groups();
+    DRAKE_DEMAND(continuous_size >= 0);
+    DRAKE_DEMAND(num_discrete_groups >= 0);
+    DRAKE_THROW_UNLESS(num_discrete_groups <= 1);
+    DRAKE_THROW_UNLESS((continuous_size == 0) || (num_discrete_groups == 0));
   }
 };
 

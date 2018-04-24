@@ -16,17 +16,17 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace math {
-/**
- * Computes the quaternion representation from Euler angles.
- * @param rpy 3 x 1 vector with SpaceXYZ Euler angles.
- * @return 4 x 1 unit length quaternion @p quaternion = [w; x; y; z].
- * @see rpy2rotmat
- */
+
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
+// TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use RollPitchYaw::ToQuaternion().")
 Vector4<typename Derived::Scalar> rpy2quat(
     const Eigen::MatrixBase<Derived>& rpy) {
   // TODO(hongkai.dai@tri.global): Switch to Eigen's EulerAngles when we fix

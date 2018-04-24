@@ -239,8 +239,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
 
   if (output_port) {
-    std::unique_ptr<AbstractValue> autodiff_y0 =
-        output_port->Allocate(*autodiff_context);
+    std::unique_ptr<AbstractValue> autodiff_y0 = output_port->Allocate();
     output_port->Calc(*autodiff_context, autodiff_y0.get());
 
     auto autodiff_y0_vec =

@@ -21,10 +21,13 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
     const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
     std::string message = fmt::format(
         "Error: Rotation matrix is not orthonormal."
-        "  Measure of orthonormality error: {:G}"
-        " (near-zero is good).  To orthonormalize a 3x3 matrix,"
-        " use RotationMatrix::ProjectToRotationMatrix(), or if"
-        " you are using quaternions, ensure you normalize them.", measure);
+        "  Measure of orthonormality error: {:G}  (near-zero is good)."
+        "  To calculate the proper orthonormal rotation matrix closest to"
+        " the alleged rotation matrix, use the SVD (expensive) method"
+        " RotationMatrix::ProjectToRotationMatrix(), or for a less expensive"
+        " (but not necessarily closest) rotation matrix, use the constructor"
+        " RotationMatrix<T>(ToQuaternion(your_Matrix3)).  Alternately, if"
+        " using quaternions, ensure the quaternion is normalized.", measure);
     throw std::logic_error(message);
   }
   if (R.determinant() < 0) {

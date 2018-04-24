@@ -96,6 +96,15 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
       model.GetBodyByName(kInvalidName), std::logic_error,
       "There is no body named '.*' in the model.");
 
+  // Test we can also retrieve links as RigidBody objects.
+  for (const std::string link_name : kLinkNames) {
+    const RigidBody<T>& link = model.GetRigidBodyByName(link_name);
+    EXPECT_EQ(link.name(), link_name);
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetRigidBodyByName(kInvalidName), std::logic_error,
+      "There is no body named '.*' in the model.");
+
   // Get joints by name.
   for (const std::string joint_name : kJointNames) {
     const Joint<T>& joint = model.GetJointByName(joint_name);

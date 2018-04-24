@@ -42,8 +42,8 @@ GTEST_TEST(BarycentricSystemTest, MatrixGain) {
   auto gain_context = gain.CreateDefaultContext();
   auto bary_context = bary_sys.CreateDefaultContext();
 
-  auto gain_output = gain.get_output_port().Allocate(*gain_context);
-  auto bary_output = bary_sys.get_output_port().Allocate(*bary_context);
+  auto gain_output = gain.get_output_port().Allocate();
+  auto bary_output = bary_sys.get_output_port().Allocate();
   for (double x : {-1., -.5, .3, .7}) {
     for (double y : {-.24, .4, .8}) {
       test = Vector2d{x, y};

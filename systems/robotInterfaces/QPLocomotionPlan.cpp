@@ -356,8 +356,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world =
         body_motion.getTransformTaskToWorld();
-    Vector4d quat_task_to_world =
-        drake::math::rotmat2quat(transform_task_to_world.linear());
+    const Vector4d quat_task_to_world =
+        drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+            transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
     eigenVectorToCArray(quat_task_to_world,
                         body_motion_data_for_support_lcm.quat_task_to_world);
@@ -590,7 +591,9 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto x0_twist =
       robot_.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
-  Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
+  const Vector4d x0_quat =
+      drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+          x0_pose.linear());
   Matrix<double, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       x0_quat, Phi,

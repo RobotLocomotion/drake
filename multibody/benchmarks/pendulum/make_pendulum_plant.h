@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
@@ -88,15 +88,14 @@ class PendulumParameters {
 /// @param[in] default_parameters
 ///   Default parameters of the model set at construction. Refer to the
 ///   documentation of PendulumParameters for further details.
-/// @param geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
+/// @param scene_graph
+///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakePendulumPlant(
-    const PendulumParameters& default_parameters,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+MakePendulumPlant(const PendulumParameters& default_parameters,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum
 }  // namespace benchmarks

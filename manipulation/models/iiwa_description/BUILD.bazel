@@ -19,7 +19,6 @@ drake_cc_googletest(
     name = "dual_iiwa14_polytope_collision_test",
     srcs = ["urdf/test/dual_iiwa14_polytope_collision_test.cc"],
     data = [":models"],
-    local = 1,
     deps = [
         "//common:find_resource",
         "//multibody/parsers",

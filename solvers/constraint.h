@@ -107,20 +107,24 @@ class Constraint : public EvaluatorBase {
  protected:
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::set_bounds, as in LinearConstraint.
+   * using Constraint::UpdateLowerBound, as in LinearConstraint.
    */
-  template <typename Derived>
-  void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
-    set_bounds(new_lb, upper_bound_);
+  void UpdateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& new_lb) {
+    if (new_lb.rows() != num_constraints()) {
+      throw std::logic_error("Lower bound has invalid dimension.");
+    }
+    lower_bound_ = new_lb;
   }
 
   /** Updates the upper bound.
    * @note if the users want to expose this method in a sub-class, do
-   * using Constraint::set_bounds, as in LinearConstraint.
+   * using Constraint::UpdateUpperBound, as in LinearConstraint.
    */
-  template <typename Derived>
-  void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
-    set_bounds(lower_bound_, new_ub);
+  void UpdateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
+    if (new_ub.rows() != num_constraints()) {
+      throw std::logic_error("Upper bound has invalid dimension.");
+    }
+    upper_bound_ = new_ub;
   }
 
   /**
@@ -130,17 +134,10 @@ class Constraint : public EvaluatorBase {
    * @note If the users want to expose this method in a sub-class, do
    * using Constraint::set_bounds, as in LinearConstraint.
    */
-  template <typename DerivedL, typename DerivedU>
-  void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
-                  const Eigen::MatrixBase<DerivedU>& upper_bound) {
-    if (lower_bound.rows() != num_constraints() ||
-        upper_bound.rows() != num_constraints() || lower_bound.cols() != 1 ||
-        upper_bound.cols() != 1) {
-      throw std::runtime_error("New constraints have invalid dimensions.");
-    }
-
-    lower_bound_ = lower_bound;
-    upper_bound_ = upper_bound;
+  void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+                  const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
+    UpdateLowerBound(lower_bound);
+    UpdateUpperBound(upper_bound);
   }
 
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,

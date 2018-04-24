@@ -8,7 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -29,9 +29,9 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
-using geometry::GeometrySystem;
+using geometry::GeometryId;
+using geometry::SceneGraph;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -142,23 +142,16 @@ class AcrobotPlantTests : public ::testing::Test {
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    geometry_system_ = builder.AddSystem<GeometrySystem>();
+    scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
-    plant_ = builder.AddSystem(
-        MakeAcrobotPlant(parameters_, false, geometry_system_));
+    plant_ =
+        builder.AddSystem(MakeAcrobotPlant(parameters_, false, scene_graph_));
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
     // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->get_geometry_ids_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
-
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_geometry_poses_output_port(),
         std::logic_error,
@@ -174,17 +167,12 @@ class AcrobotPlantTests : public ::testing::Test {
         "you must call Finalize\\(\\) first.");
 
     // Finalize() the plant before accessing its ports for communicating with
-    // GeometrySystem.
+    // SceneGraph.
     plant_->Finalize();
 
     builder.Connect(
-        plant_->get_geometry_ids_output_port(),
-        geometry_system_->get_source_frame_id_port(
-            plant_->get_source_id().value()));
-    builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        geometry_system_->get_source_pose_port(
-            plant_->get_source_id().value()));
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -244,9 +232,9 @@ class AcrobotPlantTests : public ::testing::Test {
   const AcrobotParameters parameters_;
   // The model plant:
   MultibodyPlant<double>* plant_{nullptr};
-  // A GeometrySystem so that we can test geometry registration.
-  GeometrySystem<double>* geometry_system_{nullptr};
-  // The Diagram containing both the MultibodyPlant and the GeometrySystem.
+  // A SceneGraph so that we can test geometry registration.
+  SceneGraph<double>* scene_graph_{nullptr};
+  // The Diagram containing both the MultibodyPlant and the SceneGraph.
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
@@ -292,7 +280,7 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       2.0);                     /* Actuation torque */
 }
 
-// Verifies the process of visual geometry registration with a GeometrySystem
+// Verifies the process of visual geometry registration with a SceneGraph
 // for the acrobot model.
 TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
@@ -305,20 +293,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   std::unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant_->get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
   std::unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate(*context);
+      plant_->get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -330,14 +311,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
     const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = poses.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
 
-  // GeometrySystem does not register a FrameId for the world. We use this fact
+  // SceneGraph does not register a FrameId for the world. We use this fact
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
   // world.
@@ -349,7 +329,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 }
 
 // Verifies the process of collision geometry registration with a
-// GeometrySystem.
+// SceneGraph.
 // We build a model with two spheres and a ground plane. The ground plane is
 // located at y = 0 with normal in the y-axis direction.
 // For testing the output port computation we place the spheres on the ground
@@ -359,26 +339,32 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const double radius = 0.5;
   const double x_offset = 0.6;
 
-  GeometrySystem<double> geometry_system;
+  SceneGraph<double> scene_graph;
   MultibodyPlant<double> plant;
-  plant.RegisterAsSourceForGeometrySystem(&geometry_system);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
   // A half-space for the ground geometry.
-  plant.RegisterCollisionGeometry(
+  CoulombFriction<double> ground_friction(0.5, 0.3);
+  GeometryId ground_id = plant.RegisterCollisionGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), &geometry_system);
+      geometry::HalfSpace(), ground_friction, &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere1, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  GeometryId sphere1_id = plant.RegisterCollisionGeometry(
+      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere1_friction, &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere2, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere2_friction(0.7, 0.6);
+  GeometryId sphere2_id = plant.RegisterCollisionGeometry(
+      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere2_friction, &scene_graph);
+
   // We are done defining the model.
   plant.Finalize();
 
@@ -398,20 +384,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
       context.get());
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant.get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
   std::unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate(*context);
+      plant.get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
-  const FramePoseVector<double>& poses =
+  const FramePoseVector<double>& pose_data =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -423,12 +402,19 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = pose_data.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
+
+  // Verify we can retrieve friction coefficients.
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(ground_id) == ground_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere1_id) == sphere1_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
@@ -494,7 +480,7 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   elbow_->set_angular_rate(context.get(), 2.5);
 
   std::unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate(*context);
+      plant_->get_continuous_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->GetValueOrThrow<BasicVector<double>>();

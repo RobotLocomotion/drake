@@ -23,7 +23,7 @@ ConstantValueSource<T>::ConstantValueSource(
   // Use the "advanced" method to provide explicit non-member functors here
   // since we already have AbstractValues.
   this->DeclareAbstractOutputPort(
-      [this](const Context<T>&) {
+      [this]() {
         return source_value_->Clone();
       },
       [this](const Context<T>&, AbstractValue* output) {

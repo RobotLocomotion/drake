@@ -324,7 +324,7 @@ Quantity            |Symbol|     Typeset    |   Code   | Meaning †
 Rotation matrix     |  R   |@f$^BR^C@f$     |`R_BC`    |Frame C's orientation in B
 Position vector     |  p   |@f$^Pp^Q@f$     |`p_PQ`    |Position from point P to point Q
 Transform/pose      |  X   |@f$^BX^C@f$     |`X_BC`    |Frame C's transform (pose) in B
-Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B
+Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B †
 Velocity            |  v   |@f$^Bv^Q@f$     |`v_BQ`    |%Point Q's velocity in B
 Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial velocity in B
 Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
@@ -333,10 +333,16 @@ Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial accele
 Torque              |  t   |@f$\tau^{B}@f$  |`t_B`     |Torque on a body (or frame) B
 Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
 Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
+Inertia matrix      |  I   |@f$I^{B/Bo}@f$  |`I_BBo`   |Body B's inertia matrix about Bo
+Spatial inertia     |  M   |@f$M^{B/Bo}@f$  |`M_BBo`   |Body B's spatial inertia bout Bo †
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
 as @f$[^B\omega^C]_E @f$.
+<br>Similarly, an inertia matrix or spatial inertia has an expressed-in-frame.
+<br>Example: `I_BBo_E` is body B's inertia matrix about Bo,
+expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
+<br>For more information, see @ref multibody_spatial_inertia
 
 †† In mechanical systems, it is often useful to <b>replace</b> a set of forces
 by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal

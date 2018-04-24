@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -34,7 +35,7 @@ class DiscreteValues {
   // DiscreteValues is not copyable or moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteValues)
 
-  /// Constructs an empty %DiscreteValues.
+  /// Constructs an empty %DiscreteValues object containing no groups.
   DiscreteValues() {}
 
   /// Constructs a %DiscreteValues that does not own the underlying @p data.
@@ -139,27 +140,29 @@ class DiscreteValues {
   /// match.
   void SetFrom(const DiscreteValues<double>& other) { SetFromGeneric(other); }
 
-  /// Returns a deep copy of all the data in this DiscreteValues. The clone
-  /// will own its own data. This is true regardless of whether the values being
-  /// cloned had ownership of its data or not.
-  // TODO(sherm1) This slices DiagramDiscreteVariables and needs to be reworked.
-  std::unique_ptr<DiscreteValues> Clone() const {
-    std::vector<std::unique_ptr<BasicVector<T>>> cloned_data;
-    cloned_data.reserve(data_.size());
-    for (const BasicVector<T>* datum : data_) {
-      cloned_data.push_back(datum->Clone());
-    }
-    return std::make_unique<DiscreteValues>(std::move(cloned_data));
+  /// Creates a deep copy of this object with the same substructure but with all
+  /// data owned by the copy. That is, if the original was a
+  /// DiagramDiscreteValues object that maintains a tree of substates, the clone
+  /// will not include any references to the original substates and is thus
+  /// decoupled from the Context containing the original. The concrete type of
+  /// the BasicVector underlying each leaf DiscreteValue is preserved.
+  std::unique_ptr<DiscreteValues<T>> Clone() const {
+    return std::unique_ptr<DiscreteValues<T>>(DoClone());
   }
 
  private:
-  // Pointers to the data comprising the values. If the data is owned, these
-  // pointers are equal to the pointers in owned_data_.
-  std::vector<BasicVector<T>*> data_;
-  // Owned pointers to the data comprising the values. The only purpose of these
-  // pointers is to maintain ownership. They may be populated at construction
-  // time, and are never accessed thereafter.
-  std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
+  // DiagramDiscreteValues must override this to maintain the necessary
+  // internal substructure, and to perform a deep copy so that the result
+  // owns all its own data. The default implementation here requires that this
+  // is a leaf DiscreteValues object so that we need only clone BasicVectors.
+  virtual std::unique_ptr<DiscreteValues<T>> DoClone() const {
+    std::vector<std::unique_ptr<BasicVector<T>>> cloned_data;
+    // Make deep copies regardless of previous ownership.
+    cloned_data.reserve(data_.size());
+    for (const BasicVector<T>* datum : data_)
+      cloned_data.push_back(datum->Clone());
+    return std::make_unique<DiscreteValues<T>>(std::move(cloned_data));
+  }
 
   template <typename U>
   void SetFromGeneric(const DiscreteValues<U>& other) {
@@ -170,6 +173,14 @@ class DiscreteValues {
           other.get_vector(i).get_value().template cast<T>());
     }
   }
+
+  // Pointers to the data comprising the values. If the data is owned, these
+  // pointers are equal to the pointers in owned_data_.
+  std::vector<BasicVector<T>*> data_;
+  // Owned pointers to the data comprising the values. The only purpose of these
+  // pointers is to maintain ownership in leaf DiscreteValues. They may be
+  // populated at construction time, and are never accessed thereafter.
+  std::vector<std::unique_ptr<BasicVector<T>>> owned_data_;
 };
 
 }  // namespace systems

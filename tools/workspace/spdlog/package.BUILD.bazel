@@ -21,7 +21,10 @@ config_setting(
 
 cc_library(
     name = "spdlog",
-    hdrs = glob(["include/spdlog/**"]),
+    hdrs = glob(
+        ["include/spdlog/**"],
+        exclude = ["include/spdlog/fmt/bundled/**"],
+    ),
     defines = [
         "HAVE_SPDLOG",
         "SPDLOG_FMT_EXTERNAL",

@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -29,7 +30,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // quick detection of uninitialized values.
 GTEST_TEST(SpatialInertia, DefaultConstructor) {
   SpatialInertia<double> I;
-  ASSERT_TRUE(I.IsNaN());
+  ASSERT_TRUE(I.IsNaN().value());
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
@@ -45,7 +46,7 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
   UnitInertia<double> G(m(0), m(1), m(2), /* moments of inertia */
                         p(0), p(1), p(2));/* products of inertia */
   SpatialInertia<double> M(mass, com, G);
-  ASSERT_TRUE(M.IsPhysicallyValid());
+  ASSERT_TRUE(M.IsPhysicallyValid().value());
 
   ASSERT_EQ(M.get_mass(), mass);
   ASSERT_EQ(M.get_com(), com);
@@ -63,9 +64,9 @@ GTEST_TEST(SpatialInertia, ConstructionFromMasComAndUnitInertia) {
 
   EXPECT_TRUE(Mmatrix.isApprox(expected_matrix, kEpsilon));
 
-  EXPECT_FALSE(M.IsNaN());
+  EXPECT_FALSE(M.IsNaN().value());
   M.SetNaN();
-  EXPECT_TRUE(M.IsNaN());
+  EXPECT_TRUE(M.IsNaN().value());
 }
 
 // Tests that we can correctly cast a SpatialInertia<double> to a
@@ -82,7 +83,7 @@ GTEST_TEST(SpatialInertia, CastToAutoDiff) {
       m_double(0), m_double(1), m_double(2), /* moments of inertia */
       p_double(0), p_double(1), p_double(2));/* products of inertia */
   const SpatialInertia<double> M_double(mass_double, com_double, G_double);
-  ASSERT_TRUE(M_double.IsPhysicallyValid());
+  ASSERT_TRUE(M_double.IsPhysicallyValid().value());
 
   // Cast from double to AutoDiffXd.
   SpatialInertia<AutoDiffXd> M_autodiff = M_double.cast<AutoDiffXd>();
@@ -153,7 +154,7 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
       UnitInertia<double>::SolidCube(L));
   MRightBox_Wo_W.ShiftInPlace(-Vector3d::UnitX());
   // Check if after transformation this still is a physically valid inertia.
-  EXPECT_TRUE(MRightBox_Wo_W.IsPhysicallyValid());
+  EXPECT_TRUE(MRightBox_Wo_W.IsPhysicallyValid().value());
 
   // Spatial inertia computed about the origin for a cube with sides of
   // length L centered at x = -1.0. Expressed in world frame W.
@@ -166,7 +167,7 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
       UnitInertia<double>::SolidCube(L));
   MLeftBox_Wo_W.ShiftInPlace(Vector3d::UnitX());
   // Check if after transformation this still is a physically valid inertia.
-  EXPECT_TRUE(MLeftBox_Wo_W.IsPhysicallyValid());
+  EXPECT_TRUE(MLeftBox_Wo_W.IsPhysicallyValid().value());
 
   // The result of adding the spatial inertia of two bodies is the spatial
   // inertia of the combined system of the two bodies as if they were welded
@@ -179,7 +180,7 @@ GTEST_TEST(SpatialInertia, PlusEqualOperator) {
   // in the two individual components.
   SpatialInertia<double> MBox_Wo_W(MLeftBox_Wo_W);
   MBox_Wo_W += MRightBox_Wo_W;
-  EXPECT_TRUE(MBox_Wo_W.IsPhysicallyValid());
+  EXPECT_TRUE(MBox_Wo_W.IsPhysicallyValid().value());
 
   // Check that the compound inertia corresponds to that of a larger box of
   // length 4.0.
@@ -216,7 +217,7 @@ GTEST_TEST(SpatialInertia, ReExpress) {
   SpatialInertia<double> M_CP_W = M_CP_E.ReExpress(R_WE);
 
   // Checks for physically correct spatial inertia.
-  EXPECT_TRUE(M_CP_W.IsPhysicallyValid());
+  EXPECT_TRUE(M_CP_W.IsPhysicallyValid().value());
 
   // The mass is invariant when re-expressing in another frame.
   EXPECT_EQ(M_CP_E.get_mass(), M_CP_W.get_mass());
@@ -264,7 +265,7 @@ GTEST_TEST(SpatialInertia, Shift) {
   SpatialInertia<double> M_BBtop_W = M_BBcm_W.Shift(p_BcmBtop_W);
 
   // Checks for physically correct spatial inertia.
-  EXPECT_TRUE(M_BBtop_W.IsPhysicallyValid());
+  EXPECT_TRUE(M_BBtop_W.IsPhysicallyValid().value());
 
   // Shift() does not change the mass.
   EXPECT_EQ(M_BBtop_W.get_mass(), M_BBcm_W.get_mass());
@@ -329,7 +330,7 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
       SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B);
 
   // Check for physically correct spatial inertia.
-  EXPECT_TRUE(M_BBo_B.IsPhysicallyValid());
+  EXPECT_TRUE(M_BBo_B.IsPhysicallyValid().value());
 
   // Check spatial inertia for proper value for mass and center of mass.
   EXPECT_EQ(M_BBo_B.get_mass(), mass);
@@ -394,6 +395,40 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
       0.5 * mass * v_WBcm.squaredNorm();
 
   EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
+}
+
+GTEST_TEST(SpatialInertia, SymbolicNan) {
+  using T = symbolic::Expression;
+  using symbolic::Variable;
+
+  const Variable mass{"m"};
+  const Vector3<T> p_PScm_E = symbolic::MakeVectorContinuousVariable(3, "p");
+  const UnitInertia<T> G_SP_E{
+      Variable{"Ixx"}, Variable{"Iyy"}, Variable{"Izz"},
+      Variable{"Ixy"}, Variable{"Ixz"}, Variable{"Iyz"}};
+  const SpatialInertia<T> I{mass, p_PScm_E, G_SP_E};
+  ASSERT_EQ(
+      I.IsNaN().value().to_string(),
+      "(isnan(m) or isnan(p(0)) or isnan(p(1)) or isnan(p(2)) or isnan(Ixx) or"
+      " isnan(Iyy) or isnan(Izz) or isnan(Ixy) or isnan(Ixz) or isnan(Iyz))");
+}
+
+// Verifies we can still call IsPhysicallyValid() when T = symbolic::Expression
+// and get a result whenever the expression represents a constant.
+GTEST_TEST(SpatialInertia, SymbolicConstant) {
+  using T = symbolic::Expression;
+
+  // Make a "constant" symbolic expression of a spatial inertia.
+  const T mass(2.5);
+  const Vector3<T> com(0.1, -0.2, 0.3);
+  const Vector3<T> m(2.0,  2.3, 2.4);  // m for moments.
+  const Vector3<T> p(0.1, -0.1, 0.2);  // p for products.
+  UnitInertia<T> G(m(0), m(1), m(2), /* moments of inertia */
+                   p(0), p(1), p(2));/* products of inertia */
+  SpatialInertia<T> M(mass, com, G);
+
+  // The expression can still be evaluated since all terms are constants.
+  ASSERT_TRUE(M.IsPhysicallyValid().value());
 }
 
 }  // namespace

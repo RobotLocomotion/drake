@@ -235,6 +235,9 @@ GTEST_TEST(DirectCollocationTest, NoInputs) {
   const double duration = (kNumSampleTimes - 1) * kFixedTimeStep;
   EXPECT_NEAR(prog.GetSolution(prog.final_state())(0), x0 * std::exp(-duration),
               1e-6);
+
+  const auto state_trajectory = prog.ReconstructStateTrajectory();
+  EXPECT_EQ(state_trajectory.get_number_of_segments(), kNumSampleTimes-1);
 }
 
 GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {

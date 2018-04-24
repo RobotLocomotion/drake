@@ -129,7 +129,7 @@ EXCLUDE                = "@DRAKE_WORKSPACE_ROOT@/build" \
                          "@DRAKE_WORKSPACE_ROOT@/third_party"
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = "@DRAKE_WORKSPACE_ROOT@/bazel-*" \
-                         "*/dev/*"
+                         "@DRAKE_WORKSPACE_ROOT@/*/dev/*"
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =

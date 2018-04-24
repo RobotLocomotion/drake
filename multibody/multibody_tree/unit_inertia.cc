@@ -1,13 +1,6 @@
 #include "drake/multibody/multibody_tree/unit_inertia.h"
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace multibody {
-
-// Explicitly instantiates on the most common scalar types.
-template class UnitInertia<double>;
-template class UnitInertia<AutoDiffXd>;
-
-}  // namespace multibody
-}  // namespace drake
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::UnitInertia)

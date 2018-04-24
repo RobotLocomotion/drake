@@ -51,6 +51,10 @@ class TestGeneral(unittest.TestCase):
         # Create simulator specifying context.
         context = system.CreateDefaultContext()
         context.set_time(0.)
+
+        context.set_accuracy(1e-4)
+        self.assertEquals(context.get_accuracy(), 1e-4)
+
         # @note `simulator` now owns `context`.
         simulator = Simulator(system, context)
         self.assertTrue(simulator.get_context() is context)

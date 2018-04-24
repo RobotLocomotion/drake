@@ -25,7 +25,7 @@ package(default_visibility = ["//visibility:public"])
 cc_toolchain_suite(
     name = "default-toolchain",
     toolchains = {
-        "darwin|compiler": "cc_toolchain_apple",
+        "darwin_x86_64|compiler": "cc_toolchain_apple",
         "k8|clang-4.0": "cc_toolchain_linux",
         "k8|gcc-5": "cc_toolchain_linux",
         "k8|gcc-6": "cc_toolchain_linux",
@@ -44,6 +44,9 @@ filegroup(
 # do not have any such files, although we once did.)
 filegroup(
     name = "universal_toolchain_deps",
+    srcs = [
+        "//tools/dynamic_analysis:sanitizer_blacklists",
+    ],
     visibility = ["//visibility:private"],
 )
 
@@ -99,7 +102,7 @@ cc_toolchain(
     name = "cc_toolchain_apple",
     all_files = ":apple_toolchain_deps",
     compiler_files = ":apple_toolchain_deps",
-    cpu = "darwin",
+    cpu = "darwin_x86_64",
     dwp_files = ":apple_toolchain_deps",
     dynamic_runtime_libs = [":empty"],
     linker_files = ":apple_toolchain_deps",
@@ -118,7 +121,7 @@ config_setting(
     name = "apple_debug",
     values = {
         "compilation_mode": "dbg",
-        "cpu": "darwin",
+        "cpu": "darwin_x86_64",
     },
 )
 

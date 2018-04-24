@@ -78,7 +78,7 @@ class OutputPort {
   @note If this is a vector-valued port, the underlying type is
   `Value<BasicVector<T>>`; downcast to `BasicVector<T>` before downcasting to
   the specific `BasicVector` subclass. */
-  std::unique_ptr<AbstractValue> Allocate(const Context<T>& context) const;
+  std::unique_ptr<AbstractValue> Allocate() const;
 
   /** Unconditionally computes the value of this output port with respect to the
   given context, into an already-allocated AbstractValue object whose concrete
@@ -130,12 +130,8 @@ class OutputPort {
   /** A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend
   on values and types of objects in the given Context.
-  @param context
-     A Context that has already been validated as compatible with
-     the System whose output port this is.
   @returns A unique_ptr to the new value-holding object as an AbstractValue. */
-  virtual std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>& context) const = 0;
+  virtual std::unique_ptr<AbstractValue> DoAllocate() const = 0;
 
   /** A concrete %OutputPort must implement this method to calculate the value
   this output port should have, given the supplied Context. The value may be
@@ -169,7 +165,7 @@ class OutputPort {
 
   // Check that an AbstractValue provided to Calc() is suitable for this port.
   // (Very expensive; use in Debug only.)
-  void CheckValidOutputType(const Context<T>&, const AbstractValue&) const;
+  void CheckValidOutputType(const AbstractValue&) const;
 
   // Check that both type-erased arguments have the same underlying type.
   void CheckValidAbstractValue(const AbstractValue& good,

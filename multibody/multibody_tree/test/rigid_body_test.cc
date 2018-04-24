@@ -22,8 +22,15 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   const SpatialInertia<double> M_Bo_B(mass, p_BoBcm_B, U_BBo_B);
   const RigidBody<double> B(M_Bo_B);
 
-  // Test that after construction, RigidBody class properly returns parts of its
-  // default spatial inertia.
+  // Test that after construction, RigidBody class properly returns its default
+  // spatial inertia or parts of it.
+  // TODO(amcastro-tri): Replace with EXPECT_EQ once operator==() is overloaded.
+  EXPECT_EQ(B.default_spatial_inertia().get_mass(), M_Bo_B.get_mass());
+  EXPECT_EQ(B.default_spatial_inertia().get_com(), M_Bo_B.get_com());
+  EXPECT_EQ(B.default_spatial_inertia().get_unit_inertia().get_moments(),
+            M_Bo_B.get_unit_inertia().get_moments());
+  EXPECT_EQ(B.default_spatial_inertia().get_unit_inertia().get_products(),
+            M_Bo_B.get_unit_inertia().get_products());
   EXPECT_EQ(B.default_mass(), mass);
   EXPECT_EQ(B.default_com(), p_BoBcm_B);
   const UnitInertia<double>& U_BBo_B_default = B.default_unit_inertia();
@@ -33,7 +40,7 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
   // Test that RigidBody class properly calculates rotational inertia.
   const RotationalInertia<double> I_BBo_B_expected = mass * U_BBo_B;
   const RotationalInertia<double> I_BBo_B = B.default_rotational_inertia();
-  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
+  EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon).value());
 }
 
 // Test rigid body constructor passing a string name.

@@ -17,8 +17,7 @@ void EncodeVector3d(
 Eigen::Vector3d DecodeVector3d(
     const bot_core::vector_3d_t& msg);
 
-void EncodeQuaternion(
-    const Eigen::Ref<const Eigen::Vector4d>& vec,
+void EncodeQuaternion(const Eigen::Quaterniond& q,
     // NOLINTNEXTLINE(runtime/references)
     bot_core::quaternion_t& msg);
 

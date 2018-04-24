@@ -17,7 +17,7 @@ namespace systems {
 namespace rendering {
 
 // TODO(david-german-tri, SeanCurtis-TRI): Subsume this functionality into
-// GeometrySystem when it becomes available.
+// SceneGraph when it becomes available.
 
 // TODO(david-german-tri): Consider renaming this to FrameKinematicsBundle,
 // since it contains both poses and velocities.

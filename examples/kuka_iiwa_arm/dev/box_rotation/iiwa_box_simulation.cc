@@ -248,7 +248,7 @@ int DoMain() {
   builder.Connect(iiwa_command_sub->get_output_port(),
                   iiwa_command_receiver->get_input_port(0));
 
-  builder.Connect(iiwa_command_receiver->get_output_port(0),
+  builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                   model->get_input_port_iiwa_state_command());
 
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),

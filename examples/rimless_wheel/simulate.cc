@@ -17,6 +17,8 @@ namespace examples {
 namespace rimless_wheel {
 namespace {
 
+DEFINE_double(accuracy, 1e-4, "Accuracy of the rimless wheel system (unitless);"
+    " must be positive.");
 DEFINE_double(initial_angle, 0.0, "Initial angle of the wheel (rad).  Must be"
     " in the interval (slope - alpha, slope + alpha), as described in "
     "http://underactuated.mit.edu/underactuated.html?chapter=simple_legs .");
@@ -86,7 +88,7 @@ int DoMain() {
   state.set_thetadot(FLAGS_initial_angular_velocity);
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.get_mutable_context().set_accuracy(1e-4);
+  simulator.get_mutable_context().set_accuracy(FLAGS_accuracy);
   simulator.StepTo(10);
 
   // Check that the state is still inside the expected region (I did not miss

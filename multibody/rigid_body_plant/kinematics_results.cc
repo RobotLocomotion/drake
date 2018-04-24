@@ -39,11 +39,8 @@ template<typename T>
 Quaternion<T> KinematicsResults<T>::get_body_orientation(int body_index) const {
   Isometry3<T>
       pose = tree_->relativeTransform(kinematics_cache_, 0, body_index);
-  Vector4<T> quat_vector = drake::math::rotmat2quat(pose.linear());
-  // Note that Eigen quaternion elements are not laid out in memory in the
-  // same way Drake currently aligns them. See issue #3470.
-  return Quaternion<T>(
-      quat_vector[0], quat_vector[1], quat_vector[2], quat_vector[3]);
+  const drake::math::RotationMatrix<T> R(pose.linear());
+  return R.ToQuaternion();
 }
 
 template<typename T>

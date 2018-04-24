@@ -24,29 +24,35 @@ test --test_tag_filters=-gurobi,-mosek,-snopt
 # Inject DISPLAY into test runner environment for tests that use X.
 test --test_env=DISPLAY
 
+# Location of the Gurobi license key file, typically named "gurobi.lic".
+# Setting this --test_env for all configurations is deliberate to improve
+# remote caching performance.
+test --test_env=GRB_LICENSE_FILE
+
+# Location of the MOSEK license file, typically named "mosek.lic". Setting
+# this --test_env for all configurations is deliberate to improve remote
+# caching performance.
+test --test_env=MOSEKLM_LICENSE_FILE
+
 ### A configuration that enables Gurobi. ###
-# -- To use this config, the GUROBI_PATH environment variable must be the
-# -- linux64 directory in the Gurobi 7.0.2 release.
+# -- To use this config, the GRB_LICENSE_FILE environment variable must be set
+# -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_PATH
+# -- environment variable must be set to the linux64 directory of the extracted
+# -- archive downloaded from gurobi.com.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
 # -- If Gurobi is optional, set gurobi_required=False.
 build:gurobi --define=WITH_GUROBI=ON
-# -- By default, Gurobi looks for the license file in the homedir.
-test:gurobi --test_env=HOME
-# -- If set, the GRB_LICENSE_FILE path takes precedence.
-test:gurobi --test_env=GRB_LICENSE_FILE
 
 ### A configuration that enables MOSEK. ###
-# -- To use this config, you must have a MOSEK license file installed to
-# -- $HOME/mosek/mosek.lic.
+# -- To use this config, the MOSEKLM_LICENSE_FILE environment variable must be
+# -- set to the location of the MOSEK license file.
 #
 # -- To run tests where MOSEK is used, ensure that you include
 # -- "mosek_test_tags()" from //tools/skylark:test_tags.bzl.
 # -- If MOSEK is optional, set mosek_required=False.
 build:mosek --define=WITH_MOSEK=ON
-# -- MOSEK looks for its license file at $HOME/mosek/mosek.lic
-test:mosek --test_env=HOME
 
 ### A configuration that enables SNOPT. ###
 # -- To use this config, you must have access to the private repository
@@ -62,10 +68,7 @@ test:everything --test_tag_filters=-no_everything
 
 # -- Options for Gurobi.
 build:everything --define=WITH_GUROBI=ON
-test:everything --test_env=GRB_LICENSE_FILE
 # -- Options for MOSEK.
 build:everything --define=WITH_MOSEK=ON
-# -- Options for Gurobi and MOSEK.
-test:everything --test_env=HOME
 # -- Options for SNOPT.
 build:everything --define=WITH_SNOPT=ON

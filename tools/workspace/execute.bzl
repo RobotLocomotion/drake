@@ -1,6 +1,26 @@
 # -*- python -*-
 
-def execute_and_return(repo_ctx, command):
+def path(repo_ctx, additional_search_paths = []):
+    """Return the value of the PATH environment variable that would be used by
+    the which() command."""
+    search_paths = additional_search_paths
+    if repo_ctx.os.name == "mac os x":
+        search_paths = search_paths + ["/usr/local/bin"]
+    search_paths = search_paths + ["/usr/bin", "/bin"]
+    return ":".join(search_paths)
+
+def which(repo_ctx, program, additional_search_paths = []):
+    """Return the path of the given program or None if there is no such program
+    in the PATH as defined by the path() function above. The value of the
+    user's PATH environment variable is ignored.
+    """
+    exec_result = repo_ctx.execute(["which", program], environment = {
+        "PATH": path(repo_ctx, additional_search_paths)})
+    if exec_result.return_code != 0:
+        return None
+    return repo_ctx.path(exec_result.stdout.strip())
+
+def execute_and_return(repo_ctx, command, additional_search_paths = []):
     """Runs the `command` (list) and returns a status value.  The return value
     is a struct with a field `error` that will be None on success or else a
     detailed message on command failure.
@@ -8,7 +28,7 @@ def execute_and_return(repo_ctx, command):
     if "/" in command[0]:
         program = command[0]
     else:
-        program = repo_ctx.which(command[0])
+        program = which(repo_ctx, command[0], additional_search_paths)
         if not program:
             error = "Could not find a program named '{}'".format(
                 command[0])

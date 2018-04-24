@@ -6,10 +6,10 @@ set -eu
 # demo; otherwise, it will execute the provided arguments in a Bash shell.
 if [[ $# -eq 0 ]]; then
     cd /drake
-    bazel build //tools:drake_visualizer
+    bazel build //tools:drake_visualizer //examples/acrobot:run_passive
     ./bazel-bin/tools/drake_visualizer &
     sleep 2
-    bazel run //examples/acrobot:acrobot_run_passive
+    bazel run //examples/acrobot:run_passive
 else
     exec "$@"
 fi

@@ -72,8 +72,8 @@ void RigidBodyPlant<T>::initialize() {
           .get_index();
   if (is_state_discrete()) {
     // TODO(jwnimmer-tri) Add an implementation of the state derivative output
-    // port that works in timestepping mode.  For now, we just disable the port
-    // entirely and have a cautionary API comment on its accessor.
+    // port that works in the discretized mode.  For now, we just disable the
+    // port entirely and have a cautionary API comment on its accessor.
   } else {
     state_derivative_output_port_index_ =
         this->DeclareVectorOutputPort(
@@ -92,7 +92,7 @@ void RigidBodyPlant<T>::initialize() {
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
-  // Schedule time stepping update.
+  // Schedule discretization update.
   if (timestep_ > 0.0)
     this->DeclarePeriodicDiscreteUpdate(timestep_);
 }
@@ -1076,7 +1076,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
       // See whether the joint is currently violated or the *current* joint
       // velocity might lead to a limit violation. The latter is a heuristic to
-      // incorporate the joint limit into the time stepping calculations before
+      // incorporate the joint limit into the discretization calculations before
       // it is violated.
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.
@@ -1240,7 +1240,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
     drake::systems::DiscreteValues<U>*) const {
   throw std::runtime_error(
-      "RigidBodyPlant with discrete updates (time-stepping) currently only "
+      "Discretized RigidBodyPlant currently only "
           "supports T=double.");
 }
 

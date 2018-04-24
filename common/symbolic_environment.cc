@@ -50,10 +50,10 @@ Environment::map BuildMap(const initializer_list<Environment::key_type> vars) {
 
 }  // anonymous namespace
 
-Environment::Environment(const initializer_list<value_type> init)
+Environment::Environment(const std::initializer_list<value_type> init)
     : Environment{map(init)} {}
 
-Environment::Environment(const initializer_list<key_type> vars)
+Environment::Environment(const std::initializer_list<key_type> vars)
     : Environment{BuildMap(vars)} {}
 
 Environment::Environment(map m) : map_{move(m)} {

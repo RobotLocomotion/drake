@@ -115,9 +115,15 @@ class DiagramState : public State<T> {
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class DiagramContext : public Context<T> {
+class DiagramContext final : public Context<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContext)
+  /// @name  Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is protected for use in implementing Clone().
+  DiagramContext(DiagramContext&&) = delete;
+  DiagramContext& operator=(const DiagramContext&) = delete;
+  DiagramContext& operator=(DiagramContext&&) = delete;
+  //@}
 
   /// Identifies a child subsystem's input port.
   using InputPortIdentifier = std::pair<SubsystemIndex, InputPortIndex>;
@@ -273,6 +279,17 @@ class DiagramContext : public Context<T> {
     }
   }
 
+  /// Recursively sets the accuracy on this context and all subcontexts,
+  /// overwriting any accuracy value set in any subcontexts.
+  void set_accuracy(const optional<double>& accuracy) override {
+    Context<T>::set_accuracy(accuracy);
+    for (auto& subcontext : contexts_) {
+      if (subcontext != nullptr) {
+        subcontext->set_accuracy(accuracy);
+      }
+    }
+  }
+
   int get_num_input_ports() const override {
     return static_cast<int>(input_ids_.size());
   }
@@ -296,59 +313,46 @@ class DiagramContext : public Context<T> {
   }
 
  protected:
-  /// The caller owns the returned memory.
-  DiagramContext<T>* DoClone() const override {
-    DRAKE_ASSERT(contexts_.size() == outputs_.size());
-    DiagramContext<T>* clone = new DiagramContext(num_subcontexts());
-
+  /// Protected copy constructor takes care of the local data members and
+  /// all base class members, but doesn't update base class pointers so is
+  /// not a complete copy.
+  DiagramContext(const DiagramContext& source)
+      : Context<T>(source),
+        outputs_(source.num_subcontexts()),
+        contexts_(source.num_subcontexts()),
+        state_(std::make_unique<DiagramState<T>>(source.num_subcontexts())) {
     // Clone all the subsystem contexts and outputs.
-    for (SubsystemIndex i(0); i < num_subcontexts(); ++i) {
-      DRAKE_DEMAND(contexts_[i] != nullptr);
-      DRAKE_DEMAND(outputs_[i] != nullptr);
+    for (SubsystemIndex i(0); i < source.num_subcontexts(); ++i) {
+      DRAKE_DEMAND(source.contexts_[i] != nullptr);
+      DRAKE_DEMAND(source.outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
       // appears on each of its input ports into a FreestandingInputPortValue.
-      clone->AddSystem(i, contexts_[i]->Clone(), outputs_[i]->Clone());
+      AddSystem(i, Context<T>::CloneWithoutPointers(*source.contexts_[i]),
+                source.outputs_[i]->Clone());
     }
 
     // Build a superstate over the subsystem contexts.
-    clone->MakeState();
+    MakeState();
 
-    // Build a superparameters over the subsystem contexts.
-    clone->MakeParameters();
+    // Build superparameters over the subsystem contexts.
+    MakeParameters();
 
     // Clone the internal graph structure. After this is done, the clone will
     // still have FreestandingInputPortValues at the inputs to the Diagram
     // itself, but all of the intermediate nodes will have
     // DependentInputPortValues.
-    for (const auto& connection : connection_map_) {
+    for (const auto& connection : source.connection_map_) {
       const OutputPortIdentifier& src = connection.second;
       const InputPortIdentifier& dest = connection.first;
-      clone->Connect(src, dest);
+      Connect(src, dest);
     }
 
     // Clone the external input structure.
-    for (const InputPortIdentifier& id : input_ids_) {
-      clone->ExportInput(id);
+    for (const InputPortIdentifier& id : source.input_ids_) {
+      ExportInput(id);
     }
 
-    // Make deep copies of everything else using the default copy constructors.
-    clone->set_accuracy(this->get_accuracy());
-    *clone->get_mutable_step_info() = this->get_step_info();
-
-    return clone;
-  }
-
-  /// The caller owns the returned memory.
-  State<T>* DoCloneState() const override {
-    DiagramState<T>* clone = new DiagramState<T>(num_subcontexts());
-
-    for (SubsystemIndex i(0); i < num_subcontexts(); i++) {
-      Context<T>* context = contexts_[i].get();
-      clone->set_and_own_substate(i, context->CloneState());
-    }
-
-    clone->Finalize();
-    return clone;
+    // Everything else was handled by the Context<T> copy constructor.
   }
 
   /// Returns the input port at the given @p index, which of course belongs
@@ -363,6 +367,22 @@ class DiagramContext : public Context<T> {
   }
 
  private:
+  std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
+    return std::unique_ptr<ContextBase>(new DiagramContext<T>(*this));
+  }
+
+  std::unique_ptr<State<T>> DoCloneState() const final {
+    auto clone = std::make_unique<DiagramState<T>>(num_subcontexts());
+
+    for (SubsystemIndex i(0); i < num_subcontexts(); i++) {
+      Context<T>* context = contexts_[i].get();
+      clone->set_and_own_substate(i, context->CloneState());
+    }
+
+    clone->Finalize();
+    return clone;
+  }
+
   int num_subcontexts() const {
     DRAKE_ASSERT(contexts_.size() == outputs_.size());
     return static_cast<int>(contexts_.size());

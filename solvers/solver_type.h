@@ -15,6 +15,7 @@ enum class SolverType {
   kOsqp,
   kSnopt,
   kScs,
+  kUnrevisedLemke
 };
 
 }  // namespace solvers

@@ -1,4 +1,5 @@
 #include "pybind11/eigen.h"
+#include "pybind11/functional.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -61,8 +62,13 @@ PYBIND11_MODULE(trajectory_optimization, m) {
            py::overload_cast<
                const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
                &MultipleShooting::AddFinalCost))
+      .def("AddInputTrajectoryCallback",
+           &MultipleShooting::AddInputTrajectoryCallback)
+      .def("AddStateTrajectoryCallback",
+           &MultipleShooting::AddStateTrajectoryCallback)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory)
-      .def("GetSampleTimes", &MultipleShooting::GetSampleTimes)
+      .def("GetSampleTimes", overload_cast_explicit<Eigen::VectorXd>(
+                                 &MultipleShooting::GetSampleTimes))
       .def("GetInputSamples", &MultipleShooting::GetInputSamples)
       .def("GetStateSamples", &MultipleShooting::GetStateSamples)
       .def("ReconstructInputTrajectory",
