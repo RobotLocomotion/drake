@@ -472,6 +472,7 @@ drake_cc_googletest(
 
 sh_test(
     name = "rgbd_camera_publish_lcm_test",
+    size = "small",
     srcs = ["rgbd_camera_publish_lcm_example"],
     args = [
         "--sdf_dir=" + native.package_name() + "/test/models",
