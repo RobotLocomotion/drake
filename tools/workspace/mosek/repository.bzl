@@ -55,6 +55,7 @@ def _impl(repository_ctx):
         install_name_tool = which(repository_ctx, "install_name_tool")
 
         files = [
+            "bin/libscilkrts.5.dylib",
             "bin/libiomp5.dylib",
             "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
                                                 mosek_minor_version),
@@ -87,6 +88,7 @@ def _impl(repository_ctx):
         ]
     else:
         files = [
+            "bin/libcilkrts.so.5",
             "bin/libiomp5.so",
             "bin/libmosek64.so.{}.{}".format(mosek_major_version,
                                              mosek_minor_version),
