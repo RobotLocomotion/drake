@@ -43,7 +43,7 @@ class WorldSimTreeBuilder {
   /// auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>(false);
   /// tree_builder->StoreDrakeModel("mymodel", kModelUrdf);
   /// tree_builder->AddFixedModelInstance("mymodel", Eigen::Vector3d::Zero());
-  /// auto mtree = tree_builder->get_mutable_tree();
+  /// auto mtree = tree_builder->mutable_tree();
   /// //  modify the tree here
   /// mtree->compile();
   /// ```
@@ -163,12 +163,12 @@ class WorldSimTreeBuilder {
   /// programmatically adding collision elements to the un-compiled tree).
   /// @pre Build() must not have been called yet.
   /// @pre Constructor must have been called with compile_tree set to false.
-  RigidBodyTree<T>* get_mutable_tree() {
+  RigidBodyTree<T>* mutable_tree() {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
 
     if (compile_tree_) {
       throw std::runtime_error(
-          "WorldSimTreeBuilder::get_mutable_tree(): "
+          "WorldSimTreeBuilder::mutable_tree(): "
               "Attempting to return a mutable tree on an already "
               "compiled tree.");
     }
