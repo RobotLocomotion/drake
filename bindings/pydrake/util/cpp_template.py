@@ -108,15 +108,18 @@ class TemplateBase(object):
         """Adds a set of instantiations given a function and a list of
         parameter sets.
 
-        @param instantiation_func Function of the form `f(param)`, where
-        `param` is the parameter set for the current instantiation.
+        @param instantiation_func Function of the form `f(tpl, param)`, where
+        `tpl` is the current template and `param` is the parameter set for the
+        current instantiation.
         @param param_list Ordered container of parameter sets to produce
         instantiations. This list will be iterated through, the wrapped
         function will be called, and the inner method will return a class (or
         method).
         """
+        # N.B. The `tpl` argument is added for decorators, where instantiations
+        # may want to refer to the template before the decorator has returned.
         for param in param_list:
-            self.add_instantiation(param, instantiation_func(param))
+            self.add_instantiation(param, instantiation_func(self, param))
 
     def get_param_set(self, instantiation):
         """Returns all parameters for a given `instantiation`.
