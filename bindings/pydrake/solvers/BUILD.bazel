@@ -120,14 +120,12 @@ install(
 
 drake_py_unittest(
     name = "gurobi_solver_test",
-    size = "small",
     tags = gurobi_test_tags(),
     deps = [":gurobi_py"],
 )
 
 drake_py_unittest(
     name = "ipopt_solver_test",
-    size = "small",
     args = select({
         "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
         "//conditions:default": [],
@@ -137,21 +135,18 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "mosek_solver_test",
-    size = "small",
     tags = mosek_test_tags(),
     deps = [":mosek_py"],
 )
 
 drake_py_unittest(
     name = "mathematicalprogram_test",
-    size = "small",
     tags = gurobi_test_tags(),
     deps = [":mathematicalprogram_py"],
 )
 
 drake_py_test(
     name = "pr2_ik_test",
-    size = "small",
     # TODO(jwnimmer-tri) Port this to drake_py_unittest.
     allow_import_unittest = True,
     data = ["//examples/pr2:models"],
@@ -161,7 +156,6 @@ drake_py_test(
 
 drake_py_unittest(
     name = "rbt_ik_test",
-    size = "small",
     data = ["//examples/pendulum:models"],
     tags = ["snopt"],
     deps = [":ik_py"],

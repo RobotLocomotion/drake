@@ -107,7 +107,6 @@ drake_cc_binary(
     test_rule_data = [
         ":test/maps/cross.rndf",
     ],
-    test_rule_size = "small",
     deps = [
         ":loader",
         "//common:text_logging_gflags",

@@ -230,7 +230,6 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "odr_test",
-    size = "small",
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
@@ -239,20 +238,17 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "common_test",
-    size = "small",
     data = ["//examples/atlas:models"],
     deps = [":common_py"],
 )
 
 drake_py_unittest(
     name = "forward_diff_test",
-    size = "small",
     deps = [":autodiffutils_py"],
 )
 
 drake_py_unittest(
     name = "lcm_test",
-    size = "small",
     deps = [
         ":lcm_py",
     ],
@@ -260,7 +256,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_test",
-    size = "small",
     deps = [
         ":math_py",
     ],
@@ -268,7 +263,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_overloads_test",
-    size = "small",
     deps = [
         ":autodiffutils_py",
         ":math_py",
@@ -278,7 +272,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "symbolic_test",
-    size = "small",
     deps = [
         ":algebra_test_util_py",
         ":symbolic_py",
@@ -288,13 +281,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectories_test",
-    size = "small",
     deps = [":trajectories_py"],
 )
 
 drake_py_unittest(
     name = "automotive_test",
-    size = "small",
     deps = [
         ":automotive_py",
         "//bindings/pydrake/maliput:api_py",

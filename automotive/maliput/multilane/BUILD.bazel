@@ -104,7 +104,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_builder_test",
-    size = "small",
     srcs = ["test/multilane_builder_test.cc"],
     deps = [
         ":builder",
@@ -115,7 +114,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_connection_test",
-    size = "small",
     srcs = ["test/multilane_connection_test.cc"],
     deps = [
         ":builder",
@@ -126,7 +124,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_lanes_test",
-    size = "small",
     srcs = ["test/multilane_lanes_test.cc"],
     deps = [
         ":lanes",
@@ -137,7 +134,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_line_road_curve_test",
-    size = "small",
     srcs = ["test/multilane_line_road_curve_test.cc"],
     deps = [
         ":lanes",
@@ -147,7 +143,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_loader_test",
-    size = "small",
     srcs = ["test/multilane_loader_test.cc"],
     deps = [
         ":loader",
@@ -158,7 +153,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_road_geometry_test",
-    size = "small",
     srcs = ["test/multilane_road_geometry_test.cc"],
     deps = [
         ":builder",
@@ -168,7 +162,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_segments_test",
-    size = "small",
     srcs = ["test/multilane_segments_test.cc"],
     deps = [
         ":lanes",
@@ -189,7 +182,6 @@ drake_cc_binary(
 
 drake_py_unittest(
     name = "yaml_load_test",
-    size = "small",
     args = ["$(location :yaml_load)"],
     data = [
         ":yaml_load",

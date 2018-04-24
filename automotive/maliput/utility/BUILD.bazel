@@ -59,7 +59,6 @@ drake_cc_binary(
     test_rule_data = [
         ":t_intersection.rndf",
     ],
-    test_rule_size = "small",
     deps = [
         ":utility",
         "//automotive/maliput/rndf",

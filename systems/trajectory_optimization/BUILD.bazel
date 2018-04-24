@@ -86,7 +86,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multiple_shooting_test",
-    size = "small",
     deps = [
         ":multiple_shooting",
         "//common/test_utilities:eigen_matrix_compare",

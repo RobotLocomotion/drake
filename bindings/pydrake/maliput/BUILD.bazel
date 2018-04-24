@@ -87,7 +87,6 @@ install(
 
 drake_py_unittest(
     name = "maliput_test",
-    size = "small",
     deps = [
         ":api_py",
         ":dragway_py",

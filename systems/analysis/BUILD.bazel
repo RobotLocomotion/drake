@@ -238,7 +238,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "initial_value_problem_test",
-    size = "small",
     deps = [
         ":initial_value_problem",
         ":runge_kutta2_integrator",
@@ -248,7 +247,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
-    size = "small",
     deps = [
         ":scalar_initial_value_problem",
     ],
@@ -256,7 +254,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "antiderivative_function_test",
-    size = "small",
     deps = [
         ":antiderivative_function",
     ],
