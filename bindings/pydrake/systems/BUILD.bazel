@@ -56,7 +56,15 @@ drake_pybind_library(
         "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "framework",
-    cc_srcs = ["framework_py.cc"],
+    cc_srcs = [
+        "framework_py.cc",
+        "framework_py_semantics.cc",
+        "framework_py_semantics.h",
+        "framework_py_systems.cc",
+        "framework_py_systems.h",
+        "framework_py_values.cc",
+        "framework_py_values.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
