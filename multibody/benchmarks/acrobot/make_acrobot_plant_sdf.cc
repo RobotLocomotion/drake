@@ -12,6 +12,8 @@ namespace multibody {
 namespace benchmarks {
 namespace acrobot {
 
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 using drake::multibody::multibody_plant::MultibodyPlant;
@@ -31,25 +33,25 @@ MakeAcrobotPlantSdf() {
     "<sdf version='1.6'>"
     "  <model name='acrobot'>"
     "    <link name='Link1'>"
+    "      <pose>0 0 -0.5 0 0 0</pose>"
     "      <inertial>"
-    "        <pose>0 0 0.5 0 0 0</pose>"
     "        <mass>1.0</mass>"
     "        <!-- This inertia is based on a solid cylinder with"
     "             radius=0.001 meters and height=1.0 meters. -->"
     "        <inertia>"
-    "          <ixx>0.083</ixx><iyy>0.083</iyy><izz>0.0000005</izz>"
+    "          <ixx>0.083</ixx><iyy>0.083</iyy><izz>5e-7</izz>"
     "          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>"
     "        </inertia>"
     "      </inertial>"
     "    </link>"
     "    <link name='Link2'>"
+    "      <pose>0 0 -2.0 0 0 0</pose>"
     "      <inertial>"
-    "        <pose>0 0 0.5 0 0 0</pose>"
     "        <mass>1.0</mass>"
     "        <!-- This inertia is based on a solid cylinder with"
-    "             radius=1.0 meters and height=1.0 meters. -->"
+    "             radius=1.0 meters and height=2.0 meters. -->"
     "        <inertia>"
-    "          <ixx>0.33</ixx><iyy>0.33</iyy><izz>0.5</izz>"
+    "          <ixx>0.33</ixx><iyy>0.33</iyy><izz>5e-7</izz>"
     "          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>"
     "        </inertia>"
     "      </inertial>"
@@ -58,14 +60,15 @@ MakeAcrobotPlantSdf() {
     "      <parent>world</parent>"
     "      <child>Link1</child>"
     "      <axis>"
-    "        <xyz>1.0 0 0</xyz>"
+    "        <xyz>0.0 1.0 0.0</xyz>"
     "      </axis>"
     "    </joint>"
     "    <joint name='ElbowJoint' type='revolute'>"
+    "      <pose>0 0 -1.0 0 0 0</pose>"
     "      <parent>Link1</parent>"
     "      <child>Link2</child>"
     "      <axis>"
-    "        <xyz>1.0 0 0</xyz>"
+    "        <xyz>0.0 1.0 0.0</xyz>"
     "      </axis>"
     "    </joint>"
     "  </model>"
@@ -97,7 +100,6 @@ MakeAcrobotPlantSdf() {
     const ignition::math::Matrix3d I_BBcm_Bi = I_Bcm_B.MOI();
 
     // Create the multibody inertia
-    // TODO(nkoenig) Write test to verify that I'm setting this correctly.
     SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::MakeFromCentralInertia(
           I_Bcm_B.MassMatrix().Mass(),
@@ -119,6 +121,23 @@ MakeAcrobotPlantSdf() {
     const sdf::Joint* joint = model->JointByIndex(joint_index);
     const sdf::JointAxis* axis = joint->Axis();
 
+    // Get the location of the joint in the model frame.
+    ignition::math::Matrix4d joint_M(joint->Pose());
+
+    // Get the location of the child link in the model frame.
+    ignition::math::Matrix4d childlink_m(
+        model->LinkByName(joint->ChildLinkName())->Pose());
+
+    // Compute the location of the child joint in the child link's frame.
+    ignition::math::Matrix4d childjoint_childlink_ign =
+      joint_M * childlink_m.Inverse();
+
+    // Convert to Eigen
+    Vector3d childjoint_childlink(
+        childjoint_childlink_ign.Translation().X(),
+        childjoint_childlink_ign.Translation().Y(),
+        childjoint_childlink_ign.Translation().Z());
+
     // Only supporting revolute joints for now.
     if (joint->Type() == sdf::JointType::REVOLUTE) {
       // TODO(nkoenig) Check that the links exist before creating the
@@ -129,12 +148,30 @@ MakeAcrobotPlantSdf() {
           joint->ParentLinkName() == "world") {
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->world_body(), {},
-            plant->GetBodyByName(joint->ChildLinkName()), {},
+            plant->GetBodyByName(joint->ChildLinkName()),
+            Isometry3d(Translation3d(childjoint_childlink)),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       } else {
+
+        // Get the location of the parent link in the model frame.
+        ignition::math::Matrix4d parentlink_m(
+            model->LinkByName(joint->ParentLinkName())->Pose());
+
+        // Compute the location of the parent joint in the parent link's frame.
+        ignition::math::Matrix4d parentjoint_parentlink_ign =
+          joint_M * parentlink_m.Inverse();
+
+        // Convert to Eigen
+        Vector3d parentjoint_parentlink(
+            parentjoint_parentlink_ign.Translation().X(),
+            parentjoint_parentlink_ign.Translation().Y(),
+            parentjoint_parentlink_ign.Translation().Z());
+
         plant->AddJoint<RevoluteJoint>(joint->Name(),
-            plant->GetBodyByName(joint->ParentLinkName()), {},
-            plant->GetBodyByName(joint->ChildLinkName()), {},
+            plant->GetBodyByName(joint->ParentLinkName()),
+            Isometry3d(Translation3d(parentjoint_parentlink)),
+            plant->GetBodyByName(joint->ChildLinkName()),
+            Isometry3d(Translation3d(childjoint_childlink)),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       }
     }
