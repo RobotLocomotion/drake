@@ -172,30 +172,6 @@ MakeAcrobotPlantSdf() {
             Isometry3d(Translation3d(parentjoint_parentlink)),
             plant->GetBodyByName(joint->ChildLinkName()),
             Isometry3d(Translation3d(childjoint_childlink)),
-            plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(childjoint_childlink)),
-            Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
-      } else {
-
-        // Get the location of the parent link in the model frame.
-        ignition::math::Matrix4d parentlink_m(
-            model->LinkByName(joint->ParentLinkName())->Pose());
-
-        // Compute the location of the parent joint in the parent link's frame.
-        ignition::math::Matrix4d parentjoint_parentlink_ign =
-          joint_M * parentlink_m.Inverse();
-
-        // Convert to Eigen
-        Vector3d parentjoint_parentlink(
-            parentjoint_parentlink_ign.Translation().X(),
-            parentjoint_parentlink_ign.Translation().Y(),
-            parentjoint_parentlink_ign.Translation().Z());
-
-        plant->AddJoint<RevoluteJoint>(joint->Name(),
-            plant->GetBodyByName(joint->ParentLinkName()),
-            Isometry3d(Translation3d(parentjoint_parentlink)),
-            plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(childjoint_childlink)),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       }
     }
