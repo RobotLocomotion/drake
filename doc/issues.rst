@@ -1,3 +1,5 @@
+.. _issues:
+
 ***********************
 GitHub Issue Management
 ***********************
@@ -16,6 +18,14 @@ of the following:
 Please only assign labels if you are reasonably confident they are correct.
 The Drake development team will apply appropriate labels to issues during
 the weekly scrub.
+
+Owner
+=====
+
+All GitHub issues should have an owner. The Platform Reviewer should check once
+per day that `all unassigned issues
+<https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee>`_
+have an appropriate owner.
 
 Team
 ====
