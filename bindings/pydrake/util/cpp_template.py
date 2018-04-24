@@ -151,6 +151,28 @@ class TemplateBase(object):
         # To be overridden by child classes.
         pass
 
+    @classmethod
+    def define(cls, name, param_list, *args, **kwargs):
+        """Provides a decorator which can define a user-defined template given
+        a parameter list.
+
+        Example:
+        @TemplateClass.define("MyTemplate", param_list=[(int,), (float,)])
+        def MyTemplate(param):
+            T, = param
+            class MyClass(object):
+                def __init__(self):
+                    self.T = T
+            return MyClass
+        """
+
+        def decorator(instantiation_func):
+            tpl = cls(name, *args, **kwargs)
+            tpl.add_instantiations(instantiation_func, param_list)
+            return tpl
+
+        return decorator
+
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes. """
