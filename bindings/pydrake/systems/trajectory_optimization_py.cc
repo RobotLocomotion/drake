@@ -15,6 +15,8 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::trajectory_optimization;
 
+  using solvers::VectorXDecisionVariable;
+
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
@@ -25,22 +27,35 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("time", &MultipleShooting::time)
       .def("timestep", &MultipleShooting::timestep)
       .def("fixed_timestep", &MultipleShooting::fixed_timestep)
+      // TODO(eric.cousineau): The original bindings returned references
+      // instead of copies using VectorXBlock. Restore this once dtype=custom
+      // is resolved.
       .def("state",
-           overload_cast_explicit<const solvers::VectorXDecisionVariable&>(
-               &MultipleShooting::state))
+           [](const MultipleShooting& self) -> VectorXDecisionVariable {
+             return self.state();
+           })
       .def("state",
-           overload_cast_explicit<
-               Eigen::VectorBlock<const solvers::VectorXDecisionVariable>, int>(
-               &MultipleShooting::state))
-      .def("initial_state", &MultipleShooting::initial_state)
-      .def("final_state", &MultipleShooting::final_state)
+           [](const MultipleShooting& self, int index) ->
+               VectorXDecisionVariable {
+             return self.state(index);
+           })
+      .def("initial_state",
+           [](const MultipleShooting& self) -> VectorXDecisionVariable {
+             return self.initial_state();
+           })
+      .def("final_state",
+           [](const MultipleShooting& self) -> VectorXDecisionVariable {
+             return self.final_state();
+           })
       .def("input",
-           overload_cast_explicit<const solvers::VectorXDecisionVariable&>(
-               &MultipleShooting::input))
+           [](const MultipleShooting& self) -> VectorXDecisionVariable {
+             return self.input();
+           })
       .def("input",
-           overload_cast_explicit<
-               Eigen::VectorBlock<const solvers::VectorXDecisionVariable>, int>(
-               &MultipleShooting::input))
+           [](const MultipleShooting& self, int index) ->
+                VectorXDecisionVariable {
+             return self.input(index);
+           })
       .def("AddRunningCost",
            [](MultipleShooting& prog, const symbolic::Expression& g) {
              prog.AddRunningCost(g);
