@@ -34,6 +34,5 @@ exports_files(
 # Runs `install_test_helper` unit tests.
 drake_py_unittest(
     name = "install_test_helper_test",
-    size = "small",
     deps = [":install_test_helper"],
 )

@@ -117,7 +117,6 @@ install(
 
 drake_py_unittest(
     name = "acrobot_test",
-    size = "small",
     deps = [
         ":acrobot_py",
     ],
@@ -125,7 +124,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "pendulum_test",
-    size = "small",
     deps = [
         ":pendulum_py",
     ],
@@ -133,7 +131,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rimless_wheel_test",
-    size = "small",
     deps = [
         ":rimless_wheel_py",
     ],
@@ -141,7 +138,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "van_der_pol_test",
-    size = "small",
     deps = [
         ":van_der_pol_py",
     ],

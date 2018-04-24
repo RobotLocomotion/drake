@@ -68,7 +68,6 @@ drake_cc_binary(
     test_rule_data = [
         ":t_intersection.rndf",
     ],
-    test_rule_size = "small",
     deps = [
         ":utility",
         "//automotive/maliput/rndf",
@@ -108,7 +107,7 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "yaml_to_obj_test",
-    size = "medium",
+    timeout = "moderate",
     args = ["$(location :yaml_to_obj)"],
     data = [
         ":yaml_to_obj",

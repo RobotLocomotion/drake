@@ -191,8 +191,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "large",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     deps = [
         ":implicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -202,8 +202,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "lyapunov_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":lyapunov",
         "//examples/pendulum:pendulum_plant",
@@ -220,8 +218,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "runge_kutta3_integrator_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     deps = [
         ":runge_kutta3_integrator",
         "//math:geometric_transform",
@@ -233,8 +231,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
@@ -246,7 +242,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "initial_value_problem_test",
-    size = "small",
     deps = [
         ":initial_value_problem",
         ":runge_kutta2_integrator",
@@ -256,7 +251,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
-    size = "small",
     deps = [
         ":scalar_initial_value_problem",
     ],
@@ -264,7 +258,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "antiderivative_function_test",
-    size = "small",
     deps = [
         ":antiderivative_function",
     ],

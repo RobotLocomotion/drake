@@ -205,7 +205,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "free_rotating_body_test",
-    size = "small",
     srcs = [
         "test/free_rotating_body_test.cc",
     ],
@@ -230,7 +229,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "floating_body_test",
-    size = "small",
     timeout = "moderate",
     srcs = [
         "test/floating_body_test.cc",
@@ -245,8 +243,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "tree_from_mobilizers_test",
-    # Presently times out in valgrind + debug with default size, "small".
-    size = "medium",
+    # Test timeout increased to not timeout in debug and when run with
+    # Valgrind.
+    timeout = "moderate",
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",

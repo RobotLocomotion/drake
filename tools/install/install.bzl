@@ -766,9 +766,10 @@ def install_test(
 
     drake_py_unittest(
         name = name,
-        size = "small",
-        # Increase the timeout so that debug builds are successful.
-        timeout = "long",
+        # This is an integration test with significant I/O that requires at
+        # least a "moderate" timeout so that debug builds are successful.
+        # Therefore, the test size is increased to "medium".
+        size = "medium",
         srcs = [src],
         deps = ["//tools/install:install_test_helper"],
         **kwargs

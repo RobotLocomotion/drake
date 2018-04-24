@@ -116,6 +116,7 @@ drake_py_unittest(
 
 sh_test(
     name = "clang_format_includes_test",
+    size = "small",
     srcs = ["test/clang_format_includes_test.sh"],
     data = [
         ":clang-format-includes",

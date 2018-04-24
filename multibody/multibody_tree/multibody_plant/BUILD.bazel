@@ -69,7 +69,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "coulomb_friction_test",
-    size = "small",
     deps = [
         ":coulomb_friction",
         "//common/test_utilities:expect_throws_message",
@@ -78,8 +77,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "inclined_plane_test",
-    size = "medium",
-    timeout = "long",
+    timeout = "moderate",
     deps = [
         ":multibody_plant",
         "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",

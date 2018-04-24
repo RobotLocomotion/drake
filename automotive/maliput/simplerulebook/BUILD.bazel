@@ -53,7 +53,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "simple_rulebook_test",
-    size = "small",
     deps = [
         ":simple_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
@@ -62,7 +61,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "yaml_io_test",
-    size = "small",
     deps = [
         ":yaml_io",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",

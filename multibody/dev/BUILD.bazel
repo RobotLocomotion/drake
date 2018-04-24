@@ -30,7 +30,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
-    size = "medium",
+    timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_test.cc"],
     data = [
         "//manipulation/models/iiwa_description:models",
@@ -48,7 +48,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
-    size = "medium",
+    timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_reachable_test.cc"],
     data = [
         "//manipulation/models/iiwa_description:models",
@@ -66,7 +66,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
-    size = "medium",
+    timeout = "moderate",
     srcs = ["test/global_inverse_kinematics_collision_avoidance_test.cc"],
     data = [
         "//manipulation/models/iiwa_description:models",
@@ -84,7 +84,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "global_inverse_kinematics_feasible_posture_test",
-    size = "large",
+    timeout = "long",
     srcs = ["test/global_inverse_kinematics_feasible_posture_test.cc"],
     data = [
         "//manipulation/models/iiwa_description:models",

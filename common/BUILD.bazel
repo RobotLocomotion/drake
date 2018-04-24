@@ -602,6 +602,7 @@ genrule(
 # Functional test that mistyped DRAKE_ASSERTs will failt to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
+    size = "small",
     srcs = ["test/drake_assert_test_compile_variants.sh"],
     args = [
         "$(location :capture_cc.env)",
@@ -890,8 +891,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
