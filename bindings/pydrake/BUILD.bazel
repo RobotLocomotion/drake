@@ -207,11 +207,25 @@ drake_py_library(
     srcs = ["test/algebra_test_util.py"],
 )
 
+# Test ODR (One Definition Rule).
+drake_pybind_library(
+    name = "autodiffutils_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":autodiff_types_pybind",
+    ],
+    cc_so_name = "test/autodiffutils_test_util",
+    cc_srcs = ["test/autodiffutils_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
         ":algebra_test_util_py",
         ":autodiffutils_py",
+        ":autodiffutils_test_util_py",
     ],
 )
 
