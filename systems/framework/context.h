@@ -155,7 +155,8 @@ class Context : public ContextBase {
   }
 
   /// Returns a reference to the _only_ discrete state vector. The vector may be
-  /// of size zero. Fails if there is more than one discrete state group.
+  /// of size zero.
+  /// @pre There is only one discrete state group.
   const BasicVector<T>& get_discrete_state_vector() const {
     return get_discrete_state().get_vector();
   }
@@ -164,6 +165,13 @@ class Context : public ContextBase {
   /// which may be of size zero.
   DiscreteValues<T>& get_mutable_discrete_state() {
     return get_mutable_state().get_mutable_discrete_state();
+  }
+
+  /// Returns a mutable reference to the _only_ discrete state vector.
+  /// @sa get_discrete_state_vector().
+  /// @pre There is only one discrete state group.
+  BasicVector<T>& get_mutable_discrete_state_vector() {
+    return get_mutable_discrete_state().get_mutable_vector();
   }
 
   /// Returns a mutable reference to group (vector) @p index of the discrete
