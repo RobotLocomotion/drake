@@ -164,6 +164,12 @@ class TemplateClass(TemplateBase):
         # Update class name for easier debugging.
         if self._override_meta:
             cls.__name__ = self._instantiation_name(param)
+            # Define `__qualname__` in Python2 because that's what `pybind11`
+            # uses when showing function signatures when an overload cannot be
+            # found.
+            # TODO(eric.cousineau): When porting to Python3 / six, try to
+            # ensure this handles nesting.
+            cls.__qualname__ = cls.__name__
             cls.__module__ = self._module_name
 
 
