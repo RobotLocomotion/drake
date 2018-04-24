@@ -880,10 +880,24 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint {
   virtual void eval(const double* t, KinematicsCache<double>& cache,
                     Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
   virtual void name(const double* t, std::vector<std::string>& name) const;
-  void scaleDistance(const Eigen::VectorXd& dist, Eigen::VectorXd& scaled_dist,
-                     Eigen::MatrixXd& dscaled_dist_ddist) const;
-  void penalty(const Eigen::VectorXd& dist, Eigen::VectorXd& cost,
-               Eigen::MatrixXd& dcost_ddist) const;
+
+  /** Evaluates a smooth hinge loss function for the elements of `distance`.
+   * Specifically, it sets `penalty[i]` to
+   * f(`distance[i]`, `distance_threshold`) and `dpenalty_ddistance[i]` to
+   * ∂f/∂x(`distance[i]`, `distance_threshold`), where
+   *
+   *               ⎧
+   *               ⎪ (1 - x/d) exp(1/(x/d - 1)), x < d
+   *     f(x, d) = ⎨                                  .
+   *               ⎪                          0, x ≥ d
+   *               ⎩
+   *
+   *
+   * @pre `distance_threshold` is greater than 0.
+   */
+  static void Penalty(const Eigen::VectorXd& distance,
+                      double distance_threshold, Eigen::VectorXd* penalty,
+                      Eigen::VectorXd* dpenalty_ddistance);
   virtual void bounds(const double* t, Eigen::VectorXd& lb,
                       Eigen::VectorXd& ub) const;
 
