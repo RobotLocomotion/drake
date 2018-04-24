@@ -13,6 +13,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using std::string;
 using std::vector;
@@ -56,6 +57,15 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
+
+  m.def("simple_func", [](const SimpleTemplate<int>&) {});
+
+  // Check error message if a function is called with the incorrect arguments.
+  // N.B. We use `[\s\S]` because C++ regex does not have an equivalent of
+  // Python re's DOTALL flag.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      py::eval("simple_func('incorrect value')"), std::runtime_error,
+      R"([\s\S]*incompatible function arguments[\s\S]*\(arg0: __main__\.SimpleTemplate\[int\]\)[\s\S]*)");  // NOLINT
 }
 
 template <typename ... Ts>
