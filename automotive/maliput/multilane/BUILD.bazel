@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -14,10 +15,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "multilane",
-    srcs = [],
-    hdrs = [],
     deps = [
         ":builder",
         ":lanes",
