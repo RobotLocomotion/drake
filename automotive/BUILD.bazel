@@ -692,8 +692,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
     # builds (see #6223).
     tags = ["snopt"],

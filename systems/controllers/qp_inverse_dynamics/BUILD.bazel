@@ -216,7 +216,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "valkyrie_balancing_test",
-    size = "medium",
+    timeout = "moderate",
     srcs = ["test/valkyrie_balancing_test.cc"],
     data = [
         "test/valkyrie.alias_groups",

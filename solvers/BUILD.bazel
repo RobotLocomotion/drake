@@ -1043,7 +1043,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rotation_constraint_test",
-    size = "large",
+    timeout = "long",
     tags = gurobi_test_tags() + mosek_test_tags() + [
         # Excluding asan because it is unreasonably slow (> 30 minutes).
         "no_asan",
@@ -1096,7 +1096,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "rotation_constraint_limit_test",
-    size = "large",
+    timeout = "long",
     tags = gurobi_test_tags() + [
         # Times out with Valgrind
         "no_memcheck",
@@ -1169,9 +1169,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "system_identification_test",
-    # The test takes ~20 sec in opt mode but ~140 sec in dbg mode.
-    # To avoid timeouts in dbg and valgrind, we need "large" here.
-    size = "large",
+    # Test timeout increased to not timeout in debug and when run with
+    # Valgrind.
+    timeout = "long",
     deps = [
         ":system_identification",
         "//common/test_utilities:eigen_matrix_compare",

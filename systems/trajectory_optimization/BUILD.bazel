@@ -95,8 +95,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "direct_collocation_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
@@ -106,8 +106,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "direct_transcription_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",

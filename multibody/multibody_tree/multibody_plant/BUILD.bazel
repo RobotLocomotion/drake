@@ -68,7 +68,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "inclined_plane_test",
-    size = "medium",
     timeout = "long",
     deps = [
         ":multibody_plant",

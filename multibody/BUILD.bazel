@@ -569,8 +569,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_ik_traj",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     data = ["//examples/atlas:models"],
     tags = ["snopt"],
     deps = [
