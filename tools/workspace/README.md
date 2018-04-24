@@ -157,7 +157,7 @@ it into Drake are roughly:
 
 ## When using a library from the host operating system
 
-See `blas` or `glib` for examples.
+See `glib` for an example.
 
 Update the package setup lists to mention the new package:
 
