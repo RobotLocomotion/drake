@@ -71,7 +71,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "differential_inverse_kinematics_test",
-    timeout = "moderate",
     data = [
         "//manipulation/models/iiwa_description:models",
     ],

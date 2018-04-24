@@ -184,7 +184,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
     # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "long",
+    timeout = "moderate",
     deps = [
         ":implicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -194,8 +194,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "lyapunov_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
     deps = [
         ":lyapunov",
         "//examples/pendulum:pendulum_plant",
@@ -225,8 +223,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",

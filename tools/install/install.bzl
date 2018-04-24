@@ -767,7 +767,7 @@ def install_test(
     drake_py_unittest(
         name = name,
         # Increase the timeout so that debug builds are successful.
-        timeout = "long",
+        timeout = "moderate",
         srcs = [src],
         deps = ["//tools/install:install_test_helper"],
         **kwargs

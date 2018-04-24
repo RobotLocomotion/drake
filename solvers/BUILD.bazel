@@ -1171,7 +1171,7 @@ drake_cc_googletest(
     name = "system_identification_test",
     # Test timeout increased to not timeout in debug and when run with
     # Valgrind.
-    timeout = "long",
+    timeout = "moderate",
     deps = [
         ":system_identification",
         "//common/test_utilities:eigen_matrix_compare",

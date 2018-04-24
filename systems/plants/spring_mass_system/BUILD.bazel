@@ -18,7 +18,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "spring_mass_system_test",
-    timeout = "moderate",
     deps = [
         ":spring_mass_system",
         "//common/test_utilities",

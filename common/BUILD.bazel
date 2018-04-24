@@ -885,8 +885,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
-    # Test timeout increased to not timeout when run with Valgrind.
-    timeout = "moderate",
     deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
