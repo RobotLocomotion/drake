@@ -513,6 +513,10 @@ TEST_F(DiagramTest, Topology) {
 TEST_F(DiagramTest, Path) {
   const std::string path = adder0()->GetSystemPathname();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+
+  // Just the root.
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!",
+            diagram_->GetSystemPathname());
 }
 
 TEST_F(DiagramTest, Graphviz) {

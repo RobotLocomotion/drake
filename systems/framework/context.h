@@ -14,6 +14,14 @@
 namespace drake {
 namespace systems {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides System<T> access to a Context's parent.
+template<typename T>
+class SystemContextAttorney;
+}  // namespace detail
+#endif
+
 /// Contains information about the independent variable including time and
 /// step number.
 // TODO(sherm1) Add step information.
@@ -272,6 +280,24 @@ class Context : public ContextBase {
     return FixInputPort(index, std::move(vec));
   }
 
+  /// Returns the FreestandingInputPortValue for the given input port if it
+  /// is a fixed (freestanding) input port, otherwise nullptr.
+  // TODO(sherm1) Move this T-independent method to ContextBase.
+  const FreestandingInputPortValue* MaybeGetFixedInputPortValue(
+      int index) const {
+    // TODO(sherm1) Get rid of this trickery and simply return the freestanding
+    // value or null. See caching branch near context_base.h:287.
+    const InputPortValue* port_value = GetInputPortValue(index);
+    if (port_value == nullptr) return nullptr;  // Unconnected port.
+
+    // TODO(sherm1) This inappropriate use of dynamic_cast as a runtime
+    // type-test violates the GSG. Eliminate with above fix.
+    auto const free_port_value =
+        dynamic_cast<const FreestandingInputPortValue*>(port_value);
+
+    return free_port_value;  // The value, or nullptr if not freestanding.
+  }
+
   // =========================================================================
   // Accessors and Mutators for Parameters.
 
@@ -369,19 +395,6 @@ class Context : public ContextBase {
     get_mutable_parameters().SetFrom(source.get_parameters());
   }
 
-  /// Declares that @p parent is the context of the enclosing Diagram. The
-  /// enclosing Diagram context is needed to evaluate inputs recursively.
-  /// Aborts if the parent has already been set to something else.
-  ///
-  /// This is a dangerous implementation detail. Conceptually, a Context
-  /// ought to be completely ignorant of its parent Context. However, we
-  /// need this pointer so that we can cause our inputs to be evaluated in
-  /// EvalInputPort.  See https://github.com/RobotLocomotion/drake/pull/3455.
-  void set_parent(const Context<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
-
   /// Throws an exception unless the given port information matches the inputs
   /// actually connected to this context in shape.
   void VerifyInputPort(InputPortIndex i, PortDataType data_type,
@@ -401,17 +414,6 @@ class Context : public ContextBase {
     }
     // In the abstract-valued case, there is nothing else to check.
   }
-
-  /// (Internal use only) Returns the parent %Context or `nullptr` if this is
-  /// the root %Context.
-  const Context<T>* get_parent() const {
-    return parent_;
-  }
-
-  /// Returns the InputPortValue at the given @p index, which may be nullptr if
-  /// it has never been set with SetInputPortValue().
-  /// Asserts if @p index is out of range.
-  virtual const InputPortValue* GetInputPortValue(int index) const = 0;
 
  protected:
   Context() = default;
@@ -451,6 +453,17 @@ class Context : public ContextBase {
   /// computations.
   StepInfo<T>* get_mutable_step_info() { return &step_info_; }
 
+  /// Returns the InputPortValue at the given @p index, which may be nullptr if
+  /// it has never been set with SetInputPortValue().
+  /// Asserts if @p index is out of range.
+  virtual const InputPortValue* GetInputPortValue(int index) const = 0;
+
+  /// Allows DiagramContext to invoke the protected method on subcontexts.
+  static const InputPortValue* GetInputPortValue(const Context<T>& context,
+                                                 int index) {
+    return context.GetInputPortValue(index);
+  }
+
   /// Connects the input port at @p index to the value source @p port_value.
   /// Disconnects whatever value source was previously there, and de-registers
   /// it from the output port on which it depends.  In some Context
@@ -459,13 +472,34 @@ class Context : public ContextBase {
   virtual void SetInputPortValue(
       int index, std::unique_ptr<InputPortValue> port_value) = 0;
 
-  /// Allows derived classes to invoke the protected method on subcontexts.
+  /// Allows DiagramContext to invoke the protected method on subcontexts.
   static void SetInputPortValue(Context<T>* context, int index,
                                 std::unique_ptr<InputPortValue> port_value) {
     context->SetInputPortValue(index, std::move(port_value));
   }
 
+  /// Declares that @p parent is the context of the enclosing Diagram. The
+  /// enclosing Diagram context is needed to evaluate inputs recursively.
+  /// Aborts if the parent has already been set to something else.
+  // Use static method so DiagramContext can invoke this on behalf of a child.
+  static void set_parent(const Context<T>* parent, Context<T>* child) {
+    DRAKE_DEMAND(child != nullptr);
+    child->set_parent(parent);
+  }
+
  private:
+  friend class detail::SystemContextAttorney<T>;
+
+  void set_parent(const Context<T>* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+
+  // Returns the parent Context or `nullptr` if this is the root Context.
+  const Context<T>* get_parent() const {
+    return parent_;
+  }
+
   // Current time and step information.
   StepInfo<T> step_info_;
 
@@ -477,6 +511,29 @@ class Context : public ContextBase {
   // methods on it, you are probably making a mistake.
   reset_on_copy<const Context<T>*> parent_;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T> class System;
+namespace detail {
+
+// This is an attorney-client pattern class providing System<T> with access to
+// certain specific Context<T> private methods, which are otherwise private,
+// and nothing else.
+template <typename T>
+class SystemContextAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemContextAttorney);
+  SystemContextAttorney() = delete;
+
+ private:
+  friend class System<T>;
+  static const Context<T>* get_parent(const Context<T>& context) {
+    return context.get_parent();
+  }
+};
+#endif
+
+}  // namespace detail
 
 }  // namespace systems
 }  // namespace drake
