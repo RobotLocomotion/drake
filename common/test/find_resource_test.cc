@@ -87,6 +87,14 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
 }
 
+// Check that adding a relative resource path fails on purpose.
+GTEST_TEST(FindResourceTest, RelativeResourcePathShouldFail) {
+  // Test `AddResourceSearchPath()` with a relative path. It is expected to
+  // fail.
+  const std::string test_directory = "find_resource_test_scratch";
+  EXPECT_THROW(AddResourceSearchPath(test_directory), std::runtime_error);
+}
+
 GTEST_TEST(GetDrakePathTest, BasicTest) {
   // Just test that we find a path, without any exceptions.
   const auto& result = MaybeGetDrakePath();
@@ -116,7 +124,10 @@ GTEST_TEST(ZZZ_FindResourceTest, ZZZ_AlternativeDirectory) {
   // Test `AddResourceSearchPath()` and `GetResourceSearchPaths()` by creating
   // an empty file in a scratch directory with a sentinel file. Bazel tests are
   // run in a scratch directory, so we don't need to remove anything manually.
-  const std::string test_directory = "find_resource_test_scratch";
+  spruce::path cwd;
+  cwd.setAsCurrent();
+  const std::string test_directory = cwd.getStr() +
+                                     "/find_resource_test_scratch";
   const std::string candidate_filename = "drake/candidate.ext";
   spruce::dir::mkdir(test_directory);
   spruce::dir::mkdir(test_directory + "/drake");

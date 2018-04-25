@@ -234,6 +234,8 @@ std::vector<string> GetResourceSearchPaths() {
 }
 
 void AddResourceSearchPath(string search_path) {
+  // Throw an error if path is relative.
+  DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
   GetMutableResourceSearchPaths().push_back(std::move(search_path));
 }
 
@@ -285,6 +287,16 @@ Result FindResource(string resource_path) {
   // (5) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(FindSentinelDir());
+
+  // Make sure that candidate_dirs are not relative paths. This could cause
+  // bugs, but in theory it should never happen as the code above should
+  // guard against it.
+  for (const auto& candidate_dir : candidate_dirs) {
+    if (candidate_dir && IsRelativePath(candidate_dir.value())) {
+        string error_message = "path is not absolute: " + candidate_dir.value();
+        return Result::make_error(std::move(resource_path), error_message);
+      }
+    }
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {
