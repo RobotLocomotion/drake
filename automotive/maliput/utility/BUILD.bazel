@@ -46,7 +46,9 @@ drake_cc_binary(
     deps = [
         ":utility",
         "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common:text_logging_gflags",
+        "@yaml_cpp",
     ],
 )
 
@@ -112,6 +114,7 @@ drake_py_unittest(
     data = [
         ":yaml_to_obj",
         "//automotive/maliput/monolane:yamls",
+        "//automotive/maliput/multilane:yamls",
     ],
 )
 
