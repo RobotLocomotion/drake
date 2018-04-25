@@ -102,10 +102,10 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
   const int n = phi_y.rows() - 1;
   DRAKE_ASSERT(Bx.rows() == m);
   DRAKE_ASSERT(By.rows() == n);
-  const auto xj = prog->NewContinuousVariables(n, x.get_name() + "_xj");
-  const auto yi = prog->NewContinuousVariables(m, y.get_name() + "_yi");
-  prog->AddLinearEqualityConstraint(xj.cast<Expression>().sum() - x, 0);
-  prog->AddLinearEqualityConstraint(yi.cast<Expression>().sum() - y, 0);
+  const auto x_bar = prog->NewContinuousVariables(n, x.get_name() + "_x_bar");
+  const auto y_bar = prog->NewContinuousVariables(m, y.get_name() + "_y_bar");
+  prog->AddLinearEqualityConstraint(x_bar.cast<Expression>().sum() - x, 0);
+  prog->AddLinearEqualityConstraint(y_bar.cast<Expression>().sum() - y, 0);
 
   const auto Bxy = prog->NewContinuousVariables(
       m, n, x.get_name() + "_" + y.get_name() + "_Bxy");
@@ -114,14 +114,16 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
 
   for (int i = 0; i < m; ++i) {
     prog->AddLinearConstraint(
-        yi(i) >= phi_y.head(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+        y_bar(i) >=
+        phi_y.head(n).dot(Bxy.row(i).transpose().cast<Expression>()));
     prog->AddLinearConstraint(
-        yi(i) <= phi_y.tail(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+        y_bar(i) <=
+        phi_y.tail(n).dot(Bxy.row(i).transpose().cast<Expression>()));
   }
   for (int j = 0; j < n; ++j) {
-    prog->AddLinearConstraint(xj(j) >=
+    prog->AddLinearConstraint(x_bar(j) >=
                               phi_x.head(m).dot(Bxy.col(j).cast<Expression>()));
-    prog->AddLinearConstraint(xj(j) <=
+    prog->AddLinearConstraint(x_bar(j) <=
                               phi_x.tail(m).dot(Bxy.col(j).cast<Expression>()));
   }
   // The right-hand side of the constraint on w, we will implement
@@ -130,14 +132,14 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
   // w <= w_constraint_rhs(2)
   // w <= w_constraint_rhs(3)
   Vector4<symbolic::Expression> w_constraint_rhs(0, 0, 0, 0);
-  w_constraint_rhs(0) = xj.cast<Expression>().dot(phi_y.head(n)) +
-                        yi.cast<Expression>().dot(phi_x.head(m));
-  w_constraint_rhs(1) = xj.cast<Expression>().dot(phi_y.tail(n)) +
-                        yi.cast<Expression>().dot(phi_x.tail(m));
-  w_constraint_rhs(2) = xj.cast<Expression>().dot(phi_y.head(n)) +
-                        yi.cast<Expression>().dot(phi_x.tail(m));
-  w_constraint_rhs(3) = xj.cast<Expression>().dot(phi_y.tail(n)) +
-                        yi.cast<Expression>().dot(phi_x.head(m));
+  w_constraint_rhs(0) = x_bar.cast<Expression>().dot(phi_y.head(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.head(m));
+  w_constraint_rhs(1) = x_bar.cast<Expression>().dot(phi_y.tail(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(2) = x_bar.cast<Expression>().dot(phi_y.head(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(3) = x_bar.cast<Expression>().dot(phi_y.tail(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.head(m));
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j) {
       prog->AddConstraint(
