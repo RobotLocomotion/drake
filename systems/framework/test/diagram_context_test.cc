@@ -118,11 +118,8 @@ class DiagramContextTest : public ::testing::Test {
   // Returns nullptr if the port is not connected.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    const InputPortValue* value =
-        context.GetInputPortValue(InputPortIndex(index));
-    if (value == nullptr) return nullptr;  // Not connected.
-    auto free_value = dynamic_cast<const FreestandingInputPortValue*>(value);
-    EXPECT_NE(free_value, nullptr);
+    const FreestandingInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(index);
     return free_value ? free_value->get_vector_data<double>() : nullptr;
   }
 

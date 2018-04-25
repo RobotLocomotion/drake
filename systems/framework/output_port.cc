@@ -55,7 +55,8 @@ template <typename T>
 std::string OutputPort<T>::GetPortIdString() const {
   std::ostringstream oss;
   oss << "output port " << this->get_index() << " of "
-      << this->get_system().GetSystemIdString();
+      << NiceTypeName::Get(this->get_system()) + " System " +
+             this->get_system().GetSystemPathname();
   return oss.str();
 }
 
