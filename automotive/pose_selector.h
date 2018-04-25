@@ -80,7 +80,7 @@ class PoseSelector {
   ///
   /// Users should take heed to the fact that ScanStrategy::kBranches does _not_
   /// assess the relationship between traffic and ego vehicle velocity when
-  /// selecting poses.  Thus, cars with in the same lane as the ego but with
+  /// selecting poses.  Thus, cars within the same lane as the ego but with
   /// negative net-velocity (approaching the ego car, from the ego's
   /// point-of-view) could be ignored in favor of a car in a branch with
   /// positive net-velocity.
