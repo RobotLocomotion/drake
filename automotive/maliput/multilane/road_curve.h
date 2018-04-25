@@ -42,6 +42,17 @@ class Rot3 {
   Eigen::Matrix<double, 3, 1, Eigen::DontAlign> rpy_;
 };
 
+/// A policy to guide all computations in a RoadCurve, in terms of
+/// speed and accuracy.
+enum class ComputationPolicy {
+  kPreferAccuracy,  ///< Always prefer accurate results,
+                    ///  even if at a slower pace (e.g. using
+                    ///  expensive numerical approximations).
+  kPreferSpeed      ///< Always prefer fast computations,
+                    ///  even if not accurate (e.g. using
+                    ///  approximated analytical expressions).
+};
+
 /// Defines an interface for a path in a Segment object surface. The path is
 /// defined by an elevation and superelevation CubicPolynomial objects and a
 /// reference curve. This reference curve is a C1 function in the z=0 plane.
@@ -106,8 +117,8 @@ class RoadCurve {
 
   const double& scale_length() const { return scale_length_; }
 
-  const bool& trade_accuracy_for_speed() const {
-    return trade_accuracy_for_speed_;
+  const ComputationPolicy& computation_policy() const {
+    return computation_policy_;
   }
 
   /// Computes the parametric position p along the reference curve corresponding
@@ -229,19 +240,19 @@ class RoadCurve {
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
+  /// @param linear_tolerance The linear tolerance for all computations, in the
+  /// the absolute error sense i.e. linear error must lie in the 0 ± linear
+  /// tolerance interval, for @p scale_length long features at most.
   /// @param scale_length The minimum length, in meters, of variations that
   /// the curve expresses. This imposes an upper limit to the spatial frequency
   /// (e.g., the Nyquist limit), which indicates the maximum level of detail
   /// captured.
-  /// @param linear_tolerance The linear tolerance for all computations, in the
-  /// the absolute error sense i.e. linear error must lie in the 0 ± linear
-  /// tolerance interval, for @p scale_length long features at most.
   /// @param elevation CubicPolynomial object that represents the elevation
   /// function (see below for more details).
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation function (see below for more details).
-  /// @param trade_accuracy_for_speed Allows implementation specific mechanisms
-  /// to ignore accuracy settings to speed up computations.
+  /// @param computation_policy Policy to guide computations in terms of speed
+  /// and accuracy. Actual behavior may vary across implementations.
   /// @pre The given @p scale_length is a non-negative number.
   /// @pre The given @p linear_tolerance is a non-negative number.
   /// @throw std::runtime_error if preconditions are not met.
@@ -273,11 +284,42 @@ class RoadCurve {
   ///  * p_scale is q_max (and p = q / p_scale);
   ///  * @p elevation is  E_scaled = (1 / p_scale) * E_true(p_scale * p);
   ///  * @p superelevation is  S_scaled = (1 / p_scale) * S_true(p_scale * p).
-  RoadCurve(double scale_length,
-            double linear_tolerance,
+  RoadCurve(double linear_tolerance, double scale_length,
             const CubicPolynomial& elevation,
             const CubicPolynomial& superelevation,
-            bool trade_accuracy_for_speed);
+            const ComputationPolicy& computation_policy);
+
+  // TODO(hidmic): Fast, analytical methods and the conditions in which these
+  // are expected to hold were tailored for the currently available
+  // implementations. This limitation could be overcome by e.g. providing a
+  // pair of virtual methods to check for the validity of the methods actually
+  // implemented in the subclasses.
+
+  /// Resources fast, analytical methods to compute the parametric position
+  /// p along the reference curve corresponding to longitudinal position (in
+  /// path-length) `s` along a parallel curve laterally offset by `r` from the
+  /// reference curve.
+  ///
+  /// @remarks Said methods are only expected to be valid for curves that
+  /// show no superelevation and linear elevation at most.
+  virtual double fast_p_from_s(double s, double r) const = 0;
+
+  /// Resources fast, analytical methods to compute the path length integral
+  /// in the interval of the parameter [0; p] and along a parallel curve
+  /// laterally offset by `r` the planar reference curve.
+  ///
+  /// @remarks Said methods are only expected to be valid for curves that
+  /// show no superelevation and linear elevation at most.
+  virtual double fast_s_from_p(double p, double r) const = 0;
+
+  /// Checks whether fast, analytical methods would be accurate for the curve
+  /// as defined. It boils down to checking if the curve shows no superelevation
+  /// and linear elevation at most.
+  ///
+  /// @param r Lateral offset of the reference curve over the z=0 plane.
+  /// @return True if fast, analytical results would be accurate, False
+  /// otherwise.
+  bool are_fast_computations_accurate(double r) const;
 
  private:
   // The minimum length of variations that the curve expresses.
@@ -290,9 +332,8 @@ class RoadCurve {
   // A polynomial that represents the superelevation angle change as a function
   // of p.
   CubicPolynomial superelevation_;
-  // A flag to control whether implementations are allowed to ignore
-  // accuracy settings to speed up computations or not.
-  bool trade_accuracy_for_speed_;
+  // A policy to guide computations in terms of speed and accuracy.
+  ComputationPolicy computation_policy_;
   // The inverse arc length IVP, or the parameter p as a function of the
   // arc length s.
   std::unique_ptr<systems::ScalarInitialValueProblem<double>> p_from_s_ivp_;

@@ -11,47 +11,29 @@ namespace maliput {
 namespace multilane {
 
 double ArcRoadCurve::p_from_s(double s, double r) const {
-  // Make sure that the effective radius yields a valid arc.
+  DRAKE_THROW_UNLESS(offset_radius(r) > 0.0);
+  return RoadCurve::p_from_s(s, r);
+}
+
+double ArcRoadCurve::fast_p_from_s(double s, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
-  if (!trade_accuracy_for_speed()) {
-    if ((r != 0. && (superelevation().a() != 0. || superelevation().b() != 0. ||
-                     superelevation().c() != 0. || superelevation().d() != 0.))
-        || elevation().d() != 0. || elevation().c() != 0.) {
-      // In the most general case, use a numerical approximation of
-      // the function.
-      return RoadCurve::p_from_s(s, r);
-    }
-  }
-  // When superelevation() has no influence on the curve's
-  // geometry and elevation() is at most linear along the curve,
-  // use the known analytical expression.
   const double elevation_domain = effective_radius / radius_;
   return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
                                     elevation().fake_gprime(1.) *
-                                        elevation().fake_gprime(1.)));
+                                    elevation().fake_gprime(1.)));
 }
 
 double ArcRoadCurve::s_from_p(double p, double r) const {
-  // Make sure that the effective radius yields a valid arc.
+  DRAKE_THROW_UNLESS(offset_radius(r) > 0.0);
+  return RoadCurve::s_from_p(p, r);
+}
+
+double ArcRoadCurve::fast_s_from_p(double p, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
-  if (!trade_accuracy_for_speed()) {
-    if ((r != 0. && (superelevation().a() != 0. || superelevation().b() != 0. ||
-                     superelevation().c() != 0. || superelevation().d() != 0.))
-        || elevation().d() != 0. || elevation().c() != 0.) {
-      // In the most general case, use a numerical approximation of
-      // the function.
-      return RoadCurve::s_from_p(p, r);
-    }
-  }
-  // When superelevation() has no influence on the curve's
-  // geometry and elevation() is at most linear along the curve,
-  // use the known analytical expression.
   const double elevation_domain = effective_radius / radius_;
   return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +
                                    elevation().fake_gprime(p) *
-                                       elevation().fake_gprime(p));
+                                   elevation().fake_gprime(p));
 }
 
 namespace {

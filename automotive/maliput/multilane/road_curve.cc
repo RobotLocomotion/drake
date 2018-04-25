@@ -82,12 +82,12 @@ struct InverseArcLengthODEFunction {
 RoadCurve::RoadCurve(double scale_length, double linear_tolerance,
                      const CubicPolynomial& elevation,
                      const CubicPolynomial& superelevation,
-                     bool trade_accuracy_for_speed)
+                     const ComputationPolicy& computation_policy)
     : scale_length_(scale_length),
       linear_tolerance_(linear_tolerance),
       elevation_(elevation),
       superelevation_(superelevation),
-      trade_accuracy_for_speed_(trade_accuracy_for_speed) {
+      computation_policy_(computation_policy) {
   // Enforces preconditions.
   DRAKE_THROW_UNLESS(scale_length > 0.);
   DRAKE_THROW_UNLESS(linear_tolerance > 0.);
@@ -133,18 +133,34 @@ RoadCurve::RoadCurve(double scale_length, double linear_tolerance,
   p_from_s_integrator->set_target_accuracy(relative_tolerance);
 }
 
+bool RoadCurve::are_fast_computations_accurate(double r) const {
+  // When superelevation() has no influence on the curve's
+  // geometry and elevation() is at most linear along the curve,
+  // known analytical expressions are accurate.
+  return ((r == 0.0 || superelevation().order() == 0)
+          && elevation().order() <= 1);
+}
+
 double RoadCurve::s_from_p(double p, double r) const {
-  // Populates parameter vector with (r, h) coordinate values.
-  systems::AntiderivativeFunction<double>::SpecifiedValues values;
-  values.k = (VectorX<double>(2) << r, 0.0).finished();
-  return s_from_p_func_->Evaluate(p, values);
+  if (computation_policy() == ComputationPolicy::kPreferAccuracy
+      && !are_fast_computations_accurate(r)) {
+    // Populates parameter vector with (r, h) coordinate values.
+    systems::AntiderivativeFunction<double>::SpecifiedValues values;
+    values.k = (VectorX<double>(2) << r, 0.0).finished();
+    return s_from_p_func_->Evaluate(p, values);
+  }
+  return fast_s_from_p(p, r);
 }
 
 double RoadCurve::p_from_s(double s, double r) const {
-  // Populates parameter vector with (r, h) coordinate values.
-  systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
-  values.k = (VectorX<double>(2) << r, 0.0).finished();
-  return p_from_s_ivp_->Solve(s, values);
+  if (computation_policy() == ComputationPolicy::kPreferAccuracy
+      && !are_fast_computations_accurate(r)) {
+    // Populates parameter vector with (r, h) coordinate values.
+    systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
+    values.k = (VectorX<double>(2) << r, 0.0).finished();
+    return p_from_s_ivp_->Solve(s, values);
+  }
+  return fast_p_from_s(s, r);
 }
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {

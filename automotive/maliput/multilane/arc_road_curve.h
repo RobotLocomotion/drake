@@ -32,26 +32,29 @@ class ArcRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
-  /// @param scale_length The minimum length, in meters, of variations that
-  /// the curve expresses.
   /// @param linear_tolerance The linear tolerance for all computations, in the
   /// the absolute error sense.
-  /// @param trade_accuracy_for_speed If true, prevents the use of numerical
-  /// approximations for curve parameterizations, sticking to available
-  /// closed form solutions that may not actually be correct for the curve
-  /// as specified.
+  /// @param scale_length The minimum length, in meters, of variations that
+  /// the curve expresses.
+  /// @param computation_policy Policy to guide all computations. If geared
+  /// towards speed, computations will make use of analytical expressions even
+  /// if not actually correct for the curve as specified.
   /// @throws std::runtime_error When `radius` is not positive.
-  explicit ArcRoadCurve(const Vector2<double>& center, double radius,
-                        double theta0, double d_theta,
-                        const CubicPolynomial& elevation,
-                        const CubicPolynomial& superelevation,
-                        double scale_length = 1.0,
-                        double linear_tolerance = 0.01,
-                        bool trade_accuracy_for_speed = false)
-      : RoadCurve(scale_length, linear_tolerance,
+  explicit ArcRoadCurve(
+      const Vector2<double>& center, double radius,
+      double theta0, double d_theta,
+      const CubicPolynomial& elevation,
+      const CubicPolynomial& superelevation,
+      double linear_tolerance = 0.01, double scale_length = 1.0,
+      const ComputationPolicy& computation_policy =
+         ComputationPolicy::kPreferAccuracy)
+      : RoadCurve(linear_tolerance, scale_length,
                   elevation, superelevation,
-                  trade_accuracy_for_speed),
+                  computation_policy),
         center_(center), radius_(radius), theta0_(theta0), d_theta_(d_theta) {
+    // TODO(hidmic): Remove default values in trailing arguments, which were
+    // added in the first place to defer the need to propagate changes upwards
+    // in the class hierarchy.
     DRAKE_THROW_UNLESS(radius > 0.0);
   }
 
@@ -119,6 +122,11 @@ class ArcRoadCurve : public RoadCurve {
 
   bool IsValid(double r_min, double r_max,
                const api::HBounds& height_bounds) const override;
+
+ protected:
+  double fast_p_from_s(double s, double r) const override;
+
+  double fast_s_from_p(double p, double r) const override;
 
  private:
   // Computes the absolute position along reference arc as an angle in
