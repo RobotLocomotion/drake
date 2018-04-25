@@ -76,6 +76,12 @@ drake_py_binary(
     deps = [":formatter"],
 )
 
+drake_py_binary(
+    name = "library_lint_reporter",
+    testonly = 1,
+    srcs = ["library_lint_reporter.py"],
+)
+
 # === test ===
 
 drake_py_unittest(
@@ -110,6 +116,7 @@ drake_py_unittest(
 
 sh_test(
     name = "clang_format_includes_test",
+    size = "small",
     srcs = ["test/clang_format_includes_test.sh"],
     data = [
         ":clang-format-includes",

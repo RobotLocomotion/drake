@@ -239,8 +239,8 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "dynamic_programming_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     deps = [
         ":dynamic_programming",
         ":linear_quadratic_regulator",
