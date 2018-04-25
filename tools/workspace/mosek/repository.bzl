@@ -28,7 +28,7 @@ def _impl(repository_ctx):
     mosek_major_version = 8
     mosek_minor_version = 1
     mosek_patch_version = 0
-    mosek_idle_version = 51
+    mosek_tweak_version = 51
 
     if repository_ctx.os.name == "mac os x":
         mosek_platform = "osx64x86"
@@ -41,8 +41,9 @@ def _impl(repository_ctx):
              attr = repository_ctx.os.name)
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
-    url = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2".format(
-        mosek_major_version, mosek_minor_version, mosek_patch_version, mosek_idle_version, mosek_platform)
+    url = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2".format(  # noqa
+        mosek_major_version, mosek_minor_version, mosek_patch_version,
+        mosek_tweak_version, mosek_platform)
     root_path = repository_ctx.path("")
     strip_prefix = "mosek/{}".format(mosek_major_version)
 
@@ -55,7 +56,7 @@ def _impl(repository_ctx):
         install_name_tool = which(repository_ctx, "install_name_tool")
 
         files = [
-            "bin/libscilkrts.5.dylib",
+            "bin/libcilkrts.5.dylib",
             "bin/libiomp5.dylib",
             "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
                                                 mosek_minor_version),
