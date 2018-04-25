@@ -705,7 +705,6 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
 
-  MSK_writedata(task, "problem.task.gz");
   SolutionResult result = SolutionResult::kUnknownError;
   // Run optimizer.
   if (rescode == MSK_RES_OK) {

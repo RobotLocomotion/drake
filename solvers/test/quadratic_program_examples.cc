@@ -119,7 +119,7 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kMosek) {
-    tol = 1E-9;
+    tol = 3E-5;
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
@@ -204,7 +204,7 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kMosek) {
-    tol = 1E-9;
+    tol = 1E-7;
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
