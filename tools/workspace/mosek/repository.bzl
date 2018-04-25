@@ -83,7 +83,6 @@ def _impl(repository_ctx):
 
         linkopts = [
             "-L{}".format(bin_path),
-            "-liomp5",
             "-lmosek64",
         ]
     else:
