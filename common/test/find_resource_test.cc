@@ -1,6 +1,8 @@
 #include "drake/common/find_resource.h"
 
+#include <cstdlib>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -8,7 +10,9 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_path.h"
+#include "drake/common/drake_throw.h"
 
 using std::string;
 
@@ -85,6 +89,58 @@ GTEST_TEST(FindResourceTest, FoundDeclaredData) {
 
   // Sugar works the same way.
   EXPECT_EQ(FindResourceOrThrow(relpath), absolute_path);
+}
+
+std::string GetEnv(const std::string& name) {
+  const char* result = ::getenv(name.c_str());
+  if (!result) { result = ""; }
+  return result;
+}
+
+void SetEnv(const std::string& name, const optional<std::string>& value) {
+  if (value) {
+    const int result = ::setenv(name.c_str(), value->c_str(), 1);
+    DRAKE_THROW_UNLESS(result == 0);
+  } else {
+    const int result = ::unsetenv(name.c_str());
+    DRAKE_THROW_UNLESS(result == 0);
+  }
+}
+
+GTEST_TEST(FindResourceTest, FindUsingTestSrcdir) {
+  // Confirm that the resource is found normally.
+  const string relpath = "drake/common/test/find_resource_test_data.txt";
+  EXPECT_TRUE(FindResource(relpath).get_absolute_path());
+
+  // If we defeat both (1) the "look in current working directory" heuristic
+  // and (2) the "look in TEST_SRCDIR" heuristic, then we should no longer be
+  // able to find the resource.
+
+  // (1) Change cwd to be "/".  Use scope_exit pattern to guarantee cleanup.
+  const spruce::path original_cwd = spruce::dir::getcwd();
+  auto restore_cwd_scope_exit =
+      std::shared_ptr<void>(nullptr, [original_cwd](void*) {
+          const bool restore_ok = spruce::dir::chdir(original_cwd);
+          DRAKE_DEMAND(restore_ok);
+        });
+  const bool chdir_ok = spruce::dir::chdir(spruce::path("/"));
+  ASSERT_TRUE(chdir_ok);
+
+  // (2) Unset TEST_SRCDIR.  Use scope_exit pattern to guarantee cleanup.
+  const std::string original_test_srcdir = GetEnv("TEST_SRCDIR");
+  ASSERT_FALSE(original_test_srcdir.empty());
+  auto restore_test_srcdir_scope_exit =
+      std::shared_ptr<void>(nullptr, [original_test_srcdir](void*) {
+          SetEnv("TEST_SRCDIR", original_test_srcdir);
+        });
+  SetEnv("TEST_SRCDIR", nullopt);
+
+  // Can't find the resource anymore.
+  EXPECT_TRUE(FindResource(relpath).get_error_message());
+
+  // Putting back TEST_SRCDIR is enough to get us working again.
+  restore_test_srcdir_scope_exit.reset();
+  EXPECT_TRUE(FindResource(relpath).get_absolute_path());
 }
 
 GTEST_TEST(GetDrakePathTest, BasicTest) {
