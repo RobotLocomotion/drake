@@ -14,7 +14,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"

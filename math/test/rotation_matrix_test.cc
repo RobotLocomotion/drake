@@ -250,8 +250,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40 * kEpsilon);
 
   // Test another valid rotation matrix.  Ensure near-perfect quality_factor.
-  const Vector3d angles(0.1, 0.2, 0.3);
-  m = RotationMatrix<double>::MakeSpaceXYZRotation(angles).matrix();
+  const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
+  m = RotationMatrix<double>(rpy).matrix();
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
   EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40*kEpsilon);
@@ -377,7 +377,6 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
   const RotationMatrix<double> R_double(rpy);
-  const Matrix3d m = R_double.matrix();
   const RotationMatrix<AutoDiffXd> R_autodiff = R_double.cast<AutoDiffXd>();
 
   // To avoid a (perhaps) tautological test, do not just use an Eigen cast() to

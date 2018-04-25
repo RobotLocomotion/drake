@@ -41,8 +41,7 @@ GTEST_TEST(RollPitchYaw, testAcessMethods) {
 GTEST_TEST(RollPitchYaw, testToQuaternion) {
   const RollPitchYaw<double> rpy(0.12, 0.34, -0.56);
   const Eigen::Quaterniond quat = rpy.ToQuaternion();
-  const RotationMatrix<double> R1 =
-      RotationMatrix<double>::MakeSpaceXYZRotation(rpy.vector());
+  const RotationMatrix<double> R1(rpy);
   const RotationMatrix<double> R2(quat);
   EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon));
 }
