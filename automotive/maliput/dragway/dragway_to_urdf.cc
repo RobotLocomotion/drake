@@ -65,8 +65,7 @@ int exec(int argc, char* argv[]) {
   // The following is necessary for users to know where to find the resulting
   // files when this program is executed in a sandbox. This occurs, for example
   // when using `bazel run //automotive/maliput/dragway:dragway_to_urdf`.
-  spruce::path my_path;
-  my_path.setAsCurrent();
+  const spruce::path my_path = spruce::dir::getcwd();
 
   drake::log()->info("Creating Dragway URDF in {}.", my_path.getStr());
   utility::GenerateUrdfFile(&road_geometry, directory.getStr(),
