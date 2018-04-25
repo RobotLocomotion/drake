@@ -85,6 +85,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulated_schunk_wsg_system_test",
+    timeout = "moderate",
     data = [
         "//manipulation/models/wsg_50_description:models",
     ],
