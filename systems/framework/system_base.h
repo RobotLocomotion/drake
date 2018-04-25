@@ -435,36 +435,22 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
-  /** Returns a string suitable for identifying this particular %System in
-  error messages, when it is a subsystem of a larger Diagram. This method
-  captures human-readable subsystem identification best practice; the
-  specifics of that are likely to change over time. However it will always
-  be formatted like "System xxx" or "adjective System xxx" so that the
-  remainder of the error message will continue to make sense. Currently it
-  returns "system_type_name System subsystem_pathname". */
-  // TODO(sherm1) Remove the system type noise once the subsystem path is
-  // a fully reliable identifier.
-  std::string GetSystemIdString() const {
-    return NiceTypeName::Get(*this) + " System " + GetSystemPathname();
-  }
+ protected:
+  SystemBase() = default;
 
-  // Declares that `parent` is the immediately enclosing
-  // Diagram. The enclosing Diagram is needed for interactions between peer
-  // subsystems via input and output ports. Aborts if the parent has already
-  // been set to something else.
-  void set_parent(const SystemBase* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
-
-  // Returns a pointer to the immediately enclosing Diagram
-  // if one has been set, otherwise nullptr.
+  /** Returns a pointer to the immediately enclosing Diagram if one has been
+  set, otherwise nullptr. */
   const SystemBase* get_parent_base() const {
     return parent_;
   }
 
- protected:
-  SystemBase() = default;
+  /** Declares that `parent` is the Diagram that owns this subsystem.
+  Aborts if the parent has already been set to something else. */
+  // Use static method so Diagram can invoke this on behalf of a child.
+  static void set_parent(const SystemBase* parent, SystemBase* child) {
+    DRAKE_DEMAND(child != nullptr);
+    child->set_parent(parent);
+  }
 
   /** Allows Diagram to use private MakeContext() to invoke the same method
   on its children. */
@@ -548,6 +534,15 @@ class SystemBase : public internal::SystemMessageInterface {
   // ticket number.
   DependencyTicket assign_next_dependency_ticket() {
     return next_available_ticket_++;
+  }
+
+  // Declares that `parent` is the immediately enclosing
+  // Diagram. The enclosing Diagram is needed for interactions between peer
+  // subsystems via input and output ports. Aborts if the parent has already
+  // been set to something else.
+  void set_parent(const SystemBase* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
   }
 
   // Ports and cache entries hold their own DependencyTickets. Note that the

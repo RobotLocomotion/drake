@@ -147,7 +147,7 @@ class DiagramContext final : public Context<T> {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
-    context->set_parent(this);
+    Context<T>::set_parent(this, context.get());
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }
@@ -361,7 +361,8 @@ class DiagramContext final : public Context<T> {
     const InputPortIdentifier& id = input_ids_[index];
     const SubsystemIndex system_index = id.first;
     const InputPortIndex port_index = id.second;
-    return GetSubsystemContext(system_index).GetInputPortValue(port_index);
+    return Context<T>::GetInputPortValue(GetSubsystemContext(system_index),
+                                         port_index);
   }
 
  private:

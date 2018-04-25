@@ -17,9 +17,14 @@ namespace systems {
 SystemBase::~SystemBase() {}
 
 std::string SystemBase::GetSystemPathname() const {
-  std::vector<const SystemBase*> path_to_root{this};
-  while (const SystemBase* parent = path_to_root.back()->get_parent_base())
-    path_to_root.push_back(parent);
+  // Collect System nodes from here up to root.
+  std::vector<const SystemBase*> path_to_root;
+  for (const SystemBase* node = this; node != nullptr;
+       node = node->get_parent_base()) {
+    path_to_root.push_back(node);
+  }
+
+  // Extract and concatenate names from root down to here.
   std::string path;
   std::for_each(path_to_root.rbegin(), path_to_root.rend(),
                 [&path](const SystemBase* node) {
