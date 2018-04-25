@@ -11,7 +11,6 @@
 #include "drake/math/cross_product.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 using Eigen::Matrix;

@@ -9,7 +9,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/shapes/geometry.h"
 #include "drake/systems/analysis/simulator.h"

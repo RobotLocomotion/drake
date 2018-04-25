@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 #include "drake/systems/rendering/pose_vector.h"

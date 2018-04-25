@@ -17,7 +17,6 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
