@@ -283,7 +283,7 @@ class BilinearProductMcCormickEnvelopeTest {
     auto y_constraint = prog_.AddBoundingBoxConstraint(0, 0, y_);
     auto w_constraint = prog_.AddBoundingBoxConstraint(0, 0, w_);
 
-    auto IsFeasible = [&x_constraint, &y_constraint, &w_constraint](
+    auto CheckFeasibility = [&x_constraint, &y_constraint, &w_constraint](
         MathematicalProgram* prog, double x_val, double y_val, double w_val,
         bool is_feasible) {
       auto UpdateBound = [](Binding<BoundingBoxConstraint>* constraint,
@@ -307,26 +307,26 @@ class BilinearProductMcCormickEnvelopeTest {
     };
 
     // Feasible points
-    IsFeasible(&prog_, 0, 0, 0, true);
-    IsFeasible(&prog_, 0, 1, 0, true);
-    IsFeasible(&prog_, 1, 0, 0, true);
-    IsFeasible(&prog_, 1, 1, 1, true);
-    IsFeasible(&prog_, 0.5, 1, 0.5, true);
-    IsFeasible(&prog_, 1, 0.5, 0.5, true);
-    IsFeasible(&prog_, 0.5, 0.5, 0.25, true);
+    CheckFeasibility(&prog_, 0, 0, 0, true);
+    CheckFeasibility(&prog_, 0, 1, 0, true);
+    CheckFeasibility(&prog_, 1, 0, 0, true);
+    CheckFeasibility(&prog_, 1, 1, 1, true);
+    CheckFeasibility(&prog_, 0.5, 1, 0.5, true);
+    CheckFeasibility(&prog_, 1, 0.5, 0.5, true);
+    CheckFeasibility(&prog_, 0.5, 0.5, 0.25, true);
 
     if (num_interval_x_ == 2 && num_interval_y_ == 2) {
-      IsFeasible(&prog_, 0.5, 0.5, 0.26, false);
-      IsFeasible(&prog_, 0.25, 0.25, 0.1, true);
-      IsFeasible(&prog_, 0.25, 0.25, 0.126, false);
-      IsFeasible(&prog_, 0.5, 0.6, 0.301, false);
+      CheckFeasibility(&prog_, 0.5, 0.5, 0.26, false);
+      CheckFeasibility(&prog_, 0.25, 0.25, 0.1, true);
+      CheckFeasibility(&prog_, 0.25, 0.25, 0.126, false);
+      CheckFeasibility(&prog_, 0.5, 0.6, 0.301, false);
     }
     if (num_interval_x_ == 3 && num_interval_y_ == 3) {
-      IsFeasible(&prog_, 1.0 / 3, 1.0 / 3, 0.1, false);
-      IsFeasible(&prog_, 0.5, 0.5, 0.26, true);
-      IsFeasible(&prog_, 1.0 / 3, 2.0 / 3, 2.0 / 9, true);
-      IsFeasible(&prog_, 0.5, 0.5, 5.0 / 18, true);
-      IsFeasible(&prog_, 0.5, 0.5, 5.0 / 18 + 0.001, false);
+      CheckFeasibility(&prog_, 1.0 / 3, 1.0 / 3, 0.1, false);
+      CheckFeasibility(&prog_, 0.5, 0.5, 0.26, true);
+      CheckFeasibility(&prog_, 1.0 / 3, 2.0 / 3, 2.0 / 9, true);
+      CheckFeasibility(&prog_, 0.5, 0.5, 5.0 / 18, true);
+      CheckFeasibility(&prog_, 0.5, 0.5, 5.0 / 18 + 0.001, false);
     }
   }
 

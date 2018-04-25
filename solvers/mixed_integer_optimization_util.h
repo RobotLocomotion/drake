@@ -281,15 +281,16 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * x * y is approximated by w.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
- * <pre>
- * x_min = φx(0) < φx(1) < ... < φx(m) = x_max
- * y_min = φy(0) < φy(1) < ... < φy(n) = y_max
- * </pre>
- * , and divide the range of x to small intervals [φx(0), φx(1)],
- * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
- * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(n-1), φy(n)]. The xy
- * plane is thus cut into grids, with each rectangle as
- * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
+ * ``` 
+ * x_min = φˣ₀ < φˣ₁ < ... < φˣₘ = x_max
+ * y_min = φʸ₀ < φʸ₁ < ... < φʸₘ = y_max
+ * ```
+ * , and divide the range of x into intervals
+ * [φˣ₀, φˣ₁], [φˣ₁, φˣ₂], ... , [φˣₘ₋₁, φˣₘ]
+ * and the range of y into intervals
+ * [φʸ₀, φʸ₁], [φʸ₁, φʸ₂], ... , [φʸₙ₋₁, φʸₙ]. The xy plane is thus cut into
+ * rectangles, with each rectangle as
+ * [φˣᵢ, φˣᵢ₊₁] x [φʸⱼ, φʸⱼ₊₁]. The convex hull of the surface
  * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
  * the bilinear product x * y with w, such that (x, y, w) is in one of the
  * tetrahedrons.
@@ -297,56 +298,56 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * @param x A variable in the bilinear product.
  * @param y A variable in the bilinear product.
  * @param w The expression that will approximates the bilinear product x * y.
- * @param phi_x φx in the documentation above. Will be used to cut the range of
+ * @param phi_x φˣ in the documentation above. Will be used to cut the range of
  * x into small intervals.
- * @param phi_y φy in the documentation above. Will be used to cut the range of
+ * @param phi_y φʸ in the documentation above. Will be used to cut the range of
  * y into small intervals.
  * @param Bx The binary-valued expression indicating which interval x is in.
- * Bx(i) = 1 => φx(i) <= x <= φx(i + 1).
+ * Bx(i) = 1 => φˣᵢ ≤ x ≤ φˣᵢ₊₁.
  * @param By The binary-valued expression indicating which interval y is in.
- * By(i) = 1 => φy(i) <= y <= φy(i + 1).
+ * By(i) = 1 => φʸⱼ ≤ y ≤ φʸⱼ₊₁.
  *
  * One formulation of the constraint is
- * <pre>
- * x = ∑ᵢⱼ xij(i, j)
- * y = ∑ᵢⱼ yij(i, j)
- * Bxy(i, j) = Bx(i) & By(j)
- * ∑ᵢⱼ Bxy(i, j) = 1
- * φx(i)Bxy(i, j) ≤ xij(i, j) ≤ φx(i+1)Bxy(i, j)
- * φy(j)Bxy(i, j) ≤ yij(i, j) ≤ φy(j+1)Bxy(i, j)
- * w ≥ ∑ᵢⱼ (xij(i, j)*φy(j) + φx(i)*yij(i, j) - φx(i)*φy(j) * Bxy(i, j))
- * w ≥ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j+1) * Bxy(i, j))
- * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j) + φx(i+1)*yij(i, j) - φx(i+1)*φy(j) * Bxy(i, j))
- * w ≤ ∑ᵢⱼ (xij(i, j)*φy(j+1) + φx(i)*yij(i, j) - φx(i)*φy(j+1) * Bxy(i, j))
- * </pre>
+ * x = ∑ᵢⱼ x̂ᵢⱼ
+ * y = ∑ᵢⱼ ŷᵢⱼ
+ * Bˣʸᵢⱼ = Bˣᵢ ∧ Bʸⱼ
+ * ∑ᵢⱼ Bˣʸᵢⱼ = 1
+ * φˣᵢ Bˣʸᵢⱼ ≤ x̂ᵢⱼ ≤ φˣᵢ₊₁ Bˣʸᵢⱼ
+ * φʸⱼ Bˣʸᵢⱼ ≤ ŷᵢⱼ ≤ φʸⱼ₊₁ Bˣʸᵢⱼ
+ * w ≥ ∑ᵢⱼ (x̂ᵢⱼ φʸⱼ   + φˣᵢ   ŷᵢⱼ - φˣᵢ  φʸⱼ   Bˣʸᵢⱼ)
+ * w ≥ ∑ᵢⱼ (x̂ᵢⱼ φʸⱼ₊₁ + φˣᵢ₊₁ ŷᵢⱼ - φˣᵢ₊₁ φʸⱼ₊₁ Bˣʸᵢⱼ)
+ * w ≤ ∑ᵢⱼ (x̂ᵢⱼ φʸⱼ   + φˣᵢ₊₁ ŷᵢⱼ - φˣᵢ₊₁ φʸⱼ   Bˣʸᵢⱼ)
+ * w ≤ ∑ᵢⱼ (x̂ᵢⱼ φʸⱼ₊₁ + φˣᵢ   ŷᵢⱼ - φˣᵢ   φʸⱼ₊₁ Bˣʸᵢⱼ)
+ * ```
  *
- * The "logical and" constraint Bxy(i, j) = Bx(i) & By(j) can be imposed as
- * <pre>
- * Bxy(i, j) ≥ Bx(i) + By(j) - 1
- * Bxy(i, j) ≤ Bx(i)
- * Bxy(i, j) ≤ By(j)
- * 0 ≤ Bxy(i, j) ≤ 1
- * </pre>
- *
+ * The "logical and" constraint Bˣʸᵢⱼ = Bˣᵢ ∧ Bʸⱼ can be imposed as
+ * ```
+ * Bˣʸᵢⱼ ≥ Bˣᵢ + Bʸⱼ - 1
+ * Bˣʸᵢⱼ ≤ Bˣᵢ
+ * Bˣʸᵢⱼ ≤ Bʸⱼ
+ * 0 ≤ Bˣʸᵢⱼ ≤ 1
+ * ```
  * We can further simplify these constraints, by defining two vectors
- * xj ∈ ℝⁿ, yi ∈ ℝᵐ as
- * xj(j) = ∑ᵢ xij(i, j)
- * yi(i) = ∑ⱼ yij(i, j)
- * and the constraints above can be re-formulated using xj and yi as
- * <pre>
- * x = ∑ⱼ xj(j)
- * y = ∑ᵢ yi(i)
- * Bxy(i, j) = Bx(i) & By(j)
- * ∑ᵢⱼ Bxy(i, j) = 1
- * ∑ᵢ φx(i)Bxy(i, j) ≤ xj(j) ≤ ∑ᵢ φx(i+1)Bxy(i, j)
- * ∑ⱼ φy(j)Bxy(i, j) ≤ yi(i) ≤ ∑ⱼ φy(j+1)Bxy(i, j)
- * w ≥ ∑ⱼ xj(j)*φy(j) + ∑ᵢ φx(i)*yi(i) - ∑ᵢⱼ φx(i)*φy(j) * Bxy(i, j)
- * w ≥ ∑ⱼ xj(j)*φy(j+1) + ∑ᵢ φx(i+1)*yi(i) - ∑ᵢⱼ φx(i+1)*φy(j+1) * Bxy(i, j)
- * w ≤ ∑ⱼ xj(j)*φy(j) + ∑ᵢ φx(i+1)*yi(j) - ∑ᵢⱼ φx(i+1)*φy(j) * Bxy(i, j)
- * w ≤ ∑ⱼ xj(j)*φy(j+1) + ∑ᵢ φx(i)*yi(i) - ∑ᵢⱼ φx(i)*φy(j+1) * Bxy(i, j)
- * </pre>
- * In this formulation, we introduce new continuous variables xj, yi, Bxy. The
- * total number of new variables is m + n + m * n.
+ * `x̅ ∈ ℝⁿ`, `y̅ ∈ ℝᵐ` as
+ * ```
+ * x̅ⱼ = ∑ᵢ x̂ᵢⱼ
+ * y̅ᵢ = ∑ⱼ ŷᵢⱼ
+ * ```
+ * and the constraints above can be re-formulated using `x̅` and `y̅` as
+ * ```
+ * x = ∑ⱼ x̅ⱼ
+ * y = ∑ᵢ y̅ᵢ
+ * Bˣʸᵢⱼ = Bˣᵢ ∧ Bʸⱼ
+ * ∑ᵢⱼ Bˣʸᵢⱼ = 1
+ * ∑ᵢ φˣᵢ Bˣʸᵢⱼ ≤ x̅ⱼ ≤ ∑ᵢ φˣᵢ₊₁ Bˣʸᵢⱼ
+ * ∑ⱼ φʸⱼ Bˣʸᵢⱼ ≤ y̅ᵢ ≤ ∑ⱼ φʸⱼ₊₁ Bˣʸᵢⱼ
+ * w ≥ ∑ⱼ( x̅ⱼ φʸⱼ   ) + ∑ᵢ( φˣᵢ   y̅ᵢ ) - ∑ᵢⱼ( φˣᵢ   φʸⱼ   Bˣʸᵢⱼ )
+ * w ≥ ∑ⱼ( x̅ⱼ φʸⱼ₊₁ ) + ∑ᵢ( φˣᵢ₊₁ y̅ᵢ ) - ∑ᵢⱼ( φˣᵢ₊₁ φʸⱼ₊₁ Bˣʸᵢⱼ )
+ * w ≤ ∑ⱼ( x̅ⱼ φʸⱼ   ) + ∑ᵢ( φˣᵢ₊₁ y̅ⱼ ) - ∑ᵢⱼ( φˣᵢ₊₁ φʸⱼ   Bˣʸᵢⱼ )
+ * w ≤ ∑ⱼ( x̅ⱼ φʸⱼ₊₁ ) + ∑ᵢ( φˣᵢ   y̅ᵢ ) - ∑ᵢⱼ( φˣᵢ   φʸⱼ₊₁ Bˣʸᵢⱼ ).
+ * ```
+ * In this formulation, we introduce new continuous variables `x̅`, `y̅`, `Bˣʸ`.
+ * The total number of new variables is m + n + m * n.
  *
  * In section 3.3 of
  * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
@@ -357,7 +358,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * in this function. It is the user's responsibility to ensure that these binary
  * constraints are enforced. The users can also add cutting planes ∑ᵢBx(i) = 1,
  * ∑ⱼBy(j) = 1. Without these two cutting planes, (x, y, w) is still in the
- * McCormick envelope of z = xy, but these two cutting planes "might" improve
+ * McCormick envelope of z = x * y, but these two cutting planes "might" improve
  * the computation speed in the mixed-integer solver.
  */
 void AddBilinearProductMcCormickEnvelopeMultipleChoice(
