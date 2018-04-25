@@ -122,21 +122,17 @@ MakeAcrobotPlantSdf() {
     const sdf::JointAxis* axis = joint->Axis();
 
     // Get the location of the joint in the model frame.
-    ignition::math::Matrix4d joint_M(joint->Pose());
+    //ignition::math::Matrix4d joint_M(joint->Pose());
+    ignition::math::Matrix4d X_MJ(joint->Pose());
 
     // Get the location of the child link in the model frame.
-    ignition::math::Matrix4d childlink_m(
+    ignition::math::Matrix4d X_MC(
         model->LinkByName(joint->ChildLinkName())->Pose());
 
-    // Compute the location of the child joint in the child link's frame.
-    ignition::math::Matrix4d childjoint_childlink_ign =
-      joint_M * childlink_m.Inverse();
+    ignition::math::Matrix4d X_CM = X_MC.Inverse();
 
-    // Convert to Eigen
-    Vector3d childjoint_childlink(
-        childjoint_childlink_ign.Translation().X(),
-        childjoint_childlink_ign.Translation().Y(),
-        childjoint_childlink_ign.Translation().Z());
+    // Compute the location of the child joint in the child link's frame.
+    ignition::math::Matrix4d X_CJ = X_CM * X_MJ;
 
     // Only supporting revolute joints for now.
     if (joint->Type() == sdf::JointType::REVOLUTE) {
@@ -149,29 +145,29 @@ MakeAcrobotPlantSdf() {
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->world_body(), {},
             plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(childjoint_childlink)),
+            Isometry3d(Translation3d(Vector3d(X_CJ.Translation().X(),
+                                              X_CJ.Translation().Y(),
+                                              X_CJ.Translation().Z()))),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       } else {
 
         // Get the location of the parent link in the model frame.
-        ignition::math::Matrix4d parentlink_m(
+        ignition::math::Matrix4d X_MP(
             model->LinkByName(joint->ParentLinkName())->Pose());
+        ignition::math::Matrix4d X_PM = X_MP.Inverse();
 
         // Compute the location of the parent joint in the parent link's frame.
-        ignition::math::Matrix4d parentjoint_parentlink_ign =
-          joint_M * parentlink_m.Inverse();
-
-        // Convert to Eigen
-        Vector3d parentjoint_parentlink(
-            parentjoint_parentlink_ign.Translation().X(),
-            parentjoint_parentlink_ign.Translation().Y(),
-            parentjoint_parentlink_ign.Translation().Z());
+        ignition::math::Matrix4d X_PJ = X_PM *  X_MJ;
 
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->GetBodyByName(joint->ParentLinkName()),
-            Isometry3d(Translation3d(parentjoint_parentlink)),
+            Isometry3d(Translation3d(Vector3d(X_PJ.Translation().X(),
+                                              X_PJ.Translation().Y(),
+                                              X_PJ.Translation().Z()))),
             plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(childjoint_childlink)),
+            Isometry3d(Translation3d(Vector3d(X_CJ.Translation().X(),
+                                              X_CJ.Translation().Y(),
+                                              X_CJ.Translation().Z()))),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       }
     }
