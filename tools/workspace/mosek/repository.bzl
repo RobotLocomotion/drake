@@ -57,7 +57,6 @@ def _impl(repository_ctx):
 
         files = [
             "bin/libcilkrts.5.dylib",
-            "bin/libiomp5.dylib",
             "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
                                                 mosek_minor_version),
         ]
