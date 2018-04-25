@@ -405,3 +405,9 @@ bool spruce::dir::chdir(const spruce::path& p) {
   if (SPRUCE_CHDIR(target.c_str()) != 0) return false;
   return true;
 }
+
+spruce::path spruce::dir::getcwd() {
+  spruce::path result;
+  result.setAsCurrent();
+  return result;
+}
