@@ -22,7 +22,7 @@ using std::sqrt;
 namespace drake {
 namespace solvers {
 namespace {
-/*void AddObjective(MathematicalProgram* prog,
+void AddObjective(MathematicalProgram* prog,
                   const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
                   const Eigen::Ref<const Matrix3d>& R_desired) {
   const auto R_error = R - R_desired;
@@ -174,7 +174,7 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
             2 - R.row(0).dot(R.row(0)) - R.row(1).dot(R.row(1)) + tol);
   EXPECT_LE(2 * std::abs(R.row(0).dot(R.row(2))),
             2 - R.row(0).dot(R.row(0)) - R.row(1).dot(R.row(1)) + tol);
-}*/
+}
 
 bool IsFeasibleCheck(
     MathematicalProgram* prog,
@@ -184,16 +184,9 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  // Mosek solver has some numerical issue, that it can return "floating point
-  // exception" in this test.
-  GurobiSolver solver;
-  if (solver.available()) {
-    return (prog->Solve() == kSolutionFound);
-  } else {
-    throw std::runtime_error("Gurobi solver is not available.");
-  }
+  return (prog->Solve() == kSolutionFound);
 }
-/*
+
 GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
   MathematicalProgram prog;
   auto R = NewRotationMatrixVars(&prog);
@@ -228,7 +221,7 @@ GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
           std::pair<std::array<std::array<VectorDecisionVariable<3>, 3>, 3>,
                     Eigen::Matrix<double, 9, 1>>>::value,
       "Incorrect type.");
-}*/
+}
 
 enum class ConstraintType {
   kBoxSphereIntersection,
@@ -339,12 +332,10 @@ TEST_P(TestMcCormick, TestExactRotationMatrix) {
   std::mt19937 generator(41);
   for (int i = 0; i < 40; i++) {
     R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
-    const bool is_feasible = IsFeasible(R_test);
-    std::cout << i << " " << is_feasible << "\n";
-    EXPECT_TRUE(is_feasible);
+    EXPECT_TRUE(IsFeasible(R_test));
   }
 }
-/*
+
 TEST_P(TestMcCormick, TestInexactRotationMatrix) {
   // If R is not exactly on SO(3), test whether it is infeasible for our SO(3)
   // relaxation.
@@ -393,14 +384,14 @@ TEST_P(TestMcCormick, TestInexactRotationMatrix) {
     EXPECT_TRUE(IsFeasible(R_test));
   else
     EXPECT_FALSE(IsFeasible(R_test));
-}*/
+}
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormick,
     ::testing::Combine(::testing::ValuesIn<std::vector<ConstraintType>>(
                            { ConstraintType::kBoth}),
                        ::testing::ValuesIn<std::vector<int>>({2})));
-/*
+
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
 // of the box bmin <= x <= bmax lies on the surface of the unit sphere.
@@ -617,7 +608,7 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn<std::vector<bool>>(
                            {false, true}),  // same of opposite orthant
                        ::testing::ValuesIn<std::vector<bool>>(
-                           {false, true})));  // replace bilinear or not.*/
+                           {false, true})));  // replace bilinear or not.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
