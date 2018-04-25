@@ -1,6 +1,8 @@
 import unittest
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue,
@@ -12,22 +14,24 @@ from pydrake.systems.test.test_util import (
     MyVector2,
 )
 from pydrake.systems.primitives import (
-    Adder,
-    AffineSystem,
-    ConstantVectorSource,
+    Adder, Adder_,
+    AffineSystem, AffineSystem_,
+    ConstantValueSource_,
+    ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
     FirstOrderTaylorApproximation,
-    Integrator,
+    Integrator, Integrator_,
     IsControllable,
     IsObservable,
     Linearize,
-    LinearSystem,
-    Multiplexer,
+    LinearSystem, LinearSystem_,
+    Multiplexer, Multiplexer_,
     ObservabilityMatrix,
-    PassThrough,
-    Saturation,
-    SignalLogger,
-    WrapToSystem,
+    PassThrough, PassThrough_,
+    Saturation, Saturation_,
+    SignalLogger, SignalLogger_,
+    WrapToSystem, WrapToSystem_,
+    ZeroOrderHold_,
 )
 
 
@@ -41,6 +45,29 @@ def compare_value(test, a, b):
 
 
 class TestGeneral(unittest.TestCase):
+    def _check_instantiations(self, template, supports_symbolic=True):
+        default_cls = template[None]
+        self.assertTrue(template[float] is default_cls)
+        self.assertTrue(template[AutoDiffXd] is not default_cls)
+        if supports_symbolic:
+            self.assertTrue(template[Expression] is not default_cls)
+
+    def test_instantiations(self):
+        # TODO(eric.cousineau): Refine tests once NumPy functionality is
+        # resolved for dtype=object, or dtype=custom is used.
+        self._check_instantiations(Adder_)
+        self._check_instantiations(AffineSystem_)
+        self._check_instantiations(ConstantValueSource_)
+        self._check_instantiations(ConstantVectorSource_)
+        self._check_instantiations(Integrator_)
+        self._check_instantiations(LinearSystem_)
+        self._check_instantiations(Multiplexer_)
+        self._check_instantiations(PassThrough_)
+        self._check_instantiations(Saturation_)
+        self._check_instantiations(SignalLogger_)
+        self._check_instantiations(WrapToSystem_)
+        self._check_instantiations(ZeroOrderHold_)
+
     def test_signal_logger(self):
         # Log the output of a simple diagram containing a constant
         # source and an integrator.
