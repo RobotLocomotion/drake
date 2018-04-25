@@ -1440,7 +1440,7 @@ class Diagram : public System<T> {
     // order.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
-      registered_systems_[i]->set_parent(this);
+      SystemBase::set_parent(this, registered_systems_[i].get());
     }
 
     // Generate constraints for the diagram from the constraints on the
