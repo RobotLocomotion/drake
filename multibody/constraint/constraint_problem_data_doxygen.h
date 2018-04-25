@@ -34,11 +34,13 @@ further in @ref constraint_types.
 @ingroup constraint_overview
 - nb      The number of bilateral constraint equations (nb ≥ 0)
 - nk      The number of edges in a polygonal approximation to a friction
-          cone (nk ≥ 4). Note that nk = 2nr (where nr is defined immediately
-          below).
+          cone (nk ≥ 4 for contacts between three-dimensional bodies, nk = 2 for
+          contacts between two-dimensional bodies). Note that nk = 2nr (where
+          nr is defined immediately below).
 - nr      *Half* the number of edges in a polygonal approximation to a
-          friction cone. (nr ≥ 2).
-- np      The number of contact surface constraint equations.
+          friction cone. (nr ≥ 2 for contacts between three-dimensional bodies,
+          nr = 1 for contacts between two-dimensional bodies).
+- nc      The number of contact surface constraint equations.
 - nv      The dimension of the system generalized velocity / force.
 - nq      The dimension of the system generalized coordinates.
 - v       The system's generalized velocity vector (of dimension nv), which is a
@@ -648,6 +650,7 @@ constraint problem data</h4>
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
     softening affects the definition of gₚ(.)'s Jacobian* operators, `L_mult`
     and `L_transpose_mult`.
+*/
 
 /** @defgroup constraint_references References
  @ingroup constraint_overview
