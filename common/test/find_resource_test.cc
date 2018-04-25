@@ -124,9 +124,7 @@ GTEST_TEST(ZZZ_FindResourceTest, ZZZ_AlternativeDirectory) {
   // Test `AddResourceSearchPath()` and `GetResourceSearchPaths()` by creating
   // an empty file in a scratch directory with a sentinel file. Bazel tests are
   // run in a scratch directory, so we don't need to remove anything manually.
-  spruce::path cwd;
-  cwd.setAsCurrent();
-  const std::string test_directory = cwd.getStr() +
+  const std::string test_directory = spruce::dir::getcwd().getStr() +
                                      "/find_resource_test_scratch";
   const std::string candidate_filename = "drake/candidate.ext";
   spruce::dir::mkdir(test_directory);

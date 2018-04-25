@@ -51,8 +51,7 @@ string GetFullPath(const string& file_name) {
   } else {
     // The specified file is a relative path. The following code obtains the
     // full path and verifies that the file exists.
-    spruce::path path(".");
-    path.setAsCurrent();
+    spruce::path path = spruce::dir::getcwd();
     path.append(file_name);
     if (path.isFile()) {
       result = path.getStr();
@@ -127,8 +126,7 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
     bool dir_is_relative =
         !(normalized_root_dir.size() >= 1 && normalized_root_dir[0] == '/');
     if (dir_is_relative) {
-      mesh_filename_spruce = spruce::path();
-      mesh_filename_spruce.setAsCurrent();
+      mesh_filename_spruce = spruce::dir::getcwd();
       mesh_filename_spruce.append(normalized_root_dir);
     } else {
       mesh_filename_spruce = spruce::path(normalized_root_dir);

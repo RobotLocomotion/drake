@@ -190,8 +190,7 @@ optional<string> GetTestRunfilesDir() {
 // path element, or possibly a related name like "drake2"; that is, they will
 // contain files named like "common/foo.txt", not "drake/common/foo.txt".
 optional<string> FindSentinelDir() {
-  spruce::path candidate_dir;
-  candidate_dir.setAsCurrent();
+  spruce::path candidate_dir = spruce::dir::getcwd();
   int num_attempts = 0;
   while (true) {
     DRAKE_THROW_UNLESS(num_attempts < 1000);  // Insanity fail-fast.
