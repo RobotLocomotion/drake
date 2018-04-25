@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& o, const CubicPolynomial& p) {
 
 namespace {
 
-GTEST_TEST(BruteForceIntegral, ArcRoadCurvePathLengthTest) {
+GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   const double kAccuracy{1e-12};
 
   const double kRadius{10.0};
@@ -43,9 +43,11 @@ GTEST_TEST(BruteForceIntegral, ArcRoadCurvePathLengthTest) {
   const double kH{0.};
 
   const ArcRoadCurve rc(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
-  const double path_length_2nd_order_approx =
+  // A k = 0 order approximation uses two segments, as n = 2^k, where
+  // n is the segment count.
+  const double path_length_zero_order_approx =
       test::BruteForcePathLengthIntegral(rc, kP0, kP1, kR, kH, 0);
-  EXPECT_NEAR(path_length_2nd_order_approx,
+  EXPECT_NEAR(path_length_zero_order_approx,
               std::sin(M_PI / 4.) * kRadius * 2., kAccuracy);
 
   const double tolerance = .01 * rc.s_from_p(1., 0.);
@@ -117,7 +119,7 @@ std::vector<CubicPolynomial> GetCubicPolynomials() {
 // Returns a collection of LineRoadCurve instances for testing.
 std::vector<std::shared_ptr<RoadCurve>> GetLineRoadCurves() {
   const Vector2<double> kStart{0., 0.};
-  const Vector2<double> kEnd{100., -80.};
+  const Vector2<double> kEnd{10., -8.};
 
   std::vector<std::shared_ptr<RoadCurve>> road_curves;
   for (const auto& elevation_polynomial : GetCubicPolynomials()) {
@@ -133,7 +135,7 @@ std::vector<std::shared_ptr<RoadCurve>> GetLineRoadCurves() {
 // Returns a collection of ArcRoadCurve instances for testing.
 std::vector<std::shared_ptr<RoadCurve>> GetArcRoadCurves() {
   const Vector2<double> kCenter{0., 0.};
-  const double kRadius{100.0};
+  const double kRadius{10.0};
   const double kTheta0{M_PI / 6.};
   const double kDTheta{M_PI / 2.};
 

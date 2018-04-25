@@ -8,35 +8,11 @@ namespace multilane {
 
 const double LineRoadCurve::kMinimumNorm = 1e-12;
 
-double LineRoadCurve::p_from_s(double s, double r) const {
-  if (!trade_accuracy_for_speed()) {
-    if ((r != 0. && (superelevation().a() != 0. || superelevation().b() != 0. ||
-                     superelevation().c() != 0. || superelevation().d() != 0.))
-        || elevation().d() != 0. || elevation().c() != 0.) {
-      // In the most general case, use a numerical approximation of
-      // the function.
-      return RoadCurve::p_from_s(s, r);
-    }
-  }
-  // When superelevation() has no influence on the curve's
-  // geometry and elevation() is at most linear along the curve,
-  // use the known analytical expression.
+double LineRoadCurve::fast_p_from_s(double s, double r) const {
   return elevation().p_s(s / p_scale());
 }
 
-double LineRoadCurve::s_from_p(double p, double r) const {
-  if (!trade_accuracy_for_speed()) {
-    if ((r != 0. && (superelevation().a() != 0. || superelevation().b() != 0. ||
-                     superelevation().c() != 0. || superelevation().d() != 0.))
-        || elevation().d() != 0. || elevation().c() != 0.) {
-      // In the most general case, use a numerical approximation of
-      // the function.
-      return RoadCurve::s_from_p(p, r);
-    }
-  }
-  // When superelevation() has no influence on the curve's
-  // geometry and elevation() is at most linear along the curve,
-  // use the known analytical expression.
+double LineRoadCurve::fast_s_from_p(double p, double r) const {
   return p_scale() * elevation().s_p(p);
 }
 

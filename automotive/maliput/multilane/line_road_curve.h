@@ -30,32 +30,31 @@ class LineRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
-  /// @param scale_length The minimum length, in meters, of variations that
-  /// the curve expresses.
   /// @param linear_tolerance The linear tolerance for all computations, in the
   /// the absolute error sense.
-  /// @param trade_accuracy_for_speed If true, prevents the use of numerical
-  /// approximations for curve parameterizations, sticking to available
-  /// closed form solutions that may not actually be correct for the curve
-  /// as specified.
-  explicit LineRoadCurve(const Vector2<double>& xy0, const Vector2<double>& dxy,
-                         const CubicPolynomial& elevation,
-                         const CubicPolynomial& superelevation,
-                         double scale_length = 1.0,
-                         double linear_tolerance = 0.01,
-                         bool trade_accuracy_for_speed = false)
-      : RoadCurve(scale_length, linear_tolerance,
+  /// @param scale_length The minimum length, in meters, of variations that
+  /// the curve expresses.
+  /// @param computation_policy Policy to guide all computations. If geared
+  /// towards speed, computations will make use of analytical expressions even
+  /// if not actually correct for the curve as specified.
+  explicit LineRoadCurve(
+      const Vector2<double>& xy0, const Vector2<double>& dxy,
+      const CubicPolynomial& elevation,
+      const CubicPolynomial& superelevation,
+      double scale_length = 1.0, double linear_tolerance = 0.01,
+      const ComputationPolicy& computation_policy =
+         ComputationPolicy::kPreferAccuracy)
+      : RoadCurve(linear_tolerance, scale_length,
                   elevation, superelevation,
-                  trade_accuracy_for_speed),
+                  computation_policy),
         p0_(xy0), dp_(dxy), heading_(std::atan2(dxy.y(), dxy.x())) {
+    // TODO(hidmic): Remove default values in trailing arguments, which were
+    // added in the first place to defer the need to propagate changes upwards
+    // in the class hierarchy.
     DRAKE_DEMAND(dxy.norm() > kMinimumNorm);
   }
 
   ~LineRoadCurve() override = default;
-
-  double p_from_s(double s, double r) const override;
-
-  double s_from_p(double p, double r) const override;
 
   Vector2<double> xy_of_p(double p) const override { return p0_ + p * dp_; }
 
@@ -90,7 +89,18 @@ class LineRoadCurve : public RoadCurve {
     return true;
   }
 
+ protected:
+  double fast_p_from_s(double s, double r) const override;
+
+  double fast_s_from_p(double p, double r) const override;
+
  private:
+  // Checks whether available analytical expressions for the s(p) and p(s)
+  // mappings are accurate for curve as defined.
+  // @param r Lateral offset of the reference curve over the z=0 plane.
+  // @return True if analytical results would be accurate, False otherwise.
+  bool is_analytical_parameterization_accurate(double r) const;
+
   // The first point in world coordinates over the z=0 plane of the reference
   // curve.
   const Vector2<double> p0_{};
