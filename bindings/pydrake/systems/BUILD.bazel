@@ -44,7 +44,11 @@ drake_py_library(
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
-    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+    deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
 )
 
 drake_pybind_library(
@@ -68,6 +72,8 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/util:cpp_template_py",
     ],
 )
@@ -75,6 +81,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_so_name = "primitives",
@@ -88,6 +95,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "analysis_py",
+    cc_deps = [
+        ":systems_pybind",
+    ],
     cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
