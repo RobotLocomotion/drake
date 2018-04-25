@@ -4,7 +4,6 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace math {

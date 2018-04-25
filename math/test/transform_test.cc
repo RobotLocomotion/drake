@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/math/roll_pitch_yaw.h"
-
 namespace drake {
 namespace math {
 namespace {

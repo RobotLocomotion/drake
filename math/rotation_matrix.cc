@@ -4,7 +4,6 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace math {
