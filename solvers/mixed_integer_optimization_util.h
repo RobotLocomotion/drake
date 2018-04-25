@@ -153,15 +153,16 @@ enum class IntervalBinning {
  * x * y is approximated by w.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
- * <pre>
- * x_min = φx(0) < φx(1) < ... < φx(m) = x_max
- * y_min = φy(0) < φy(1) < ... < φy(n) = y_max
- * </pre>
- * , and divide the range of x to small intervals [φx(0), φx(1)],
- * [φx(1), φx(2)], ... , [φx(m-1), φx(m)], and the range of y to small
- * intervals [φy(0), φy(1)], [φy(1), φy(2)], ..., [φy(n-1), φy(n)]. The xy
- * plane is thus cut into grids, with each rectangle as
- * [φx(i), φx(i + 1)] x [φy(j), φy(j + 1)]. The convex hull of the surface
+ * ```
+ * x_min = φˣ₀ < φˣ₁ < ... < φˣₘ = x_max
+ * y_min = φʸ₀ < φʸ₁ < ... < φʸₘ = y_max
+ * ```
+ * , and divide the range of x into intervals
+ * [φˣ₀, φˣ₁], [φˣ₁, φˣ₂], ... , [φˣₘ₋₁, φˣₘ]
+ * and the range of y into intervals
+ * [φʸ₀, φʸ₁], [φʸ₁, φʸ₂], ... , [φʸₙ₋₁, φʸₙ]. The xy plane is thus cut into
+ * rectangles, with each rectangle as
+ * [φˣᵢ, φˣᵢ₊₁] x [φʸⱼ, φʸⱼ₊₁]. The convex hull of the surface
  * z = x * y for x, y in each rectangle is a tetrahedron. We then approximate
  * the bilinear product x * y with w, such that (x, y, w) is in one of the
  * tetrahedrons.
@@ -281,7 +282,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * x * y is approximated by w.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
  * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
- * ``` 
+ * ```
  * x_min = φˣ₀ < φˣ₁ < ... < φˣₘ = x_max
  * y_min = φʸ₀ < φʸ₁ < ... < φʸₘ = y_max
  * ```
