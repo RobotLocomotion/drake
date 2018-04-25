@@ -153,9 +153,8 @@ class OutputPort {
                  the System whose output port this is. */
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
 
-  /** This is useful for error messages and produces `"output port <#> of
-  GetSystemIdString()"` with whatever System identification string is produced
-  by that method. */
+  /** This is useful for error messages and produces a human-readable
+  identification of an offending output port. */
   std::string GetPortIdString() const;
 
  private:
