@@ -144,7 +144,11 @@ install_files(
 
 install(
    name = "install",
-   docs = ["mosek-eula.pdf"],
+   docs = [
+       "mosek-eula.pdf",
+       "@drake//tools/workspace/mosek:cilkrts_notice",
+       "@drake//tools/workspace/mosek:openMP_notice",
+   ],
    deps = [":install_libraries"],
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
