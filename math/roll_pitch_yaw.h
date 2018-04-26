@@ -76,7 +76,7 @@ class RollPitchYaw {
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
   /// @throws std::logic_error in debug builds if
   /// !IsValid(Vector3<T>(roll, pitch, yaw)).
-  explicit RollPitchYaw(const T& roll, const T& pitch, const T& yaw) {
+  RollPitchYaw(const T& roll, const T& pitch, const T& yaw) {
     const Vector3<T> rpy(roll, pitch, yaw);
     SetOrThrowIfNotValidInDebugBuild(rpy);
   }

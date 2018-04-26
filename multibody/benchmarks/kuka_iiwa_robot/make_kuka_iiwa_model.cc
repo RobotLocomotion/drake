@@ -51,8 +51,9 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
     MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
-  const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
-                                                 xyzA);
+  const math::RollPitchYaw<double> rpy(q123A);
+  const math::RotationMatrix<double> R_AAb(rpy);
+  const Eigen::Isometry3d X_AAb = MakeIsometry3d(R_AAb.matrix(), xyzA);
 
   // Create transform from outboard body B to mobilizer outboard frame Ba.
   const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
