@@ -212,6 +212,6 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     int num_intervals_per_half_axis = kNumIntervalsPerHalfAxis,
-    bool add_mccormick_for_sphere_box_intersection = true);
+    bool add_mccormick_for_sphere_box_intersection = false);
 }  // namespace solvers
 }  // namespace drake

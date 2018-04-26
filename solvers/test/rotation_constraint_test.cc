@@ -389,8 +389,10 @@ TEST_P(TestMcCormick, TestInexactRotationMatrix) {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormick,
     ::testing::Combine(::testing::ValuesIn<std::vector<ConstraintType>>(
-                           { ConstraintType::kBoth}),
-                       ::testing::ValuesIn<std::vector<int>>({2})));
+                           {ConstraintType::kBoxSphereIntersection,
+                            ConstraintType::kReplaceBilinear,
+                            ConstraintType::kBoth}),
+                       ::testing::ValuesIn<std::vector<int>>({1, 2})));
 
 // Test some corner cases of McCormick envelope.
 // The corner cases happens when either the innermost or the outermost corner
