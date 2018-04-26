@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
@@ -619,104 +618,6 @@ TEST_F(DiagramTest, AllocateInputs) {
     EXPECT_NE(vec, nullptr);
     EXPECT_EQ(vec->size(), kSize);
   }
-}
-
-// A BasicVector-derived type we can complain about in the next test.
-template <typename T>
-class WrongVector : public MyVector<2, T> {
- public:
-  using MyVector<2, T>::MyVector;
-};
-
-// A System with an abstract input port we can use for error checking.
-class HasAbstractInputPort : public LeafSystem<double> {
- public:
-  HasAbstractInputPort() {
-    auto value = AbstractValue::Make<int>(3);
-    this->DeclareAbstractInputPort(*value);
-  }
-};
-
-// Test error messages from the EvalInput methods.
-TEST_F(DiagramTest, EvalInputErrors) {
-  auto context = diagram_->CreateDefaultContext();
-
-  ASSERT_EQ(diagram_->get_num_input_ports(), 3);
-
-  // Try some illegal port numbers.
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalVectorInput(*context, -1), std::out_of_range,
-      ".*EvalVectorInput.*negative.*-1.*illegal.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalAbstractInput(*context, -2), std::out_of_range,
-      ".*EvalAbstractInput.*negative.*-2.*illegal.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalInputValue<int>(*context, -3), std::out_of_range,
-      ".*EvalInputValue.*negative.*-3.*illegal.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalEigenVectorInput(*context, -4), std::out_of_range,
-      ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalVectorInput(*context, 9), std::out_of_range,
-      ".*EvalVectorInput.*no input port.*9.*only.*3.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalAbstractInput(*context, 10), std::out_of_range,
-      ".*EvalAbstractInput.*no input port.*10.*only.*3.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalInputValue<int>(*context, 11), std::out_of_range,
-      ".*EvalInputValue.*no input port.*11.*only.*3.*");
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalEigenVectorInput(*context, 12), std::out_of_range,
-      ".*EvalEigenVectorInput.*no input port.*12.*only.*3.*");
-
-  // No ports have values yet. EvalEigenVectorInput() requires a value, but
-  // the others should return nullptr.
-  EXPECT_EQ(diagram_->EvalVectorInput(*context, 1), nullptr);
-  EXPECT_EQ(diagram_->EvalAbstractInput(*context, 1), nullptr);
-  EXPECT_EQ(diagram_->EvalInputValue<int>(*context, 1), nullptr);
-
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalEigenVectorInput(*context, 1), std::logic_error,
-      ".*EvalEigenVectorInput.*input port\\[1\\].*neither connected nor "
-      "freestanding.*");
-
-  // Assign values to all ports. These are all BasicVector ports.
-  diagram_->AllocateFreestandingInputs(context.get());
-
-  EXPECT_NO_THROW(diagram_->EvalVectorInput(*context, 2));  // BasicVector OK.
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalVectorInput<WrongVector>(*context, 2), std::logic_error,
-      ".*EvalVectorInput.*expected.*WrongVector"
-      ".*input port.*2.*actual.*BasicVector.*");
-
-  EXPECT_NO_THROW(diagram_->EvalInputValue<BasicVector<double>>(*context, 0));
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      diagram_->EvalInputValue<int>(*context, 0), std::logic_error,
-      ".*EvalInputValue.*expected.*int.*input port.*0.*actual.*BasicVector.*");
-
-  // Now induce errors that only apply to abstract-valued input ports.
-  HasAbstractInputPort abstract_system;
-  auto abstract_context = abstract_system.CreateDefaultContext();
-  abstract_system.AllocateFreestandingInputs(abstract_context.get());
-
-  EXPECT_EQ(*abstract_system.EvalInputValue<int>(*abstract_context, 0), 3);
-  EXPECT_NO_THROW(abstract_system.EvalAbstractInput(*abstract_context, 0));
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      abstract_system.EvalVectorInput(*abstract_context, 0), std::logic_error,
-      ".*EvalVectorInput.*vector port required.*input port.*0.*"
-      "was declared abstract.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      abstract_system.EvalEigenVectorInput(*abstract_context, 0),
-      std::logic_error,
-      ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
-      "was declared abstract.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      abstract_system.EvalInputValue<double>(*abstract_context, 0),
-      std::logic_error,
-      ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*int.*");
 }
 
 // Tests that a diagram can be transmogrified to AutoDiffXd.
