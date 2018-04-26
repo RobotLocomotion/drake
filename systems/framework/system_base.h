@@ -50,7 +50,8 @@ class SystemBase : public internal::SystemMessageInterface {
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
   currently just "_" (a lone underscore). */
-  // TODO(sherm1) Revisit this "_" business. Maybe something like "(noname)"?
+  // TODO(sherm1) Revisit this "_" business. Maybe something like "(noname)",
+  // or a unique default like DiagramBuilder uses?
   const std::string& GetSystemName() const final {
     static never_destroyed<std::string> dummy("_");
     return name_.empty() ? dummy.access() : name_;

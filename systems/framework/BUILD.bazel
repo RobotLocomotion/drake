@@ -585,7 +585,6 @@ drake_cc_googletest(
     deps = [
         ":diagram",
         "//common:essential",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//examples/pendulum:pendulum_plant",
         "//systems/analysis/test_utilities:stateless_system",
@@ -720,6 +719,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "system_base_test",
+    deps = [
+        ":system_base",
+        "//common:essential",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "system_test",
     deps = [
         ":leaf_context",
@@ -727,6 +735,7 @@ drake_cc_googletest(
         ":system",
         "//common:essential",
         "//common:unused",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
     ],
 )
