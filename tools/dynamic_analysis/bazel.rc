@@ -45,7 +45,7 @@ test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
 test:asan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan --test_timeout=120,600,1800,7200
+test:asan --test_timeout=150,750,2250,9000  # 2.5x
 
 ### ASan everything build. ###
 build:asan_everything --define=WITH_GUROBI=ON
@@ -66,7 +66,7 @@ test:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
 test:asan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan_everything --test_timeout=120,600,1800,7200
+test:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
 
 ### LSan build. ###
 build:lsan --copt -g
@@ -225,7 +225,7 @@ test:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
 test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck --test_timeout=1200,6000,18000,72000  # 20x
+test:memcheck --test_timeout=1500,7500,22500,90000  # 25x
 
 ### Memcheck everything build. ###
 build:memcheck_everything --define=WITH_GUROBI=ON
@@ -239,7 +239,7 @@ test:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 test:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck_everything --test_timeout=1200,6000,18000,72000  # 20x
+test:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
 
 # Fast memcheck.
 #
@@ -254,4 +254,4 @@ test:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind
 test:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:fastmemcheck --test_timeout=1200,6000,18000,72000  # 20x
+test:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
