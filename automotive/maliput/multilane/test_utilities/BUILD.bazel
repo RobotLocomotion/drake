@@ -11,6 +11,7 @@ drake_cc_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":multilane_brute_force_integral",
         ":multilane_types_compare",
     ],
 )
