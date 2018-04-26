@@ -11,6 +11,7 @@
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
@@ -147,11 +148,10 @@ PiecewisePolynomial<double> MakePlan() {
       info_good = false;
     }
   }
-  printf("\n");
 
   if (!info_good) {
     throw std::runtime_error(
-        "inverseKinPointwise failed to compute a valid solution.");
+        "inverseKinPointwise failed to compute a feasible solution.");
   }
 
   std::vector<MatrixXd> knots(kTimes.size());
@@ -281,21 +281,54 @@ int do_main() {
   simulator.set_target_realtime_rate(0);
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(kTimes.back());
+  simulator.StepTo(12.0);  // kTimes.back()
 
-  // Comparing the final xyz position of the object in world frame to a desired
-  // value.
-  // desired_object_CG_final_position =
-  // end_effector_final_position + [0.12, 0, 0]
-  const Eigen::Vector3d position_final_expected(0.32, 0.2, 0.8);
-  const Eigen::VectorXd q_final = log_state->data().topRightCorner(n1, 1);
+  // Comparing the final position and orientation of the object in world frame
+  // to expected values.
 
-  // The tolerance (5e-2) is large because the tolerances in the trajectory
-  // optimization (MakePlan) are large. The large tolerances are needed for
-  // IPOPT to return feasible solutions.
-  EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head(3), 5e-2,
+  const int kDumbbellIndex = 1;
+  const int kIiwaEndEffectorIndex = 13;
+
+  // compute offset in the x-direction (in the EE-frame) from the origin of
+  // the EE to the origin of the object (dumbbell). The x-axes of the end
+  // effector and the object are aligned with the x-axis of the world frame
+  // at t = 3.0, the time at which x_offset is calculated. 
+  const Eigen::VectorXd q_grasping =
+      log_state->data().col(static_cast<int>(3.0 / h));
+  VectorXd v(tree->get_num_velocities());
+  v.setZero();
+  KinematicsCache<double> cache = tree->CreateKinematicsCache();
+  cache.initialize(q_grasping, v);
+  tree->doKinematics(cache);
+  auto transform = tree->CalcBodyPoseInWorldFrame(
+      cache, tree->get_body(kIiwaEndEffectorIndex));
+  const double x_offset = q_grasping[0] - (transform.translation())[0];
+
+  // compute expected_object_CG_final_position =
+  // expected_end_effector_final_position + [x_offset, 0, 0]
+  const Eigen::Vector3d position_final_expected(0.2 + x_offset, 0.2, 0.8);
+  const Eigen::VectorXd q_final = log_state->data().rightCols(1);
+
+  // compute expected_object_orientation as a rotation matrix.
+  Eigen::Vector3d rpy_dumbbell_expected(M_PI / 4, 0, 0);
+  math::RotationMatrix<double> R_dumbbell_expected(
+      math::RollPitchYawToQuaternion(rpy_dumbbell_expected));
+
+  // compute object final poistion and orientation.
+  cache.initialize(q_final, v);
+  tree->doKinematics(cache);
+  transform =
+      tree->CalcBodyPoseInWorldFrame(cache, tree->get_body(kDumbbellIndex));
+
+  std::cout << transform.linear() << std::endl;
+  std::cout << R_dumbbell_expected.matrix() << std::endl;
+  std::cout << position_final_expected << std::endl;
+  std::cout << q_final.head<3>() << std::endl;
+
+  EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head<3>(), 1e-2,
                               MatrixCompareType::absolute));
-
+  EXPECT_TRUE(CompareMatrices(R_dumbbell_expected.matrix(), transform.linear(),
+                              2e-2, MatrixCompareType::absolute));
 
   return 0;
 }
