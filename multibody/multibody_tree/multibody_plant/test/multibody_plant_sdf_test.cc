@@ -5,8 +5,8 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant_sdf.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 

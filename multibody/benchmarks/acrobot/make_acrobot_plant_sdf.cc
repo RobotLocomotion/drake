@@ -122,7 +122,6 @@ MakeAcrobotPlantSdf() {
     const sdf::JointAxis* axis = joint->Axis();
 
     // Get the location of the joint in the model frame.
-    //ignition::math::Matrix4d joint_M(joint->Pose());
     ignition::math::Matrix4d X_MJ(joint->Pose());
 
     // Get the location of the child link in the model frame.
@@ -150,7 +149,6 @@ MakeAcrobotPlantSdf() {
                                               X_CJ.Translation().Z()))),
             Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
       } else {
-
         // Get the location of the parent link in the model frame.
         ignition::math::Matrix4d X_MP(
             model->LinkByName(joint->ParentLinkName())->Pose());
