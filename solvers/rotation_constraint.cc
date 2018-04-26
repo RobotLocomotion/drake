@@ -453,11 +453,15 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   *n = prog_normal.GetSolution(n_var);
   *d = prog_normal.GetSolution(d_var(0));
 
+  // The optimization problem might not be solved to super high precision. To
+  // guarantee that the constraints d <= nᵀ * pts.col(i), nᵀ * n = 1 are
+  // satisfied, we "polish" the optimization solution below.
   n->normalize();
   *d = std::numeric_limits<double>::infinity();
   for (const auto& pt : pts) {
     *d = std::min(*d, n->dot(pt));
   }
+
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
 }
@@ -1095,6 +1099,8 @@ void AddCrossProductImpliedOrthantConstraint(
   }
 }
 
+// This function just calls AddMcCormickVectorConstraints for each row/column
+// of R.
 void AddMcCormickVectorConstraintsForR(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const std::vector<Matrix3<symbolic::Expression>> & CRpos,
@@ -1238,6 +1244,13 @@ bool is_power_of_two(int n) {
   return  (n & (n-1)) == 0;
 }
 
+// B[i][j] contains a vector of binary variables, such that if B[i][j] is the
+// reflected gray code representation of integer k, then R(i, j) is in the k'th
+// interval. We will write CRpos and CRneg as expressions of B, such that
+// CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k + 1) => B[i][j] represents
+// num_interval_per_half_axis + k in reflected gray code.
+// CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k) => B[i][j]
+// represents num_interval_per_half_axis - k - 1 in reflected gray code.
 template <typename T>
 void GetCRposAndCRnegForLogarithmicBinning(
     const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
