@@ -138,12 +138,13 @@ class RotationMatrix {
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
     const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
+    const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
     const T Rxx = c2 * c1;
-    const T Rxy = c2 * s1 * s0 - s2 * c0;
-    const T Rxz = c2 * s1 * c0 + s2 * s0;
+    const T Rxy = c2_s1 * s0 - s2 * c0;
+    const T Rxz = c2_s1 * c0 + s2 * s0;
     const T Ryx = s2 * c1;
-    const T Ryy = s2 * s1 * s0 + c2 * c0;
-    const T Ryz = s2 * s1 * c0 - c2 * s0;
+    const T Ryy = s2_s1 * s0 + c2 * c0;
+    const T Ryz = s2_s1 * c0 - c2 * s0;
     const T Rzx = -s1;
     const T Rzy = c1 * s0;
     const T Rzz = c1 * c0;
@@ -679,10 +680,10 @@ class RotationMatrix {
   Matrix3<T> R_AB_{Matrix3<T>::Identity()};
 };
 
-// TODO(mitiguy) Delete this code after all call sites removed.
-// TODO(mitiguy) Mark as deprecated as shown below.
-// DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-//                     "Use RotationMatrix(RollPitchYaw(rpy)).")
+// TODO(mitiguy) Delete this code after all:
+// * All call sites removed, and
+// * code has subsequently been marked deprecated in favor of
+//   RotationMatrix(RollPitchYaw(rpy)). as per issue #8323.
 template <typename Derived>
 Matrix3<typename Derived::Scalar> rpy2rotmat(
     const Eigen::MatrixBase<Derived>& rpy) {
