@@ -290,6 +290,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.Solve()
         self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
 
+    def test_addcost_symbolic(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(1, 'x')
+        prog.AddCost((x[0]-1.)**2)
+        prog.AddConstraint(0 <= x[0])
+        prog.AddConstraint(x[0] <= 2)
+        prog.Solve()
+        self.assertAlmostEquals(prog.GetSolution(x)[0], 1.)
+
     def test_initial_guess(self):
         prog = mp.MathematicalProgram()
         count = 6
