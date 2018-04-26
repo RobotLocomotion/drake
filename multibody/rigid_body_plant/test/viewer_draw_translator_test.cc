@@ -47,24 +47,24 @@ GTEST_TEST(ViewerDrawTranslatorTests, BasicTest) {
   // was just created. This is the "device under test."
   ViewerDrawTranslator viewer_draw_translator(*tree);
 
-  // Instantiates a generalized state vector containing all zeros. This is
+  // Instantiates a generalized position vector containing all zeros. This is
   // selected to make the resulting quaternion values be easily specified.
-  int num_states = tree->get_num_positions() + tree->get_num_velocities();
-  BasicVector<double> generalized_state(num_states);
-  generalized_state.set_value(Eigen::VectorXd::Zero(num_states));
+  int num_positions = tree->get_num_positions();
+  BasicVector<double> generalized_position(num_positions);
+  generalized_position.set_value(Eigen::VectorXd::Zero(num_positions));
 
   // Places body0 to be at location X = 1, Y = 2, Z = 3 with an orientation of
   // roll = PI.
-  generalized_state.SetAtIndex(0, 1);
-  generalized_state.SetAtIndex(1, 2);
-  generalized_state.SetAtIndex(2, 3);
-  generalized_state.SetAtIndex(3, M_PI);
+  generalized_position.SetAtIndex(0, 1);
+  generalized_position.SetAtIndex(1, 2);
+  generalized_position.SetAtIndex(2, 3);
+  generalized_position.SetAtIndex(3, M_PI);
 
   // Uses the `ViewerDrawTranslator` to convert the `BasicVector<double>` into
   // a byte array for a `drake::lcmt_viewer_draw` message.
   double time = 0;
   std::vector<uint8_t> message_bytes;
-  viewer_draw_translator.Serialize(time, generalized_state, &message_bytes);
+  viewer_draw_translator.Serialize(time, generalized_position, &message_bytes);
   EXPECT_GT(message_bytes.size(), 0u);
 
   // Verifies that the serialized message is correct. This entails:
