@@ -93,7 +93,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(1.5, 4.0));
   Eigen::Vector3d rpy_end(0, 0, 0);
-  Eigen::Vector4d quat_end(math::rpy2quat(rpy_end));
+  Eigen::Quaterniond qE = math::RollPitchYawToQuaternion(rpy_end);
+  Eigen::Vector4d quat_end(qE.w(), qE.x(), qE.y(), qE.z());
   WorldQuatConstraint wqc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(1.5, 5.0));
 
@@ -104,7 +105,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(5.5, 6.0));
   rpy_end << 0, -M_PI / 2, 0;
-  quat_end = math::rpy2quat(rpy_end);
+  qE = math::RollPitchYawToQuaternion(rpy_end);
+  quat_end << qE.w(), qE.x(), qE.y(), qE.z();
   WorldQuatConstraint wqc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(5.5, 6.0));
 
@@ -115,7 +117,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(11.5, 12.0));
   rpy_end = rpy_end_final;
-  quat_end = math::rpy2quat(rpy_end);
+  qE = math::RollPitchYawToQuaternion(rpy_end);
+  quat_end << qE.w(), qE.x(), qE.y(), qE.z();
   WorldQuatConstraint wqc3(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(11.5, 12.0));
 
