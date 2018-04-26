@@ -46,10 +46,11 @@ int DoMain() {
     // TODO(russt): Consider moving/reusing this block (useful for all passive
     // walkers).
     DrakeShapes::Box geom(Eigen::Vector3d(100, 1, 10));
-    Eigen::Isometry3d T_element_to_link = Eigen::Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -10. / 2;  // Top of the box is at z = 0.
-    T_element_to_link.rotate(
+
+    // In the following use W for world frame and B for box frame.
+    Eigen::Isometry3d X_WB = Eigen::Isometry3d::Identity();
+    X_WB.translation() << 0, 0, -10. / 2;  // Top of the box is at z = 0.
+    X_WB.rotate(
         math::RotationMatrix<double>::MakeYRotation(ramp_pitch).matrix());
 
     // Defines a color called "desert sand" according to htmlcsscolor.com.
@@ -57,11 +58,10 @@ int DoMain() {
     color << 0.9297, 0.7930, 0.6758, 1;
 
     RigidBody<double>& world = tree->world();
-    world.AddVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
+    world.AddVisualElement(DrakeShapes::VisualElement(geom, X_WB, color));
     tree->addCollisionElement(
-        drake::multibody::collision::Element(geom, T_element_to_link, &world),
-        world, "terrain");
+        drake::multibody::collision::Element(geom, X_WB, &world), world,
+        "terrain");
     tree->compile();
   }
   auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);

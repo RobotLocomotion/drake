@@ -258,7 +258,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                &MathematicalProgram::AddBoundingBoxConstraint))
       .def("AddBoundingBoxConstraint",
            [](MathematicalProgram* self, double lb, double ub,
-              const Eigen::Ref<MatrixX<symbolic::Variable>>& vars) {
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>& vars) {
              return self->AddBoundingBoxConstraint(lb, ub, vars);
            })
       .def("AddConstraint",
@@ -313,6 +313,9 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                   vars);
            },
            py::arg("func"), py::arg("vars"), py::arg("description") = "")
+      .def("AddCost",
+          static_cast<Binding<Cost> (MathematicalProgram::*)(
+          const Expression&)>(&MathematicalProgram::AddCost))
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddLinearCost))

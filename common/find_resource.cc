@@ -190,8 +190,7 @@ optional<string> GetTestRunfilesDir() {
 // path element, or possibly a related name like "drake2"; that is, they will
 // contain files named like "common/foo.txt", not "drake/common/foo.txt".
 optional<string> FindSentinelDir() {
-  spruce::path candidate_dir;
-  candidate_dir.setAsCurrent();
+  spruce::path candidate_dir = spruce::dir::getcwd();
   int num_attempts = 0;
   while (true) {
     DRAKE_THROW_UNLESS(num_attempts < 1000);  // Insanity fail-fast.
@@ -234,6 +233,8 @@ std::vector<string> GetResourceSearchPaths() {
 }
 
 void AddResourceSearchPath(string search_path) {
+  // Throw an error if path is relative.
+  DRAKE_THROW_UNLESS(!IsRelativePath(search_path));
   GetMutableResourceSearchPaths().push_back(std::move(search_path));
 }
 
@@ -285,6 +286,16 @@ Result FindResource(string resource_path) {
   // (5) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(FindSentinelDir());
+
+  // Make sure that candidate_dirs are not relative paths. This could cause
+  // bugs, but in theory it should never happen as the code above should
+  // guard against it.
+  for (const auto& candidate_dir : candidate_dirs) {
+    if (candidate_dir && IsRelativePath(candidate_dir.value())) {
+        string error_message = "path is not absolute: " + candidate_dir.value();
+        return Result::make_error(std::move(resource_path), error_message);
+      }
+    }
 
   // See which (if any) candidate contains the requested resource.
   for (const auto& candidate_dir : candidate_dirs) {

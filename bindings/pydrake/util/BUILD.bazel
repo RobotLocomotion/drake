@@ -261,6 +261,7 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":cpp_template_pybind",
         "//common:nice_type_name",
+        "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
 )
