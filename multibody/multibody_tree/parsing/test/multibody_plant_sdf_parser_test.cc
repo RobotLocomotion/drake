@@ -1,3 +1,5 @@
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -6,11 +8,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 
@@ -71,7 +72,7 @@ class AcrobotModelTests : public ::testing::Test {
     EXPECT_TRUE(CompareMatrices(
         M, M_benchmark, kTolerance, MatrixCompareType::relative));
   }
-  
+
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;
   const RevoluteJoint<double>* shoulder_{nullptr};
@@ -84,10 +85,8 @@ class AcrobotModelTests : public ::testing::Test {
   std::unique_ptr<systems::Context<double>> benchmark_context_;
 };
 
-
-// This test creates a simple model for an acrobot from an SDF file using
-// MultibodyPlant and verifies a number of invariants such as that body and
-// joint models were properly added and the model sizes.
+// This test verifies a number of invariants such as model sizes and that body
+// and joint models were properly added.
 TEST_F(AcrobotModelTests, ModelBasics) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(3, plant_->num_bodies());
@@ -114,6 +113,13 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   EXPECT_EQ(shoulder_joint.name(), "ShoulderJoint");
   const Joint<double>& elbow_joint = plant_->GetJointByName("ElbowJoint");
   EXPECT_EQ(elbow_joint.name(), "ElbowJoint");
+
+  // Drake uses a different convention for naming the world body and therefore
+  // we just check its index.
+  EXPECT_EQ(shoulder_joint.parent_body().index(), world_index());
+  EXPECT_EQ(shoulder_joint.child_body().name(), "Link1");
+  EXPECT_EQ(elbow_joint.parent_body().name(), "Link1");
+  EXPECT_EQ(elbow_joint.child_body().name(), "Link2");
 }
 
 // Verify the parsed model computes the same mass matrix as a Drake benchmark

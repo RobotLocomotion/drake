@@ -79,7 +79,7 @@ SpatialInertia<double> ExtractSpatialInertia(
       mass, p_BoBcm_B, I_BBcm_B);
 }
 
-}
+}  // namespace
 
 void AddModelFromSdfFile(
     const std::string& file_name,
@@ -93,25 +93,19 @@ void AddModelFromSdfFile(
 
   // Check for any errors.
   if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfString\n");
+    std::string error_accumulation("From AddModelFromSdfString():\n");
     for (const auto& e : errors)
       error_accumulation += "Error: " + e.Message() + "\n";
     throw std::runtime_error(error_accumulation);
   }
 
-  if (root.ModelCount() == 0) {
-    throw std::logic_error("File must contain a <model>.");
-  }
-
   if (root.ModelCount() != 1) {
-    throw std::logic_error("File must only have a single model.");
+    throw std::logic_error("File must have a single <model> element.");
   }
 
   // Get a pointer to the only model in the file.
   const sdf::Model* model = root.ModelByIndex(0);
-  if (!model) {
-    throw std::logic_error("No models present in SDF string.");
-  }
+  DRAKE_ASSERT(model != nullptr);
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model->LinkCount(); ++link_index) {
@@ -119,9 +113,9 @@ void AddModelFromSdfFile(
     DRAKE_ASSERT(link != nullptr);
 
     // Get the link's inertia relative to the Bcm frame.
-    // Inertial provides a representation for the SpatialInertia M_Bcm_Bi of body
-    // B, about its center of mass Bcm, and expressed in an inertial frame Bi as
-    // defined in <inertial> <pose></pose> </inertial>.
+    // Inertial provides a representation for the SpatialInertia M_Bcm_Bi of
+    // body B, about its center of mass Bcm, and expressed in an inertial frame
+    // Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
     const ignition::math::Inertiald& Inertial_Bcm_Bi = link->Inertial();
@@ -169,7 +163,6 @@ void AddModelFromSdfFile(
     // Only supporting revolute joints for now.
     switch (joint->Type()) {
       case sdf::JointType::REVOLUTE: {
-
         // Joint axis, by default in the joint frame J.
         // TODO(amcastro-tri): Verify this capability indeed is supported by
         // sdformat.
@@ -182,7 +175,6 @@ void AddModelFromSdfFile(
         // Special case for a joint connected to the world.
         if (joint->ParentLinkName().empty() ||
             joint->ParentLinkName() == "world") {
-
           // TODO(amcastro-tri): Remove these when sdformat guarantees a model
           // with basic structural checks.
           if (!model->LinkNameExists(joint->ChildLinkName())) {
@@ -200,7 +192,6 @@ void AddModelFromSdfFile(
               plant->world_body(), X_PJ,
               plant->GetBodyByName(joint->ChildLinkName()), X_CJ, axis_J);
         } else {
-
           // TODO(amcastro-tri): Remove these when sdformat guarantees a model
           // with basic structural checks.
           if (!model->LinkNameExists(joint->ParentLinkName())) {
