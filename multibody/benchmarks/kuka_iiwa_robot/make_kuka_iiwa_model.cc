@@ -1,7 +1,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
