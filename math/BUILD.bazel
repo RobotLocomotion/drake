@@ -68,6 +68,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
+        "//common:drake_bool",
         "//common:essential",
         "//common:is_approx_equal_abstol",
         "@fmt",
