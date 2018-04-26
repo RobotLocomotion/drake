@@ -313,6 +313,9 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                   vars);
            },
            py::arg("func"), py::arg("vars"), py::arg("description") = "")
+      .def("AddCost",
+          static_cast<Binding<Cost> (MathematicalProgram::*)(
+          const Expression&)>(&MathematicalProgram::AddCost))
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddLinearCost))
