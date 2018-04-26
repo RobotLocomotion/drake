@@ -1,10 +1,7 @@
 from __future__ import print_function
 
-import copy
 import unittest
-import numpy as np
 
-import pydrake.systems.framework as framework
 from pydrake.examples.rimless_wheel import (
     RimlessWheelParams, RimlessWheel, RimlessWheelContinuousState
     )
@@ -35,7 +32,7 @@ class TestRimlessWheel(unittest.TestCase):
         self.assertEqual(state.thetadot(), 2.)
 
     def test_simulation(self):
-        # Basic constant-torque rimless_wheel simulation.
+        # Basic rimless_wheel simulation.
         rimless_wheel = RimlessWheel()
 
         # Create the simulator.
