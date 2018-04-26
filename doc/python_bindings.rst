@@ -42,7 +42,7 @@ MOSEK, without building tests:
     cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
 
 Using the Python Bindings
-=========================
+-------------------------
 
 To use the Drake Python bindings, follow the build steps above or ensure that
 you have installed Drake appropriately. You will also need to have your
@@ -82,11 +82,11 @@ To check this:
     ``${GUROBI_INCLUDE_DIR}`` via CMake.
 
 What's Available from Python
-============================
+----------------------------
 
 The most up-to-date demonstrations of what can be done using ``pydrake`` are
 the ``pydrake`` unit tests themselves. You can see all of them inside the
-``drake/bindings/python/pydrake/test`` folder in the Drake source code.
+``drake/bindings/python/pydrake/**/test`` folders in the Drake source code.
 
 Here's an example snippet of code from ``pydrake``:
 
@@ -139,7 +139,7 @@ explicity refer to each symbol:
         pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
 
 For Developers
-==============
+--------------
 
 If you are developing Python bindings, please see the Doxygen page for
 `Python Bindings <http://drake.mit.edu/doxygen_cxx/python_bindings.html>`_.
