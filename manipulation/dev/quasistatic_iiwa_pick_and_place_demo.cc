@@ -71,7 +71,8 @@ const std::vector<double> kTimes{0.0, 2.0, 4.0, 6.0, 12.0};
 
 // Creates a basic pointwise IK trajectory for moving the iiwa arm.
 // It starts in the zero configuration (straight up).
-PiecewisePolynomial<double> MakePlan() {
+PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
+                                     const Vector3d& rpy_end_final) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
@@ -107,13 +108,13 @@ PiecewisePolynomial<double> MakePlan() {
   WorldQuatConstraint wqc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(5.5, 6.0));
 
-  pos_end << 0.2, 0.2, 0.8;
+  pos_end = pos_end_final;
   pos_lb = pos_end - Vector3d::Constant(0.002);
   pos_ub = pos_end + Vector3d::Constant(0.002);
   WorldPositionConstraint wpc4(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(11.5, 12.0));
-  rpy_end << M_PI / 4, 0, 0;
+  rpy_end = rpy_end_final;
   quat_end = math::rpy2quat(rpy_end);
   WorldQuatConstraint wqc3(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(11.5, 12.0));
@@ -217,7 +218,9 @@ int do_main() {
   builder.Connect(gain1->get_output_port(), publisher->get_input_port(0));
 
   // generates trajectory source for iiwa and gripper
-  PiecewisePolynomial<double> iiwa_traj = MakePlan();
+  const Vector3d pos_EE_final(0.2, 0.2, 0.8);
+  const Vector3d rpy_EE_final(M_PI / 4, 0, 0);
+  PiecewisePolynomial<double> iiwa_traj = MakePlan(pos_EE_final, rpy_EE_final);
   auto iiwa_traj_src =
       builder.template AddSystem<systems::TrajectorySource<double>>(iiwa_traj,
                                                                     1);
@@ -281,7 +284,7 @@ int do_main() {
   simulator.set_target_realtime_rate(0);
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(kTimes.back()); 
+  simulator.StepTo(kTimes.back());
 
   // Comparing the final position and orientation of the object in world frame
   // to expected values.
@@ -306,24 +309,19 @@ int do_main() {
 
   // compute expected_object_CG_final_position =
   // expected_end_effector_final_position + [x_offset, 0, 0]
-  const Eigen::Vector3d position_final_expected(0.2 + x_offset, 0.2, 0.8);
-  const Eigen::VectorXd q_final = log_state->data().rightCols(1);
+  const Eigen::Vector3d pos_offset(x_offset, 0, 0);
+  const Eigen::Vector3d position_final_expected = pos_EE_final + pos_offset;
 
   // compute expected_object_orientation as a rotation matrix.
-  Eigen::Vector3d rpy_dumbbell_expected(M_PI / 4, 0, 0);
-  math::RotationMatrix<double> R_dumbbell_expected(
-      math::RollPitchYawToQuaternion(rpy_dumbbell_expected));
+  const math::RotationMatrix<double> R_dumbbell_expected(
+      math::RollPitchYawToQuaternion(rpy_EE_final));
 
   // compute object final poistion and orientation.
+  const Eigen::VectorXd q_final = log_state->data().rightCols(1);
   cache.initialize(q_final, v);
   tree->doKinematics(cache);
   transform =
       tree->CalcBodyPoseInWorldFrame(cache, tree->get_body(kDumbbellIndex));
-
-  std::cout << transform.linear() << std::endl;
-  std::cout << R_dumbbell_expected.matrix() << std::endl;
-  std::cout << position_final_expected << std::endl;
-  std::cout << q_final.head<3>() << std::endl;
 
   EXPECT_TRUE(CompareMatrices(position_final_expected, q_final.head<3>(), 1e-2,
                               MatrixCompareType::absolute));
