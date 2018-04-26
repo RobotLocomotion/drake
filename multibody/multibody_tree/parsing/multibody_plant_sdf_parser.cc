@@ -81,15 +81,15 @@ SpatialInertia<double> ExtractSpatialInertia(
 
 }
 
-void AddModelFromSdfString(
-    const std::string& sdf_string,
+void AddModelFromSdfFile(
+    const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
   // Load the SDF string
   sdf::Root root;
-  sdf::Errors errors = root.LoadSdfString(sdf_string);
+  sdf::Errors errors = root.Load(file_name);
 
   // Check for any errors.
   if (!errors.empty()) {

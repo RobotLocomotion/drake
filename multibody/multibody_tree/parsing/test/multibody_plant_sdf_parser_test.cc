@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
@@ -17,7 +18,7 @@ using Eigen::Vector3d;
 using geometry::SceneGraph;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::parsing::AddModelFromSdfString;
+using multibody::parsing::AddModelFromSdfFile;
 using systems::Context;
 using systems::LeafSystem;
 
@@ -29,54 +30,10 @@ class AcrobotModelTests : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
-    const std::string sdf_string =
-        "<?xml version='1.0' ?>"
-            "<sdf version='1.6'>"
-            "  <model name='acrobot'>"
-            "    <link name='Link1'>"
-            "      <pose>0 0 -0.5 0 0 0</pose>"
-            "      <inertial>"
-            "        <mass>1.0</mass>"
-            "        <!-- This inertia is based on a solid cylinder with"
-            "             radius=0.001 meters and height=1.0 meters. -->"
-            "        <inertia>"
-            "          <ixx>0.083</ixx><iyy>0.083</iyy><izz>0</izz>"
-            "          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>"
-            "        </inertia>"
-            "      </inertial>"
-            "    </link>"
-            "    <link name='Link2'>"
-            "      <pose>0 0 -2.0 0 0 0</pose>"
-            "      <inertial>"
-            "        <mass>1.0</mass>"
-            "        <!-- This inertia is based on a solid cylinder with"
-            "             radius=1.0 meters and height=2.0 meters. -->"
-            "        <inertia>"
-            "          <ixx>0.33</ixx><iyy>0.33</iyy><izz>0</izz>"
-            "          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>"
-            "        </inertia>"
-            "      </inertial>"
-            "    </link>"
-            "    <joint name='ShoulderJoint' type='revolute'>"
-            "      <parent>world</parent>"
-            "      <child>Link1</child>"
-            "      <axis>"
-            "        <xyz>0.0 1.0 0.0</xyz>"
-            "      </axis>"
-            "    </joint>"
-            "    <joint name='ElbowJoint' type='revolute'>"
-            "      <pose>0 0 -1.0 0 0 0</pose>"
-            "      <parent>Link1</parent>"
-            "      <child>Link2</child>"
-            "      <axis>"
-            "        <xyz>0.0 1.0 0.0</xyz>"
-            "      </axis>"
-            "    </joint>"
-            "  </model>"
-            "</sdf>";
-
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
     plant_ = std::make_unique<MultibodyPlant<double>>();
-    AddModelFromSdfString(sdf_string, plant_.get());
+    AddModelFromSdfFile(full_name, plant_.get());
     // We are done adding models.
     plant_->Finalize();
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");

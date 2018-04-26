@@ -12,8 +12,8 @@ namespace parsing {
 
 /// This method makes a MultibodyPlant model for an acrobot SDF model.
 /// @throws std::runtime_error if the parsing the acrobot SDF model fails.
-void AddModelFromSdfString(
-    const std::string& sdf_string,
+void AddModelFromSdfFile(
+    const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant);
 }  // namespace parsing
 }  // namespace multibody
