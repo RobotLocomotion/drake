@@ -13,11 +13,8 @@ namespace systems {
 
 using std::runtime_error;
 
-ViewerDrawTranslator::ViewerDrawTranslator(
-    const RigidBodyTree<double>& tree) :
-    LcmAndVectorBaseTranslator(
-        tree.get_num_positions() + tree.get_num_velocities()),
-    tree_(tree) {
+ViewerDrawTranslator::ViewerDrawTranslator(const RigidBodyTree<double>& tree)
+    : LcmAndVectorBaseTranslator(tree.get_num_positions()), tree_(tree) {
   // Initializes the draw message.
   draw_message_.num_links = tree_.get_bodies().size();
   std::vector<float> position = {0, 0, 0};
@@ -52,8 +49,7 @@ void ViewerDrawTranslator::Serialize(double time,
   message.timestamp = static_cast<int64_t>(time * 1000);
 
   // Obtains the generalized positions from vector_base.
-  const Eigen::VectorXd q = vector_base.CopyToVector().head(
-      tree_.get_num_positions());
+  const Eigen::VectorXd q = vector_base.CopyToVector();
 
   // Computes the poses of each body.
   KinematicsCache<double> cache = tree_.doKinematics(q);

@@ -15,7 +15,7 @@ namespace systems {
 /**
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`. It translates between a VectorBase<double> that
- * contains the state vector of a RigidBodyTree, and a
+ * contains the position vector of a RigidBodyTree, and a
  * `drake::lcmt_viewer_draw` message.
  */
 class ViewerDrawTranslator : public lcm::LcmAndVectorBaseTranslator {
