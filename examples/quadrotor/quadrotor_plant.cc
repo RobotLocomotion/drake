@@ -4,7 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/math/gradient.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/util/drakeGeometryUtil.h"
 

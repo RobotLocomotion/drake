@@ -12,9 +12,12 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
+#include "drake/math/roll_pitch_yaw.h"
 
 namespace drake {
 namespace math {
+
+template <typename T> class RollPitchYaw;
 
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
@@ -97,6 +100,59 @@ class RotationMatrix {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
   }
 
+  /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
+  /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
+  /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
+  /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
+  /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
+  /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
+  /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  ///      =       R_AB          *        R_BC          *        R_CD
+  /// ```
+  /// Note: In this discussion, A is the Space frame and D is the Body frame.
+  /// One way to visualize this rotation sequence is by introducing intermediate
+  /// frames B and C (useful constructs to understand this rotation sequence).
+  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
+  /// Then D is subjected to successive right-handed rotations relative to A.
+  /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
+  /// roll angle `r` about `Dx = Cx`.  Note: D and C are no longer aligned.
+  /// @li 2nd rotation R_BC: Frames D, C (collectively -- as if welded together)
+  /// rotate relative to frame B, A by a pitch angle `p` about `Cy = By`.
+  /// Note: C and B are no longer aligned.
+  /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
+  /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
+  /// Note: B and A are no longer aligned.
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
+    const T &r = rpy.get_roll_angle();
+    const T &p = rpy.get_pitch_angle();
+    const T &y = rpy.get_yaw_angle();
+    using std::sin;
+    using std::cos;
+    const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
+    const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
+    const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
+    const T Rxx = c2 * c1;
+    const T Rxy = c2_s1 * s0 - s2 * c0;
+    const T Rxz = c2_s1 * c0 + s2 * s0;
+    const T Ryx = s2 * c1;
+    const T Ryy = s2_s1 * s0 + c2 * c0;
+    const T Ryz = s2_s1 * c0 - c2 * s0;
+    const T Rzx = -s1;
+    const T Rzy = c1 * s0;
+    const T Rzz = c1 * c0;
+    R_AB_.row(0) << Rxx, Rxy, Rxz;
+    R_AB_.row(1) << Ryx, Ryy, Ryz;
+    R_AB_.row(2) << Rzx, Rzy, Rzz;
+  }
+
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
@@ -165,76 +221,6 @@ class RotationMatrix {
     R << c, -s,  0,
          s,  c,  0,
          0,  0,  1;
-    // clang-format on
-    return RotationMatrix(R);
-  }
-
-  /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
-  /// "yaw-pitch-roll" angles `[y, p, r]`, which is equivalent to a Space-fixed
-  /// (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles" `[r, p, y]`.
-  /// @param[in] ypr radian measures of three angles [yaw, pitch, roll].
-  /// @note Denoting yaw `y`, pitch `p`, roll `r`, this method returns a
-  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
-  /// ```
-  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
-  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
-  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
-  ///      =       R_AB          *        R_BC          *        R_CD
-  /// ```
-  /// Note: In this discussion, A is the Space frame and D is the Body frame.
-  /// One way to visualize this rotation sequence is by introducing intermediate
-  /// frames B and C (useful constructs to understand this rotation sequence).
-  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
-  /// Then D is subjected to successive right-handed rotations relative to A.
-  /// @li 1st rotation R_AB: Frames B, C, D collectively (as if welded together)
-  /// rotate relative to frame A by a yaw angle `y` about `Az = Bz`.
-  /// @li 2nd rotation R_BC: Frames C, D collectively (as if welded together)
-  /// rotate relative to frame B by a pitch angle `p` about `By = Cy`.
-  /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
-  /// angle `r` about `Cx = Dx`.
-  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeBodyZYXRotation(const Vector3<T>& ypr) {
-    const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
-    return RotationMatrix<T>::MakeSpaceXYZRotation(roll_pitch_yaw);
-  }
-
-  /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
-  /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
-  /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
-  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
-  /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
-  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
-  /// ```
-  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
-  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
-  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
-  ///      =       R_AB          *        R_BC          *        R_CD
-  /// ```
-  /// Note: In this discussion, A is the Space frame and D is the Body frame.
-  /// One way to visualize this rotation sequence is by introducing intermediate
-  /// frames B and C (useful constructs to understand this rotation sequence).
-  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
-  /// Then D is subjected to successive right-handed rotations relative to A.
-  /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
-  /// roll angle `r` about `Dx = Cx`.  Note: D and C are no longer aligned.
-  /// @li 2nd rotation R_BC: Frames D, C (collectively -- as if welded together)
-  /// rotate relative to frame B, A by a pitch angle `p` about `Cy = By`.
-  /// Note: C and B are no longer aligned.
-  /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
-  /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
-  /// Note: B and A are no longer aligned.
-  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  static RotationMatrix<T> MakeSpaceXYZRotation(const Vector3<T>& rpy) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c0 = cos(rpy(0)), s0 = sin(rpy(0));
-    const T c1 = cos(rpy(1)), s1 = sin(rpy(1));
-    const T c2 = cos(rpy(2)), s2 = sin(rpy(2));
-    // clang-format off
-    R << c2 * c1,  c2 * s1 * s0 - s2 * c0,  c2 * s1 * c0 + s2 * s0,
-         s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
-        -s1,            c1 * s0,                 c1 * c0;
     // clang-format on
     return RotationMatrix(R);
   }
@@ -693,6 +679,20 @@ class RotationMatrix {
   // The default initialization is the identity matrix.
   Matrix3<T> R_AB_{Matrix3<T>::Identity()};
 };
+
+// TODO(mitiguy) Delete this code after all:
+// * All call sites removed, and
+// * code has subsequently been marked deprecated in favor of
+//   RotationMatrix(RollPitchYaw(rpy)). as per issue #8323.
+template <typename Derived>
+Matrix3<typename Derived::Scalar> rpy2rotmat(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const RotationMatrix<Scalar> R(roll_pitch_yaw);
+  return R.matrix();
+}
 
 }  // namespace math
 }  // namespace drake
