@@ -75,7 +75,8 @@ class DrakeVisualizer : public LeafSystem<double> {
    */
   DrakeVisualizer(const RigidBodyTree<double>& tree,
                   drake::lcm::DrakeLcmInterface* lcm,
-                  bool enable_playback = false);
+                  bool enable_playback = false,
+                  bool add_collisions = false);
 
   /**
    * Sets the publishing period of this system. See

@@ -16,7 +16,7 @@ namespace multibody {
 /// They are already available to link against in the containing library.
 template <typename T>
 lcmt_viewer_load_robot CreateLoadRobotMessage(
-    const RigidBodyTree<double>& tree);
+    const RigidBodyTree<double>& tree, bool add_collisions = false);
 
 }  // namespace multibody
 }  // namespace drake
