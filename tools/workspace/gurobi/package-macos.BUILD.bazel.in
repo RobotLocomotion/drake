@@ -11,7 +11,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 7.5.2 is not installed at {gurobi_path}' && false",  # noqa
+    cmd = "echo 'error: Gurobi 8.0.0 is not installed at {gurobi_path}' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
@@ -26,7 +26,7 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_path}/lib",
-        "-lgurobi75",
+        "-lgurobi80",
     ],
     visibility = ["//visibility:public"],
 )
