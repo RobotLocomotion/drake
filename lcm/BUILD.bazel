@@ -83,6 +83,15 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "drake_lcm_interface_test",
+    deps = [
+        ":lcmt_drake_signal_utils",
+        ":mock",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_lcm_test",
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,

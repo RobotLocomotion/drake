@@ -18,26 +18,26 @@ void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
 
   const Expression binding_expression{
       0.5 *
-          binding.variables().dot(binding.constraint()->Q() *
+          binding.variables().dot(binding.evaluator()->Q() *
                                   binding.variables()) +
-      binding.constraint()->b().dot(binding.variables())};
+      binding.evaluator()->b().dot(binding.variables())};
   if (!std::isinf(lb)) {
     EXPECT_TRUE(symbolic::test::PolynomialEqual(
         symbolic::Polynomial(e - lb),
         symbolic::Polynomial(binding_expression -
-                             binding.constraint()->lower_bound()(0)),
+                             binding.evaluator()->lower_bound()(0)),
         1E-10));
   } else {
-    EXPECT_TRUE(std::isinf(binding.constraint()->lower_bound()(0)));
+    EXPECT_TRUE(std::isinf(binding.evaluator()->lower_bound()(0)));
   }
   if (!std::isinf(ub)) {
     EXPECT_TRUE(symbolic::test::PolynomialEqual(
         symbolic::Polynomial(e - ub),
         symbolic::Polynomial(binding_expression -
-                             binding.constraint()->upper_bound()(0)),
+                             binding.evaluator()->upper_bound()(0)),
         1E-10));
   } else {
-    EXPECT_TRUE(std::isinf(binding.constraint()->upper_bound()(0)));
+    EXPECT_TRUE(std::isinf(binding.evaluator()->upper_bound()(0)));
   }
 }
 
@@ -74,8 +74,8 @@ void CheckParseLorentzConeConstraint(const Expression& linear_expression,
                                      const Expression& quadratic_expression) {
   Binding<LorentzConeConstraint> binding = internal::ParseLorentzConeConstraint(
       linear_expression, quadratic_expression);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(z(0)), symbolic::Polynomial(linear_expression),
@@ -89,8 +89,8 @@ void CheckParseRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(v);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   for (int i = 0; i < z.rows(); ++i) {
     EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(i)),
@@ -104,8 +104,8 @@ void CheckParseRotatedLorentzConeConstraint(
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(
           linear_expression1, linear_expression2, quadratic_expression);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   const double tol_check{1E-10};
   EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(0)),

@@ -51,10 +51,7 @@ void FrameVisualizer::DoPublish(
     msg.quaternion[i][3] = static_cast<float>(quat.z());
   }
 
-  const int length = msg.getEncodedSize();
-  std::vector<uint8_t> msgbytes(length);
-  msg.encode(msgbytes.data(), 0, length);
-  lcm_->Publish(lcm_channel_, msgbytes.data(), msgbytes.size());
+  drake::lcm::Publish(lcm_, lcm_channel_, msg, context.get_time());
 }
 
 }  // namespace systems

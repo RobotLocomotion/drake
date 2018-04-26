@@ -19,7 +19,7 @@ lcmt_viewer_geometry_data MakeGeometryData(
     case DrakeShapes::BOX: {
       geometry_data.type = geometry_data.BOX;
       geometry_data.num_float_data = 3;
-      auto box = dynamic_cast<const DrakeShapes::Box&>(geometry);
+      const auto& box = dynamic_cast<const DrakeShapes::Box&>(geometry);
       for (int i = 0; i < 3; ++i)
         geometry_data.float_data.push_back(static_cast<float>(box.size(i)));
       break;
@@ -27,14 +27,15 @@ lcmt_viewer_geometry_data MakeGeometryData(
     case DrakeShapes::SPHERE: {
       geometry_data.type = geometry_data.SPHERE;
       geometry_data.num_float_data = 1;
-      auto sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
+      const auto& sphere = dynamic_cast<const DrakeShapes::Sphere&>(geometry);
       geometry_data.float_data.push_back(static_cast<float>(sphere.radius));
       break;
     }
     case DrakeShapes::CYLINDER: {
       geometry_data.type = geometry_data.CYLINDER;
       geometry_data.num_float_data = 2;
-      auto cylinder = dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
+      const auto& cylinder =
+          dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
       geometry_data.float_data.push_back(static_cast<float>(cylinder.radius));
       geometry_data.float_data.push_back(static_cast<float>(cylinder.length));
       break;
@@ -42,7 +43,7 @@ lcmt_viewer_geometry_data MakeGeometryData(
     case DrakeShapes::MESH: {
       geometry_data.type = geometry_data.MESH;
       geometry_data.num_float_data = 3;
-      auto mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
+      const auto& mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
       geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[0]));
       geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[1]));
       geometry_data.float_data.push_back(static_cast<float>(mesh.scale_[2]));
@@ -58,7 +59,7 @@ lcmt_viewer_geometry_data MakeGeometryData(
     case DrakeShapes::CAPSULE: {
       geometry_data.type = geometry_data.CAPSULE;
       geometry_data.num_float_data = 2;
-      auto c = dynamic_cast<const DrakeShapes::Capsule&>(geometry);
+      const auto& c = dynamic_cast<const DrakeShapes::Capsule&>(geometry);
       geometry_data.float_data.push_back(static_cast<float>(c.radius));
       geometry_data.float_data.push_back(static_cast<float>(c.length));
       break;
@@ -76,7 +77,8 @@ lcmt_viewer_geometry_data MakeGeometryData(
   Eigen::Map<Eigen::Vector3f> position(geometry_data.position);
   position = transform.translation().cast<float>();
   Eigen::Map<Eigen::Vector4f> quaternion(geometry_data.quaternion);
-  quaternion = math::rotmat2quat(transform.linear()).cast<float>();
+  quaternion = math::RotationMatrix<double>::ToQuaternionAsVector4(
+                                              transform.linear()).cast<float>();
 
   Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
   color = visual_element.getMaterial().template cast<float>();

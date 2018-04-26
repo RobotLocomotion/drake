@@ -108,7 +108,7 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
   const solvers::SolutionResult result = prog.Solve();
   if (result != solvers::SolutionResult::kSolutionFound) {
     drake::log()->error("No solution found.  SolutionResult = " +
-                        std::to_string(result));
+                        to_string(result));
   }
   drake::log()->info("Done solving program.");
 

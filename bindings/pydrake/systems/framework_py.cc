@@ -77,6 +77,7 @@ class LeafSystemPublic : public LeafSystem<T> {
   using Base::DeclareContinuousState;
   using Base::DeclareDiscreteState;
   using Base::DeclarePeriodicDiscreteUpdate;
+  using Base::DeclareAbstractState;
 
   // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
   // this method in `PyLeafSystem`, expose the method here for direct(-ish)
@@ -302,7 +303,10 @@ PYBIND11_MODULE(framework, m) {
           // casting this using `py::str` does not work, but directly
           // calling the Python function (`str_py`) does.
           return str_py(self->GetGraphvizString());
-        });
+        })
+    // Events.
+    .def("Publish",
+         overload_cast_explicit<void, const Context<T>&>(&System<T>::Publish));
 
   // Don't use a const-rvalue as a function handle parameter, as pybind11 wants
   // to copy it?
@@ -355,7 +359,12 @@ PYBIND11_MODULE(framework, m) {
          &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
          py::arg("period_sec"), py::arg("offset_sec") = 0.)
     .def("_DoCalcDiscreteVariableUpdates",
-         &LeafSystemPublic::DoCalcDiscreteVariableUpdates);
+         &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
+    // Abstract state.
+    .def("_DeclareAbstractState",
+         &LeafSystemPublic::DeclareAbstractState,
+         // Keep alive, ownership: `AbstractValue` keeps `self` alive.
+         py::keep_alive<2, 1>());
 
   py::class_<Context<T>>(m, "Context")
     .def("get_num_input_ports", &Context<T>::get_num_input_ports)
@@ -373,6 +382,8 @@ PYBIND11_MODULE(framework, m) {
          py::keep_alive<3, 1>())
     .def("get_time", &Context<T>::get_time)
     .def("set_time", &Context<T>::set_time)
+    .def("set_accuracy", &Context<T>::set_accuracy)
+    .def("get_accuracy", &Context<T>::get_accuracy)
     .def("Clone", &Context<T>::Clone)
     .def("__copy__", &Context<T>::Clone)
     .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
@@ -396,6 +407,28 @@ PYBIND11_MODULE(framework, m) {
     .def("get_mutable_discrete_state_vector",
          [](Context<T>* self) -> auto& {
            return self->get_mutable_discrete_state().get_mutable_vector();
+         },
+         py_reference_internal)
+    // - Abstract.
+    .def("get_num_abstract_states", &Context<T>::get_num_abstract_states)
+    .def("get_abstract_state",
+         [](const Context<T>* self) -> auto& {
+           return self->get_abstract_state();
+         },
+         py_reference_internal)
+    .def("get_abstract_state",
+         [](const Context<T>* self, int index) -> auto& {
+           return self->get_abstract_state().get_value(index);
+         },
+         py_reference_internal)
+    .def("get_mutable_abstract_state",
+         [](Context<T>* self) -> auto& {
+           return self->get_mutable_abstract_state();
+         },
+         py_reference_internal)
+    .def("get_mutable_abstract_state",
+         [](Context<T>* self, int index) -> auto& {
+           return self->get_mutable_abstract_state().get_mutable_value(index);
          },
          py_reference_internal);
 
@@ -451,7 +484,8 @@ PYBIND11_MODULE(framework, m) {
   py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
 
   py::class_<OutputPort<T>>(m, "OutputPort")
-    .def("size", &OutputPort<T>::size);
+    .def("size", &OutputPort<T>::size)
+    .def("get_index", &OutputPort<T>::get_index);
 
   py::class_<SystemOutput<T>> system_output(m, "SystemOutput");
   DefClone(&system_output);
@@ -463,7 +497,9 @@ PYBIND11_MODULE(framework, m) {
          py_reference_internal);
 
   py::class_<InputPortDescriptor<T>>(m, "InputPortDescriptor")
-    .def("size", &InputPortDescriptor<T>::size);
+    .def("size", &InputPortDescriptor<T>::size)
+    .def("get_data_type", &InputPortDescriptor<T>::get_data_type)
+    .def("get_index", &InputPortDescriptor<T>::get_index);
 
   // Value types.
   py::class_<VectorBase<T>>(m, "VectorBase")
@@ -611,13 +647,19 @@ PYBIND11_MODULE(framework, m) {
 
   // State.
   py::class_<State<T>>(m, "State")
-    .def(py::init<>())
-    .def("get_continuous_state",
-         &State<T>::get_continuous_state, py_reference_internal)
-    .def("get_mutable_continuous_state",
-         &State<T>::get_mutable_continuous_state, py_reference_internal)
-    .def("get_discrete_state",
-        &State<T>::get_discrete_state, py_reference_internal);
+      .def(py::init<>())
+      .def("get_continuous_state", &State<T>::get_continuous_state,
+           py_reference_internal)
+      .def("get_mutable_continuous_state",
+           &State<T>::get_mutable_continuous_state, py_reference_internal)
+      .def("get_discrete_state",
+           overload_cast_explicit<const DiscreteValues<T>&>(
+               &State<T>::get_discrete_state),
+           py_reference_internal)
+      .def("get_mutable_discrete_state",
+           overload_cast_explicit<DiscreteValues<T>&>(
+               &State<T>::get_mutable_discrete_state),
+           py_reference_internal);
 
   // - Constituents.
   py::class_<ContinuousState<T>>(m, "ContinuousState")
@@ -647,7 +689,12 @@ PYBIND11_MODULE(framework, m) {
   DefClone(&abstract_values);
   abstract_values
     .def(py::init<>())
-    .def(py::init<AbstractValuePtrList>());
+    .def(py::init<AbstractValuePtrList>())
+    .def("size", &AbstractValues::size)
+    .def("get_value", &AbstractValues::get_value, py_reference_internal)
+    .def("get_mutable_value",
+         &AbstractValues::get_mutable_value, py_reference_internal)
+    .def("CopyFrom", &AbstractValues::CopyFrom);
 
   // Additional derivative Systems which are not glue, but do not fall under
   // `//systems/primitives`.

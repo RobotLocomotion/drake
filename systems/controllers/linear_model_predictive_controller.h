@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {

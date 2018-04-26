@@ -119,7 +119,7 @@ drake_cc_binary(
     deps = [
         ":jaco_common",
         "//common:find_resource",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//lcm",
         "//multibody:inverse_kinematics",
         "//multibody:rigid_body_tree_construction",

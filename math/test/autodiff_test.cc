@@ -106,10 +106,6 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   Eigen::Vector3d test3out = DiscardGradient(test3);
   EXPECT_TRUE(CompareMatrices(test3out, test2));
 
-  VectorX<AutoDiffUpTo73d> test4 = VectorX<AutoDiffUpTo73d>::Ones(4);
-  Eigen::Vector4d test4b = DiscardGradient(test4);
-  EXPECT_TRUE(CompareMatrices(test4b, Eigen::Vector4d::Ones()));
-
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
   EXPECT_TRUE(
       CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
@@ -153,11 +149,6 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardZeroGradient) {
   EXPECT_THROW(DiscardZeroGradient(test3), std::runtime_error);
   EXPECT_NO_THROW(DiscardZeroGradient(test3, 2.));
 
-  VectorX<AutoDiffUpTo73d> test4 = VectorX<AutoDiffUpTo73d>::Ones(4);
-  EXPECT_NO_THROW(DiscardZeroGradient(test4));
-  Eigen::Vector4d test4b = DiscardZeroGradient(test4);
-  EXPECT_TRUE(CompareMatrices(test4b, Eigen::Vector4d::Ones()));
-
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
   EXPECT_NO_THROW(DiscardZeroGradient(test5));
   EXPECT_TRUE(
@@ -186,8 +177,10 @@ GTEST_TEST(AdditionalAutodiffTest, CastToAutoDiff) {
   EXPECT_EQ(dynamic_gradients.rows(), 2);
   EXPECT_EQ(dynamic_gradients.cols(), 0);
 
-  Vector2<AutoDiffUpTo73d> dynamic_max =
-      Vector2d::Ones().cast<AutoDiffUpTo73d>();
+  using VectorUpTo16d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 16, 1>;
+  using AutoDiffUpTo16d = Eigen::AutoDiffScalar<VectorUpTo16d>;
+  Vector2<AutoDiffUpTo16d> dynamic_max =
+      Vector2d::Ones().cast<AutoDiffUpTo16d>();
   const auto dynamic_max_gradients = autoDiffToGradientMatrix(dynamic_max);
   EXPECT_EQ(dynamic_max_gradients.rows(), 2);
   EXPECT_EQ(dynamic_max_gradients.cols(), 0);

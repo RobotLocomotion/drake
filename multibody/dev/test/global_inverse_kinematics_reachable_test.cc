@@ -46,11 +46,11 @@ TEST_F(KukaTest, ReachableTest) {
     // TODO(hongkai.dai): do a warm start on the binary variables
     ee_pos_lb_W << 0.2, -0.1, 0.6;
     ee_pos_ub_W << 0.4, 0.1, 1.0;
-    ee_pos_cnstr.constraint()->UpdateLowerBound(ee_pos_lb_W);
-    ee_pos_cnstr.constraint()->UpdateUpperBound(ee_pos_ub_W);
+    ee_pos_cnstr.evaluator()->UpdateLowerBound(ee_pos_lb_W);
+    ee_pos_cnstr.evaluator()->UpdateUpperBound(ee_pos_ub_W);
     angle_tol = 0.3 * M_PI;
     // The orientation constraint is 2 * cos(angle_tol) + 1 <= trace(Rᵀ * R_des)
-    ee_orient_cnstr.constraint()->UpdateLowerBound(
+    ee_orient_cnstr.evaluator()->UpdateLowerBound(
         Vector1d(2 * cos(angle_tol) + 1));
     sol_result = gurobi_solver.Solve(global_ik_);
     EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
@@ -85,7 +85,6 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_TRUE(sol_result == solvers::SolutionResult::kInfeasibleConstraints ||
                 sol_result ==
                     solvers::SolutionResult::kInfeasible_Or_Unbounded);
-    q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution();
   }
 }
 }  // namespace

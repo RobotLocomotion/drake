@@ -16,7 +16,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["multibody_tree_indexes.h"],
     deps = [
-        "//drake/common:type_safe_index",
+        "//common:type_safe_index",
     ],
 )
 
@@ -50,10 +50,10 @@ drake_cc_library(
     deps = [
         ":articulated_body_inertia",
         ":multibody_tree_topology",
-        "//drake/common:autodiff",
-        "//drake/multibody/multibody_tree/math:spatial_acceleration",
-        "//drake/multibody/multibody_tree/math:spatial_velocity",
-        "//drake/systems/framework:leaf_context",
+        "//common:autodiff",
+        "//multibody/multibody_tree/math:spatial_acceleration",
+        "//multibody/multibody_tree/math:spatial_velocity",
+        "//systems/framework:leaf_context",
     ],
 )
 
@@ -112,9 +112,8 @@ drake_cc_library(
         ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":spatial_inertia",
-        "//drake/common:autodiff",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/multibody_tree/math:rotation_matrix",
+        "//common:autodiff",
+        "//math:geometric_transform",
     ],
 )
 
@@ -123,9 +122,10 @@ drake_cc_library(
     srcs = ["rotational_inertia.cc"],
     hdrs = ["rotational_inertia.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:extract_double",
+        "//common:default_scalars",
+        "//common:drake_bool",
+        "//common:essential",
+        "//common:extract_double",
     ],
 )
 
@@ -134,9 +134,13 @@ drake_cc_library(
     srcs = ["spatial_inertia.cc"],
     hdrs = ["spatial_inertia.h"],
     deps = [
+        ":rotational_inertia",
         ":unit_inertia",
-        "//drake/math:gradient",
-        "//drake/multibody/multibody_tree/math:spatial_algebra",
+        "//common:default_scalars",
+        "//common:drake_bool",
+        "//common:essential",
+        "//math:vector3_util",
+        "//multibody/multibody_tree/math:spatial_algebra",
     ],
 )
 
@@ -146,6 +150,8 @@ drake_cc_library(
     hdrs = ["unit_inertia.h"],
     deps = [
         ":rotational_inertia",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -155,10 +161,12 @@ drake_cc_library(
     hdrs = ["articulated_body_inertia.h"],
     deps = [
         ":spatial_inertia",
-        "//drake/common:default_scalars",
-        "//drake/common:nice_type_name",
-        "//drake/common:symbolic",
-        "//drake/multibody/multibody_tree/math:spatial_algebra",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:nice_type_name",
+        "//common:symbolic",
+        "//math:vector3_util",
+        "//multibody/multibody_tree/math:spatial_algebra",
     ],
 )
 
@@ -170,9 +178,9 @@ drake_cc_library(
     srcs = ["test/free_rotating_body_plant.cc"],
     hdrs = ["test/free_rotating_body_plant.h"],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
+        "//common:default_scalars",
+        "//multibody/multibody_tree",
+        "//systems/framework",
     ],
 )
 
@@ -184,9 +192,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":free_rotating_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/free_body",
-        "//drake/systems/analysis:simulator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/free_body",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -196,9 +204,8 @@ drake_cc_library(
     srcs = ["test/floating_body_plant.cc"],
     hdrs = ["test/floating_body_plant.h"],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree",
-        "//drake/systems/framework",
+        "//common:default_scalars",
+        "//multibody/multibody_tree/multibody_plant",
     ],
 )
 
@@ -211,9 +218,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":floating_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/free_body",
-        "//drake/systems/analysis:simulator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/free_body",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -223,8 +230,10 @@ drake_cc_googletest(
     size = "medium",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot",
     ],
 )
 
@@ -232,8 +241,8 @@ drake_cc_googletest(
     name = "tree_from_joints_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
     ],
 )
 
@@ -246,7 +255,7 @@ drake_cc_googletest(
     name = "multibody_forces_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -254,10 +263,10 @@ drake_cc_googletest(
     name = "multibody_tree_test",
     deps = [
         ":multibody_tree",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
-        "//drake/multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-        "//drake/multibody/multibody_tree/test_utilities:expect_error_message",
+        "//common/test_utilities",
+        "//math:gradient",
+        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
+        "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
 
@@ -275,8 +284,8 @@ drake_cc_googletest(
     name = "rotational_inertia_test",
     deps = [
         ":rotational_inertia",
-        "//drake/common:autodiff",
-        "//drake/math:gradient",
+        "//common:autodiff",
+        "//math:gradient",
     ],
 )
 
@@ -284,6 +293,7 @@ drake_cc_googletest(
     name = "spatial_inertia_test",
     deps = [
         ":spatial_inertia",
+        "//math:gradient",
     ],
 )
 
@@ -291,7 +301,7 @@ drake_cc_googletest(
     name = "unit_inertia_test",
     deps = [
         ":unit_inertia",
-        "//drake/math:gradient",
+        "//math:gradient",
     ],
 )
 
@@ -307,6 +317,10 @@ drake_cc_googletest(
     deps = [
         ":articulated_body_inertia",
         ":multibody_tree",
+        ":rotational_inertia",
+        ":unit_inertia",
+        "//math:autodiff",
+        "//math:gradient",
     ],
 )
 

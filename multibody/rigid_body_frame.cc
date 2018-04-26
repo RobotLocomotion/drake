@@ -20,17 +20,6 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
 }
 
 template <typename T>
-std::shared_ptr<RigidBodyFrame<T>> RigidBodyFrame<T>::Clone(RigidBody<T>* body)
-    const {
-  auto frame = std::make_shared<RigidBodyFrame<T>>();
-  frame->set_name(name_);
-  frame->set_rigid_body(body);
-  frame->set_transform_to_body(transform_to_body_);
-  frame->set_frame_index(frame_index_);
-  return move(frame);
-}
-
-template <typename T>
 int RigidBodyFrame<T>::get_model_instance_id() const {
   return body_->get_model_instance_id();
 }
@@ -92,4 +81,3 @@ void RigidBodyFrame<T>::set_transform_to_body(const Eigen::Isometry3d&
 // Explicitly instantiates on the most common scalar types.
 template class RigidBodyFrame<double>;
 template class RigidBodyFrame<drake::AutoDiffXd>;
-template class RigidBodyFrame<drake::AutoDiffUpTo73d>;

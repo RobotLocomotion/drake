@@ -220,11 +220,22 @@ class PrintInterface {
  public:
   virtual ~PrintInterface() {}
   virtual std::string print() const = 0;
+ protected:
+  // Allow our subclasses to make these public.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PrintInterface)
+  PrintInterface() = default;
 };
 
 // A trivial class that implements a trivial interface.
+//
+// N.B. Don't use this precise example in your own code!  Normally we would
+// mark this class `final` in order to avoid the slicing problem during copy,
+// move, and assignment; however, the unit tests below are specifically
+// checking for weird corner cases, so we can't mark it as such here.
 class Point : public PrintInterface {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
+
   Point(int x, int y) : x_(x), y_(y) {}
   virtual ~Point() {}
 

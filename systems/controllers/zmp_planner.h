@@ -90,8 +90,8 @@ class ZMPPlanner {
    * to identity.
    * @param R, Quadratic cost term on CoM acceleration, defaults to zero.
    */
-  void Plan(const PiecewisePolynomial<double>& zmp_d, const Eigen::Vector4d& x0,
-            double height, double gravity = 9.81,
+  void Plan(const trajectories::PiecewisePolynomial<double>& zmp_d,
+            const Eigen::Vector4d& x0, double height, double gravity = 9.81,
             const Eigen::Matrix2d& Qy = Eigen::Matrix2d::Identity(),
             const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
 
@@ -208,13 +208,13 @@ class ZMPPlanner {
 
   Eigen::Vector2d get_final_desired_zmp() const {
     DRAKE_DEMAND(planned_);
-    return zmp_d_.value(zmp_d_.getEndTime());
+    return zmp_d_.value(zmp_d_.end_time());
   }
 
   /**
    * Returns the desired ZMP trajectory.
    */
-  const PiecewisePolynomial<double>& get_desired_zmp() const {
+  const trajectories::PiecewisePolynomial<double>& get_desired_zmp() const {
     DRAKE_DEMAND(planned_);
     return zmp_d_;
   }
@@ -222,8 +222,8 @@ class ZMPPlanner {
   /**
    * Returns the nominal CoM trajectory.
    */
-  const ExponentialPlusPiecewisePolynomial<double>& get_nominal_com()
-      const {
+  const trajectories::ExponentialPlusPiecewisePolynomial<double>&
+  get_nominal_com() const {
     DRAKE_DEMAND(planned_);
     return com_;
   }
@@ -231,8 +231,8 @@ class ZMPPlanner {
   /**
    * Returns the nominal CoM velocity trajectory.
    */
-  const ExponentialPlusPiecewisePolynomial<double>& get_nominal_comd()
-      const {
+  const trajectories::ExponentialPlusPiecewisePolynomial<double>&
+  get_nominal_comd() const {
     DRAKE_DEMAND(planned_);
     return comd_;
   }
@@ -240,8 +240,8 @@ class ZMPPlanner {
   /**
    * Returns the nominal CoM acceleration trajectory.
    */
-  const ExponentialPlusPiecewisePolynomial<double>& get_nominal_comdd()
-      const {
+  const trajectories::ExponentialPlusPiecewisePolynomial<double>&
+  get_nominal_comdd() const {
     DRAKE_DEMAND(planned_);
     return comdd_;
   }
@@ -259,7 +259,8 @@ class ZMPPlanner {
    * Returns the time varying first order term (s2 in [1]) of the value
    * function.
    */
-  const ExponentialPlusPiecewisePolynomial<double>& get_Vx() const {
+  const trajectories::ExponentialPlusPiecewisePolynomial<double>& get_Vx()
+      const {
     DRAKE_DEMAND(planned_);
     return s2_;
   }
@@ -278,7 +279,8 @@ class ZMPPlanner {
  private:
   // Check if the last point of zmp_d is stationary (first and higher
   // derivatives are zero).
-  bool CheckStationaryEndPoint(const PiecewisePolynomial<double>& zmp_d) const;
+  bool CheckStationaryEndPoint(
+      const trajectories::PiecewisePolynomial<double>& zmp_d) const;
 
   // Used to test whether the last point of the desired ZMP trajectory is
   // stationary or not in CheckStationaryEndPoint. This number is currently
@@ -294,12 +296,12 @@ class ZMPPlanner {
   // y_bar = y - y_tf
 
   // Desired ZMP trajectories.
-  PiecewisePolynomial<double> zmp_d_;
+  trajectories::PiecewisePolynomial<double> zmp_d_;
 
   // Nominal CoM, CoMd, and CoMdd trajectories.
-  ExponentialPlusPiecewisePolynomial<double> com_;
-  ExponentialPlusPiecewisePolynomial<double> comd_;
-  ExponentialPlusPiecewisePolynomial<double> comdd_;
+  trajectories::ExponentialPlusPiecewisePolynomial<double> com_;
+  trajectories::ExponentialPlusPiecewisePolynomial<double> comd_;
+  trajectories::ExponentialPlusPiecewisePolynomial<double> comdd_;
 
   // System dynamics matrices.
   Eigen::Matrix<double, 4, 4> A_;
@@ -319,14 +321,14 @@ class ZMPPlanner {
   // Value function
   // V = x_bar^T * S1 * x_bar + x_bar^T * s2 + constant_term.
   Eigen::Matrix<double, 4, 4> S1_;
-  ExponentialPlusPiecewisePolynomial<double> s2_;
+  trajectories::ExponentialPlusPiecewisePolynomial<double> s2_;
 
   // Linear policy.
   // u = K * x_bar + k2
   Eigen::Matrix<double, 2, 4> K_;
-  ExponentialPlusPiecewisePolynomial<double> k2_;
+  trajectories::ExponentialPlusPiecewisePolynomial<double> k2_;
 
-  bool planned_ {false};
+  bool planned_{false};
 };
 
 }  // namespace controllers

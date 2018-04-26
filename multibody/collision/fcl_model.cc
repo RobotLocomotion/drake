@@ -87,12 +87,12 @@ void FclModel::DoAddElement(const Element& element) {
 
   switch (element.getShape()) {
     case DrakeShapes::SPHERE: {
-      const auto sphere =
+      const auto& sphere =
           static_cast<const DrakeShapes::Sphere&>(element.getGeometry());
       fcl_geometry = std::make_shared<fcl::Sphered>(sphere.radius);
     } break;
     case DrakeShapes::CYLINDER: {
-      const auto cylinder =
+      const auto& cylinder =
           static_cast<const DrakeShapes::Cylinder&>(element.getGeometry());
       fcl_geometry =
           std::make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.length);

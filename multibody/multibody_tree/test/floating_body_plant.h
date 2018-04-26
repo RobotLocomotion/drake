@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -29,7 +29,8 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
+class AxiallySymmetricFreeBodyPlant final :
+    public multibody_plant::MultibodyPlant<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
 
@@ -85,42 +86,15 @@ class AxiallySymmetricFreeBodyPlant final : public systems::LeafSystem<T> {
   /// SetDefaultState(). Currently a non-zero value.
   static Vector3<double> get_default_initial_translational_velocity();
 
-  const QuaternionFloatingMobilizer<T>& mobilizer() const {
-    return *mobilizer_;
-  }
-
-  /// Returns a const reference to the MultibodyTree model for this plant.
-  const MultibodyTree<T>& model() const { return model_; }
+  /// Returns a constant reference to the free body model of this plant.
+  const RigidBody<T>& body() const { return *body_; }
 
  private:
-  // Override of context construction so that we can delegate it to
-  // MultibodyTree.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
-
-  void DoCalcTimeDerivatives(
-      const systems::Context<T> &context,
-      systems::ContinuousState<T> *derivatives) const override;
-
-  void DoMapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      systems::VectorBase<T>* generalized_velocity) const override;
-
-  void DoMapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& generalized_velocity,
-      systems::VectorBase<T>* qdot) const override;
-
-  // Helper method to build the MultibodyTree model for this plant.
-  void BuildMultibodyTreeModel();
-
   double mass_{0};
   double I_{0};
   double J_{0};
   double g_{0};
-  MultibodyTree<T> model_;
   const RigidBody<T>* body_{nullptr};
-  const QuaternionFloatingMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test

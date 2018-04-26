@@ -13,7 +13,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
@@ -43,12 +43,13 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 using manipulation::util::SimDiagramBuilder;
+using trajectories::PiecewisePolynomial;
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
 
-unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
+PiecewisePolynomial<double> MakePlan() {
   auto tree = make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
@@ -96,9 +97,16 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   pc3.setJointLimits(joint_position_start_idx, Vector1d(0.7), Vector1d(0.8));
 
   const std::vector<double> kTimes{0.0, 2.0, 5.0, 7.0, 9.0};
-  MatrixXd q0(tree->get_num_positions(), kTimes.size());
+  MatrixXd q_seed(tree->get_num_positions(), kTimes.size());
+  MatrixXd q_nom(tree->get_num_positions(), kTimes.size());
   for (size_t i = 0; i < kTimes.size(); ++i) {
-    q0.col(i) = zero_conf;
+    // Zero configuration is a bad initial guess for IK, to be solved through
+    // nonlinear optimization, as the robot configuration is in singularity,
+    // and the gradient is zero. So we add 0.1 as the arbitrary pertubation
+    // to the zero configuration.
+    q_seed.col(i) =
+        zero_conf + 0.1 * Eigen::VectorXd::Ones(tree->get_num_positions());
+    q_nom.col(i) = zero_conf;
   }
 
   std::vector<RigidBodyConstraint*> constraint_array;
@@ -112,7 +120,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
   MatrixXd q_sol(tree->get_num_positions(), kTimes.size());
   std::vector<std::string> infeasible_constraint;
 
-  inverseKinPointwise(tree.get(), kTimes.size(), kTimes.data(), q0, q0,
+  inverseKinPointwise(tree.get(), kTimes.size(), kTimes.data(), q_seed, q_nom,
                       constraint_array.size(), constraint_array.data(),
                       ikoptions, &q_sol, info.data(), &infeasible_constraint);
   bool info_good = true;
@@ -136,8 +144,7 @@ unique_ptr<PiecewisePolynomialTrajectory> MakePlan() {
     knots[i] = q_sol.col(i);
   }
 
-  return make_unique<PiecewisePolynomialTrajectory>(
-      PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots));
+  return PiecewisePolynomial<double>::FirstOrderHold(kTimes, knots);
 }
 
 int DoMain() {
@@ -146,7 +153,7 @@ int DoMain() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   CreateTreedFromFixedModelAtPose(FindResourceOrThrow(kUrdfPath), tree.get());
 
-  std::unique_ptr<PiecewisePolynomialTrajectory> traj = MakePlan();
+  PiecewisePolynomial<double> traj = MakePlan();
 
   drake::lcm::DrakeLcm lcm;
   SimDiagramBuilder<double> builder;
@@ -169,7 +176,7 @@ int DoMain() {
       builder.get_mutable_builder();
   auto traj_src =
       diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
-          *traj, 1 /* outputs q + v */);
+          traj, 1 /* outputs q + v */);
   traj_src->set_name("trajectory_source");
 
   diagram_builder->Connect(traj_src->get_output_port(),

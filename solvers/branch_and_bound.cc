@@ -86,7 +86,7 @@ Binding<Constraint> ReplaceBoundVariables(
   for (int i = 0; i < new_bound_vars.rows(); ++i) {
     new_bound_vars(i) = map_old_vars_to_new_vars.at(old_bound_vars(i).get_id());
   }
-  return Binding<Constraint>(binding.constraint(), new_bound_vars);
+  return Binding<Constraint>(binding.evaluator(), new_bound_vars);
 }
 
 // Adds a vector of costs to a mathematical program.

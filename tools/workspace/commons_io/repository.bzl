@@ -7,7 +7,7 @@ def commons_io_repository(
         mirrors = None):
     java_import_external(
         name = name,
-        licenses = [],
+        licenses = ["notice"],  # Apache-2.0
         jar_urls = [
             x.format(fulljar = "commons-io/commons-io/1.3.1/commons-io-1.3.1.jar")  # noqa
             for x in mirrors.get("maven")

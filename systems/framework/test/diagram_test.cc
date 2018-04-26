@@ -154,32 +154,31 @@ class EmptySystemDiagram : public Diagram<double> {
   }
 };
 
-template <typename T>
-void CheckPeriodAndOffset(const typename Event<T>::PeriodicAttribute& attr) {
-  EXPECT_EQ(attr.period_sec, 1.125);
-  EXPECT_EQ(attr.offset_sec, 2.25);
+void CheckPeriodAndOffset(const PeriodicEventData& data) {
+  EXPECT_EQ(data.period_sec(), 1.125);
+  EXPECT_EQ(data.offset_sec(), 2.25);
 }
 
 // Tests whether the diagram exhibits the correct behavior for
 // GetUniquePeriodicDiscreteUpdateAttribute().
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
-  optional<Event<double>::PeriodicAttribute> periodic_attr;
+  optional<PeriodicEventData> periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
   EmptySystemDiagram d_sys1upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, true);
   EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
       true);
-  ASSERT_TRUE(periodic_attr =
+  ASSERT_TRUE(periodic_data =
       d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
-  ASSERT_TRUE(periodic_attr =
+  CheckPeriodAndOffset(periodic_data.value());
+  ASSERT_TRUE(periodic_data =
       d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
-  ASSERT_TRUE(periodic_attr =
+  CheckPeriodAndOffset(periodic_data.value());
+  ASSERT_TRUE(periodic_data =
       d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
-  CheckPeriodAndOffset<double>(periodic_attr.value());
+  CheckPeriodAndOffset(periodic_data.value());
 
   // Check systems with up to three levels of recursion.
   for (int i = 1; i <= 3; ++i) {
@@ -198,24 +197,24 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
         EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, true);
 
     // All of these should return "true". Check them.
-    ASSERT_TRUE(periodic_attr =
+    ASSERT_TRUE(periodic_data =
         d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
-    ASSERT_TRUE(periodic_attr =
+    CheckPeriodAndOffset(periodic_data.value());
+    ASSERT_TRUE(periodic_data =
         d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
-    CheckPeriodAndOffset<double>(periodic_attr.value());
+    CheckPeriodAndOffset(periodic_data.value());
   }
 }
 
@@ -223,7 +222,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 // GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
-  Event<double>::PeriodicAttribute periodic_attr;
+  PeriodicEventData periodic_data;
   EmptySystemDiagram d_sys2upd_zero(
       EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
   EmptySystemDiagram d_sys1upd_zero(
@@ -268,14 +267,49 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   }
 }
 
-/// ExampleDiagram has the following structure:
-/// adder0_: (input0_ + input1_) -> A
-/// adder1_: (A + input2_)       -> B, output 0
-/// adder2_: (A + B)             -> output 1
-/// integrator1_: A              -> C
-/// integrator2_: C              -> output 2
-/// It also uses an StatelessSystem to verify Diagram's ability to retrieve
-/// witness functions from its subsystems.
+/* ExampleDiagram has the following structure:
+adder0_: (input0_ + input1_) -> A
+adder1_: (A + input2_)       -> B, output 0
+adder2_: (A + B)             -> output 1
+integrator1_: A              -> C
+integrator2_: C              -> output 2
+It also uses an StatelessSystem to verify Diagram's ability to retrieve
+witness functions from its subsystems.
+
+             +----------------------------------------------------------+
+             |                                                          |
+             |  +--------+                       +------------------------->
+1, 2, 4  +------>        |                       |                   B  | y0
+          u0 |  | Adder0 | A  +-----------+      |                      |
+             |  |        +-+--> u0        |      |                      |
+8, 16, 32+------>        | |  |           |      |                      |
+          u1 |  +--------+ |  | Adder1    |  B   |       +-----------+  |
+             |             |  |           +------+-------> u1        |  |
+64, 128, 256 |             |  |           | 73,146,292   |           |  |
+         +--------------------> u1        |              | Adder2    |  |
+          u2 |             |  +-----------+              |           +----->
+             |             |                 A           |           |  | y1
+             |             +-----------------------------> u0        |  |
+             |             |     9, 18, 36               +-----------+  |  82
+             |             |                                            | 164
+             |             |                                            | 328
+             |             |                                            |
+             |             |  +------------+             +-----------+  |
+             |             |  |            |             |           |  |
+             |           A |  |            |     C       |           |  |
+             |             +--> Integ0     +-------------> Integ1    +----->
+             |                |            |             |           |  | y2
+             |                |  3, 9, 27  |             |81,243,729 |  |
+             |                +------------+             +-----------+  |
+             |                                                          |
+             |  +----------------+            +-------------------+     |
+             |  |                |            |    ConstantVector |     |
+             |  |  Stateless     |            |    or             |     |
+             |  |                |            |    DoubleOnly     |     |
+             |  +----------------+            +-------------------+     |
+             |                                                          |
+             +----------------------------------------------------------|
+*/
 class ExampleDiagram : public Diagram<double> {
  public:
   explicit ExampleDiagram(
@@ -439,10 +473,7 @@ TEST_F(DiagramTest, Witness) {
 
   // Stateless function always returns the ClockWitness.
   ASSERT_EQ(wf.size(), 1);
-  EXPECT_TRUE(is_dynamic_castable<const analysis_test::ClockWitness<double>>(
-      wf.front()));
-
-  EXPECT_LT(diagram_->EvaluateWitness(*context_, *wf.front()), 0);
+  EXPECT_LT(diagram_->CalcWitnessValue(*context_, *wf.front()), 0);
 }
 
 // Tests that the diagram exports the correct topology.
@@ -552,20 +583,18 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   ASSERT_EQ(6, derivatives->get_misc_continuous_state().size());
 
   // The derivative of the first integrator is A.
-  const ContinuousState<double>* integrator0_xcdot =
+  const ContinuousState<double>& integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator0());
-  ASSERT_TRUE(integrator0_xcdot != nullptr);
-  EXPECT_EQ(1 + 8, integrator0_xcdot->get_vector().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot->get_vector().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot->get_vector().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot.get_vector().GetAtIndex(0));
+  EXPECT_EQ(2 + 16, integrator0_xcdot.get_vector().GetAtIndex(1));
+  EXPECT_EQ(4 + 32, integrator0_xcdot.get_vector().GetAtIndex(2));
 
   // The derivative of the second integrator is the state of the first.
-  const ContinuousState<double>* integrator1_xcdot =
+  const ContinuousState<double>& integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*derivatives, integrator1());
-  ASSERT_TRUE(integrator1_xcdot != nullptr);
-  EXPECT_EQ(3, integrator1_xcdot->get_vector().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot->get_vector().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot->get_vector().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot.get_vector().GetAtIndex(0));
+  EXPECT_EQ(9, integrator1_xcdot.get_vector().GetAtIndex(1));
+  EXPECT_EQ(27, integrator1_xcdot.get_vector().GetAtIndex(2));
 }
 
 // Tests the AllocateInput logic.
@@ -724,7 +753,7 @@ TEST_F(DiagramTest, DerivativesOfStatelessSystemAreEmpty) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       diagram_->AllocateTimeDerivatives();
   EXPECT_EQ(0,
-            diagram_->GetSubsystemDerivatives(*derivatives, adder0())->size());
+            diagram_->GetSubsystemDerivatives(*derivatives, adder0()).size());
 }
 
 class DiagramOfDiagramsTest : public ::testing::Test {
@@ -820,7 +849,7 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output1 = output0 + 8 + 64 = 656
   //   output2 = 9 (state of integrator1_)
 
-  // So, the outputs of subsytem1_, and thus of the whole diagram, are:
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
@@ -1456,7 +1485,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
 
     // Verify that no periodic discrete updates are registered.
-    Event<double>::PeriodicAttribute attr;
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
@@ -1942,7 +1970,6 @@ class MyEventTestSystem : public LeafSystem<double> {
       DeclarePeriodicPublish(p);
 
       // Verify that no periodic discrete updates are registered.
-      Event<double>::PeriodicAttribute attr;
       EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
     } else {
       DeclarePerStepEvent<PublishEvent<double>>(

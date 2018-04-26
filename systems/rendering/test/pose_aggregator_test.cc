@@ -198,8 +198,8 @@ TEST_F(PoseAggregatorTest, Stateless) { EXPECT_TRUE(context_->is_stateless()); }
 // the new ports.
 TEST_F(PoseAggregatorTest, AddSinglePoseAndVelocityPorts) {
   auto ports = aggregator_.AddSinglePoseAndVelocityInput("test", 100);
-  const InputPortDescriptor<double>& pose_port = ports.first;
-  const InputPortDescriptor<double>& velocity_port = ports.second;
+  const InputPortDescriptor<double>& pose_port = ports.pose_descriptor;
+  const InputPortDescriptor<double>& velocity_port = ports.velocity_descriptor;
   EXPECT_EQ(PoseVector<double>::kSize, pose_port.size());
   EXPECT_EQ(FrameVelocity<double>::kSize, velocity_port.size());
 }

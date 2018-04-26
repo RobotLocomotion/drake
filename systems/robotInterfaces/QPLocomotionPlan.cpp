@@ -10,7 +10,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/constants.h"
-#include "drake/common/trajectories/qp_spline/spline_generation.h"
 #include "drake/examples/atlas/atlasUtil.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -45,6 +44,7 @@ using Eigen::VectorXd;
 
 using drake::kQuaternionSize;
 using drake::kSpaceDimension;
+using drake::Vector1d;
 
 using drake::math::Gradient;
 using drake::math::autoDiffToGradientMatrix;
@@ -54,6 +54,9 @@ using drake::math::expmap2quat;
 using drake::math::initializeAutoDiffGivenGradientMatrix;
 using drake::math::quat2expmap;
 using drake::math::quatRotateVec;
+
+using drake::trajectories::ExponentialPlusPiecewisePolynomial;
+using drake::trajectories::PiecewisePolynomial;
 
 using std::allocator;
 using std::cerr;
@@ -320,7 +323,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     PiecewisePolynomial<double> body_motion_trajectory_slice =
         body_motion.getTrajectory().slice(
             body_motion_segment_index,
-            std::min(2, body_motion.getTrajectory().getNumberOfSegments() -
+            std::min(2, body_motion.getTrajectory().get_number_of_segments() -
                      body_motion_segment_index));
 
     // convert to global time
@@ -353,8 +356,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world =
         body_motion.getTransformTaskToWorld();
-    Vector4d quat_task_to_world =
-        drake::math::rotmat2quat(transform_task_to_world.linear());
+    const Vector4d quat_task_to_world =
+        drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+            transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
     eigenVectorToCArray(quat_task_to_world,
                         body_motion_data_for_support_lcm.quat_task_to_world);
@@ -521,7 +525,7 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const {
   } else {
     size_t x0_row = 0;
     Vector2d shifted_zmp_final =
-        shifted_zmp_trajectory_.value(shifted_zmp_trajectory_.getEndTime());
+        shifted_zmp_trajectory_.value(shifted_zmp_trajectory_.end_time());
     for (Eigen::Index i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = shifted_zmp_final(i);
     }
@@ -575,11 +579,11 @@ void QPLocomotionPlan::updateSwingTrajectory(
 
   // last three knot points from spline
   PiecewisePolynomial<double>& trajectory = body_motion_data.getTrajectory();
-  VectorXd x1 = trajectory.value(trajectory.getEndTime(takeoff_segment_index));
+  VectorXd x1 = trajectory.value(trajectory.end_time(takeoff_segment_index));
   VectorXd x2 =
-      trajectory.value(trajectory.getEndTime(takeoff_segment_index + 1));
+      trajectory.value(trajectory.end_time(takeoff_segment_index + 1));
   VectorXd xf =
-      trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
+      trajectory.value(trajectory.end_time(takeoff_segment_index + 2));
 
   // first knot point from current position
   auto x0_pose =
@@ -587,7 +591,9 @@ void QPLocomotionPlan::updateSwingTrajectory(
   auto x0_twist =
       robot_.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
-  Vector4d x0_quat = drake::math::rotmat2quat(x0_pose.linear());
+  const Vector4d x0_quat =
+      drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+          x0_pose.linear());
   Matrix<double, kQuaternionSize, kSpaceDimension> Phi;
   angularvel2quatdotMatrix(
       x0_quat, Phi,
@@ -631,7 +637,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
 
   // TODO(rdeits): find a less expensive way of doing this
   VectorXd xdf = trajectory.derivative().value(
-      trajectory.getEndTime(landing_segment_index));
+      trajectory.end_time(landing_segment_index));
 
   // Unwrap all of the knots in the trajectory to ensure we don't create a
   // wraparound
@@ -648,15 +654,21 @@ void QPLocomotionPlan::updateSwingTrajectory(
   // xf: " << xf(5) << std::endl;
   // std::cout << "xd0: " << xd0.transpose() << " xdf: " << xdf.transpose();
 
-  auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
+  auto start_it =
+      trajectory.get_segment_times().begin() + takeoff_segment_index;
   int num_breaks = num_swing_segments + 1;
   std::vector<double> breaks(start_it, start_it + num_breaks);
 
+  std::vector<MatrixXd> knots(4);
   for (int dof_num = 0; dof_num < x0.rows(); ++dof_num) {
+    knots[0] = Vector1d{x0(dof_num)};
+    knots[1] = Vector1d{x1(dof_num)};
+    knots[2] = Vector1d{x2(dof_num)};
+    knots[3] = Vector1d{xf(dof_num)};
     PiecewisePolynomial<double> updated_spline_for_dof =
-        nWaypointCubicSpline(breaks, x0(dof_num), xd0(dof_num), xf(dof_num),
-                             xdf(dof_num), Vector2d(x1(dof_num), x2(dof_num)));
-    for (int j = 0; j < updated_spline_for_dof.getNumberOfSegments(); j++) {
+        PiecewisePolynomial<double>::Cubic(
+            breaks, knots, Vector1d{xd0(dof_num)}, Vector1d{xdf(dof_num)});
+    for (int j = 0; j < updated_spline_for_dof.get_number_of_segments(); j++) {
       body_motion_data.getTrajectory().setPolynomialMatrixBlock(
           updated_spline_for_dof.getPolynomialMatrix(j),
           takeoff_segment_index + j, dof_num, 0);
@@ -777,9 +789,9 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan,
                                            const double last_support_fraction,
                                            const double next_support_fraction,
                                            const double transition_fraction) {
-  int segment_index = settings_.zmp_trajectory.getSegmentIndex(t_plan);
+  int segment_index = settings_.zmp_trajectory.get_segment_index(t_plan);
   const std::vector<double>& segment_times =
-      settings_.zmp_trajectory.getSegmentTimes();
+      settings_.zmp_trajectory.get_segment_times();
   std::vector<MatrixXd> zmp_knots;
   zmp_knots.reserve(segment_times.size());
   for (size_t i = 0; i < segment_times.size(); ++i) {

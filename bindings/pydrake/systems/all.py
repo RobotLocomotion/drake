@@ -4,6 +4,7 @@ from .framework import *
 from .primitives import *
 from .rendering import *
 from .sensors import *
+from .trajectory_optimization import *
 
 try:
     from .drawing import *

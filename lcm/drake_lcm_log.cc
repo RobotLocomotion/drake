@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <limits>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 
@@ -14,7 +15,7 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
     : is_write_(is_write),
       overwrite_publish_time_with_system_clock_(
           overwrite_publish_time_with_system_clock) {
-  if (is_write) {
+  if (is_write_) {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "w");
   } else {
     log_ = std::make_unique<::lcm::LogFile>(file_name, "r");
@@ -26,16 +27,16 @@ DrakeLcmLog::DrakeLcmLog(const std::string& file_name, bool is_write,
 }
 
 void DrakeLcmLog::Publish(const std::string& channel, const void* data,
-                          int data_size, double second) {
+                          int data_size, optional<double> time_sec) {
   if (!is_write_) {
     throw std::logic_error("Publish is only available for log saving.");
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  ::lcm::LogEvent log_event;
+  ::lcm::LogEvent log_event{};
   if (!overwrite_publish_time_with_system_clock_) {
-    log_event.timestamp = second_to_timestamp(second);
+    log_event.timestamp = second_to_timestamp(time_sec.value_or(0.0));
   } else {
     log_event.timestamp = std::chrono::steady_clock::now().time_since_epoch() /
                           std::chrono::microseconds(1);
@@ -50,21 +51,25 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void DrakeLcmLog::Subscribe(const std::string& channel,
                             DrakeLcmMessageHandlerInterface* handler) {
+  Subscribe(channel, std::bind(
+      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
+      channel, std::placeholders::_1, std::placeholders::_2));
+}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+void DrakeLcmLog::Subscribe(const std::string& channel,
+                            HandlerFunction handler) {
   if (is_write_) {
     throw std::logic_error("Subscribe is only available for log playback.");
   }
 
   std::lock_guard<std::mutex> lock(mutex_);
 
-  auto it = subscriptions_.find(channel);
-  // No channels yet.
-  if (it == subscriptions_.end()) {
-    subscriptions_[channel] = {handler};
-  } else {
-    it->second.push_back(handler);
-  }
+  subscriptions_.emplace(channel, std::move(handler));
 }
 
 double DrakeLcmLog::GetNextMessageTime() const {
@@ -96,12 +101,10 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
   }
 
   // Dispatch message if necessary.
-  auto it = subscriptions_.find(next_event_->channel);
-  if (it != subscriptions_.end()) {
-    for (DrakeLcmMessageHandlerInterface* handler : it->second) {
-      handler->HandleMessage(next_event_->channel, next_event_->data,
-                             next_event_->datalen);
-    }
+  const auto& range = subscriptions_.equal_range(next_event_->channel);
+  for (auto iter = range.first; iter != range.second; ++iter) {
+    const HandlerFunction& handler = iter->second;
+    handler(next_event_->data, next_event_->datalen);
   }
 
   // Advance log.

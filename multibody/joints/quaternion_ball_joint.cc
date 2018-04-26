@@ -12,13 +12,13 @@ using Eigen::VectorXd;
 std::string QuaternionBallJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
-      return name + "_qw";
+      return name_ + "_qw";
     case 1:
-      return name + "_qx";
+      return name_ + "_qx";
     case 2:
-      return name + "_qy";
+      return name_ + "_qy";
     case 3:
-      return name + "_qz";
+      return name_ + "_qz";
     default:
       throw std::runtime_error("bad index");
   }
@@ -27,23 +27,26 @@ std::string QuaternionBallJoint::get_position_name(int index) const {
 std::string QuaternionBallJoint::get_velocity_name(int index) const {
   switch (index) {
     case 0:
-      return name + "_wx";
+      return name_ + "_wx";
     case 1:
-      return name + "_wy";
+      return name_ + "_wy";
     case 2:
-      return name + "_wz";
+      return name_ + "_wz";
     default:
       throw std::runtime_error("bad index");
   }
 }
 
 VectorXd QuaternionBallJoint::zeroConfiguration() const {
+  // TODO(mitiguy) Consider updating this method to return Eigen::Quaterniond.
   return Vector4d(1, 0, 0, 0);
 }
 
 VectorXd QuaternionBallJoint::randomConfiguration(
     std::default_random_engine& generator) const {
-  return drake::math::UniformlyRandomQuat(generator);
+  // TODO(mitiguy) Consider updating this method to return Eigen::Quaterniond.
+  Eigen::Quaterniond q = drake::math::UniformlyRandomQuaternion(&generator);
+  return Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

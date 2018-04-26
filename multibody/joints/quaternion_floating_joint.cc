@@ -13,19 +13,19 @@ using std::normal_distribution;
 std::string QuaternionFloatingJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
-      return name + "_x";
+      return name_ + "_x";
     case 1:
-      return name + "_y";
+      return name_ + "_y";
     case 2:
-      return name + "_z";
+      return name_ + "_z";
     case 3:
-      return name + "_qw";
+      return name_ + "_qw";
     case 4:
-      return name + "_qx";
+      return name_ + "_qx";
     case 5:
-      return name + "_qy";
+      return name_ + "_qy";
     case 6:
-      return name + "_qz";
+      return name_ + "_qz";
     default:
       throw std::runtime_error("bad index");
   }
@@ -34,17 +34,17 @@ std::string QuaternionFloatingJoint::get_position_name(int index) const {
 std::string QuaternionFloatingJoint::get_velocity_name(int index) const {
   switch (index) {
     case 0:
-      return name + "_wx";
+      return name_ + "_wx";
     case 1:
-      return name + "_wy";
+      return name_ + "_wy";
     case 2:
-      return name + "_wz";
+      return name_ + "_wz";
     case 3:
-      return name + "_vx";
+      return name_ + "_vx";
     case 4:
-      return name + "_vy";
+      return name_ + "_vy";
     case 5:
-      return name + "_vz";
+      return name_ + "_vz";
     default:
       throw std::runtime_error("bad index");
   }
@@ -67,11 +67,11 @@ VectorXd QuaternionFloatingJoint::randomConfiguration(
   q[2] = normal(generator);
 
   // orientation
-  Vector4d quat = drake::math::UniformlyRandomQuat(generator);
-  q[3] = quat(0);
-  q[4] = quat(1);
-  q[5] = quat(2);
-  q[6] = quat(3);
+  Eigen::Quaterniond quat = drake::math::UniformlyRandomQuaternion(&generator);
+  q[3] = quat.w();
+  q[4] = quat.x();
+  q[5] = quat.y();
+  q[6] = quat.z();
   return q;
 }
 

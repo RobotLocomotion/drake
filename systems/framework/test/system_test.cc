@@ -44,10 +44,6 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> AllocateContext() const override {
-    return nullptr;
-  }
-
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -98,14 +94,14 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
-  double DoEvaluateWitness(const Context<double>&,
-                           const WitnessFunction<double>&) const override {
+  double DoCalcWitnessValue(const Context<double>&,
+                            const WitnessFunction<double>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<double>&,
+      Event<double>*,
       CompositeEventCollection<double>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -204,14 +200,20 @@ class TestSystem : public System<double> {
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
-  std::map<Event<double>::PeriodicAttribute,
+  std::map<PeriodicEventData,
       std::vector<const Event<double>*>,
-      PeriodicAttributeComparator<double>>
+      PeriodicEventDataComparator>
       DoGetPeriodicEvents() const override {
     return {};
   }
 
  private:
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    return std::make_unique<LeafContext<double>>();
+  }
+
+  void DoValidateAllocatedContext(const ContextBase&) const final {}
+
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
   mutable std::vector<int> published_numbers_;
@@ -434,14 +436,14 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  T DoEvaluateWitness(const Context<T>&,
-                      const WitnessFunction<T>&) const override {
+  T DoCalcWitnessValue(const Context<T>&,
+                       const WitnessFunction<T>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>&,
+      Event<T>*,
       CompositeEventCollection<T>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -465,11 +467,13 @@ class ValueIOTestSystem : public System<T> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
     context->SetNumInputPorts(this->get_num_input_ports());
     return std::move(context);
   }
+
+  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
@@ -556,8 +560,8 @@ class ValueIOTestSystem : public System<T> {
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
     return {};
   }
 };

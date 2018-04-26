@@ -23,6 +23,7 @@
 #include "drake/multibody/multibody_tree/multibody_tree_context.h"
 #include "drake/multibody/multibody_tree/multibody_tree_topology.h"
 #include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
@@ -854,8 +855,7 @@ class MultibodyTree {
   /// is validated, meaning that the topology is up-to-date after this call.
   /// No more multibody tree elements can be added after a call to Finalize().
   ///
-  /// @throws std::logic_error If users attempt to call this method on an
-  ///         already finalized %MultibodyTree.
+  /// @throws std::exception if called post-finalize.
   // TODO(amcastro-tri): Consider making this method private and calling it
   // automatically when CreateDefaultContext() is called.
   void Finalize();
@@ -881,6 +881,50 @@ class MultibodyTree {
   /// Mobilizer::set_zero_configuration().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyPoseOrThrow(
+      const Body<T>& body, const Isometry3<T>& X_WB,
+      systems::Context<T>* context) const;
+
+  /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
+  /// the world frame W.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodySpatialVelocityOrThrow(
+      const Body<T>& body, const SpatialVelocity<T>& V_WB,
+      systems::Context<T>* context) const;
+
+  /// Sets `sate` to store the pose `X_WB` of a given `body` B in the world
+  /// frame W, for a given `context` of `this` model.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyPoseOrThrow(
+      const Body<T>& body, const Isometry3<T>& X_WB,
+      const systems::Context<T>& context, systems::State<T>* state) const;
+
+  /// Sets `state` to store the spatial velocity `V_WB` of a given `body` B in
+  /// the world frame W, for a given `context` of `this` model.
+  /// @note In general setting the pose and/or velocity of a body in the model
+  /// would involve a complex inverse kinematics problem. This method allows us
+  /// to simplify this process when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodySpatialVelocityOrThrow(
+      const Body<T>& body, const SpatialVelocity<T>& V_WB,
+      const systems::Context<T>& context, systems::State<T>* state) const;
 
   /// @name Kinematic computations
   /// Kinematics computations are concerned with the motion of bodies in the
@@ -1711,6 +1755,9 @@ class MultibodyTree {
   // private methods from MultibodyTree<T>.
   template <typename> friend class MultibodyTree;
 
+  // Friend class to facilitate testing.
+  friend class MultibodyTreeTester;
+
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
       std::unique_ptr<JointType<T>> joint) {
@@ -1741,8 +1788,37 @@ class MultibodyTree {
   // previously called on this tree.
   void FinalizeInternals();
 
-  // Helper method for throwing an exception if Finalize() has not been called
-  // on this MultibodyTree model. The invoking method should pass it's name so
+  // Helper method to add a QuaternionFreeMobilizer to all bodies that do not
+  // have a mobilizer. The mobilizer is between each body and the world. To be
+  // called at Finalize().
+  // The world body is special in that it is the only body in the model with no
+  // mobilizer, even after Finalize().
+  void AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+
+  // Helper method to access the mobilizer of a free body.
+  // If `body` is a free body in the model, this method will return the
+  // QuaternionFloatingMobilizer for the body. If the body is not free but it
+  // is connected to the model by a Joint, this method will throw a
+  // std::exception.
+  // The returned mobilizer provides a user-facing API to set the state for
+  // this body including both pose and spatial velocity.
+  // @note In general setting the pose and/or velocity of a body in the model
+  // would involve a complex inverse kinematics problem. It is possible however
+  // to do this directly for free bodies and the QuaternionFloatingMobilizer
+  // user-facing API allows us to do exactly that.
+  // @throws std::exception if `body` is not free in the model.
+  // @throws std::exception if called pre-finalize.
+  // @throws std::exception if called on the world body.
+  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
+      const Body<T>& body) const;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called post-finalize. The invoking method should pass its name so
+  // that the error message can include that detail.
+  void ThrowIfFinalized(const char* source_method) const;
+
+  // Helper method for throwing an exception within public methods that should
+  // not be called pre-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
 

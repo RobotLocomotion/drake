@@ -109,13 +109,13 @@ h, and "left" and "right" endpoints `Rl=Ro-h*Rx` and `Rr=Ro+h*Rx` at which
 it can contact the halfspace whose surface is at Wy=0.
 
 This system can be simulated using one of three models:
-- a compliant contact model (the rod is rigid, but contact between
-  the rod and the half-space is modeled as compliant) simulated using
+- continuously, using a compliant contact model (the rod is rigid, but contact
+  between the rod and the half-space is modeled as compliant) simulated using
   ordinary differential equations (ODEs),
 - a fully rigid model simulated with piecewise differential algebraic
   equations (DAEs), and
 - a fully rigid model simulated as a discrete system using a first-order
-  time stepping approach.
+  discretization approach.
 
 The rod state is initialized to the configuration that corresponds to the
 Painlevé Paradox problem, described in [Stewart 2000]. The paradox consists
@@ -156,30 +156,33 @@ class Rod2D : public systems::LeafSystem<T> {
  public:
   ~Rod2D() override {}
 
-  /// Simulation model and approach for the system.
-  enum class SimulationType {
-    /// For simulating the system using rigid contact, Coulomb friction, and
-    /// piecewise differential algebraic equations.
+  /// System model and approach for simulating the system.
+  enum class SystemType {
+    /// For modeling the system using rigid contact, Coulomb friction, and
+    /// hybrid mode variables and simulating the system through piecewise
+    /// solutions of differential algebraic equations.
     kPiecewiseDAE,
 
-    /// For simulating the system using rigid contact, Coulomb friction, and
-    /// a first-order time stepping approach.
-    kTimeStepping,
+    /// For modeling the system using either rigid or compliant contact,
+    /// Coulomb friction, and a first-order time discretization (which can
+    /// be applied to simulating the system without an integrator).
+    kDiscretized,
 
-    /// For simulating the system using compliant contact, Coulomb friction,
-    /// and ordinary differential equations.
-    kCompliant
+    /// For modeling the system using compliant contact, Coulomb friction,
+    /// and ordinary differential equations and simulating the system
+    /// through standard algorithms for solving initial value problems.
+    kContinuous
   };
 
   /// Constructor for the 2D rod system using the piecewise DAE (differential
-  /// algebraic equation) based approach, the time stepping approach, or the
-  /// compliant ordinary differential equation based approach.
+  /// algebraic equation) based approach, the discretization approach, or the
+  /// continuous ordinary differential equation based approach.
   /// @param dt The integration step size. This step size cannot be reset
   ///           after construction.
-  /// @throws std::logic_error if @p dt is not positive and simulation_type is
-  ///         kTimeStepping or @p dt is not zero and simulation_type is
-  ///         kPiecewiseDAE or kCompliant.
-  explicit Rod2D(SimulationType simulation_type, double dt);
+  /// @throws std::logic_error if @p dt is not positive and system_type is
+  ///         kDiscretized or @p dt is not zero and system_type is
+  ///         kPiecewiseDAE or kContinuous.
+  explicit Rod2D(SystemType system_type, double dt);
 
   static const Rod2dStateVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
@@ -227,7 +230,7 @@ class Rod2D : public systems::LeafSystem<T> {
         half_length_);
   }
 
-  /// Gets the constraint force mixing parameter (CFM, used for time stepping
+  /// Gets the constraint force mixing parameter (CFM, used for discretized
   /// systems only), which should lie in the interval [0, infinity].
   double get_cfm() const {
     return 1.0 /
@@ -235,7 +238,7 @@ class Rod2D : public systems::LeafSystem<T> {
         kCharacteristicDeformation));
   }
 
-  /// Gets the error reduction parameter (ERP, used for time stepping
+  /// Gets the error reduction parameter (ERP, used for discretized
   /// systems only), which should lie in the interval [0, 1].
   double get_erp() const {
     return dt_ * stiffness_ / (stiffness_ * dt_ +
@@ -312,7 +315,7 @@ class Rod2D : public systems::LeafSystem<T> {
   }
 
   /// Sets stiffness and dissipation for the rod from cfm and erp values (used
-  /// for time stepping implementations).
+  /// for discretized system implementations).
   void SetStiffnessAndDissipation(double cfm, double erp) {
     // These values were determined by solving the equations:
     // cfm = 1 / (dt * stiffness + damping)
@@ -330,7 +333,7 @@ class Rod2D : public systems::LeafSystem<T> {
   double get_mu_static() const { return mu_s_; }
 
   /// Set contact stiction coefficient (>= mu_coulomb). This has no
-  /// effect if the rod model is time stepping.
+  /// effect if the rod model is discretized.
   void set_mu_static(double mu_static) {
     DRAKE_DEMAND(mu_static >= mu_);
     mu_s_ = mu_static;
@@ -378,18 +381,19 @@ class Rod2D : public systems::LeafSystem<T> {
   /// this method returns `false`.
   bool IsImpacting(const systems::Context<T>& context) const;
 
-  /// Gets the integration step size for the time stepping system.
+  /// Gets the integration step size for the discretized system.
   /// @returns 0 if this is a DAE-based system.
   double get_integration_step_size() const { return dt_; }
 
   /// Gets the model and simulation type for this system.
-  SimulationType get_simulation_type() const { return simulation_type_; }
+  SystemType get_system_type() const { return system_type_; }
 
   /// Return net contact forces as a spatial force F_Ro_W=(fx,fy,τ) where
   /// translational force f_Ro_W=(fx,fy) is applied at the rod origin Ro,
   /// and torque t_R=τ is the moment due to the contact forces actually being
   /// applied elsewhere. The returned spatial force may be the resultant of
-  /// multiple active contact points. Only valid for simulation type kCompliant.
+  /// multiple active contact points. Only valid for simulation type
+  /// kContinuous.
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
 
@@ -542,21 +546,21 @@ class Rod2D : public systems::LeafSystem<T> {
   // Quintic step function approximation used by Stribeck friction model.
   static T step5(const T& x);
 
-  // Friction model used in compliant contact.
+  // Friction model used in the continuous model.
   static T CalcMuStribeck(const T& us, const T& ud, const T& v);
 
   // The constraint solver.
   multibody::constraint::ConstraintSolver<T> solver_;
 
-  // Solves linear complementarity problems for time stepping.
+  // Solves linear complementarity problems for the discretized system.
   solvers::MobyLCPSolver<T> lcp_;
 
-  // The simulation type, unable to be changed after object construction.
-  const SimulationType simulation_type_;
+  // The system type, unable to be changed after object construction.
+  const SystemType system_type_;
 
   // TODO(edrumwri,sherm1) Document these defaults once they stabilize.
 
-  double dt_{0.};           // Integration step-size for time stepping approach.
+  double dt_{0.};           // Step-size for the discretization approach.
   double mass_{1.};         // The mass of the rod (kg).
   double half_length_{1.};  // The length of the rod (m).
   double mu_{1000.};        // The (dynamic) coefficient of friction.

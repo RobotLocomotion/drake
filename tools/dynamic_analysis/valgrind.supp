@@ -100,3 +100,17 @@
     fun:mkl_serv_thread_free_buffers
     fun:PRIVATE*
 }
+
+# Started happening when using libOSMesa for offscreen rendering, PR 7851.
+{
+    <libosmesa-1>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    obj:/usr/lib/x86_64-linux-gnu/libOSMesa.so.8.0.0
+    ...
+    fun:call_init.part.0
+    fun:call_init
+    fun:_dl_init
+    obj:/lib/x86_64-linux-gnu/ld-2.23.so
+}

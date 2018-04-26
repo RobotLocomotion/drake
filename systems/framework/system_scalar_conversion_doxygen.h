@@ -130,6 +130,9 @@ The relevant details of the examples are:
      constructor;
      - we see that above in the first example where the default constructor
        delegates to the one-argument constructor;
+   - all `MySystem` constructors must pass a `SystemTypeTag` to their superclass
+     constructor; if all `MySystem` constructors delegate to a single one, this
+     is easy because only that one needs to provide the `SystemTypeTag` value;
 - `MySystem` has a public scalar-converting copy constructor;
   - the constructor takes a reference to `MySystem<U>` and delegates to another
     constructor;

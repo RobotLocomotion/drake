@@ -13,7 +13,6 @@ load(
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,8 +26,8 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_tree",
-        "//drake/solvers:mathematical_program",
-        "//drake/solvers:rotation_constraint",
+        "//solvers:mathematical_program",
+        "//solvers:rotation_constraint",
     ],
 )
 
@@ -94,9 +93,9 @@ drake_cc_library(
         ":kinematics_cache_helper",
         ":rigid_body_constraint",
         ":rigid_body_tree",
-        "//drake/common:unused",
-        "//drake/math:gradient",
-        "//drake/solvers:mathematical_program",
+        "//common:unused",
+        "//math:gradient",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -126,9 +125,9 @@ drake_cc_library(
         "kinematics_cache-inl.h",
     ],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/multibody/joints",
+        "//common:autodiff",
+        "//common:essential",
+        "//multibody/joints",
     ],
 )
 
@@ -137,11 +136,11 @@ drake_cc_library(
     srcs = ["rigid_body.cc"],
     hdrs = ["rigid_body.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/multibody/collision",
-        "//drake/multibody/joints",
-        "//drake/util",
+        "//common:autodiff",
+        "//common:essential",
+        "//multibody/collision",
+        "//multibody/joints",
+        "//util",
     ],
 )
 
@@ -151,7 +150,7 @@ drake_cc_library(
     hdrs = ["rigid_body_actuator.h"],
     deps = [
         ":rigid_body",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -161,9 +160,9 @@ drake_cc_library(
     hdrs = ["rigid_body_frame.h"],
     deps = [
         ":rigid_body",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
+        "//common:autodiff",
+        "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -173,8 +172,8 @@ drake_cc_library(
     hdrs = ["rigid_body_loop.h"],
     deps = [
         ":rigid_body_frame",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
+        "//common:autodiff",
+        "//common:essential",
     ],
 )
 
@@ -189,7 +188,7 @@ drake_cc_library(
     ],
     visibility = [],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -208,14 +207,14 @@ drake_cc_library(
         ":rigid_body_frame",
         ":rigid_body_loop",
         ":rigid_body_tree_datatypes",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "//drake/math:gradient",
-        "//drake/multibody/collision",
-        "//drake/multibody/joints",
-        "//drake/multibody/shapes",
-        "//drake/util",
+        "//common:autodiff",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/collision",
+        "//multibody/joints",
+        "//multibody/shapes",
+        "//util",
     ],
 )
 
@@ -233,12 +232,12 @@ drake_cc_library(
         ":rigid_body_frame",
         ":rigid_body_loop",
         ":rigid_body_tree_datatypes",
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/collision",
-        "//drake/multibody/joints",
-        "//drake/multibody/shapes",
+        "//common:autodiff",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//multibody/collision",
+        "//multibody/joints",
+        "//multibody/shapes",
     ],
 )
 
@@ -319,8 +318,8 @@ drake_cc_library(
     deps = [
         ":rigid_body_tree",
         ":rigid_body_tree_alias_groups_proto",
-        "//drake/common:essential",
-        "//drake/common/proto:protobuf",
+        "//common:essential",
+        "//common/proto:protobuf",
     ],
 )
 
@@ -340,10 +339,12 @@ drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common/test_utilities:measure_execution",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:measure_execution",
+        "//multibody/parsers",
     ],
 )
 
@@ -354,7 +355,7 @@ drake_cc_binary(
     srcs = ["test/debug_manipulator_dynamics.cc"],
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//multibody/parsers",
     ],
 )
 
@@ -364,8 +365,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
@@ -375,9 +376,9 @@ drake_cc_googletest(
     data = glob(["test/rigid_body_tree/two_link_ball_joint_robot.urdf"]),
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -387,8 +388,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
@@ -398,9 +399,9 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -410,8 +411,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
@@ -420,18 +421,18 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_collision_clique_test.cc"],
     deps = [
         ":rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "rigid_body_constraint_test",
     srcs = ["test/rigid_body_constraint_test.cc"],
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_constraint",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
@@ -440,27 +441,27 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_kinematics_test.cc"],
     data = [
         "test/rigid_body_tree/two_dof_robot.urdf",
-        "//drake/multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/benchmarks/acrobot",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "rigid_body_tree_dynamics_test",
     srcs = ["test/rigid_body_tree/rigid_body_tree_dynamics_test.cc"],
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:jacobian",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:jacobian",
+        "//multibody/parsers",
     ],
 )
 
@@ -469,20 +470,20 @@ drake_cc_googletest(
     srcs = ["test/rigid_body_tree/rigid_body_tree_clone_test.cc"],
     data = [
         ":test_models",
-        "//drake/automotive/models",
-        "//drake/examples/atlas:models",
-        "//drake/examples/pendulum:models",
-        "//drake/examples/valkyrie:models",
+        "//automotive/models",
+        "//examples/atlas:models",
+        "//examples/pendulum:models",
+        "//examples/valkyrie:models",
     ],
     deps = [
         ":rigid_body_tree_compare_to_clone",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:signal_logger",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
     ],
 )
 
@@ -500,9 +501,9 @@ drake_cc_googletest(
     data = glob(["test/rigid_body_tree/*.urdf"]),
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities",
+        "//multibody/parsers",
     ],
 )
 
@@ -514,55 +515,55 @@ drake_cc_googletest(
     ],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "test_kinematics_cache_checks",
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "test_ik",
     data = [
-        "//drake/examples/atlas:models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//examples/atlas:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_kinematics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "test_ik_pointwise",
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":inverse_kinematics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "test_ik_more_constraints",
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -570,13 +571,13 @@ drake_cc_googletest(
     name = "test_ik_traj",
     # Test size increased to not timeout when run with Valgrind.
     size = "medium",
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     tags = ["snopt"],
     deps = [
         ":inverse_kinematics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -589,26 +590,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rigid_body_frame_test",
-    deps = [
-        ":rigid_body_frame_compare_to_clone",
-        ":rigid_body_tree",
-    ],
-)
-
-drake_cc_googletest(
     name = "rigid_body_tree_alias_groups_test",
     srcs = ["test/rigid_body_tree_alias_groups_test.cc"],
     data = [
         "test/rigid_body_tree/two_dof_robot.urdf",
         "test/test.alias_groups",
-        "//drake/multibody:test_models",
+        "//multibody:test_models",
     ],
     deps = [
         ":rigid_body_tree_alias_groups",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -623,14 +616,14 @@ drake_cc_googletest(
         ],
         "//conditions:default": [],
     }),
-    data = ["//drake/examples/atlas:models"],
+    data = ["//examples/atlas:models"],
     tags = gurobi_test_tags(),
     deps = select({
-        "//tools:with_gurobi": adjust_labels_for_drake_hoist([
+        "//tools:with_gurobi": [
             ":inverse_kinematics",
-            "//drake/common:find_resource",
-            "//drake/multibody/parsers",
-        ]),
+            "//common:find_resource",
+            "//multibody/parsers",
+        ],
         "//conditions:default": [],
     }),
 )

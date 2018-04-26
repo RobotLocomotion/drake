@@ -21,11 +21,13 @@
 
 using drake::solvers::SolutionResult;
 
-typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 namespace drake {
 namespace examples {
 namespace acrobot {
+
+typedef trajectories::PiecewisePolynomial<double> PiecewisePolynomialType;
+
 namespace {
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
@@ -70,7 +72,7 @@ int do_main() {
     return 1;
   }
 
-  const PiecewisePolynomialTrajectory pp_xtraj =
+  const trajectories::PiecewisePolynomial<double> pp_xtraj =
       dircol.ReconstructStateTrajectory();
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
@@ -98,7 +100,7 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(pp_xtraj.get_end_time());
+  simulator.StepTo(pp_xtraj.end_time());
   return 0;
 }
 

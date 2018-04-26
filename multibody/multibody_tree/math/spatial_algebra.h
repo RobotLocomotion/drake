@@ -13,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/multibody_tree/math/spatial_momentum.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 
 namespace drake {
@@ -26,6 +27,16 @@ T SpatialVelocity<T>::dot(const SpatialForce<T>& F) const {
 template <typename T>
 T SpatialForce<T>::dot(const SpatialVelocity<T>& V) const {
   return V.dot(*this);  // dot-product is commutative.
+}
+
+template <typename T>
+T SpatialMomentum<T>::dot(const SpatialVelocity<T>& V) const {
+  return this->get_coeffs().dot(V.get_coeffs());
+}
+
+template <typename T>
+T SpatialVelocity<T>::dot(const SpatialMomentum<T>& L) const {
+  return L.dot(*this);  // dot-product is commutative.
 }
 
 }  // namespace multibody

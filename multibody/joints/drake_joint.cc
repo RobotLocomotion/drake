@@ -8,21 +8,21 @@
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
 
-DrakeJoint::DrakeJoint(const std::string& _name,
-                       const Isometry3d& _transform_to_parent_body,
-                       int _num_positions, int _num_velocities)
-    : name(_name),
-      joint_limit_min(VectorXd::Constant(
-          _num_positions, -std::numeric_limits<double>::infinity())),
-      joint_limit_max(VectorXd::Constant(
-          _num_positions, std::numeric_limits<double>::infinity())),
+DrakeJoint::DrakeJoint(const std::string& name,
+                       const Isometry3d& transform_to_parent_body,
+                       int num_positions, int num_velocities)
+    : name_(name),
+      joint_limit_min_(VectorXd::Constant(
+          num_positions, -std::numeric_limits<double>::infinity())),
+      joint_limit_max_(VectorXd::Constant(
+          num_positions, std::numeric_limits<double>::infinity())),
       joint_limit_stiffness_(VectorXd::Constant(
-          _num_positions, 150. /* Historic default from RigidBodyPlant. */)),
+          num_positions, 150. /* Historic default from RigidBodyPlant. */)),
       joint_limit_dissipation_(VectorXd::Constant(
-          _num_positions, 1. /* Arbitrary, reasonable default. */)),
-      transform_to_parent_body(_transform_to_parent_body),
-      num_positions(_num_positions),
-      num_velocities(_num_velocities) {
+          num_positions, 1. /* Arbitrary, reasonable default. */)),
+      transform_to_parent_body_(transform_to_parent_body),
+      num_positions_(num_positions),
+      num_velocities_(num_velocities) {
   DRAKE_ASSERT(num_positions <= MAX_NUM_POSITIONS);
   DRAKE_ASSERT(num_velocities <= MAX_NUM_VELOCITIES);
 }
@@ -38,14 +38,14 @@ std::unique_ptr<DrakeJoint> DrakeJoint::Clone() const {
 }
 
 const Isometry3d& DrakeJoint::get_transform_to_parent_body() const {
-  return transform_to_parent_body;
+  return transform_to_parent_body_;
 }
 
-int DrakeJoint::get_num_positions() const { return num_positions; }
+int DrakeJoint::get_num_positions() const { return num_positions_; }
 
-int DrakeJoint::get_num_velocities() const { return num_velocities; }
+int DrakeJoint::get_num_velocities() const { return num_velocities_; }
 
-const std::string& DrakeJoint::get_name() const { return name; }
+const std::string& DrakeJoint::get_name() const { return name_; }
 
 std::string DrakeJoint::get_velocity_name(int index) const {
   return get_position_name(index) + "dot";
@@ -77,11 +77,11 @@ std::string DrakeJoint::getVelocityName(int index) const {
 }
 
 const Eigen::VectorXd& DrakeJoint::getJointLimitMin() const {
-  return joint_limit_min;
+  return joint_limit_min_;
 }
 
 const Eigen::VectorXd& DrakeJoint::getJointLimitMax() const {
-  return joint_limit_max;
+  return joint_limit_max_;
 }
 
 const Eigen::VectorXd& DrakeJoint::get_joint_limit_stiffness() const {
@@ -94,8 +94,8 @@ const Eigen::VectorXd& DrakeJoint::get_joint_limit_dissipation() const {
 
 void DrakeJoint::InitializeClone(DrakeJoint* clone) const {
   DoInitializeClone(clone);
-  clone->joint_limit_min = joint_limit_min;
-  clone->joint_limit_max = joint_limit_max;
+  clone->joint_limit_min_ = joint_limit_min_;
+  clone->joint_limit_max_ = joint_limit_max_;
   clone->joint_limit_stiffness_ = joint_limit_stiffness_;
   clone->joint_limit_dissipation_ = joint_limit_dissipation_;
 }

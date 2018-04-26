@@ -20,7 +20,15 @@ load(
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
+licenses(["notice"])  # Apache-2.0
+
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
 
 PROJECT_NAME = "ignition-rndf"
 
@@ -143,6 +151,10 @@ cc_binary(
         "-w",
     ],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_rndf0.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
     deps = [

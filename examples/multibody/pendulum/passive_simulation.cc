@@ -3,11 +3,12 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/examples/multibody/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -15,9 +16,25 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
+
+using geometry::GeometrySystem;
+using geometry::SourceId;
+using lcm::DrakeLcm;
+using multibody::benchmarks::pendulum::MakePendulumPlant;
+using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::multibody_plant::MultibodyPlant;
+using multibody::RevoluteJoint;
+using systems::ImplicitEulerIntegrator;
+using systems::lcm::LcmPublisherSystem;
+using systems::lcm::Serializer;
+using systems::rendering::PoseBundleToDrawMessage;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+
 namespace examples {
 namespace multibody {
 namespace pendulum {
@@ -31,16 +48,6 @@ DEFINE_string(integration_scheme, "runge_kutta3",
               "Integration scheme to be used. Available options are:"
               "'runge_kutta3','implicit_euler','semi_explicit_euler'");
 
-using geometry::GeometrySystem;
-using geometry::SourceId;
-using lcm::DrakeLcm;
-using systems::ImplicitEulerIntegrator;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
-using systems::RungeKutta3Integrator;
-using systems::SemiExplicitEulerIntegrator;
-
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
@@ -48,16 +55,14 @@ int do_main() {
       *builder.AddSystem<GeometrySystem>();
   geometry_system.set_name("geometry_system");
 
-  // Define plant's parameters:
-  const double mass = 0.5;      // [Kgr], about a pound.
-  const double length = 0.7;    // [m]
-  const double gravity = 9.81;  // [m/s²]
+  // The model's parameters:
+  PendulumParameters parameters;
 
   // Define simulation parameters:
   // Compute a reference time scale to set reasonable values for time step and
   // simulation time.
   const double reference_time_scale =
-      PendulumPlant<double>::CalcSimplePendulumPeriod(length, gravity);
+      2.0 * M_PI * sqrt(parameters.l() / parameters.g());
 
   // Define a reasonable maximum time step based off the expected dynamics's
   // time scales.
@@ -70,10 +75,18 @@ int do_main() {
   // whenever a variable time step integrator is used.
   const double target_accuracy = 0.001;
 
-  PendulumPlant<double>& pendulum =
-      *builder.AddSystem<PendulumPlant>(
-          mass, length, gravity, &geometry_system);
-  pendulum.set_name("Pendulum");
+  MultibodyPlant<double>& pendulum =
+      *builder.AddSystem(MakePendulumPlant(parameters, &geometry_system));
+  const RevoluteJoint<double>& pin =
+      pendulum.GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
+
+  // A constant source for a zero applied torque at the pin joint.
+  double applied_torque(0.0);
+  auto torque_source =
+      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
+  torque_source->set_name("Applied Torque");
+  builder.Connect(torque_source->get_output_port(),
+                  pendulum.get_actuation_input_port());
 
   // Boilerplate used to connect the plant to a GeometrySystem for
   // visualization.
@@ -90,11 +103,11 @@ int do_main() {
   DRAKE_DEMAND(!!pendulum.get_source_id());
 
   builder.Connect(
-      pendulum.get_geometry_id_output_port(),
+      pendulum.get_geometry_ids_output_port(),
       geometry_system.get_source_frame_id_port(
           pendulum.get_source_id().value()));
   builder.Connect(
-      pendulum.get_geometry_pose_output_port(),
+      pendulum.get_geometry_poses_output_port(),
       geometry_system.get_source_pose_port(pendulum.get_source_id().value()));
 
   builder.Connect(geometry_system.get_pose_bundle_output_port(),
@@ -110,7 +123,7 @@ int do_main() {
   auto diagram_context = diagram->CreateDefaultContext();
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(pendulum, diagram_context.get());
-  pendulum.SetAngle(&pendulum_context, M_PI / 3.0);
+  pin.set_angle(&pendulum_context,  M_PI / 3.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -182,7 +195,7 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple pendulum demo using Drake's MultibodyTree. "
+      "A simple pendulum demo using Drake's MultibodyPlant. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::multibody::pendulum::do_main();

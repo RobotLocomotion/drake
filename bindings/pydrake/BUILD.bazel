@@ -41,7 +41,7 @@ drake_pybind_library(
     cc_srcs = ["common_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
-        "//bindings/pydrake/util:module_shim_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "__init__.py",
@@ -58,16 +58,29 @@ drake_pybind_library(
     name = "autodiffutils_py",
     cc_deps = [
         ":autodiff_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "autodiffutils.py",
         "forwarddiff.py",
     ],
+)
+
+drake_pybind_library(
+    name = "automotive_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_so_name = "automotive",
+    cc_srcs = ["automotive_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_py_library(
@@ -79,6 +92,16 @@ drake_py_library(
     deps = [
         "//bindings/pydrake/multibody:parsers_py",
         "//bindings/pydrake/multibody:rigid_body_tree_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "lcm_py",
+    cc_so_name = "lcm",
+    cc_srcs = ["lcm_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
     ],
 )
 
@@ -102,20 +125,37 @@ drake_pybind_library(
     name = "symbolic_py",
     cc_deps = [
         ":symbolic_types_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
+        "@fmt",
     ],
     cc_srcs = ["symbolic_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        ":math_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = ["symbolic.py"],
 )
 
+drake_pybind_library(
+    name = "trajectories_py",
+    cc_so_name = "trajectories",
+    cc_srcs = ["trajectories_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":common_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
+    ":automotive_py",
     ":common_py",
+    ":lcm_py",
     ":math_py",
     ":symbolic_py",
+    ":trajectories_py",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/maliput",
     "//bindings/pydrake/multibody",
@@ -145,6 +185,10 @@ drake_py_library(
 
 install(
     name = "install",
+    install_tests = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
+    ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     visibility = ["//visibility:public"],
@@ -157,16 +201,17 @@ drake_py_unittest(
     deps = [":all_py"],
 )
 
-drake_py_test(
-    name = "all_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
-    allow_import_unittest = True,
-    data = ["//:install"],
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = 1,
+    srcs = ["test/algebra_test_util.py"],
+)
+
+drake_py_unittest(
+    name = "autodiffutils_test",
     deps = [
-        "//tools/install:install_test_helper",
+        ":algebra_test_util_py",
+        ":autodiffutils_py",
     ],
 )
 
@@ -199,27 +244,18 @@ drake_py_unittest(
     deps = [":common_py"],
 )
 
-# `//:install` is run in this test to verify that once installed
-# pydrake still works. This test is implemented in a separate file from
-# common_test to be able to remove files in the sandbox without
-# interfering with other tests.
-drake_py_test(
-    name = "common_install_test",
-    size = "medium",
-    # Increase the timeout so that debug builds are successful.
-    timeout = "long",
-    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
-    allow_import_unittest = True,
-    data = ["//:install"],
-    deps = [
-        "//tools/install:install_test_helper",
-    ],
-)
-
 drake_py_unittest(
     name = "forward_diff_test",
     size = "small",
     deps = [":autodiffutils_py"],
+)
+
+drake_py_unittest(
+    name = "lcm_test",
+    size = "small",
+    deps = [
+        ":lcm_py",
+    ],
 )
 
 drake_py_unittest(
@@ -231,21 +267,41 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "math_overloads_test",
+    size = "small",
+    deps = [
+        ":autodiffutils_py",
+        ":math_py",
+        ":symbolic_py",
+    ],
+)
+
+drake_py_unittest(
     name = "symbolic_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [
+        ":algebra_test_util_py",
+        ":symbolic_py",
+        "//bindings/pydrake/util:containers_py",
+    ],
 )
 
 drake_py_unittest(
-    name = "symbolic_variables_test",
+    name = "trajectories_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [":trajectories_py"],
 )
 
 drake_py_unittest(
-    name = "symbolic_monomial_test",
+    name = "automotive_test",
     size = "small",
-    deps = [":symbolic_py"],
+    deps = [
+        ":automotive_py",
+        "//bindings/pydrake/maliput:api_py",
+        "//bindings/pydrake/maliput:dragway_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/systems",
+    ],
 )
 
 drake_py_unittest(
@@ -255,4 +311,9 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/all_install_test.py",
+        ":test/common_install_test.py",
+    ],
+)

@@ -17,7 +17,7 @@ bool LinearSystemSolver::available() const { return true; }
 SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    num_constraints += binding.constraint()->A().rows();
+    num_constraints += binding.evaluator()->A().rows();
   }
 
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -33,7 +33,7 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
 
   size_t constraint_index = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
-    auto const& c = binding.constraint();
+    auto const& c = binding.evaluator();
     size_t n = c->A().rows();
     for (int i = 0; i < static_cast<int>(binding.GetNumElements()); ++i) {
       size_t variable_index =
@@ -49,21 +49,21 @@ SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
   // least-squares solution
   const Eigen::VectorXd least_square_sol =
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
-  prog.SetDecisionVariableValues(least_square_sol);
+  SolverResult solver_result(id());
+  solver_result.set_decision_variable_values(least_square_sol);
 
-  prog.SetSolverId(id());
   if (beq.isApprox(Aeq * least_square_sol)) {
-    prog.SetOptimalCost(0.);
+    solver_result.set_optimal_cost(0.);
+    prog.SetSolverResult(solver_result);
     return SolutionResult::kSolutionFound;
   } else {
-    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+    solver_result.set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
+    prog.SetSolverResult(solver_result);
     return SolutionResult::kInfeasibleConstraints;
   }
 }
 
-SolverId LinearSystemSolver::solver_id() const {
-  return id();
-}
+SolverId LinearSystemSolver::solver_id() const { return id(); }
 
 SolverId LinearSystemSolver::id() {
   static const never_destroyed<SolverId> singleton{"Linear system"};

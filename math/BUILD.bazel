@@ -50,27 +50,27 @@ drake_cc_library(
 drake_cc_library(
     name = "geometric_transform",
     srcs = [
-        "axis_angle.cc",
         "quaternion.cc",
         "random_rotation.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
-        "rotation_matrix_utilities.cc",
+        "transform.cc",
     ],
     hdrs = [
-        "axis_angle.h",
         "quaternion.h",
         "random_rotation.h",
         "roll_pitch_yaw.h",
         "roll_pitch_yaw_not_using_quaternion.h",
         "roll_pitch_yaw_using_quaternion.h",
         "rotation_matrix.h",
-        "rotation_matrix_utilities.h",
+        "rotation_matrix_deprecated.h",
+        "transform.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
         "//common:is_approx_equal_abstol",
-        "//multibody/multibody_tree/math:rotation_matrix",
+        "@fmt",
     ],
 )
 
@@ -349,7 +349,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_matrix_utilities_test",
+    name = "rotation_matrix_test",
+    deps = [
+        ":geometric_transform",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rotation_matrix_deprecated_test",
     deps = [
         ":geometric_transform",
         "//common/test_utilities:eigen_matrix_compare",
@@ -371,6 +379,13 @@ drake_cc_googletest(
         ":saturate",
         "//common:autodiff",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
+    name = "transform_test",
+    deps = [
+        ":geometric_transform",
     ],
 )
 

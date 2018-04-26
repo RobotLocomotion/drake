@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/proto/rpc_pipe_temp_directory.h"
 
 namespace drake {
 namespace common {
@@ -117,7 +118,8 @@ CreateOutputStream(const std::string& filename) {
 
 void PublishCallMatlab(const MatlabRPC& message) {
   // TODO(russt): Provide option for setting the filename.
-  static auto raw_output = CreateOutputStream("/tmp/matlab_rpc");
+  const std::string output_file = GetRpcPipeTempDirectory() + "/matlab_rpc";
+  static auto raw_output = CreateOutputStream(output_file);
   PublishCall(raw_output.get(), message);
 }
 

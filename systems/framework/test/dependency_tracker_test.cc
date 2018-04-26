@@ -28,13 +28,13 @@ namespace systems {
 namespace {
 
 // See above for why this is here.
-class MyContextBase : public ContextBase {
+class MyContextBase final : public ContextBase {
  public:
   MyContextBase() {}
   MyContextBase(const MyContextBase&) = default;
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 };
 
@@ -47,13 +47,156 @@ struct Stats {
 };
 
 void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
-  EXPECT_EQ(tracker->num_ignored_notifications(), expected.ignored);
-  EXPECT_EQ(tracker->num_notifications_sent(), expected.sent);
-  EXPECT_EQ(tracker->num_value_change_events(), expected.value_change);
-  EXPECT_EQ(tracker->num_prerequisite_change_events(), expected.prereq_change);
+  EXPECT_EQ(tracker->num_ignored_notifications(), expected.ignored)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_notifications_sent(), expected.sent)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_value_change_events(), expected.value_change)
+      << tracker->description();
+  EXPECT_EQ(tracker->num_prerequisite_change_events(), expected.prereq_change)
+      << tracker->description();
   EXPECT_EQ(tracker->num_notifications_received(),
             tracker->num_value_change_events() +
-                tracker->num_prerequisite_change_events());
+                tracker->num_prerequisite_change_events())
+      << tracker->description();
+}
+
+// Test that the built-in trackers exist and are wired up correctly. See
+// framework_common.h for the built-in tracker ticket numbers and make sure
+// they are all tested here. See ContextBase::CreateBuiltInTrackers() to see
+// how they are supposed to be wired up.
+// (User-friendly access to tickets is provided by SystemBase methods; we have
+// to construct them manually here.)
+GTEST_TEST(DependencyTracker, BuiltInTrackers) {
+  MyContextBase context, context2;
+
+  // Make sure each tracker knows its own ticket and looks reasonable. This is
+  // also a unit test for ThrowIfBadDependencyTracker().
+  for (int ticket_int = 0; ticket_int < internal::kNextAvailableTicket;
+       ++ticket_int) {
+    const DependencyTicket ticket(ticket_int);
+    auto& tracker = context.get_tracker(ticket);
+    EXPECT_EQ(tracker.ticket(), ticket);
+    EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
+        &context, &CacheEntryValue::dummy()));
+    EXPECT_THROW(tracker.ThrowIfBadDependencyTracker(&context2),
+                 std::logic_error);
+  }
+
+  // Now check that each built-in tracker has the expected prerequisites and
+  // dependents.
+  using DT = DependencyTicket;  // Reduce clutter.
+  auto& nothing = context.get_tracker(DT(internal::kNothingTicket));
+  auto& time = context.get_tracker(DT(internal::kTimeTicket));
+  auto& accuracy = context.get_tracker(DT(internal::kAccuracyTicket));
+  auto& q = context.get_tracker(DT(internal::kQTicket));
+  auto& v = context.get_tracker(DT(internal::kVTicket));
+  auto& z = context.get_tracker(DT(internal::kZTicket));
+  auto& xc = context.get_tracker(DT(internal::kXcTicket));
+  auto& xd = context.get_tracker(DT(internal::kXdTicket));
+  auto& xa = context.get_tracker(DT(internal::kXaTicket));
+  auto& x = context.get_tracker(DT(internal::kXTicket));
+  auto& configuration = context.get_tracker(DT(internal::kConfigurationTicket));
+  auto& velocity = context.get_tracker(DT(internal::kVelocityTicket));
+  auto& kinematics = context.get_tracker(DT(internal::kKinematicsTicket));
+  auto& p = context.get_tracker(DT(internal::kAllParametersTicket));
+  auto& u = context.get_tracker(DT(internal::kAllInputPortsTicket));
+  auto& all_sources = context.get_tracker(DT(internal::kAllSourcesTicket));
+  auto& xc_dot = context.get_tracker(DT(internal::kXcdotTicket));
+  auto& xd_hat = context.get_tracker(DT(internal::kXdhatTicket));
+
+  // "nothing" has no prerequisites or subscribers.
+  EXPECT_EQ(nothing.prerequisites().size(), 0);
+  EXPECT_EQ(nothing.subscribers().size(), 0);
+
+  // time and accuracy are independent but all_sources subscribes.
+  EXPECT_EQ(time.prerequisites().size(), 0);
+  ASSERT_EQ(time.subscribers().size(), 1);
+  EXPECT_EQ(time.subscribers()[0], &all_sources);
+  EXPECT_EQ(accuracy.prerequisites().size(), 0);
+  ASSERT_EQ(accuracy.subscribers().size(), 1);
+  EXPECT_EQ(accuracy.subscribers()[0], &all_sources);
+
+  // q, v, z are independent but xc subscribes to all, configuration to q,
+  // and velocity to v.
+  EXPECT_EQ(q.prerequisites().size(), 0);
+  ASSERT_EQ(q.subscribers().size(), 2);
+  EXPECT_EQ(q.subscribers()[0], &xc);
+  EXPECT_EQ(q.subscribers()[1], &configuration);
+  EXPECT_EQ(v.prerequisites().size(), 0);
+  ASSERT_EQ(v.subscribers().size(), 2);
+  EXPECT_EQ(v.subscribers()[0], &xc);
+  EXPECT_EQ(v.subscribers()[1], &velocity);
+  EXPECT_EQ(z.prerequisites().size(), 0);
+  ASSERT_EQ(z.subscribers().size(), 1);
+  EXPECT_EQ(z.subscribers()[0], &xc);
+
+  // xc depends on q, v, and z and x subscribes.
+  ASSERT_EQ(xc.prerequisites().size(), 3);
+  EXPECT_EQ(xc.prerequisites()[0], &q);
+  EXPECT_EQ(xc.prerequisites()[1], &v);
+  EXPECT_EQ(xc.prerequisites()[2], &z);
+  ASSERT_EQ(xc.subscribers().size(), 1);
+  EXPECT_EQ(xc.subscribers()[0], &x);
+
+  // No discrete variables so xd is independent; x subscribes.
+  EXPECT_EQ(xd.prerequisites().size(), 0);
+  ASSERT_EQ(xd.subscribers().size(), 1);
+  EXPECT_EQ(xd.subscribers()[0], &x);
+
+  // No abstract variables so xa is independent; x subscribes.
+  EXPECT_EQ(xa.prerequisites().size(), 0);
+  ASSERT_EQ(xa.subscribers().size(), 1);
+  EXPECT_EQ(xa.subscribers()[0], &x);
+
+  // x depends on xc, xd, and xa; all_sources subscribes.
+  ASSERT_EQ(x.prerequisites().size(), 3);
+  EXPECT_EQ(x.prerequisites()[0], &xc);
+  EXPECT_EQ(x.prerequisites()[1], &xd);
+  EXPECT_EQ(x.prerequisites()[2], &xa);
+  ASSERT_EQ(x.subscribers().size(), 1);
+  EXPECT_EQ(x.subscribers()[0], &all_sources);
+
+  // configuration depends on q, kinematics subscribes.
+  ASSERT_EQ(configuration.prerequisites().size(), 1);
+  EXPECT_EQ(configuration.prerequisites()[0], &q);
+  ASSERT_EQ(configuration.subscribers().size(), 1);
+  EXPECT_EQ(configuration.subscribers()[0], &kinematics);
+
+  // velocity depends on q, kinematics subscribes.
+  ASSERT_EQ(velocity.prerequisites().size(), 1);
+  EXPECT_EQ(velocity.prerequisites()[0], &v);
+  ASSERT_EQ(velocity.subscribers().size(), 1);
+  EXPECT_EQ(velocity.subscribers()[0], &kinematics);
+
+  // kinematics depends on configuration and velocity.
+  ASSERT_EQ(kinematics.prerequisites().size(), 2);
+  EXPECT_EQ(kinematics.prerequisites()[0], &configuration);
+  EXPECT_EQ(kinematics.prerequisites()[1], &velocity);
+  EXPECT_EQ(kinematics.subscribers().size(), 0);
+
+  // No parameters or inputs yet so p,u independent; all_sources subscribes.
+  EXPECT_EQ(p.prerequisites().size(), 0);
+  ASSERT_EQ(p.subscribers().size(), 1);
+  EXPECT_EQ(p.subscribers()[0], &all_sources);
+  EXPECT_EQ(u.prerequisites().size(), 0);
+  ASSERT_EQ(u.subscribers().size(), 1);
+  EXPECT_EQ(u.subscribers()[0], &all_sources);
+
+  // All sources depends on time, accuracy, x, p, u; no subscribers.
+  ASSERT_EQ(all_sources.prerequisites().size(), 5);
+  EXPECT_EQ(all_sources.prerequisites()[0], &time);
+  EXPECT_EQ(all_sources.prerequisites()[1], &accuracy);
+  EXPECT_EQ(all_sources.prerequisites()[2], &x);
+  EXPECT_EQ(all_sources.prerequisites()[3], &p);
+  EXPECT_EQ(all_sources.prerequisites()[4], &u);
+  EXPECT_EQ(all_sources.subscribers().size(), 0);
+
+  // TODO(sherm1) xcdot and xdhat are not yet connected.
+  EXPECT_EQ(xc_dot.prerequisites().size(), 0);
+  EXPECT_EQ(xc_dot.subscribers().size(), 0);
+  EXPECT_EQ(xd_hat.prerequisites().size(), 0);
+  EXPECT_EQ(xd_hat.subscribers().size(), 0);
 }
 
 // Normally the dependency trackers are allocated automatically by the
@@ -70,10 +213,12 @@ void ExpectStatsMatch(const DependencyTracker* tracker, const Stats& expected) {
 //                          |                              +-->           |
 //     +-----------+        +--------------------------------->  entry0   |
 //     |  time     +------------------------------------------>           |
-//     +-----------+                                          +-----------+
+//     |           +---> others                               +-----------+
+//     +-----------+
 //
 // entry0 is a cache entry so we expect invalidation; the others are just
-// trackers with no associated values.
+// trackers with no associated values. Time is a built-in tracker and may
+// have other subscribers besides what we added here.
 class HandBuiltDependencies : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -98,7 +243,7 @@ class HandBuiltDependencies : public ::testing::Test {
     downstream2_->SubscribeToPrerequisite(middle1_);
 
     Cache& cache = context_.get_mutable_cache();
-    const CacheIndex index(cache.num_entries());
+    const CacheIndex index(cache.cache_size());
     entry0_ = &cache.CreateNewCacheEntryValue(
         index, next_ticket++, "entry0",
         {time_ticket_, middle1_->ticket(), downstream2_->ticket()}, &graph);
@@ -179,11 +324,11 @@ TEST_F(HandBuiltDependencies, Unsubscribe) {
 TEST_F(HandBuiltDependencies, Notify) {
   // Just-allocated cache entries are not up to date. We're not using the
   // cache entry API here -- just playing with the underlying "up to date" flag.
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
 
-  // set_value() sets the up-to-date flag.
+  // set_value() sets marks the entry up to date.
   entry0_->set_value(1125);
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  EXPECT_FALSE(entry0_->is_out_of_date());
 
   // Refer to diagram above to decipher the expected stats below.
 
@@ -193,7 +338,7 @@ TEST_F(HandBuiltDependencies, Notify) {
   // The cache entry does not depend on downstream1.
   downstream1_->NoteValueChange(1LL);
   down1_stats_.value_change++;  // No dependents.
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  EXPECT_FALSE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 
   // A repeated notification (same change event) should be ignored.
@@ -205,13 +350,13 @@ TEST_F(HandBuiltDependencies, Notify) {
   // The cache entry depends directly on time.
   time_tracker_->NoteValueChange(2LL);
   tt_stats_.value_change++;
-  tt_stats_.sent++;  // entry0
+  tt_stats_.sent += time_tracker_->num_subscribers();  // entry0, others
   entry0_stats_.prereq_change++;
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 
-  entry0_->set_is_up_to_date(true);
-  EXPECT_TRUE(entry0_->is_up_to_date());
+  entry0_->mark_up_to_date();
+  EXPECT_FALSE(entry0_->is_out_of_date());
 
   upstream1_->NoteValueChange(3LL);
   up1_stats_.value_change++;
@@ -224,7 +369,7 @@ TEST_F(HandBuiltDependencies, Notify) {
   down2_stats_.sent++;  // entry0
   entry0_stats_.prereq_change += 2;
   entry0_stats_.ignored++;
-  EXPECT_FALSE(entry0_->is_up_to_date());
+  EXPECT_TRUE(entry0_->is_out_of_date());
   ExpectAllStatsMatch();
 }
 
@@ -313,9 +458,9 @@ TEST_F(HandBuiltDependencies, Clone) {
   ExpectStatsMatch(&down2, down2_stats);
   ExpectStatsMatch(&e0_tracker, entry0_stats);
 
-  EXPECT_FALSE(clone_entry0.is_up_to_date());
+  EXPECT_TRUE(clone_entry0.is_out_of_date());
   clone_entry0.set_value(101);
-  EXPECT_TRUE(clone_entry0.is_up_to_date());
+  EXPECT_FALSE(clone_entry0.is_out_of_date());
 
   // Upstream2 is prerequisite to middle1 which is prerequisite to down1,2 and
   // the cache entry, and down2 gets the cache entry again so should be

@@ -32,11 +32,11 @@ drake_cc_library(
         "roll_pitch_yaw_floating_joint.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:unused",
-        "//drake/math:geometric_transform",
-        "//drake/math:gradient",
-        "//drake/util",
+        "//common:essential",
+        "//common:unused",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//util",
     ],
 )
 

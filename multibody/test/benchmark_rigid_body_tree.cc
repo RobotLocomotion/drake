@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/measure_execution.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -41,7 +42,6 @@ using math::gradientMatrixToAutoDiff;
 namespace multibody {
 namespace {
 
-typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 
 template <int Rows, int Cols>
@@ -114,7 +114,6 @@ void TestScenario1(const RigidBodyTree<double>& model) {
   int ntests = 1000;
 
   vector<VectorXd> qs_double;
-  vector<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>> qs_autodiff_fixed;
   vector<Matrix<AutoDiffDynamicSize, Dynamic, 1>> qs_autodiff_dynamic;
   default_random_engine generator;
 
@@ -124,10 +123,6 @@ void TestScenario1(const RigidBodyTree<double>& model) {
 
     MatrixXd grad = MatrixXd::Identity(model.get_num_positions(),
                                        model.get_num_positions());
-
-    auto q_autodiff_fixed = q.cast<AutoDiffFixedMaxSize>().eval();
-    gradientMatrixToAutoDiff(grad, q_autodiff_fixed);
-    qs_autodiff_fixed.push_back(q_autodiff_fixed);
 
     auto q_autodiff_dynamic = q.cast<AutoDiffDynamicSize>().eval();
     gradientMatrixToAutoDiff(grad, q_autodiff_dynamic);
@@ -153,8 +148,6 @@ void TestScenario1(const RigidBodyTree<double>& model) {
       make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 
   auto cache_double = model.CreateKinematicsCache();
-  auto cache_autodiff_fixed =
-      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
   auto cache_autodiff_dynamic =
       model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
@@ -162,12 +155,6 @@ void TestScenario1(const RigidBodyTree<double>& model) {
   cout << "no gradients: "
        << MeasureExecutionTime(Scenario1<double>, model, cache_double,
                                qs_double, body_fixed_points) /
-              static_cast<double>(ntests)
-       << " s" << endl;
-  cout << "autodiff fixed max size: "
-       << MeasureExecutionTime(Scenario1<AutoDiffFixedMaxSize>, model,
-                               cache_autodiff_fixed, qs_autodiff_fixed,
-                               body_fixed_points) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
@@ -183,8 +170,6 @@ void TestScenario2(const RigidBodyTree<double>& model) {
   int ntests = 1000;
 
   vector<pair<VectorXd, VectorXd>> states_double;
-  vector<pair<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>,
-              Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>> states_autodiff_fixed;
   vector<pair<Matrix<AutoDiffDynamicSize, Dynamic, 1>,
               Matrix<AutoDiffDynamicSize, Dynamic, 1>>> states_autodiff_dynamic;
   default_random_engine generator;
@@ -198,15 +183,6 @@ void TestScenario2(const RigidBodyTree<double>& model) {
 
     MatrixXd grad = MatrixXd::Identity(x.size(), x.size());
 
-    auto x_autodiff_fixed = x.cast<AutoDiffFixedMaxSize>().eval();
-    gradientMatrixToAutoDiff(grad, x_autodiff_fixed);
-    Matrix<AutoDiffFixedMaxSize, Dynamic, 1> q_autodiff_fixed =
-        x_autodiff_fixed.topRows(model.get_num_positions());
-    Matrix<AutoDiffFixedMaxSize, Dynamic, 1> v_autodiff_fixed =
-        x_autodiff_fixed.bottomRows(model.get_num_velocities());
-    states_autodiff_fixed.push_back(
-        make_pair(q_autodiff_fixed, v_autodiff_fixed));
-
     auto x_autodiff_dynamic = x.cast<AutoDiffDynamicSize>().eval();
     gradientMatrixToAutoDiff(grad, x_autodiff_dynamic);
     Matrix<AutoDiffDynamicSize, Dynamic, 1> q_autodiff_dynamic =
@@ -218,8 +194,6 @@ void TestScenario2(const RigidBodyTree<double>& model) {
   }
 
   auto cache_double = model.CreateKinematicsCache();
-  auto cache_autodiff_fixed =
-      model.CreateKinematicsCacheWithType<AutoDiffFixedMaxSize>();
   auto cache_autodiff_dynamic =
       model.CreateKinematicsCacheWithType<AutoDiffDynamicSize>();
 
@@ -227,11 +201,6 @@ void TestScenario2(const RigidBodyTree<double>& model) {
   cout << "no gradients: "
        << MeasureExecutionTime(Scenario2<double>, model, cache_double,
                                states_double) /
-              static_cast<double>(ntests)
-       << " s" << endl;
-  cout << "autodiff fixed max size: "
-       << MeasureExecutionTime(Scenario2<AutoDiffFixedMaxSize>, model,
-                               cache_autodiff_fixed, states_autodiff_fixed) /
               static_cast<double>(ntests)
        << " s" << endl;
   cout << "autodiff dynamic size: "
@@ -250,7 +219,8 @@ void TestScenario2(const RigidBodyTree<double>& model) {
 int main() {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      "examples/atlas/urdf/atlas_minimal_contact.urdf",
+      drake::FindResourceOrThrow(
+          "drake/examples/atlas/urdf/atlas_minimal_contact.urdf"),
       drake::multibody::joints::kRollPitchYaw, tree.get());
 
   drake::multibody::TestScenario1(*tree);

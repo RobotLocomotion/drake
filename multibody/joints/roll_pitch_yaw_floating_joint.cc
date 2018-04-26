@@ -15,17 +15,17 @@ using Eigen::VectorXd;
 std::string RollPitchYawFloatingJoint::get_position_name(int index) const {
   switch (index) {
     case 0:
-      return name + "_x";
+      return name_ + "_x";
     case 1:
-      return name + "_y";
+      return name_ + "_y";
     case 2:
-      return name + "_z";
+      return name_ + "_z";
     case 3:
-      return name + "_roll";
+      return name_ + "_roll";
     case 4:
-      return name + "_pitch";
+      return name_ + "_pitch";
     case 5:
-      return name + "_yaw";
+      return name_ + "_yaw";
     default:
       throw std::runtime_error("bad index");
   }
@@ -46,7 +46,7 @@ VectorXd RollPitchYawFloatingJoint::randomConfiguration(
   }
 
   Map<Vector3d> rpy(&q[3]);
-  rpy = drake::math::UniformlyRandomRPY(generator);
+  rpy = drake::math::UniformlyRandomRPY(&generator);
   return q;
 }
 

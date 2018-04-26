@@ -1880,6 +1880,36 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
   EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
 }
 
+TEST_F(SymbolicExpressionTest, Jacobian) {
+  // J1 = (x * y + sin(x)).Jacobian([x, y])
+  //    = [y + cos(y), x]
+  const Vector2<Variable> vars{var_x_, var_y_};
+  const auto J1 = (x_ * y_ + sin(x_)).Jacobian(vars);
+  // This should be matched with the non-member function Jacobian.
+  const auto J2 = Jacobian(Vector1<Expression>(x_ * y_ + sin(x_)), vars);
+  // Checks the sizes.
+  EXPECT_EQ(J1.rows(), 1);
+  EXPECT_EQ(J2.rows(), 1);
+  EXPECT_EQ(J1.cols(), 2);
+  EXPECT_EQ(J2.cols(), 2);
+  // Checks the elements.
+  EXPECT_EQ(J1(0), y_ + cos(x_));
+  EXPECT_EQ(J1(1), x_);
+  EXPECT_EQ(J2(0), J1(0));
+  EXPECT_EQ(J2(1), J1(1));
+}
+
+TEST_F(SymbolicExpressionTest, GetDistinctVariables) {
+  EXPECT_EQ(GetDistinctVariables(Vector1<Expression>{x_plus_y_}),
+            Variables({var_x_, var_y_}));
+  EXPECT_EQ(GetDistinctVariables(Vector1<Expression>{x_plus_z_}),
+            Variables({var_x_, var_z_}));
+  EXPECT_EQ(GetDistinctVariables(Vector2<Expression>{x_plus_y_, x_plus_z_}),
+            Variables({var_x_, var_y_, var_z_}));
+  EXPECT_EQ(GetDistinctVariables(RowVector2<Expression>{x_plus_z_, e_cos_}),
+            Variables({var_x_, var_z_}));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

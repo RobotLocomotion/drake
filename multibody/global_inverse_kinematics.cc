@@ -178,21 +178,22 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
     // the posture for that joint.
     if (joint->is_floating()) {
       // p_WBi is the position of the body frame in the world frame.
-      Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
-      Matrix3d normalized_rotmat = math::ProjectMatToRotMat(R_WC);
+      const Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
+      const math::RotationMatrix<double> normalized_rotmat =
+          math::RotationMatrix<double>::ProjectToRotationMatrix(R_WC);
 
       q.segment<3>(body.get_position_start_index()) = p_WBi;
       if (num_positions == 6) {
         // The position order is x-y-z-roll-pitch-yaw.
         q.segment<3>(body.get_position_start_index() + 3) =
-            math::rotmat2rpy(normalized_rotmat);
+            math::rotmat2rpy(normalized_rotmat.matrix());
       } else {
         // The position order is x-y-z-qw-qx-qy-qz, namely translation
         // first, and quaternion second.
         q.segment<4>(body.get_position_start_index() + 3) =
-            math::rotmat2quat(normalized_rotmat);
+            normalized_rotmat.ToQuaternionAsVector4();
       }
-      reconstruct_R_WB->at(body_idx) = normalized_rotmat;
+      reconstruct_R_WB->at(body_idx) = normalized_rotmat.matrix();
     } else if (num_positions == 1) {
       const int joint_idx = body.get_position_start_index();
       const double joint_lb = joint_lower_bounds_(joint_idx);

@@ -33,4 +33,26 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "run_lqr",
+    srcs = ["run_lqr.cc"],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/framework:diagram",
+        "//systems/lcm",
+        "//systems/primitives:affine_system",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
 add_lint_tests()

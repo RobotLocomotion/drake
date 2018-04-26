@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -56,6 +57,10 @@ namespace systems {
 ///   - RigidBodyTree<T>::get_position_name()
 ///   - RigidBodyTree<T>::get_velocity_name()
 ///
+/// - state_derivative_output_port(): A vector-valued port containing the time
+///   derivative `xcdot` of the state vector.  The order of indices within the
+///   vector is identical to state_output_port() as explained above.
+///
 /// - kinematics_results_output_port(): An abstract-valued port containing a
 ///   KinematicsResults object allowing access to the results from kinematics
 ///   computations for each RigidBody in the RigidBodyTree.
@@ -83,10 +88,9 @@ namespace systems {
 /// addition, the model may contain loop constraints described by
 /// RigidBodyLoop instances in the multibody model. Even though loop constraints
 /// are a particular case of holonomic constraints, general holonomic
-/// constraints are not yet supported. For %RigidBodyPlant systems
-/// simulated using time stepping algorithms, an additional (discrete)
-/// scalar state variable stores the last time that the system's state was
-/// updated.
+/// constraints are not yet supported. For simulating discretized
+/// %RigidBodyPlant systems, an additional (discrete) scalar state variable
+/// stores the last time that the system's state was updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
@@ -142,7 +146,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// @param[in] timestep a non-negative value specifying the update period of
   ///   the model; 0.0 implies continuous-time dynamics with derivatives, and
   ///   values > 0.0 result in discrete-time dynamics implementing a
-  ///   time-stepping approximation to the dynamics.  @default 0.0.
+  ///   discretization of the dynamics equation.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
   explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<double>> tree,
@@ -328,6 +332,14 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(state_output_port_index_);
   }
 
+  /// Returns the plant-centric state derivative output port. The size of
+  /// this port is equal to get_num_states().
+  /// @pre This %RigidBodyPlant is using continuous-time dynamics.
+  const OutputPort<T>& state_derivative_output_port() const {
+    DRAKE_DEMAND(state_derivative_output_port_index_.has_value());
+    return System<T>::get_output_port(*state_derivative_output_port_index_);
+  }
+
   /// Returns the output port containing the state of a
   /// particular model with instance ID equal to `model_instance_id`. Throws a
   /// std::runtime_error if `model_instance_id` does not exist. This method can
@@ -469,6 +481,9 @@ class RigidBodyPlant : public LeafSystem<T> {
   void CopyStateToOutput(const Context<T>& context,
                          BasicVector<T>* state_output_vector) const;
 
+  void CalcStateDerivativeOutput(const Context<T>& context,
+                                 BasicVector<T>*) const;
+
   void CalcInstanceOutput(int instance_id,
                           const Context<T>& context,
                           BasicVector<T>* instance_output) const;
@@ -486,7 +501,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void ExportModelInstanceCentricPorts();
 
-  void ComputeTimeSteppingContactResults(
+  void ComputeDiscretizedSystemContactResults(
       const T& dt,
       const std::vector<multibody::collision::PointPair<T>>& contacts,
       const multibody::constraint::ConstraintVelProblemData<T>& data,
@@ -535,6 +550,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
+  optional<OutputPortIndex> state_derivative_output_port_index_;
   OutputPortIndex kinematics_output_port_index_{};
   OutputPortIndex contact_output_port_index_{};
 
@@ -575,12 +591,13 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   // TODO(edrumwri): Remove this variable once caching is in place.
   // This variable stores the generalized force due to contact from the last
-  // time stepping computation (in DoCalcDiscreteVariableUpdatesImpl()). The
-  // computation should remain valid since the first-order discretized version
-  // of this system is only evaluated monotonically forward in time.
-  mutable ContactResults<T> time_stepping_contact_results_;
+  // discretized system time stepping computation (in
+  // DoCalcDiscreteVariableUpdatesImpl()). The computation should remain valid
+  // since the first-order discretized version of this system is only
+  // evaluated monotonically forward in time.
+  mutable ContactResults<T> discretized_system_contact_results_;
 
-  // Structure for storing joint limit data for time stepping.
+  // Structure for storing joint limit data for discretized systems.
   struct JointLimit {
     // The index for the joint limit.
     int v_index{-1};

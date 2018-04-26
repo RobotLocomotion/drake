@@ -39,7 +39,7 @@ GTEST_TEST(WrapFunction, FunctionPointer) {
 // Lambdas / basic functors.
 GTEST_TEST(WrapFunction, Lambda) {
   int value{0};
-  auto func_1_lambda = [](int value) {};
+  auto func_1_lambda = [](int) {};
   WrapIdentity(func_1_lambda)(value);
 
   std::function<void(int)> func_1_func = func_1_lambda;

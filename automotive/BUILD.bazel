@@ -107,7 +107,6 @@ drake_cc_library(
     name = "create_trajectory_params",
     srcs = ["create_trajectory_params.cc"],
     hdrs = ["create_trajectory_params.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":curve2",
         ":trajectory_car",
@@ -215,7 +214,6 @@ drake_cc_library(
     name = "pose_selector",
     srcs = ["pose_selector.cc"],
     hdrs = ["pose_selector.h"],
-    visibility = [],
     deps = [
         ":lane_direction",
         ":road_odometry",
@@ -285,7 +283,6 @@ drake_cc_library(
     name = "road_path",
     srcs = ["road_path.cc"],
     hdrs = ["road_path.h"],
-    visibility = [],
     deps = [
         ":lane_direction",
         ":monolane_onramp_merge",
@@ -293,7 +290,6 @@ drake_cc_library(
         "//common:essential",
         "//common:unused",
         "//common/trajectories:piecewise_polynomial",
-        "//common/trajectories/qp_spline:spline_generation",
         "//math:saturate",
     ],
 )
@@ -330,7 +326,6 @@ drake_cc_library(
     name = "calc_ongoing_road_position",
     srcs = ["calc_ongoing_road_position.cc"],
     hdrs = ["calc_ongoing_road_position.h"],
-    visibility = [],
     deps = [
         ":pose_selector",
         "//automotive/maliput/api",
@@ -346,7 +341,6 @@ drake_cc_library(
     name = "calc_smooth_acceleration",
     srcs = ["calc_smooth_acceleration.cc"],
     hdrs = ["calc_smooth_acceleration.h"],
-    visibility = [],
     deps = [
         "//common:autodiff",
         "//common:symbolic",
@@ -387,6 +381,7 @@ drake_cc_library(
         ":trajectory_car",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
+        "//common:temp_directory",
         "//lcm",
         "//multibody/parsers",
         "//multibody/rigid_body_plant:drake_visualizer",

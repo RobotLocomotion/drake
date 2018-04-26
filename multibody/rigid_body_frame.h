@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/multibody/rigid_body.h"
 
 // TODO(amcastro-tri): There should be no tinyxml2 dependence in this file.
@@ -22,13 +23,14 @@ class XMLElement;
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
-/// - AutoDiffUpTo73d
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class RigidBodyFrame {
+class RigidBodyFrame final {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidBodyFrame)
+
   /**
    * A constructor where the transform-to-body is specified using an
    * Eigen::Isometry3d matrix.
@@ -57,20 +59,6 @@ class RigidBodyFrame {
   // described in #4407.
   RigidBodyFrame()
       : RigidBodyFrame("", nullptr, Eigen::Isometry3d::Identity()) {}
-
-  virtual ~RigidBodyFrame() {}
-
-  // TODO(liang.fok) Update this to return a unique_ptr. This is related to
-  // #3093.
-  /**
-   * Returns a clone of this RigidBodyFrame. It is admittedly awkward for a
-   * clone method to have an input parameter. This parameter, however, is
-   * necessary to ensure the returned clone is fully initialized.
-   *
-   * @param[in] body A pointer to the body to include in the returned clone.
-   * This pointer must remain valid for the duration of the clone's lifetime.
-   */
-  virtual std::shared_ptr<RigidBodyFrame<T>> Clone(RigidBody<T>* body) const;
 
   /**
    * Returns the ID of the model instance to which this rigid body frame

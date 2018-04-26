@@ -60,8 +60,8 @@ void DependencyTracker::NotePrerequisiteChange(
     return;
   }
   last_change_event_ = change_event;
-  // Update associated value if any.
-  cache_value_->set_is_up_to_date(false);
+  // Invalidate associated cache entry value if any.
+  cache_value_->mark_out_of_date();
   // Follow up with downstream subscribers.
   NotifySubscribers(change_event, depth);
 }
@@ -171,10 +171,49 @@ bool DependencyTracker::HasSubscriber(
   return Contains(&subscriber, subscribers_);
 }
 
+void DependencyTracker::ThrowIfBadDependencyTracker(
+    const internal::ContextMessageInterface* owning_subcontext,
+    const CacheEntryValue* cache_value) const {
+  if (owning_subcontext_ == nullptr) {
+    // Can't use FormatName() here because that depends on us having an owning
+    // context to talk to.
+    throw std::logic_error("DependencyTracker(" + description() + ")::" +
+        __func__ +
+        "(): tracker has no owning subcontext.");
+  }
+  if (owning_subcontext && owning_subcontext_ != owning_subcontext) {
+    throw std::logic_error(FormatName(__func__) + "wrong owning subcontext.");
+  }
+  if (cache_value_ == nullptr) {
+    throw std::logic_error(
+        FormatName(__func__) +
+            "no associated cache entry value (should at least be a dummy).");
+  }
+  if (cache_value && cache_value_ != cache_value) {
+    throw std::logic_error(FormatName(__func__) +
+        "wrong associated cache entry value.");
+  }
+  if (!ticket_.is_valid()) {
+    throw std::logic_error(FormatName(__func__) +
+        "dependency ticket invalid.");
+  }
+  if (last_change_event_ < -1) {
+    throw std::logic_error(FormatName(__func__) +
+        "last change event has an absurd value.");
+  }
+  if (num_value_change_notifications_received_ < 0 ||
+      num_prerequisite_notifications_received_ < 0 ||
+      num_ignored_notifications_ < 0 ||
+      num_downstream_notifications_sent_ < 0) {
+    throw std::logic_error(FormatName(__func__) +
+        "a counter has a negative value.");
+  }
+}
+
 void DependencyTracker::RepairTrackerPointers(
     const DependencyTracker& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const internal::SystemPathnameInterface* owning_subcontext, Cache* cache) {
+    const internal::ContextMessageInterface* owning_subcontext, Cache* cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   DRAKE_DEMAND(cache != nullptr);
   owning_subcontext_ = owning_subcontext;
@@ -208,6 +247,9 @@ void DependencyTracker::RepairTrackerPointers(
     DRAKE_DEMAND(map_entry != tracker_map.end());
     prerequisites_[i] = map_entry->second;
   }
+
+  // This should never happen, but ...
+  ThrowIfBadDependencyTracker();
 }
 
 void DependencyGraph::AppendToTrackerPointerMap(
@@ -227,7 +269,7 @@ void DependencyGraph::AppendToTrackerPointerMap(
 void DependencyGraph::RepairTrackerPointers(
     const DependencyGraph& source,
     const DependencyTracker::PointerMap& tracker_map,
-    const internal::SystemPathnameInterface* owning_subcontext,
+    const internal::ContextMessageInterface* owning_subcontext,
     Cache* new_cache) {
   DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;

@@ -31,16 +31,21 @@ static T copysign_int_to_non_symbolic_scalar(int magic, const T& value) {
 template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_autodiffxd_convertible(
      const S<double>& dut, Callback callback) {
+  // We must use salted local variable names ("_67273" suffix) to work around
+  // GCC 5.4 bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67273 because the
+  // `callback` is a generic lambda.  The bug is fixed as of GCC 6.1.
+
   // Check if a proper type came out; return early if not.
-  std::unique_ptr<System<AutoDiffXd>> converted = dut.ToAutoDiffXdMaybe();
-  ::testing::AssertionResult result =
-        is_dynamic_castable<S<AutoDiffXd>>(converted);
-  if (!result) { return result; }
+  std::unique_ptr<System<AutoDiffXd>> converted_67273 =
+      dut.ToAutoDiffXdMaybe();
+  ::testing::AssertionResult result_67273 =
+        is_dynamic_castable<S<AutoDiffXd>>(converted_67273);
+  if (!result_67273) { return result_67273; }
 
   // Allow calling code to specify additional tests on the converted System.
-  const S<AutoDiffXd>& downcast =
-      dynamic_cast<const S<AutoDiffXd>&>(*converted);
-  callback(downcast);
+  const S<AutoDiffXd>& downcast_67273 =
+      dynamic_cast<const S<AutoDiffXd>&>(*converted_67273);
+  callback(downcast_67273);
 
   return ::testing::AssertionSuccess();
 }
@@ -61,17 +66,21 @@ template <template <typename> class S>
 template <template <typename> class S, typename Callback>
 ::testing::AssertionResult is_symbolic_convertible(
      const S<double>& dut, Callback callback) {
+  // We must use salted local variable names ("_67273" suffix) to work around
+  // GCC 5.4 bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67273 because the
+  // `callback` is a generic lambda.  The bug is fixed as of GCC 6.1.
+
   // Check if a proper type came out; return early if not.
-  std::unique_ptr<System<symbolic::Expression>> converted =
+  std::unique_ptr<System<symbolic::Expression>> converted_67273 =
       dut.ToSymbolicMaybe();
-  ::testing::AssertionResult result =
-        is_dynamic_castable<S<symbolic::Expression>>(converted);
-  if (!result) { return result; }
+  ::testing::AssertionResult result_67273 =
+        is_dynamic_castable<S<symbolic::Expression>>(converted_67273);
+  if (!result_67273) { return result_67273; }
 
   // Allow calling code to specify additional tests on the converted System.
-  const S<symbolic::Expression>& downcast =
-      dynamic_cast<const S<symbolic::Expression>&>(*converted);
-  callback(downcast);
+  const S<symbolic::Expression>& downcast_67273 =
+      dynamic_cast<const S<symbolic::Expression>&>(*converted_67273);
+  callback(downcast_67273);
 
   return ::testing::AssertionSuccess();
 }

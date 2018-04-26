@@ -164,6 +164,26 @@ optional<string> CheckCandidateDir(const spruce::path& candidate_dir) {
   return nullopt;
 }
 
+// Returns a sentinel directory appropriate when running under `bazel test`.
+optional<string> GetTestRunfilesDir() {
+  // These environment variables are documented at:
+  // https://docs.bazel.build/versions/master/test-encyclopedia.html#initial-conditions
+  // We check TEST_TMPDIR as a sanity check that we're being called by Bazel.
+  // Other than TEST_SRCDIR below, its the only other non-standard environment
+  // variable that Bazel is required to set when running a test.
+  if (::getenv("TEST_TMPDIR") == nullptr) {
+    // Not running under `bazel test`.
+    return nullopt;
+  }
+  char* test_srcdir = ::getenv("TEST_SRCDIR");
+  if (test_srcdir == nullptr) {
+    // Apparently running under `bazel test`, but no runfiles tree is set?
+    // Maybe TEST_TMPDIR was something other than Bazel; ignore it.
+    return nullopt;
+  }
+  return CheckCandidateDir(*AppendDrakeTo(string(test_srcdir)));
+}
+
 // Returns the directory that contains our sentinel file, searching from the
 // current directory and working up through all transitive parent directories
 // up to "/".  Candidate paths will already end with "drake" as their final
@@ -259,7 +279,10 @@ Result FindResource(string resource_path) {
   // resource folder in install tree based on `libdrake.so` location.
   candidate_dirs.emplace_back(GetCandidateDirFromLibdrake());
 
-  // (4) Search in cwd (and its parent, grandparent, etc.) to find Drake's
+  // (4) Find resources during `bazel test` execution.
+  candidate_dirs.emplace_back(GetTestRunfilesDir());
+
+  // (5) Search in cwd (and its parent, grandparent, etc.) to find Drake's
   // resource-root sentinel file.
   candidate_dirs.emplace_back(FindSentinelDir());
 

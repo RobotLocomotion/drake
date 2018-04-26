@@ -70,8 +70,8 @@ void LogarithmicSos2Test(int num_lambda, bool logarithmic_binning) {
     } else {
       y_val(i) = 1;
     }
-    y_assignment.constraint()->UpdateLowerBound(y_val);
-    y_assignment.constraint()->UpdateUpperBound(y_val);
+    y_assignment.evaluator()->UpdateLowerBound(y_val);
+    y_assignment.evaluator()->UpdateUpperBound(y_val);
 
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
@@ -142,8 +142,8 @@ void LogarithmicSos1Test(int num_lambda,
   auto binary_assignment = prog.AddBoundingBoxConstraint(0, 0, y);
   for (int i = 0; i < num_lambda; ++i) {
     Eigen::VectorXd code = codes.row(i).cast<double>().transpose();
-    binary_assignment.constraint()->UpdateLowerBound(code);
-    binary_assignment.constraint()->UpdateUpperBound(code);
+    binary_assignment.evaluator()->UpdateLowerBound(code);
+    binary_assignment.evaluator()->UpdateUpperBound(code);
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
       auto result = gurobi_solver.Solve(prog);
@@ -336,8 +336,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
         break;
     }
 
-    Bx_constraint.constraint()->UpdateLowerBound(Bx_val);
-    Bx_constraint.constraint()->UpdateUpperBound(Bx_val);
+    Bx_constraint.evaluator()->UpdateLowerBound(Bx_val);
+    Bx_constraint.evaluator()->UpdateUpperBound(Bx_val);
     for (int j = 0; j < num_interval_y_; ++j) {
       Eigen::VectorXd By_val(By_size_);
       switch (binning_) {
@@ -349,8 +349,8 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
           By_val(j) = 1;
           break;
       }
-      By_constraint.constraint()->UpdateLowerBound(By_val);
-      By_constraint.constraint()->UpdateUpperBound(By_val);
+      By_constraint.evaluator()->UpdateLowerBound(By_val);
+      By_constraint.evaluator()->UpdateUpperBound(By_val);
 
       // vertices.col(l) is the l'th vertex of the tetrahedron.
       Eigen::Matrix<double, 3, 4> vertices;
@@ -358,7 +358,7 @@ TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
       vertices.row(1) << phi_y_(j), phi_y_(j + 1), phi_y_(j), phi_y_(j + 1);
       vertices.row(2) = vertices.row(0).cwiseProduct(vertices.row(1));
       for (int k = 0; k < a.cols(); ++k) {
-        cost.constraint()->UpdateCoefficients(a.col(k));
+        cost.evaluator()->UpdateCoefficients(a.col(k));
         GurobiSolver gurobi_solver;
         if (gurobi_solver.available()) {
           auto result = gurobi_solver.Solve(prog_);

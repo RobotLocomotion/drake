@@ -1,5 +1,4 @@
-// NOLINTNEXTLINE(build/include) False positive on inl file.
-#include "drake/examples/bouncing_ball/bouncing_ball-inl.h"
+#include "drake/examples/bouncing_ball/bouncing_ball.h"
 
 #include "drake/common/default_scalars.h"
 

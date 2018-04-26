@@ -7,7 +7,7 @@ def org_apache_xmlgraphics_commons_repository(
         mirrors = None):
     java_import_external(
         name = name,
-        licenses = [],
+        licenses = ["notice"],  # Apache-2.0
         jar_urls = [
             x.format(fulljar = "org/apache/xmlgraphics/xmlgraphics-commons/1.3.1/xmlgraphics-commons-1.3.1.jar")  # noqa
             for x in mirrors.get("maven")

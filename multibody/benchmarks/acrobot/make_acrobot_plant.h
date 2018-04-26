@@ -89,8 +89,10 @@ class AcrobotParameters {
   double b2() const { return b2_; }
   double g() const { return g_; }
   // Radii of the cylinders used for visualization.
-  double r1() const { return 0.05; }
-  double r2() const { return 0.05; }
+  // The second link is made slightly thicker so that the difference between the
+  // links can be seen when aligned.
+  double r1() const { return 0.035; }
+  double r2() const { return 0.07; }
 
   // getters for modeling elements' names
   const std::string& link1_name() const { return link1_name_; }

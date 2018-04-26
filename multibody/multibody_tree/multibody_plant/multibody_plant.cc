@@ -1,5 +1,6 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -29,6 +30,9 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
+using geometry::PenetrationAsPointPair;
+using geometry::SourceId;
+using systems::InputPortDescriptor;
 using systems::OutputPort;
 using systems::State;
 
@@ -55,6 +59,15 @@ template<typename U>
 MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   DRAKE_THROW_UNLESS(other.is_finalized());
   model_ = other.model_->template CloneToScalar<T>();
+  // Copy of all members related with geometry registration.
+  source_id_ = other.source_id_;
+  body_index_to_frame_id_ = other.body_index_to_frame_id_;
+  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+  geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+  // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize() on
+  // the new MultibodyTree on U. Therefore we only Finilize the plant's
+  // internals (and not the MultibodyTree).
+  FinalizePlantOnly();
 }
 
 template <typename T>
@@ -94,6 +107,32 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
+}
+
+template<typename T>
+void MultibodyPlant<T>::RegisterCollisionGeometry(
+    const Body<T>& body,
+    const Isometry3<double>& X_BG, const geometry::Shape& shape,
+    geometry::GeometrySystem<T>* geometry_system) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_system != nullptr);
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  if (geometry_system != geometry_system_) {
+    throw std::logic_error(
+        "Geometry registration calls must be performed on the SAME instance of "
+        "GeometrySystem used on the first call to "
+        "RegisterAsSourceForGeometrySystem()");
+  }
+  GeometryId id;
+  // TODO(amcastro-tri): Consider doing this after finalize so that we can
+  // register anchored geometry on ANY body welded to the world.
+  if (body.index() == world_index()) {
+    id = RegisterAnchoredGeometry(X_BG, shape, geometry_system);
+  } else {
+    id = RegisterGeometry(body, X_BG, shape, geometry_system);
+  }
+  const int collision_index = geometry_id_to_collision_index_.size();
+  geometry_id_to_collision_index_[id] = collision_index;
 }
 
 template<typename T>
@@ -140,12 +179,20 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
   model_->Finalize();
+  FinalizePlantOnly();
+}
+
+template<typename T>
+void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a GeometrySystem if the plant is
   // provided with a valid source id.
   if (source_id_) DeclareGeometrySystemPorts();
   DeclareCacheEntries();
   geometry_system_ = nullptr;  // must not be used after Finalize().
+  if (get_num_collision_geometries() > 0 &&
+      penalty_method_contact_parameters_.time_scale < 0)
+    set_penetration_allowance();
 }
 
 template<typename T>
@@ -211,6 +258,11 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
+  // Compute contact forces on each body by penalty method.
+  if (get_num_collision_geometries() > 0) {
+    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
+  }
+
   model_->CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
@@ -229,6 +281,194 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
+void MultibodyPlant<T>::set_penetration_allowance(
+    double penetration_allowance) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  // Default to Earth's gravity for this estimation.
+  const double g = gravity_field_.has_value() ?
+                   gravity_field_.value()->gravity_vector().norm() : 9.81;
+
+  // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
+  // are several flying objects and fixed base robots (E.g.: manipulation
+  // cases.)
+
+  // The heuristic now is very simple. We should update it to:
+  //  - Only scan free bodies for weight.
+  //  - Consider an estimate of maximum velocities (context dependent).
+  // Right now we are being very conservative and use the maximum mass in the
+  // system.
+  double mass = 0.0;
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = model().get_body(body_index);
+    mass = std::max(mass, body.get_default_mass());
+  }
+
+  // For now, we use the model of a critically damped spring mass oscillator
+  // to estimate these parameters: mẍ+cẋ+kx=mg
+  // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
+  // which translate to a second order oscillator of the form:
+  // mẍ+(kdx)ẋ+kx=mg
+  // Therefore, for this more complex, non-linear, oscillator, we estimate the
+  // damping constant d using a time scale related to the free oscillation
+  // (omega below) and the requested penetration allowance as a length scale.
+
+  // We first estimate the stiffness based on static equilibrium.
+  const double stiffness = mass * g / penetration_allowance;
+  // Frequency associated with the stiffness above.
+  const double omega = sqrt(stiffness / mass);
+
+  // Estimated contact time scale. The relative velocity of objects coming into
+  // contact goes to zero in this time scale.
+  const double time_scale = 1.0 / omega;
+
+  // Damping ratio for a critically damped model. We could allow users to set
+  // this. Right now, critically damp the normal direction.
+  // This corresponds to a non-penetraion constraint in the limit for
+  // contact_penetration_allowance_ goint to zero (no bounce off).
+  const double damping_ratio = 1.0;
+  // We form the damping (with units of 1/velocity) using dimensional analysis.
+  // Thus we use 1/omega for the time scale and penetration_allowance for the
+  // length scale. We then scale it by the damping ratio.
+  const double damping = damping_ratio * time_scale / penetration_allowance;
+
+  // Final parameters used in the penalty method:
+  penalty_method_contact_parameters_.stiffness = stiffness;
+  penalty_method_contact_parameters_.damping = damping;
+  // The time scale can be requested to hint the integrator's time step.
+  penalty_method_contact_parameters_.time_scale = time_scale;
+}
+
+template<>
+void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<double>& context,
+    const PositionKinematicsCache<double>& pc,
+    const VelocityKinematicsCache<double>& vc,
+    std::vector<SpatialForce<double>>* F_BBo_W_array) const {
+  if (get_num_collision_geometries() == 0) return;
+
+  const geometry::QueryObject<double>& query_object =
+      this->EvalAbstractInput(context, geometry_query_port_)
+          ->template GetValue<geometry::QueryObject<double>>();
+
+  std::vector<PenetrationAsPointPair<double>> penetrations =
+      query_object.ComputePointPairPenetration();
+  for (const auto& penetration : penetrations) {
+    const GeometryId geometryA_id = penetration.id_A;
+    const GeometryId geometryB_id = penetration.id_B;
+
+    // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
+    // when that capability lands.
+    // TODO(amcastro-tri): consider allowing this id's to belong to a third
+    // external system when they correspond to anchored geometry.
+    if (!is_collision_geometry(geometryA_id) ||
+        !is_collision_geometry(geometryB_id))
+      continue;
+
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(penetration.id_A);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(penetration.id_B);
+
+    BodyNodeIndex bodyA_node_index =
+        model().get_body(bodyA_index).node_index();
+    BodyNodeIndex bodyB_node_index =
+        model().get_body(bodyB_index).node_index();
+
+    // Penetration depth, > 0 during penetration.
+    const double &x = penetration.depth;
+    const Vector3<double>& nhat_BA_W = penetration.nhat_BA_W;
+    const Vector3<double>& p_WCa = penetration.p_WCa;
+    const Vector3<double>& p_WCb = penetration.p_WCb;
+
+    // Contact point C.
+    const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
+
+    // Contact point position on body A.
+    const Vector3<double>& p_WAo =
+        pc.get_X_WB(bodyA_node_index).translation();
+    const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
+
+    // Contact point position on body B.
+    const Vector3<double>& p_WBo =
+        pc.get_X_WB(bodyB_node_index).translation();
+    const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
+
+    // Separation velocity, > 0  if objects separate.
+    const Vector3<double> v_WAc =
+        vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
+    const Vector3<double> v_WBc =
+        vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
+    const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
+
+    // if xdot = vn > 0 ==> they are getting closer.
+    const double vn = v_AcBc_W.dot(nhat_BA_W);
+
+    // Magnitude of the normal force on body A at contact point C.
+    const double k = penalty_method_contact_parameters_.stiffness;
+    const double d = penalty_method_contact_parameters_.damping;
+    const double fn_AC = k * x * (1.0 + d * vn);
+
+    if (fn_AC <= 0) continue;  // Continue with next point.
+
+    // Spatial force on body A at C, expressed in the world frame W.
+    const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
+                                      fn_AC * nhat_BA_W);
+
+    if (bodyA_index != world_index()) {
+      // Spatial force on body A at Ao, expressed in W.
+      const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+      F_BBo_W_array->at(bodyA_index) += F_AAo_W;
+    }
+
+    if (bodyB_index != world_index()) {
+      // Spatial force on body B at Bo, expressed in W.
+      const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+      F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+    }
+  }
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<T>&,
+    const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>&,
+    std::vector<SpatialForce<T>>*) const {
+  DRAKE_ABORT_MSG("Only <double> is supported.");
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapQDotToVelocity(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& qdot,
+    systems::VectorBase<T>* generalized_velocity) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(qdot.size() == nq);
+  DRAKE_DEMAND(generalized_velocity != nullptr);
+  DRAKE_DEMAND(generalized_velocity->size() == nv);
+
+  VectorX<T> v(nv);
+  model_->MapQDotToVelocity(context, qdot, &v);
+  generalized_velocity->SetFromVector(v);
+}
+
+template<typename T>
+void MultibodyPlant<T>::DoMapVelocityToQDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& generalized_velocity,
+    systems::VectorBase<T>* positions_derivative) const {
+  const int nq = model_->num_positions();
+  const int nv = model_->num_velocities();
+
+  DRAKE_ASSERT(generalized_velocity.size() == nv);
+  DRAKE_DEMAND(positions_derivative != nullptr);
+  DRAKE_DEMAND(positions_derivative->size() == nq);
+
+  VectorX<T> qdot(nq);
+  model_->MapVelocityToQDot(context, generalized_velocity, &qdot);
+  positions_derivative->SetFromVector(qdot);
+}
+
+template<typename T>
 void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
@@ -244,7 +484,17 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
             systems::BasicVector<T>(num_actuated_dofs())).get_index();
   }
 
-  // TODO(amcastro-tri): Declare output port for the state.
+  continuous_state_output_port_ =
+      this->DeclareVectorOutputPort(
+          BasicVector<T>(num_multibody_states()),
+          &MultibodyPlant::CopyContinuousStateOut).get_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::CopyContinuousStateOut(
+    const Context<T>& context, BasicVector<T>* state_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  state_vector->SetFrom(context.get_continuous_state_vector());
 }
 
 template <typename T>
@@ -255,8 +505,16 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   return systems::System<T>::get_input_port(actuation_port_);
 }
 
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(continuous_state_output_port_);
+}
+
 template<typename T>
 void MultibodyPlant<T>::DeclareGeometrySystemPorts() {
+  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   geometry_id_port_ =
       this->DeclareAbstractOutputPort(
           &MultibodyPlant::AllocateFrameIdOutput,
@@ -331,6 +589,7 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_ids_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_id_port_);
 }
 
@@ -338,7 +597,16 @@ template <typename T>
 const OutputPort<T>& MultibodyPlant<T>::get_geometry_poses_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
   return systems::System<T>::get_output_port(geometry_pose_port_);
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>&
+MultibodyPlant<T>::get_geometry_query_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(geometry_source_is_registered());
+  return systems::System<T>::get_input_port(geometry_query_port_);
 }
 
 template<typename T>

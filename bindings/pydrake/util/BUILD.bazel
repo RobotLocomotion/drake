@@ -43,6 +43,12 @@ drake_cc_library(
     hdrs = ["wrap_function.h"],
 )
 
+drake_cc_library(
+    name = "wrap_pybind",
+    hdrs = ["wrap_pybind.h"],
+    deps = [":wrap_function"],
+)
+
 # This is a pure-python, standalone library SET.
 # Keep this away from `common_py` to simplify test dependencies.
 drake_py_library(
@@ -52,8 +58,8 @@ drake_py_library(
 )
 
 drake_py_library(
-    name = "module_shim_py",
-    srcs = ["module_shim.py"],
+    name = "deprecation_py",
+    srcs = ["deprecation.py"],
     imports = PACKAGE_INFO.py_imports,
 )
 
@@ -150,16 +156,25 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "containers_py",
+    srcs = ["containers.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
 
 PY_LIBRARIES = [
+    ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
+    ":deprecation_py",
     ":module_py",
-    ":module_shim_py",
     ":pybind11_version_py",
 ]
 
@@ -200,22 +215,17 @@ drake_cc_googletest(
 )
 
 drake_py_library(
-    name = "module_shim_example",
+    name = "deprecation_example",
     testonly = 1,
-    srcs = [
-        "test/module_shim_example/__init__.py",
-        "test/module_shim_example/sub_module.py",
-    ],
+    srcs = glob(["test/deprecation_example/*.py"]),
     imports = ["test"],
-    deps = [":module_shim_py"],
+    deps = [":deprecation_py"],
 )
 
-drake_py_test(
-    name = "module_shim_test",
-    srcs = ["test/module_shim_test.py"],
-    allow_import_unittest = True,
+drake_py_unittest(
+    name = "deprecation_test",
     deps = [
-        ":module_shim_example",
+        ":deprecation_example",
     ],
 )
 
@@ -285,6 +295,13 @@ drake_py_unittest(
     name = "pybind11_version_test",
     deps = [
         ":pybind11_version_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "containers_test",
+    deps = [
+        ":containers_py",
     ],
 )
 

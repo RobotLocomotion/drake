@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_viewer2_comms
+{
+  // The timestamp in microseconds
+  int64_t utime;
+
+  // The format name and version determines how
+  // the message data field should be interpreted.
+  string format;
+  int32_t format_version_major;
+  int32_t format_version_minor;
+
+  // The viewer data
+  int32_t num_bytes;
+  byte data[num_bytes];
+}

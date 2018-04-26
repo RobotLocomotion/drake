@@ -41,7 +41,7 @@ const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
 }
 
 template <typename T>
-std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
+PoseVelocityInputPortDescriptors<T>
 PoseAggregator<T>::AddSinglePoseAndVelocityInput(const std::string& name,
                                                  int model_instance_id) {
   // Add an input for the pose.
@@ -50,9 +50,7 @@ PoseAggregator<T>::AddSinglePoseAndVelocityInput(const std::string& name,
   // Add an input for the velocity.
   const auto& velocity_descriptor =
       DeclareInput(MakeSingleVelocityInputRecord(name, model_instance_id));
-  return std::pair<const InputPortDescriptor<T>&,
-                   const InputPortDescriptor<T>&>(pose_descriptor,
-                                                  velocity_descriptor);
+  return {pose_descriptor, velocity_descriptor};
 }
 
 template <typename T>

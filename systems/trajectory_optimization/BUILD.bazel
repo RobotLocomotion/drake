@@ -44,7 +44,7 @@ drake_cc_library(
     hdrs = ["multiple_shooting.h"],
     deps = [
         "//common:essential",
-        "//common/trajectories:piecewise_polynomial_trajectory",
+        "//common/trajectories:piecewise_polynomial",
         "//solvers:mathematical_program",
         "//systems/framework",
     ],
@@ -90,7 +90,6 @@ drake_cc_googletest(
     deps = [
         ":multiple_shooting",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -101,7 +100,6 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/trajectories:piecewise_polynomial",
         "//systems/primitives:linear_system",
     ],
 )
@@ -113,7 +111,6 @@ drake_cc_googletest(
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/trajectories:piecewise_polynomial",
         "//systems/primitives:piecewise_polynomial_linear_system",
     ],
 )

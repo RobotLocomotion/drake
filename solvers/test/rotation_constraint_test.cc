@@ -71,11 +71,11 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
         for (double yaw = ymin; yaw <= ymax; yaw += M_PI / 6) {
           Matrix3d R = drake::math::rpy2rotmat(Vector3d(roll, pitch, yaw));
           Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
-          prog.SetDecisionVariableValues(vecR);
-          for (const auto &b : bb_constraints) {
-            Eigen::VectorXd x = prog.EvalBindingAtSolution(b);
-            const Eigen::VectorXd &lb = b.constraint()->lower_bound();
-            const Eigen::VectorXd &ub = b.constraint()->upper_bound();
+          prog.SetInitialGuessForAllVariables(vecR);
+          for (const auto& b : bb_constraints) {
+            const Eigen::VectorXd x = prog.EvalBindingAtInitialGuess(b);
+            const Eigen::VectorXd& lb = b.evaluator()->lower_bound();
+            const Eigen::VectorXd& ub = b.evaluator()->upper_bound();
             for (int i = 0; i < x.size(); i++) {
               EXPECT_GE(x(i), lb(i));
               EXPECT_LE(x(i), ub(i));
@@ -177,9 +177,9 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
 }
 
 bool IsFeasibleCheck(
-    MathematicalProgram *prog,
-    const std::shared_ptr<LinearEqualityConstraint> &feasibility_constraint,
-    const Eigen::Ref<const Matrix3d> &R_sample) {
+    MathematicalProgram* prog,
+    const std::shared_ptr<LinearEqualityConstraint>& feasibility_constraint,
+    const Eigen::Ref<const Matrix3d>& R_sample) {
   Eigen::Map<const Eigen::Matrix<double, 9, 1>> R_sample_vec(R_sample.data());
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
@@ -232,10 +232,12 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
         R_(NewRotationMatrixVars(&prog_)),
         replace_bilinear_product_(std::get<0>(GetParam())),
         num_intervals_per_half_axis_(std::get<1>(GetParam())),
-  feasibility_constraint_{prog_.AddLinearEqualityConstraint(
-      Eigen::Matrix<double, 9, 9>::Identity(),
-      Eigen::Matrix<double, 9, 1>::Zero(),
-      {R_.col(0), R_.col(1), R_.col(2)}).constraint()} {
+        feasibility_constraint_{prog_
+                                    .AddLinearEqualityConstraint(
+                                        Eigen::Matrix<double, 9, 9>::Identity(),
+                                        Eigen::Matrix<double, 9, 1>::Zero(),
+                                        {R_.col(0), R_.col(1), R_.col(2)})
+                                    .evaluator()} {
     if (replace_bilinear_product_) {
       AddRotationMatrixBilinearMcCormickMilpConstraints(
           &prog_, R_, num_intervals_per_half_axis_);
@@ -249,7 +251,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
     return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
   }
 
-  ~TestMcCormick() override {};
+  ~TestMcCormick() override{};
 
  protected:
   MathematicalProgram prog_;
@@ -295,7 +297,7 @@ TEST_P(TestMcCormick, TestExactRotationMatrix) {
 
   std::mt19937 generator(41);
   for (int i = 0; i < 40; i++) {
-    R_test = math::UniformlyRandomRotmat(generator);
+    R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
     EXPECT_TRUE(IsFeasible(R_test));
   }
 }
@@ -362,13 +364,13 @@ class TestMcCormickCorner
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
 
   TestMcCormickCorner()
-    : prog_(),
-      R_(NewRotationMatrixVars(&prog_)),
-      Cpos_(),
-      Cneg_(),
-      orthant_(std::get<0>(GetParam())),
-      is_bmin_(std::get<1>(GetParam())),
-      col_idx_(std::get<2>(GetParam())) {
+      : prog_(),
+        R_(NewRotationMatrixVars(&prog_)),
+        Cpos_(),
+        Cneg_(),
+        orthant_(std::get<0>(GetParam())),
+        is_bmin_(std::get<1>(GetParam())),
+        col_idx_(std::get<2>(GetParam())) {
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
     std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
@@ -382,12 +384,12 @@ class TestMcCormickCorner
   MatrixDecisionVariable<3, 3> R_;
   std::vector<Eigen::Matrix<Expression, 3, 3>> Cpos_;
   std::vector<Eigen::Matrix<Expression, 3, 3>> Cneg_;
-  int orthant_;  // Index of the orthant that R_.col(col_idx_) is in.
+  int orthant_;   // Index of the orthant that R_.col(col_idx_) is in.
   bool is_bmin_;  // If true, then the box bmin <= x <= bmax intersects with the
                   // surface of the unit sphere at the unique point bmin;
                   // otherwise it intersects at the unique point bmax;
-  int col_idx_;  // R_.col(col_idx_) will be fixed to a vertex of the box, and
-                 // also this point is on the surface of the unit sphere.
+  int col_idx_;   // R_.col(col_idx_) will be fixed to a vertex of the box, and
+                  // also this point is on the surface of the unit sphere.
 };
 
 TEST_P(TestMcCormickCorner, TestOrthogonal) {
@@ -434,11 +436,11 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
   if (is_bmin_) {
     prog_.AddLinearConstraint(1 == orthant_C[1](0));
     prog_.AddLinearConstraint(Eigen::Vector2d::Ones() ==
-      orthant_C[2].block<2, 1>(1, 0));
+                              orthant_C[2].block<2, 1>(1, 0));
   } else {
     prog_.AddLinearConstraint(1 == orthant_C[0](0));
     prog_.AddLinearConstraint(Eigen::Vector2d::Ones() ==
-      orthant_C[1].block<2, 1>(1, 0));
+                              orthant_C[1].block<2, 1>(1, 0));
   }
 
   // Add a cost function to try to make the column of R not perpendicular.
@@ -473,9 +475,7 @@ class TestMcCormickOrthant
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickOrthant)
 
-  TestMcCormickOrthant()
-      : prog_(),
-        R_(NewRotationMatrixVars(&prog_)) {
+  TestMcCormickOrthant() : prog_(), R_(NewRotationMatrixVars(&prog_)) {
     const int num_bin = std::get<0>(GetParam());
     const int orthant = std::get<1>(GetParam());
     const bool is_row_vector = std::get<2>(GetParam());
@@ -549,7 +549,7 @@ TEST_P(TestMcCormickOrthant, test) {
     // Since no two row or column vectors in R can lie in either the same of the
     // opposite orthant, the program should be infeasible.
     EXPECT_TRUE(sol_result == SolutionResult::kInfeasible_Or_Unbounded ||
-        sol_result == SolutionResult::kInfeasibleConstraints);
+                sol_result == SolutionResult::kInfeasibleConstraints);
   }
 }
 

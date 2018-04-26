@@ -9,7 +9,7 @@ def net_sf_jchart2d_repository(
     # licenses in tools/third_party/jchart2d/LICENSE are still applicable.
     java_import_external(
         name = name,
-        licenses = [],
+        licenses = ["restricted"],  # LGPL-3.0+
         jar_urls = [
             x.format(fulljar = "net/sf/jchart2d/jchart2d/3.3.2/jchart2d-3.3.2.jar")  # noqa
             for x in mirrors.get("maven")

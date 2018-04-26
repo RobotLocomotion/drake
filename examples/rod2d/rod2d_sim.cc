@@ -39,14 +39,14 @@ using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta3Integrator;
 
 // Simulation parameters.
-DEFINE_string(simulation_type, "timestepping",
-              "Type of simulation, valid values are "
-              "'timestepping','compliant'");
+DEFINE_string(system_type, "discretized",
+              "Type of rod system, valid values are "
+              "'discretized','continuous'");
 DEFINE_double(dt, 1e-2, "Integration step size");
 DEFINE_double(rod_radius, 5e-2, "Radius of the rod (for visualization only)");
 DEFINE_double(sim_duration, 10, "Simulation duration in virtual seconds");
 DEFINE_double(accuracy, 1e-5,
-              "Requested simulation accuracy (ignored for time stepping)");
+              "Requested simulation accuracy (ignored for discretized system)");
 
 int main(int argc, char* argv[]) {
   // Parse any flags.
@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
 
   // Emit a one-time load message.
   Serializer<drake::lcmt_viewer_load_robot> load_serializer;
-  std::vector<uint8_t> message_bytes;
 
   // TODO(edrumwri): Remove the DRAKE_VIEWER_DRAW, DRAKE_VIEWER_LOAD_ROBOT
   //                 magic strings as soon as they are a named constant within
@@ -76,14 +75,14 @@ int main(int argc, char* argv[]) {
 
   // Create the rod and add it to the diagram.
   Rod2D* rod;
-  if (FLAGS_simulation_type == "timestepping") {
+  if (FLAGS_system_type == "discretized") {
     rod = builder.template AddSystem<Rod2D>(
-        Rod2D::SimulationType::kTimeStepping, FLAGS_dt);
-  } else if (FLAGS_simulation_type == "compliant") {
-    rod = builder.template AddSystem<Rod2D>(Rod2D::SimulationType::kCompliant,
+        Rod2D::SystemType::kDiscretized, FLAGS_dt);
+  } else if (FLAGS_system_type == "continuous") {
+    rod = builder.template AddSystem<Rod2D>(Rod2D::SystemType::kContinuous,
                                             0.0);
   } else {
-    std::cerr << "Invalid simulation type '" << FLAGS_simulation_type
+    std::cerr << "Invalid simulation type '" << FLAGS_system_type
               << "'; note that types are case sensitive." << std::endl;
     return -1;
   }
@@ -94,7 +93,7 @@ int main(int argc, char* argv[]) {
       Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
 
   // Create the load message.
-  drake::lcmt_viewer_load_robot message;
+  drake::lcmt_viewer_load_robot message{};
   message.num_links = 1;
   message.link.resize(1);
   message.link.back().name = "rod";
@@ -104,11 +103,7 @@ int main(int argc, char* argv[]) {
   message.link.back().geom[0] = MakeGeometryData(rod_vis);
 
   // Send a load mesage.
-  const int message_length = message.getEncodedSize();
-  message_bytes.resize(message_length);
-  message.encode(message_bytes.data(), 0, message_length);
-  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
-              message_bytes.size());
+  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 
   // Set the names of the systems.
   rod->set_name("rod");
@@ -132,7 +127,7 @@ int main(int argc, char* argv[]) {
 
   // Set up the integrator.
   Simulator<double> simulator(*diagram, std::move(context));
-  if (FLAGS_simulation_type == "compliant") {
+  if (FLAGS_system_type == "continuous") {
     Context<double>& mut_context = simulator.get_mutable_context();
     simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
                                                                 &mut_context);

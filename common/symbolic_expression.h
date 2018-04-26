@@ -276,6 +276,13 @@ class Expression {
    */
   Expression Differentiate(const Variable& x) const;
 
+  /** Let `f` be this Expression, computes a row vector of derivatives,
+   * `[∂f/∂vars(0), ... , ∂f/∂vars(n-1)]` with respect to the variables
+   * @p vars.
+   */
+  RowVectorX<Expression> Jacobian(
+      const Eigen::Ref<const VectorX<Variable>>& vars) const;
+
   /** Returns string representation of Expression. */
   std::string to_string() const;
 
@@ -891,6 +898,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Returns the distinct variables in the matrix of expressions.
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
 
 /// Checks if two Eigen::Matrix<Expression> @p m1 and @p m2 are structurally
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally

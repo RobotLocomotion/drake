@@ -6,6 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/multibody_tree/rotational_inertia.h"
@@ -21,6 +22,9 @@ using Eigen::MatrixXd;
 using Eigen::NumTraits;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
+using symbolic::Environment;
+using symbolic::Expression;
+using symbolic::Variable;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
@@ -28,7 +32,7 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // quick detection of un-initialized values.
 GTEST_TEST(UnitInertia, DefaultConstructor) {
   UnitInertia<double> I;
-  ASSERT_TRUE(I.IsNaN());
+  ASSERT_TRUE(I.IsNaN().value());
 }
 
 // Test constructor for a diagonal unit inertia with all elements equal.
@@ -115,7 +119,7 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
 
   // While at it, check if after transformation this still is a physically
   // valid inertia.
-  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
+  EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid().value());
 }
 
 // Tests the static method to obtain the unit inertia of a point mass.
@@ -349,7 +353,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));  // Equal after shifting.
-  EXPECT_TRUE(G.CouldBePhysicallyValid());
+  EXPECT_TRUE(G.CouldBePhysicallyValid().value());
 
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
@@ -368,7 +372,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
       SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
-  EXPECT_TRUE(G3.CouldBePhysicallyValid());
+  EXPECT_TRUE(G3.CouldBePhysicallyValid().value());
 }
 
 // Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
@@ -390,7 +394,7 @@ GTEST_TEST(UnitInertia, CastToAutoDiff) {
 
   // Cast from double to AutoDiffScalar.
   const UnitInertia<ADScalar> I_cast = I_double.cast<ADScalar>();
-  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon));
+  EXPECT_TRUE(I_autodiff.IsNearlyEqualTo(I_cast, kEpsilon).value());
 
   const Matrix3<ADScalar> I_autodiff_matrix = I_cast.CopyToFullMatrix3();
   auto I_value = drake::math::autoDiffToValueMatrix(I_autodiff_matrix);
@@ -564,6 +568,31 @@ GTEST_TEST(UnitInertia, PlusEqualAnInertia) {
 
   // ... we cannot perform the same operation on a UnitInertia.
   EXPECT_FALSE(has_plus_equal<UnitInertia<double>>());
+}
+
+// Verify that UnitInertia works with symbolic::Expression.
+GTEST_TEST(UnitInertia, CompatibleWithSymbolicExpression) {
+  const Variable r("r");
+  const Variable L("L");
+  // Compute the unit inertia for a cylinder oriented along the z-axis
+  // (the default).
+  UnitInertia<Expression> Gz = UnitInertia<Expression>::SolidCylinder(r, L);
+
+  // Lets give the varaibles above some values.
+  const double r_value = 0.025;
+  const double L_value = 0.2;
+  // And the expected principal moments.
+  const double I_perp = (3.0 * r_value * r_value + L_value * L_value) / 12.0;
+  const double I_axial = r_value * r_value / 2.0;
+  // Create an environment in which variables have set values.
+  const Environment env{{r, r_value}, {L, L_value}};
+
+  EXPECT_NEAR(Gz(0, 0).Evaluate(env), I_perp,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(Gz(1, 1).Evaluate(env), I_perp,
+              std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(Gz(2, 2).Evaluate(env), I_axial,
+              std::numeric_limits<double>::epsilon());
 }
 
 }  // namespace

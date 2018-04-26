@@ -5,22 +5,25 @@ import os
 import unittest
 
 import pydrake
+from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
+    RigidBodyFrame,
     RigidBodyTree,
     FloatingBaseType
     )
 import pydrake.multibody.shapes as shapes
+from pydrake.util.eigen_geometry import Isometry3
 
 
 class TestRigidBodyTree(unittest.TestCase):
     def test_kinematics_api(self):
         # TODO(eric.cousineau): Reduce these tests to only test API, and do
         # simple sanity checks on the numbers.
-        tree = RigidBodyTree(os.path.join(
-            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf"))
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
         num_q = 7
         num_v = 7
         self.assertEqual(tree.number_of_positions(), num_q)
@@ -75,16 +78,30 @@ class TestRigidBodyTree(unittest.TestCase):
             [0, 0, 0, 1]])
         self.assertTrue(np.allclose(T, T_expected))
 
+    def test_frame_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
+        # xyz + rpy
+        frame = RigidBodyFrame(
+            name="frame_1", body=tree.world(),
+            xyz=[0, 0, 0], rpy=[0, 0, 0])
+        self.assertEqual(frame.get_name(), "frame_1")
+        tree.addFrame(frame)
+        self.assertTrue(frame.get_frame_index() < 0, frame.get_frame_index())
+        self.assertTrue(frame.get_rigid_body() is tree.world())
+        self.assertIsInstance(frame.get_transform_to_body(), Isometry3)
+        self.assertTrue(tree.findFrame(frame_name="frame_1") is frame)
+
     def test_flat_terrain(self):
-        tree = RigidBodyTree(os.path.join(
-            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf"))
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
 
         # Test that AddFlatTerrainToWorld is spelled correctly.
         AddFlatTerrainToWorld(tree)
 
     def test_kinematics_com_api(self):
-        tree = RigidBodyTree(os.path.join(
-            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf"))
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf"))
         num_q = 7
         num_v = 7
         q = np.zeros(num_q)
@@ -109,8 +126,8 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(c, [0.0, 0.0, -0.5]))
 
     def test_dynamics_api(self):
-        urdf_path = os.path.join(
-            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf")
+        urdf_path = FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf")
         tree = RigidBodyTree(
             urdf_path, floating_base_type=FloatingBaseType.kRollPitchYaw)
 
@@ -156,8 +173,8 @@ class TestRigidBodyTree(unittest.TestCase):
         # don't break the test), and split pure API testing of
         # VisualElement and Geometry over to shapes_test while keeping
         # RigidBodyTree and RigidBody visual element extraction here.
-        urdf_path = os.path.join(
-            pydrake.getDrakePath(), "examples/pendulum/Pendulum.urdf")
+        urdf_path = FindResourceOrThrow(
+            "drake/examples/pendulum/Pendulum.urdf")
 
         tree = RigidBodyTree(
             urdf_path,
@@ -203,14 +220,27 @@ class TestRigidBodyTree(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             sphere_geometry.getFaces()
 
+        # Add a visual element just to test the spelling of AddVisualElement.
+        tree.world().AddVisualElement(sphere_visual_element)
+
+        # Test that I can call compile.
+        tree.compile()
+
     def test_atlas_parsing(self):
         # Sanity check on parsing.
         pm = PackageMap()
-        model = os.path.join(
-            pydrake.getDrakePath(), "examples", "atlas", "urdf",
-            "atlas_minimal_contact.urdf")
+        model = FindResourceOrThrow(
+            "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
         pm.PopulateUpstreamToDrake(model)
         tree = RigidBodyTree(
             model, package_map=pm,
             floating_base_type=FloatingBaseType.kRollPitchYaw)
         self.assertEqual(tree.get_num_actuators(), 30)
+        # Sanity checks joint limits
+        #  - Check sizes.
+        self.assertEqual(tree.joint_limit_min.size, tree.number_of_positions())
+        self.assertEqual(tree.joint_limit_max.size, tree.number_of_positions())
+        #  - Check extremal values against values taken from URDF-file. Ignore
+        #    the floating-base joints, as they are not present in the URDF.
+        self.assertAlmostEqual(np.min(tree.joint_limit_min[6:]), -3.011)
+        self.assertAlmostEqual(np.max(tree.joint_limit_max[6:]), 3.14159)

@@ -770,6 +770,18 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
   EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
 }
+
+TEST_F(SymbolicPolynomialTest, Hash) {
+  const auto h = std::hash<Polynomial>{};
+  Polynomial p1{x_ * x_};
+  const Polynomial p2{x_ * x_};
+  EXPECT_EQ(p1, p2);
+  EXPECT_EQ(h(p1), h(p2));
+  p1 += Polynomial{y_};
+  EXPECT_NE(p1, p2);
+  EXPECT_NE(h(p1), h(p2));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

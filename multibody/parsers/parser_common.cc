@@ -282,5 +282,48 @@ CompliantMaterial ParseCollisionCompliance(XMLElement* node) {
   return material;
 }
 
+void ParseCollisionFilterGroup(RigidBodyTree<double>* tree, XMLElement* node,
+                               int model_instance_id) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && (std::strcmp(attr, "true") == 0)) return;
+
+  // TODO(SeanCurtis-TRI): After upgrading to newest tinyxml, add line numbers
+  // to error messages.
+  attr = node->Attribute("name");
+  if (!attr) {
+    throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "
+        "Collision filter group specification missing name attribute.");
+  }
+  string group_name(attr);
+
+  tree->DefineCollisionFilterGroup(group_name);
+
+  for (XMLElement* member_node = node->FirstChildElement("member"); member_node;
+       member_node = member_node->NextSiblingElement("member")) {
+    const char* link_name = member_node->Attribute("link");
+    if (!link_name) {
+      throw runtime_error(string(__FILE__) + ": " + __func__ + ": Collision "
+          "filter group " + group_name + " provides a member tag without "
+          "specifying the \"link\" attribute.");
+    }
+    tree->AddCollisionFilterGroupMember(group_name, link_name,
+                                        model_instance_id);
+  }
+
+  for (XMLElement* ignore_node =
+      node->FirstChildElement("ignored_collision_filter_group");
+       ignore_node; ignore_node = ignore_node->NextSiblingElement(
+      "ignored_collision_filter_group")) {
+    const char* target_name = ignore_node->Attribute("collision_filter_group");
+    if (!target_name) {
+      throw runtime_error(
+          string(__FILE__) + ": " + __func__ + ": Collision filter group "
+              "provides a tag specifying a group to ignore without specifying "
+              "the \"collision_filter_group\" attribute.");
+    }
+    tree->AddCollisionFilterIgnoreTarget(group_name, target_name);
+  }
+}
+
 }  // namespace parsers
 }  // namespace drake

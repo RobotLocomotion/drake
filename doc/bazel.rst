@@ -35,7 +35,7 @@ Developing Drake using Bazel
 To build or test Drake, run **bazel build** or **bazel test** with the desired
 target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
-https://bazel.build/versions/master/docs/bazel-user-manual.html#target-patterns.
+https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
 Under Bazel, Clang is the default compiler on all platforms, but command-line
 options are available to use GCC on Ubuntu.
@@ -169,7 +169,7 @@ To confirm that your setup was successful, run the tests that require Gurobi.
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
 MOSEK 7.1
 ---------
@@ -185,7 +185,7 @@ To confirm that your setup was successful, run the tests that require MOSEK.
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
 SNOPT 7.2
 ---------
@@ -220,7 +220,7 @@ To confirm that your setup was successful, run the tests that require SNOPT.
 The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
-See https://bazel.build/versions/master/docs/bazel-user-manual.html#bazelrc.
+See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
 Optional Tools
 ==============

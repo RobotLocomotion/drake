@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
@@ -9,6 +10,8 @@ load(
 )
 
 InstallInfo = provider()
+
+InstalledTestInfo = provider()
 
 #==============================================================================
 #BEGIN internal helpers
@@ -277,6 +280,27 @@ def _install_java_launcher_actions(
     return actions
 
 #------------------------------------------------------------------------------
+def _install_test_actions(ctx):
+    """Compute and return list of install test command lines.
+
+    This computes the install path for the install tests (tests run to verify
+    that the project works once installed).
+
+    Returns:
+        :obj:`struct`: A list of test actions containing the location of the
+        tests files in the source tree and in the install tree.
+    """
+    test_actions = []
+
+    # For files, we run the file from the build tree.
+    for test in ctx.attr.install_tests:
+        for f in test.files:
+            test_actions.append(
+                struct(src = f, cmd = f.path))
+
+    return test_actions
+
+#------------------------------------------------------------------------------
 # Generate install code for an install action.
 def _install_code(action):
     return "install(%r, %r)" % (action.src.short_path, action.dst)
@@ -297,11 +321,14 @@ def _java_launcher_code(action):
 # targets, headers, or documentation files.
 def _install_impl(ctx):
     actions = []
+    installed_tests = []
     rename = dict(ctx.attr.rename)
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d[InstallInfo].install_actions
         rename.update(d[InstallInfo].rename)
+        if InstalledTestInfo in d:
+            installed_tests += d[InstalledTestInfo].tests
 
     # Generate actions for data, docs and includes.
     actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
@@ -335,6 +362,9 @@ def _install_impl(ctx):
             # Executable scripts copied from source directory.
             actions += _install_runtime_actions(ctx, t)
 
+    # Generate install test actions.
+    installed_tests += _install_test_actions(ctx)
+
     # Generate code for install actions.
     script_actions = []
     installed_files = {}
@@ -356,17 +386,34 @@ def _install_impl(ctx):
 
     # Generate install script.
     # TODO(mwoehlke-kitware): Figure out a better way to generate this and run
-    # it via Python than `#!/usr/bin/env python`?
-    ctx.template_action(
+    # it via Python than `#!/usr/bin/env python2`?
+    ctx.actions.expand_template(
         template = ctx.executable.install_script_template,
         output = ctx.outputs.executable,
         substitutions = {"<<actions>>": "\n    ".join(script_actions)})
 
+    script_tests = []
+    # Generate list containing all commands to run to test.
+    for i in installed_tests:
+        script_tests.append(i.cmd)
+
+    # Generate test installation script
+    if ctx.attr.install_tests_script and not script_tests:
+        fail("`install_tests_script` is not empty but no `script_tests` were provided.")  # noqa
+    if ctx.attr.install_tests_script:
+        ctx.actions.write(
+            output = ctx.outputs.install_tests_script,
+            content = "\n".join(script_tests),
+            is_executable = False,
+    )
+
     # Return actions.
     files = ctx.runfiles(
-        files = [a.src for a in actions if not hasattr(a, "main_class")])
+        files = [a.src for a in actions if not hasattr(a, "main_class")] +
+                [i.src for i in installed_tests])
     return [
         InstallInfo(install_actions = actions, rename = rename),
+        InstalledTestInfo(tests = installed_tests),
         DefaultInfo(runfiles = files),
     ]
 
@@ -401,6 +448,10 @@ install = rule(
         "py_dest": attr.string(default = "lib/python2.7/site-packages"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
+        "install_tests": attr.label_list(
+            default = [],
+            allow_files = True,
+        ),
         "workspace": attr.string(),
         "allowed_externals": attr.label_list(allow_files = True),
         "install_script_template": attr.label(
@@ -409,6 +460,7 @@ install = rule(
             cfg = "target",
             default = Label("//tools/install:install.py.in"),
         ),
+        "install_tests_script": attr.output(),
     },
     executable = True,
     implementation = _install_impl,
@@ -473,6 +525,11 @@ Note:
             filename = Java launcher file name
         )
 
+    A file containing all the commands to test executables after installation
+    is created if `install_tests_script` is set. The list of commands to run
+    is given by `install_tests`. The generated file location can be passed to
+    `install_test()` as an `args`.
+
 Args:
     deps: List of other install rules that this rule should include.
     docs: List of documentation files to install.
@@ -505,6 +562,12 @@ Args:
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
+    install_tests: List of scripts that are designed to test the install
+        tree. These scripts will not be installed.
+    install_tests_script: Name of the generated file that contains the commands
+        run to test the install tree. This only needs to be specified for the
+        main `install()` call, and the same name should be passed to
+        `install_test()` as `"$(location :" + install_tests_script + ")"`.
     workspace: Workspace name to use in default paths (overrides built-in
         guess).
     allowed_externals: List of external packages whose files may be installed.
@@ -678,6 +741,37 @@ def install_cmake_config(
         dest = cmake_config_dest,
         files = cmake_config_files,
         visibility = visibility,
+    )
+
+#------------------------------------------------------------------------------
+def install_test(
+        name,
+        **kwargs):
+    """A wrapper to test installed drake executables.
+
+    !!!Important: This command should be called only once, when the main
+    installation step occurs!!!
+
+    This wrapper uses `//tools/install:install_test.py` as its main script. It
+    expects to receive one argument which is the location of a file containing
+    the list of command to run in the test. The current limitation requires
+    each command to contain only one command per line. The file containing the
+    list of command is typically `install_tests_script` outputted by the
+    `install()` rule.
+    """
+    if native.package_name():
+        fail("This command should be called only once, when the main installation step occurs.")
+
+    src = "//tools/install:install_test.py"
+
+    drake_py_unittest(
+        name = name,
+        size = "small",
+        # Increase the timeout so that debug builds are successful.
+        timeout = "long",
+        srcs = [src],
+        deps = ["//tools/install:install_test_helper"],
+        **kwargs
     )
 
 #END macros

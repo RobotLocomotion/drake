@@ -155,17 +155,18 @@ GTEST_TEST(MultibodyTree, MultibodyTreeElementChecks) {
 
   // model1 is complete. Expect no-throw.
   EXPECT_NO_THROW(model1->Finalize());
+  // model 1 has a single dof corresponding to the pin joint.
+  EXPECT_EQ(model1->num_positions(), 1);
+  EXPECT_EQ(model1->num_velocities(), 1);
 
-  // model2->Finalize() is expected to throw an exception since there is no
-  // mobilizer for body2.
-  try {
-    model2->Finalize();
-    GTEST_FAIL();
-  } catch (std::runtime_error& e) {
-    std::string expected_msg =
-        "Body with index 1 was not assigned a mobilizer";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
+  // model2->Finalize() is not expected to throw an exception. Since body2 has
+  // no joint, MultibodyTree will default it to be free and will assign a free
+  // mobilizer to it.
+  EXPECT_NO_THROW(model2->Finalize());
+  // We now verify the number of dofs corresponds to a quaternion free mobilizer
+  // by default.
+  EXPECT_EQ(model2->num_positions(), 7);
+  EXPECT_EQ(model2->num_velocities(), 6);
 
   // Tests that the created multibody elements indeed do have a parent
   // MultibodyTree.

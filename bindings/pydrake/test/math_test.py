@@ -1,8 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
-import unittest
+import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
+
+import unittest
 import numpy as np
+
+import math
 
 
 class TestBarycentricMesh(unittest.TestCase):
@@ -58,3 +62,38 @@ class TestBarycentricMesh(unittest.TestCase):
 
     def test_wrap_to(self):
         self.assertEquals(wrap_to(1.5, 0., 1.), .5)
+
+    def test_math(self):
+        # Compare against `math` functions.
+        # TODO(eric.cousineau): Consider removing this and only rely on
+        # `math_overloads_test`, which already tests this.
+        unary = [
+            (mut.log, math.log),
+            (mut.abs, math.fabs),
+            (mut.exp, math.exp),
+            (mut.sqrt, math.sqrt),
+            (mut.sin, math.sin),
+            (mut.cos, math.cos),
+            (mut.tan, math.tan),
+            (mut.asin, math.asin),
+            (mut.acos, math.acos),
+            (mut.atan, math.atan),
+            (mut.sinh, math.sinh),
+            (mut.cosh, math.cosh),
+            (mut.tanh, math.tanh),
+            (mut.ceil, math.ceil),
+            (mut.floor, math.floor),
+        ]
+        binary = [
+            (mut.min, min),
+            (mut.max, max),
+            (mut.pow, math.pow),
+            (mut.atan2, math.atan2),
+        ]
+
+        a = 0.1
+        b = 0.2
+        for f_core, f_cpp in unary:
+            self.assertEquals(f_core(a), f_cpp(a), (f_core, f_cpp))
+        for f_core, f_cpp in binary:
+            self.assertEquals(f_core(a, b), f_cpp(a, b))

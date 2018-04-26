@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -14,6 +15,10 @@ using Eigen::Vector3d;
 
 namespace drake {
 namespace solvers {
+
+using symbolic::Variable;
+using symbolic::Expression;
+
 namespace {
 GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   // Update the coefficients or the bound of the linear constraint, and check
@@ -254,6 +259,39 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
               (y.array() > cnstr.upper_bound().array()).any());
   EXPECT_FALSE(cnstr.CheckSatisfied(x2));
 }
+
+GTEST_TEST(testConstraint, testExpressionConstraint) {
+  Variable x0{"x0"};
+  Variable x1{"x1"};
+  Variable x2{"x2"};
+
+  Vector3<Variable> vars{x0, x1, x2};
+  Vector2<Expression> e{ 1. + x0*x0, x1*x1 + x2 };
+
+  ExpressionConstraint constraint(e, Vector2d::Zero(), 2.*Vector2d::Ones());
+
+  const Vector3d x{.2, .4, .6};
+  VectorXd y;
+  const Vector2d y_expected{1.04, .76};
+  constraint.Eval(x, y);
+
+  EXPECT_TRUE(CompareMatrices(y, y_expected));
+
+  AutoDiffVecXd x_autodiff = drake::math::initializeAutoDiff(x);
+  AutoDiffVecXd y_autodiff;
+  Eigen::Matrix<double, 2, 3> y_gradient_expected;
+  // clang-format off
+  y_gradient_expected << .4, 0., 0.,
+                         0., .8, 1.;
+  // clang-format on
+  constraint.Eval(x_autodiff, y_autodiff);
+
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
+                              y_expected));
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
+                              y_gradient_expected));
+}
+
 // Test that the Eval() method of LinearComplementarityConstraint correctly
 // returns the slack.
 GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {

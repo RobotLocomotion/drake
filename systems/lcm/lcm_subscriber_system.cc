@@ -37,12 +37,13 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(translator),
-      serializer_(std::move(serializer)),
-      lcm_interface_(lcm) {
+      serializer_(std::move(serializer)) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
-  lcm->Subscribe(channel_, this);
+  lcm->Subscribe(channel_, [this](const void* buffer, int size) {
+      this->HandleMessage(buffer, size);
+    });
 
   if (translator_ != nullptr) {
     // Invoke the translator allocate method once to provide a model value.
@@ -145,63 +146,35 @@ int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
 void LcmSubscriberSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
     systems::CompositeEventCollection<double>* events, double* time) const {
-  const int last_message_count = GetMessageCount(context);
+  // We do not support events other than our own message timing events.
+  LeafSystem<double>::DoCalcNextUpdateTime(context, events, time);
+  DRAKE_THROW_UNLESS(events->HasEvents() == false);
+  DRAKE_THROW_UNLESS(std::isinf(*time));
 
+  // Do nothing unless we have a new message.
+  const int last_message_count = GetMessageCount(context);
   const int received_message_count = [this]() {
     std::unique_lock<std::mutex> lock(received_message_mutex_);
     return received_message_count_;
   }();
+  if (last_message_count == received_message_count) {
+    return;
+  }
 
-  // Has a new message. Schedule an update event.
-  if (last_message_count != received_message_count) {
-    // TODO(siyuan): should be context.get_time() once #5725 is resolved.
-    *time = context.get_time() + 0.0001;
-    if (translator_ == nullptr) {
-      EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
-          events->get_mutable_unrestricted_update_events();
-      uu_events.add_event(
-          std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
-              Event<double>::TriggerType::kTimed));
-    } else {
-      EventCollection<DiscreteUpdateEvent<double>>& du_events =
-          events->get_mutable_discrete_update_events();
-      du_events.add_event(
-          std::make_unique<systems::DiscreteUpdateEvent<double>>(
-              Event<double>::TriggerType::kTimed));
-    }
+  // Schedule an update event at the current time.
+  *time = context.get_time();
+  if (translator_ == nullptr) {
+    EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
+        events->get_mutable_unrestricted_update_events();
+    uu_events.add_event(
+        std::make_unique<systems::UnrestrictedUpdateEvent<double>>(
+            Event<double>::TriggerType::kTimed));
   } else {
-    // Special code to support LCM log playback. For the normal and mock LCM
-    // interfaces, this always returns inf and returns.
-    *time = lcm_interface_->GetNextMessageTime();
-    DRAKE_DEMAND(*time > context.get_time());
-    if (std::isinf(*time)) {
-      return;
-    }
-
-    // Schedule a publish event at the next message time. We use a publish
-    // event here because we only want to generate a side effect to dispatch
-    // the message properly to all the subscribers, not mutating this system's
-    // context.)
-    // Note that for every LCM subscriber in the diagram, they will all schedule
-    // this event for themselves. However, only the first subscriber executing
-    // the callback will advance the log and do the message dispatch. This is
-    // because once the first callback is executed, the front of the log will
-    // have a different timestamp than the context's time (scheduled callback
-    // time).
-    EventCollection<PublishEvent<double>>& pub_events =
-        events->get_mutable_publish_events();
-
-    PublishEvent<double>::PublishCallback callback = [this](
-        const Context<double>& c, const PublishEvent<double>&) {
-      // Want to keep polling from the message queue, if they happen
-      // to be occur at the exact same time.
-      while (lcm_interface_->GetNextMessageTime() == c.get_time()) {
-        lcm_interface_->DispatchMessageAndAdvanceLog(c.get_time());
-      }
-    };
-
-    pub_events.add_event(std::make_unique<systems::PublishEvent<double>>(
-        Event<double>::TriggerType::kTimed, callback));
+    EventCollection<DiscreteUpdateEvent<double>>& du_events =
+        events->get_mutable_discrete_update_events();
+    du_events.add_event(
+        std::make_unique<systems::DiscreteUpdateEvent<double>>(
+            Event<double>::TriggerType::kTimed));
   }
 }
 
@@ -278,30 +251,20 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
       context.get_abstract_state().get_value(kStateIndexMessage));
 }
 
-void LcmSubscriberSystem::HandleMessage(const std::string& channel,
-                                        const void* message_buffer,
-                                        int message_size) {
-  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel);
+void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
+  SPDLOG_TRACE(drake::log(), "Receiving LCM {} message", channel_);
 
-  if (channel == channel_) {
-    const uint8_t* const rbuf_begin =
-        static_cast<const uint8_t*>(message_buffer);
-    const uint8_t* const rbuf_end = rbuf_begin + message_size;
-    std::lock_guard<std::mutex> lock(received_message_mutex_);
-    received_message_.clear();
-    received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
-
-    received_message_count_++;
-    received_message_condition_variable_.notify_all();
-  } else {
-    std::cerr << "LcmSubscriberSystem: HandleMessage: WARNING: Received a "
-              << "message for channel \"" << channel
-              << "\" instead of channel \"" << channel_ << "\". Ignoring it."
-              << std::endl;
-  }
+  const uint8_t* const rbuf_begin = static_cast<const uint8_t*>(buffer);
+  const uint8_t* const rbuf_end = rbuf_begin + size;
+  std::lock_guard<std::mutex> lock(received_message_mutex_);
+  received_message_.clear();
+  received_message_.insert(received_message_.begin(), rbuf_begin, rbuf_end);
+  received_message_count_++;
+  received_message_condition_variable_.notify_all();
 }
 
-int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
+int LcmSubscriberSystem::WaitForMessage(
+    int old_message_count, AbstractValue* message) const {
   // The message buffer and counter are updated in HandleMessage(), which is
   // a callback function invoked by a different thread owned by the
   // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
@@ -310,14 +273,26 @@ int LcmSubscriberSystem::WaitForMessage(int old_message_count) const {
 
   // This while loop is necessary to guard for spurious wakeup:
   // https://en.wikipedia.org/wiki/Spurious_wakeup
-  while (old_message_count == received_message_count_)
+  while (old_message_count >= received_message_count_) {
     // When wait returns, lock is atomically acquired. So it's thread safe to
     // read received_message_count_.
     received_message_condition_variable_.wait(lock);
+  }
   int new_message_count = received_message_count_;
+  if (message) {
+      DRAKE_ASSERT(translator_ == nullptr);
+      DRAKE_ASSERT(serializer_ != nullptr);
+      serializer_->Deserialize(
+          received_message_.data(), received_message_.size(), message);
+  }
   lock.unlock();
 
   return new_message_count;
+}
+
+int LcmSubscriberSystem::GetInternalMessageCount() const {
+  std::unique_lock<std::mutex> lock(received_message_mutex_);
+  return received_message_count_;
 }
 
 const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
@@ -328,3 +303,4 @@ const LcmAndVectorBaseTranslator& LcmSubscriberSystem::get_translator() const {
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake
+

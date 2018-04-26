@@ -22,6 +22,7 @@ drake_cc_library(
     hdrs = [
         "pick_and_place_configuration.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//common",
         "//multibody/rigid_body_plant:compliant_contact_model",
@@ -43,6 +44,7 @@ drake_cc_library(
     hdrs = [
         "pick_and_place_configuration_parsing.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":pick_and_place_configuration",
         ":pick_and_place_configuration_proto",

@@ -95,10 +95,11 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   prog.AddRunningCost(prog.input().transpose() * prog.input());
 
   // Initial guess is a straight line from the initial state to the final state.
-  auto initial_state_trajectory = PiecewisePolynomial<double>::FirstOrderHold(
+  auto initial_state_trajectory =
+      trajectories::PiecewisePolynomial<double>::FirstOrderHold(
       {0, initial_duration}, {x0.get_value(), xf.get_value()});
 
-  prog.SetInitialTrajectory(PiecewisePolynomial<double>(),
+  prog.SetInitialTrajectory(trajectories::PiecewisePolynomial<double>(),
                             initial_state_trajectory);
   EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
 

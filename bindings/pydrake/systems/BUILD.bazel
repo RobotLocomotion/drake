@@ -108,23 +108,9 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "sensors_py",
-    cc_deps = [
-        "//bindings/pydrake/util:cpp_template_pybind",
-    ],
-    cc_so_name = "sensors",
-    cc_srcs = ["sensors_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":framework_py",
-        ":module_py",
-        "//bindings/pydrake/util:cpp_template_py",
-    ],
-)
-
-drake_pybind_library(
     name = "rendering_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:eigen_geometry_pybind",
     ],
     cc_so_name = "rendering",
@@ -137,6 +123,44 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "sensors_py",
+    cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/util:eigen_pybind",
+    ],
+    cc_so_name = "sensors",
+    cc_srcs = ["sensors_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "trajectory_optimization_py",
+    cc_deps = [
+        "//bindings/pydrake:symbolic_types_pybind",
+    ],
+    cc_so_name = "trajectory_optimization",
+    cc_srcs = ["trajectory_optimization_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":framework_py",
+        ":module_py",
+        "//bindings/pydrake/solvers:mathematicalprogram_py",
+        "//bindings/pydrake:trajectories_py",
+    ],
+)
+
+# TODO(eric.cousineau): Put this under test once `pydot` is in
+# `install_prereqs.sh`.
 drake_py_library(
     name = "drawing_py",
     srcs = ["drawing.py"],
@@ -151,6 +175,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":primitives_py",
     ":rendering_py",
     ":sensors_py",
+    ":trajectory_optimization_py",
 ]
 
 PY_LIBRARIES = [
@@ -188,11 +213,9 @@ drake_py_unittest(
     ],
 )
 
-# TODO(eric.cousineau): Convert this to a workflow test once `pydot` is added
-# to `install_prereqs.sh`.
 drake_py_binary(
-    name = "graphviz_example",
-    srcs = ["test/graphviz_example.py"],
+    name = "drawing_graphviz_example",
+    srcs = ["drawing_graphviz_example.py"],
     deps = [
         ":drawing_py",
         ":framework_py",
@@ -263,14 +286,7 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":primitives_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "sensors_test",
-    size = "small",
-    deps = [
-        ":sensors_py",
+        ":test_util_py",
     ],
 )
 
@@ -279,6 +295,38 @@ drake_py_unittest(
     size = "small",
     deps = [
         ":rendering_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sensors_test",
+    size = "small",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    deps = [
+        ":sensors_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "trajectory_optimization_test",
+    size = "small",
+    deps = [
+        ":trajectory_optimization_py",
+        "//bindings/pydrake/examples:pendulum_py",
+    ],
+)
+
+drake_py_binary(
+    name = "rgbd_camera_example",
+    srcs = ["rgbd_camera_example.py"],
+    data = [
+        "//multibody:models",
+    ],
+    deps = [
+        ":sensors_py",
     ],
 )
 

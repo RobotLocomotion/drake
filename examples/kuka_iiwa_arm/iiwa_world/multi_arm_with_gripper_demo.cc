@@ -16,6 +16,7 @@ namespace {
 using manipulation::util::ModelInstanceInfo;
 using manipulation::util::WorldSimTreeBuilder;
 using manipulation::util::SimDiagramBuilder;
+using trajectories::PiecewisePolynomial;
 
 std::unique_ptr<RigidBodyTree<double>> build_tree(
     int num_pairs, std::vector<ModelInstanceInfo<double>>* iiwa,
@@ -78,7 +79,7 @@ void main() {
     // Adds a trajectory source for desired state and accelerations.
     iiwa_traj_src =
         diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
-            PiecewisePolynomialTrajectory(poly), 1);
+            poly, 1);
   }
 
   // Generates a desired plan for all wsg grippers.
@@ -93,7 +94,7 @@ void main() {
     // Adds a trajectory source for desired state and accelerations.
     wsg_traj_src =
         diagram_builder->template AddSystem<systems::TrajectorySource<double>>(
-            PiecewisePolynomialTrajectory(poly), 1);
+            poly, 1);
   }
 
   // Adds controllers for all the iiwa arms.

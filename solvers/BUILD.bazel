@@ -29,6 +29,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//math:autodiff",
         "//math:matrix_util",
     ],
 )
@@ -38,10 +39,13 @@ drake_cc_library(
     srcs = ["constraint.cc"],
     hdrs = ["constraint.h"],
     deps = [
+        ":decision_variable",
         ":evaluator_base",
+        ":symbolic_extraction",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//common:symbolic",
         "//math:matrix_util",
     ],
 )
@@ -164,6 +168,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":solver_type",
+        ":unrevised_lemke_solver",
         "//common:essential",
     ],
 )
@@ -194,6 +199,7 @@ drake_cc_library(
         ":snopt_solver",
         ":solver_id",
         ":symbolic_extraction",
+        ":unrevised_lemke_solver",
         "//common:autodiff",
         "//common:essential",
         "//common:number_traits",
@@ -441,6 +447,17 @@ drake_cc_library(
     hdrs = ["linear_system_solver.h"],
     deps = [
         ":mathematical_program_api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "unrevised_lemke_solver",
+    srcs = ["unrevised_lemke_solver.cc"],
+    hdrs = ["unrevised_lemke_solver.h"],
+    deps = [
+        ":mathematical_program_api",
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -733,7 +750,7 @@ drake_cc_googletest(
         ":branch_and_bound",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -938,6 +955,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "unrevised_lemke_solver_test",
+    deps = [
+        ":mathematical_program",
+        ":unrevised_lemke_solver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "mosek_solver_test",
     srcs = [
         "test/mosek_solver_test.cc",
@@ -1035,7 +1061,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":osqp_solver",
         ":quadratic_program_examples",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -1094,6 +1120,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
+        "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "@spruce",
     ],
@@ -1109,6 +1136,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "solver_type_converter_test",
     deps = [
+        ":mathematical_program",
         ":solver_type_converter",
     ],
 )

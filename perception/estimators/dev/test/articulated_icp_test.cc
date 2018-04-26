@@ -47,9 +47,7 @@ class ArticulatedIcpVisualizer : public PointCloudVisualizer {
   void Init() {
     const lcmt_viewer_load_robot load_msg(
         (multibody::CreateLoadRobotMessage<double>(scene_->tree())));
-    vector<uint8_t> bytes(load_msg.getEncodedSize());
-    load_msg.encode(bytes.data(), 0, bytes.size());
-    lcm().Publish("DRAKE_VIEWER_LOAD_ROBOT", bytes.data(), bytes.size());
+    Publish(&lcm(), "DRAKE_VIEWER_LOAD_ROBOT", load_msg);
   }
   void PublishScene(const SceneState& scene_state) {
     const ViewerDrawTranslator draw_msg_tx(scene_->tree());
@@ -63,7 +61,7 @@ class ArticulatedIcpVisualizer : public PointCloudVisualizer {
     xb.setZero();
     xb.head(num_q) = scene_state.q();
     draw_msg_tx.Serialize(0, x, &bytes);
-    lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size());
+    lcm().Publish("DRAKE_VIEWER_DRAW", bytes.data(), bytes.size(), {});
   }
 
  private:

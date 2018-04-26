@@ -21,11 +21,11 @@ load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
 load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
-load("@drake//tools/workspace/gthread:repository.bzl", "gthread_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repository")  # noqa
 load("@drake//tools/workspace/ignition_rndf:repository.bzl", "ignition_rndf_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
+load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
@@ -112,8 +112,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         godotengine_repository(name = "godotengine", mirrors = mirrors)
     if "gtest" not in excludes:
         gtest_repository(name = "gtest", mirrors = mirrors)
-    if "gthread" not in excludes:
-        gthread_repository(name = "gthread")
     if "gurobi" not in excludes:
         gurobi_repository(name = "gurobi")
     if "ignition_math" not in excludes:
@@ -122,6 +120,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ignition_rndf_repository(name = "ignition_rndf", mirrors = mirrors)
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
+    if "json" not in excludes:
+        json_repository(name = "json", mirrors = mirrors)
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:

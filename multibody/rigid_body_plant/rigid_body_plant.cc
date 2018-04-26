@@ -71,6 +71,17 @@ void RigidBodyPlant<T>::initialize() {
       this->DeclareVectorOutputPort(BasicVector<T>(get_num_states()),
                                     &RigidBodyPlant::CopyStateToOutput)
           .get_index();
+  if (is_state_discrete()) {
+    // TODO(jwnimmer-tri) Add an implementation of the state derivative output
+    // port that works in the discretized mode.  For now, we just disable the
+    // port entirely and have a cautionary API comment on its accessor.
+  } else {
+    state_derivative_output_port_index_ =
+        this->DeclareVectorOutputPort(
+            BasicVector<T>(get_num_states()),
+            &RigidBodyPlant::CalcStateDerivativeOutput)
+        .get_index();
+  }
   ExportModelInstanceCentricPorts();
   // Declares an abstract valued output port for kinematics results.
   kinematics_output_port_index_ =
@@ -82,15 +93,15 @@ void RigidBodyPlant<T>::initialize() {
   // Declares an abstract valued output port for contact information.
   contact_output_port_index_ = DeclareContactResultsOutputPort();
 
-  // @TODO(edrumwri): Remove this once the time stepping constraint force
+  // @TODO(edrumwri): Remove this once the discretization constraint "force"
   //                  results have been cached (which will allow us to compute
   //                  the contact force outputs the "proper" way and obviate the
   //                  need to initialize the generalized contact force vector in
   //                  this way).
-  time_stepping_contact_results_.set_generalized_contact_force(
+  discretized_system_contact_results_.set_generalized_contact_force(
       VectorX<T>::Zero(tree_->get_num_velocities()));
 
-  // Schedule time stepping update.
+  // Schedule discretization update.
   if (timestep_ > 0.0)
     this->DeclarePeriodicDiscreteUpdate(timestep_);
 }
@@ -485,6 +496,15 @@ void RigidBodyPlant<T>::CopyStateToOutput(const Context<T>& context,
                             : context.get_continuous_state().CopyToVector();
 
   state_output_vector->get_mutable_value() = state_vector;
+}
+
+template <typename T>
+void RigidBodyPlant<T>::CalcStateDerivativeOutput(
+    const Context<T>& context,
+    BasicVector<T>* output) const {
+  unique_ptr<ContinuousState<T>> derivatives = this->AllocateTimeDerivatives();
+  this->CalcTimeDerivatives(context, derivatives.get());
+  output->SetFrom(derivatives->get_vector());
 }
 
 // Updates one model-instance-centric state output port.
@@ -1042,7 +1062,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const T denom = dt * stiffness + damping;
     const T cfm = 1.0 / denom;
     const T erp = (dt * stiffness) / denom;
-    data.gammaN[i] = cfm;
+    data.gammaN[i] = cfm / dt;
     data.kN[i] = erp * contacts[i].distance / dt;
   }
 
@@ -1064,7 +1084,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
       // See whether the joint is currently violated or the *current* joint
       // velocity might lead to a limit violation. The latter is a heuristic to
-      // incorporate the joint limit into the time stepping calculations before
+      // incorporate the joint limit into the discretization calculations before
       // it is violated.
       if (qjoint < qmin || qjoint + vjoint * dt < qmin) {
         // Institute a lower limit.
@@ -1117,7 +1137,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
   // transpose_mult() operation.
-  data.L_mult = [this, &limits](const VectorX<T>& w) -> VectorX<T> {
+  data.L_mult = [&limits](const VectorX<T>& w) -> VectorX<T> {
     VectorX<T> result(limits.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
       const int index = limits[i].v_index;
@@ -1165,7 +1185,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.kL.resize(limits.size());
   for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = default_limit_erp * limits[i].signed_distance / dt;
-  data.gammaL.setOnes(limits.size()) *= default_limit_cfm;
+  data.gammaL.setOnes(limits.size()) *= default_limit_cfm / dt;
 
   // Set Jacobians for bilateral constraint terms.
   // TODO(edrumwri): Make erp individually settable.
@@ -1173,10 +1193,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.kG = default_bilateral_erp *
       tree.positionConstraints(kinematics_cache) / dt;
   const auto G = tree.positionConstraintsJacobian(kinematics_cache, false);
-  data.G_mult = [this, &G](const VectorX<T>& w) -> VectorX<T> {
-    return G * w;
-  };
-  data.G_transpose_mult = [this, &G](const VectorX<T>& lambda) {
+  data.G_mult = [&G](const VectorX<T>& w) -> VectorX<T> { return G * w; };
+  data.G_transpose_mult = [&G](const VectorX<T>& lambda) {
     return G.transpose() * lambda;
   };
 
@@ -1216,9 +1234,9 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
-  ComputeTimeSteppingContactResults(dt, contacts, data, kinematics_cache,
-                                    constraint_force,
-                                    &time_stepping_contact_results_);
+  ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
+                                    constraint_force / dt,
+                                    &discretized_system_contact_results_);
 
   // qn = q + dt*qdot.
   VectorX<T> xn(this->get_num_states());
@@ -1232,7 +1250,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 // geometric data (`contacts`), the time stepping problem data, and the computed
 // contact force (impulse) solution.
 template <typename T>
-void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
+void RigidBodyPlant<T>::ComputeDiscretizedSystemContactResults(
     const T& dt,
     const std::vector<multibody::collision::PointPair<T>>& contacts,
     const multibody::constraint::ConstraintVelProblemData<T>& data,
@@ -1294,16 +1312,15 @@ void RigidBodyPlant<T>::ComputeTimeSteppingContactResults(
     }
 
     ++normal_force_index;
-    const ContactForce<T> resultant_force(p_W, contact.normal, force / dt);
+    const ContactForce<T> resultant_force(p_W, contact.normal, force);
     contact_result.set_resultant_force(resultant_force);
     contact_details.emplace_back(new PointContactDetail<T>(resultant_force));
     contact_result.set_contact_details(std::move(contact_details));
   }
 
-  // Convert the contact forces to generalized forces by using the constraint
-  // solvers function for doing so, but first zeroing joint limit and bilateral
-  // constraint forces, in order to get *just* the generalized forces due to
-  // contact.
+  // Convert the contact forces to generalized forces after first zeroing
+  // range-of-motion and bilateral constraint forces first- we do not want those
+  // accounted for in the calculation.
   VectorX<T> generalized_contact_force;
   const int limits_start = contacts.size() + total_friction_cone_edges;
   VectorX<T> contact_force = constraint_force;
@@ -1323,7 +1340,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>&,
     drake::systems::DiscreteValues<U>*) const {
   throw std::runtime_error(
-      "RigidBodyPlant with discrete updates (time-stepping) currently only "
+      "Discretized RigidBodyPlant currently only "
           "supports T=double.");
 }
 
@@ -1446,14 +1463,10 @@ void RigidBodyPlant<T>::CalcContactResultsOutput(
   contacts->set_generalized_contact_force(
       VectorX<T>::Zero(get_num_velocities()));
 
-  // Computing the contact forces from scratch, as is currently done for the
-  // continuous time plant, is a bad idea for the discretized plant since a
-  // mathematical programming problem must be solved. The discretized plant
-  // uses a discretized contact model, with results dependent upon the step
-  // size. Therefore, we do not use the continuous plant's contact forces,
-  // because we want better than an estimate of the contact forces.
+  // If the state is discrete, we use the last contact results, which we can
+  // do because the discretized model only steps forward in time.
   if (is_state_discrete()) {
-    *contacts = time_stepping_contact_results_;
+    *contacts = discretized_system_contact_results_;
     return;
   }
 

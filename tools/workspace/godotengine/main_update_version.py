@@ -5,7 +5,7 @@ import sys
 
 # Load godotengine's SCons implementation of this feature.
 # See https://github.com/godotengine/godot/blob/master/methods.py.
-from methods import update_version
+from godotengine.methods import update_version
 
 # Turn the path "genfiles/external/godotengine/core/version_generated.gen.h"
 # into just the base "genfiles/external/godotengine".

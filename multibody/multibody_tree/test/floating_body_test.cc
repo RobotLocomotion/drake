@@ -10,6 +10,17 @@
 
 namespace drake {
 namespace multibody {
+
+// Friend tester class for accessing MultibodyTree protected/private internals.
+class MultibodyTreeTester {
+ public:
+  MultibodyTreeTester() = delete;
+  static const QuaternionFloatingMobilizer<double>& get_floating_mobilizer(
+      const MultibodyTree<double>& model, const Body<double>& body) {
+    return model.GetFreeBodyMobilizerOrThrow(body);
+  }
+};
+
 namespace multibody_tree {
 namespace test {
 namespace {
@@ -68,7 +79,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
       free_body_plant.get_default_initial_translational_velocity();
 
   const QuaternionFloatingMobilizer<double>& mobilizer =
-      free_body_plant.mobilizer();
+      MultibodyTreeTester::get_floating_mobilizer(
+          free_body_plant.model(), free_body_plant.body());
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
   mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
@@ -253,8 +265,6 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, kInertia, kInertia, acceleration_of_gravity);
-  const QuaternionFloatingMobilizer<double>& mobilizer =
-      free_body_plant.mobilizer();
   const MultibodyTree<double>& model = free_body_plant.model();
 
   std::unique_ptr<Context<double>> context =
@@ -272,14 +282,19 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // propagate to the time derivatives through the kinematic maps.
   EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kEpsilon);
 
-  mobilizer.set_position(context.get(), p_WB);
-  mobilizer.set_quaternion(context.get(), q_WB);
+  Isometry3d X_WB = Isometry3d::Identity();
+  X_WB.linear() = q_WB.matrix();
+  X_WB.translation() = p_WB;
+  EXPECT_NO_THROW(
+      model.SetFreeBodyPoseOrThrow(
+          free_body_plant.body(), X_WB, context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);
   const Vector3d v_WB(-1.0, 4.0, -0.5);
-  mobilizer.set_angular_velocity(context.get(), w_WB);
-  mobilizer.set_translational_velocity(context.get(), v_WB);
+  EXPECT_NO_THROW(
+      model.SetFreeBodySpatialVelocityOrThrow(
+          free_body_plant.body(), {w_WB, v_WB}, context.get()));
 
   // Map generalized velocities to time derivatives of generalized positions.
   VectorX<double> qdot_from_v(model.num_positions());

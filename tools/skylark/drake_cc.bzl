@@ -1,11 +1,5 @@
 # -*- python -*-
 
-load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
-)
-
 # Keep CXX_FLAGS, CLANG_FLAGS, and GCC_FLAGS in sync with CMAKE_CXX_FLAGS in
 # matlab/cmake/flags.cmake.
 
@@ -13,33 +7,33 @@ load(
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=deprecated",
+    "-Werror=deprecated-declarations",
     "-Werror=ignored-qualifiers",
-    "-Werror=overloaded-virtual",
     "-Werror=old-style-cast",
+    "-Werror=overloaded-virtual",
+    "-Werror=shadow",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with clang.
 CLANG_FLAGS = CXX_FLAGS + [
-    "-Werror=shadow",
     "-Werror=inconsistent-missing-override",
-    "-Werror=sign-compare",
-    "-Werror=return-stack-address",
     "-Werror=non-virtual-dtor",
+    "-Werror=return-stack-address",
+    "-Werror=sign-compare",
 ]
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
 GCC_FLAGS = CXX_FLAGS + [
     "-Werror=extra",
-    "-Werror=return-local-addr",
-    "-Werror=non-virtual-dtor",
-    "-Werror=unused-but-set-parameter",
     "-Werror=logical-op",
+    "-Werror=non-virtual-dtor",
+    "-Werror=return-local-addr",
+    "-Werror=unused-but-set-parameter",
     # TODO(jwnimmer-tri) Fix these warnings and remove this suppression.
     "-Wno-missing-field-initializers",
-    # TODO(#2852) Turn on shadow checking for g++ once we use a version that
-    # fixes https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57709
 ]
 
 # The GCC_CC_TEST_FLAGS will be enabled for all cc_test rules in the project
@@ -48,9 +42,9 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
-def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
-    """Returns both the rule_copts (plus rule_gcc_copts iff under GCC), and
-    platform-specific copts.
+def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
+    """Returns both the rule_copts (plus rule_{cc}_copts iff under the
+    specified compiler), and platform-specific copts.
 
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
     to 1 from cc_test rules or rules that are boil down to cc_test rules.
@@ -59,8 +53,10 @@ def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
     return select({
-        "//tools/cc_toolchain:apple": CLANG_FLAGS + rule_copts,
-        "//tools/cc_toolchain:clang4.0-linux": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:apple":
+            CLANG_FLAGS + rule_copts + rule_clang_copts,
+        "//tools/cc_toolchain:clang4.0-linux":
+            CLANG_FLAGS + rule_copts + rule_clang_copts,
         "//tools/cc_toolchain:gcc5-linux":
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
         "//tools/cc_toolchain:gcc6-linux":
@@ -127,7 +123,7 @@ def installed_headers_for_dep(dep):
         last_slash = dep.rindex("/")
         libname = dep[last_slash + 1:]
         result = dep + ":" + libname + suffix
-    return adjust_label_for_drake_hoist(result)
+    return result
 
 def installed_headers_for_drake_deps(deps):
     """Filters `deps` to find drake labels (i.e., discard third_party labels),
@@ -229,7 +225,6 @@ def _raw_drake_cc_library(
         name,
         hdrs = [],
         srcs = [],  # Cannot list any headers here.
-        data = [],
         deps = [],
         declare_installed_headers = 0,
         install_hdrs_exclude = [],
@@ -239,8 +234,6 @@ def _raw_drake_cc_library(
     a drake_installed_headers() target.  (This should be set if and only if the
     caller is drake_cc_library.)
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
     _check_library_deps_blacklist(name, deps)
     _, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
@@ -257,7 +250,6 @@ def _raw_drake_cc_library(
         hdrs = hdrs,
         srcs = srcs,
         deps = deps,
-        data = data,
         strip_include_prefix = strip_include_prefix,
         include_prefix = include_prefix,
         **kwargs)
@@ -309,6 +301,7 @@ def drake_cc_library(
         srcs = [],
         deps = [],
         copts = [],
+        clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
         install_hdrs_exclude = [],
@@ -324,7 +317,7 @@ def drake_cc_library(
     of Drake).  In other words, all of Drake's C++ libraries must be declared
     using the drake_cc_library macro.
     """
-    new_copts = _platform_copts(copts, gcc_copts)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     # We install private_hdrs by default, because Bazel's visibility denotes
     # whether headers can be *directly* included when using cc_library; it does
     # not precisely relate to which headers should appear in the install tree.
@@ -357,6 +350,7 @@ def drake_cc_binary(
         copts = [],
         linkopts = [],
         gcc_copts = [],
+        clang_copts = [],
         linkshared = 0,
         linkstatic = 1,
         testonly = 0,
@@ -377,9 +371,7 @@ def drake_cc_binary(
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
-    new_copts = _platform_copts(copts, gcc_copts)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
         srcs = srcs,
@@ -398,7 +390,9 @@ def drake_cc_binary(
         linkopts = select({
             "//tools/cc_toolchain:apple": linkopts,
             "//conditions:default": linkopts + [
-                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu -Wl,--disable-new-dtags",
+                "-Wl,--disable-new-dtags",
+                "-Wl,-rpath=/usr/lib/x86_64-linux-gnu",
+                "-Wl,-soname," + name,
             ],
         })
 
@@ -441,16 +435,17 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
+            tags = kwargs.pop("tags", []) + ["nolint"],
             **kwargs)
 
 def drake_cc_test(
         name,
         size = None,
         srcs = [],
-        data = [],
         deps = [],
         copts = [],
         gcc_copts = [],
+        clang_copts = [],
         disable_in_compilation_mode_dbg = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
@@ -464,14 +459,12 @@ def drake_cc_test(
     in debug-mode builds, so the test will trivially pass. This option should
     be used only rarely, and the reason should always be documented.
     """
-    data = adjust_labels_for_drake_hoist(data)
-    deps = adjust_labels_for_drake_hoist(deps)
     if size == None:
         size = "small"
     if not srcs:
         srcs = ["test/%s.cc" % name]
     kwargs['testonly'] = 1
-    new_copts = _platform_copts(copts, gcc_copts, cc_test = 1)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
         srcs = srcs,
@@ -489,7 +482,6 @@ def drake_cc_test(
         name = name,
         size = size,
         srcs = new_srcs,
-        data = data,
         deps = new_deps,
         copts = new_copts,
         **kwargs)
@@ -523,9 +515,9 @@ def drake_cc_googletest(
     be used only rarely, and the reason should always be documented.
     """
     if use_default_main:
-        deps = deps + adjust_labels_for_drake_hoist([
-            "//drake/common/test_utilities:drake_cc_googletest_main",
-        ])
+        deps = deps + [
+            "//common/test_utilities:drake_cc_googletest_main",
+        ]
     else:
         deps = deps + ["@gtest//:without_main"]
     drake_cc_test(

@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -385,6 +386,13 @@ class Simulator {
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
 
+  // The vector of active witness functions.
+  std::unique_ptr<std::vector<const WitnessFunction<T>*>> witness_functions_;
+
+  // Indicator for whether the Simulator needs to redetermine the active witness
+  // functions.
+  bool redetermine_active_witnesses_{true};
+
   // Per step events that are to be handled on every "major time step" (i.e.,
   // every successful completion of a step). This collection is set within
   // Initialize().
@@ -395,6 +403,14 @@ class Simulator {
 
   // Pre-allocated temporaries for states from unrestricted updates.
   std::unique_ptr<State<T>> unrestricted_updates_;
+
+  // Pre-allocated temporary for ContinuousState passed to event handlers after
+  // witness function triggering.
+  std::unique_ptr<ContinuousState<T>> event_handler_xc_;
+
+  // Mapping of witness functions to pre-allocated events.
+  std::unordered_map<const WitnessFunction<T>*, std::unique_ptr<Event<T>>>
+      witness_function_events_;
 };
 
 template <typename T>
@@ -421,6 +437,13 @@ Simulator<T>::Simulator(const System<T>& system,
   // (which will then be transferred back to system state).
   discrete_updates_ = system_.AllocateDiscreteVariables();
   unrestricted_updates_ = context_->CloneState();
+
+  // Allocate the vector of active witness functions.
+  witness_functions_ = std::make_unique<
+      std::vector<const WitnessFunction<T>*>>();
+
+  // Allocate the necessary temporary for witness-based event handling.
+  event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
 template <typename T>
@@ -474,6 +497,9 @@ void Simulator<T>::HandleUnrestrictedUpdate(
     State<T>& x = context_->get_mutable_state();
     x.CopyFrom(*unrestricted_updates_);
     ++num_unrestricted_updates_;
+
+    // Mark the witness function vector as needing to be redetermined.
+    redetermine_active_witnesses_ = true;
   }
 }
 
@@ -598,6 +624,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
 
     // TODO(sherm1) Constraint projection goes here.
   }
+
+  // TODO(edrumwri): Add test coverage to complete #8490.
+  redetermine_active_witnesses_ = true;
 }
 
 template <class T>
@@ -607,9 +636,12 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
   // TODO(edrumwri): Add ability to disable witness time isolation through
   // a Simulator setting.
 
-  // The scale factor for witness isolation.
-  // TODO(edrumwri): Consider making this user-settable.
-  const double iso_scale_factor = 1.0;
+  // The scale factor for witness isolation accuracy, which can allow witness
+  // function zeros to be isolated more or less tightly, for positive values
+  // less than one and greater than one, respectively. This number should be a
+  // reasonable default that allows witness isolation accuracy to be
+  // commensurate with integrator accuracy for most systems.
+  const double iso_scale_factor = 0.01;
 
   // TODO(edrumwri): Acquire characteristic time properly from the system
   //                 (i.e., modify the System to provide this value).
@@ -632,7 +664,7 @@ optional<T> Simulator<T>::GetCurrentWitnessTimeIsolation() const {
 
   // Integration with error control isolation window determination.
   if (!accuracy) {
-    throw std::logic_error("Integrator is not operating in fixed step mode"
+    throw std::logic_error("Integrator is not operating in fixed step mode "
                                "and accuracy is not set in the context.");
   }
 
@@ -713,7 +745,7 @@ void Simulator<T>::IsolateWitnessTriggers(
     // See whether any witness functions trigger.
     bool trigger = false;
     for (size_t i = 0; i < witnesses.size(); ++i) {
-      wc[i] = get_system().EvaluateWitness(context, *witnesses[i]);
+      wc[i] = get_system().CalcWitnessValue(context, *witnesses[i]);
       if (witnesses[i]->should_trigger(w0[i], wc[i]))
         trigger = true;
     }
@@ -769,15 +801,19 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
-  // Get the set of witness functions active at the current time.
+  // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
-  std::vector<const WitnessFunction<T>*> witness_functions;
-  system.GetWitnessFunctions(context, &witness_functions);
+  if (redetermine_active_witnesses_) {
+    witness_functions_->clear();
+    system.GetWitnessFunctions(context, witness_functions_.get());
+    redetermine_active_witnesses_ = false;
+  }
+  const auto& witness_functions = *witness_functions_;
 
   // Evaluate the witness functions.
   w0_.resize(witness_functions.size());
   for (size_t i = 0; i < witness_functions.size(); ++i)
-      w0_[i] = system.EvaluateWitness(context, *witness_functions[i]);
+      w0_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
 
   // Attempt to integrate. Updates and boundary times are consciously
   // distinguished between. See internal documentation for
@@ -790,7 +826,7 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
   // Evaluate the witness functions again.
   wf_.resize(witness_functions.size());
   for (size_t i =0; i < witness_functions.size(); ++i)
-    wf_[i] = system.EvaluateWitness(context, *witness_functions[i]);
+    wf_[i] = system.CalcWitnessValue(context, *witness_functions[i]);
 
   // See whether a witness function triggered.
   triggered_witnesses_.clear();
@@ -808,12 +844,41 @@ bool Simulator<T>::IntegrateContinuousState(const T& next_publish_dt,
     IsolateWitnessTriggers(witness_functions, w0_, t0, x0, tf,
                              &triggered_witnesses_);
 
+    // Store the state at x0 in the temporary continuous state. We only do this
+    // if there are triggered witnesses (even though `witness_triggered` is
+    // `true`, the witness might not have actually triggered after isolation).
+    if (!triggered_witnesses_.empty())
+      event_handler_xc_->SetFromVector(x0);
+
     // Store witness function(s) that triggered.
     for (const WitnessFunction<T>* fn : triggered_witnesses_) {
       SPDLOG_DEBUG(drake::log(), "Witness function {} crossed zero at time {}",
-                   fn->get_name(), context.get_time());
+                   fn->description(), context.get_time());
+
+      // Skip witness functions that have no associated event.
+      if (!fn->get_event())
+        continue;
+
+      // Get the event object that corresponds to this witness function. If
+      // there is none, create it.
+      auto& event = witness_function_events_[fn];
+      if (!event) {
+        event = fn->get_event()->Clone();
+        event->set_trigger_type(Event<T>::TriggerType::kWitness);
+        event->set_event_data(std::make_unique<WitnessTriggeredEventData<T>>());
+      }
+
+      // Populate the event data.
+      auto event_data = static_cast<WitnessTriggeredEventData<T>*>(
+          event->get_mutable_event_data());
+      event_data->set_triggered_witness(fn);
+      event_data->set_t0(t0);
+      event_data->set_tf(tf);
+      event_data->set_xc0(event_handler_xc_.get());
+      event_data->set_xcf(&context_->get_continuous_state());
       system.AddTriggeredWitnessFunctionToCompositeEventCollection(
-          *fn, events);
+          event.get(),
+          events);
     }
 
     // Indicate a "sample time was hit" if at least one witness function

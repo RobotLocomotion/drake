@@ -15,10 +15,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "piecewise_function",
-    srcs = ["piecewise_function.cc"],
-    hdrs = ["piecewise_function.h"],
+    name = "piecewise_trajectory",
+    srcs = ["piecewise_trajectory.cc"],
+    hdrs = ["piecewise_trajectory.h"],
     deps = [
+        ":trajectory",
         "//common:essential",
     ],
 )
@@ -28,28 +29,15 @@ drake_cc_library(
     srcs = [
         "exponential_plus_piecewise_polynomial.cc",
         "piecewise_polynomial.cc",
-        "piecewise_polynomial_base.cc",
     ],
     hdrs = [
         "exponential_plus_piecewise_polynomial.h",
         "piecewise_polynomial.h",
-        "piecewise_polynomial_base.h",
     ],
     deps = [
-        ":piecewise_function",
+        ":piecewise_trajectory",
         "//common:essential",
         "//common:polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_trajectory",
-    srcs = ["piecewise_polynomial_trajectory.cc"],
-    hdrs = ["piecewise_polynomial_trajectory.h"],
-    deps = [
-        ":piecewise_polynomial",
-        ":trajectory",
-        "//common:essential",
     ],
 )
 
@@ -58,7 +46,8 @@ drake_cc_library(
     srcs = ["piecewise_quaternion.cc"],
     hdrs = ["piecewise_quaternion.h"],
     deps = [
-        ":piecewise_function",
+        ":piecewise_polynomial",
+        ":piecewise_trajectory",
         "//common:essential",
         "//math:geometric_transform",
     ],
@@ -76,9 +65,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "piecewise_function_test",
+    name = "piecewise_trajectory_test",
     deps = [
-        ":piecewise_function",
+        ":piecewise_trajectory",
     ],
 )
 
@@ -106,15 +95,6 @@ drake_cc_googletest(
     name = "exponential_plus_piecewise_polynomial_test",
     deps = [
         ":piecewise_polynomial",
-        ":random_piecewise_polynomial",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "piecewise_polynomial_trajectory_test",
-    deps = [
-        ":piecewise_polynomial_trajectory",
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
     ],

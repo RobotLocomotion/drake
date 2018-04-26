@@ -9,6 +9,10 @@ def resolve_path(relpath):
     return abspath
 
 
+def set_path(key, relpath):
+    os.environ[key] = resolve_path(relpath)
+
+
 def prepend_path(key, relpath):
     os.environ[key] = resolve_path(relpath) + ":" + os.environ.get(key, '')
 
@@ -27,10 +31,10 @@ assert runfiles_dir, (
 stub_relpath = "tools/workspace/drake_visualizer/stub"
 if os.path.exists(os.path.join(runfiles_dir, "external/drake")):
     # This is for bazel run @drake//tools:drake_visualizer.
-    prepend_path('PYTHONPATH', "external/drake/" + stub_relpath)
+    prepend_path("PYTHONPATH", "external/drake/" + stub_relpath)
 else:
     # This is for bazel run //tools:drake_visualizer.
-    prepend_path('PYTHONPATH', stub_relpath)
+    prepend_path("PYTHONPATH", stub_relpath)
 
 # Don't use DRAKE_RESOURCE_ROOT; the stub getDrakePath should always win.  This
 # also placates the drake-visualizer logic that puts it into Director mode when
@@ -44,8 +48,8 @@ except KeyError:
 # these on its own.
 if sys.platform.startswith("linux"):
     # Ensure that we handle LD_LIBRARY_PATH and PYTHONPATH for `@vtk`.
-    prepend_path('LD_LIBRARY_PATH', "external/vtk/lib")
-    prepend_path('PYTHONPATH', "external/vtk/lib/python2.7/site-packages")
+    set_path("LD_LIBRARY_PATH", "external/vtk/lib")
+    prepend_path("PYTHONPATH", "external/vtk/lib/python2.7/site-packages")
 
 # Execute binary.
 bin_path = resolve_path("external/drake_visualizer/bin/drake-visualizer")

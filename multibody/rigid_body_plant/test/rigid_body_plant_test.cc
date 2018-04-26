@@ -334,19 +334,32 @@ TEST_P(KukaArmTest, EvalOutput) {
   auto x = kuka_plant_->GetStateVector(*context_);
   ASSERT_EQ(x, desired_state);
 
-  // Five output ports:
+  // Output ports:
   //
   //    (1) plant state
-  //    (2) model instance state for tree containing a single model instance
-  //    (3) kinematic results
-  //    (4) contact results
-  //    (5) model instance measure joint torque
+  //    (2) plant state derivative [only when non-discrete]
+  //    (3) model instance state for tree containing a single model instance
+  //    (4) kinematic results
+  //    (5) contact results
+  //    (6) model instance measure joint torque
   //
   // (In this context, there is only one model instance and thus only one model
   // instance state port.)
-  ASSERT_EQ(5, output_->get_num_ports());
+  if (kuka_plant_->is_state_discrete()) {
+    ASSERT_EQ(5, output_->get_num_ports());
+  } else {
+    ASSERT_EQ(6, output_->get_num_ports());
+  }
 
   kuka_plant_->CalcOutput(*context_, output_.get());
+
+  if (!kuka_plant_->is_state_discrete()) {
+    const int state_derivative_output_port_index =
+        kuka_plant_->state_derivative_output_port().get_index();
+    EXPECT_EQ(
+        output_->get_vector_data(state_derivative_output_port_index)->size(),
+        kNumPositions_ + kNumVelocities_);
+  }
 
   // Check that the per-instance port (we should only have one) equals
   // the expected state.
@@ -370,15 +383,10 @@ TEST_P(KukaArmTest, EvalOutput) {
   auto cache = tree.doKinematics(q, v);
 
   for (int ibody = 0; ibody < kuka_plant_->get_num_bodies(); ++ibody) {
-    Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
-    Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
-    // Note that Eigen quaternion elements are not laid out in memory in the
-    // same way Drake currently aligns them. See issue #3470.
-    // When solved we will not need to instantiate a temporary Quaternion below
-    // just to perform a comparison.
-    Quaterniond quat(quat_vector[0], quat_vector[1], quat_vector[2],
-                     quat_vector[3]);
-    Vector3d position = pose.translation();
+    const Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
+    const math::RotationMatrix<double> R(pose.linear());
+    const Eigen::Quaterniond quat = R.ToQuaternion();
+    const Vector3d position = pose.translation();
     EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
     EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
   }

@@ -32,7 +32,6 @@
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
-#define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
@@ -788,9 +787,9 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return drake::math::rotmat2quat(
-        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
-            .linear());
+    const drake::Matrix3<Scalar> R = relativeTransform(cache,
+                         to_body_or_frame_ind, from_body_or_frame_ind).linear();
+    return drake::math::RotationMatrix<Scalar>::ToQuaternionAsVector4(R);
   }
 
   template <typename Scalar>
@@ -807,7 +806,15 @@ class RigidBodyTree {
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
       int from_body_or_frame_ind, int to_body_or_frame_ind,
-      bool in_terms_of_qdot) const;
+      bool in_terms_of_qdot) const {
+    using PointScalar = typename std::conditional<
+      std::is_same<typename DerivedPoints::Scalar, double>::value,
+      double, drake::AutoDiffXd>::type;
+    return DoTransformPointsJacobian<Scalar, PointScalar>(
+        cache,
+        points.template cast<PointScalar>().eval(),
+        from_body_or_frame_ind, to_body_or_frame_ind, in_terms_of_qdot);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kQuaternionSize, Eigen::Dynamic>
@@ -833,7 +840,10 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
-      int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+      int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return DoTransformPointsJacobianDotTimesV<Scalar>(
+        cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(
@@ -937,7 +947,7 @@ class RigidBodyTree {
   }
 
   /**
-   * Updates the collision elements registered with the collision detection 
+   * Updates the collision elements registered with the collision detection
    * engine.  Note: If U is not a double then the transforms from kinematics
    * cache will be forcefully cast to doubles (discarding any gradient
    * information).  Callers that set @p throw_if_missing_gradient to
@@ -946,7 +956,7 @@ class RigidBodyTree {
    * zero.
    * @see ComputeMaximumDepthCollisionPoints for an example.
    *
-   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    * only if @p throws_if_missing_gradient is true.
    */
   template <typename U>
@@ -956,8 +966,8 @@ class RigidBodyTree {
       bool throw_if_missing_gradient = true);
 
   /**
-   * @see updateCollisionElements 
-   * @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   * @see updateCollisionElements
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    * only if @p throws_if_missing_gradient is true.
    */
   template <typename U>
@@ -1142,7 +1152,7 @@ class RigidBodyTree {
    @param[in] use_margins If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
 
-   @throws std::runtime_error based on the criteria of DiscardZeroGradient() 
+   @throws std::runtime_error based on the criteria of DiscardZeroGradient()
    only if @p throws_if_missing_gradient is true.
    **/
   template <typename U>
@@ -1661,6 +1671,20 @@ class RigidBodyTree {
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar, typename PointScalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  DoTransformPointsJacobian(
+      const KinematicsCache<Scalar>&,
+      const Eigen::Ref<const drake::Matrix3X<PointScalar>>&,
+      int, int, bool) const;
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> DoTransformPointsJacobianDotTimesV(
+      const KinematicsCache<Scalar>&, const Eigen::Ref<const Eigen::Matrix3Xd>&,
+      int, int) const;
 
   // TODO(SeanCurtis-TRI): This isn't properly used.
   // No query operations should work if it hasn't been initialized.  Calling

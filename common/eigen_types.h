@@ -130,9 +130,6 @@ using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 template <typename Scalar>
 using Translation3 = Eigen::Translation<Scalar, 3>;
 
-/// A column vector of dynamic size, up to a maximum of 73 elements.
-using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
-
 /// A column vector consisting of one twist.
 template <typename Scalar>
 using TwistVector = Eigen::Matrix<Scalar, kTwistSize, 1>;

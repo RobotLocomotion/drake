@@ -9,6 +9,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -18,7 +19,13 @@ namespace multibody {
 using internal::BodyNode;
 using internal::BodyNodeWelded;
 
-#define MBT_THROW_IF_NOT_FINALIZED ThrowIfNotFinalized(__FUNCTION__);
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 namespace internal {
 template <typename T>
@@ -46,6 +53,38 @@ template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
   world_body_ = &AddRigidBody("WorldBody", SpatialInertia<double>());
+}
+
+template <typename T>
+void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+  DRAKE_DEMAND(!topology_is_valid());
+  // Skip the world.
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const BodyTopology& body_topology =
+        get_topology().get_body(body.index());
+    if (!body_topology.inboard_mobilizer.is_valid()) {
+      this->template AddMobilizer<QuaternionFloatingMobilizer>(
+          world_body().body_frame(), body.body_frame());
+    }
+  }
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>&
+MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
+    const Body<T>& body) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(body.index() != world_index());
+  const BodyTopology& body_topology = get_topology().get_body(body.index());
+  const QuaternionFloatingMobilizer<T>* mobilizer =
+      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
+          &get_mobilizer(body_topology.inboard_mobilizer));
+  if (mobilizer == nullptr) {
+    throw std::logic_error(
+        "Body '" + body.name() + "' is not a free floating body.");
+  }
+  return *mobilizer;
 }
 
 template <typename T>
@@ -111,6 +150,7 @@ void MultibodyTree<T>::FinalizeInternals() {
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  DRAKE_MBT_THROW_IF_FINALIZED();
   // Create Joint objects's implementation. Joints are implemented using a
   // combination of MultibodyTree's building blocks such as Body, Mobilizer,
   // ForceElement and Constraint. For a same physical Joint, several
@@ -126,6 +166,11 @@ void MultibodyTree<T>::Finalize() {
   for (auto& joint : owned_joints_) {
     internal::JointImplementationBuilder<T>::Build(joint.get(), this);
   }
+  // It is VERY important to add quaternions if needed only AFTER joints had a
+  // chance to get implemented with mobilizers. This is because joints's
+  // implementations change the topology of the tree. Therefore, do not change
+  // this order!
+  AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -188,6 +233,45 @@ void MultibodyTree<T>::SetDefaultState(
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->set_zero_state(context, state);
   }
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodySpatialVelocityOrThrow(
+      body, V_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
+  mobilizer.set_position(context, X_WB.translation(), state);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
+  mobilizer.set_translational_velocity(context, V_WB.translational(), state);
 }
 
 template <typename T>
@@ -588,7 +672,7 @@ template <typename T>
 const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
-  MBT_THROW_IF_NOT_FINALIZED
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   body_B.HasThisParentTreeOrThrow(this);
   return EvalPositionKinematics(context).get_X_WB(body_B.node_index());
 }
@@ -597,7 +681,7 @@ template <typename T>
 const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
-  MBT_THROW_IF_NOT_FINALIZED
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   body_B.HasThisParentTreeOrThrow(this);
   return EvalVelocityKinematics(context).get_V_WB(body_B.node_index());
 }
@@ -845,12 +929,20 @@ const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
 }
 
 template <typename T>
-void MultibodyTree<T>::ThrowIfNotFinalized(
-    const char* source_method) const {
+void MultibodyTree<T>::ThrowIfFinalized(const char* source_method) const {
+  if (topology_is_valid()) {
+    throw std::logic_error(
+        "Post-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; calls to this method must happen before Finalize().");
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
   if (!topology_is_valid()) {
     throw std::logic_error(
-        "The call to '" + std::string(source_method) + "' is invalid; "
-        " You must call Finalize() first. ");
+        "Pre-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; you must call Finalize() first.");
   }
 }
 

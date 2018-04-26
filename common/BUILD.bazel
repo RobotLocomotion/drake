@@ -26,7 +26,9 @@ drake_cc_library(
         ":autodiffxd_make_coherent",
         ":cond",
         ":copyable_unique_ptr",
+        ":default_scalars",
         ":double",
+        ":drake_bool",
         ":drake_path",
         ":dummy_value",
         ":essential",
@@ -35,15 +37,18 @@ drake_cc_library(
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
+        ":is_less_than_comparable",
         ":nice_type_name",
         ":number_traits",
         ":polynomial",
         ":reset_after_move",
         ":reset_on_copy",
         ":scoped_singleton",
+        ":sorted_pair",
         ":sorted_vectors_have_intersection",
         ":symbolic",
         ":symbolic_decompose",
+        ":temp_directory",
         ":type_safe_index",
         ":unused",
     ],
@@ -87,6 +92,16 @@ drake_cc_library(
     hdrs = ["cond.h"],
     deps = [
         ":double",
+    ],
+)
+
+drake_cc_library(
+    name = "drake_bool",
+    hdrs = ["drake_bool.h"],
+    deps = [
+        ":autodiff",
+        ":cond",
+        ":essential",
     ],
 )
 
@@ -197,6 +212,7 @@ drake_cc_library(
     ],
     deps = [
         ":cond",
+        ":drake_bool",
         ":dummy_value",
         ":essential",
         ":extract_double",
@@ -344,6 +360,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "temp_directory",
+    srcs = ["temp_directory.cc"],
+    hdrs = ["temp_directory.h"],
+    deps = [
+        ":essential",
+        "@spruce",
+    ],
+)
+
+drake_cc_library(
     name = "text_logging_gflags",
     hdrs = ["text_logging_gflags.h"],
     # TODO(jwnimmer-tri) Ideally, gflags BUILD would do this for us.  Figure
@@ -419,6 +445,7 @@ drake_py_binary(
 
 install(
     name = "install",
+    install_tests = [":test/resource_tool_installed_test.py"],
     targets = [":resource_tool"],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
@@ -473,6 +500,15 @@ drake_cc_googletest(
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_bool_test",
+    deps = [
+        ":drake_bool",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -586,6 +622,7 @@ drake_cc_googletest(
     name = "copyable_unique_ptr_test",
     deps = [
         ":copyable_unique_ptr",
+        "//common:unused",
         "//common/test_utilities:is_dynamic_castable",
     ],
 )
@@ -632,6 +669,13 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":nice_type_name",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hash_test",
+    deps = [
+        ":hash",
     ],
 )
 
@@ -913,6 +957,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "temp_directory_test",
+    deps = [
+        ":temp_directory",
+        "@spruce",
+    ],
+)
+
+drake_cc_googletest(
     name = "text_logging_test",
     deps = [
         ":essential",
@@ -932,6 +984,7 @@ drake_cc_googletest(
     deps = [
         ":type_safe_index",
         ":unused",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -985,16 +1038,6 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "resource_tool_installed_test",
-    args = [
-        "$(location :install)",
-    ],
-    data = [
-        ":install",
-    ],
-)
-
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
@@ -1002,4 +1045,8 @@ drake_py_unittest(
 # - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/resource_tool_installed_test.py",
+    ],
+)

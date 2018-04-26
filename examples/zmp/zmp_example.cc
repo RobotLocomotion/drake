@@ -85,7 +85,7 @@ void do_main() {
       Eigen::Vector2d(1, -0.1), Eigen::Vector2d(1.5, 0.1),
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
-  std::vector<PiecewisePolynomial<double>> zmp_trajs =
+  std::vector<trajectories::PiecewisePolynomial<double>> zmp_trajs =
       systems::controllers::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
 
   Eigen::Vector4d x0(0, 0, 0, 0);

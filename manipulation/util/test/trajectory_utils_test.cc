@@ -7,6 +7,9 @@
 namespace drake {
 namespace manipulation {
 
+using trajectories::PiecewisePolynomial;
+using trajectories::PiecewiseQuaternionSlerp;
+
 class PiecewiseCubicTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -52,7 +55,7 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetPosition) {
 TEST_F(PiecewiseCubicTrajectoryTest, GetVelocity) {
   for (double time : test_times_) {
     VectorX<double> expected = vel_.value(time);
-    if (!pos_.isTimeInRange(time)) expected.setZero();
+    if (!pos_.is_time_in_range(time)) expected.setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(expected, dut_.get_velocity(time), 1e-12,
                                        drake::MatrixCompareType::absolute));
@@ -64,7 +67,7 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetVelocity) {
 TEST_F(PiecewiseCubicTrajectoryTest, GetAcceleration) {
   for (double time : test_times_) {
     VectorX<double> expected = acc_.value(time);
-    if (!pos_.isTimeInRange(time)) expected.setZero();
+    if (!pos_.is_time_in_range(time)) expected.setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(expected, dut_.get_acceleration(time),
                                        1e-12,
@@ -81,8 +84,8 @@ TEST_F(PiecewiseCubicTrajectoryTest, GetTrajectories) {
 
 // Tests get_x_time().
 TEST_F(PiecewiseCubicTrajectoryTest, GetEndTimes) {
-  EXPECT_EQ(dut_.get_start_time(), pos_.getStartTime());
-  EXPECT_EQ(dut_.get_end_time(), pos_.getEndTime());
+  EXPECT_EQ(dut_.get_start_time(), pos_.start_time());
+  EXPECT_EQ(dut_.get_end_time(), pos_.end_time());
 }
 
 // Tests is_approx().
@@ -100,7 +103,7 @@ class PiecewiseCartesianTrajectoryTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::vector<double> times = {1, 2};
-    eigen_aligned_std_vector<AngleAxis<double>> rot_knots(times.size());
+    std::vector<AngleAxis<double>> rot_knots(times.size());
     std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
 
     rot_knots[0] = AngleAxis<double>(0.3, Vector3<double>::UnitX());
@@ -173,7 +176,7 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestVelocity) {
     expected.head<3>() = orientation_.angular_velocity(time);
     expected.tail<3>() = position_.get_velocity(time);
 
-    if (!orientation_.isTimeInRange(time)) expected.head<3>().setZero();
+    if (!orientation_.is_time_in_range(time)) expected.head<3>().setZero();
 
     EXPECT_TRUE(drake::CompareMatrices(dut_.get_velocity(time), expected, 1e-12,
                                        drake::MatrixCompareType::absolute));
@@ -219,7 +222,7 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestConstructor) {
 // Tests is_approx().
 TEST_F(PiecewiseCartesianTrajectoryTest, TestIsApprox) {
   std::vector<double> times = {1, 2, 3};
-  eigen_aligned_std_vector<AngleAxis<double>> rot_knots(times.size());
+  std::vector<AngleAxis<double>> rot_knots(times.size());
   std::vector<MatrixX<double>> pos_knots(times.size(), MatrixX<double>(3, 1));
   pos_knots[0] << -3, 1, 0;
   pos_knots[1] << -2, -1, 5;

@@ -2,8 +2,14 @@
 
 load(
     "@drake//tools/install:install.bzl",
+    "cmake_config",
     "install",
+    "install_cmake_config",
+    "install_files",
 )
+load("@drake//tools/lint:python_lint.bzl", "python_lint")
+
+licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])
 
@@ -43,7 +49,36 @@ cc_library(
     ],
 )
 
+cmake_config(
+    package = "pybind11",
+    script = "@drake//tools/workspace/pybind11:package-create-cps.py",
+    version_file = "include/pybind11/detail/common.h",
+)
+
+# Creates rule :install_cmake_config.
+install_cmake_config(package = "pybind11")
+
+install_files(
+    name = "install_extra_cmake",
+    dest = "lib/cmake/pybind11",
+    files = [
+        "tools/FindPythonLibsNew.cmake",
+        "tools/pybind11Tools.cmake",
+    ],
+    strip_prefix = ["**/"],
+)
+
 install(
     name = "install",
+    targets = [":pybind11"],
+    hdr_dest = "include/pybind11",
+    hdr_strip_prefix = ["include"],
+    guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
+    deps = [
+        ":install_cmake_config",
+        ":install_extra_cmake",
+    ],
 )
+
+python_lint()

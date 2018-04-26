@@ -19,6 +19,7 @@ struct TVLQRData {
   Eigen::MatrixXd N;
 };
 
-ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
-    const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,
-    const Eigen::Ref<const Eigen::MatrixXd> &S);
+drake::trajectories::ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
+    const TVLQRData& sys,
+    const drake::trajectories::PiecewisePolynomial<double>& zmp_trajectory,
+    const Eigen::Ref<const Eigen::MatrixXd>& S);

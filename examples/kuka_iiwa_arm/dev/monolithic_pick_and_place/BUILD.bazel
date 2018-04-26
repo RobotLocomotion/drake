@@ -77,7 +77,7 @@ drake_cc_googletest(
     # parallel, subject to the availability of resources. There are 31 test
     # points in this test. To count the number of tests in the googletest
     # target "foo_test" run
-    #   $ ./bazel-bin/path/to/foo_test --gtest_list_test | grep "  \w" | wc -l
+    #   $ ./bazel-bin/path/to/foo_test --gtest_list_tests | grep "  \w" | wc -l
     shard_count = 31,
     # TODO(sam.creasey) The "snopt" tag is required because IPOPT doesn't find
     # a reasonable solution for one of the steps in this demo.  We should see

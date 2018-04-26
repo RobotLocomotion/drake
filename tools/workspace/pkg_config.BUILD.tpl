@@ -1,5 +1,9 @@
 # -*- python -*-
 
+# %{topcomment}
+
+licenses(%{licenses})
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(

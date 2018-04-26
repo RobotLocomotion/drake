@@ -19,8 +19,8 @@ drake_cc_library(
         "visual_element.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:unused",
         "@spruce",
         "@tinyobjloader",
     ],
@@ -49,7 +49,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 
@@ -61,7 +61,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 
@@ -73,7 +73,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":shapes",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 

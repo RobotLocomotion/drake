@@ -64,12 +64,11 @@ struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
  */
 template <typename Derived>
 typename std::enable_if<
-    std::is_base_of<Eigen::MatrixBase<Derived>, Derived>::value &&
-        std::is_same<typename Derived::Scalar, symbolic::Expression>::value &&
-        Derived::ColsAtCompileTime == 1,
+    drake::is_eigen_vector_of<Derived, symbolic::Expression>::value,
     typename LogarithmicSos2NewBinaryVariables<
         Derived::RowsAtCompileTime>::type>::type
-AddLogarithmicSos2Constraint(MathematicalProgram* prog, const Derived& lambda,
+AddLogarithmicSos2Constraint(MathematicalProgram* prog,
+                             const Eigen::MatrixBase<Derived>& lambda,
                              const std::string& binary_variable_name = "y") {
   const int binary_variable_size = CeilLog2(lambda.rows() - 1);
   const auto y = prog->NewBinaryVariables<
@@ -178,7 +177,7 @@ enum class IntervalBinning {
  * logarithmic binning.
  * @return lambda The auxiliary continuous variables.
  * x = φxᵀ * (λ.rowwise().sum())
- * y = φyᵀ * (λ.cowwise().sum())
+ * y = φyᵀ * (λ.colwise().sum())
  * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
  * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
  * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),

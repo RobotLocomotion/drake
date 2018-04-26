@@ -19,11 +19,11 @@ drake_cc_library(
         "point_pair.h",
     ],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:sorted_vectors_have_intersection",
-        "//drake/multibody/rigid_body_plant:compliant_material",
-        "//drake/multibody/shapes",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:sorted_vectors_have_intersection",
+        "//multibody/rigid_body_plant:compliant_material",
+        "//multibody/shapes",
     ],
 )
 
@@ -37,14 +37,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "bullet_collision",
-    srcs = [
-        "bullet_model.cc",
-        "bullet_model.h",
-    ],
+    srcs = ["bullet_model.cc"],
+    hdrs = ["bullet_model.h"],
+    install_hdrs_exclude = ["bullet_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
-        "//drake/common:unused",
-        "@bullet//:BulletCollision",
+        "//common:unused",
+        "@bullet",
     ],
 )
 
@@ -53,10 +53,9 @@ drake_cc_library(
 # ensure the file still compiles.
 drake_cc_library(
     name = "unusable_collision",
-    srcs = [
-        "unusable_model.cc",
-        "unusable_model.h",
-    ],
+    srcs = ["unusable_model.cc"],
+    hdrs = ["unusable_model.h"],
+    install_hdrs_exclude = ["unusable_model.h"],
     visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
@@ -67,13 +66,13 @@ drake_cc_library(
 # other foo_collision libraries *do* contain the dispatcher.)
 drake_cc_library(
     name = "fcl_collision",
-    srcs = [
-        "fcl_model.cc",
-        "fcl_model.h",
-    ],
+    srcs = ["fcl_model.cc"],
+    hdrs = ["fcl_model.h"],
+    install_hdrs_exclude = ["fcl_model.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":collision_api",
-        "//drake/common:unused",
+        "//common:unused",
         "@fcl",
     ],
 )
@@ -99,8 +98,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -109,10 +108,10 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody:rigid_body_tree",
+        "//multibody/joints",
+        "//multibody/parsers",
     ],
 )
 
