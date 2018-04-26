@@ -41,7 +41,7 @@ const Eigen::Vector3d kDumbbellBase(0.5 + 0.0725 + 0.035, 0, 0.815);
 
 const char kUrdfPath[] =
     "drake/manipulation/models/iiwa_description/urdf/"
-    "/iiwa14_polytope_no_collision.urdf";
+    "/iiwa14_no_collision.urdf";
 
 const char kUrdfPathDumbbell[] =
     "drake/manipulation/dev/double_dumbbell_for_pick_up.sdf";
