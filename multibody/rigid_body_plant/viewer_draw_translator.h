@@ -15,7 +15,7 @@ namespace systems {
 /**
  * Specializes `LcmAndVectorBaseTranslator` to handle LCM messages of type
  * `drake::lcmt_viewer_draw`. It translates between a VectorBase<double> that
- * contains the state vector of a RigidBodyTree, and a
+ * contains the position or state vector of a RigidBodyTree, and a
  * `drake::lcmt_viewer_draw` message.
  */
 class ViewerDrawTranslator : public lcm::LcmAndVectorBaseTranslator {
@@ -23,9 +23,11 @@ class ViewerDrawTranslator : public lcm::LcmAndVectorBaseTranslator {
     DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ViewerDrawTranslator)
 
   /**
-   * A constructor that sets the expected sizes of both the LCM message and
-   * VectorBase vector to be the size of the state vector of @p tree,
-   * which is the sum of the number of position and velocity states in @p tree.
+   * A constructor that sets the expected size of both the LCM message and
+   * VectorBase vector to be the size of the position vector of @p tree.
+   * However, the Serialize() method will also accept input the size of the 
+   * state vector of @p tree, which is the sum of the number of position and 
+   * velocity states in @p tree.
    *
    * @param[in] tree A reference to the RigidBodyTree with which to obtain the
    * pose of each RigidBody to be included in the `drake::lcmt_viewer_draw` LCM

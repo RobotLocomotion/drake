@@ -139,6 +139,10 @@ class DrakeVisualizer : public LeafSystem<double> {
 
   // The (optional) log used for recording and playback.
   std::unique_ptr<SignalLog<double>> log_{nullptr};
+
+  // The RigidBodyTree with which the poses of each RigidBody can be
+  // determined given the state vector of the RigidBodyTree.
+  const RigidBodyTree<double>& tree_;
 };
 
 }  // namespace systems
