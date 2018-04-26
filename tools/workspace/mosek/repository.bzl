@@ -149,6 +149,10 @@ install(
        "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
        "@drake//tools/workspace/mosek:LICENSE_OpenMP",
    ],
+   allowed_externals = [
+       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       "@drake//tools/workspace/mosek:LICENSE_OpenMP",
+   ],
    deps = [":install_libraries"],
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
