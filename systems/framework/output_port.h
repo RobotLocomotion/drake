@@ -12,18 +12,18 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/system.h"  // Ugh
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
 
+// Break the System <=> OutputPort physical dependency cycle.  OutputPorts are
+// decorated with a back-pointer to their owning System<T>, but that pointer is
+// forward-declared here and never dereferenced within this file.
 template <typename T>
 class System;
-
-template <typename T>
-class Context;
 
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
@@ -99,7 +99,7 @@ class OutputPort {
   the Allocate() method. */
   void Calc(const Context<T>& context, AbstractValue* value) const {
     DRAKE_DEMAND(value != nullptr);
-    DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+    DRAKE_ASSERT_VOID(system_base_.ThrowIfContextNotCompatible(context));
     DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
 
     DoCalc(context, value);
@@ -111,7 +111,7 @@ class OutputPort {
   before the reference is returned. (Not implemented yet.) */
   // TODO(sherm1) Implement properly.
   const AbstractValue& Eval(const Context<T>& context) const {
-    DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+    DRAKE_ASSERT_VOID(system_base_.ThrowIfContextNotCompatible(context));
     return DoEval(context);
   }
 
@@ -137,17 +137,24 @@ class OutputPort {
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction.
+  @param system_base
+    The System that will own this new output port (as pure virtual interface).
   @param system
-    The System that will own this new output port. This port will
-    be assigned the next available output port index in this system.
+    The System that will own this new output port (as forward-declared class).
+  @param index
+    The index of this port within its owning System; this should always be
+    passed as the next available output port index in this system.
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
     If the port described is vector-valued, the number of elements expected,
     otherwise ignored. */
-  OutputPort(const System<T>& system, PortDataType data_type, int size)
-      : system_(system),
-        index_(system.get_num_output_ports()),
+  OutputPort(const internal::SystemMessageInterface& system_base,
+             const System<T>& system, OutputPortIndex index,
+             PortDataType data_type, int size)
+      : system_base_(system_base),
+        system_(system),
+        index_(index),
         data_type_(data_type),
         size_(size) {
     if (size_ == kAutoSize) {
@@ -182,12 +189,12 @@ class OutputPort {
   virtual const AbstractValue& DoEval(const Context<T>& context) const = 0;
 
   /** This is useful for error messages and produces `"output port <#> of
-  GetSystemIdString()"` with whatever System identification string is produced
-  by that method. */
+  <descriptive System text>"`. */
   std::string GetPortIdString() const {
     std::ostringstream oss;
     oss << "output port " << this->get_index() << " of "
-        << this->get_system().GetSystemIdString();
+        << NiceTypeName::Get(system_base_) + " System " +
+        system_base_.GetSystemPathname();
     return oss.str();
   }
 
@@ -225,12 +232,11 @@ class OutputPort {
   // Check that an AbstractValue provided to Calc() is suitable for this port.
   // (Very expensive; use in Debug only.)
   // See CacheEntry::CheckValidAbstractValue; treat both methods similarly.
-  void CheckValidOutputType(const AbstractValue&) const {
+  void CheckValidOutputType(const AbstractValue& proposed) const {
     // TODO(sherm1) Consider whether we can depend on there already being an
-    //              object of this type in the output port's CacheEntryValue so we
-    //              wouldn't have to allocate one here. If so could also store
-    //              a precomputed type_index there for further savings. Would
-    //              need to pass in a Context.
+    // object of this type in the output port's CacheEntryValue so we wouldn't
+    // have to allocate one here. If so could also store a precomputed
+    // type_index there for further savings. Would need to pass in a Context.
     auto good = DoAllocate();  // Expensive!
     // Attempt to interpret these as BasicVectors.
     auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
@@ -250,8 +256,8 @@ class OutputPort {
     if (typeid(proposed) != typeid(good)) {
       std::ostringstream oss;
       oss << "Calc(): expected AbstractValue output type "
-          << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
-          << " for " << GetPortIdString();
+          << NiceTypeName::Get(good) << " but got "
+          << NiceTypeName::Get(proposed) << " for " << GetPortIdString();
       throw std::logic_error(oss.str());
     }
   }
@@ -262,12 +268,13 @@ class OutputPort {
     if (typeid(proposed) != typeid(good)) {
       std::ostringstream oss;
       oss << "Calc(): expected BasicVector output type "
-          << NiceTypeName::Get(good) << " but got " << NiceTypeName::Get(proposed)
-          << " for " << GetPortIdString();
+          << NiceTypeName::Get(good) << " but got "
+          << NiceTypeName::Get(proposed) << " for " << GetPortIdString();
       throw std::logic_error(oss.str());
     }
   }
 
+  const internal::SystemMessageInterface& system_base_;
   const System<T>& system_;
   const OutputPortIndex index_;
   const PortDataType data_type_;

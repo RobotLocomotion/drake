@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
@@ -74,10 +75,13 @@ class LeafOutputPort : public OutputPort<T> {
   invoked here during construction of the port so it may depend on data that
   becomes available only after completion of the containing System or
   Diagram. */
-  LeafOutputPort(const System<T>& system,
+  LeafOutputPort(const internal::SystemMessageInterface& system_base,
+                 const System<T>& system,
+                 OutputPortIndex index,
                  AllocCallback alloc_function,
                  CalcCallback calc_function)
-      : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
+      : OutputPort<T>(system_base, system, index, kAbstractValued,
+                      0 /* size */) {
     set_allocation_function(alloc_function);
     set_calculation_function(calc_function);
   }
@@ -93,11 +97,13 @@ class LeafOutputPort : public OutputPort<T> {
   // here since construction of the containing System is likely incomplete when
   // this method is invoked. Do not attempt to extract the size from
   // the allocator by calling it here.
-  LeafOutputPort(const System<T>& system,
+  LeafOutputPort(const internal::SystemMessageInterface& system_base,
+                 const System<T>& system,
+                 OutputPortIndex index,
                  int fixed_size,
                  AllocCallback vector_alloc_function,
                  CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(system, kVectorValued, fixed_size) {
+      : OutputPort<T>(system_base, system, index, kVectorValued, fixed_size) {
     set_allocation_function(vector_alloc_function);
     set_calculation_function(vector_calc_function);
   }
@@ -187,7 +193,8 @@ class LeafOutputPort : public OutputPort<T> {
     // TODO(sherm1) Provide proper default behavior for an output port with
     // its own cache entry.
     DRAKE_ABORT_MSG("LeafOutputPort::DoEval(): NOT IMPLEMENTED YET");
-    return *reinterpret_cast<const AbstractValue*>(0);
+    static never_destroyed<Value<int>> dummy{0};
+    return dummy.access();
   }
 
   AllocCallback alloc_function_;

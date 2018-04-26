@@ -1554,7 +1554,8 @@ class LeafSystem : public System<T> {
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator) {
     auto port = std::make_unique<LeafOutputPort<T>>(
-        *this, fixed_size, vector_allocator, vector_calculator);
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        fixed_size, vector_allocator, vector_calculator);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -1565,8 +1566,9 @@ class LeafSystem : public System<T> {
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
       typename LeafOutputPort<T>::AllocCallback allocator,
       typename LeafOutputPort<T>::CalcCallback calculator) {
-    auto port =
-        std::make_unique<LeafOutputPort<T>>(*this, allocator, calculator);
+    auto port = std::make_unique<LeafOutputPort<T>>(
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        allocator, calculator);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;

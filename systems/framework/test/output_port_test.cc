@@ -96,9 +96,12 @@ class LeafOutputPortTest : public ::testing::Test {
 
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
-  LeafOutputPort<double> absport_general_{dummy_, alloc_string, calc_string};
-  LeafOutputPort<double> vecport_general_{dummy_, 3, alloc_myvector3,
-                                          calc_vector3};
+  LeafOutputPort<double> absport_general_{
+    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
+    alloc_string, calc_string};
+  LeafOutputPort<double> vecport_general_{
+    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
+    3, alloc_myvector3, calc_vector3};
 };
 
 // Helper function for testing an abstract-valued port.
@@ -150,7 +153,9 @@ unique_ptr<AbstractValue> alloc_null() {
 // The null check is done in all builds.
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
-  LeafOutputPort<double> null_port{dummy_, alloc_null, calc_string};
+  LeafOutputPort<double> null_port{
+    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
+    alloc_null, calc_string};
   EXPECT_THROW(null_port.Allocate(), std::logic_error);
 }
 
