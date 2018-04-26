@@ -146,8 +146,8 @@ install(
    name = "install",
    docs = [
        "mosek-eula.pdf",
-       "@drake//tools/workspace/mosek:cilkrts_notice",
-       "@drake//tools/workspace/mosek:openMP_notice",
+       "@drake//tools/workspace/mosek:LICENSE_CilkPlus",
+       "@drake//tools/workspace/mosek:LICENSE_OpenMP",
    ],
    deps = [":install_libraries"],
 )
