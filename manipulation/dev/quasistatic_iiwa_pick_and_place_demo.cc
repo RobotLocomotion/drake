@@ -281,7 +281,7 @@ int do_main() {
   simulator.set_target_realtime_rate(0);
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(12.0);  // kTimes.back()
+  simulator.StepTo(kTimes.back()); 
 
   // Comparing the final position and orientation of the object in world frame
   // to expected values.
@@ -292,7 +292,7 @@ int do_main() {
   // compute offset in the x-direction (in the EE-frame) from the origin of
   // the EE to the origin of the object (dumbbell). The x-axes of the end
   // effector and the object are aligned with the x-axis of the world frame
-  // at t = 3.0, the time at which x_offset is calculated. 
+  // at t = 3.0, the time at which x_offset is calculated.
   const Eigen::VectorXd q_grasping =
       log_state->data().col(static_cast<int>(3.0 / h));
   VectorXd v(tree->get_num_velocities());
