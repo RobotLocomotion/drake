@@ -78,6 +78,14 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "scalar_conversion_py",
+    srcs = ["scalar_conversion.py"],
+    deps = [
+        ":framework_py",
+    ],
+)
+
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
@@ -308,6 +316,14 @@ drake_py_unittest(
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "scalar_conversion_test",
+    deps = [
+        ":framework_py",
+        ":scalar_conversion_py",
     ],
 )
 

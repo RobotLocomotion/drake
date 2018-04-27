@@ -13,6 +13,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/vector_system.h"
 
 using std::make_unique;
@@ -25,6 +26,7 @@ namespace pydrake {
 
 namespace {
 
+using symbolic::Expression;
 using systems::System;
 using systems::LeafSystem;
 using systems::Context;
@@ -32,6 +34,7 @@ using systems::VectorSystem;
 using systems::PublishEvent;
 using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
+using systems::SystemScalarConverter;
 
 // Provides a templated 'namespace'.
 template <typename T>
@@ -47,7 +50,12 @@ struct Impl {
   class LeafSystemPublic : public LeafSystem<T> {
    public:
     using Base = LeafSystem<T>;
-    using Base::Base;
+
+    // Explicit forward constructors, as we want the protected
+    // `SystemScalarConverter` constructor as well.
+    LeafSystemPublic() {}
+    explicit LeafSystemPublic(SystemScalarConverter converter)
+        : Base(std::move(converter)) {}
 
     // N.B. These function methods are still typed as (LeafSystem<T>::*)(...),
     // since they are more or less visibility imports.
@@ -300,6 +308,7 @@ struct Impl {
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
       m, "LeafSystem", GetPyParam<T>())
       .def(py::init<>())
+      .def(py::init<SystemScalarConverter>())
       .def(
           "_DeclareVectorOutputPort",
           [](PyLeafSystem* self, const BasicVector<T>& arg1,
@@ -387,6 +396,52 @@ struct Impl {
 }  // namespace
 
 void DefineFrameworkPySystems(py::module m) {
+  // System scalar conversion.
+  py::class_<SystemScalarConverter> converter(m, "SystemScalarConverter");
+  converter
+    .def(py::init())
+    .def("__copy__",
+         [](const SystemScalarConverter& in) -> SystemScalarConverter {
+           return in;
+         });
+  // Bind templated instantiations.
+  auto converter_methods = [converter](auto pack) {
+    using Pack = decltype(pack);
+    using T = typename Pack::template type_at<0>;
+    using U = typename Pack::template type_at<1>;
+    using ConverterFunction = SystemScalarConverter::ConverterFunction<T, U>;
+    using WrappedConverterFunction =
+        std::function<std::unique_ptr<System<T>>(const System<U>*)>;
+    AddTemplateMethod(
+        converter, "Add",
+        [](SystemScalarConverter* self, WrappedConverterFunction wrapped) {
+          ConverterFunction unwrapped = [wrapped](const System<U>& system) {
+            return wrapped(&system);
+          };
+          self->Add(unwrapped);
+        },
+        GetPyParam<T, U>());
+    AddTemplateMethod(
+        converter, "IsConvertible",
+        &SystemScalarConverter::IsConvertible<T, U>, GetPyParam<T, U>());
+  };
+  // N.B. Synchronize this with the instantiations in `AddIfSupported(...)`
+  // stanzas for the advanced constructor of `SystemScalarConverter`.
+  using ConversionPairs = type_pack<
+      type_pack<AutoDiffXd, double>,
+      type_pack<Expression, double>,
+      type_pack<double, AutoDiffXd>,
+      type_pack<Expression, AutoDiffXd>,
+      type_pack<double, Expression>,
+      type_pack<AutoDiffXd, Expression>
+      >;
+  type_visit(converter_methods, ConversionPairs{});
+  // Add mention of what scalars are supported via `SystemScalarConverter`
+  // through Python.
+  converter.attr("SupportedScalars") =
+      GetPyParam(pysystems::CommonScalarPack{});
+
+  // Do templated instantiations of system types.
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);
     Impl<T>::DoDefinitions(m);
