@@ -1062,7 +1062,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const T denom = dt * stiffness + damping;
     const T cfm = 1.0 / denom;
     const T erp = (dt * stiffness) / denom;
-    data.gammaN[i] = cfm;
+    data.gammaN[i] = cfm / dt;
     data.kN[i] = erp * contacts[i].distance / dt;
   }
 
@@ -1185,7 +1185,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.kL.resize(limits.size());
   for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = default_limit_erp * limits[i].signed_distance / dt;
-  data.gammaL.setOnes(limits.size()) *= default_limit_cfm;
+  data.gammaL.setOnes(limits.size()) *= default_limit_cfm / dt;
 
   // Set Jacobians for bilateral constraint terms.
   // TODO(edrumwri): Make erp individually settable.
@@ -1235,7 +1235,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
   ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
-                                    constraint_force,
+                                    constraint_force / dt,
                                     &discretized_system_contact_results_);
 
   // qn = q + dt*qdot.

@@ -60,7 +60,7 @@ class ContactResultTest : public ContactResultTestCommon<double>,
     // used. The contact forces from the discretized plant match better as the
     // step size gets smaller. 1e-18 is necessary to get the contact force
     // outputs to match to the requested accuracy.
-    const double timestep = (GetParam()) ? 1e-18 : 0.0;
+    const double timestep = (GetParam()) ? 1e-15 : 0.0;
 
     // Populate the plant.
     plant_ = make_unique<RigidBodyPlant<double>>(GenerateTestTree(distance),
