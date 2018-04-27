@@ -92,7 +92,7 @@ PiecewisePolynomial<double> MakePlan(
   WorldPositionConstraint wpc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(1.5, 4.0));
-  RollPitchYaw<double> rpy_end1(0, 0, 0);
+  const RollPitchYaw<double> rpy_end1(0, 0, 0);
   Eigen::Quaterniond qE = rpy_end1.ToQuaternion();
   Eigen::Vector4d quat_end(qE.w(), qE.x(), qE.y(), qE.z());
   WorldQuatConstraint wqc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
@@ -104,7 +104,7 @@ PiecewisePolynomial<double> MakePlan(
   WorldPositionConstraint wpc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(5.5, 6.0));
-  RollPitchYaw<double> rpy_end2(0, -M_PI / 2, 0);
+  const RollPitchYaw<double> rpy_end2(0, -M_PI / 2, 0);
   qE = rpy_end2.ToQuaternion();
   quat_end << qE.w(), qE.x(), qE.y(), qE.z();
   WorldQuatConstraint wqc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
@@ -276,7 +276,6 @@ int do_main() {
                                                 .get_mutable_vector();
 
   x0.SetZero();
-
   x0.SetAtIndex(0, kDumbbellBase(0));  // x
   x0.SetAtIndex(1, kDumbbellBase(1));  // y
   x0.SetAtIndex(2, kDumbbellBase(2));  // z
@@ -291,7 +290,6 @@ int do_main() {
 
   // Comparing the final position and orientation of the object in world frame
   // to expected values.
-
   const int kDumbbellIndex = 1;
   const int kIiwaEndEffectorIndex = 13;
 
