@@ -375,7 +375,6 @@ void Rod2D<T>::CalcConstraintProblemData(
     Ndot.row(i) =  GetJacobianDotRow(context, points[i], contact_normal);
   const Vector3<T> v = GetRodVelocity(context);
   data->kN = Ndot * v;
-  data->gammaN.setZero(nc);
 
   // Form the tangent directions contact Jacobian (F), its time derivative
   // (Fdot), and compute Fdot * v.
@@ -393,8 +392,6 @@ void Rod2D<T>::CalcConstraintProblemData(
   data->F_transpose_mult = [F](const VectorX<T>& w) -> VectorX<T> {
     return F.transpose() * w;
   };
-  data->gammaF.setZero(nr);
-  data->gammaE.setZero(non_sliding_contacts.size());
 
   // Form N - mu*Q (Q is sliding contact direction Jacobian).
   MatrixX<T> N_minus_mu_Q = N;
@@ -411,7 +408,6 @@ void Rod2D<T>::CalcConstraintProblemData(
       VectorX<T> { return N_minus_mu_Q.transpose() * w; };
 
   data->kL.resize(0);
-  data->gammaL.resize(0);
 
   // Set external force vector.
   data->tau = ComputeExternalForces(context);

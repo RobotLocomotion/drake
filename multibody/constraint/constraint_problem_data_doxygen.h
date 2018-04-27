@@ -38,7 +38,7 @@ further in @ref constraint_types.
           below).
 - nr      *Half* the number of edges in a polygonal approximation to a
           friction cone. (nr ≥ 2).
-- np      The number of contact surface constraint equations.
+- np      The number of non-interpenetration constraint equations. 
 - nv      The dimension of the system generalized velocity / force.
 - nq      The dimension of the system generalized coordinates.
 - v       The system's generalized velocity vector (of dimension nv), which is a
@@ -190,37 +190,31 @@ the equations above.
 @ingroup constraint_overview
 
 It can be both numerically advantageous and a desirable modeling feature to
-regularize constraints. For example, consider modifying a 
-unilateral complementarity constraint from:<pre>
-0 ≤ gₐ(t,q,v;v̇,λ)  ⊥  λ ≥ 0
+regularize constraints. For example, consider modifying a unilateral
+complementarity constraint from:<pre>
+0 ≤ gᵥ(t,q;v,λ)  ⊥  λ ≥ 0
 </pre>
 to:<pre>
-0 ≤ gₐ(t,q,v;v̇,λ) + ελ  ⊥  λ ≥ 0
+0 ≤ gᵥ(t,q;v,λ) + ελ  ⊥  λ ≥ 0
 </pre>
-where ε is a non-negative scalar; alternatively, it can represent a diagonal
-matrix with the same number of rows/columns as the dimension of gₐ and λ,
-permitting different coefficients for each constraint equation.
-With ελ > 0, it becomes easier to satisfy the constraint
-gₐ(t,q,v;v̇,λ) + ελ ≥ 0, though the resulting v̇ and λ may not quite
-satisfy gₐ ≥ 0: gₐ can become slightly negative. As hinted above,
+where q(k) and v(k) are discrete time variables (a series of variables defined
+only at integer values of k), λ is an impulsive force, and ε is a non-negative
+scalar; alternatively, ε can represent a diagonal matrix with the same number
+of rows/columns as the dimension of gᵥ and λ, permitting different coefficients
+for each constraint equation. With ελ > 0, it becomes easier to satisfy the
+constraint gᵥ(t,q;v,λ) + ελ ≥ 0, though the resulting v and λ may not quite
+satisfy gᵥ ≥ 0: gᵥ can become slightly negative. As hinted above,
 regularization can confer two benefits. First, the resulting complementarity
 problems become easier to solve; more importantly, any complementarity problem
 becomes solvable given sufficient regularization [Cottle 1992].
 
-<h4>Regularization introduces compliance</h4>
-Second (in concert with constraint stabilization and a particular discretization
-of the constrained multibody dynamics equations), regularization introduces
-compliant effects, e.g., at joint stops and between contacting bodies; such
-"softening" effects are often desirable.
-
-Unfortunately, not all constraints can be intuitively softened. While
-[Lacoursiere 2007] convincingly argues for softening interpenetration
-constraints between rigid bodies (and even provides an algorithmic mechanism
-for doing so), users typically expect stiction and Coulomb friction constraints
-to be maintained to high accuracy. Without softening *all* constraints, the
-regularization benefits noted above disappear.
-
-<h4>Regularizing at the velocity level</h4>
+Finally, this section applies particularly to constraints upon discretized
+systems. The combination of discretization, regularization, and stabilization
+yields an approach for solving otherwise computationally stiff systems using
+atypically large integration step sizes. The compliant effects that 
+regularization introduces at joint stops and between contacting bodies) are
+often desirable. Not all constraints can be intuitively softened.
+ 
 [Catto 2011] showed how the combination of constraint softening, constraint
 stabilization, and a particular integration scheme results in numerically
 stable spring-like constraints. For a one-dimensional particle with dynamics
@@ -257,12 +251,13 @@ the formula:<pre>
 ϱ = hm̂ω²γ
 </pre>
 where m̂ is the *effective inertia* of the constraint and is determined
-by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅, G ∈ ℝ¹ˣⁿ is the partial derivative of the
+by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅ = 1, G ∈ ℝ¹ˣⁿ is the partial derivative of the
 constraint function with respect to the quasi-coordinates (see
 @ref quasi_coordinates; equivalently, G maps generalized velocities to the time
 derivative of the constraints, i.e., ġₚ) and M is the generalized inertia
 matrix. Considering gₚ(.) to be a scalar function for simplicity of presentation
-should make it clear that GM⁻¹Gᵀ would be a scalar as well.
+should make it clear that GM⁻¹Gᵀ would be a scalar as well. Thus m̂ = 1/m for
+this forced mass-spring-damper.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
@@ -277,18 +272,7 @@ to γ and
 ϱ/h times the signed constraint distance (using, e.g., signed distance for the
 point contact non-interpenetration constraint).
 
-<h4>Regularization at the acceleration-level</h4>
-Starting from the same stabilized and regularized spring mass system:
-<pre>
-mẍ = f + λ
-ẍ + ελ = 0
-</pre>
-the softening benefits are not realized, but the linear equations and linear
-complementarity problems become easier to solve (albeit at the expense of
-larger constraint errors to be stabilized).
-
-<h4>Bilateral constraints</h4>
-Drake does not regularize bilateral constraints.
+Finally, note that Drake does not regularize bilateral constraints.
 */
 
 /** @defgroup constraint_Jacobians Constraint Jacobian matrices
@@ -353,10 +337,10 @@ The non-negativity condition on the constraint force magnitudes (λ ≥ 0)
 keeps the contact force along the contact normal compressive, as is consistent
 with a non-adhesive contact model.
 
-@image html multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of contact surface constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
+@image html multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of non-interpenetration constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
 
 <h4>Constraint regularization and softening</h4>
-As discussed in @ref constraint_regularization, the contact surface
+As discussed in @ref constraint_regularization, the non-interpenetration 
 constraint can be regularized or softened by adding a term to, e.g., the
 second time derivative of the equation:
 <pre>
@@ -426,10 +410,13 @@ could be written
 as:<pre>
 Mv̇ = f + Nᵀλᴺ - (Qᵀ)λᶜ
 </pre>
-where M is the generalized inertia matrix, Nᵀ is the wrench on the bodies that
-results from applying a unit force along n̂ to the bodies at the point of
-contact, and Qᵀ is the wrench on the bodies that results from applying a unit
-force along q̂. Instead, Drake uses the equivalent equation:
+where M is the generalized inertia matrix, Nᵀ is the generalized wrench on the
+bodies that results from applying a unit force along n̂ to the bodies at the
+point of contact (i.e., the geometric Jacobian matrix that transforms the
+generalized velocity to the relative velocity between the two bodies at the
+point of contact and projected along n̂), and Qᵀ is the generalized wrench on
+the bodies that results from applying a unit force along q̂. Instead, Drake uses
+the equivalent equation:
 <pre>
 Mv̇ = f + (Nᵀ - μQᵀ)λᴺ
 </pre>
@@ -444,10 +431,9 @@ sliding to sticking (and vice versa) instantaneously.
 <h4>Non-sliding constraints</h4>
 Non-sliding constraints for bodies can correspond to constraints introduced
 for bodies in stiction or rolling at a point of contact. These
-particular constraints act to minimize the acceleration, to the extent
-permitted by the contact normal force and friction coefficient, in the 
-contact tangent plane (i.e., plane passing through the point of contact and
-with normal parallel to the contact surface normal.
+particular constraints act against the acceleration in the plane defined by
+the contact normal, to the extent permitted by the contact normal force and
+friction coefficient.
 
 The bodies are, by definition, not sliding at a point, a condition described
 by the following pair of constraints:<pre>
@@ -503,10 +489,9 @@ which lead to the following complementarity conditions:<pre>
 0 ≤ ⁿʳ⁺¹gₐ  ⊥  λᵇₙᵣ₊₁ ≥ 0
 0 ≤ ⁿᵏgₐ    ⊥    λᵇₙₖ ≥ 0
 </pre>
-where Λ is roughly interpretable as the remaining tangential acceleration
-at the contact after constraint forces have been applied.  From this
-construction, the frictional force to be applied along direction
-i will be equal to λᵇᵢ - λᵇₙᵣ₊ᵢ.
+where Λ is roughly interpretable as the residual tangential acceleration
+at the contact.  From this construction, the frictional force to be applied
+along direction i will be equal to λᵇᵢ - λᵇₙᵣ₊ᵢ.
 
 <h4>Friction constraints at the velocity-level</h4>
 Since modifying velocity variables can cause constraints to change from sticking
