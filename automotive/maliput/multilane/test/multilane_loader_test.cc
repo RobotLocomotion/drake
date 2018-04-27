@@ -32,6 +32,8 @@ using ::testing::Return;
 using ::testing::Sequence;
 using ::testing::Truly;
 
+using drake::maliput::multilane::test::Matches;
+
 namespace drake {
 namespace maliput {
 namespace multilane {
@@ -62,17 +64,17 @@ class BuilderMock : public BuilderBase {
     ON_CALL(*this, get_angular_tolerance())
         .WillByDefault(Invoke(&builder_, &Builder::get_angular_tolerance));
 
-    const Connection* (Builder::*connect_ref_line)(
-        const std::string&, int, double, double, double, const Endpoint&,
-        double, const EndpointZ&) = &Builder::Connect;
-    ON_CALL(*this, Connect(_, _, _, _, _, _, An<double>(), _))
-        .WillByDefault(Invoke(&builder_, connect_ref_line));
+    const Connection* (Builder::*connect_line_ref)(
+        const std::string&, const LaneLayout&, const StartReference::Spec&,
+        const LineOffset&, const EndReference::Spec&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, _, An<const LineOffset&>(), _))
+        .WillByDefault(Invoke(&builder_, connect_line_ref));
 
-    const Connection* (Builder::*connect_ref_arc)(
-        const std::string&, int, double, double, double, const Endpoint&,
-        const ArcOffset&, const EndpointZ&) = &Builder::Connect;
-    ON_CALL(*this, Connect(_, _, _, _, _, _, An<const ArcOffset&>(), _))
-        .WillByDefault(Invoke(&builder_, connect_ref_arc));
+    const Connection* (Builder::*connect_arc_ref)(
+        const std::string&, const LaneLayout&, const StartReference::Spec&,
+        const ArcOffset&, const EndReference::Spec&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, _, An<const ArcOffset&>(), _))
+        .WillByDefault(Invoke(&builder_, connect_arc_ref));
 
     ON_CALL(*this, SetDefaultBranch(_, _, _, _, _, _))
         .WillByDefault(Invoke(&builder_, &Builder::SetDefaultBranch));
@@ -99,13 +101,15 @@ class BuilderMock : public BuilderBase {
 
   MOCK_CONST_METHOD0(get_angular_tolerance, double());
 
-  MOCK_METHOD8(Connect, const Connection*(const std::string&, int, double,
-                                          double, double, const Endpoint&,
-                                          double, const EndpointZ&));
+  MOCK_METHOD5(Connect,
+               const Connection*(const std::string&, const LaneLayout&,
+                                 const StartReference::Spec&, const LineOffset&,
+                                 const EndReference::Spec&));
 
-  MOCK_METHOD8(Connect, const Connection*(const std::string&, int, double,
-                                          double, double, const Endpoint&,
-                                          const ArcOffset&, const EndpointZ&));
+  MOCK_METHOD5(Connect,
+               const Connection*(const std::string&, const LaneLayout&,
+                                 const StartReference::Spec&, const ArcOffset&,
+                                 const EndReference::Spec&));
 
   MOCK_METHOD6(SetDefaultBranch,
                void(const Connection*, int, const api::LaneEnd::Which,
@@ -166,6 +170,7 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
 )R";
 
   const double kLaneWidth{4.};
+  const double kZeroTolerance{0.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.5 * M_PI / 180.};
   const api::HBounds kElevationBounds{0., 5.};
@@ -175,10 +180,9 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   BuilderMock* builder_mock = local_builder_mock.get();
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
 
-  Matcher<const api::HBounds&> hbounds_matcher =
-      MakeMatcher(new test::HBoundsMatcher({0., 5.}, 0.));
-  EXPECT_CALL(builder_factory_mock, Make(kLaneWidth, hbounds_matcher,
-                                         kLinearTolerance, kAngularTolerance));
+  EXPECT_CALL(builder_factory_mock,
+              Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
+                   kLinearTolerance, kAngularTolerance));
 
   EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId("empty_road_geometry")));
 
@@ -326,6 +330,7 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.5 * M_PI / 180.};
   const api::HBounds kElevationBounds{0., 5.};
+  const int kRefLane{0};
   const int kOneLane{1};
   const int kTwoLanes{2};
   const int kThreeLanes{3};
@@ -344,172 +349,187 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
 
   ExpectationSet prebuild_expectations;
 
-  Matcher<const api::HBounds&> hbounds_matcher =
-      MakeMatcher(new test::HBoundsMatcher(kElevationBounds, kZeroTolerance));
   prebuild_expectations += EXPECT_CALL(
       builder_factory_mock,
-      Make(kLaneWidth, hbounds_matcher, kLinearTolerance, kAngularTolerance));
-
-  Matcher<const EndpointZ&> endpoint_z_zero_matcher =
-      MakeMatcher(new test::EndpointZMatcher(kEndpointZZero, kLinearTolerance));
-  Matcher<const EndpointZ&> endpoint_z_elevated_matcher = MakeMatcher(
-      new test::EndpointZMatcher(kEndpointZElevated, kLinearTolerance));
+      Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
+           kLinearTolerance, kAngularTolerance));
 
   // Connection expectations.
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(kEndpointA, kLinearTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s1", kThreeLanes, kZeroRRef,
-                               kDefaultLeftShoulder, kDefaultRightShoulder,
-                               endpoint_matcher, 50., endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s1",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kThreeLanes, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at(kEndpointA, Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher({{50., 5., 0.}, kEndpointZZero},
-                                              kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s2", kOneLane, 5., kCustomLeftShoulder, kDefaultRightShoulder,
-                endpoint_matcher, arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s2", Matches(LaneLayout(kCustomLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, 5.),
+                        kZeroTolerance),
+          Matches(StartReference().at({{50., 5., 0.}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(15., M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{50., 35., M_PI}, kEndpointZZero}, kLinearTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s3", kOneLane, 5., kDefaultLeftShoulder, kCustomRightShoulder,
-                endpoint_matcher, 50., endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s3",
+              Matches(LaneLayout(kDefaultLeftShoulder, kCustomRightShoulder,
+                                 kOneLane, kRefLane, 5.),
+                      kZeroTolerance),
+              Matches(StartReference().at({{50., 35., M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher({{0., 35., M_PI}, kEndpointZZero},
-                                              kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({15., M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock,
-        Connect("s4", kOneLane, 5., kDefaultLeftShoulder, kDefaultRightShoulder,
-                endpoint_matcher, arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s4", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, 5.),
+                        kZeroTolerance),
+          Matches(StartReference().at({{0., 35., M_PI}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(15., M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher({{50., 0., 0.}, kEndpointZZero},
-                                              kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s5", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher,
-                               arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s5", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kTwoLanes, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(StartReference().at({{50., 0., 0.}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., -M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{50., -40., -M_PI}, kEndpointZZero}, kLinearTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s6", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher, 50.,
-                               endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s6",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kTwoLanes, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at({{50., -40., -M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(LineOffset(50), kZeroTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{0., -40., -M_PI}, kEndpointZZero}, kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher({20., -M_PI}, kLinearTolerance,
-                                               kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s7", kTwoLanes, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher,
-                               arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s7", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kTwoLanes, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(StartReference().at({{0., -40., -M_PI}, kEndpointZZero},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., -M_PI), kLinearTolerance, kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{0., -45., -M_PI}, kEndpointZZero}, kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s8", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher,
-                               arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect("s8",
+              Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                 kOneLane, kRefLane, kZeroRRef),
+                      kZeroTolerance),
+              Matches(StartReference().at({{0., -45., -M_PI}, kEndpointZZero},
+                                          Direction::kForward),
+                      kLinearTolerance),
+              Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                      kAngularTolerance),
+              Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                      kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{-20., -65., -M_PI / 2.}, kEndpointZZero}, kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations +=
-        EXPECT_CALL(*builder_mock,
-                    Connect("s9", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                            kDefaultRightShoulder, endpoint_matcher,
-                            arc_offset_matcher, endpoint_z_elevated_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s9", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                   kOneLane, kRefLane, kZeroRRef),
+                        kZeroTolerance),
+          Matches(
+              StartReference().at({{-20., -65., -M_PI / 2.}, kEndpointZZero},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{0, -85., 0}, kEndpointZElevated}, kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations +=
-        EXPECT_CALL(*builder_mock,
-                    Connect("s10", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                            kDefaultRightShoulder, endpoint_matcher,
-                            arc_offset_matcher, endpoint_z_elevated_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s10", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(StartReference().at({{0, -85., 0}, kEndpointZElevated},
+                                      Direction::kForward),
+                  kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{20., -65., M_PI / 2.}, {10., 0., 0., 0.}}, kLinearTolerance));
-    Matcher<const ArcOffset&> arc_offset_matcher =
-        MakeMatcher(new test::ArcOffsetMatcher(
-            {20., M_PI / 2.}, kLinearTolerance, kAngularTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s11", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher,
-                               arc_offset_matcher, endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s11", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -65., M_PI / 2.}, {10., 0., 0., 0.}},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(ArcOffset(20., M_PI / 2.), kLinearTolerance,
+                  kAngularTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{20., -65., M_PI / 2.}, kEndpointZElevated}, kLinearTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s12", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher, 30.,
-                               endpoint_z_elevated_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s12", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -65., M_PI / 2.}, kEndpointZElevated},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(LineOffset(30.), kZeroTolerance),
+          Matches(EndReference().z_at(kEndpointZElevated, Direction::kForward),
+                  kLinearTolerance)));
 
-  {
-    Matcher<const Endpoint&> endpoint_matcher =
-        MakeMatcher(new test::EndpointMatcher(
-            {{20., -35., M_PI / 2.}, kEndpointZElevated}, kLinearTolerance));
-    prebuild_expectations += EXPECT_CALL(
-        *builder_mock, Connect("s13", kOneLane, kZeroRRef, kDefaultLeftShoulder,
-                               kDefaultRightShoulder, endpoint_matcher, 15.,
-                               endpoint_z_zero_matcher));
-  }
+  prebuild_expectations += EXPECT_CALL(
+      *builder_mock,
+      Connect(
+          "s13", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
+                                    kOneLane, kRefLane, kZeroRRef),
+                         kZeroTolerance),
+          Matches(
+              StartReference().at({{20., -35., M_PI / 2.}, kEndpointZElevated},
+                                  Direction::kForward),
+              kLinearTolerance),
+          Matches(LineOffset(15.), kZeroTolerance),
+          Matches(EndReference().z_at(kEndpointZZero, Direction::kForward),
+                  kLinearTolerance)));
 
   // Group expectations.
   {

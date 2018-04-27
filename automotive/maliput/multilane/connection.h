@@ -139,6 +139,29 @@ class Endpoint {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint);
 
+/// Specification for path offset along a line.
+///  * length: length of the line, which must be nonnegative.
+class LineOffset {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LineOffset)
+
+  LineOffset() = default;
+
+  explicit LineOffset(double length) : length_(length) {
+    DRAKE_DEMAND(length_ >= 0.);
+  }
+
+  double length() const { return length_; }
+
+ private:
+  double length_{};
+};
+
+/// Streams a string representation of `line_offset` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const LineOffset& line_offset);
+
 /// Specification for path offset along a circular arc.
 ///  * radius: radius of the arc, which must be positive
 ///  * d_theta:  angle of arc segment (Δθ)
