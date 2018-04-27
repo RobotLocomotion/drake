@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
@@ -290,26 +291,19 @@ struct Impl {
         })
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe);
 
-    // Don't use a const-rvalue as a function handle parameter, as pybind11
-    // wants to copy it?
-    // TODO(eric.cousineau): Make a helper wrapper for this; file a bug in
-    // pybind11 (since these are arguments).
-    using CalcVectorPtrCallback =
-        std::function<void(const Context<T>*, BasicVector<T>*)>;
+    using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
       m, "LeafSystem", GetPyParam<T>())
       .def(py::init<>())
       .def(
           "_DeclareVectorOutputPort",
-          [](PyLeafSystem* self, const BasicVector<T>& arg1,
-             CalcVectorPtrCallback arg2) -> auto&& {
-            typename LeafOutputPort<T>::CalcVectorCallback wrapped =
-                [arg2](const Context<T>& nest_arg1, BasicVector<T>* nest_arg2) {
-                  return arg2(&nest_arg1, nest_arg2);
-                };
-            return self->DeclareVectorOutputPort(arg1, wrapped);
-          }, py_reference_internal)
+          WrapCallbacks(
+              [](PyLeafSystem* self, const BasicVector<T>& arg1,
+                 CalcVectorCallback arg2) -> auto& {
+                return self->DeclareVectorOutputPort(arg1, arg2);
+              }),
+          py_reference_internal)
       .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
            py::arg("period_sec"), py::arg("offset_sec") = 0.)
       .def("_DoPublish", &LeafSystemPublic::DoPublish)

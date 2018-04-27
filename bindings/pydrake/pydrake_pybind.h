@@ -210,9 +210,5 @@ struct overload_cast_impl {
 template <typename Return, typename... Args>
 constexpr auto overload_cast_explicit = overload_cast_impl<Return, Args...>{};
 
-// TODO(eric.cousineau): pybind11 defaults to C++-like copies when dealing
-// with rvalues. We should wrap this into a drake-level binding, so that we
-// can default this to `py_reference` or `py_reference_internal.`
-
 }  // namespace pydrake
 }  // namespace drake
