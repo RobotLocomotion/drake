@@ -1,5 +1,3 @@
-#include "drake/common/proto/call_python.h"
-
 #include <chrono>
 #include <cmath>
 #include <string>
@@ -7,6 +5,8 @@
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
+
+#include "drake/common/proto/call_python.h"
 
 DEFINE_string(file, "/tmp/python_rpc",
               "File written to by this binary, read by client.");
