@@ -47,17 +47,18 @@ void CacheEntry::Calc(const ContextBase& context,
                       AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
   DRAKE_ASSERT_VOID(owning_subsystem_->ThrowIfContextNotCompatible(context));
-  DRAKE_ASSERT_VOID(CheckValidAbstractValue(context, *value));
+  DRAKE_ASSERT_VOID(CheckValidAbstractValue(*value));
 
   calc_function_(context, value);
 }
 
-void CacheEntry::CheckValidAbstractValue(const ContextBase&,
-                                         const AbstractValue& proposed) const {
+// See OutputPort::CheckValidOutputType; treat both methods similarly.
+void CacheEntry::CheckValidAbstractValue(const AbstractValue& proposed) const {
   // TODO(sherm1) Consider whether we can depend on there already being an
   //              object of this type in the context's CacheEntryValue so we
   //              wouldn't have to allocate one here. If so could also store
-  //              a precomputed type_index there for further savings.
+  //              a precomputed type_index there for further savings. Would
+  //              need to pass in a ContextBase.
   auto good_ptr = Allocate();  // Very expensive!
   const AbstractValue& good = *good_ptr;
   if (typeid(proposed) != typeid(good)) {

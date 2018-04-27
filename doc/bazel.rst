@@ -139,7 +139,7 @@ Proprietary Solvers
 The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 7.5.2
- * MOSEK 7.1
+ * MOSEK 8.1
  * SNOPT 7.2
 
 .. _gurobi:
@@ -151,18 +151,20 @@ Install on Ubuntu
 ~~~~~~~~~~~~~~~~~
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download ``gurobi7.5.2_linux64.tar.gz``.
-4. Unzip it.  We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
-5. ``export GUROBI_PATH=/opt/gurobi752/linux64``
+3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
+4. Download ``gurobi7.5.2_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
+6. ``export GUROBI_PATH=/opt/gurobi752/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
-3. Download and install ``gurobi7.5.2_mac64.pkg``.
+3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
+4. Download and install ``gurobi7.5.2_mac64.pkg``.
 
 
-To confirm that your setup was successful, run the tests that require Gurobi.
+To confirm that your setup was successful, run the tests that require Gurobi:
 
   ``bazel test --config gurobi --test_tag_filters=gurobi //...``
 
@@ -171,14 +173,15 @@ these tests.  If you will be developing with Gurobi regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-MOSEK 7.1
+MOSEK 8.1
 ---------
 
-The Drake Bazel build system downloads MOSEK 7.1 automatically.  No manual
-installation is required.  Please obtain and save a license file at
-``~/mosek/mosek.lic``.
+The Drake Bazel build system downloads MOSEK 8.1.0.51 automatically.  No manual
+installation is required.  Set the location of your license file as follows:
 
-To confirm that your setup was successful, run the tests that require MOSEK.
+``export MOSEKLM_LICENSE_FILE=/path/to/mosek.lic``
+
+To confirm that your setup was successful, run the tests that require MOSEK:
 
   ``bazel test --config mosek --test_tag_filters=mosek //...``
 
@@ -213,7 +216,7 @@ source archive has not been specified.
 Test the build (for either mechanism)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To confirm that your setup was successful, run the tests that require SNOPT.
+To confirm that your setup was successful, run the tests that require SNOPT:
 
   ``bazel test --config snopt --test_tag_filters=snopt //...``
 

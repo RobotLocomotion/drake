@@ -87,6 +87,31 @@ GTEST_TEST(TestUnrevisedLemke, TestSimple) {
   RunLCP(M, q, expected_z);
 }
 
+// Tests that the artificial variable is always selected in a tie
+// (Example 4.4.16 in [Cottle 1992]). We know Lemke's algorithm can solve
+// this one since the matrix is symmetric and positive semi-definite.
+// Lemke implementations without the necessary special-case code can terminate
+// on an unblocked variable (i.e., fail to find the solution when one is known
+// to exist).
+// NOTE: This is a necessary but not sufficient test that the special-case code
+// is working. This test failed before the special-case code was added, but it's
+// possible that the test could succeed using other strategies for selecting
+// one of multiple valid blocking indices. For example, Miranda and Fackler's
+// Lemke solver uses a random blocking variable selection when multiple are
+// possible.
+GTEST_TEST(TestUnrevisedLemke, TestPSD) {
+  MatrixX<double> M(2, 2);
+  M << 1, -1,
+      -1, 1;
+
+  Eigen::Vector2d q;
+  q << 1, -1;
+
+  Eigen::VectorXd expected_z(2);
+  expected_z << 0, 1;
+  RunLCP(M, q, expected_z);
+}
+
 GTEST_TEST(TestUnrevisedLemke, TestProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
   // Local and Global Optimization".
@@ -787,7 +812,7 @@ TEST_F(UnrevisedLemkePrivateTests, FindComplementIndex) {
 
   // Since the indices of the LCP variables from SetUp()
   // correspond to their array indices, verification is straightforward.
-  EXPECT_EQ(lcp_.FindComplementIndex(query, lcp_.indep_variables_), 1);
+  EXPECT_EQ(lcp_.FindComplementIndex(query), 1);
 }
 
 TEST_F(UnrevisedLemkePrivateTests, FindBlockingIndex) {

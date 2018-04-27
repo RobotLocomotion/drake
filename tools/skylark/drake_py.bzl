@@ -85,7 +85,8 @@ def drake_py_unittest(
 
     This macro should be preferred instead of the basic drake_py_test for tests
     that use the `unittest` framework.  Tests that use this macro should *not*
-    contain a __main__ handler nor a shebang line.
+    contain a __main__ handler nor a shebang line.  By default, sets test size
+    to "small" to indicate a unit test.
     """
     helper = "//common/test_utilities:drake_py_unittest_main.py"
     if not srcs:
@@ -99,6 +100,7 @@ def drake_py_unittest(
 
 def drake_py_test(
         name,
+        size = None,
         srcs = None,
         deps = None,
         isolate = True,
@@ -118,7 +120,11 @@ def drake_py_test(
         tests should use the `drake_py_unittest` macro instead of this one
         (thus disabling this interlock), but can override this parameter in
         case something unique is happening and the other macro can't be used.
+
+    By default, sets test size to "small" to indicate a unit test.
     """
+    if size == None:
+        size = "small"
     if srcs == None:
         srcs = ["test/%s.py" % name]
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
@@ -129,6 +135,7 @@ def drake_py_test(
         name = name,
         py_target = native.py_test,
         isolate = isolate,
+        size = size,
         srcs = srcs,
         deps = deps,
         **kwargs)

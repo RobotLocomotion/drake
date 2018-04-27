@@ -57,6 +57,18 @@ drake_cc_vector_gen_translator_library(
 )
 
 drake_cc_library(
+    name = "agent_trajectory",
+    srcs = ["agent_trajectory.cc"],
+    hdrs = ["agent_trajectory.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_quaternion",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/math:spatial_velocity",
+    ],
+)
+
+drake_cc_library(
     name = "bicycle_car",
     srcs = ["bicycle_car.cc"],
     hdrs = ["bicycle_car.h"],
@@ -364,6 +376,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "trivial_right_of_way_state_provider",
+    srcs = [
+        "trivial_right_of_way_state_provider.cc",
+    ],
+    hdrs = [
+        "trivial_right_of_way_state_provider.h",
+    ],
+    deps = [
+        "//automotive/maliput/api",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
@@ -379,6 +405,7 @@ drake_cc_library(
         ":pure_pursuit_controller",
         ":simple_car",
         ":trajectory_car",
+        ":trivial_right_of_way_state_provider",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
@@ -484,11 +511,19 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "agent_trajectory_test",
+    deps = [
+        "//automotive:agent_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//automotive/models:prod_models"],
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,
-    local = 1,
     deps = [
         "//automotive:automotive_simulator",
         "//automotive:create_trajectory_params",
@@ -678,8 +713,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "trajectory_optimization_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     # Disable IPOPT for this example due to test timeouts on Mac-Clang-Bazel
     # builds (see #6223).
     tags = ["snopt"],
@@ -691,8 +726,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "trivial_right_of_way_state_provider_test",
+    deps = [
+        ":trivial_right_of_way_state_provider",
+    ],
+)
+
 sh_test(
     name = "demo_dry_run_test",
+    size = "small",
     srcs = ["test/demo_test.sh"],
     args = [
         "--driving_command_gui_names=alpha,beta",

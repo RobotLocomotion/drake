@@ -95,7 +95,6 @@ drake_cc_googletest(
     name = "drake_lcm_test",
     # Flaky because LCM self-test can fail (PR #7311)
     flaky = 1,
-    local = 1,
     deps = [
         ":lcm",
         ":lcmt_drake_signal_utils",
@@ -104,7 +103,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_lcm_log_test",
-    local = 1,
     deps = [
         ":lcm_log",
         ":lcmt_drake_signal_utils",
@@ -133,4 +131,8 @@ drake_py_test(
     deps = ["@lcm//:lcm-python"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    # We need to more seriously refactor and deprecate some names here before
+    # we can start following package_library conventions.
+    enable_library_lint = False,
+)

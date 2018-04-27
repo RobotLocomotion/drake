@@ -69,14 +69,13 @@ class DiagramOutputPort : public OutputPort<T> {
   }
 
  private:
-  // These forward to the source system output port, passing in just the source
-  // System's Context, not the whole Diagram context we're given.
-  std::unique_ptr<AbstractValue> DoAllocate(
-      const Context<T>& context) const final {
-    const Context<T>& subcontext = get_subcontext(context);
-    return source_output_port_->Allocate(subcontext);
+  // These forward to the source system output port.
+  std::unique_ptr<AbstractValue> DoAllocate() const final {
+    return source_output_port_->Allocate();
   }
 
+  // Pass in just the source System's Context, not the whole Diagram context
+  // we're given.
   void DoCalc(
       const Context<T>& context, AbstractValue* value) const final {
     const Context<T>& subcontext = get_subcontext(context);

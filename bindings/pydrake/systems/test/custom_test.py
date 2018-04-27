@@ -6,14 +6,16 @@ import copy
 import unittest
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression
 from pydrake.systems.analysis import (
     Simulator,
     )
 from pydrake.systems.framework import (
     AbstractValue,
-    BasicVector,
+    BasicVector, BasicVector_,
     DiagramBuilder,
-    LeafSystem,
+    LeafSystem, LeafSystem_,
     PortDataType,
     VectorSystem,
     )
@@ -48,6 +50,12 @@ class CustomAdder(LeafSystem):
         for i in xrange(context.get_num_input_ports()):
             input_vector = self.EvalVectorInput(context, i)
             sum += input_vector.get_value()
+
+
+# TODO(eric.cousineau): Make this class work with custom scalar types once
+# referencing with custom dtypes lands.
+# WARNING: At present, dtype=object matrices are NOT well supported, and may
+# produce unexecpted results (e.g. references not actually being respected).
 
 
 class CustomVectorSystem(VectorSystem):
@@ -272,27 +280,32 @@ class TestCustom(unittest.TestCase):
             diagram.GetMutableSubsystemContext(system, context) is not None)
 
     def test_continuous_state_api(self):
+        # N.B. Since this has trivial operations, we can test all scalar types.
+        for T in [float, AutoDiffXd, Expression]:
 
-        class TrivialSystem(LeafSystem):
-            def __init__(self, index):
-                LeafSystem.__init__(self)
-                num_q = 2
-                num_v = 1
-                num_z = 3
-                num_state = num_q + num_v + num_z
-                if index == 0:
-                    self._DeclareContinuousState(num_state_variables=num_state)
-                elif index == 1:
-                    self._DeclareContinuousState(
-                        num_q=num_q, num_v=num_v, num_z=num_z)
-                elif index == 2:
-                    self._DeclareContinuousState(BasicVector(num_state))
-                elif index == 3:
-                    self._DeclareContinuousState(
-                        BasicVector(num_state),
-                        num_q=num_q, num_v=num_v, num_z=num_z)
+            class TrivialSystem(LeafSystem_[T]):
+                def __init__(self, index):
+                    LeafSystem_[T].__init__(self)
+                    num_q = 2
+                    num_v = 1
+                    num_z = 3
+                    num_state = num_q + num_v + num_z
+                    if index == 0:
+                        self._DeclareContinuousState(
+                            num_state_variables=num_state)
+                    elif index == 1:
+                        self._DeclareContinuousState(
+                            num_q=num_q, num_v=num_v, num_z=num_z)
+                    elif index == 2:
+                        self._DeclareContinuousState(
+                            BasicVector_[T](num_state))
+                    elif index == 3:
+                        self._DeclareContinuousState(
+                            BasicVector_[T](num_state),
+                            num_q=num_q, num_v=num_v, num_z=num_z)
 
-        for index in range(4):
-            system = TrivialSystem(index)
-            context = system.CreateDefaultContext()
-            self.assertEquals(context.get_continuous_state_vector().size(), 6)
+            for index in range(4):
+                system = TrivialSystem(index)
+                context = system.CreateDefaultContext()
+                self.assertEquals(
+                    context.get_continuous_state_vector().size(), 6)

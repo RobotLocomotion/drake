@@ -26,8 +26,10 @@ Arguments:
                     headers are to be found.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
+
 def _impl(repository_ctx):
-    python = repository_ctx.which("python{}".format(
+    python = which(repository_ctx, "python{}".format(
         repository_ctx.attr.python_version))
 
     if not python:

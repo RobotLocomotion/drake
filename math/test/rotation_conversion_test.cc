@@ -11,7 +11,6 @@
 #include "drake/math/cross_product.h"
 #include "drake/math/normalize_vector.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 using Eigen::Matrix;
@@ -397,7 +396,7 @@ TEST_F(RotationConversionTest, QuatRotmat) {
     const Matrix3d rotmat = quat2rotmat(EigenQuaternionToOrderWXYZ(qi));
     EXPECT_TRUE(CompareMatrices(rotmat_expected, rotmat, 1E-10,
                                 MatrixCompareType::absolute));
-    // quat2rotmat should be the inversion of ToQuaternion().
+    // quat2rotmat should be the inversion of RotationMatrix::ToQuaternion().
     const Eigen::Quaterniond quat_expected =
         RotationMatrix<double>::ToQuaternion(rotmat);
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, quat_expected));
@@ -407,9 +406,9 @@ TEST_F(RotationConversionTest, QuatRotmat) {
 TEST_F(RotationConversionTest, QuatRPY) {
   for (const Quaterniond& qi : quaternion_test_cases_) {
     const Vector3d rpy = QuaternionToSpaceXYZ(qi);
-    // rpy2quat should be the inversion of QuaternionToSpaceXYZ().
-    const Vector4d quat4 = rpy2quat(rpy);
-    const Eigen::Quaterniond q_expected(quat4(0), quat4(1), quat4(2), quat4(3));
+    // RollPitchYaw::ToQuaternion() should be inverse of QuaternionToSpaceXYZ().
+    const Eigen::Quaterniond q_expected =
+        RollPitchYaw<double>(rpy).ToQuaternion();
     EXPECT_TRUE(AreQuaternionsForSameOrientation(qi, q_expected));
     EXPECT_TRUE(check_rpy_range(rpy));
   }
@@ -468,30 +467,10 @@ TEST_F(RotationConversionTest, RPYRotmat) {
 // its output to a quaternion obtained from SpaceXYZAnglesToEigenQuaternion().
 TEST_F(RotationConversionTest, RPYQuat) {
   for (const Vector3d& rpyi : rpy_test_cases_) {
-    const Eigen::Quaterniond q = SpaceXYZAnglesToEigenQuaternion(rpyi);
-    const Vector4d quat4 = rpy2quat(rpyi);
-    const Eigen::Quaterniond quat(quat4(0), quat4(1), quat4(2), quat4(3));
-    EXPECT_TRUE(AreQuaternionsForSameOrientation(quat, q));
-    // QuaternionToSpaceXYZ() should be the inversion of rpy2quat.
+    const Eigen::Quaterniond q = RollPitchYaw<double>(rpyi).ToQuaternion();
+    // QuaternionToSpaceXYZ() should be inverse of RollPitchYaw::ToQuaternion().
     const Vector3d rpy_expected = QuaternionToSpaceXYZ(q);
     EXPECT_TRUE(AreRollPitchYawForSameOrientation(rpyi, rpy_expected));
-    EXPECT_TRUE(
-        AreRollPitchYawForSameOrientation(rpyi, rotmat2rpy(rpy2rotmat(rpyi))));
-  }
-}
-
-// Verifies the correctness of the method
-// drake::math::RollPitchYawToQuaternion() by comparing its output to a
-// quaternion obtained in the local function SpaceXYZAnglesToEigenQuaternion().
-TEST_F(RotationConversionTest, RollPitchYawToQuaternion) {
-  // Compute the quaternion representation using Eigen's geometry model,
-  // compare the result with rpy2quat
-  for (const Vector3d& rpyi : rpy_test_cases_) {
-    const Vector3d spaceXYZ_angles(rpyi(0), rpyi(1), rpyi(2));
-    auto quat_expected = SpaceXYZAnglesToEigenQuaternion(spaceXYZ_angles);
-    auto quat = RollPitchYawToQuaternion(rpyi);
-    EXPECT_TRUE(
-        quat.isApprox(quat_expected, Eigen::NumTraits<double>::epsilon()));
   }
 }
 

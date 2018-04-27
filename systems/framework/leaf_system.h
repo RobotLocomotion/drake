@@ -220,12 +220,11 @@ class LeafSystem : public System<T> {
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const final {
+      const Context<T>&) const final {
     std::unique_ptr<LeafSystemOutput<T>> output(new LeafSystemOutput<T>);
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
-      output->add_port(std::make_unique<OutputPortValue>(
-          port.Allocate(context)));
+      output->add_port(std::make_unique<OutputPortValue>(port.Allocate()));
     }
     return std::move(output);
   }
@@ -871,7 +870,18 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, and calculator function; and
+  /// with no event object.
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc);
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, calculator function, and
   /// publish event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -895,7 +905,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, calculator function, and
   /// discrete update event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -919,7 +929,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, calculation function, and
+  /// for debugging and logging), direction type, calculator function, and
   /// unrestricted update event callback function for when this triggers.
   template <class MySystem>
   std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
@@ -943,10 +953,10 @@ class LeafSystem : public System<T> {
   }
 
   /// Constructs the witness function with the given description (used primarily
-  /// for debugging and logging), direction type, and calculation
-  /// function, and with a unique pointer to the event that is to be dispatched
-  /// when this witness function triggers. Example types of event objects are
-  /// publish, discrete variable update, unrestricted update events.
+  /// for debugging and logging), direction type, and calculator
+  /// function, and with an object corresponding to the event that is to be
+  /// dispatched when this witness function triggers. Example types of event
+  /// objects are publish, discrete variable update, unrestricted update events.
   /// A clone of the event will be owned by the newly constructed
   /// WitnessFunction.
   template <class MySystem>
@@ -957,6 +967,22 @@ class LeafSystem : public System<T> {
       const Event<T>& e) const {
     static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
       "Expected to be invoked from a LeafSystem-derived system.");
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, e.Clone());
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, and calculator
+  /// function, and with an object corresponding to the event that is to be
+  /// dispatched when this witness function triggers. Example types of event
+  /// objects are publish, discrete variable update, unrestricted update events.
+  /// A clone of the event will be owned by the newly constructed
+  /// WitnessFunction.
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      std::function<T(const Context<T>&)> calc,
+      const Event<T>& e) const {
     return std::make_unique<WitnessFunction<T>>(
         this, description, direction_type, calc, e.Clone());
   }
@@ -1038,7 +1064,7 @@ class LeafSystem : public System<T> {
           // object needs a member field to maintain storage for our result.
           // We must use a shared_ptr not because we share storage, but because
           // our lambda must be copyable.  This will go away once Eval works.
-          storage = port.Allocate(context);
+          storage = port.Allocate();
           // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
           port.Calc(context, storage.get());
           return storage->GetValue<BasicVector<T>>();
@@ -1150,34 +1176,6 @@ class LeafSystem : public System<T> {
   /// Declares an abstract-valued output port by specifying member functions to
   /// use both for the allocator and calculator. The signatures are:
   /// @code
-  /// OutputType MySystem::MakeOutputValue(const Context<T>&) const;
-  /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
-  /// @endcode
-  /// where `MySystem` is a class derived from `LeafSystem<T>` and `OutputType`
-  /// is any concrete type such that `Value<OutputType>` is permitted. See
-  /// alternate signature if your allocator method does not need a Context.
-  /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
-  template <class MySystem, typename OutputType>
-  const OutputPort<T>& DeclareAbstractOutputPort(
-      OutputType (MySystem::*make)(const Context<T>&) const,
-      void (MySystem::*calc)(const Context<T>&, OutputType*) const) {
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>& context) {
-          return AbstractValue::Make((this_ptr->*make)(context));
-        },
-        [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
-          (this_ptr->*calc)(context, &typed_result);
-        });
-    return port;
-  }
-
-  /// Declares an abstract-valued output port by specifying member functions to
-  /// use both for the allocator and calculator. The signatures are:
-  /// @code
   /// OutputType MySystem::MakeOutputValue() const;
   /// void MySystem::CalcOutputValue(const Context<T>&, OutputType*) const;
   /// @endcode
@@ -1193,7 +1191,7 @@ class LeafSystem : public System<T> {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     auto& port = CreateAbstractLeafOutputPort(
-        [this_ptr, make](const Context<T>&) {  // Swallow the context.
+        [this_ptr, make]() {
           return AbstractValue::Make((this_ptr->*make)());
         },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
@@ -1587,7 +1585,7 @@ class LeafSystem : public System<T> {
     // allocator functor here.
     copyable_unique_ptr<AbstractValue> owned_model(
         new Value<OutputType>(model_value));
-    return [model = std::move(owned_model)](const Context<T>&) {
+    return [model = std::move(owned_model)]() {
       return model->Clone();
     };
   }

@@ -4,8 +4,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
@@ -20,7 +20,7 @@
 
 namespace drake {
 
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -78,19 +78,15 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  GeometrySystem<double>& geometry_system =
-      *builder.AddSystem<GeometrySystem>();
-  geometry_system.set_name("geometry_system");
+  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
+  scene_graph.set_name("scene_graph");
 
   const double simulation_time = FLAGS_simulation_time;
 
   // Make and add the acrobot model.
   const AcrobotParameters acrobot_parameters;
-  const MultibodyPlant<double>& acrobot =
-      *builder.AddSystem(
-          MakeAcrobotPlant(
-              acrobot_parameters, true /* Finalize the plant */,
-              &geometry_system));
+  const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
+      acrobot_parameters, true /* Finalize the plant */, &scene_graph));
   const RevoluteJoint<double>& shoulder =
       acrobot.GetJointByName<RevoluteJoint>(
           acrobot_parameters.shoulder_joint_name());
@@ -108,7 +104,7 @@ int do_main() {
   builder.Connect(controller->get_output_port(),
                   acrobot.get_actuation_input_port());
 
-  // Boilerplate used to connect the plant to a GeometrySystem for
+  // Boilerplate used to connect the plant to a SceneGraph for
   // visualization.
   DrakeLcm lcm;
   const PoseBundleToDrawMessage& converter =
@@ -123,20 +119,16 @@ int do_main() {
   DRAKE_DEMAND(!!acrobot.get_source_id());
 
   builder.Connect(
-      acrobot.get_geometry_ids_output_port(),
-      geometry_system.get_source_frame_id_port(
-          acrobot.get_source_id().value()));
-  builder.Connect(
       acrobot.get_geometry_poses_output_port(),
-      geometry_system.get_source_pose_port(acrobot.get_source_id().value()));
+      scene_graph.get_source_pose_port(acrobot.get_source_id().value()));
 
-  builder.Connect(geometry_system.get_pose_bundle_output_port(),
+  builder.Connect(scene_graph.get_pose_bundle_output_port(),
                   converter.get_input_port(0));
   builder.Connect(converter, publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(geometry_system);
+  geometry::DispatchLoadMessage(scene_graph);
 
   // And build the Diagram:
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();

@@ -11,13 +11,13 @@ namespace drake {
 namespace tools {
 namespace test {
 
-std::unique_ptr<systems::BasicVector<double>>
+std::unique_ptr<drake::systems::BasicVector<double>>
 SampleTranslator::AllocateOutputVector() const {
   return std::make_unique<Sample<double>>();
 }
 
 void SampleTranslator::Serialize(
-    double time, const systems::VectorBase<double>& vector_base,
+    double time, const drake::systems::VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
   const auto* const vector = dynamic_cast<const Sample<double>*>(&vector_base);
   DRAKE_DEMAND(vector != nullptr);
@@ -33,7 +33,7 @@ void SampleTranslator::Serialize(
 
 void SampleTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
-    systems::VectorBase<double>* vector_base) const {
+    drake::systems::VectorBase<double>* vector_base) const {
   DRAKE_DEMAND(vector_base != nullptr);
   auto* const my_vector = dynamic_cast<Sample<double>*>(vector_base);
   DRAKE_DEMAND(my_vector != nullptr);

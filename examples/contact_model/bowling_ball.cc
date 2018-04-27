@@ -30,8 +30,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -136,14 +136,13 @@ int main() {
   const auto& tree = plant.get_rigid_body_tree();
 
   // TODO(SeanCurtis-TRI): This should be wrapped up into a sugar diagram so
-  // this can be done more concisely. Perhaps bundle a GeometrySystem in with
-  // all the others and called (something like) GeometrySystemWithLcmVisuals.
-  auto geometry_system = builder.AddSystem<geometry::GeometrySystem<double>>();
-  geometry_system->set_name("geometry_system");
+  // this can be done more concisely. Perhaps bundle a SceneGraph in with
+  // all the others and called (something like) SceneGraphWithLcmVisuals.
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
+  scene_graph->set_name("scene_graph");
 
-  auto rbt_gs_bridge =
-      builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
-          &tree, geometry_system);
+  auto rbt_gs_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+      &tree, scene_graph);
 
   DrakeLcm lcm;
 
@@ -159,19 +158,16 @@ int main() {
                   rbt_gs_bridge->rigid_body_plant_state_input_port());
 
   builder.Connect(
-      rbt_gs_bridge->geometry_id_output_port(),
-      geometry_system->get_source_frame_id_port(rbt_gs_bridge->source_id()));
-  builder.Connect(
       rbt_gs_bridge->geometry_pose_output_port(),
-      geometry_system->get_source_pose_port(rbt_gs_bridge->source_id()));
+      scene_graph->get_source_pose_port(rbt_gs_bridge->source_id()));
 
-  builder.Connect(geometry_system->get_pose_bundle_output_port(),
+  builder.Connect(scene_graph->get_pose_bundle_output_port(),
                   converter->get_input_port(0));
   builder.Connect(*converter, *publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(*geometry_system);
+  geometry::DispatchLoadMessage(*scene_graph);
 
   auto diagram = builder.Build();
 

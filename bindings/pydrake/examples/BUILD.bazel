@@ -50,6 +50,20 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "compass_gait_py",
+    cc_deps = [
+        "//examples/compass_gait",
+    ],
+    cc_so_name = "compass_gait",
+    cc_srcs = ["compass_gait_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
         "//examples/pendulum:pendulum_plant",
@@ -77,10 +91,26 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "van_der_pol_py",
+    cc_deps = [
+        "//examples/van_der_pol",
+    ],
+    cc_so_name = "van_der_pol",
+    cc_srcs = ["van_der_pol_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
+    ":compass_gait_py",
     ":pendulum_py",
     ":rimless_wheel_py",
+    ":van_der_pol_py",
 ]
 
 PY_LIBRARIES = [
@@ -102,15 +132,21 @@ install(
 
 drake_py_unittest(
     name = "acrobot_test",
-    size = "small",
     deps = [
         ":acrobot_py",
     ],
 )
 
 drake_py_unittest(
-    name = "pendulum_test",
+    name = "compass_gait_test",
     size = "small",
+    deps = [
+        ":compass_gait_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "pendulum_test",
     deps = [
         ":pendulum_py",
     ],
@@ -118,9 +154,15 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rimless_wheel_test",
-    size = "small",
     deps = [
         ":rimless_wheel_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "van_der_pol_test",
+    deps = [
+        ":van_der_pol_py",
     ],
 )
 

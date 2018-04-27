@@ -186,13 +186,12 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                   T zero_tol, VectorX<T>* M_bar_col, VectorX<T>* q_bar) const;
   bool ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
       int artificial_index, T zero_tol, VectorX<T>* z) const;
-  int FindComplementIndex(
-      const LCPVariable& query,
-      const std::vector<LCPVariable>& indep_variables) const;
+  int FindComplementIndex(const LCPVariable& query) const;
   void DetermineIndexSets() const;
   bool FindBlockingIndex(
       const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
       int* blocking_index) const;
+  bool IsArtificial(const LCPVariable& v) const;
 
   typedef std::vector<LCPVariable> LCPVariableVector;
 

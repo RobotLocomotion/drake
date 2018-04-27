@@ -452,7 +452,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
     VectorX<T>* q_prime) const {
   DRAKE_DEMAND(q_prime);
 
-  const int kArtificial = M.rows();  // Artificial variable index.
+  const int kArtificial = M.rows();
   DRAKE_DEMAND(driving_index >= 0 && driving_index <= kArtificial);
 
   // Verify that each member in the independent and dependent sets is unique.
@@ -461,10 +461,8 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
 
   // If the driving index does not correspond to the artificial variable,
   // M_prime_col must be non-null.
-  if (!indep_variables_[driving_index].is_z() ||
-      indep_variables_[driving_index].index() != kArtificial) {
+  if (!IsArtificial(indep_variables_[driving_index]))
     DRAKE_DEMAND(M_prime_col);
-  }
 
   // Determine the sets.
   DetermineIndexSets();
@@ -576,17 +574,22 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   return true;
 }
 
+// Checks to see whether a given variable is the artificial variable.
+template <class T>
+bool UnrevisedLemkeSolver<T>::IsArtificial(const LCPVariable& v) const {
+  const int n = static_cast<int>(dep_variables_.size());
+  return v.is_z() && v.index() == n;
+}
+
 // Method for finding the index of the complement of an LCP variable in
 // a tuple (strictly speaking, an unsorted vector) of independent variables.
 // Aborts if the index is not found in the set or the variable is the artificial
 // variable (it never should be).
 template <class T>
 int UnrevisedLemkeSolver<T>::FindComplementIndex(
-    const LCPVariable& query,
-    const std::vector<LCPVariable>& indep_variables) const {
+    const LCPVariable& query) const {
   // Verify that the query is not the artificial variable.
-  const int kArtificial = static_cast<int>(indep_variables.size() - 1);
-  DRAKE_DEMAND(!(query.is_z() && query.index() == kArtificial));
+  DRAKE_DEMAND(!IsArtificial(query));
 
   const auto iter = indep_variables_indices_.find(query.Complement());
   DRAKE_DEMAND(iter != indep_variables_indices_.end());
@@ -640,9 +643,10 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
   DRAKE_DEMAND(ratios.size() == matrix_col.size());
   DRAKE_DEMAND(zero_tol > 0);
 
+  const int n = matrix_col.size();
   T min_ratio = std::numeric_limits<double>::infinity();
   *blocking_index = -1;
-  for (int i = 0; i < matrix_col.size(); ++i) {
+  for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
       DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
       if (ratios[i] < min_ratio) {
@@ -657,13 +661,22 @@ bool UnrevisedLemkeSolver<T>::FindBlockingIndex(
     return false;
   }
 
-  // Determine all variables within the zero tolerance of the minimum ratio.
+  // Determine all variables within the zero tolerance of the minimum ratio,
+  // while simultaneously looking for the presence of the artificial variable
+  // among the (possible multiple) minima.
   std::vector<int> blocking_indices;
-  for (int i = 0; i < matrix_col.size(); ++i) {
+  for (int i = 0; i < n; ++i) {
     if (matrix_col[i] < -zero_tol) {
       DRAKE_SPDLOG_DEBUG(log(), "Ratio for index {}: {}", i, ratios[i]);
-      if (ratios[i] < min_ratio + zero_tol)
+      if (ratios[i] < min_ratio + zero_tol) {
+        if (IsArtificial(dep_variables_[i])) {
+          // *Always* select the artificial variable, if multiple choices are
+          // possible ([Cottle 1992] p. 280).
+          *blocking_index = i;
+          return true;
+        }
         blocking_indices.push_back(i);
+      }
     }
   }
 
@@ -771,10 +784,8 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     int zn_index = -1;
     for (int i = 0;
          i < static_cast<int>(indep_variables_.size()) && zn_index < 0; ++i) {
-      if (indep_variables_[i].is_z() &&
-          indep_variables_[i].index() == kArtificial) {
+      if (IsArtificial(indep_variables_[i]))
         zn_index = i;
-      }
     }
 
     if (zn_index >= 0) {
@@ -905,7 +916,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
         driving_index;
 
     // Make the driving variable the complement of the blocking variable.
-    driving_index = FindComplementIndex(blocking, indep_variables_);
+    driving_index = FindComplementIndex(blocking);
 
     DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
         to_string(indep_variables_));

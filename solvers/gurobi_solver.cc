@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -607,6 +608,13 @@ bool GurobiSolver::available() const { return true; }
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
+
+  const char* grb_license_file = std::getenv("GRB_LICENSE_FILE");
+  if (grb_license_file == nullptr) {
+    throw std::runtime_error(
+        "Could not locate Gurobi license key file because GRB_LICENSE_FILE "
+        "environment variable was not set.");
+  }
 
   GRBenv* env = nullptr;
   GRBloadenv(&env, nullptr);

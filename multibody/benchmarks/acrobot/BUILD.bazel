@@ -35,9 +35,13 @@ drake_cc_library(
         "make_acrobot_plant.h",
     ],
     deps = [
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    # We need to more seriously refactor and deprecate some names here before
+    # we can start following package_library conventions.
+    enable_library_lint = False,
+)

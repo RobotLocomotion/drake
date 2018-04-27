@@ -14,7 +14,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/monolane/builder.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
@@ -379,7 +379,8 @@ TEST_F(MaliputRailcarTest, ZeroInitialOutput) {
   EXPECT_EQ(state->speed(), MaliputRailcar<double>::kDefaultInitialSpeed);
   auto pose = pose_output();
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
-                              Eigen::Isometry3d::Identity().matrix()));
+                              Eigen::Isometry3d::Identity().matrix(),
+                              16 * std::numeric_limits<double>::epsilon()));
   Eigen::Translation<double, 3> translation = pose->get_translation();
   EXPECT_EQ(translation.x(), 0);
   EXPECT_EQ(translation.y(), 0);
@@ -409,8 +410,8 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputDragway) {
   // `h` are by default zero.
   expected_pose.translation() = Eigen::Vector3d(kS, 0, 0);
   EXPECT_TRUE(CompareMatrices(pose->get_isometry().matrix(),
-                              expected_pose.matrix()));
-
+                              expected_pose.matrix(),
+                              16 * std::numeric_limits<double>::epsilon()));
   auto velocity = velocity_output();
   const Vector6<double> expected_velocity =
       (Vector6<double>() << 0, 0, 0, kSpeed, 0, 0).finished();

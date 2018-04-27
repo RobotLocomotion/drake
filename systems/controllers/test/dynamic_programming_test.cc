@@ -52,7 +52,7 @@ GTEST_TEST(FittedValueIterationTest, SingleIntegrator) {
   // Optimal policy is 1 if x < 0, 0 if x = 0, -1 if x > 0.
   EXPECT_EQ(policy->get_output_port().size(), 1);
   auto context = policy->CreateDefaultContext();
-  auto output = policy->get_output_port().Allocate(*context);
+  auto output = policy->get_output_port().Allocate();
   for (const double x : state_grid[0]) {
     context->FixInputPort(0, Vector1d{x});
     policy->get_output_port().Calc(*context, output.get());

@@ -39,7 +39,6 @@ drake_cc_binary(
         "--duration=0.1",
         "--initial_height=0.051",
     ],
-    test_rule_size = "medium",
     deps = [
         ":quadrotor_plant",
         "//common:find_resource",

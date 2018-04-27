@@ -44,7 +44,7 @@ class Monomial {
   /** Constructs a Monomial from @p var. */
   explicit Monomial(const Variable& var);
 
-  /** Constructs a Monomial from @p var and @exponent. */
+  /** Constructs a Monomial from @p var and @p exponent. */
   Monomial(const Variable& var, int exponent);
 
   /** Returns the degree of this Monomial in a variable @p v. */

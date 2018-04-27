@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/util/drakeGeometryUtil.h"
 

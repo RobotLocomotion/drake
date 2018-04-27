@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "drake/common/autodiff.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 template <typename T>
 RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,

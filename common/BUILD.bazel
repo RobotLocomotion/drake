@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -16,11 +17,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-# This should encompass every non-testonly cc_library in this package,
-# except for items that should only ever be linked into main() programs.
-drake_cc_library(
+drake_cc_package_library(
     name = "common",
-    srcs = [],
     deps = [
         ":autodiff",
         ":autodiffxd_make_coherent",
@@ -52,9 +50,6 @@ drake_cc_library(
         ":type_safe_index",
         ":unused",
     ],
-    # Intentionally excluded items:
-    # - text_logging_gflags
-    # - text_logging_gflags_h
 )
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -379,6 +374,11 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-pthread"],
         "//conditions:default": [],
     }),
+    tags = [
+        # Don't add this library into the ":common" package library.
+        # Only programs with a main() function should ever use this header.
+        "exclude_from_package",
+    ],
     deps = [
         ":essential",
         "@gflags",
@@ -391,6 +391,12 @@ drake_cc_library(
 drake_cc_library(
     name = "text_logging_gflags_h",
     hdrs = ["text_logging_gflags.h"],
+    tags = [
+        # Don't add this library into the ":common" package library.
+        # This rule should only be used for install purposes.
+        "exclude_from_package",
+    ],
+    # This rule should only be used for install purposes.
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
@@ -596,6 +602,7 @@ genrule(
 # Functional test that mistyped DRAKE_ASSERTs will failt to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
+    size = "small",
     srcs = ["test/drake_assert_test_compile_variants.sh"],
     args = [
         "$(location :capture_cc.env)",
@@ -884,8 +891,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",

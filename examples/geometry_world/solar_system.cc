@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -19,12 +18,11 @@ namespace solar_system {
 using Eigen::Vector4d;
 using geometry::Cylinder;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::Mesh;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -36,28 +34,20 @@ using systems::DiscreteValues;
 using std::make_unique;
 
 template <typename T>
-SolarSystem<T>::SolarSystem(GeometrySystem<T>* geometry_system) {
-  DRAKE_DEMAND(geometry_system);
-  source_id_ = geometry_system->RegisterSource("solar_system");
-  geometry_id_port_ =
-      this->DeclareAbstractOutputPort(&SolarSystem::AllocateFrameIdOutput,
-                                      &SolarSystem::CalcFrameIdOutput)
-          .get_index();
-  geometry_pose_port_ =
-      this->DeclareAbstractOutputPort(&SolarSystem::AllocateFramePoseOutput,
-                                      &SolarSystem::CalcFramePoseOutput)
-          .get_index();
+SolarSystem<T>::SolarSystem(SceneGraph<T>* scene_graph) {
+  DRAKE_DEMAND(scene_graph);
+  source_id_ = scene_graph->RegisterSource("solar_system");
 
   this->DeclareContinuousState(kBodyCount /* num_q */, kBodyCount /* num_v */,
                                0 /* num_z */);
 
-  AllocateGeometry(geometry_system);
-}
+  AllocateGeometry(scene_graph);
 
-template <typename T>
-const systems::OutputPort<T>& SolarSystem<T>::get_geometry_id_output_port()
-    const {
-  return systems::System<T>::get_output_port(geometry_id_port_);
+  // Now that frames have been registered, allocate the output port.
+  geometry_pose_port_ = this->DeclareAbstractOutputPort(
+          FramePoseVector<T>(source_id_, body_ids_),
+          &SolarSystem::CalcFramePoseOutput)
+      .get_index();
 }
 
 template <typename T>
@@ -108,27 +98,27 @@ void SolarSystem<T>::SetDefaultState(const systems::Context<T>&,
 template <class ParentId>
 void MakeArm(SourceId source_id, ParentId parent_id, double length,
              double height, double radius, const VisualMaterial& material,
-             GeometrySystem<double>* geometry_system) {
+             SceneGraph<double>* scene_graph) {
   Isometry3<double> arm_pose = Isometry3<double>::Identity();
   // tilt it horizontally
   arm_pose.linear() =
       Eigen::AngleAxis<double>(M_PI / 2, Vector3<double>::UnitY()).matrix();
   arm_pose.translation() << length / 2, 0, 0;
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id, parent_id,
       make_unique<GeometryInstance>(
           arm_pose, make_unique<Cylinder>(radius, length), material));
 
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << length, 0, height/2;
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id, parent_id,
       make_unique<GeometryInstance>(
           post_pose, make_unique<Cylinder>(radius, height), material));
 }
 
 template <typename T>
-void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
+void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   body_ids_.reserve(kBodyCount);
   body_offset_.reserve(kBodyCount);
   axes_.reserve(kBodyCount);
@@ -140,7 +130,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // Allocate the sun.
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
-  geometry_system->RegisterAnchoredGeometry(
+  scene_graph->RegisterAnchoredGeometry(
       source_id_, make_unique<GeometryInstance>(
                       Isometry3<double>::Identity(), make_unique<Sphere>(1.f),
                       VisualMaterial(Vector4d(1, 1, 0, 1))));
@@ -149,11 +139,11 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   const double post_height = 1;
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << 0, 0, (orrery_bottom + post_height / 2);
-  geometry_system->RegisterAnchoredGeometry(
-      source_id_, make_unique<GeometryInstance>(
-                      post_pose,
-                      make_unique<Cylinder>(pipe_radius, post_height),
-                      post_material));
+  scene_graph->RegisterAnchoredGeometry(
+      source_id_,
+      make_unique<GeometryInstance>(
+          post_pose, make_unique<Cylinder>(pipe_radius, post_height),
+          post_material));
 
   // Allocate the "celestial bodies": two planets orbiting on different planes,
   // each with a moon.
@@ -164,8 +154,8 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // orrery arm).
   const double kEarthBottom = orrery_bottom + 0.25;
   Isometry3<double> X_SE{Translation3<double>{0, 0, kEarthBottom}};
-  FrameId planet_id = geometry_system->RegisterFrame(
-      source_id_, GeometryFrame("Earth", X_SE));
+  FrameId planet_id =
+      scene_graph->RegisterFrame(source_id_, GeometryFrame("Earth", X_SE));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SE);
   axes_.push_back(Vector3<double>::UnitZ());
@@ -174,18 +164,18 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   const double kEarthOrbitRadius = 3.0;
   Isometry3<double> X_EGe{
       Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id_, planet_id,
       make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f),
                                     VisualMaterial(Vector4d(0, 0, 1, 1))));
   // Earth's orrery arm.
   MakeArm(source_id_, planet_id, kEarthOrbitRadius, -kEarthBottom, pipe_radius,
-          post_material, geometry_system);
+          post_material, scene_graph);
 
   // Luna's frame L is at the center of Earth's geometry (Ge). So, X_EL = X_EGe.
   const Isometry3<double>& X_EL = X_EGe;
-  FrameId luna_id = geometry_system->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("Luna", X_EL));
+  FrameId luna_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                               GeometryFrame("Luna", X_EL));
   body_ids_.push_back(luna_id);
   body_offset_.push_back(X_EL);
   Vector3<double> plane_normal{1, 1, 1};
@@ -199,7 +189,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   Vector3<double> luna_position =
       Vector3<double>(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
   Isometry3<double> X_LGl{Translation3<double>{luna_position}};
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id_, luna_id, make_unique<GeometryInstance>(
                                X_LGl, make_unique<Sphere>(0.075f),
                                VisualMaterial(Vector4d(0.5, 0.5, 0.35, 1))));
@@ -207,8 +197,8 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // Mars's frame M lies directly *below* the sun (to account for the orrery
   // arm).
   Isometry3<double> X_SM{Translation3<double>{0, 0, orrery_bottom}};
-  planet_id = geometry_system->RegisterFrame(
-      source_id_, GeometryFrame("Mars", X_SM));
+  planet_id =
+      scene_graph->RegisterFrame(source_id_, GeometryFrame("Mars", X_SM));
   body_ids_.push_back(planet_id);
   body_offset_.push_back(X_SM);
   plane_normal << 0, 0.1, 1;
@@ -219,7 +209,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   const double kMarsSize = 0.24;
   Isometry3<double> X_MGm{
       Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
-  GeometryId mars_geometry_id = geometry_system->RegisterGeometry(
+  GeometryId mars_geometry_id = scene_graph->RegisterGeometry(
       source_id_, planet_id,
       make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize),
                                     VisualMaterial(Vector4d(0.9, 0.1, 0, 1))));
@@ -228,7 +218,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
       FindResourceOrThrow("drake/examples/geometry_world/planet_rings.obj");
   Vector3<double> axis = Vector3<double>(1, 1, 1).normalized();
   Isometry3<double> X_GmGr(AngleAxis<double>(M_PI / 3, axis));
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id_, mars_geometry_id,
       make_unique<GeometryInstance>(
           X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize),
@@ -236,14 +226,14 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
 
   // Mars's orrery arm.
   MakeArm(source_id_, planet_id, kMarsOrbitRadius, -orrery_bottom, pipe_radius,
-          post_material, geometry_system);
+          post_material, scene_graph);
 
   // Phobos's frame P is at the center of Mars's geometry (Gm).
   // So, X_MP = X_MGm. The normal of the plane is negated so it orbits in the
   // opposite direction.
   const Isometry3<double>& X_MP = X_MGm;
-  FrameId phobos_id = geometry_system->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("phobos", X_MP));
+  FrameId phobos_id = scene_graph->RegisterFrame(source_id_, planet_id,
+                                                 GeometryFrame("phobos", X_MP));
   body_ids_.push_back(phobos_id);
   body_offset_.push_back(X_MP);
   plane_normal << 0, 0, -1;
@@ -252,7 +242,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // The geometry is displaced from the Phobos's frame so that it orbits.
   const double kPhobosOrbitRadius = 0.34;
   Isometry3<double> X_PGp{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
-  geometry_system->RegisterGeometry(
+  scene_graph->RegisterGeometry(
       source_id_, phobos_id, make_unique<GeometryInstance>(
                                  X_PGp, make_unique<Sphere>(0.06f),
                                  VisualMaterial(Vector4d(0.65, 0.6, 0.8, 1))));
@@ -261,42 +251,22 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
 }
 
 template <typename T>
-FramePoseVector<T> SolarSystem<T>::AllocateFramePoseOutput(
-    const Context<T>&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
-  // NOTE: We initialize with the translational offset during allocation so that
-  // the `CalcFramePoseOutput` need only update the rotational component.
-  return FramePoseVector<T>(source_id_, body_offset_);
-}
-
-template <typename T>
 void SolarSystem<T>::CalcFramePoseOutput(const Context<T>& context,
                                          FramePoseVector<T>* poses) const {
+  DRAKE_DEMAND(poses->size() == kBodyCount);
+  DRAKE_DEMAND(poses->source_id() == source_id_);
+
   const BasicVector<T>& state = get_state(context);
-  DRAKE_ASSERT(poses->vector().size() == body_ids_.size());
-  std::vector<Isometry3<T>>& pose_data = poses->mutable_vector();
-  for (size_t i = 0; i < body_ids_.size(); ++i) {
+
+  poses->clear();
+  for (int i = 0; i < kBodyCount; ++i) {
+    Isometry3<T> pose = body_offset_[i];
     // Frames only revolve around their origin; it is only necessary to set the
     // rotation value.
-    T rot{state[i]};
-    pose_data[i].linear() = AngleAxis<T>(rot, axes_[i]).matrix();
+    T rotation{state[i]};
+    pose.linear() = AngleAxis<T>(rotation, axes_[i]).matrix();
+    poses->set_value(body_ids_[i], pose);
   }
-}
-
-template <typename T>
-FrameIdVector SolarSystem<T>::AllocateFrameIdOutput(const MyContext&) const {
-  DRAKE_DEMAND(source_id_.is_valid());
-  DRAKE_DEMAND(static_cast<int>(body_offset_.size()) == kBodyCount);
-  FrameIdVector ids(source_id_);
-  ids.AddFrameIds(body_ids_);
-  return ids;
-}
-
-template <typename T>
-void SolarSystem<T>::CalcFrameIdOutput(const MyContext&, FrameIdVector*) const {
-  // NOTE: This only needs to do work if the topology changes. This system makes
-  // no topology changes.
 }
 
 template <typename T>

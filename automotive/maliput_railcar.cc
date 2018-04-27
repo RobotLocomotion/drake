@@ -14,7 +14,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
-#include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
@@ -28,7 +28,6 @@ using maliput::api::Lane;
 using maliput::api::LaneEnd;
 using maliput::api::LanePosition;
 using maliput::api::Rotation;
-using math::RollPitchYawToQuaternion;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
@@ -193,9 +192,10 @@ void MaliputRailcar<T>::CalcPose(const Context<T>& context,
                          -rotation.pitch(),
                          atan2(-sin(rotation.yaw()), -cos(rotation.yaw()))));
   pose->set_translation(Eigen::Translation<T, 3>(geo_position.xyz()));
-  pose->set_rotation(RollPitchYawToQuaternion(
-      Vector3<T>(adjusted_rotation.roll(), adjusted_rotation.pitch(),
-                 adjusted_rotation.yaw())));
+  const math::RollPitchYaw<T> rpy(adjusted_rotation.roll(),
+                                  adjusted_rotation.pitch(),
+                                  adjusted_rotation.yaw());
+  pose->set_rotation(rpy.ToQuaternion());
 }
 
 template <typename T>
