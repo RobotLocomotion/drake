@@ -78,6 +78,39 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "quasistatic_iiwa_pick_and_place_demo",
+    testonly = 1,
+    srcs = ["quasistatic_iiwa_pick_and_place_demo.cc"],
+    data = [
+        ":double_dumbbell_for_pick_up.sdf",
+        ":dumbbell_for_pick_up.sdf",
+        ":models",
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":quasistatic_system",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//lcm",
+        "//manipulation/util:sim_diagram_builder",
+        "//manipulation/util:world_sim_tree_builder",
+        "//math:geometric_transform",
+        "//systems/analysis",
+        "//systems/controllers:pid_controller",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:matrix_gain",
+        "//systems/primitives:multiplexer",
+        "//systems/primitives:signal_logger",
+        "//systems/primitives:trajectory_source",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
 install_data()
 
 add_lint_tests()
