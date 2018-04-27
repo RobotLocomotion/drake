@@ -16,6 +16,9 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
+
+using drake::log;
 
 namespace drake {
 namespace solvers {
@@ -934,7 +937,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   // Eigen to keep from freeing/reallocating memory repeatedly.
   VectorX<T> wx;
 
-  Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() entered" << std::endl;
+  DRAKE_SPDLOG_DEBUG(
+      log(), "MobyLCPSolver::SolveLcpLemkeRegularized() entered");
 
   // look for fast exit
   if (q.size() == 0) {
@@ -950,7 +954,7 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
   // rather than for each regularized version of M.
   const T mod_zero_tol = (zero_tol > 0) ? zero_tol : ComputeZeroTolerance(M);
 
-  Log() << " zero tolerance: " << mod_zero_tol << std::endl;
+  DRAKE_SPDLOG_DEBUG(log(), " zero tolerance: {}", mod_zero_tol);
 
   // store the total pivots
   unsigned total_piv = 0;
@@ -969,27 +973,24 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
         const T wx_min = wx.minCoeff();
         const T wx_max = wx.maxCoeff();
         if (wx_min >= -mod_zero_tol && wx_max < mod_zero_tol) {
-          Log() << "  solved with no regularization necessary!" << std::endl;
-          Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
-                << std::endl;
+          DRAKE_SPDLOG_DEBUG(log(), "  solved with no regularization "
+              "necessary!");
+          DRAKE_SPDLOG_DEBUG(log(), "MobyLCPSolver::SolveLcpLemkeRegularized() "
+              "exited");
 
           return true;
         } else {
-          Log() << "MobyLCPSolver::SolveLcpLemke() - "
-                << "'<w, z> not within tolerance(min value: " << wx_min
-                << " max value: " << wx_max << ")" << std::endl;
+          DRAKE_SPDLOG_DEBUG(log(), "MobyLCPSolver::SolveLcpLemke() - "
+                "'<w, z> not within tolerance(min value: {}, max value: {})",
+                wx_min, wx_max);
         }
       } else {
-        Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to desired "
-            "tolerance"
-              << std::endl;
-        Log() << "  minimum w: " << wx.minCoeff() << std::endl;
+        DRAKE_SPDLOG_DEBUG(log(), "  MobyLCPSolver::SolveLcpLemke() - 'w' not "
+            "solved to desired tolerance. minimum w: {}", wx.minCoeff());
       }
     } else {
-      Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-          "tolerance"
-            << std::endl;
-      Log() << "  minimum z: " << z->minCoeff() << std::endl;
+      DRAKE_SPDLOG_DEBUG(log(), "  MobyLCPSolver::SolveLcpLemke() - 'z' not "
+          "solved to desired tolerance. minimum z: {}", z->minCoeff());
     }
   }
 
@@ -1003,8 +1004,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
     double lambda =
         std::pow(static_cast<double>(10.0), static_cast<double>(rf));
 
-    Log() << "  trying to solve LCP with regularization factor: " << lambda
-          << std::endl;
+    DRAKE_SPDLOG_DEBUG(log(), "  trying to solve LCP with regularization "
+        "factor: {}", lambda);
 
     // regularize M
     MM = M;
@@ -1030,28 +1031,24 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
           const T wx_min = wx.minCoeff();
           const T wx_max = wx.maxCoeff();
           if (wx_min > -mod_zero_tol && wx_max < mod_zero_tol) {
-            Log() << "  solved with regularization factor: " << lambda
-                  << std::endl;
-            Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited"
-                  << std::endl;
+            DRAKE_SPDLOG_DEBUG(log(), "  solved with regularization factor: {}",
+                lambda);
+            DRAKE_SPDLOG_DEBUG(log(), "MobyLCPSolver::"
+                "SolveLcpLemkeRegularized() exited");
             pivots_ = total_piv;
             return true;
           } else {
-            Log() << "MobyLCPSolver::SolveLcpLemke() - "
-                  << "'<w, z> not within tolerance(min value: " << wx_min
-                  << " max value: " << wx_max << ")" << std::endl;
+            DRAKE_SPDLOG_DEBUG(log(), "MobyLCPSolver::SolveLcpLemke() - "
+                  "'<w, z> not within tolerance(min value: {}, max value: {})",
+                               wx_min, wx_max);
           }
         } else {
-          Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to "
-              "desired tolerance"
-                << std::endl;
-          Log() << "  minimum w: " << wx.minCoeff() << std::endl;
+          DRAKE_SPDLOG_DEBUG(log(), "  MobyLCPSolver::SolveLcpLemke() - 'w' "
+              "not solved to desired tolerance. minimum w: {}", wx.minCoeff());
         }
       } else {
-        Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-            "tolerance"
-              << std::endl;
-        Log() << "  minimum z: " << z->minCoeff() << std::endl;
+        DRAKE_SPDLOG_DEBUG(log(), "  MobyLCPSolver::SolveLcpLemke() - 'z' not "
+            "solved to desired tolerance. minimum z: {}", z->minCoeff());
       }
     }
 
@@ -1059,8 +1056,8 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
     rf += step_exp;
   }
 
-  Log() << "  unable to solve given any regularization!" << std::endl;
-  Log() << "MobyLCPSolver::SolveLcpLemkeRegularized() exited" << std::endl;
+  DRAKE_SPDLOG_DEBUG(log(), "  unable to solve given any regularization!");
+  DRAKE_SPDLOG_DEBUG(log(), "MobyLCPSolver::SolveLcpLemkeRegularized() exited");
 
   // store total pivots
   pivots_ = total_piv;

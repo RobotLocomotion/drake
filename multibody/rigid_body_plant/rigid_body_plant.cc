@@ -587,9 +587,8 @@ void RigidBodyPlant<T>::CalcContactStiffnessDampingMuAndNumHalfConeEdges(
   *mu = material.static_friction();
 
   // TODO(edrumwri): The number of half-cone edges should be able to be set on
-  // a per-geometry pair basis. For now, just set the value to pyramidal
-  // friction.
-  *num_half_cone_edges = 2;
+  // a per-geometry pair basis.
+  *num_half_cone_edges = default_half_num_friction_cone_edges_;
 
   // Verify the friction directions are set correctly.
   DRAKE_DEMAND(*num_half_cone_edges >= 2);
@@ -1062,7 +1061,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     const T denom = dt * stiffness + damping;
     const T cfm = 1.0 / denom;
     const T erp = (dt * stiffness) / denom;
-    data.gammaN[i] = cfm / dt;
+    data.gammaN[i] = cfm;
     data.kN[i] = erp * contacts[i].distance / dt;
   }
 
@@ -1117,9 +1116,10 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
     return ContactNormalJacobianMult(contacts, q, w);
   };
-  data.N_transpose_mult = [this, &contacts, &kinematics_cache]
+  data.N_transpose_mult = [this, &contacts, &kinematics_cache, dt]
       (const VectorX<T>& f) -> VectorX<T> {
-    return TransposedContactNormalJacobianMult(contacts, kinematics_cache, f);
+    return TransposedContactNormalJacobianMult(
+        contacts, kinematics_cache, f) * dt;
   };
 
   // Set up the F multiplication operator (projected velocity along the contact
@@ -1129,10 +1129,10 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
       VectorX<T> {
     return ContactTangentJacobianMult(contacts, q, w, data.r);
   };
-  data.F_transpose_mult = [this, &contacts, &kinematics_cache, &data]
+  data.F_transpose_mult = [this, &contacts, &kinematics_cache, &data, dt]
       (const VectorX<T>& f) -> VectorX<T> {
     return TransposedContactTangentJacobianMult(contacts,
-        kinematics_cache, f, data.r);
+        kinematics_cache, f, data.r) * dt;
   };
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
@@ -1145,29 +1145,14 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
     }
     return result;
   };
-  data.L_transpose_mult = [this, &v, &limits](const VectorX<T>& lambda) {
+  data.L_transpose_mult = [this, &v, &limits, dt](const VectorX<T>& lambda) {
     VectorX<T> result = VectorX<T>::Zero(v.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
       const int index = limits[i].v_index;
       result[index] = (limits[i].lower_limit) ? lambda[i] : -lambda[i];
     }
-    return result;
+    return result * dt;
   };
-
-  // Output the Jacobians.
-  #ifdef SPDLOG_DEBUG_ON
-  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()),
-      F(contacts.size() * 2, v.size());
-  for (int i = 0; i < v.size(); ++i) {
-    VectorX<T> unit = VectorX<T>::Unit(v.size(), i);
-    N.col(i) = data.N_mult(unit);
-    F.col(i) = data.F_mult(unit);
-    L.col(i) = data.L_mult(unit);
-  }
-  SPDLOG_DEBUG(drake::log(), "N: {}", N);
-  SPDLOG_DEBUG(drake::log(), "F: {}", F);
-  SPDLOG_DEBUG(drake::log(), "L: {}", L);
-  #endif
 
   // Set the regularization and stabilization terms for contact tangent
   // directions (kF).
@@ -1177,6 +1162,21 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.gammaF.setZero(total_friction_cone_edges);
   data.gammaE.setZero(contacts.size());
 
+  // Output the Jacobians.
+#ifdef SPDLOG_DEBUG_ON
+  MatrixX<T> N(contacts.size(), v.size()), L(limits.size(), v.size()),
+      F(total_friction_cone_edges, v.size());
+  for (int i = 0; i < v.size(); ++i) {
+    VectorX<T> unit = VectorX<T>::Unit(v.size(), i);
+    N.col(i) = data.N_mult(unit);
+    F.col(i) = data.F_mult(unit);
+    L.col(i) = data.L_mult(unit);
+  }
+  SPDLOG_DEBUG(drake::log(), "N: {}", N);
+  SPDLOG_DEBUG(drake::log(), "F: {}", F);
+  SPDLOG_DEBUG(drake::log(), "L: {}", L);
+#endif
+
   // Set the regularization and stabilization terms for joint limit
   // constraints (kL).
   // TODO(edrumwri): Make cfm and erp individually settable.
@@ -1185,7 +1185,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   data.kL.resize(limits.size());
   for (int i = 0; i < static_cast<int>(limits.size()); ++i)
     data.kL[i] = default_limit_erp * limits[i].signed_distance / dt;
-  data.gammaL.setOnes(limits.size()) *= default_limit_cfm / dt;
+  data.gammaL.setOnes(limits.size()) *= default_limit_cfm;
 
   // Set Jacobians for bilateral constraint terms.
   // TODO(edrumwri): Make erp individually settable.
@@ -1235,7 +1235,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
   ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
-                                    constraint_force / dt,
+                                    constraint_force,
                                     &discretized_system_contact_results_);
 
   // qn = q + dt*qdot.
@@ -1306,8 +1306,9 @@ void RigidBodyPlant<T>::ComputeDiscretizedSystemContactResults(
             (static_cast<double>(data.r[normal_force_index]) - 1);
         const double cth = cos(theta);
         const double sth = sin(theta);
-        force += tan1_dir * cth * constraint_force[frictional_force_index++];
-        force += tan2_dir * sth * constraint_force[frictional_force_index++];
+        force += tan1_dir * cth * constraint_force[frictional_force_index] +
+                 tan2_dir * sth * constraint_force[frictional_force_index];
+        ++frictional_force_index;
       }
     }
 
@@ -1327,7 +1328,7 @@ void RigidBodyPlant<T>::ComputeDiscretizedSystemContactResults(
   contact_force.segment(
       limits_start, constraint_force.size() - limits_start).setZero();
   constraint_solver_.ComputeGeneralizedImpulseFromConstraintImpulses(
-      data, contact_force / dt, &generalized_contact_force);
+      data, contact_force, &generalized_contact_force);
   contact_results->set_generalized_contact_force(
       generalized_contact_force);
 }

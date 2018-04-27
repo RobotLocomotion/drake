@@ -394,6 +394,19 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// (seconds per update).
   double get_time_step() const { return timestep_; }
 
+  /// Gets *half* the default number of edges in a polygonal approximation to
+  /// a friction cone.
+  int get_default_half_num_friction_cone_edges() const {
+    return default_half_num_friction_cone_edges_;
+  }
+
+  /// Sets *half* the default number of edges in a polygonal approximation to
+  /// a friction cone. Minimum number is 2.
+  void set_default_half_num_friction_cone_edges(int k) {
+    DRAKE_DEMAND(k >= 2);
+    default_half_num_friction_cone_edges_ = k;
+  }
+
  protected:
   // Constructor for derived classes to support system scalar conversion, as
   // mandated in the doxygen `system_scalar_conversion` documentation.
@@ -609,6 +622,10 @@ class RigidBodyPlant : public LeafSystem<T> {
     // to joint limit violations.
     T signed_distance{0};
   };
+
+  // Half the number of edges used in a polygonal approximation to a friction
+  // cone, when no such per-pair number has been specified.
+  int default_half_num_friction_cone_edges_{2};  // Default is friction pyramid.
 
   template <typename U>
   friend class RigidBodyPlant;  // For scalar-converting copy constructor.

@@ -38,6 +38,21 @@ using parsers::sdf::AddModelInstancesFromSdfFile;
 namespace systems {
 namespace {
 
+// Tests the default friction cone edges.
+GTEST_TEST(RigidBodyPlantTest, DefaultHalfFrictionConeEdges) {
+  // Load in an arbitrary URDF.
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/world.urdf"),
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  RigidBodyPlant<double> plant(move(tree_ptr));
+  EXPECT_GE(plant.get_default_half_num_friction_cone_edges(), 2);
+  plant.set_default_half_num_friction_cone_edges(16);
+  EXPECT_EQ(plant.get_default_half_num_friction_cone_edges(), 16);
+}
+
 // Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
 GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
   auto tree_ptr = make_unique<RigidBodyTree<double>>();

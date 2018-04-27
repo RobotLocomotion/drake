@@ -253,9 +253,6 @@ class ConstraintSolver {
   void CheckAccelConstraintMatrix(
     const ConstraintAccelProblemData<T>& problem_data,
     const MatrixX<T>& MM) const;
-  void CheckVelConstraintMatrix(
-    const ConstraintVelProblemData<T>& problem_data,
-    const MatrixX<T>& MM) const;
 
   // Computes a constraint space compliance matrix A⋅M⁻¹⋅Bᵀ, where A ∈ ℝᵃˣᵐ
   // (realized here using an operator) and B ∈ ℝᵇˣᵐ are both Jacobian matrices
@@ -1513,59 +1510,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   qq->segment(nc + nk + num_non_sliding, num_limits) = L(trunc_neg_invA_a) + kL;
 }
 
-template <class T>
-void ConstraintSolver<T>::CheckVelConstraintMatrix(
-    const ConstraintVelProblemData<T>& problem_data,
-    const MatrixX<T>& MM) const {
-  // Get numbers of contacts.
-  const int num_contacts = problem_data.mu.size();
-  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
-                                                   problem_data.r.end(), 0);
-  const int num_limits = problem_data.kL.size();
-
-  // Alias operators and vectors to make accessing them less clunky.
-  const auto N = problem_data.N_mult;
-  const auto NT = problem_data.N_transpose_mult;
-  const auto F = problem_data.F_mult;
-  const auto FT = problem_data.F_transpose_mult;
-  const auto L = problem_data.L_mult;
-  const auto LT = problem_data.L_transpose_mult;
-  auto iM = problem_data.solve_inertia;
-
-  // Alias these variables for more readable construction of MM and qq.
-  const int ngv = problem_data.Mv.size();  // generalized velocity dimension.
-  const int nr = num_spanning_vectors;
-  const int nk = nr * 2;
-  const int nl = num_limits;
-
-  // Get blocks of M that were set through a transposition operation.
-  Eigen::Ref<const MatrixX<T>> F_iM_NT =
-      MM.block(num_contacts, 0, nr, num_contacts);
-  Eigen::Ref<const MatrixX<T>> L_iM_NT =
-      MM.block(num_contacts * 2 + nk, 0, nl, num_contacts);
-  Eigen::Ref<const MatrixX<T>> L_iM_FT =
-      MM.block(num_contacts * 2 + nk, num_contacts, nl, nr);
-
-  // Compute the blocks from scratch.
-  MatrixX<T> F_iM_NT_true(nr, num_contacts), L_iM_NT_true(nl, num_contacts);
-  MatrixX<T> L_iM_FT_true(nl, nr);
-  MatrixX<T> iM_NT(ngv, num_contacts), iM_FT(ngv, nr);
-  ComputeInverseInertiaTimesGT(iM, NT, num_contacts, &iM_NT);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_NT, F_iM_NT_true);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_NT, L_iM_NT_true);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
-
-  // Determine the zero tolerance.
-  const T zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
-      MM.rows();
-
-  // Check that the blocks are nearly equal.
-  DRAKE_ASSERT((F_iM_NT - F_iM_NT_true).norm() < zero_tol);
-  DRAKE_ASSERT((L_iM_NT - L_iM_NT_true).norm() < zero_tol);
-  DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
-}
-
 // Forms the LCP matrix and vector, which is used to determine the collisional
 // impulses.
 template <class T>
@@ -1682,9 +1626,6 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   // constraints.
   MM->block(nc * 2 + nk, 0, nl, nc * 2 + nk) =
       MM->block(0, nc * 2 + nk, nc * 2 + nk, nl).transpose().eval();
-
-  // Check the transposed blocks of the LCP matrix.
-  DRAKE_ASSERT_VOID(CheckVelConstraintMatrix(problem_data, *MM));
 
   // Verify that all gamma vectors are either empty or non-negative.
   DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);

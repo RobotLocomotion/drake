@@ -26,6 +26,14 @@ template <typename DerivedA, typename DerivedB>
                          MatrixCompareType::absolute);
 }
 
+template <typename DerivedA, typename DerivedB>
+::testing::AssertionResult CompareMatrices(
+    const Eigen::MatrixBase<DerivedA>& m1,
+    const Eigen::MatrixBase<DerivedB>& m2, double precision) {
+  return CompareMatrices(m1, m2, precision,
+                         MatrixCompareType::absolute);
+}
+
 // Base class for testing the CompliantContactModel class as well as the
 // RigidBodyPlant's logic for populating its output port for collision response
 // data.
