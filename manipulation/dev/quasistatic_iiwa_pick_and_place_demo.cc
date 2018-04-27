@@ -33,7 +33,7 @@ using Eigen::VectorXi;
 using manipulation::util::ModelInstanceInfo;
 using manipulation::util::SimDiagramBuilder;
 using manipulation::util::WorldSimTreeBuilder;
-using math::rpy2quat;
+using math::RollPitchYaw;
 using trajectories::PiecewisePolynomial;
 
 const Eigen::Vector3d kTableBase(0.82, 0, 0);
@@ -71,8 +71,8 @@ const std::vector<double> kTimes{0.0, 2.0, 4.0, 6.0, 12.0};
 
 // Creates a basic pointwise IK trajectory for moving the iiwa arm.
 // It starts in the zero configuration (straight up).
-PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
-                                     const Vector3d& rpy_end_final) {
+PiecewisePolynomial<double> MakePlan(
+    const Vector3d& pos_end_final, const RollPitchYaw<double>& rpy_end_final) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow(kUrdfPath), multibody::joints::kFixed, tree.get());
@@ -92,8 +92,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
   WorldPositionConstraint wpc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(1.5, 4.0));
-  Eigen::Vector3d rpy_end(0, 0, 0);
-  Eigen::Quaterniond qE = math::RollPitchYawToQuaternion(rpy_end);
+  RollPitchYaw<double> rpy_end1(0, 0, 0);
+  Eigen::Quaterniond qE = rpy_end1.ToQuaternion();
   Eigen::Vector4d quat_end(qE.w(), qE.x(), qE.y(), qE.z());
   WorldQuatConstraint wqc1(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(1.5, 5.0));
@@ -104,8 +104,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
   WorldPositionConstraint wpc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(5.5, 6.0));
-  rpy_end << 0, -M_PI / 2, 0;
-  qE = math::RollPitchYawToQuaternion(rpy_end);
+  RollPitchYaw<double> rpy_end2(0, -M_PI / 2, 0);
+  qE = rpy_end2.ToQuaternion();
   quat_end << qE.w(), qE.x(), qE.y(), qE.z();
   WorldQuatConstraint wqc2(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(5.5, 6.0));
@@ -116,8 +116,8 @@ PiecewisePolynomial<double> MakePlan(const Vector3d& pos_end_final,
   WorldPositionConstraint wpc4(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                                Vector3d::Zero(), pos_lb, pos_ub,
                                Vector2d(11.5, 12.0));
-  rpy_end = rpy_end_final;
-  qE = math::RollPitchYawToQuaternion(rpy_end);
+
+  qE = rpy_end_final.ToQuaternion();
   quat_end << qE.w(), qE.x(), qE.y(), qE.z();
   WorldQuatConstraint wqc3(tree.get(), tree->FindBodyIndex("iiwa_link_ee"),
                            quat_end, 0.002, Vector2d(11.5, 12.0));
@@ -222,7 +222,7 @@ int do_main() {
 
   // generates trajectory source for iiwa and gripper
   const Vector3d pos_EE_final(0.2, 0.2, 0.8);
-  const Vector3d rpy_EE_final(M_PI / 4, 0, 0);
+  const RollPitchYaw<double> rpy_EE_final(M_PI / 4, 0, 0);
   PiecewisePolynomial<double> iiwa_traj = MakePlan(pos_EE_final, rpy_EE_final);
   auto iiwa_traj_src =
       builder.template AddSystem<systems::TrajectorySource<double>>(iiwa_traj,
@@ -317,7 +317,7 @@ int do_main() {
 
   // compute expected_object_orientation as a rotation matrix.
   const math::RotationMatrix<double> R_dumbbell_expected(
-      math::RollPitchYawToQuaternion(rpy_EE_final));
+      rpy_EE_final.ToQuaternion());
 
   // compute object final poistion and orientation.
   const Eigen::VectorXd q_final = log_state->data().rightCols(1);
