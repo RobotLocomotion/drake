@@ -76,7 +76,16 @@ PYBIND11_MODULE(automotive, m) {
            py_reference_internal);
 
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
-  py::class_<SimpleCarState<T>, BasicVector<T>>(m, "SimpleCarState");
+  py::class_<SimpleCarState<T>, BasicVector<T>>(m, "SimpleCarState")
+      .def(py::init<>())
+      .def("x", &SimpleCarState<T>::x)
+      .def("y", &SimpleCarState<T>::y)
+      .def("heading", &SimpleCarState<T>::heading)
+      .def("velocity", &SimpleCarState<T>::velocity)
+      .def("set_x", &SimpleCarState<T>::set_x)
+      .def("set_y", &SimpleCarState<T>::set_y)
+      .def("set_heading", &SimpleCarState<T>::set_heading)
+      .def("set_velocity", &SimpleCarState<T>::set_velocity);
 
   py::class_<SimpleCar<T>, LeafSystem<T>>(m, "SimpleCar")
       .def(py::init<>())
