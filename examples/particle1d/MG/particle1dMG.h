@@ -6,6 +6,9 @@
 // This copyright notice must appear in all copies and distributions.
 // MotionGenesis Professional Licensee: Toyota Research Institute
 // -----------------------------------------------------------------------------
+// Instantiated templates for the following kinds of T's are provided:
+// - double
+// - AutoDiffXd
 #include <cmath>
 
 // -----------------------------------------------------------------------------
