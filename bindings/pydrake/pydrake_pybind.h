@@ -12,12 +12,41 @@ namespace pydrake {
 /**
 @page python_bindings Python Bindings
 
+# Overview
+
 Drake uses [pybind11](http://pybind11.readthedocs.io/en/stable/) for binding
 its C++ API to Python.
 
 At present, a fork of `pybind11` is used which permits bindings matrices with
 `dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
 classes derived from `pybind11` classes.
+
+## `pybind11` Tips
+
+### Python Types
+
+Throughout the Drake code, Python types provided by `pybind11` are used, such
+as `py::handle`, `py::object`, `py::module`, `py::str`, `py::list`, etc.
+For an overview, see the
+[pybind11 reference](http://pybind11.readthedocs.io/en/stable/reference.html).
+
+All of these are effectively thin wrappers around `PyObject*`, and thus can be
+cheaply copied.
+
+Mutating the referred-to object also does not require passing by reference, so
+you can always pass the object by value for functions, but you should document
+your method if it mutates the object in a non-obvious fashion.
+
+### Python Type Conversions
+
+You can implicit convert between `py::object` and its derived classes (such
+as `py::list`, `py::class_`, etc.), assuming the actual Python types agree.
+You may also implicitly convert from `py::object` (and its derived classes) to
+`py::handle`.
+
+If you wish to convert a `py::handle` (or `PyObject*`) to `py::object` or a
+derived class, you should use
+[`py::reinterpret_borrow<>`](http://pybind11.readthedocs.io/en/stable/reference.html#_CPPv218reinterpret_borrow6handle).
 
 # Conventions
 

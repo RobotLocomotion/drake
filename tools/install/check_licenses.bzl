@@ -8,8 +8,8 @@ LICENSE_LITERALS = [
     "COPYING",
     "Copyright.txt",  # vtk
     "EULA.pdf",  # gurobi
-    "license.pdf",  # mosek
     "LICENSE",
+    "mosek-eula.pdf",  # mosek
 ]
 
 # List of file name prefixes of license files

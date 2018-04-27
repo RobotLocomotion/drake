@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace math {
+
 template<typename T>
 void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
   if (!R.allFinite()) {
@@ -35,6 +36,7 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
                                "It is possible a basis is left-handed");
   }
 }
+
 }  // namespace math
 }  // namespace drake
 

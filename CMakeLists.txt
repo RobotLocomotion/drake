@@ -17,7 +17,7 @@ endif()
 if(APPLE)
   set(MINIMUM_BAZEL_VERSION 0.12.0)
 else()
-  set(MINIMUM_BAZEL_VERSION 0.10.1)
+  set(MINIMUM_BAZEL_VERSION 0.12.0)
 endif()
 
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)

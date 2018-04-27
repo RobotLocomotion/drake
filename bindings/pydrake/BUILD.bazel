@@ -207,11 +207,25 @@ drake_py_library(
     srcs = ["test/algebra_test_util.py"],
 )
 
+# Test ODR (One Definition Rule).
+drake_pybind_library(
+    name = "autodiffutils_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":autodiff_types_pybind",
+    ],
+    cc_so_name = "test/autodiffutils_test_util",
+    cc_srcs = ["test/autodiffutils_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
         ":algebra_test_util_py",
         ":autodiffutils_py",
+        ":autodiffutils_test_util_py",
     ],
 )
 
@@ -230,7 +244,6 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "odr_test",
-    size = "small",
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
@@ -239,20 +252,17 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "common_test",
-    size = "small",
     data = ["//examples/atlas:models"],
     deps = [":common_py"],
 )
 
 drake_py_unittest(
     name = "forward_diff_test",
-    size = "small",
     deps = [":autodiffutils_py"],
 )
 
 drake_py_unittest(
     name = "lcm_test",
-    size = "small",
     deps = [
         ":lcm_py",
     ],
@@ -260,7 +270,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_test",
-    size = "small",
     deps = [
         ":math_py",
     ],
@@ -268,7 +277,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_overloads_test",
-    size = "small",
     deps = [
         ":autodiffutils_py",
         ":math_py",
@@ -278,7 +286,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "symbolic_test",
-    size = "small",
     deps = [
         ":algebra_test_util_py",
         ":symbolic_py",
@@ -288,13 +295,11 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectories_test",
-    size = "small",
     deps = [":trajectories_py"],
 )
 
 drake_py_unittest(
     name = "automotive_test",
-    size = "small",
     deps = [
         ":automotive_py",
         "//bindings/pydrake/maliput:api_py",

@@ -1,18 +1,17 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "simplerulebook",
-    srcs = [],
-    hdrs = [],
     deps = [
         ":simple_rulebook",
         ":yaml_io",
@@ -54,7 +53,6 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "simple_rulebook_test",
-    size = "small",
     deps = [
         ":simple_rulebook",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
@@ -63,7 +61,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "yaml_io_test",
-    size = "small",
     deps = [
         ":yaml_io",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",

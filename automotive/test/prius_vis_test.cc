@@ -8,7 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_viewer_link_data.hpp"
-#include "drake/math/roll_pitch_yaw_using_quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_bundle.h"
 
@@ -116,7 +116,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
 
   for (const auto& rotation : rotation_offsets) {
     Eigen::Isometry3d X_WM_W_offset =
-        math::RollPitchYawToQuaternion(rotation) * X_WM_W_origin;
+        math::RollPitchYaw<double>(rotation).ToQuaternion() * X_WM_W_origin;
     PoseBundle<double> offset_vis_poses = dut.CalcPoses(X_WM_W_offset);
     EXPECT_EQ(offset_vis_poses.get_num_poses(), kNumBodies);
     ASSERT_EQ(origin_vis_poses.get_num_poses(),
@@ -158,16 +158,18 @@ GTEST_TEST(PriusVisTest, BasicTest) {
 
   // Tests the visualization's pose when the model is rotated 90 degrees about
   // its +Z axis. In other words, the vehicle is facing left.
-  const Eigen::Isometry3d X_WM_W_90_about_z = math::RollPitchYawToQuaternion(
-      Eigen::Vector3d(0, 0, M_PI_2)) * Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d X_WM_W_90_about_z =
+      math::RollPitchYaw<double>(Eigen::Vector3d(0, 0, M_PI_2)).ToQuaternion() *
+          Eigen::Isometry3d::Identity();
   EXPECT_DOUBLE_EQ(
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_90_about_z)).translation().y(),
       PriusVis<double>::kVisOffset);
 
   // Tests the visualization's pose when the model is rotated 45 degrees about
   // its +Y axis. In other words, the vehicle is going down a steep hill.
-  const Eigen::Isometry3d X_WM_W_45_about_y = math::RollPitchYawToQuaternion(
-      Eigen::Vector3d(0, M_PI_4, 0)) * Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d X_WM_W_45_about_y =
+      math::RollPitchYaw<double>(Eigen::Vector3d(0, M_PI_4, 0)).ToQuaternion() *
+          Eigen::Isometry3d::Identity();
   const Isometry3<double> floor_pose_down_hill =
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_45_about_y));
   EXPECT_DOUBLE_EQ(
@@ -181,8 +183,9 @@ GTEST_TEST(PriusVisTest, BasicTest) {
   // Tests the visualization's pose when the model is rotated 45 degrees about
   // its +X axis. In other words, the vehicle is leaning to its right side due
   // to the lane being severely cambered.
-  const Eigen::Isometry3d X_WM_W_45_about_x = math::RollPitchYawToQuaternion(
-      Eigen::Vector3d(M_PI_4, 0, 0)) * Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d X_WM_W_45_about_x =
+      math::RollPitchYaw<double>(Eigen::Vector3d(M_PI_4, 0, 0)).ToQuaternion() *
+          Eigen::Isometry3d::Identity();
   const Isometry3<double> floor_pose_severe_camber =
       GetChassisFloorPose(dut.CalcPoses(X_WM_W_45_about_x));
   EXPECT_DOUBLE_EQ(floor_pose_severe_camber.translation().x(),

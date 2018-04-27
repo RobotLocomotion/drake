@@ -7,9 +7,9 @@ namespace multibody {
 namespace benchmarks {
 namespace inclined_plane {
 
-using geometry::GeometrySystem;
-using geometry::Sphere;
 using geometry::HalfSpace;
+using geometry::SceneGraph;
+using geometry::Sphere;
 using multibody_plant::CoulombFriction;
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::RigidBody;
@@ -21,8 +21,8 @@ using Eigen::AngleAxisd;
 std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction, double gravity,
-    GeometrySystem<double>* geometry_system) {
-  DRAKE_DEMAND(geometry_system != nullptr);
+    SceneGraph<double>* scene_graph) {
+  DRAKE_DEMAND(scene_graph != nullptr);
 
   auto plant = std::make_unique<MultibodyPlant<double>>();
 
@@ -31,7 +31,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
 
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
 
-  plant->RegisterAsSourceForGeometrySystem(geometry_system);
+  plant->RegisterAsSourceForSceneGraph(scene_graph);
 
   // Orientation of a plane frame P with its z axis normal to the plane and its
   // x axis pointing down the plane.
@@ -43,38 +43,38 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   const Vector3<double> point_W = -normal_W * radius;
 
   // A half-space for the inclined plane geometry.
-  plant->RegisterCollisionGeometry(
-      plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
-      surface_friction, geometry_system);
+  plant->RegisterCollisionGeometry(plant->world_body(),
+                                   HalfSpace::MakePose(normal_W, point_W),
+                                   HalfSpace(), surface_friction, scene_graph);
 
   // Add sphere geometry for the ball.
   plant->RegisterCollisionGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>::Identity(), Sphere(radius), surface_friction,
-      geometry_system);
+      scene_graph);
 
   // Adds little spherical spokes highlight the sphere's rotation.
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(0, 0, radius)), Sphere(radius / 5),
-      geometry_system);
+      scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(0, 0, -radius)),
-      Sphere(radius / 5), geometry_system);
+      Sphere(radius / 5), scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(radius, 0, 0)), Sphere(radius / 5),
-      geometry_system);
+      scene_graph);
   plant->RegisterVisualGeometry(
       ball,
       /* Pose X_BG of the geometry frame G in the ball frame B. */
       Isometry3<double>(Translation3<double>(-radius, 0, 0)),
-      Sphere(radius / 5), geometry_system);
+      Sphere(radius / 5), scene_graph);
 
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(

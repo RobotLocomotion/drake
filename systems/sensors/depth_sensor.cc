@@ -158,8 +158,8 @@ void DepthSensor::CalcDepthOutput(
 
   VectorX<double> distances(get_num_depth_readings());
 
-  // TODO(liang.fok) Remove the need for const_cast once GeometrySystem is
-  // ready. See:
+  // TODO(liang.fok) Remove the need for const_cast once SceneGraph is ready.
+  // See:
   // https://github.com/RobotLocomotion/drake/issues/4592#issuecomment-269491752
   const_cast<RigidBodyTree<double>&>(tree_).collisionRaycast(
       kinematics_cache, origin, raycast_endpoints_world, distances);

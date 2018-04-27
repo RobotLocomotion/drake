@@ -1,7 +1,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
@@ -51,8 +51,9 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
     MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
-  const Eigen::Isometry3d X_AAb = MakeIsometry3d(math::rpy2rotmat(q123A),
-                                                 xyzA);
+  const math::RollPitchYaw<double> rpy(q123A);
+  const math::RotationMatrix<double> R_AAb(rpy);
+  const Eigen::Isometry3d X_AAb = MakeIsometry3d(R_AAb.matrix(), xyzA);
 
   // Create transform from outboard body B to mobilizer outboard frame Ba.
   const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),

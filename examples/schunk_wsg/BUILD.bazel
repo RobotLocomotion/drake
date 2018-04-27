@@ -49,7 +49,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "schunk_wsg_lift_test",
-    size = "large",
+    timeout = "moderate",
     data = [
         "test/test_lifter.sdf",
         "//manipulation/models/wsg_50_description:models",
@@ -85,8 +85,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulated_schunk_wsg_system_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    timeout = "moderate",
     data = [
         "//manipulation/models/wsg_50_description:models",
     ],

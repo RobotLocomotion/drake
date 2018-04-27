@@ -11,7 +11,6 @@
 namespace drake {
 namespace solvers {
 namespace test {
-
 TEST_P(LinearProgramTest, TestLP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);

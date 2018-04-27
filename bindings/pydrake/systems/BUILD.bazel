@@ -44,7 +44,11 @@ drake_py_library(
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
-    deps = ["//bindings/pydrake/util:cpp_template_pybind"],
+    deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
 )
 
 drake_pybind_library(
@@ -56,10 +60,20 @@ drake_pybind_library(
         "//bindings/pydrake/util:type_safe_index_pybind",
     ],
     cc_so_name = "framework",
-    cc_srcs = ["framework_py.cc"],
+    cc_srcs = [
+        "framework_py.cc",
+        "framework_py_semantics.cc",
+        "framework_py_semantics.h",
+        "framework_py_systems.cc",
+        "framework_py_systems.h",
+        "framework_py_values.cc",
+        "framework_py_values.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/util:cpp_template_py",
     ],
 )
@@ -67,6 +81,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "primitives_py",
     cc_deps = [
+        ":systems_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_so_name = "primitives",
@@ -80,6 +95,9 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "analysis_py",
+    cc_deps = [
+        ":systems_pybind",
+    ],
     cc_so_name = "analysis",
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
@@ -205,7 +223,6 @@ install(
 
 drake_py_unittest(
     name = "general_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
@@ -252,7 +269,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "custom_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
@@ -263,7 +279,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "value_test",
-    size = "small",
     deps = [
         ":framework_py",
         ":test_util_py",
@@ -272,7 +287,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "controllers_test",
-    size = "small",
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
@@ -281,7 +295,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "primitives_test",
-    size = "small",
     deps = [
         ":analysis_py",
         ":framework_py",
@@ -292,7 +305,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rendering_test",
-    size = "small",
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
@@ -301,7 +313,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "sensors_test",
-    size = "small",
     data = [
         "//systems/sensors:test_models",
     ],
@@ -312,7 +323,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectory_optimization_test",
-    size = "small",
     deps = [
         ":trajectory_optimization_py",
         "//bindings/pydrake/examples:pendulum_py",

@@ -52,9 +52,9 @@ Installing CLion
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 The most recent versions that we have tested for compatibility are:
-  - CLion 2017.3.3
-  - Bazel 0.10.1
-  - "CLion with Bazel" plug-in 2018.01.29.0.0.
+  - CLion 2017.3.4
+  - Bazel 0.12.0
+  - "CLion with Bazel" plug-in 2018.03.26.0.5.
 
 Upgrading CLion
 ---------------

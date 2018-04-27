@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace maliput {
@@ -69,7 +69,7 @@ class Rotation {
   /// expressing a roll around X, followed by pitch around Y,
   /// followed by yaw around Z (with all angles in radians).
   static Rotation FromRpy(const Vector3<double>& rpy) {
-    return Rotation(math::RollPitchYawToQuaternion(rpy));
+    return Rotation(math::RollPitchYaw<double>(rpy).ToQuaternion());
   }
 
   /// Constructs a Rotation expressing a @p roll around X, followed by

@@ -6,7 +6,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 
 namespace drake {
 namespace geometry {
@@ -23,22 +23,22 @@ class QueryObjectTester {
 
   template <typename T>
   static std::unique_ptr<QueryObject<T>> MakeQueryObject(
-      const GeometryContext<T>* context, const GeometrySystem<T>* system) {
+      const GeometryContext<T>* context, const SceneGraph<T>* scene_graph) {
     auto q = std::unique_ptr<QueryObject<T>>(new QueryObject<T>());
-    q->system_ = system;
+    q->scene_graph_ = scene_graph;
     q->context_ = context;
     return q;
   }
 
   template <typename T>
   static void expect_default(const QueryObject<T>& object) {
-    EXPECT_EQ(object.system_, nullptr);
+    EXPECT_EQ(object.scene_graph_, nullptr);
     EXPECT_EQ(object.context_, nullptr);
   }
 
   template <typename T>
   static void expect_live(const QueryObject<T>& object) {
-    EXPECT_NE(object.system_, nullptr);
+    EXPECT_NE(object.scene_graph_, nullptr);
     EXPECT_NE(object.context_, nullptr);
   }
 
@@ -58,15 +58,15 @@ class QueryObjectTest : public ::testing::Test {
   using QOT = QueryObjectTester;
 
   void SetUp() override {
-    context_ = system_.AllocateContext();
+    context_ = scene_graph_.AllocateContext();
     geom_context_ = dynamic_cast<GeometryContext<double>*>(context_.get());
     ASSERT_NE(geom_context_, nullptr);
-    query_object_ = QOT::MakeQueryObject(geom_context_, &system_);
+    query_object_ = QOT::MakeQueryObject(geom_context_, &scene_graph_);
 
     QueryObjectTester::expect_live(*query_object_);
   }
 
-  GeometrySystem<double> system_;
+  SceneGraph<double> scene_graph_;
   unique_ptr<Context<double>> context_;
   GeometryContext<double>* geom_context_{nullptr};
   unique_ptr<QueryObject<double>> query_object_;
@@ -106,7 +106,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
 }
 
 // NOTE: This doesn't test the specific queries; GeometryQuery simply wraps
-// the class (GeometrySystem) that actually *performs* those queries. The
+// the class (SceneGraph) that actually *performs* those queries. The
 // correctness of those queries is handled in geometry_state_test.cc. The
 // wrapper merely confirms that the state is correct and that wrapper
 // functionality is tested in DefaultQueryThrows.

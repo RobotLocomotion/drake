@@ -18,6 +18,9 @@ GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileSet) {
   ASSERT_STRNE(nullptr, grb_license_file);
 
   MathematicalProgram program;
+  // Add a variable to avoid the "Solve" function terminating without calling
+  // the external Gurobi solver.
+  const auto x = program.NewContinuousVariables<1>();
   GurobiSolver solver;
 
   EXPECT_NO_THROW(solver.Solve(program));
@@ -31,6 +34,9 @@ GTEST_TEST(GrbLicenseFileTest, GrbLicenseFileUnset) {
   ASSERT_EQ(0, unsetenv_result);
 
   MathematicalProgram program;
+  // Add a variable to avoid the "Solve" function terminating without calling
+  // the external Gurobi solver.
+  const auto x = program.NewContinuousVariables<1>();
   GurobiSolver solver;
 
   try {

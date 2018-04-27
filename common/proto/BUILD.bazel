@@ -135,6 +135,7 @@ drake_cc_googletest(
 # backend on CI only.
 sh_test(
     name = "call_python_full_test",
+    size = "small",
     srcs = ["test/call_python_full_test.sh"],
     data = [
         ":call_python_client_cli",

@@ -2,9 +2,10 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -12,19 +13,28 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-drake_cc_library(
+drake_cc_package_library(
     name = "multibody_plant",
+    deps = [
+        ":coulomb_friction",
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_core",
     srcs = [
         "multibody_plant.cc",
     ],
     hdrs = [
         "multibody_plant.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//multibody/multibody_tree",
         "//systems/framework:leaf_system",
     ],
@@ -59,7 +69,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "coulomb_friction_test",
-    size = "small",
     deps = [
         ":coulomb_friction",
         "//common/test_utilities:expect_throws_message",
@@ -68,8 +77,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "inclined_plane_test",
-    size = "medium",
-    timeout = "long",
+    timeout = "moderate",
     deps = [
         ":multibody_plant",
         "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",

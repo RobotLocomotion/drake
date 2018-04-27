@@ -18,6 +18,8 @@ _upstream_files = [
 
 def external_data_workspace_test(
         name,
+        size = None,
+        timeout = None,
         args = ARGS_DEFAULT,
         data = []):
     """
@@ -36,6 +38,8 @@ def external_data_workspace_test(
     script = "external_data_workspace_test.sh"
     workspace_test(
         name = name,
+        size = size,
+        timeout = timeout,
         args = [
             "$(location {})".format(script),
             package_relpath,
