@@ -1,6 +1,8 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+
 #------------------------------------------------------------------------------
 # Internal helper; set up test given name and list of files. Will do nothing
 # if no files given.
@@ -11,7 +13,7 @@ def _bazel_lint(name, files, ignore):
 
         locations = ["$(locations %s)" % f for f in files]
 
-        native.py_test(
+        py_test_isolated(
             name = name + "_codestyle",
             size = "small",
             srcs = ["@drake//tools/lint:bzlcodestyle"],
@@ -22,7 +24,7 @@ def _bazel_lint(name, files, ignore):
             tags = ["bzlcodestyle", "lint"],
         )
 
-        native.py_test(
+        py_test_isolated(
             name = name + "_buildifier",
             size = "small",
             srcs = ["@drake//tools/lint:buildifier"],

@@ -5,6 +5,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
@@ -44,45 +45,48 @@ namespace {
 
 // Base class for testing the CompliantContactModel logic for contact force
 // computations.
-class CompliantContactModelTest : public ContactResultTestCommon {
+template <typename T>
+class CompliantContactModelTest : public ContactResultTestCommon<T> {
  protected:
-  const ContactResults<double>& RunTest(double distance) override {
-    unique_tree_ = GenerateTestTree(distance);
+  const ContactResults<T>& RunTest(double distance) override {
+    unique_tree_ = this->GenerateTestTree(distance);
     // Populate the CompliantContactModel.
-    compliant_contact_model_ =
-        make_unique<CompliantContactModel<double>>();
-    CompliantMaterial material = MakeDefaultMaterial();
+    compliant_contact_model_ = make_unique<CompliantContactModel<T>>();
+    CompliantMaterial material = this->MakeDefaultMaterial();
     compliant_contact_model_->set_default_material(material);
     CompliantContactModelParameters contact_parameters;
-    contact_parameters.v_stiction_tolerance = kVStictionTolerance;
-    contact_parameters.characteristic_radius = kContactRadius;
+    contact_parameters.v_stiction_tolerance = this->kVStictionTolerance;
+    contact_parameters.characteristic_radius = this->kContactRadius;
     compliant_contact_model_->set_model_parameters(contact_parameters);
 
     // The state to test is the default state of the tree (0 velocities
     // and default configuration positions of the tree)
 
-    VectorX<double> q0 = VectorX<double>::Zero(
-        unique_tree_->get_num_positions());
+    VectorX<T> q0 = VectorX<T>::Zero(unique_tree_->get_num_positions());
 
-    VectorXd v0 = VectorXd::Zero(unique_tree_->get_num_velocities());
+    VectorX<T> v0 = VectorX<T>::Zero(unique_tree_->get_num_velocities());
 
     q0 = unique_tree_->getZeroConfiguration();
     auto kinsol = unique_tree_->doKinematics(q0, v0);
 
     compliant_contact_model_->ComputeContactForce(*unique_tree_.get(), kinsol,
-                                                  &contact_results_);
-    return contact_results_;
+                                                  &(this->contact_results_));
+    return this->contact_results_;
   }
 
   // Instances owned by the test class.
-  unique_ptr<CompliantContactModel<double>> compliant_contact_model_{};
+  unique_ptr<CompliantContactModel<T>> compliant_contact_model_{};
   // Holds the unique pointer to the tree.
   unique_ptr<RigidBodyTree<double>> unique_tree_{};
 };
 
+using CompliantContactModelTestDouble = CompliantContactModelTest<double>;
+using CompliantContactModelTestAutoDiffXd =
+    CompliantContactModelTest<AutoDiffXd>;
+
 // Confirms a contact result for two non-colliding spheres -- expects no
 // reported collisions.
-TEST_F(CompliantContactModelTest, ModelNoCollision) {
+TEST_F(CompliantContactModelTestDouble, ModelNoCollision) {
   auto& contact_results = RunTest(0.1);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
@@ -90,14 +94,14 @@ TEST_F(CompliantContactModelTest, ModelNoCollision) {
 // Confirms a contact result for two touching spheres -- expects no reported
 // collisions. For now, osculation is not considered a "contact" for reporting
 // purposes. If the definition changes, this will likewise change.
-TEST_F(CompliantContactModelTest, ModelTouching) {
+TEST_F(CompliantContactModelTestDouble, ModelTouching) {
   auto& contact_results = RunTest(0.0);
   ASSERT_EQ(contact_results.get_num_contacts(), 0);
 }
 
 // Confirms a contact result for two colliding spheres with identical contact
 // material and zero relative velocity.
-TEST_F(CompliantContactModelTest, ModelSingleCollision) {
+TEST_F(CompliantContactModelTestDouble, ModelSingleCollision) {
   const double offset = 0.1;
   auto& contact_results = RunTest(-offset);
   ASSERT_EQ(contact_results.get_num_contacts(), 1);
@@ -147,10 +151,19 @@ TEST_F(CompliantContactModelTest, ModelSingleCollision) {
       CompareMatrices(detail_force.get_application_point(), expected_point));
 }
 
+// Test that the autodiff module throws when collision information is discarded
+// (due to the collision model not supporting AutoDiffXd yet).
+TEST_F(CompliantContactModelTestAutoDiffXd, AutoDiffTest) {
+  EXPECT_NO_THROW(RunTest(0.1));
+  EXPECT_NO_THROW(RunTest(0.0));
+  EXPECT_THROW(RunTest(-0.1), std::runtime_error);
+}
+
 // This class introduces heterogeneous compliant material parameters. It does
 // so by wrapping the tree generation and directly setting element contact
 // parameters.
-class CompliantHeterogeneousModelTest : public CompliantContactModelTest {
+class CompliantHeterogeneousModelTest
+    : public CompliantContactModelTest<double> {
  protected:
   void DoGenerateTestTree(RigidBodyTree<double>*) override {
     EXPECT_EQ(body1_->get_num_collision_elements(), 1);
@@ -158,7 +171,7 @@ class CompliantHeterogeneousModelTest : public CompliantContactModelTest {
     Element& element1 = **body1_->collision_elements_begin();
     Element& element2 = **body2_->collision_elements_begin();
 
-    auto set_params = [this](Element* element, int index) {
+    auto set_params = [](Element* element, int index) {
       CompliantMaterial material;
       material.set_youngs_modulus(kMaterialYoungsModulus[index]);
       element->set_compliant_material(material);

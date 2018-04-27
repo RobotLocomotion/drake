@@ -10,8 +10,8 @@ drake_cc_library(
     srcs = ["acrobot.cc"],
     hdrs = ["acrobot.h"],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:extract_double",
+        "//common:autodiff",
+        "//common:extract_double",
     ],
 )
 
@@ -24,6 +24,20 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
+)
+
+drake_cc_library(
+    name = "make_acrobot_plant",
+    srcs = [
+        "make_acrobot_plant.cc",
+    ],
+    hdrs = [
+        "make_acrobot_plant.h",
+    ],
+    deps = [
+        "//geometry:geometry_system",
+        "//multibody/multibody_tree/multibody_plant",
+    ],
 )
 
 add_lint_tests()

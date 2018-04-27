@@ -6,6 +6,9 @@
 // scs.h should be included before linsys/amatrix.h, since amatrix.h uses types
 // scs_float, scs_int, etc, defined in scs.h
 #include <scs.h>
+#include <cones.h>
+#include <linalg.h>
+#include <util.h>
 #include "linsys/amatrix.h"
 // clang-format on
 
@@ -17,26 +20,16 @@
 namespace drake {
 namespace solvers {
 namespace {
-std::vector<int> FindDecisionVariableIndices(
-    const MathematicalProgram &prog,
-    const Eigen::Ref<const VectorXDecisionVariable> &x) {
-  std::vector<int> x_indices(x.rows());
-  for (int i = 0; i < x.rows(); ++i) {
-    x_indices[i] = prog.FindDecisionVariableIndex(x(i));
-  }
-  return x_indices;
-}
-
 void ParseLinearCost(const MathematicalProgram& prog, std::vector<double>* c,
                      double* constant) {
   for (const auto& linear_cost : prog.linear_costs()) {
     // Each linear cost is in the form of aᵀx + b
-    const auto& a = linear_cost.constraint()->a();
+    const auto& a = linear_cost.evaluator()->a();
     const VectorXDecisionVariable& x = linear_cost.variables();
     for (int i = 0; i < a.rows(); ++i) {
       (*c)[prog.FindDecisionVariableIndex(x(i))] += a(i);
     }
-    (*constant) += linear_cost.constraint()->b();
+    (*constant) += linear_cost.evaluator()->b();
   }
 }
 
@@ -129,10 +122,10 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
     std::vector<Eigen::Triplet<double>> Ai_triplets;
     Ai_triplets.emplace_back(0, y_index, 1);
     for (int i = 0; i < z.rows(); ++i) {
-      Ai_triplets.emplace_back(0, i, -cost.constraint()->b()(i));
+      Ai_triplets.emplace_back(0, i, -cost.evaluator()->b()(i));
     }
     // Decompose Q to Cᵀ*C
-    const Eigen::MatrixXd& Q = cost.constraint()->Q();
+    const Eigen::MatrixXd& Q = cost.evaluator()->Q();
     const Eigen::MatrixXd C =
         math::DecomposePSDmatrixIntoXtransposeTimesX(Q, 1E-10);
     for (int i = 0; i < C.rows(); ++i) {
@@ -144,11 +137,11 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
     }
     // append the variable y to the end of x
     (*num_x)++;
-    std::vector<int> Ai_var_indices = FindDecisionVariableIndices(prog, z);
+    std::vector<int> Ai_var_indices = prog.FindDecisionVariableIndices(z);
     Ai_var_indices.push_back(*num_x - 1);
     // Set b_cone
     Eigen::VectorXd b_cone = Eigen::VectorXd::Zero(2 + C.rows());
-    b_cone(0) = -cost.constraint()->c();
+    b_cone(0) = -cost.evaluator()->c();
     b_cone(1) = 2;
     // Add the rotated Lorentz cone constraint
     ParseRotatedLorentzConeConstraint(Ai_triplets, b_cone, Ai_var_indices,
@@ -162,7 +155,7 @@ void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
 void ParseLinearConstraint(const MathematicalProgram& prog,
                            std::vector<Eigen::Triplet<double>>* A_triplets,
                            std::vector<double>* b, int* A_row_count,
-                           SCS_CONE* cone) {
+                           ScsCone* cone) {
   // The linear constraint lb ≤ aᵀx ≤ ub is converted to
   //  aᵀx + s1 = ub,
   // -aᵀx + s2 = lb
@@ -174,12 +167,11 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
   // aᵀx + s = ub, s in the positive cone.
   int num_linear_constraint_rows = 0;
   for (const auto& linear_constraint : prog.linear_constraints()) {
-    const Eigen::VectorXd& ub = linear_constraint.constraint()->upper_bound();
-    const Eigen::VectorXd& lb = linear_constraint.constraint()->lower_bound();
+    const Eigen::VectorXd& ub = linear_constraint.evaluator()->upper_bound();
+    const Eigen::VectorXd& lb = linear_constraint.evaluator()->lower_bound();
     const VectorXDecisionVariable& x = linear_constraint.variables();
-    const Eigen::MatrixXd& Ai = linear_constraint.constraint()->A();
-    for (int i = 0; i < static_cast<int>(
-        linear_constraint.constraint()->num_constraints());
+    const Eigen::MatrixXd& Ai = linear_constraint.evaluator()->A();
+    for (int i = 0; i < linear_constraint.evaluator()->num_constraints();
          ++i) {
       const bool is_ub_finite{!std::isinf(ub(i))};
       const bool is_lb_finite{!std::isinf(lb(i))};
@@ -223,30 +215,30 @@ void ParseLinearConstraint(const MathematicalProgram& prog,
 void ParseLinearEqualityConstraint(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, SCS_CONE* cone) {
+    int* A_row_count, ScsCone* cone) {
   int num_linear_equality_constraints_rows = 0;
   // The linear equality constraint A x = b is converted to
   // A x + s = b. s in zero cone.
   for (const auto& linear_equality_constraint :
-      prog.linear_equality_constraints()) {
+       prog.linear_equality_constraints()) {
     const Eigen::SparseMatrix<double> Ai =
-        linear_equality_constraint.constraint()->GetSparseMatrix();
+        linear_equality_constraint.evaluator()->GetSparseMatrix();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     A_triplets->reserve(A_triplets->size() + Ai_triplets.size());
     const solvers::VectorXDecisionVariable& x =
         linear_equality_constraint.variables();
     // x_indices[i] is the index of x(i)
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     for (const auto& Ai_triplet : Ai_triplets) {
       A_triplets->emplace_back(Ai_triplet.row() + *A_row_count,
                                x_indices[Ai_triplet.col()], Ai_triplet.value());
     }
     const int num_Ai_rows =
-        linear_equality_constraint.constraint()->num_constraints();
+        linear_equality_constraint.evaluator()->num_constraints();
     b->reserve(b->size() + num_Ai_rows);
     for (int i = 0; i < num_Ai_rows; ++i) {
-      b->push_back(linear_equality_constraint.constraint()->lower_bound()(i));
+      b->push_back(linear_equality_constraint.evaluator()->lower_bound()(i));
     }
     *A_row_count += num_Ai_rows;
     num_linear_equality_constraints_rows += num_Ai_rows;
@@ -257,7 +249,7 @@ void ParseLinearEqualityConstraint(
 void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
                                 std::vector<Eigen::Triplet<double>>* A_triplets,
                                 std::vector<double>* b, int* A_row_count,
-                                SCS_CONE* cone) {
+                                ScsCone* cone) {
   // A bounding box constraint lb ≤ x ≤ ub is converted to the SCS form as
   // x + s1 = ub, -x + s2 = -lb, s1, s2 in the positive cone.
   // TODO(hongkai.dai) : handle the special case l = u, such that we can convert
@@ -270,20 +262,20 @@ void ParseBoundingBoxConstraint(const MathematicalProgram& prog,
     A_triplets->reserve(A_triplets->size() + 2 * num_xi_rows);
     b->reserve(b->size() + 2 * num_xi_rows);
     for (int i = 0; i < num_xi_rows; ++i) {
-      if (!std::isinf(bounding_box_constraint.constraint()->upper_bound()(i))) {
+      if (!std::isinf(bounding_box_constraint.evaluator()->upper_bound()(i))) {
         // if ub != ∞, then add the constraint x + s1 = ub, s1 in the positive
         // cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), 1);
-        b->push_back(bounding_box_constraint.constraint()->upper_bound()(i));
+        b->push_back(bounding_box_constraint.evaluator()->upper_bound()(i));
         ++num_scs_new_constraint;
       }
-      if (!std::isinf(bounding_box_constraint.constraint()->lower_bound()(i))) {
+      if (!std::isinf(bounding_box_constraint.evaluator()->lower_bound()(i))) {
         // if lb != -∞, then add the constraint -x + s2 = -lb, s2 in the
         // positive cone.
         A_triplets->emplace_back(num_scs_new_constraint + *A_row_count,
                                  prog.FindDecisionVariableIndex(xi(i)), -1);
-        b->push_back(-bounding_box_constraint.constraint()->lower_bound()(i));
+        b->push_back(-bounding_box_constraint.evaluator()->lower_bound()(i));
         ++num_scs_new_constraint;
       }
     }
@@ -302,9 +294,9 @@ void ParseSecondOrderConeConstraints(
   for (const auto& lorentz_cone_constraint : prog.lorentz_cone_constraints()) {
     // x_indices[i] is the index of x(i)
     const VectorXDecisionVariable& x = lorentz_cone_constraint.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        lorentz_cone_constraint.constraint()->A().sparseView();
+        lorentz_cone_constraint.evaluator()->A().sparseView();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     for (const auto& Ai_triplet : Ai_triplets) {
@@ -312,9 +304,9 @@ void ParseSecondOrderConeConstraints(
                                x_indices[Ai_triplet.col()],
                                -Ai_triplet.value());
     }
-    const int num_Ai_rows = lorentz_cone_constraint.constraint()->A().rows();
+    const int num_Ai_rows = lorentz_cone_constraint.evaluator()->A().rows();
     for (int i = 0; i < num_Ai_rows; ++i) {
-      b->push_back(lorentz_cone_constraint.constraint()->b()(i));
+      b->push_back(lorentz_cone_constraint.evaluator()->b()(i));
     }
     lorentz_cone_length->push_back(num_Ai_rows);
     *A_row_count += num_Ai_rows;
@@ -323,10 +315,10 @@ void ParseSecondOrderConeConstraints(
   for (const auto& rotated_lorentz_cone :
        prog.rotated_lorentz_cone_constraints()) {
     const VectorXDecisionVariable& x = rotated_lorentz_cone.variables();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     const Eigen::SparseMatrix<double> Ai =
-        rotated_lorentz_cone.constraint()->A().sparseView();
-    const Eigen::VectorXd& bi = rotated_lorentz_cone.constraint()->b();
+        rotated_lorentz_cone.evaluator()->A().sparseView();
+    const Eigen::VectorXd& bi = rotated_lorentz_cone.evaluator()->b();
     const std::vector<Eigen::Triplet<double>> Ai_triplets =
         math::SparseMatrixToTriplets(Ai);
     ParseRotatedLorentzConeConstraint(Ai_triplets, bi, x_indices, A_triplets, b,
@@ -339,7 +331,7 @@ void ParseSecondOrderConeConstraints(
 void ParsePositiveSemidefiniteConstraint(
     const MathematicalProgram& prog,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, SCS_CONE* cone) {
+    int* A_row_count, ScsCone* cone) {
   std::vector<int> psd_cone_length;
   const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
@@ -359,7 +351,7 @@ void ParsePositiveSemidefiniteConstraint(
     // explained in https://github.com/cvxgrp/scs
     // x is the stacked column vector of the lower triangular part of the
     // symmetric matrix X.
-    const int X_rows = psd_constraint.constraint()->matrix_rows();
+    const int X_rows = psd_constraint.evaluator()->matrix_rows();
     int x_index_count = 0;
     const VectorXDecisionVariable& flat_X = psd_constraint.variables();
     DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
@@ -404,10 +396,10 @@ void ParsePositiveSemidefiniteConstraint(
     //   x = [x₁; x₂; ... ; xₙ].
     // As explained above, the off-diagonal rows are scaled by √2. Please refer
     // to https://github.com/cvxgrp/scs about the scaling factor √2.
-    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.constraint()->F();
+    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
     const VectorXDecisionVariable& x = lmi_constraint.variables();
-    const int F_rows = lmi_constraint.constraint()->matrix_rows();
-    const std::vector<int> x_indices = FindDecisionVariableIndices(prog, x);
+    const int F_rows = lmi_constraint.evaluator()->matrix_rows();
+    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
     int A_cone_row_count = 0;
     b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
     for (int j = 0; j < F_rows; ++j) {
@@ -459,47 +451,23 @@ std::string Scs_return_info(scs_int scs_status) {
   }
 }
 
-void ExtractSolution(MathematicalProgram* prog,
-                     const SCS_SOL_VARS& scs_sol_vars) {
-  // For zero, positive or second-order cones, the primal variable x is the
-  // same variable as in `prog`. For semidefinite cones, the variable x is a
-  // scaled version of the lower-triangular part of the variable in `prog`, with
-  // a scaling factor of √2.
-  prog->SetDecisionVariableValues(
-      Eigen::Map<Eigen::VectorXd>(scs_sol_vars.x, prog->num_vars()));
-}
-
-void SetScsProblemSettingsToDefault(SCS_SETTINGS* settings) {
-  // These macro's are defined in SCS. For their actual value, please refer to
-  // https://github.com/cvxgrp/scs/blob/master/include/constants.h
-  settings->alpha = ALPHA;
-  settings->cg_rate = CG_RATE;
-  settings->eps = EPS;
-  settings->max_iters = MAX_ITERS;
-  settings->normalize = NORMALIZE;
-  settings->rho_x = RHO_X;
-  settings->scale = SCALE;
-  settings->verbose = VERBOSE;
-  settings->warm_start = WARM_START;
-}
-
 void SetScsProblemData(int A_row_count, int num_vars,
                        const Eigen::SparseMatrix<double>& A,
                        const std::vector<double>& b,
                        const std::vector<double>& c,
-                       SCS_PROBLEM_DATA* scs_problem_data) {
+                       ScsData* scs_problem_data) {
   scs_problem_data->m = A_row_count;
   scs_problem_data->n = num_vars;
 
-  scs_problem_data->A = static_cast<AMatrix*>(malloc(sizeof(AMatrix)));
+  scs_problem_data->A = static_cast<ScsMatrix*>(malloc(sizeof(ScsMatrix)));
   scs_problem_data->A->x =
-    static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
+      static_cast<scs_float*>(scs_calloc(A.nonZeros(), sizeof(scs_float)));
 
   scs_problem_data->A->i =
-    static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
+      static_cast<scs_int*>(scs_calloc(A.nonZeros(), sizeof(scs_int)));
 
-  scs_problem_data->A->p =
-    static_cast<scs_int*>(scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
+  scs_problem_data->A->p = static_cast<scs_int*>(
+      scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
 
   // TODO(hongkai.dai): should I use memcpy for the assignment in the for loop?
   for (int i = 0; i < A.nonZeros(); ++i) {
@@ -526,8 +494,8 @@ void SetScsProblemData(int A_row_count, int num_vars,
 
   // Set the parameters to default values.
   scs_problem_data->stgs =
-      static_cast<SCS_SETTINGS*>(scs_malloc(sizeof(SCS_SETTINGS)));
-  SetScsProblemSettingsToDefault(scs_problem_data->stgs);
+      static_cast<ScsSettings*>(scs_calloc(1, sizeof(ScsSettings)));
+  scs_set_default_settings(scs_problem_data);
 }
 }  // namespace
 
@@ -577,7 +545,7 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   std::vector<Eigen::Triplet<double>> A_triplets;
 
   // cone stores all the cones K in the problem.
-  SCS_CONE* cone = static_cast<SCS_CONE*>(scs_calloc(1, sizeof(SCS_CONE)));
+  ScsCone* cone = static_cast<ScsCone*>(scs_calloc(1, sizeof(ScsCone)));
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -628,33 +596,34 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
 
-  SCS_PROBLEM_DATA* scs_problem_data =
-      static_cast<SCS_PROBLEM_DATA*>(scs_calloc(1, sizeof(SCS_PROBLEM_DATA)));
+  ScsData* scs_problem_data =
+      static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
   SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
   scs_problem_data->stgs->verbose = verbose_ ? VERBOSE : 0;
 
-  SCS_INFO scs_info{0};
-  SCS_WORK* scs_work = scs_init(scs_problem_data, cone, &scs_info);
+  ScsInfo scs_info{0};
 
-  SCS_SOL_VARS* scs_sol =
-      static_cast<SCS_SOL_VARS*>(scs_calloc(1, sizeof(SCS_SOL_VARS)));
+  ScsSolution* scs_sol =
+      static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
 
-  scs_int scs_status =
-      scs_solve(scs_work, scs_problem_data, cone, scs_sol, &scs_info);
+  scs_int scs_status = scs(scs_problem_data, cone, scs_sol, &scs_info);
 
-  SolutionResult sol_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolverResult solver_result(id());
   if (scs_status == SCS_SOLVED || scs_status == SCS_SOLVED_INACCURATE) {
-    sol_result = SolutionResult::kSolutionFound;
-    ExtractSolution(&prog, *scs_sol);
-    prog.SetOptimalCost(scs_info.pobj + cost_constant);
+    solution_result = SolutionResult::kSolutionFound;
+    solver_result.set_decision_variable_values(
+        (Eigen::Map<VectorX<scs_float>>(scs_sol->x, prog.num_vars()))
+            .cast<double>());
+    solver_result.set_optimal_cost(scs_info.pobj + cost_constant);
   } else if (scs_status == SCS_UNBOUNDED ||
              scs_status == SCS_UNBOUNDED_INACCURATE) {
-    sol_result = SolutionResult::kUnbounded;
-    prog.SetOptimalCost(MathematicalProgram::kUnboundedCost);
+    solution_result = SolutionResult::kUnbounded;
+    solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
   } else if (scs_status == SCS_INFEASIBLE ||
              scs_status == SCS_INFEASIBLE_INACCURATE) {
-    sol_result = SolutionResult::kInfeasibleConstraints;
-    prog.SetOptimalCost(MathematicalProgram::kGlobalInfeasibleCost);
+    solution_result = SolutionResult::kInfeasibleConstraints;
+    solver_result.set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
   }
   if (scs_status != SCS_SOLVED) {
     drake::log()->info("SCS returns code {}, with message \"{}\".\n",
@@ -662,12 +631,11 @@ SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
   }
 
   // Free allocated memory
-  scs_finish(scs_work);
-  freeData(scs_problem_data, cone);
-  freeSol(scs_sol);
+  scs_free_data(scs_problem_data, cone);
+  scs_free_sol(scs_sol);
 
-  prog.SetSolverId(id());
-  return sol_result;
+  prog.SetSolverResult(solver_result);
+  return solution_result;
 }
 }  // namespace solvers
 }  // namespace drake

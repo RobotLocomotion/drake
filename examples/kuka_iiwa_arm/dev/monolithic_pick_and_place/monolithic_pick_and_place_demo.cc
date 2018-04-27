@@ -70,7 +70,7 @@ int DoMain(void) {
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
           "CONTACT_RESULTS", &lcm));
   builder.Connect(plant->get_output_port_contact_results(),
-                  contact_results_publisher->get_input_port(0));
+                  contact_results_publisher->get_input_port());
   contact_results_publisher->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Add visualizer.
@@ -99,8 +99,9 @@ int DoMain(void) {
 
   // Step the simulator in some small increment.  Between steps, check
   // to see if the state machine thinks we're done, and if so that the
-  // object is near the target.
-  const double simulation_step = 0.1;
+  // object is near the target.  If --quick is set, use a smaller
+  // increment to keep the test from taking too long in valgrind.
+  const double simulation_step = FLAGS_quick ? 0.01 : 0.1;
   bool done{false};
   while (!done) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);

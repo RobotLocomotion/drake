@@ -53,11 +53,13 @@ class DirectCollocation : public MultipleShooting {
 
   /// Get the input trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override;
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
+  const override;
 
   /// Get the state trajectory at the solution as a
   /// %PiecewisePolynomialTrajectory%.
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override;
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
+  const override;
 
  private:
   // Implements a running cost at all timesteps using trapezoidal integration.
@@ -70,6 +72,64 @@ class DirectCollocation : public MultipleShooting {
   const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
   FreestandingInputPortValue* input_port_value_{nullptr};
 };
+
+/// Implements the direct collocation constraints for a first-order hold on
+/// the input and a cubic polynomial representation of the state trajectories.
+///
+/// Note that the DirectCollocation implementation allocates only ONE of
+/// these constraints, but binds that constraint multiple times (with
+/// different decision variables, along the trajectory).
+
+class DirectCollocationConstraint : public solvers::Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
+
+ public:
+  DirectCollocationConstraint(const System<double>& system,
+                              const Context<double>& context);
+
+  ~DirectCollocationConstraint() override = default;
+
+  int num_states() const { return num_states_; }
+  int num_inputs() const { return num_inputs_; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  DirectCollocationConstraint(const System<double>& system,
+                              const Context<double>& context, int num_states,
+                              int num_inputs);
+
+  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                AutoDiffVecXd* xdot) const;
+
+  std::unique_ptr<System<AutoDiffXd>> system_;
+  std::unique_ptr<Context<AutoDiffXd>> context_;
+  FreestandingInputPortValue* input_port_value_{nullptr};
+  std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
+
+  const int num_states_{0};
+  const int num_inputs_{0};
+};
+
+/// Helper method to add a DirectCollocationConstraint to the @p prog,
+/// ensuring that the order of variables in the binding matches the order
+/// expected by the constraint.
+// Note: The order of arguments is a compromise between GSG and the desire to
+// match the AddConstraint interfaces in MathematicalProgram.
+solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(
+    std::shared_ptr<DirectCollocationConstraint> constraint,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& timestep,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& state,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& next_state,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& input,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& next_input,
+    solvers::MathematicalProgram* prog);
 
 }  // namespace trajectory_optimization
 }  // namespace systems

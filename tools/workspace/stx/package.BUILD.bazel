@@ -7,6 +7,8 @@ load(
     "install_cmake_config",
 )
 
+licenses(["notice"])  # BSD-3-Clause AND BSL-1.0
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -27,7 +29,7 @@ install_cmake_config(
 install(
     name = "install",
     targets = [":stx"],
-    hdr_dest = "include/stx",
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     docs = ["@drake//tools/workspace/stx:LICENSE"],

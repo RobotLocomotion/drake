@@ -15,8 +15,17 @@ namespace rendering {
 
 namespace pose_aggregator_detail { struct InputRecord; }
 
+/// A container with references to the input port descriptor for the pose input,
+/// and a reference to an input port descriptor for the velocity input.
+template <typename T>
+struct PoseVelocityInputPortDescriptors {
+  const InputPortDescriptor<T>& pose_descriptor;
+  const InputPortDescriptor<T>& velocity_descriptor;
+};
+
+
 // TODO(david-german-tri, SeanCurtis-TRI): Evolve PoseAggregator into
-// GeometrySystem after GeometryWorld becomes available.
+// GeometrySystem as it becomes available.
 
 // TODO(david-german-tri): Rename PoseAggregator to KinematicsAggregator, since
 // it includes both poses and velocities now.
@@ -90,10 +99,8 @@ class PoseAggregator : public LeafSystem<T> {
   /// FrameVelocity. @p name must be unique for all inputs with the same
   /// @p model_instance_id.
   ///
-  /// @return A pair where the first element is the descriptor for the pose
-  ///         input, and the second element is the descriptor for the velocity
-  ///         input.
-  std::pair<const InputPortDescriptor<T>&, const InputPortDescriptor<T>&>
+  /// @return Descriptors for pose and velocity.
+  PoseVelocityInputPortDescriptors<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.

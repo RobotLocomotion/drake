@@ -24,16 +24,26 @@ GTEST_TEST(RigidBody, RigidBodyConstructor) {
 
   // Test that after construction, RigidBody class properly returns parts of its
   // default spatial inertia.
-  EXPECT_EQ(B.get_default_mass(), mass);
-  EXPECT_EQ(B.get_default_com(), p_BoBcm_B);
-  const UnitInertia<double>& U_BBo_B_default = B.get_default_unit_inertia();
+  EXPECT_EQ(B.default_mass(), mass);
+  EXPECT_EQ(B.default_com(), p_BoBcm_B);
+  const UnitInertia<double>& U_BBo_B_default = B.default_unit_inertia();
   EXPECT_EQ(U_BBo_B_default.get_moments(), U_BBo_B.get_moments());
   EXPECT_EQ(U_BBo_B_default.get_products(), U_BBo_B.get_products());
 
   // Test that RigidBody class properly calculates rotational inertia.
   const RotationalInertia<double> I_BBo_B_expected = mass * U_BBo_B;
-  const RotationalInertia<double> I_BBo_B = B.get_default_rotational_inertia();
+  const RotationalInertia<double> I_BBo_B = B.default_rotational_inertia();
   EXPECT_TRUE(I_BBo_B.IsNearlyEqualTo(I_BBo_B_expected, 4.0*kEpsilon));
+}
+
+// Test rigid body constructor passing a string name.
+GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
+  const std::string kLinkName = "LinkName";
+  // For this test the numerical values of the spatial intertia are not
+  // important and therefore it is left uninitialized.
+  const SpatialInertia<double> M_Bo_B;
+  const RigidBody<double> B("LinkName", M_Bo_B);
+  EXPECT_EQ(B.name(), kLinkName);
 }
 
 }  // namespace

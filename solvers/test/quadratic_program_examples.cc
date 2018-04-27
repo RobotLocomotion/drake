@@ -366,13 +366,13 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Eigen::Vector2d x_desired;
   x_desired << 1.0, 0.0;
-  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x).constraint();
+  auto objective = prog.AddQuadraticErrorCost(Q, x_desired, x).evaluator();
 
   Eigen::Matrix2d A;
   A << 1.0, 1.0, -1.0, 1.0;
   Eigen::Vector2d ub = Eigen::Vector2d::Constant(1.0);
   Eigen::Vector2d lb = Eigen::Vector2d::Constant(-1.0);
-  auto constraint = prog.AddLinearConstraint(A, lb, ub, x).constraint();
+  auto constraint = prog.AddLinearConstraint(A, lb, ub, x).evaluator();
   Eigen::Vector2d x_expected;
 
   const int N = 40;  // number of points to test around the circle

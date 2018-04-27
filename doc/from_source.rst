@@ -16,11 +16,14 @@ account.
 
 Now run::
 
-    git clone git@github.com:RobotLocomotion/drake.git drake-distro
+    git clone git@github.com:RobotLocomotion/drake.git
 
+Note: we suggest you keep the default clone directory name (``drake``) and not
+rename it (such as ``drake2``).  The CLion integration will suffer if the
+checkout directory is not named ``drake``.  (See :doc:`clion` for details.)
 
 Note: the build process may encounter problems if you have unusual characters
-like parentheses in the absolute path to the drake-distro directory
+like parentheses in the absolute path to the drake directory
 (see `#394 <https://github.com/RobotLocomotion/drake/issues/394>`_).
 
 The above ``git clone`` command will configure Drake's primary repository as a
@@ -28,7 +31,7 @@ remote called ``origin``. We recommend that you configure your fork of Drake's
 primary repository as the ``origin`` remote and Drake's primary repository as
 the ``upstream`` remote. This can be done by executing the following commands::
 
-    cd drake-distro
+    cd drake
     git remote set-url origin git@github.com:[your github user name]/drake.git
     git remote add upstream git@github.com:RobotLocomotion/drake.git
     git remote set-url --push upstream no_push

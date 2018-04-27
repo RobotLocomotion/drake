@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/multibody/rigid_body_plant/compliant_contact_model.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
@@ -56,6 +57,10 @@ namespace systems {
 ///   - RigidBodyTree<T>::get_position_name()
 ///   - RigidBodyTree<T>::get_velocity_name()
 ///
+/// - state_derivative_output_port(): A vector-valued port containing the time
+///   derivative `xcdot` of the state vector.  The order of indices within the
+///   vector is identical to state_output_port() as explained above.
+///
 /// - kinematics_results_output_port(): An abstract-valued port containing a
 ///   KinematicsResults object allowing access to the results from kinematics
 ///   computations for each RigidBody in the RigidBodyTree.
@@ -83,7 +88,10 @@ namespace systems {
 /// addition, the model may contain loop constraints described by
 /// RigidBodyLoop instances in the multibody model. Even though loop constraints
 /// are a particular case of holonomic constraints, general holonomic
-/// constraints are not yet supported.
+/// constraints are not yet supported. For %RigidBodyPlant systems
+/// simulated using time stepping algorithms, an additional (discrete)
+/// scalar state variable stores the last time that the system's state was
+/// updated.
 ///
 /// The system dynamics is given by the set of multibody equations written in
 /// generalized coordinates including loop joints as a set of holonomic
@@ -110,6 +118,22 @@ namespace systems {
 /// where `N(q)` is a transformation matrix only dependent on the positions.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+/// @throws std::runtime_error  The AutodiffXd implementation has some
+/// restrictions:
+/// - The collision detection code does not yet support AutoDiff, and calls
+/// to RigidBodyTree that would have required that gradient information will
+/// throw a std::runtime_error.  Currently, the implication is that AutoDiff
+/// calls for RigidBodyPlants with Context that do not require gradients of
+/// the contact forces will succeed, but calls where Context results in
+/// non-zero contact forces will throw.
+/// - DoCalcDiscreteVariableUpdates does not yet support AutoDiff, and will
+/// throw if called.  In practice this means that AutoDiff of the dynamics
+/// are only available if the RigidBodyPlant is constructed with `timestep=0`.
+///
 /// @ingroup rigid_body_systems
 template <typename T>
 class RigidBodyPlant : public LeafSystem<T> {
@@ -126,8 +150,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   ///   time-stepping approximation to the dynamics.  @default 0.0.
   // TODO(SeanCurtis-TRI): It appears that the tree has to be "compiled"
   // already.  Confirm/deny and document that result.
-  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<T>> tree,
+  explicit RigidBodyPlant(std::unique_ptr<const RigidBodyTree<double>> tree,
                           double timestep = 0.0);
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit RigidBodyPlant(const RigidBodyPlant<U>& other);
 
   ~RigidBodyPlant() override;
 
@@ -142,7 +170,7 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   /// Returns a constant reference to the multibody dynamics model
   /// of the world.
-  const RigidBodyTree<T>& get_rigid_body_tree() const;
+  const RigidBodyTree<double>& get_rigid_body_tree() const;
 
   /// Returns the number of bodies in the world.
   int get_num_bodies() const;
@@ -192,6 +220,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// `position`.
   void set_position(Context<T>* context, int position_index, T position) const;
 
+  /// Sets the generalized coordinates of the model instance specified by
+  /// `model_instance_id` to the values in `position`.
+  void SetModelInstancePositions(
+      Context<T>* context, int model_instance_id,
+      const Eigen::Ref<const VectorX<T>> positions) const;
+
   /// Sets the generalized velocity `velocity_index` to the value
   /// `velocity`.
   void set_velocity(Context<T>* context, int velocity_index, T velocity) const;
@@ -221,6 +255,9 @@ class RigidBodyPlant : public LeafSystem<T> {
 
       // Write the zero configuration into the discrete state.
       xd.SetFromVector(x0);
+
+      // Set the initial time.
+      state->get_mutable_discrete_state().get_mutable_vector(1)[0] = 0;
     } else {
       // Extract a reference to continuous state from the context.
       ContinuousState<T>& xc = state->get_mutable_continuous_state();
@@ -296,12 +333,42 @@ class RigidBodyPlant : public LeafSystem<T> {
     return System<T>::get_output_port(state_output_port_index_);
   }
 
-  /// Returns he output port containing the state of a
+  /// Returns the plant-centric state derivative output port. The size of
+  /// this port is equal to get_num_states().
+  /// @pre This %RigidBodyPlant is using continuous-time dynamics.
+  const OutputPort<T>& state_derivative_output_port() const {
+    DRAKE_DEMAND(state_derivative_output_port_index_.has_value());
+    return System<T>::get_output_port(*state_derivative_output_port_index_);
+  }
+
+  /// Returns the output port containing the state of a
   /// particular model with instance ID equal to `model_instance_id`. Throws a
   /// std::runtime_error if `model_instance_id` does not exist. This method can
   /// only be called when this class is instantiated with constructor parameter
   /// `export_model_instance_centric_ports` equal to `true`.
   const OutputPort<T>& model_instance_state_output_port(
+      int model_instance_id) const;
+
+  /// Returns the output port containing measured joint torques.
+  /// @throws std::runtime_error if this RigidBodyTree contains more than one
+  /// model instances.
+  const OutputPort<T>& torque_output_port() const {
+    if (get_num_model_instances() != 1) {
+      throw std::runtime_error(
+          "RigidBodyPlant::torque_output_port(): "
+          "ERROR: This method can only called when there is only one model "
+          "instance in the RigidBodyTree. There are currently " +
+          std::to_string(get_num_model_instances()) +
+          " model instances in the "
+          "RigidBodyTree.");
+    }
+    return model_instance_torque_output_port(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId);
+  }
+
+  /// Returns the output port containing the measured joint torques of a
+  /// particular model with @p model_instance_id.
+  const OutputPort<T>& model_instance_torque_output_port(
       int model_instance_id) const;
 
   /// Returns the KinematicsResults output port.
@@ -329,6 +396,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   double get_time_step() const { return timestep_; }
 
  protected:
+  // Constructor for derived classes to support system scalar conversion, as
+  // mandated in the doxygen `system_scalar_conversion` documentation.
+  explicit RigidBodyPlant(SystemScalarConverter converter,
+                          std::unique_ptr<const RigidBodyTree<double>> tree,
+                          double timestep = 0.0);
+
   // Evaluates the actuator command input ports and throws a runtime_error
   // exception if at least one of the ports is not connected.
   VectorX<T> EvaluateActuatorInputs(const Context<T>& context) const;
@@ -342,9 +415,14 @@ class RigidBodyPlant : public LeafSystem<T> {
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
-  void DoCalcDiscreteVariableUpdates(const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<T>* updates) const override;
+
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      drake::systems::DiscreteValues<T>* updates) const override {
+    // Pass to SFINAE compatible implementation.
+    DoCalcDiscreteVariableUpdatesImpl(context, events, updates);
+  }
 
   optional<bool> DoHasDirectFeedthrough(int, int) const override;
 
@@ -380,15 +458,41 @@ class RigidBodyPlant : public LeafSystem<T> {
  private:
   friend class RigidBodyPlantTimeSteppingDataTest_NormalJacobian_Test;
   friend class RigidBodyPlantTimeSteppingDataTest_TangentJacobian_Test;
+
+  // Common logic only intended to be called from the (multiple) constructors.
+  void initialize(void);
+
+  template <typename U = T>
+  std::enable_if_t<std::is_same<U, double>::value, void>
+  DoCalcDiscreteVariableUpdatesImpl(
+      const drake::systems::Context<U>& context,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,
+      drake::systems::DiscreteValues<U>* updates) const;
+
+  template <typename U = T>
+  std::enable_if_t<!std::is_same<U, double>::value, void>
+  DoCalcDiscreteVariableUpdatesImpl(
+      const drake::systems::Context<U>& context,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,
+      drake::systems::DiscreteValues<U>* updates) const;
+
   OutputPortIndex DeclareContactResultsOutputPort();
 
-  // These four are the output port calculator methods.
+  // These five are the output port calculator methods.
   void CopyStateToOutput(const Context<T>& context,
                          BasicVector<T>* state_output_vector) const;
+
+  void CalcStateDerivativeOutput(const Context<T>& context,
+                                 BasicVector<T>*) const;
 
   void CalcInstanceOutput(int instance_id,
                           const Context<T>& context,
                           BasicVector<T>* instance_output) const;
+
+  // Measured torque is currently directly copied from the inputs.
+  void CopyInstanceTorqueOutput(int instance_id,
+                                const Context<T>& context,
+                                BasicVector<T>* instance_output) const;
 
   void CalcKinematicsResultsOutput(const Context<T>& context,
                                    KinematicsResults<T>* output) const;
@@ -399,10 +503,8 @@ class RigidBodyPlant : public LeafSystem<T> {
   void ExportModelInstanceCentricPorts();
 
   void CalcContactStiffnessDampingMuAndNumHalfConeEdges(
-      const drake::multibody::collision::PointPair& contact,
-      double* stiffness,
-      double* damping,
-      double* mu,
+      const drake::multibody::collision::PointPair<T>& contact,
+      double* stiffness, double* damping, double* mu,
       int* num_cone_edges) const;
 
   Vector3<T> CalcRelTranslationalVelocity(
@@ -414,33 +516,34 @@ class RigidBodyPlant : public LeafSystem<T> {
       const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
 
   VectorX<T> ContactNormalJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v) const;
+      const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+      const VectorX<T>& q, const VectorX<T>& v) const;
 
   VectorX<T> TransposedContactNormalJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
+      const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f) const;
 
   VectorX<T> ContactTangentJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const VectorX<T>& q,
-      const VectorX<T>& v,
+      const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+      const VectorX<T>& q, const VectorX<T>& v,
       const std::vector<int>& half_num_cone_edges) const;
 
   VectorX<T> TransposedContactTangentJacobianMult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f,
+      const std::vector<drake::multibody::collision::PointPair<T>>& contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f,
       const std::vector<int>& half_num_cone_edges) const;
 
-  std::unique_ptr<const RigidBodyTree<T>> tree_;
+  // Note: The templated ScalarTypes are used in the KinematicsCache, but all
+  // KinematicsResults use RigidBodyTree<double>.  This effectively implies
+  // that we can e.g. AutoDiffXd with respect to the configurations, but not
+  // the RigidBodyTree parameters.
+  std::unique_ptr<const RigidBodyTree<double>> tree_;
 
   // Object that performs all constraint computations.
-  multibody::constraint::ConstraintSolver<T> constraint_solver_;
+  multibody::constraint::ConstraintSolver<double> constraint_solver_;
 
   OutputPortIndex state_output_port_index_{};
+  optional<OutputPortIndex> state_derivative_output_port_index_;
   OutputPortIndex kinematics_output_port_index_{};
   OutputPortIndex contact_output_port_index_{};
 
@@ -461,6 +564,12 @@ class RigidBodyPlant : public LeafSystem<T> {
   // kInvalidPortIdentifier indicates that a model instance has no state and
   // thus no corresponding output port.
   std::vector<int> output_map_;
+
+  // Maps model instance ids to output port indices. A value of
+  // kInvalidPortIdentifier indicates that a model instance has no actuators,
+  // and thus no corresponding output port.
+  std::vector<int> torque_output_map_;
+
   // Maps model instance ids to position indices and number of
   // position states in the RigidBodyTree.  Values are stored as a
   // pair of (index, count).
@@ -485,7 +594,16 @@ class RigidBodyPlant : public LeafSystem<T> {
     // to joint limit violations.
     T signed_distance{0};
   };
+
+  template <typename U>
+  friend class RigidBodyPlant;  // For scalar-converting copy constructor.
 };
+
+// Explicitly disable symbolic::Expression (for now).
+namespace scalar_conversion {
+template <>
+struct Traits<RigidBodyPlant> : public NonSymbolicTraits {};
+}  // namespace scalar_conversion
 
 }  // namespace systems
 }  // namespace drake

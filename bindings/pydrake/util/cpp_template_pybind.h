@@ -3,19 +3,17 @@
 #include <string>
 #include <utility>
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/functional.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 // `GetPyTypes` is implemented specifically for `cpp_template`; to simplify
 // dependencies, this is included transitively.
 #include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 
 namespace drake {
 namespace pydrake {
-
-namespace py = pybind11;
-
 namespace internal {
 
 // C++ interface for `pydrake.util.cpp_template.get_or_init`.
@@ -66,8 +64,7 @@ std::string TemporaryClassName(
 /// @param param Parameters for the instantiation.
 inline py::object AddTemplateClass(
     py::handle scope, const std::string& name,
-    py::handle py_class, py::tuple param,
-    const std::string& default_instantiation_name = "") {
+    py::handle py_class, py::tuple param) {
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateClass");
   internal::AddInstantiation(py_template, py_class, param);

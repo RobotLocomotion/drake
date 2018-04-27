@@ -11,6 +11,7 @@
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/monolane_onramp_merge.h"
+#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/lcm/drake_lcm.h"
 
@@ -151,7 +152,9 @@ void AddMaliputRailcar(int num_cars, bool idm_controlled, int initial_s_offset,
     if (idm_controlled) {
       simulator->AddIdmControlledPriusMaliputRailcar(
           "IdmControlledMaliputRailcar" + std::to_string(i),
-          LaneDirection(lane), params, state);
+          LaneDirection(lane), ScanStrategy::kPath,
+          RoadPositionStrategy::kExhaustiveSearch,
+          0. /* time period (unused) */, params, state);
     } else {
       simulator->AddPriusMaliputRailcar("MaliputRailcar" + std::to_string(i),
                                         LaneDirection(lane), params, state);
@@ -237,7 +240,10 @@ void AddVehicles(RoadNetworkType road_network_type,
       const double y_offset = lane->ToGeoPosition({0., 0., 0.}).y();
       state.set_x(x_offset);
       state.set_y(y_offset);
-      simulator->AddMobilControlledSimpleCar(name, true /* with_s */, state);
+      simulator->AddMobilControlledSimpleCar(
+          name, true /* with_s */, ScanStrategy::kPath,
+          RoadPositionStrategy::kExhaustiveSearch,
+          0. /* time period (unused) */, state);
     }
 
     AddMaliputRailcar(FLAGS_num_idm_controlled_maliput_railcar,
@@ -382,11 +388,13 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
   const RoadNetworkType road_network_type = DetermineRoadNetworkType();
-  auto simulator = std::make_unique<AutomotiveSimulator<double>>(
-      std::make_unique<lcm::DrakeLcm>());
+  auto simulator = std::make_unique<AutomotiveSimulator<double>>();
+  auto* lcm = dynamic_cast<drake::lcm::DrakeLcm*>(simulator->get_lcm());
+  DRAKE_DEMAND(lcm != nullptr);  // The simulator promises this should be OK.
   const maliput::api::RoadGeometry* road_geometry =
       AddTerrain(road_network_type, simulator.get());
   AddVehicles(road_network_type, road_geometry, simulator.get());
+  lcm->StartReceiveThread();
   simulator->Start(FLAGS_target_realtime_rate);
   simulator->StepBy(FLAGS_simulation_sec);
   return 0;

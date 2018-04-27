@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from drake.tools.install.cpsutils import read_version_defs, read_requires
 
@@ -18,16 +18,19 @@ content = """
     "fmt": {
       "Version": "%(fmt_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/fmt"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [ ":spdlog" ],
+  "Default-Components": [":spdlog"],
   "Components": {
     "spdlog": {
       "Type": "interface",
-      "Includes": [ "@prefix@/include" ],
-      "Definitions": ["SPDLOG_FMT_EXTERNAL", "HAVE_SPDLOG"],
-      "Requires": [ "fmt:fmt" ]
+      "Includes": ["@prefix@/include/spdlog"],
+      "Definitions": [
+        "HAVE_SPDLOG",
+        "SPDLOG_FMT_EXTERNAL"
+      ],
+      "Requires": ["fmt:fmt-header-only"]
     }
   }
 }

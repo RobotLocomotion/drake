@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 """
 @file
@@ -21,7 +20,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.primitives import (
     Adder,
     )
-from pydrake.systems.test.lifetime_test_util import (
+from pydrake.systems.test.test_util import (
     DeleteListenerSystem,
     DeleteListenerVector,
     )
@@ -114,7 +113,3 @@ class TestLifetime(unittest.TestCase):
         self.assertTrue(np.allclose(vector.get_value(), [0.]))
         vector.get_mutable_value()[:] = [10.]
         self.assertTrue(np.allclose(vector.get_value(), [10.]))
-
-
-assert __name__ == '__main__'
-unittest.main()

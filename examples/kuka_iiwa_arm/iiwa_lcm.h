@@ -4,6 +4,7 @@
 /// LCM messages related to the iiwa arm.
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -20,9 +21,9 @@ namespace kuka_iiwa_arm {
 extern const double kIiwaLcmStatusPeriod;
 
 /// Handles lcmt_iiwa_command messages from a LcmSubscriberSystem.
-/// Has a single output port which publishes the commanded position
-/// for each joint along with an estimate of the commanded velocity
-/// for each joint.
+/// Has two output ports: one for the commanded position for each joint along
+/// with an estimate of the commanded velocity for each joint, and another for
+/// commanded additional feedforward joint torque.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -35,13 +36,23 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   /// velocity) until a position message is received.  If this
   /// function is not called, the starting position will be the zero
   /// configuration.
-  void set_initial_position(
-      systems::Context<double>* context,
-      const Eigen::Ref<const VectorX<double>> x) const;
+  void set_initial_position(systems::Context<double>* context,
+                            const Eigen::Ref<const VectorX<double>> x) const;
+
+  const systems::OutputPort<double>& get_commanded_state_input_port()
+      const {
+    return this->get_output_port(0);
+  }
+
+  const systems::OutputPort<double>& get_commanded_torque_input_port()
+      const {
+    return this->get_output_port(1);
+  }
 
  private:
-  void OutputCommand(const systems::Context<double>& context,
-                     systems::BasicVector<double>* output) const;
+  void CopyStateToOutput(const systems::Context<double>& context, int start_idx,
+                         int length,
+                         systems::BasicVector<double>* output) const;
 
   void DoCalcDiscreteVariableUpdates(
       const systems::Context<double>& context,
@@ -106,13 +117,12 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
-  const systems::OutputPort<double>&
-    get_measured_position_output_port() const {
+  const systems::OutputPort<double>& get_measured_position_output_port() const {
     return this->get_output_port(measured_position_output_port_);
   }
 
-  const systems::OutputPort<double>&
-    get_commanded_position_output_port() const {
+  const systems::OutputPort<double>& get_commanded_position_output_port()
+      const {
     return this->get_output_port(commanded_position_output_port_);
   }
 
@@ -134,13 +144,17 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
 /// Creates and outputs lcmt_iiwa_status messages.
 ///
-/// This system has three vector-valued input ports, one for the plant's
-/// current state, one for the most recently received position command, and one
-/// for the most recently received joint torque command.
+/// This system has five vector-valued input ports, one for the plant's
+/// current state, one for the most recently received position command, one
+/// for the most recently received joint torque command, one for the plant's
+/// measured joint torque, and one for the plant's external joint torque. The
+/// last two inputs are optional. If left unconnected, the measured joint torque
+/// field in the output message will be identical to the commanded joint torque,
+/// and external torque will be filled with zeros.
 /// The state and command ports contain a position and velocity for each joint
 /// (velocity is unused, this is done to be more readily compatible with the
-/// outputs from IiwaCommandReceiver and RigidBodyPlant). The torque command
-/// port contains a single torque for each joint.
+/// outputs from IiwaCommandReceiver and RigidBodyPlant). The torque related
+/// ports contain a single torque for each joint.
 ///
 /// This system has one abstract valued output port that contains a
 /// systems::Value object templated on type `lcmt_iiwa_status`. Note that this
@@ -166,9 +180,27 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
     return this->get_input_port(1);
   }
 
-  const systems::InputPortDescriptor<double>& get_torque_commanded_input_port()
-  const {
+  const systems::InputPortDescriptor<double>& get_commanded_torque_input_port()
+      const {
     return this->get_input_port(2);
+  }
+
+  /**
+   * Optional input port. If not connected, the joint_torque_measured field in
+   * the output message will be identical to the joint_torque_commanded field.
+   */
+  const systems::InputPortDescriptor<double>& get_measured_torque_input_port()
+      const {
+    return this->get_input_port(3);
+  }
+
+  /**
+   * Optional input port. If not connected, the joint_torque_external field in
+   * the output message will be zeros.
+   */
+  const systems::InputPortDescriptor<double>& get_external_torque_input_port()
+      const {
+    return this->get_input_port(4);
   }
 
  private:
@@ -180,6 +212,40 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
                     lcmt_iiwa_status* output) const;
 
   const int num_joints_;
+};
+
+/**
+ * A translator class that converts the contact force field in
+ * systems::ContactResults to external joint torque for a set of specified
+ * model instances in RigidBodyTree. The input, systems::ContactResults, is
+ * assumed to be generated using the same RigidBodyTree. This class also assumes
+ * that contact force is the only cause of external joint torque, no other
+ * effects such as friction is considered.
+ */
+class IiwaContactResultsToExternalTorque : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaContactResultsToExternalTorque)
+
+  /**
+   * Constructor.
+   * @param tree const RigidBodyTree reference that generates ContactResults.
+   * @param model_instance_ids A set of model instances in @p tree, whose
+   * corresponding generalized contact forces will be stacked and output. Order
+   * of @p model_instance_ids does not matter.
+   */
+  IiwaContactResultsToExternalTorque(
+      const RigidBodyTree<double>& tree,
+      const std::vector<int>& model_instance_ids);
+
+ private:
+  const int num_joints_;
+  // Maps model instance ids to velocity indices and number of
+  // velocity states in the RigidBodyTree.  Values are stored as a
+  // pair of (index, count).
+  std::vector<std::pair<int, int>> velocity_map_;
+
+  void OutputExternalTorque(const systems::Context<double>& context,
+                            systems::BasicVector<double>* output) const;
 };
 
 }  // namespace kuka_iiwa_arm

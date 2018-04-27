@@ -20,7 +20,15 @@ load(
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
+licenses(["notice"])  # Apache-2.0
+
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
 
 PROJECT_MAJOR = 4
 
@@ -47,12 +55,25 @@ cmake_configure_file(
 )
 
 generate_file(
-    name = "export_genrule",
-    out = "include/ignition/math/Export.hh",
+    name = "include/ignition/math/Export.hh",
     content = """
 #pragma once
 
+// IGN_DEPRECATED is defined by all ignition libraries, but the version below
+// is a simplified version.  When mixing the regular ignition libraries and
+// the drake compiled ignition libraries, the compiler throws a warning about
+// the macro being multiply defined.  We undefine it before redefining it here
+// to work around that issue.  Note that the IGNITION_MATH_VISIBLE macro
+// shouldn't be defined multiple times, but we undefine it just in case.
+
+#ifdef IGNITION_MATH_VISIBLE
+#undef IGNITION_MATH_VISIBLE
+#endif
 #define IGNITION_MATH_VISIBLE __attribute__ ((visibility("default")))
+
+#ifdef IGN_DEPRECATED
+#undef IGN_DEPRECATED
+#endif
 #define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
     visibility = ["//visibility:private"],
@@ -134,7 +155,7 @@ public_headers = public_headers_no_gen + [
 # upstream's explicitly listed sources plus private headers.  The explicitly
 # listed hdrs= matches upstream's public headers.
 cc_binary(
-    name = "libignition_math.so",
+    name = "libdrake_ignition_math4.so",
     srcs = [
         "src/Angle.cc",
         "src/Box.cc",
@@ -154,14 +175,19 @@ cc_binary(
         "src/Temperature.cc",
         "src/Vector3Stats.cc",
     ] + private_headers + public_headers,
+    copts = ["-fvisibility-inlines-hidden"],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_math4.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
 )
 
 cc_library(
     name = "ignition_math",
-    srcs = ["libignition_math.so"],
+    srcs = ["libdrake_ignition_math4.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
@@ -181,8 +207,9 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libignition_math.so"],
+    targets = [":libdrake_ignition_math4.so"],
     hdrs = public_headers,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",

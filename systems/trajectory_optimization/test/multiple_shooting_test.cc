@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace systems {
@@ -18,6 +19,7 @@ namespace {
 // TODO(russt): MathematicalProgram should provide this number for each solver.
 const double kSolverTolerance = 1e-6;
 
+using trajectories::PiecewisePolynomial;
 typedef PiecewisePolynomial<double> PiecewisePolynomialType;
 
 class MyDirectTrajOpt : public MultipleShooting {
@@ -33,12 +35,12 @@ class MyDirectTrajOpt : public MultipleShooting {
       : MultipleShooting(num_inputs, num_states, num_time_samples, min_timestep,
                          max_timestep) {}
 
-  PiecewisePolynomialTrajectory ReconstructInputTrajectory() const override {
-    return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
+  PiecewisePolynomial<double> ReconstructInputTrajectory() const override {
+    return PiecewisePolynomial<double>();
   };
 
-  PiecewisePolynomialTrajectory ReconstructStateTrajectory() const override {
-    return PiecewisePolynomialTrajectory(PiecewisePolynomial<double>());
+  PiecewisePolynomial<double> ReconstructStateTrajectory() const override {
+    return PiecewisePolynomial<double>();
   };
 
   // Expose for unit testing.
@@ -208,8 +210,12 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
 
   ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
   for (int i = 0; i < kNumSampleTimes; i++) {
+    // osqp can fail in polishing step, such that the accuracy cannot reach
+    // 1E-6.
+    const double tol =
+        prog.GetSolverId() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
     EXPECT_TRUE(
-        CompareMatrices(prog.GetSolution(prog.state(i)), state_value, 1e-6));
+        CompareMatrices(prog.GetSolution(prog.state(i)), state_value, tol));
   }
 
   const solvers::VectorDecisionVariable<1>& t = prog.time();
@@ -265,15 +271,25 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
 
   // If one is empty, uses the duration.
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  solvers::SolverResult solver_result(solvers::SolverId("dummy"));
+  solver_result.set_decision_variable_values(prog.initial_guess());
+  prog.SetSolverResult(solver_result);
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   prog.SetInitialTrajectory(traj2, PiecewisePolynomial<double>());
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  solver_result.set_decision_variable_values(prog.initial_guess());
+  prog.SetSolverResult(solver_result);
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 1.5, 3.0));
 
   prog.SetInitialTrajectory(traj1, traj1);
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  solver_result.set_decision_variable_values(prog.initial_guess());
+  prog.SetSolverResult(solver_result);
   EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   // Throws if trajectories don't match.
@@ -298,7 +314,11 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
     prog.SetInitialGuess(prog.input(i), input_trajectory.col(i));
     prog.SetInitialGuess(prog.state(i), state_trajectory.col(i));
   }
-  prog.SetDecisionVariableValues(prog.initial_guess());
+  // Pretends that the solver has solved the optimization problem, and sets
+  // the solution to prog.initial_guess().
+  solvers::SolverResult solver_result(solvers::SolverId("dummy"));
+  solver_result.set_decision_variable_values(prog.initial_guess());
+  prog.SetSolverResult(solver_result);
 
   EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(),
                               Eigen::Vector2d(0.0, kFixedTimeStep), 0.0));

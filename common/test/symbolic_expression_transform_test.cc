@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -48,8 +49,8 @@ class SymbolicExpressionTransformationTest : public ::testing::Test {
 };
 
 // Checks if `lhs.cast<Expresion>() * rhs` and `(lhs * rhs).cast<Expresion>()`
-// produce the same output. Also checks the symmetric case. See the following
-// commutative diagram.
+// produce almost identical output. Also checks the symmetric case. See the
+// following commutative diagram.
 //                  * rhs
 //   lhs --------------------------> lhs * rhs
 //    ||                                ||
@@ -61,6 +62,8 @@ class SymbolicExpressionTransformationTest : public ::testing::Test {
 //    \/                          ?     \/
 //   lhs.cast<Expresion>() * rhs  ==  (lhs * rhs).cast<Expresion>()
 //
+// The exactness is not guaranteed due to the non-associativity of
+// floating-point arithmetic (+, *).
 template <typename LhsTransform, typename RhsTransform>
 ::testing::AssertionResult CheckMultiplication(const LhsTransform& lhs,
                                                const RhsTransform& rhs) {
@@ -72,15 +75,12 @@ template <typename LhsTransform, typename RhsTransform>
   ::testing::StaticAssertTypeEq<decltype(expected), decltype(lhs_cast)>();
   ::testing::StaticAssertTypeEq<decltype(expected), decltype(rhs_cast)>();
 
-  // Their matrices should be identical.
-  if (expected.matrix() != lhs_cast.matrix()) {
-    return ::testing::AssertionFailure()
-           << "lhs.cast<Expression>() * rhs != (lhs * rhs).cast<Expression>()";
-  }
-  if (expected.matrix() != rhs_cast.matrix()) {
-    return ::testing::AssertionFailure()
-           << "lhs * rhs.cast<Expression>() != (lhs * rhs).cast<Expression>()";
-  }
+  // Their matrices should be almost identical.
+  const double absolute_tolerance{1e-15};
+  EXPECT_TRUE(CompareMatrices(expected.matrix(), lhs_cast.matrix(),
+                              absolute_tolerance));
+  EXPECT_TRUE(CompareMatrices(expected.matrix(), rhs_cast.matrix(),
+                              absolute_tolerance));
   return ::testing::AssertionSuccess();
 }
 

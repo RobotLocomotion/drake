@@ -54,6 +54,14 @@ GTEST_TEST(ContactResultantForceTest, ContactForceTests) {
   EXPECT_EQ(f1.get_force(), force);
   EXPECT_EQ(f2.get_torque(), torque);
   EXPECT_EQ(f2.get_application_point(), pos);
+
+  // Case 3.  AutoDiffXd.
+  ContactForce<AutoDiffXd> f3(pos, normal, force, torque);
+  EXPECT_EQ(f3.get_normal_force(), normal_force.cast<AutoDiffXd>());
+  EXPECT_EQ(f3.get_tangent_force(), tangent_force.cast<AutoDiffXd>());
+  EXPECT_EQ(f3.get_force(), force.cast<AutoDiffXd>());
+  EXPECT_EQ(f3.get_torque(), torque.cast<AutoDiffXd>());
+  EXPECT_EQ(f3.get_application_point(), pos.cast<AutoDiffXd>());
 }
 
 // Tests transforming wrench with respect to a given reference point.

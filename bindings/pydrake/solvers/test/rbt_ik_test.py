@@ -3,14 +3,14 @@ from __future__ import absolute_import, division, print_function
 import unittest
 import numpy as np
 import pydrake
-import pydrake.rbtree
+from pydrake.multibody.rigid_body_tree import RigidBodyTree
 from pydrake.solvers import ik
 import os.path
 
 
 class TestRBTIK(unittest.TestCase):
     def setUp(self):
-        self.r = pydrake.rbtree.RigidBodyTree(
+        self.r = RigidBodyTree(
             os.path.join(pydrake.getDrakePath(),
                          "examples/pendulum/Pendulum.urdf"))
 
@@ -130,7 +130,3 @@ class TestRBTIK(unittest.TestCase):
         # Test that construction doesn't fail with a given timespan.
         ik.MinDistanceConstraint(model, min_distance, active_bodies_idx,
                                  active_group_name, tspan)
-
-
-if __name__ == '__main__':
-    unittest.main()

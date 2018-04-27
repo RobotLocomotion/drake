@@ -266,36 +266,6 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 int max_exp = 1, const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
-  /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
-  /// all strictly semimonotone matrices, all P-matrices, and all strictly
-  /// copositive matrices, for the special case of sparse matrices. See
-  /// the non-sparse version of SolveLcpLemke() for descriptions of the calling
-  /// and return parameters.
-  /// @note This function is not templatized because the pivoting operations
-  ///       make single-precision floating point solves untenable and because
-  ///       the underlying sparse linear system solver does not support
-  ///       AutoDiff.
-  // @TODO(edrumwri): Remove the ability for MobyLCPSolver<AutoDiffXd> to offer
-  //                  sparse double-precision solves.
-  bool SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
-                     const Eigen::VectorXd& q, Eigen::VectorXd* z,
-                     double piv_tol = -1.0, double zero_tol = -1.0) const;
-
-  /// Regularized wrapper around Lemke's Algorithm for solving LCPs in the
-  /// matrix class E. See the non-sparse version of SolveLcpLemkeRegularized()
-  /// for descriptions of the calling and return parameters.
-  /// @note This function is not templatized because the pivoting operations
-  ///       make single-precision floating point solves untenable and because
-  ///       the underlying sparse linear system solver does not support
-  ///       AutoDiff.
-  // @TODO(edrumwri): Remove the ability for MobyLCPSolver<AutoDiffXd> to offer
-  //                  sparse double-precision solves.
-  bool SolveLcpLemkeRegularized(const Eigen::SparseMatrix<double>& M,
-                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
-                                int min_exp = -20, unsigned step_exp = 4,
-                                int max_exp = 20, double piv_tol = -1.0,
-                                double zero_tol = -1.0) const;
-
   bool available() const override { return true; }
 
   SolutionResult Solve(MathematicalProgram& prog) const override;

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -18,7 +20,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
-#include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
@@ -178,13 +179,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetDefaultState(*context, &context->get_mutable_state());
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -235,13 +236,13 @@ class System {
     // not change.
     const int n_xc = context->get_continuous_state().size();
     const int n_xd = context->get_num_discrete_state_groups();
-    const int n_xa = context->get_num_abstract_state_groups();
+    const int n_xa = context->get_num_abstract_states();
 
     SetRandomState(*context, &context->get_mutable_state(), generator);
 
     DRAKE_DEMAND(n_xc == context->get_continuous_state().size());
     DRAKE_DEMAND(n_xd == context->get_num_discrete_state_groups());
-    DRAKE_DEMAND(n_xa == context->get_num_abstract_state_groups());
+    DRAKE_DEMAND(n_xa == context->get_num_abstract_states());
 
     // Set the default parameters, checking that the number of parameters does
     // not change.
@@ -399,12 +400,17 @@ class System {
   }
 
   /// Causes the vector-valued input port with the given `port_index` to become
-  /// up-to-date, delegating to our parent Diagram if necessary. Returns
-  /// the port's value as an %Eigen expression.
+  /// up-to-date, delegating to our parent Diagram if necessary. Returns the
+  /// port's value as an %Eigen expression. Throws an exception if the input
+  /// port is not connected.
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     const BasicVector<T>* input_vector = EvalVectorInput(context, port_index);
-    DRAKE_ASSERT(input_vector != nullptr);
+    if (input_vector == nullptr) {
+      throw std::logic_error(
+          "System " + get_name() + ": Port index " +
+          std::to_string(port_index) + " is not connected.");
+    }
     DRAKE_ASSERT(input_vector->size() == get_input_port(port_index).size());
     return input_vector->get_value();
   }
@@ -632,8 +638,10 @@ class System {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_DEMAND(events != nullptr);
     events->Clear();
-    T time;
+    T time{NAN};
     DoCalcNextUpdateTime(context, events, &time);
+    using std::isnan;
+    DRAKE_ASSERT(!isnan(time));
     return time;
   }
 
@@ -676,14 +684,11 @@ class System {
   /// determine whether a system's dynamics are at least partially governed by
   /// difference equations and (2) to obtain the difference equation update
   /// times.
-  /// @param[out] periodic_attr Contains the periodic trigger attributes
-  ///             on return of `true` from this function; the value will be
-  ///             unchanged on return value `false`. Function aborts if null.
-  /// @returns `true` if there exists a unique periodic attribute that triggers
-  ///          one or more discrete update events and `false` otherwise.
-  optional<typename Event<T>::PeriodicAttribute>
+  /// @returns optional<PeriodicEventData> Contains the periodic trigger
+  /// attributes if the unique periodic attribute exists, otherwise `nullopt`.
+  optional<PeriodicEventData>
       GetUniquePeriodicDiscreteUpdateAttribute() const {
-    optional<typename Event<T>::PeriodicAttribute> saved_attr;
+    optional<PeriodicEventData> saved_attr;
     auto periodic_events = GetPeriodicEvents();
     for (const auto& saved_attr_and_vector : periodic_events) {
       for (const auto& event : saved_attr_and_vector.second) {
@@ -702,8 +707,8 @@ class System {
   /// Gets all periodic triggered events for a system. Each periodic attribute
   /// (offset and period, in seconds) is mapped to one or more update events
   /// that are to be triggered at the proper times.
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-    PeriodicAttributeComparator<T>> GetPeriodicEvents() const {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+    PeriodicEventDataComparator> GetPeriodicEvents() const {
     return DoGetPeriodicEvents();
   }
 
@@ -869,6 +874,15 @@ class System {
   virtual const State<T>* DoGetTargetSystemState(const System<T>& target_system,
                                                  const State<T>* state) const {
     if (&target_system == this) return state;
+    return nullptr;
+  }
+
+  /// Returns @p xc if @p target_system equals `this`, nullptr otherwise.
+  /// Should not be directly called.
+  virtual const ContinuousState<T>* DoGetTargetSystemContinuousState(
+      const System<T>& target_system,
+      const ContinuousState<T>* xc) const {
+    if (&target_system == this) return xc;
     return nullptr;
   }
 
@@ -1323,13 +1337,13 @@ class System {
 
   //@}
 
-  /// Gets the witness functions active at the beginning of a continuous time
-  /// interval. DoGetWitnessFunctions() does the actual work.
+  /// Gets the witness functions active for the given state.
+  /// DoGetWitnessFunctions() does the actual work. The vector of active witness
+  /// functions are expected to change only upon an unrestricted update.
   /// @param context a valid context for the System (aborts if not true).
   /// @param[out] w a valid pointer to an empty vector that will store
-  ///             pointers to the witness functions active at the beginning of
-  ///             the continuous time interval. The method aborts if witnesses
-  ///             is null or non-empty.
+  ///             pointers to the witness functions active for the current
+  ///             state. The method aborts if witnesses is null or non-empty.
   void GetWitnessFunctions(const Context<T>& context,
                            std::vector<const WitnessFunction<T>*>* w) const {
     DRAKE_DEMAND(w);
@@ -1339,19 +1353,19 @@ class System {
   }
 
   /// Evaluates a witness function at the given context.
-  T EvaluateWitness(const Context<T>& context,
-                    const WitnessFunction<T>& witness_func) const {
+  T CalcWitnessValue(const Context<T>& context,
+                     const WitnessFunction<T>& witness_func) const {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
-    return DoEvaluateWitness(context, witness_func);
+    return DoCalcWitnessValue(context, witness_func);
   }
 
-  /// Add @p witness_func to @p events. @p events cannot be nullptr. @p events
+  /// Add `event` to `events` due to a witness function triggering. `events`
   /// should be allocated with this system's AllocateCompositeEventCollection.
-  /// The system associated with @p witness_func has to be either `this` or a
-  /// subsystem of `this` depending on whether `this` is a LeafSystem or
-  /// a Diagram.
+  /// Neither `event` nor `events` can be nullptr. Additionally, `event` must
+  /// contain event data (event->get_event_data() must not be nullptr) and
+  /// the type of that data must be WitnessTriggeredEventData.
   virtual void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>& witness_func,
+      Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
   /// Returns a string suitable for identifying this particular %System in
@@ -1370,14 +1384,15 @@ class System {
  protected:
   /// Derived classes will implement this method to evaluate a witness function
   /// at the given context.
-  virtual T DoEvaluateWitness(const Context<T>& context,
-                              const WitnessFunction<T>& witness_func) const = 0;
+  virtual T DoCalcWitnessValue(
+      const Context<T>& context,
+      const WitnessFunction<T>& witness_func) const = 0;
 
   /// Derived classes can override this method to provide witness functions
-  /// active at the beginning of a continuous time interval. The default
-  /// implementation does nothing. On entry to this function, the context will
-  /// have already been validated and the vector of witness functions will have
-  /// been validated to be both empty and non-null.
+  /// active for the given state. The default implementation does nothing. On
+  /// entry to this function, the context will have already been validated and
+  /// the vector of witness functions will have been validated to be both empty
+  /// and non-null.
   virtual void DoGetWitnessFunctions(const Context<T>&,
       std::vector<const WitnessFunction<T>*>*) const {
   }
@@ -1459,7 +1474,7 @@ class System {
   const InputPortDescriptor<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
-    int port_index = get_num_input_ports();
+    const InputPortIndex port_index(get_num_input_ports());
     input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
         this, port_index, type, size, random_type));
     return *input_ports_.back();
@@ -1571,8 +1586,8 @@ class System {
   /// @see GetPeriodicEvents() for a detailed description of the returned
   ///      variable.
   /// @note The default implementation returns an empty map.
-  virtual std::map<typename Event<T>::PeriodicAttribute,
-      std::vector<const Event<T>*>, PeriodicAttributeComparator<T>>
+  virtual std::map<PeriodicEventData,
+      std::vector<const Event<T>*>, PeriodicEventDataComparator>
     DoGetPeriodicEvents() const = 0;
 
   /// Implement this method to return any events to be handled before the

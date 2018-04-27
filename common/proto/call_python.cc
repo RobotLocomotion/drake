@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/proto/matlab_rpc.pb.h"
+#include "drake/common/proto/rpc_pipe_temp_directory.h"
 
 namespace drake {
 namespace common {
@@ -27,14 +28,14 @@ void ToMatlabArray(const PythonRemoteVariable& var, MatlabArray* matlab_array) {
 
 namespace {
 
-const char kFilenameDefault[] = "/tmp/python_rpc";
-
 auto GetPythonOutputStream(const std::string* filename = nullptr) {
   static std::unique_ptr<google::protobuf::io::FileOutputStream> raw_output;
   if (!raw_output) {
     // If we do not yet have a file, create it.
+    const std::string filename_default
+        = GetRpcPipeTempDirectory() + "/python_rpc";
     raw_output =
-        internal::CreateOutputStream(filename ? *filename : kFilenameDefault);
+        internal::CreateOutputStream(filename ? *filename : filename_default);
   } else {
     // If we already have a file, ensure that this does not come from
     // `CallPythonInit`.

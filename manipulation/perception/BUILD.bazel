@@ -16,8 +16,8 @@ drake_cc_library(
     hdrs = ["optitrack_pose_extractor.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//drake/math:geometric_transform",
-        "//drake/systems/framework",
+        "//math:geometric_transform",
+        "//systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
@@ -26,10 +26,11 @@ drake_cc_library(
     name = "pose_smoother",
     srcs = ["pose_smoother.cc"],
     hdrs = ["pose_smoother.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//drake/manipulation/util:moving_average_filter",
-        "//drake/math:geometric_transform",
-        "//drake/systems/framework:leaf_system",
+        "//manipulation/util:moving_average_filter",
+        "//math:geometric_transform",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -37,8 +38,8 @@ drake_cc_googletest(
     name = "optitrack_pose_extractor_test",
     deps = [
         ":optitrack_pose_extractor",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
     ],
 )
 
@@ -46,10 +47,10 @@ drake_cc_googletest(
     name = "pose_smoother_test",
     deps = [
         ":pose_smoother",
-        "//drake/common/test_utilities:eigen_geometry_compare",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/manipulation/util:moving_average_filter",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/util:moving_average_filter",
+        "//systems/framework",
     ],
 )
 

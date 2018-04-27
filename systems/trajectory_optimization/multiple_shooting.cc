@@ -16,6 +16,8 @@ namespace drake {
 namespace systems {
 namespace trajectory_optimization {
 
+using trajectories::PiecewisePolynomial;
+
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
 // N number of timesteps/samples
@@ -108,16 +110,16 @@ void MultipleShooting::SetInitialTrajectory(
     double end_time = fixed_timestep_ * N_;
     DRAKE_THROW_UNLESS(!traj_init_u.empty() || !traj_init_x.empty());
     if (!traj_init_u.empty()) {
-      start_time = traj_init_u.getStartTime();
-      end_time = traj_init_u.getEndTime();
+      start_time = traj_init_u.start_time();
+      end_time = traj_init_u.end_time();
       if (!traj_init_x.empty()) {
         // Note: Consider adding a tolerance here if warranted.
-        DRAKE_THROW_UNLESS(start_time == traj_init_x.getStartTime());
-        DRAKE_THROW_UNLESS(end_time == traj_init_x.getEndTime());
+        DRAKE_THROW_UNLESS(start_time == traj_init_x.start_time());
+        DRAKE_THROW_UNLESS(end_time == traj_init_x.end_time());
       }
     } else {
-      start_time = traj_init_x.getStartTime();
-      end_time = traj_init_x.getEndTime();
+      start_time = traj_init_x.start_time();
+      end_time = traj_init_x.end_time();
     }
     DRAKE_DEMAND(start_time <= end_time);
     h = (end_time - start_time) / (N_ - 1);

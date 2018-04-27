@@ -14,23 +14,6 @@ namespace {
 const double epsilon = 1e-6;
 const bool verbose = false;
 
-template <typename Derived>
-Eigen::SparseMatrix<double> MakeSparseMatrix(
-    const Eigen::MatrixBase<Derived>& M) {
-  typedef Eigen::Triplet<double> Triplet;
-  std::vector<Triplet> triplet_list;
-  for (int i = 0; i < M.rows(); i++) {
-    for (int j = 0; j < M.cols(); j++) {
-      if (M(i, j)) {
-        triplet_list.push_back(Triplet(i, j, M(i, j)));
-      }
-    }
-  }
-  Eigen::SparseMatrix<double> out(M.rows(), M.cols());
-  out.setFromTriplets(triplet_list.begin(), triplet_list.end());
-  return out;
-}
-
 /// Run all non-regularized solvers.  If @p expected_z is an empty
 /// vector, outputs will only be compared against each other.
 template <typename Derived>
@@ -66,18 +49,6 @@ void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
   EXPECT_GT(l.get_num_pivots(), 0);
-
-  Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
-  lemke_z.setZero();
-  result = l.SolveLcpLemke(M_sparse, q, &lemke_z);
-  EXPECT_GT(l.get_num_pivots(), 0);
-  EXPECT_TRUE(result);
-  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
-
-  // Verify that resetting the number of pivots works.
-  l.reset_num_pivots();
-  EXPECT_EQ(l.get_num_pivots(), 0);
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
@@ -110,12 +81,6 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
 
   Eigen::VectorXd lemke_z;
   result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
-  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
-
-  Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
-  lemke_z.setZero();
-  result = l.SolveLcpLemkeRegularized(M_sparse, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
 }
@@ -311,10 +276,6 @@ GTEST_TEST(testMobyLCP, testProblem4) {
   fast_z.setZero();
   result = l.SolveLcpLemke(M, q, &fast_z);
   EXPECT_FALSE(result);
-
-  Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
-  result = l.SolveLcpLemke(M_sparse, q, &fast_z);
-  EXPECT_FALSE(result);
 }
 
 GTEST_TEST(testMobyLCP, testProblem6) {
@@ -375,11 +336,6 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  Eigen::SparseMatrix<double> empty_sparse_M(0, 0);
-  result = l.SolveLcpLemke(empty_sparse_M, empty_q, &z);
-  EXPECT_TRUE(result);
-  EXPECT_EQ(z.size(), 0);
-
   result = l.SolveLcpFastRegularized(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
@@ -387,42 +343,6 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   result = l.SolveLcpLemkeRegularized(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
-
-  result = l.SolveLcpLemkeRegularized(empty_sparse_M, empty_q, &z);
-  EXPECT_TRUE(result);
-  EXPECT_EQ(z.size(), 0);
-}
-
-GTEST_TEST(testMobyLCP, ThrowsOnNaN) {
-  const int n = 2;
-  Eigen::SparseMatrix<double> M(n, n);
-  Eigen::VectorXd q(n), z(n);
-  typedef Eigen::Triplet<double> Triplet;
-  std::vector<Triplet> triplet_list;
-  MobyLCPSolver<double> lcp;
-
-  // Construct a matrix with an initial basis that corresponds to a singular
-  // sub-matrix.
-  q[0] = 0.0;
-  q[1] = -1.0;
-  z[0] = 1.0;
-  z[1] = 0.0;
-  triplet_list.push_back(Triplet(1, 1, 1.0));
-  M.setFromTriplets(triplet_list.begin(), triplet_list.end());
-
-  // Try solving the LCP.
-  EXPECT_TRUE(lcp.SolveLcpLemke(M, q, &z));
-
-  // Construct a matrix with with an initial basis that corresponds to a
-  // singular sub-matrix, and the non-singular block has a NaN value.
-  triplet_list.clear();
-  triplet_list.push_back(Triplet(1, 1, std::nan("")));
-  M.setFromTriplets(triplet_list.begin(), triplet_list.end());
-
-  // Try solving the LCP - it's now unsolvable- and should be identified as
-  // such within a single pivot.
-  EXPECT_FALSE(lcp.SolveLcpLemke(M, q, &z));
-  EXPECT_LE(lcp.get_num_pivots(), 1);
 }
 
 // Verifies that z is zero on LCP solver failure.
@@ -446,15 +366,6 @@ GTEST_TEST(testMobyLCP, testFailure) {
   EXPECT_FALSE(constraint.CheckSatisfied(z));
 
   result = l.SolveLcpLemke(neg_M, neg_q, &z);
-  EXPECT_FALSE(result);
-  ASSERT_EQ(z.size(), neg_q.size());
-  EXPECT_EQ(z[0], 0.0);
-  EXPECT_FALSE(constraint.CheckSatisfied(z));
-
-  Eigen::SparseMatrix<double> neg_sparse_M(1, 1);
-  neg_sparse_M.setIdentity();
-  neg_sparse_M *= -1;
-  result = l.SolveLcpLemke(neg_sparse_M, neg_q, &z);
   EXPECT_FALSE(result);
   ASSERT_EQ(z.size(), neg_q.size());
   EXPECT_EQ(z[0], 0.0);

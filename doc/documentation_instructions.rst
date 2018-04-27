@@ -34,8 +34,8 @@ without launching a preview::
 
 To generate the Doxygen documentation::
 
-    $ cd drake-distro
+    $ cd drake
     $ doc/doxygen.py [--quick]
 
 To view the generated documentation, open using a web browser to
-``drake-distro/build/drake/doc/doxygen_cxx/html/index.html``
+``drake/build/drake/doc/doxygen_cxx/html/index.html``

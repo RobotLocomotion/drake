@@ -7,7 +7,7 @@
 /// during, and after the commanded motion.
 
 #include <gflags/gflags.h>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"

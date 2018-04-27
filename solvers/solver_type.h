@@ -12,6 +12,7 @@ enum class SolverType {
   kMobyLCP,
   kMosek,
   kNlopt,
+  kOsqp,
   kSnopt,
   kScs,
 };

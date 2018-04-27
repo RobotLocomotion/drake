@@ -25,6 +25,10 @@ using Eigen::VectorXd;
 using drake::math::autoDiffToValueMatrix;
 using drake::math::expmap2quat;
 
+namespace {
+const double kEpsilon = 10e-8;
+}
+
 template <typename DerivedA, typename DerivedB>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void getRows(std::set<int>& rows, MatrixBase<DerivedA> const& M,
@@ -88,10 +92,10 @@ void surfaceTangents(const Vector3d& normal,
   Vector3d t1, t2;
   double theta;
 
-  if (1 - normal(2) < EPSILON) {  // handle the unit-normal case (since it's
-                                  // unit length, just check z)
+  if (1 - normal(2) < kEpsilon) {  // handle the unit-normal case (since it's
+                                   // unit length, just check z)
     t1 << 1, 0, 0;
-  } else if (1 + normal(2) < EPSILON) {
+  } else if (1 + normal(2) < kEpsilon) {
     t1 << -1, 0, 0;  // same for the reflected case
   } else {           // now the general case
     t1 << normal(1), -normal(0), 0;
@@ -217,7 +221,7 @@ MatrixXd individualSupportCOPs(
       const auto& betaj = beta.segment(beta_start, active_support_length);
 
       const auto& contact_positions =
-          r.bodies[active_support.body_idx]->get_contact_points();
+          r.get_bodies()[active_support.body_idx]->get_contact_points();
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
@@ -389,9 +393,11 @@ Vector6d bodySpatialMotionPD(
 
   Matrix3d R_des = body_pose_des.linear();
   Matrix3d R_err_task = R_des * R_body_to_task.transpose();
-  Vector4d angleAxis_err_task = drake::math::rotmat2axis(R_err_task);
-  Vector3d angular_err_task =
-      angleAxis_err_task.head<3>() * angleAxis_err_task(3);
+  const drake::math::RotationMatrix<double> RR_err_task(R_err_task);
+  const Eigen::AngleAxis<double> angle_axis = RR_err_task.ToAngleAxis();
+  const Vector3d& lambda = angle_axis.axis();
+  const double theta = angle_axis.angle();
+  const Vector3d angular_err_task = theta * lambda;
 
   Vector3d xyzdot_err_task = body_v_des.head<3>() - body_xyzdot_task;
   Vector3d angular_vel_err_task = body_angular_vel_des - body_angular_vel_task;

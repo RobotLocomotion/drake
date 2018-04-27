@@ -16,38 +16,53 @@ drake_cc_library(
     srcs = [],
     hdrs = ["spatial_vector.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "spatial_velocity",
-    srcs = [],
+    srcs = ["spatial_velocity.cc"],
     hdrs = ["spatial_velocity.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
 drake_cc_library(
     name = "spatial_acceleration",
-    srcs = [],
+    srcs = ["spatial_acceleration.cc"],
     hdrs = ["spatial_acceleration.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common:essential",
-        "//drake/math:vector3_util",
+        ":spatial_velocity",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:vector3_util",
     ],
 )
 
 drake_cc_library(
     name = "spatial_force",
-    srcs = [],
+    srcs = ["spatial_force.cc"],
     hdrs = ["spatial_force.h"],
     deps = [
         ":spatial_vector",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "spatial_momentum",
+    srcs = ["spatial_momentum.cc"],
+    hdrs = ["spatial_momentum.h"],
+    deps = [
+        ":spatial_vector",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -58,32 +73,10 @@ drake_cc_library(
     deps = [
         ":spatial_acceleration",
         ":spatial_force",
+        ":spatial_momentum",
         ":spatial_vector",
         ":spatial_velocity",
-        "//drake/common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "rotation_matrix",
-    srcs = ["rotation_matrix.cc"],
-    hdrs = ["rotation_matrix.h"],
-    deps = [
-        "//drake/common",
-        "//drake/common:default_scalars",
-        "//drake/math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "transform",
-    srcs = ["transform.cc"],
-    hdrs = ["transform.h"],
-    deps = [
-        ":rotation_matrix",
-        "//drake/common",
-        "//drake/common:default_scalars",
-        "//drake/math:geometric_transform",
+        "//common:essential",
     ],
 )
 
@@ -91,21 +84,8 @@ drake_cc_googletest(
     name = "spatial_algebra_test",
     deps = [
         ":spatial_algebra",
-        "//drake/common:autodiff",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rotation_matrix_test",
-    deps = [
-        ":rotation_matrix",
-    ],
-)
-
-drake_cc_googletest(
-    name = "transform_test",
-    deps = [
-        ":transform",
+        "//common:autodiff",
+        "//common:symbolic",
     ],
 )
 

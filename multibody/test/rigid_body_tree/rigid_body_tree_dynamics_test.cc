@@ -30,9 +30,6 @@ namespace plants {
 namespace test {
 namespace {
 
-constexpr const int kChunkSize =
-    drake::AutoDiffUpTo73d::DerType::MaxRowsAtCompileTime;
-
 class RigidBodyTreeInverseDynamicsTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
@@ -109,22 +106,22 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestSkewSymmetryProperty) {
 
   // Compute Coriolis matrix (see Murray et al., eq. (4.23)).
   auto qd_to_coriolis_term = [&](const auto& qd_arg) {
-    using Scalar =
-        typename std::remove_reference<decltype(qd_arg)>::type::Scalar;
+    const auto& q_autodiff = q.cast<AutoDiffXd>().eval();
+    const auto& qdd_autodiff = qdd.cast<AutoDiffXd>().eval();
+    const auto& qd_arg_dynamic = qd_arg.template cast<AutoDiffXd>().eval();
+
     auto kinematics_cache_coriolis =
-        tree_rpy_->CreateKinematicsCacheWithType<Scalar>();
-    kinematics_cache_coriolis.initialize(q.cast<Scalar>(), qd_arg);
+        tree_rpy_->CreateKinematicsCacheWithType<AutoDiffXd>();
+    kinematics_cache_coriolis.initialize(q_autodiff, qd_arg_dynamic);
     tree_rpy_->doKinematics(kinematics_cache_coriolis, true);
 
-    const typename RigidBodyTree<Scalar>::BodyToWrenchMap no_external_wrenches;
     auto coriolis_term = tree_rpy_->inverseDynamics(
-        kinematics_cache_coriolis, no_external_wrenches,
-        qdd.cast<Scalar>().eval(), true);
-    coriolis_term -= tree_rpy_->frictionTorques(qd_arg);
+        kinematics_cache_coriolis, {}, qdd_autodiff, true);
+    coriolis_term -= tree_rpy_->frictionTorques(qd_arg_dynamic);
     return coriolis_term;
   };
   auto coriolis_term_qd_jacobian =
-      autoDiffToGradientMatrix(jacobian<kChunkSize>(qd_to_coriolis_term, qd));
+      autoDiffToGradientMatrix(jacobian(qd_to_coriolis_term, qd));
   auto coriolis_matrix = (coriolis_term_qd_jacobian / 2.).eval();
 
   // Asserts that the the Coriolis matrix is a square matrix with a dimension
@@ -160,19 +157,18 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestAccelerationJacobianIsMassMatrix) {
     auto mass_matrix = tree->massMatrix(kinematics_cache);
 
     auto vd_to_mass_matrix = [&](const auto& vd_arg) {
-      using Scalar =
-          typename std::remove_reference<decltype(vd_arg)>::type::Scalar;
-      auto kinematics_cache_2 =
-          tree->CreateKinematicsCacheWithType<Scalar>();
-      kinematics_cache_2.initialize(q.cast<Scalar>(), v.cast<Scalar>());
-      tree->doKinematics(kinematics_cache_2, true);
-      const typename RigidBodyTree<Scalar>::
-      BodyToWrenchMap no_external_wrenches;
-      return tree->inverseDynamics(kinematics_cache_2, no_external_wrenches,
-                                   vd_arg);
+      const auto& q_autodiff = q.cast<AutoDiffXd>().eval();
+      const auto& v_autodiff = v.cast<AutoDiffXd>().eval();
+      const auto& vd_arg_dynamic = vd_arg.template cast<AutoDiffXd>().eval();
+
+      auto cache_xd = tree->CreateKinematicsCacheWithType<AutoDiffXd>();
+      cache_xd.initialize(q_autodiff, v_autodiff);
+      tree->doKinematics(cache_xd, true);
+
+      return tree->inverseDynamics(cache_xd, {}, vd_arg_dynamic);
     };
     auto mass_matrix_from_inverse_dynamics =
-        autoDiffToGradientMatrix(jacobian<kChunkSize>(vd_to_mass_matrix, vd));
+        autoDiffToGradientMatrix(jacobian(vd_to_mass_matrix, vd));
 
     ASSERT_EQ(tree->get_num_velocities(),
               mass_matrix_from_inverse_dynamics.rows());
@@ -215,20 +211,22 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestGeneralizedGravitationalForces) {
   auto gravitational_force =
       (gravitational_acceleration * tree->getMass()).eval();
   auto q_to_gravitational_potential_energy = [&](const auto& q_arg) {
-    using Scalar =
-        typename std::remove_reference<decltype(q_arg)>::type::Scalar;
-    auto kinematics_cache_2 =
-        tree->CreateKinematicsCacheWithType<Scalar>();
-    kinematics_cache_2.initialize(q_arg);
-    tree->doKinematics(kinematics_cache_2);
-    auto center_of_mass = tree->centerOfMass(kinematics_cache_2);
-    Scalar gravitational_potential_energy =
-        -center_of_mass.dot(gravitational_force.cast<Scalar>().eval());
+    const auto& gravitational_force_autodiff =
+        gravitational_force.cast<AutoDiffXd>().eval();
+    const auto& q_arg_dynamic = q_arg.template cast<AutoDiffXd>().eval();
+
+    auto cache_autodiff = tree->CreateKinematicsCacheWithType<AutoDiffXd>();
+    cache_autodiff.initialize(q_arg_dynamic);
+    tree->doKinematics(cache_autodiff);
+
+    auto center_of_mass = tree->centerOfMass(cache_autodiff);
+    AutoDiffXd gravitational_potential_energy =
+        -center_of_mass.dot(gravitational_force_autodiff);
     // The jacobian function expects a Matrix as output, so:
-    return Eigen::Matrix<Scalar, 1, 1>(gravitational_potential_energy);
+    return Eigen::Matrix<AutoDiffXd, 1, 1>(gravitational_potential_energy);
   };
   auto gravitational_forces_from_potential_energy =
-      jacobian<kChunkSize>(q_to_gravitational_potential_energy, q)
+      jacobian(q_to_gravitational_potential_energy, q)
           .value()
           .derivatives();
 
@@ -298,7 +296,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
 
   // Set external wrenches, keep track of total wrench.
   Vector6<double> total_wrench_world = gravitational_wrench_world;
-  for (const auto& body_ptr : tree.bodies) {
+  for (const auto& body_ptr : tree.get_bodies()) {
     if (body_ptr->has_parent_body()) {
       auto wrench_body = Vector6<double>::Random().eval();
       external_wrenches[body_ptr.get()] = wrench_body;
@@ -311,7 +309,7 @@ TEST_F(RigidBodyTreeInverseDynamicsTest, TestMomentumRateOfChange) {
 
   // Compute wrench across floating joint W_f, add to total wrench.
   auto tau = tree.inverseDynamics(kinematics_cache, external_wrenches, vd);
-  auto& floating_body_ptr = tree.bodies[1];
+  auto& floating_body_ptr = tree.get_bodies()[1];
   int floating_joint_start_index =
       floating_body_ptr->get_velocity_start_index();
   Vector6<double> floating_joint_wrench_body =

@@ -9,17 +9,18 @@ namespace systems {
 namespace controllers {
 
 struct LinearQuadraticRegulatorResult {
-  Eigen::MatrixXd S;
   Eigen::MatrixXd K;
+  Eigen::MatrixXd S;
 };
 
-/// Computes the optimal feedback controller, u=-Kx
+/// Computes the optimal feedback controller, u=-Kx, and the optimal
+/// cost-to-go J = x'Sx for the problem:
 ///
 ///   @f[ \dot{x} = Ax + Bu @f]
-///   @f[ \min_u \int_0^T x'Qx + u'Ru + 2x'Nu dt @f]
+///   @f[ \min_u \int_0^\infty x'Qx + u'Ru + 2x'Nu dt @f]
 ///
 /// @param A The state-space dynamics matrix of size num_states x num_states.
-/// @param B The state-space input matrix of size num_states x num_inupts.
+/// @param B The state-space input matrix of size num_states x num_inputs.
 /// @param Q A symmetric positive semi-definite cost matrix of size num_states x
 /// num_states.
 /// @param R A symmetric positive definite cost matrix of size num_inputs x
@@ -39,10 +40,41 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero());
 
-/// Creates a system that implements the optimal time-invariant linear quadratic
-/// regulator (LQR):
+/// Computes the optimal feedback controller, u=-Kx, and the optimal
+/// cost-to-go J = x'Sx for the problem:
 ///
-///   @f[ \min_u \int_0^T x'Qx + u'Ru dt @f]
+///   @f[ x[n+1] = Ax[n] + Bu[n] @f]
+///   @f[ \min_u \sum_0^\infty x'Qx + u'Ru @f]
+///
+/// @param A The state-space dynamics matrix of size num_states x num_states.
+/// @param B The state-space input matrix of size num_states x num_inputs.
+/// @param Q A symmetric positive semi-definite cost matrix of size num_states x
+/// num_states.
+/// @param R A symmetric positive definite cost matrix of size num_inputs x
+/// num_inputs.
+/// @returns A structure that contains the optimal feedback gain K and the
+/// quadratic cost term S. The optimal feedback control is u = -Kx;
+///
+/// @throws std::runtime_error if R is not positive definite.
+/// @ingroup control_systems
+// TODO(russt): Consider implementing the optional N argument as in the
+// continuous-time formulation.
+LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R);
+
+/// Creates a system that implements the optimal time-invariant linear quadratic
+/// regulator (LQR).  If @p system is a continuous-time system, then solves
+/// the continuous-time LQR problem:
+///
+///   @f[ \min_u \int_0^\infty x^T(t)Qx(t) + u^T(t)Ru(t) dt. @f]
+///
+/// If @p system is a discrete-time system, then solves the discrete-time LQR
+/// problem:
+///
+///   @f[ \min_u \sum_0^\infty x^T[n]Qx[n] + u^T[n]Ru[n]. @f]
 ///
 /// @param system The System to be controlled.
 /// @param Q A symmetric positive semi-definite cost matrix of size num_states x
@@ -65,10 +97,20 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 
 /// Linearizes the System around the specified Context, computes the optimal
 /// time-invariant linear quadratic regulator (LQR), and returns a System which
-/// implements that regulator in the original System's coordinates.
+/// implements that regulator in the original System's coordinates.  If
+/// @p system is a continuous-time system, then solves
+/// the continuous-time LQR problem:
 ///
-/// @f[ \min_u \int_0^T (x-x_0)'Q(x-x_0) + (u-u_0)'R(u-u_0) dt @f]
+///   @f[ \min_u \int_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0) dt. @f]
+///
+/// If @p system is a discrete-time system, then solves the discrete-time LQR
+/// problem:
+///
+///   @f[ \min_u \sum_0^\infty (x-x_0)^TQ(x-x_0) + (u-u_0)^TR(u-u_0), @f]
+///
 /// where @f$ x_0 @f$ is the nominal state and @f$ u_0 @f$ is the nominal input.
+/// The system is considered discrete if it has a single discrete state
+/// vector and a single unique periodic update event declared.
 ///
 /// @param system The System to be controlled.
 /// @param context Defines the desired state and control input to regulate the

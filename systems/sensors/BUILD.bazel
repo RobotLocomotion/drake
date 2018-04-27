@@ -40,9 +40,9 @@ drake_cc_library(
         "accelerometer_output.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/framework",
+        "//multibody:rigid_body_tree",
+        "//multibody/rigid_body_plant",
+        "//systems/framework",
     ],
 )
 
@@ -58,8 +58,8 @@ drake_cc_library(
     deps = [
         ":beam_model_params",
         ":depth_sensor",
-        "//drake/common:unused",
-        "//drake/systems/framework",
+        "//common:unused",
+        "//systems/framework",
     ],
 )
 
@@ -72,7 +72,7 @@ drake_cc_library(
         "camera_info.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -84,8 +84,9 @@ drake_cc_library(
         "pixel_types.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:reinit_after_move",
+        "//common:essential",
+        "//common:reset_after_move",
+        "//common:symbolic",
     ],
 )
 
@@ -99,8 +100,8 @@ drake_cc_library(
     ],
     deps = [
         ":image",
-        "//drake/common:essential",
-        "//drake/systems/framework",
+        "//common:essential",
+        "//systems/framework",
         "@lcmtypes_robotlocomotion",
         "@zlib",
     ],
@@ -119,9 +120,9 @@ drake_cc_library(
         "depth_sensor_specification.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework",
-        "//drake/systems/rendering:pose_vector",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+        "//systems/rendering:pose_vector",
     ],
 )
 
@@ -135,8 +136,8 @@ drake_cc_library(
     ],
     deps = [
         ":depth_sensor",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/rendering:pose_vector",
+        "//multibody:rigid_body_tree",
+        "//systems/rendering:pose_vector",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -152,8 +153,8 @@ drake_cc_library(
         "gyroscope_output.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
     ],
 )
 
@@ -166,7 +167,7 @@ drake_cc_library(
     install_hdrs_exclude = ["vtk_util.h"],
     visibility = ["//visibility:private"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonTransforms",
@@ -189,8 +190,8 @@ drake_cc_library(
     deps = [
         ":image",
         ":vtk_util",
-        "//drake/common",
-        "//drake/multibody/shapes",
+        "//common",
+        "//multibody/shapes",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
@@ -213,12 +214,12 @@ drake_cc_library(
         ":image",
         ":rgbd_renderer",
         ":vtk_util",
-        "//drake/math:geometric_transform",
-        "//drake/multibody:rigid_body_frame",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework",
-        "//drake/systems/primitives",
-        "//drake/systems/rendering:pose_vector",
+        "//math:geometric_transform",
+        "//multibody:rigid_body_frame",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+        "//systems/primitives",
+        "//systems/rendering:pose_vector",
         "@eigen",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkCommonDataModel",
@@ -240,16 +241,16 @@ drake_cc_binary(
     deps = [
         ":image_to_lcm_image_array_t",
         ":rgbd_camera",
-        "//drake/common:unused",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/lcm",
-        "//drake/systems/rendering:pose_stamped_t_pose_vector_translator",
+        "//common:unused",
+        "//lcm",
+        "//multibody:rigid_body_tree",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/lcm",
+        "//systems/rendering:pose_stamped_t_pose_vector_translator",
         "@gflags",
     ],
 )
@@ -259,8 +260,8 @@ drake_cc_library(
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
     deps = [
-        "//drake/common:unused",
-        "//drake/systems/framework",
+        "//common:unused",
+        "//systems/framework",
     ],
 )
 
@@ -270,27 +271,24 @@ drake_cc_library(
     srcs = [
         "test/accelerometer_test/accelerometer_example_diagram.cc",
         "test/accelerometer_test/accelerometer_test_logger.cc",
-        "test/accelerometer_test/accelerometer_xdot_hack.cc",
     ],
     hdrs = [
         "test/accelerometer_test/accelerometer_example_diagram.h",
         "test/accelerometer_test/accelerometer_test_logger.h",
-        "test/accelerometer_test/accelerometer_xdot_hack.h",
     ],
     data = [
-        "//drake/examples/pendulum:models",
+        "//examples/pendulum:models",
     ],
     visibility = ["//visibility:private"],
     deps = [
         ":accelerometer",
-        "//drake/common:essential",
-        "//drake/common:find_resource",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/multibody/rigid_body_plant:rigid_body_plant_that_publishes_xdot",  # noqa
-        "//drake/systems/lcm:lcmt_drake_signal_translator",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:signal_logger",
+        "//common:essential",
+        "//common:find_resource",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
     ],
 )
 
@@ -302,9 +300,9 @@ drake_cc_binary(
     ],
     deps = [
         ":accelerometer_example_diagram",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcm",
-        "//drake/systems/analysis:simulator",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//systems/analysis:simulator",
         "@gflags",
     ],
 )
@@ -315,7 +313,7 @@ drake_cc_library(
     hdrs = ["optitrack_sender.h"],
     deps = [
         ":optitrack_encoder",
-        "//drake/systems/framework:leaf_system",
+        "//systems/framework:leaf_system",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
@@ -325,8 +323,8 @@ drake_cc_library(
     srcs = ["optitrack_encoder.cc"],
     hdrs = ["optitrack_encoder.h"],
     deps = [
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/rendering:pose_bundle",
+        "//systems/framework:leaf_system",
+        "//systems/rendering:pose_bundle",
     ],
 )
 
@@ -338,14 +336,13 @@ drake_cc_googletest(
         "test/accelerometer_test/accelerometer_test.cc",
     ],
     data = [
-        "//drake/multibody:models",
+        "//multibody:models",
     ],
     deps = [
         ":accelerometer_example_diagram",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/lcm:mock",
-        "//drake/systems/analysis:simulator",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -353,11 +350,11 @@ drake_cc_googletest(
     name = "beam_model_test",
     deps = [
         ":beam_model",
-        "//drake/common/proto:call_matlab",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:random_source",
-        "//drake/systems/primitives:signal_logger",
+        "//common/proto:call_matlab",
+        "//systems/analysis:simulator",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:random_source",
+        "//systems/primitives:signal_logger",
     ],
 )
 
@@ -365,7 +362,7 @@ drake_cc_googletest(
     name = "camera_info_test",
     deps = [
         ":camera_info",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -381,7 +378,7 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_test.cc"],
     deps = [
         ":depth_sensor",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -390,7 +387,7 @@ drake_cc_googletest(
     srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
     deps = [
         ":depth_sensor_to_lcm_point_cloud_message",
-        "//drake/lcm:mock",
+        "//lcm:mock",
     ],
 )
 
@@ -398,13 +395,13 @@ drake_cc_googletest(
     name = "gyroscope_test",
     srcs = ["test/gyroscope_test.cc"],
     data = [
-        "//drake/multibody:models",
+        "//multibody:models",
     ],
     deps = [
         ":gyroscope",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -418,7 +415,6 @@ filegroup(
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
     ],
-    visibility = ["//visibility:private"],
 )
 
 drake_cc_googletest(
@@ -437,11 +433,11 @@ drake_cc_googletest(
     ],
     deps = [
         ":rgbd_camera",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
     ],
 )
 
@@ -468,9 +464,9 @@ drake_cc_googletest(
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:geometric_transform",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -478,11 +474,8 @@ sh_test(
     name = "rgbd_camera_publish_lcm_test",
     srcs = ["rgbd_camera_publish_lcm_example"],
     args = [
-        # TODO(eric.cousineau): Find skylark rule that can resolve
-        # "test/models/sphere.sdf" to the path below.
         "--sdf_dir=" + native.package_name() + "/test/models",
         "--duration=0.1",
-        "--show_window=false",
     ],
     data = [
         ":test_models",
@@ -490,11 +483,15 @@ sh_test(
     # Mitigates driver-related issues when running under `bazel test`. For more
     # information, see #7004.
     local = 1,
-    # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
-    # leaks. For more information, see #7520.
+    # TODO(mitiguy) Issue #8368: Test rgbd_camera_publish_lcm_test in the
+    # BUILD.bazel file in directory drake/systems/sensors cannot be run anymore
+    # due to the new RotationMatrix class which insists on being a proper
+    # orthogonal rotation matrix.  This test produces a quaternion with NANs
+    # which causes the RotationMatrix class to throw an exception in debug
+    # builds. This test is labeled with tags = "manual" so CI does not run it.
+    # This test is defective and should never have passed earlier code review.
     tags = [
-        "no_lsan",
-        "no_memcheck",
+        "manual",
     ],
 )
 
@@ -502,9 +499,9 @@ drake_cc_googletest(
     name = "rotary_encoders_test",
     deps = [
         ":rotary_encoders",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:symbolic_test_util",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -523,7 +520,7 @@ drake_cc_googletest(
     srcs = ["test/optitrack_encoder_test.cc"],
     deps = [
         ":optitrack_encoder",
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -533,7 +530,7 @@ drake_cc_googletest(
     deps = [
         ":optitrack_encoder",
         ":optitrack_sender",
-        "//drake/systems/framework",
+        "//systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )

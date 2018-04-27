@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import argparse
 import collections
@@ -19,6 +19,27 @@ list_only = False
 # as a suffix (e.g. my_lib.so.x.y.z).
 dylib_match = r"(.*\.so)(\.\d+)*$|(.*\.dylib)$"
 
+
+def is_relative_link(filepath):
+    """Find if a file is a relative link.
+
+    Bazel paths are assumed to always be absolute. If path is not absolute,
+    the file is a link we want to keep.
+
+    If the given `filepath` is not a link, the function returns `None`. If the
+    given `filepath` is a link, the result will depend if the link is absolute
+    or relative. The function is called recursively. If the result is not a
+    link, `None` is returned. If the link is relative, the relative link is
+    returned.
+    """
+    if os.path.islink(filepath):
+        link = os.readlink(filepath)
+        if not os.path.isabs(link):
+            return link
+        else:
+            return is_relative_link(link)
+    else:
+        return None
 
 def find_binary_executables():
     """Finds installed files that are binary executables to fix them up later.
@@ -59,6 +80,19 @@ def needs_install(src, dst):
     return True
 
 
+def copy_or_link(src, dst):
+    """Copy file if it is not a relative link or recreate the symlink in `dst`.
+
+    Copy the input file to the destination if it is not a relative link. If the
+    file is a relative link, create a similar link in the destination folder.
+    """
+    relative_link = is_relative_link(src)
+    if relative_link:
+        os.symlink(relative_link, dst)
+    else:
+        shutil.copy2(src,dst)
+
+
 def install(src, dst):
     global subdirs
 
@@ -79,13 +113,13 @@ def install(src, dst):
     dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
     if needs_install(src, dst):
-        print("[Installing] %s" % dst)
+        print("-- Installing: {}".format(dst_full))
         if os.path.exists(dst_full):
             os.remove(dst_full)
-        shutil.copy2(src, dst_full)
+        copy_or_link(src, dst_full)
         installed = True
     else:
-        print("[Up to date] %s" % dst)
+        print("-- Up-to-date: {}".format(dst_full))
     re_result = re.match(dylib_match, dst)
     if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
@@ -94,7 +128,7 @@ def install(src, dst):
         # we do not know which one to use, and fail fast.
         if basename in files_to_fix_up:
             sys.stderr.write(
-                "Multiple installation rules found for %s." % (basename))
+                "Multiple installation rules found for {}.".format(basename))
             sys.exit(1)
         files_to_fix_up[basename] = (dst_full, installed)
     else:  # It is not a library, it may be an executable.
@@ -113,19 +147,31 @@ def install(src, dst):
             pass
 
 
-def fix_rpaths():
+def fix_rpaths_and_strip():
     # Add binary executables to list of files to be fixed up:
     find_binary_executables()
     # Only fix files that are installed now.
     fix_files = [(k, files_to_fix_up[k][0])
                  for k in files_to_fix_up.keys() if files_to_fix_up[k][1]]
     for basename, dst_full in fix_files:
+        if os.path.islink(dst_full):
+            # Skip files that are links. However, they need to be in the
+            # dictionary to fixup other library and executable paths.
+            continue
         # Enable write permissions to allow modification.
         os.chmod(dst_full, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR |
                  stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
         if sys.platform == "darwin":
+            # From the manual for BSD `strip`: for dynamic shared libraries,
+            # the maximum level of stripping is usually -x (to remove all
+            # non-global symbols).
+            check_call(['strip', '-x', dst_full])
             macos_fix_rpaths(basename, dst_full)
         else:
+            # Strip before running `patchelf`. Trying to strip after patching
+            # the files is likely going to create the following error:
+            # 'Not enough room for program headers, try linking with -N'
+            check_call(['strip', dst_full])
             linux_fix_rpaths(dst_full)
 
 
@@ -171,30 +217,57 @@ def macos_fix_rpaths(basename, dst_full):
 
 
 def linux_fix_rpaths(dst_full):
-    # Check if file dependencies are found and not in install prefix.
-    # The found libraries outside of the install prefix are system
-    # libraries and we do not worry about these. We only make sure that
-    # drake libraries will be found.
+    # A conservative subset of the ld.so search path. These paths are added
+    # to /etc/ld.so.conf by default or after the prerequisites install script
+    # has been run. Query on a given system using `ldconfig -v`.
+    ld_so_search_paths = [
+        '/lib',
+        '/lib/libblas',
+        '/lib/liblapack',
+        '/lib/x86_64-linux-gnu',
+        '/lib32',
+        '/libx32',
+        '/usr/lib',
+        '/usr/lib/x86_64-linux-gnu',
+        '/usr/lib/x86_64-linux-gnu/libfakeroot',
+        '/usr/lib/x86_64-linux-gnu/mesa-egl',
+        '/usr/lib/x86_64-linux-gnu/mesa',
+        '/usr/lib/x86_64-linux-gnu/pulseaudio',
+        '/usr/lib32',
+        '/usr/libx32',
+        '/usr/local/lib',
+    ]
     file_output = check_output(["ldd", dst_full])
     rpath = []
     for line in file_output.splitlines():
         ldd_result = line.strip().split(' => ')
-        # If library found and not in install prefix, then skip.
-        if len(ldd_result) < 2 or \
-                not (ldd_result[1] == "not found" or
-                     ldd_result[1].startswith(prefix)):
+        if len(ldd_result) < 2:
             continue
-        re_result = re.match(dylib_match, ldd_result[0])
-        # Look for the absolute path in the dictionary of libraries using the
-        # library name without its possible version number.
-        soname, _, _ = re_result.groups()
-        if soname not in files_to_fix_up.keys():
-            continue
-        lib_dirname = os.path.dirname(dst_full)
-        diff_path = os.path.dirname(
-            os.path.relpath(files_to_fix_up[soname][0], lib_dirname)
-        )
-        rpath.append('$ORIGIN' + '/' + diff_path)
+        # Library in install prefix.
+        if ldd_result[1] == 'not found' or ldd_result[1].startswith(prefix):
+            re_result = re.match(dylib_match, ldd_result[0])
+            # Look for the absolute path in the dictionary of libraries using
+            # the library name without its possible version number.
+            soname, _, _ = re_result.groups()
+            if soname not in files_to_fix_up.keys():
+                continue
+            lib_dirname = os.path.dirname(dst_full)
+            diff_path = os.path.dirname(
+                os.path.relpath(files_to_fix_up[soname][0], lib_dirname)
+            )
+            rpath.append('$ORIGIN' + '/' + diff_path)
+        # System library not in ld.so search path.
+        else:
+            # Remove (hexadecimal) address from output leaving (at most) the
+            # path to the library.
+            ldd_regex = r"(.*\.so(?:\.\d+)*) \(0x[0-9a-f]+\)$"
+            re_result = re.match(ldd_regex, ldd_result[1])
+            if re_result:
+                lib_dirname = os.path.dirname(
+                    os.path.realpath(re_result.group(1))
+                )
+                if lib_dirname not in ld_so_search_paths:
+                    rpath.append(lib_dirname + '/')
 
     # Ensure that system libraries get loaded instead of those bundled with
     # MATLAB that are added to the LD_LIBRARY_PATH.
@@ -207,8 +280,9 @@ def linux_fix_rpaths(dst_full):
 
     # Replace build tree RPATH with computed install tree RPATH. Build tree
     # RPATH are automatically removed by this call. RPATH will contain the
-    # necessary relative paths to find the libraries that are needed. RPATH
-    # will typically be set to `$ORIGIN` or `$ORIGIN/../../..` .
+    # necessary absolute and relative paths to find the libraries that are
+    # needed. RPATH will typically be set to `$ORIGIN` or `$ORIGIN/../../..`,
+    # possibly concatenated with directories under /opt.
     str_rpath = ":".join(x for x in rpath)
     check_output(
         ["patchelf",
@@ -218,13 +292,16 @@ def linux_fix_rpaths(dst_full):
     )
 
 
-def create_java_launcher(filename, classpath, main_class):
+def create_java_launcher(filename, classpath, jvm_flags, main_class):
     # In list-only mode, just display the filename, don't do any real work.
     if list_only:
         print(filename)
         return
-    # Make sure install directory exists.
+
     filename = os.path.join(prefix, filename)
+    print("-- Generating: {}".format(filename))
+
+     # Make sure install directory exists.
     filepath = os.path.dirname(filename)
     if not os.path.exists(filepath):
         os.makedirs(filepath)
@@ -242,14 +319,14 @@ set -euo pipefail
 readonly prefix=$(python -c 'import os;\
     print(os.path.realpath(os.path.join(\"'\"$0\"'\", os.pardir, os.pardir)))')
 
-for jar_file in %s; do
+for jar_file in {}; do
   if [ -f "$jar_file" ]; then
-    export CLASSPATH="${CLASSPATH:+$CLASSPATH:}$jar_file"
+    export CLASSPATH="${{CLASSPATH:+$CLASSPATH:}}$jar_file"
   fi
 done
 
-java %s "$@"
-""" % (strclasspath, main_class)
+java {} {} "$@"
+""".format(strclasspath, jvm_flags, main_class)
         launcher_file.write(content)
     os.chmod(filename, stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH |
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
@@ -271,20 +348,29 @@ def main(args):
     prefix = args.prefix
     list_only = args.list
 
+    # Transform install prefix if DESTDIR is set.
+    # https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+    destdir = os.environ.get('DESTDIR')
+    if destdir:
+        prefix = destdir + prefix
+
     # Because Bazel executes us in a strange working directory and not the
     # working directory of the user's shell, enforce that the install
     # location is an absolute path so that the user is not surprised.
     if not os.path.isabs(prefix):
         sys.stderr.write(
-            "Install prefix must be an absolute path (got %r)\n"
-            % prefix)
+            "Install prefix must be an absolute path (got {})\n"
+            .format(prefix))
         sys.exit(1)
+
+    # Match the output of the CMake install step.
+    print("Install the project...")
 
     # Execute the install actions.
     <<actions>>
 
     # Libraries paths may need to be updated in libraries and executables.
-    fix_rpaths()
+    fix_rpaths_and_strip()
 
 
 if __name__ == "__main__":

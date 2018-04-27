@@ -57,6 +57,8 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
   double cost = 0;
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
+  prog->EvalVisualizationCallbacks(xvec);
+
   auto tx = math::initializeAutoDiff(xvec);
   AutoDiffVecXd ty(1);
   AutoDiffVecXd this_x;
@@ -72,7 +74,7 @@ double EvaluateCosts(const std::vector<double>& x, std::vector<double>& grad,
       this_x(i) = tx(prog->FindDecisionVariableIndex(binding.variables()(i)));
     }
 
-    binding.constraint()->Eval(this_x, ty);
+    binding.evaluator()->Eval(this_x, ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
@@ -168,8 +170,8 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   const Constraint* c = wrapped->constraint;
-  const size_t num_constraints = c->num_constraints();
-  DRAKE_ASSERT(num_constraints >= m);
+  const int num_constraints = c->num_constraints();
+  DRAKE_ASSERT(num_constraints >= static_cast<int>(m));
   DRAKE_ASSERT(wrapped->active_constraints.size() == m);
 
   AutoDiffVecXd ty(num_constraints);
@@ -180,7 +182,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   const Eigen::VectorXd& lower_bound = c->lower_bound();
   const Eigen::VectorXd& upper_bound = c->upper_bound();
   size_t result_idx = 0;
-  for (size_t i = 0; i < num_constraints; i++) {
+  for (int i = 0; i < num_constraints; i++) {
     if (!wrapped->active_constraints.count(i)) {
       continue;
     }
@@ -210,7 +212,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
       v_index[i] =
           wrapped->prog->FindDecisionVariableIndex((*wrapped->vars)(i));
     }
-    for (size_t i = 0; i < num_constraints; i++) {
+    for (int i = 0; i < num_constraints; i++) {
       if (!wrapped->active_constraints.count(i)) {
         continue;
       }
@@ -239,18 +241,18 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
   // Version of the wrapped constraint which refers only to equality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_eq(binding.constraint().get(), &binding.variables(),
+  WrappedConstraint wrapped_eq(binding.evaluator().get(), &binding.variables(),
                                &prog);
 
   // Version of the wrapped constraint which refers only to inequality
   // constraints (if any), and will be used with
   // add_equality_mconstraint.
-  WrappedConstraint wrapped_in(binding.constraint().get(), &binding.variables(),
+  WrappedConstraint wrapped_in(binding.evaluator().get(), &binding.variables(),
                                &prog);
 
   bool is_pure_inequality = true;
-  const Eigen::VectorXd& lower_bound = binding.constraint()->lower_bound();
-  const Eigen::VectorXd& upper_bound = binding.constraint()->upper_bound();
+  const Eigen::VectorXd& lower_bound = binding.evaluator()->lower_bound();
+  const Eigen::VectorXd& upper_bound = binding.evaluator()->upper_bound();
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
   for (size_t i = 0; i < static_cast<size_t>(lower_bound.size()); i++) {
     if (lower_bound(i) == upper_bound(i)) {
@@ -297,14 +299,16 @@ void WrapConstraint(const MathematicalProgram& prog, const Binding<C>& binding,
 template <typename Binding>
 bool IsVectorOfConstraintsSatisfiedAtSolution(
     const MathematicalProgram& prog, const std::vector<Binding>& bindings,
+    const Eigen::Ref<const Eigen::VectorXd>& decision_variable_values,
     double tol) {
   for (const auto& binding : bindings) {
-    const Eigen::VectorXd constraint_val = prog.EvalBindingAtSolution(binding);
+    const Eigen::VectorXd constraint_val =
+        prog.EvalBinding(binding, decision_variable_values);
     const int num_constraint = constraint_val.rows();
-    if (((constraint_val - binding.constraint()->lower_bound()).array() <
+    if (((constraint_val - binding.evaluator()->lower_bound()).array() <
          -Eigen::ArrayXd::Constant(num_constraint, tol))
             .any() ||
-        ((constraint_val - binding.constraint()->upper_bound()).array() >
+        ((constraint_val - binding.evaluator()->upper_bound()).array() >
          Eigen::ArrayXd::Constant(num_constraint, tol))
             .any()) {
       return false;
@@ -336,7 +340,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
   for (auto const& binding : prog.bounding_box_constraints()) {
-    const auto& c = binding.constraint();
+    const auto& c = binding.evaluator();
     const auto& lower_bound = c->lower_bound();
     const auto& upper_bound = c->upper_bound();
 
@@ -397,6 +401,7 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   double minf = 0;
   const double kUnboundedTol = -1E30;
+  SolverResult solver_result(id());
   try {
     const nlopt::result nlopt_result = opt.optimize(x, minf);
     if (nlopt_result == nlopt::SUCCESS ||
@@ -405,11 +410,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         nlopt_result == nlopt::FTOL_REACHED ||
         nlopt_result == nlopt::MAXEVAL_REACHED ||
         nlopt_result == nlopt::MAXTIME_REACHED) {
-      Eigen::VectorXd sol(x.size());
-      for (int i = 0; i < nx; i++) {
-        sol(i) = x[i];
-      }
-      prog.SetDecisionVariableValues(sol);
+      solver_result.set_decision_variable_values(
+          Eigen::Map<Eigen::VectorXd>(x.data(), nx));
     }
     switch (nlopt_result) {
       case nlopt::SUCCESS:
@@ -423,9 +425,11 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         // TODO(hongkai.dai) Allow the user to set this tolerance.
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
-                                &all_constraints_satisfied](auto constraints) {
+                                &all_constraints_satisfied,
+                                &solver_result](auto constraints) {
           all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
-              prog, constraints, constraint_tol);
+              prog, constraints,
+              solver_result.decision_variable_values().value(), constraint_tol);
         };
         constraint_test(prog.generic_constraints());
         constraint_test(prog.bounding_box_constraints());
@@ -476,8 +480,8 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
     result = SolutionResult::kUnknownError;
   }
 
-  prog.SetOptimalCost(minf);
-  prog.SetSolverId(id());
+  solver_result.set_optimal_cost(minf);
+  prog.SetSolverResult(solver_result);
   return result;
 }
 

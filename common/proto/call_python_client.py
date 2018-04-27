@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function
 import argparse
 import os
@@ -244,9 +242,6 @@ def default_globals():
         locals())
 
 
-_FILENAME_DEFAULT = "/tmp/python_rpc"
-
-
 class CallPythonClient(object):
     """Provides a client to receive Python commands.
 
@@ -255,9 +250,12 @@ class CallPythonClient(object):
     """
     def __init__(self, filename=None, stop_on_error=True,
                  scope_globals=None, scope_locals=None,
-                 threaded=True, loop=False):
+                 threaded=True, wait=False):
         if filename is None:
-            self.filename = _FILENAME_DEFAULT
+            # TODO(jamiesnape): Implement and use a
+            # drake.common.GetRpcPipeTempDirectory function.
+            temp_directory = os.environ.get("TEST_TMPDIR", "/tmp")
+            self.filename = os.path.join(temp_directory, "python_rpc")
         else:
             self.filename = filename
         # Scope. Give it access to everything here.
@@ -277,11 +275,16 @@ class CallPythonClient(object):
 
         self._stop_on_error = stop_on_error
         self._threaded = threaded
-        if not _is_fifo(self.filename):
-            if loop:
-                sys.stderr.write("Disabling looping for non-FIFO files.\n")
-                loop = False
-        self._loop = loop
+
+        self._loop = False
+        self._wait = False
+        if wait:
+            if _is_fifo(self.filename):
+                self._loop = True
+                print("Looping for FIFO file (wait=True).")
+            else:
+                self._wait = True
+                print("Waiting after processing non-FIFO file (wait=True).")
 
         # Variables indexed by GUID.
         self._client_vars = {}
@@ -390,6 +393,9 @@ class CallPythonClient(object):
                 "ERROR: Invalid termination. " +
                 "'execution_check.finish' called insufficient number of " +
                 "times: {}\n".format(execution_check.count))
+        if self._wait and not self._had_error:
+            wait_func = self.scope_globals["wait"]
+            wait_func()
         return not self._had_error
 
     def _handle_messages_threaded(self):
@@ -542,10 +548,10 @@ def main(argv):
     _ensure_sigint_handler()
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--no_loop", action='store_true',
-        help="Do not loop the end for user interaction. With a FIFO pipe, " +
-             "this will end session after C++ program closes. " +
-             "Looping cannot be done with non-FIFO files.")
+        "--no_wait", action='store_true',
+        help="Close client after messages are processed. " +
+             "For FIFO, this means the client will close after the C++ " +
+             "binary is executed once.")
     parser.add_argument(
         "--no_threading", action='store_true',
         help="Disable threaded dispatch.")
@@ -557,7 +563,7 @@ def main(argv):
 
     client = CallPythonClient(
         args.file, stop_on_error=args.stop_on_error,
-        threaded=not args.no_threading, loop=not args.no_loop)
+        threaded=not args.no_threading, wait=not args.no_wait)
     good = client.run()
     return good
 

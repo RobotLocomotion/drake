@@ -12,7 +12,6 @@ load(
 )
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "HAS_MOVED_6996")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,7 +35,8 @@ drake_cc_library(
     hdrs = ["call_matlab.h"],
     deps = [
         ":matlab_rpc",
-        "//drake/common:essential",
+        ":rpc_pipe_temp_directory",
+        "//common:essential",
     ],
 )
 
@@ -55,7 +55,8 @@ drake_cc_library(
     hdrs = ["call_python.h"],
     deps = [
         ":call_matlab",
-        "//drake/common:copyable_unique_ptr",
+        ":rpc_pipe_temp_directory",
+        "//common:copyable_unique_ptr",
     ],
 )
 
@@ -77,7 +78,7 @@ py_binary(
         # TODO(jwnimmer-tri) We should use a project-wide solution so that
         # Drake's import paths are consistent without having to use weird
         # spellings such as this one.
-        "@drake//common/proto:call_python_client" if HAS_MOVED_6996 else ":call_python_client",  # noqa
+        "@drake//common/proto:call_python_client",
     ],
 )
 
@@ -91,6 +92,17 @@ cc_library(
     hdrs = [_UBSAN_H],
     include_prefix = "drake/common/proto",
     strip_include_prefix = "/third_party/com_github_google_protobuf",
+)
+
+drake_cc_library(
+    name = "rpc_pipe_temp_directory",
+    srcs = ["rpc_pipe_temp_directory.cc"],
+    hdrs = ["rpc_pipe_temp_directory.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "@spruce",
+    ],
 )
 
 install(
@@ -131,9 +143,6 @@ sh_test(
     # TODO(eric.cousineau): Find the source of (more) sporadic CI failures, but
     # after refactoring the script into Python.
     flaky = 1,
-    # Certain versions of Mac don't like this script using `ps`. For this
-    # reason, make the test run locally.
-    local = 1,
 )
 
 drake_cc_googletest(
@@ -143,7 +152,14 @@ drake_cc_googletest(
     ],
     deps = [
         ":protobuf",
-        "//drake/common",
+        "//common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rpc_pipe_temp_directory_test",
+    deps = [
+        ":rpc_pipe_temp_directory",
     ],
 )
 

@@ -142,15 +142,7 @@ States: planar position (state indices 0 and 1) and orientation (state
         index 2), and planar linear velocity (state indices 3 and 4) and
         scalar angular velocity (state index 5) in units of m, radians,
         m/s, and rad/s, respectively. Orientation is measured counter-
-        clockwise with respect to the x-axis. For simulations using the
-        piecewise DAE formulation, one abstract state variable
-        (of type Rod2D::Mode) is used to identify which dynamic mode
-        the system is in (e.g., ballistic, contacting at one point and
-        sliding, etc.) and one abstract state variable (of type int) is used
-        to determine which endpoint(s) of the rod contact the halfspace
-        (k=-1 indicates the left endpoint Rl, k=+1 indicates the right
-        endpoint Rr, and k=0 indicates that both endpoints of the rod are
-        contacting the halfspace).
+        clockwise with respect to the x-axis. 
 
 Outputs: Output Port 0 corresponds to the state vector; Output Port 1
          corresponds to a PoseVector giving the 3D pose of the rod in the world
@@ -177,33 +169,6 @@ class Rod2D : public systems::LeafSystem<T> {
     /// For simulating the system using compliant contact, Coulomb friction,
     /// and ordinary differential equations.
     kCompliant
-  };
-
-  /// Possible dynamic modes for the 2D rod.
-  enum Mode {
-    /// Mode is invalid.
-        kInvalid,
-
-    /// Rod is currently undergoing ballistic motion.
-        kBallisticMotion,
-
-    /// Rod is sliding while undergoing non-impacting contact at one contact
-    /// point (a rod endpoint); the other rod endpoint is not in contact.
-        kSlidingSingleContact,
-
-    /// Rod is sticking while undergoing non-impacting contact at one contact
-    /// point (a rod endpoint); the other rod endpoint is not in contact.
-        kStickingSingleContact,
-
-    /// Rod is sliding at two contact points without impact. It should be
-    /// evident that the tangent velocity at the two endpoints of the rod must
-    /// be equal.
-        kSlidingTwoContacts,
-
-    /// Rod is sticking at two contact points without impact.  It should be
-    /// evident that the tangent velocity at two endpoints of the rod must be
-    /// both zero or both nonzero.
-        kStickingTwoContacts
   };
 
   /// Constructor for the 2D rod system using the piecewise DAE (differential
@@ -295,11 +260,6 @@ class Rod2D : public systems::LeafSystem<T> {
     return context.get_state().
         get_continuous_state().get_generalized_velocity().CopyToVector();
   }
-
-  /// Models impact using an inelastic impact model with friction.
-  /// @p new_state is set to the output of the impact model on return.
-  void HandleImpact(const systems::Context<T>& context,
-                    systems::State<T>* new_state) const;
 
   /// Gets the acceleration (with respect to the positive y-axis) due to
   /// gravity (i.e., this number should generally be negative).
@@ -432,53 +392,6 @@ class Rod2D : public systems::LeafSystem<T> {
   /// multiple active contact points. Only valid for simulation type kCompliant.
   Vector3<T> CalcCompliantContactForces(
       const systems::Context<T>& context) const;
-
-  /// The witness function for signed distance between the rod and the
-  /// half-space. The witness function will return positive values when the
-  /// rod is separated from the halfspace, negative values when the rod is
-  /// interpenetrating the halfspace, and zero values when the rod is "kissing"
-  /// the halfspace.
-  T CalcSignedDistance(const systems::Context<T>& context) const;
-
-  /// The witness function for the signed distance between one endpoint of the
-  /// rod (not already touching the half-space) and the half-space for the case
-  /// when the rod is contacting the ground with a single point of contact. The
-  /// witness function will return positive values when the other rod endpoint
-  /// is above the halfspace, negative values when the other rod endpoint is
-  /// strictly within the halfspace, and zero when the other rod endpoint is
-  /// "kissing" the halfspace.
-  /// @pre One endpoint of the rod is in contact with the ground, indicated by
-  ///      the mode variable being set appropriately. Assertion failure is
-  ///      triggered if this is not the case.
-  T CalcEndpointDistance(const systems::Context<T>& context) const;
-
-  /// The witness function that determines whether the rod should separate from
-  /// the halfspace. The witness function will return a negative value when
-  /// the rod should not separate and a positive value when it should begin
-  /// to separate from the halfspace.
-  /// @pre It is assumed that the signed distance between the point of contact
-  ///      and the halfspace will be approximately zero and that the vertical
-  ///      velocity at the point of contact will be approximately zero.
-  ///      Assertion failure is triggered if the rod is in a ballistic mode.
-  T CalcNormalAccelWithoutContactForces(
-      const systems::Context<T>& context) const;
-
-  /// Evaluates the witness function for sliding direction changes. The witness
-  /// function will bracket a zero crossing when the direction of sliding
-  /// changes over the interval; for example, when the rod is sliding to the
-  /// right, CalcSlidingDot() will return a positive value, which evolves into
-  /// a negative value (first crossing zero), as the rod begins sliding to the
-  /// left (assuming that the rod remains in contact with the halfspace over
-  /// the interval).
-  T CalcSlidingDot(const systems::Context<T>& context) const;
-
-  /// Evaluates the witness function for determining whether the rod in sticking
-  /// frictional contact should transition to sliding contact. When the rod
-  /// is in sticking contact at the beginning of an interval, the witness
-  /// function will return a non-negative value. If the witness function returns
-  /// a negative value at the end of an interval, a transition from sticking
-  /// to sliding has been indicated.
-  T CalcStickingFrictionForceSlack(const systems::Context<T>& context) const;
 
   /// Gets the number of witness functions for the system active in the system
   /// for a given state (using @p context).
@@ -613,28 +526,6 @@ class Rod2D : public systems::LeafSystem<T> {
                                   const systems::Context<T>& context,
                                   systems::ContinuousState<T>* derivatives)
                                     const;
-  void CalcAccelerationsBallistic(const systems::Context<T>& context,
-                                  systems::ContinuousState<T>* derivatives)
-                                    const;
-  void CalcAccelerationsTwoContact(const systems::Context<T>& context,
-                                   systems::ContinuousState<T>* derivatives)
-                                     const;
-  void CalcAccelerationsOneContactNoSliding(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const;
-  void CalcAccelerationsOneContactSliding(
-      const systems::Context<T>& context,
-      systems::ContinuousState<T>* derivatives) const;
-  void SetAccelerations(const systems::Context<T>& context,
-                        const T& fN, const T& fF,
-                        const Vector2<T>& c,
-                        systems::VectorBase<T>* const f) const;
-  void SetAccelerations(const systems::Context<T>& context,
-                        const Vector2<T>& fN, const Vector2<T>& fF,
-                        const Vector2<T>& c1, const Vector2<T>& c2,
-                        systems::VectorBase<T>* const f) const;
-  Vector2<T> CalcStickingContactForces(
-      const systems::Context<T>& context) const;
 
   // 2D cross product returns a scalar. This is the z component of the 3D
   // cross product [ax ay 0] × [bx by 0]; the x,y components are zero.

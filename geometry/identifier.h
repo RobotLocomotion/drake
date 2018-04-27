@@ -215,7 +215,7 @@ namespace std {
 template <typename Tag>
 struct hash<drake::geometry::Identifier<Tag>> {
   size_t operator()(const drake::geometry::Identifier<Tag>& id) const {
-    return hash<int64_t>()(id.get_value());
+    return std::hash<int64_t>()(id.get_value());
   }
 };
 

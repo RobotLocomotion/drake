@@ -10,7 +10,7 @@
 class BodyMotionData {
  public:  // TODO(tkoolen): would be better to make this private
   int body_or_frame_id;
-  PiecewisePolynomial<double> trajectory;
+  drake::trajectories::PiecewisePolynomial<double> trajectory;
   std::vector<bool> toe_off_allowed;
   std::vector<bool> in_floating_base_nullspace;
   std::vector<bool> control_pose_when_in_contact;
@@ -36,9 +36,9 @@ class BodyMotionData {
 
   double getExponentialMapProportionalGainMultiplier() const;
 
-  const PiecewisePolynomial<double>& getTrajectory() const;
+  const drake::trajectories::PiecewisePolynomial<double>& getTrajectory() const;
 
-  PiecewisePolynomial<double>& getTrajectory();
+  drake::trajectories::PiecewisePolynomial<double>& getTrajectory();
 
   const Eigen::Isometry3d& getTransformTaskToWorld() const;
 

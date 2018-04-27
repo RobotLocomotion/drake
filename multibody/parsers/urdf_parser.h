@@ -62,6 +62,12 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
  * `package://` should instead use
  * AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().
  *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
+ *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
  * A new model instance is created based on this URDF text and added to
@@ -75,6 +81,10 @@ std::shared_ptr<RigidBodyFrame<double>> MakeRigidBodyFrameFromUrdfNode(
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
+
+ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
+    const std::string& urdf_string, bool do_compile,
+    RigidBodyTree<double>* tree);
 
 DRAKE_DEPRECATED(
   "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
@@ -95,6 +105,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * modeling resources using `package://`. If the model in the URDF does not use
  * `package://`, the URDF could instead be loaded using
  * AddModelInstanceFromUrdfStringWithRpyJointToWorld().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -117,6 +133,11 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable
+AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
+    const std::string& urdf_string, const PackageMap& package_map,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
@@ -135,6 +156,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * reference modeling resources like mesh files. URDF models that contain
  * `package://` should instead use
  * AddModelInstanceFromUrdfStringSearchingInRosPackages().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -160,6 +187,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstanceFromUrdfString(
+    const std::string& urdf_string, const std::string& root_dir,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * This method is the same as AddModelInstanceFromUrdfString() except it has an
  * additional parameter called @p package_map. Parameter @p package_map
@@ -173,6 +206,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * modeling resources using `package://`. If the model in the URDF does not use
  * `package://`, the URDF could instead be loaded using
  * AddModelInstanceFromUrdfString().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] urdf_string The URDF string of the model. This is the actual
  * URDF text (i.e., it is not the name of a file that contains the URDF text).
@@ -205,6 +244,13 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
+    const std::string& urdf_string, const PackageMap& package_map,
+    const std::string& root_dir,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
@@ -228,6 +274,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
+ *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  *
  * @param[out] tree The `RigidBodyTree` to which to add the model instance.
@@ -238,6 +290,10 @@ ModelInstanceIdTable AddModelInstanceFromUrdfString(
  */
 ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const std::string& urdf_filename, RigidBodyTree<double>* tree);
+
+ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
+    const std::string& urdf_filename, bool do_compile,
+    RigidBodyTree<double>* tree);
 
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -258,6 +314,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
+ *
  * @param[in] urdf_filename The name of the file containing a URDF
  * description of the model. An instance of this model will be added to
  * @p tree.
@@ -276,6 +338,11 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     RigidBodyTree<double>* tree);
+
+ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
+    const std::string& urdf_filename,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    bool do_compile, RigidBodyTree<double>* tree);
 
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileToWorld().")
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
@@ -299,6 +366,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * meet these requirements should instead use
  * AddModelInstanceFromUrdfFileSearchingInRosPackages().
  *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
+ *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  * A new instance of this model is created and added to @p tree.
  *
@@ -321,6 +394,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
 
+ModelInstanceIdTable AddModelInstanceFromUrdfFile(
+    const std::string& urdf_filename,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
+
 /**
  * This method is the same as AddModelInstanceFromUrdfFile() except it has an
  * additional parameter called @p package_map. Parameter @p package_map
@@ -334,6 +413,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFile(
  * modeling resources using `package://`. If the model in the URDF does not use
  * `package://`, the URDF could instead be loaded using
  * AddModelInstanceFromUrdfFile().
+ *
+ * There are two versions: one in which the tree is automatically "compiled"
+ * after a successful parse and one in which compilation depends on an input
+ * parameter, `do_compile`. If `do_compile` is false, it is the responsibility
+ * of the caller to ensure RigdBodyTree::compile() is invoked appropriately
+ * subsequent to the successful parse.
  *
  * @param[in] urdf_filename The name of the file containing the URDF model.
  * An instance of this model will be added to @p tree.
@@ -359,6 +444,12 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     RigidBodyTree<double>* tree);
+
+ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
+    const std::string& urdf_filename, const PackageMap& package_map,
+    const drake::multibody::joints::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
+    bool do_compile, RigidBodyTree<double>* tree);
 
 DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(

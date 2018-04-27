@@ -48,6 +48,9 @@ struct PlannerConfiguration {
   int num_tables{0};
   /// Gripping force to apply (in Newtons).
   double grip_force{40.};
+  // The distance from the end effector link to the grasp frame's
+  // origin (position between the fingertips of the gripper).
+  double grasp_frame_translational_offset{0.19};
 
   /// Returns the absolute path for our @p drake_relative_model_path.
   std::string absolute_model_path() const {

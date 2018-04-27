@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/common/symbolic.h"
 
@@ -12,11 +13,12 @@ namespace drake {
 namespace symbolic {
 
 using std::endl;
+using std::initializer_list;
+using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
-using std::initializer_list;
 
 namespace {
 void throw_if_dummy(const Variable& var) {
@@ -35,19 +37,29 @@ void throw_if_nan(const double v) {
     throw runtime_error(oss.str());
   }
 }
-}  // anonymous namespace
 
-Environment::Environment(const initializer_list<value_type> init) : map_(init) {
-  for (const auto& p : init) {
-    throw_if_dummy(p.first);
-    throw_if_nan(p.second);
+// Given a list of variables, @p vars, builds an Environment::map which maps a
+// Variable to its double value. All values are set to 0.0.
+Environment::map BuildMap(const initializer_list<Environment::key_type> vars) {
+  Environment::map m;
+  for (const Environment::key_type& var : vars) {
+    m.emplace(var, 0.0);
   }
+  return m;
 }
 
-Environment::Environment(const initializer_list<key_type> vars) {
-  for (const auto& var : vars) {
-    throw_if_dummy(var);
-    map_.emplace(var, 0.0);
+}  // anonymous namespace
+
+Environment::Environment(const initializer_list<value_type> init)
+    : Environment{map(init)} {}
+
+Environment::Environment(const initializer_list<key_type> vars)
+    : Environment{BuildMap(vars)} {}
+
+Environment::Environment(map m) : map_{move(m)} {
+  for (const auto& p : map_) {
+    throw_if_dummy(p.first);
+    throw_if_nan(p.second);
   }
 }
 

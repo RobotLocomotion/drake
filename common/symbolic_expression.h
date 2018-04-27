@@ -276,6 +276,13 @@ class Expression {
    */
   Expression Differentiate(const Variable& x) const;
 
+  /** Let `f` be this Expression, computes a row vector of derivatives,
+   * `[∂f/∂vars(0), ... , ∂f/∂vars(n-1)]` with respect to the variables
+   * @p vars.
+   */
+  RowVectorX<Expression> Jacobian(
+      const Eigen::Ref<const VectorX<Variable>>& vars) const;
+
   /** Returns string representation of Expression. */
   std::string to_string() const;
 
@@ -309,6 +316,8 @@ class Expression {
   Expression& operator++();
   /** Provides postfix increment operator (i.e. x++). */
   Expression operator++(int);
+  /** Provides unary plus operator. */
+  friend Expression operator+(const Expression& e);
 
   friend Expression operator-(Expression lhs, const Expression& rhs);
   // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
@@ -470,6 +479,7 @@ class Expression {
 Expression operator+(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator+=(Expression& lhs, const Expression& rhs);
+Expression operator+(const Expression& e);
 Expression operator-(Expression lhs, const Expression& rhs);
 // NOLINTNEXTLINE(runtime/references) per C++ standard signature.
 Expression& operator-=(Expression& lhs, const Expression& rhs);
@@ -626,6 +636,21 @@ get_base_to_exponent_map_in_multiplication(const Expression& e);
  */
 const std::string& get_uninterpreted_function_name(const Expression& e);
 
+/** Returns the conditional formula in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Formula& get_conditional_formula(const Expression& e);
+
+/** Returns the 'then' expression in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Expression& get_then_expression(const Expression& e);
+
+/** Returns the 'else' expression in the if-then-else expression @p e.
+ * @pre @p e is an if-then-else expression.
+ */
+const Expression& get_else_expression(const Expression& e);
+
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if<
@@ -651,30 +676,6 @@ typename std::enable_if<
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator+=(Expression& lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, const Variable& rhs);
-Expression operator+(Expression lhs, const Variable& rhs);
-Expression operator+(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator-=(Expression& lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, const Variable& rhs);
-Expression operator-(Expression lhs, const Variable& rhs);
-Expression operator-(const Variable& lhs, const Expression& rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator*=(Expression& lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, const Variable& rhs);
-Expression operator*(Expression lhs, const Variable& rhs);
-Expression operator*(const Variable& lhs, Expression rhs);
-
-// NOLINTNEXTLINE(runtime/references) per C++ standard signature.
-Expression& operator/=(Expression& lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Variable& rhs);
-Expression operator/(Expression lhs, const Variable& rhs);
-Expression operator/(const Variable& lhs, const Expression& rhs);
 
 Expression operator+(const Variable& var);
 Expression operator-(const Variable& var);
@@ -897,6 +898,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Returns the distinct variables in the matrix of expressions.
+Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
 
 /// Checks if two Eigen::Matrix<Expression> @p m1 and @p m2 are structurally
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally

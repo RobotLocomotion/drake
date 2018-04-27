@@ -20,9 +20,10 @@ using std::normal_distribution;
 using std::uniform_int_distribution;
 
 namespace drake {
+namespace trajectories {
 namespace {
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testIntegralAndDerivative() {
   int num_coefficients = 5;
   int num_segments = 3;
@@ -34,15 +35,15 @@ void testIntegralAndDerivative() {
 
   default_random_engine generator;
   vector<double> segment_times =
-      PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+      PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
   PiecewisePolynomialType piecewise =
       test::MakeRandomPiecewisePolynomial<CoefficientType>(
           rows, cols, num_coefficients, segment_times);
 
   // derivative(0) should be same as original piecewise.
   EXPECT_TRUE(
-      CompareMatrices(piecewise.value(piecewise.getStartTime()),
-                      piecewise.derivative(0).value(piecewise.getStartTime()),
+      CompareMatrices(piecewise.value(piecewise.start_time()),
+                      piecewise.derivative(0).value(piecewise.start_time()),
                       1e-10, MatrixCompareType::absolute));
 
   // differentiate integral, get original back
@@ -54,19 +55,19 @@ void testIntegralAndDerivative() {
       PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(),
                                                          piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
-  auto value_at_t0 = integral.value(piecewise.getStartTime());
+  auto value_at_t0 = integral.value(piecewise.start_time());
   EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10,
                               MatrixCompareType::absolute));
 
   // check continuity at knot points
-  for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
+  for (int i = 0; i < piecewise.get_number_of_segments() - 1; ++i) {
     EXPECT_EQ(integral.getPolynomial(i)
-              .EvaluateUnivariate(integral.getDuration(i)),
+                  .EvaluateUnivariate(integral.duration(i)),
               integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
@@ -83,7 +84,8 @@ void testBasicFunctionality() {
     int cols = int_distribution(generator);
 
     vector<double> segment_times =
-        PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments,
+                                                        generator);
     PiecewisePolynomialType piecewise1 =
         test::MakeRandomPiecewisePolynomial<CoefficientType>(
             rows, cols, num_coefficients, segment_times);
@@ -104,8 +106,8 @@ void testBasicFunctionality() {
     piecewise1_shifted.shiftRight(shift);
     PiecewisePolynomialType product = piecewise1 * piecewise2;
 
-    uniform_real_distribution<double> uniform(piecewise1.getStartTime(),
-                                              piecewise1.getEndTime());
+    uniform_real_distribution<double> uniform(piecewise1.start_time(),
+                                              piecewise1.end_time());
     double t = uniform(generator);
 
     EXPECT_TRUE(CompareMatrices(sum.value(t),
@@ -135,31 +137,35 @@ void testBasicFunctionality() {
   }
 }
 
-template <typename CoefficientType>
+template<typename CoefficientType>
 void testValueOutsideOfRange() {
   typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
 
   default_random_engine generator;
   vector<double> segment_times =
-      PiecewiseFunction::randomSegmentTimes(6, generator);
+      PiecewiseTrajectory<double>::RandomSegmentTimes(6, generator);
   PiecewisePolynomialType piecewise =
       test::MakeRandomPiecewisePolynomial<CoefficientType>(
           3, 4, 5, segment_times);
 
-  EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getStartTime()),
-                              piecewise.value(piecewise.getStartTime() - 1.0),
+  EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.start_time()),
+                              piecewise.value(piecewise.start_time() - 1.0),
                               1e-10, MatrixCompareType::absolute));
 
-  EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getEndTime()),
-                              piecewise.value(piecewise.getEndTime() + 1.0),
+  EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.end_time()),
+                              piecewise.value(piecewise.end_time() + 1.0),
                               1e-10, MatrixCompareType::absolute));
 }
 
-GTEST_TEST(testPiecewisePolynomial, AllTests) {
-  testIntegralAndDerivative<double>();
-  testBasicFunctionality<double>();
-  testValueOutsideOfRange<double>();
+GTEST_TEST(testPiecewisePolynomial, AllTests
+) {
+testIntegralAndDerivative<double>();
+
+testBasicFunctionality<double>();
+
+testValueOutsideOfRange<double>();
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

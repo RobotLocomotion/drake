@@ -24,9 +24,9 @@ action is required by a developer.
 However, you may still invoke code style checks directly if desired, as
 follows::
 
-  cd /path/to/drake-distro
-  bazel test --config lint //...               # Only run style checks; don't build or test anything else.
-  bazel test --config lint //drake/common/...  # Check common/ and its child subdirectories.
+  cd /path/to/drake
+  bazel test --config lint //...         # Only run style checks; don't build or test anything else.
+  bazel test --config lint //common/...  # Check common/ and its child subdirectories.
 
 User manuals for the style-checking tools are as follows:
 

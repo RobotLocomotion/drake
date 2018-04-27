@@ -13,7 +13,7 @@ drake_cc_library(
         "drake_lcm_message_handler_interface.h",
     ],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -38,7 +38,7 @@ drake_cc_library(
     ],
     deps = [
         ":interface",
-        "//drake/common:essential",
+        "//common:essential",
         "@lcm",
     ],
 )
@@ -53,7 +53,7 @@ drake_cc_library(
     ],
     deps = [
         ":interface",
-        "//drake/common:essential",
+        "//common:essential",
         "@lcm",
     ],
 )
@@ -64,8 +64,8 @@ drake_cc_library(
     srcs = ["lcmt_drake_signal_utils.cc"],
     hdrs = ["lcmt_drake_signal_utils.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/lcmtypes:drake_signal",
+        "//common:essential",
+        "//lcmtypes:drake_signal",
     ],
 )
 
@@ -75,12 +75,21 @@ drake_cc_library(
         "translator_base.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:unused",
+        "//common:essential",
+        "//common:unused",
     ],
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "drake_lcm_interface_test",
+    deps = [
+        ":lcmt_drake_signal_utils",
+        ":mock",
+        "//common/test_utilities",
+    ],
+)
 
 drake_cc_googletest(
     name = "drake_lcm_test",
@@ -119,8 +128,8 @@ drake_cc_googletest(
 
 drake_py_test(
     name = "import_lcm_test",
-    srcs = ["test/import_lcm_test.py"],
-    main = "test/import_lcm_test.py",
+    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
+    allow_import_unittest = True,
     deps = ["@lcm//:lcm-python"],
 )
 

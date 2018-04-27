@@ -23,6 +23,7 @@ namespace pick_and_place {
 namespace {
 
 using manipulation::util::WorldSimTreeBuilder;
+using trajectories::PiecewisePolynomial;
 
 const char kGraspFrameName[] = "grasp_frame";
 
@@ -299,7 +300,8 @@ std::unique_ptr<RigidBodyTree<double>> BuildTree(
     // The grasp frame is located between the fingertips of the gripper, which
     // puts it grasp_frame_translational_offset from the origin of the
     // end-effector link.
-    const double grasp_frame_translational_offset{0.19};
+    const double grasp_frame_translational_offset =
+        configuration.grasp_frame_translational_offset;
     // Define the pose of the grasp frame (G) relative to the end effector (E).
     Isometry3<double> X_EG{Isometry3<double>::Identity()};
     X_EG.rotate(Eigen::AngleAxisd(grasp_frame_angular_offset,
@@ -824,7 +826,7 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
         std::vector<VectorX<double>> q;
         PiecewisePolynomial<double>& q_traj =
             interpolation_result_map_->at(state_);
-        const std::vector<double>& times{q_traj.getSegmentTimes()};
+        const std::vector<double>& times{q_traj.get_segment_times()};
         q.reserve(times.size());
         for (double t : times) {
           q.push_back(q_traj.value(t));

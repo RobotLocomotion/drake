@@ -15,6 +15,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // We use this tolerance to match the interpolated positions given by the path
 // length interpolator wrappers.
@@ -530,6 +531,7 @@ GTEST_TEST(RNDFCreatePChipBasedSplineTest, CaseExceptions) {
   EXPECT_THROW(CreatePChipBasedSpline(points), std::runtime_error);
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

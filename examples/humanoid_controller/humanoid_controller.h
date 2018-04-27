@@ -71,12 +71,12 @@ class HumanoidController : public systems::Diagram<double> {
             "ROBOT_COMMAND", lcm));
 
     // lcm -> rs
-    builder.Connect(robot_state_subscriber_->get_output_port(0),
+    builder.Connect(robot_state_subscriber_->get_output_port(),
                     msg_to_humanoid_status->get_input_port());
     // rs + plan -> qp_input
     builder.Connect(msg_to_humanoid_status->get_output_port(),
                     plan_eval_->get_input_port_kinematic_state());
-    builder.Connect(plan_subscriber->get_output_port(0),
+    builder.Connect(plan_subscriber->get_output_port(),
                     plan_eval_->get_input_port_manip_plan_msg());
     // rs + qp_input -> qp_output
     builder.Connect(msg_to_humanoid_status->get_output_port(),
@@ -88,7 +88,7 @@ class HumanoidController : public systems::Diagram<double> {
                     joint_con->get_input_port_qp_output());
     // atlas_command_t -> lcm
     builder.Connect(joint_con->get_output_port_atlas_command(),
-                    atlas_command_publisher->get_input_port(0));
+                    atlas_command_publisher->get_input_port());
 
     builder.BuildInto(this);
   }

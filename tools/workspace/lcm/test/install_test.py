@@ -14,7 +14,3 @@ class TestCommonInstall(unittest.TestCase):
         self.assertEqual(None, result)
         executable_folder = os.path.join(tmp_folder, "bin")
         subprocess.check_call([os.path.join(executable_folder, "lcm-gen")])
-
-
-if __name__ == '__main__':
-    unittest.main()

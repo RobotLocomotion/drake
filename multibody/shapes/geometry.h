@@ -32,7 +32,6 @@ const double MIN_RADIUS = 1e-7;
 class Geometry {
  public:
   Geometry();
-  Geometry(const Geometry& other);
 
   virtual ~Geometry() {}
 
@@ -76,6 +75,11 @@ class Geometry {
 
  protected:
   explicit Geometry(Shape shape);
+
+  // Provide only a copy constructor, only for use by our subclasses' clone().
+  Geometry(const Geometry&) = default;
+  void operator=(const Geometry&) = delete;
+
   void getBoundingBoxPoints(
       double x_half_width, double y_half_width, double z_half_width,
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
@@ -85,7 +89,7 @@ class Geometry {
   static const int NUM_BBOX_POINTS;
 };
 
-class Sphere : public Geometry {
+class Sphere final : public Geometry {
  public:
   explicit Sphere(double radius);
   virtual ~Sphere() {}
@@ -104,9 +108,14 @@ class Sphere : public Geometry {
 
   double radius;
   static const int NUM_POINTS;
+
+ private:
+  // Allow only the copy constructor, only for our clone().
+  Sphere(const Sphere&) = default;
+  void operator=(const Sphere&) = delete;
 };
 
-class Box : public Geometry {
+class Box final : public Geometry {
  public:
   explicit Box(const Eigen::Vector3d& size);
   virtual ~Box() {}
@@ -129,6 +138,11 @@ class Box : public Geometry {
   friend std::ostream& operator<<(std::ostream&, const Box&);
 
   Eigen::Vector3d size;
+
+ private:
+  // Allow only the copy constructor, only for our clone().
+  Box(const Box&) = default;
+  void operator=(const Box&) = delete;
 };
 
 class Cylinder : public Geometry {
@@ -148,6 +162,11 @@ class Cylinder : public Geometry {
 
   double radius;
   double length;
+
+ private:
+  // Allow only the copy constructor, only for our clone().
+  Cylinder(const Cylinder&) = default;
+  void operator=(const Cylinder&) = delete;
 };
 
 class Capsule : public Geometry {
@@ -169,6 +188,11 @@ class Capsule : public Geometry {
   double length;
 
   static const int NUM_POINTS;
+
+ private:
+  // Allow only the copy constructor, only for our clone().
+  Capsule(const Capsule&) = default;
+  void operator=(const Capsule&) = delete;
 };
 
 class Mesh : public Geometry {
@@ -238,6 +262,10 @@ class Mesh : public Geometry {
       TriangulatePolicy triangulate = TriangulatePolicy::kFailOnNonTri) const;
 
  private:
+  // Allow only the copy constructor, only for our clone().
+  Mesh(const Mesh&) = default;
+  void operator=(const Mesh&) = delete;
+
   // Lower limit on generated triangle area (as documented).
   static constexpr double kMinArea = 1e-10;
 
@@ -280,6 +308,11 @@ class MeshPoints : public Geometry {
   friend std::ostream& operator<<(std::ostream&, const MeshPoints&);
 
   Eigen::Matrix3Xd points;
+
+ private:
+  // Allow only the copy constructor, only for our clone().
+  MeshPoints(const MeshPoints&) = default;
+  void operator=(const MeshPoints&) = delete;
 };
 
 }  // namespace DrakeShapes

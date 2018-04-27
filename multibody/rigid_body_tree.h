@@ -32,7 +32,6 @@
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
-#define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
@@ -138,6 +137,16 @@ class RigidBodyTree {
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
   int get_number_of_model_instances() const;
 
+
+  /**
+   * Adds a frame.
+   *
+   * @param frame Frame to be added.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
+   */
+  // TODO(eric.cousineau): Rename to `AddFrame`.
   void addFrame(std::shared_ptr<RigidBodyFrame<T>> frame);
 
   /**
@@ -511,9 +520,11 @@ class RigidBodyTree {
   /// @returns a `nv` dimensional vector, where `nv` is the dimension of the
   ///      generalized velocities.
   /// @sa transformVelocityToQDot()
-  static drake::VectorX<T> transformQDotToVelocity(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& qdot);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformQDotToVelocity(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& qdot);
 
   /// Converts a vector of generalized velocities (v) to the time
   /// derivative of generalized coordinates (qdot).
@@ -524,9 +535,11 @@ class RigidBodyTree {
   /// @retval qdot a `nq` dimensional vector, where `nq` is the dimension of the
   ///      generalized coordinates.
   /// @sa transformQDotToVelocity()
-  static drake::VectorX<T> transformVelocityToQDot(
-      const KinematicsCache<T>& cache,
-      const drake::VectorX<T>& v);
+  template <typename Derived>
+  static drake::VectorX<typename Derived::Scalar>
+  transformVelocityToQDot(
+      const KinematicsCache<typename Derived::Scalar>& cache,
+      const Eigen::MatrixBase<Derived>& v);
 
   /**
    * Converts a matrix B, which transforms generalized velocities (v) to an
@@ -793,7 +806,15 @@ class RigidBodyTree {
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
       int from_body_or_frame_ind, int to_body_or_frame_ind,
-      bool in_terms_of_qdot) const;
+      bool in_terms_of_qdot) const {
+    using PointScalar = typename std::conditional<
+      std::is_same<typename DerivedPoints::Scalar, double>::value,
+      double, drake::AutoDiffXd>::type;
+    return DoTransformPointsJacobian<Scalar, PointScalar>(
+        cache,
+        points.template cast<PointScalar>().eval(),
+        from_body_or_frame_ind, to_body_or_frame_ind, in_terms_of_qdot);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, drake::kQuaternionSize, Eigen::Dynamic>
@@ -819,7 +840,10 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache,
       const Eigen::MatrixBase<DerivedPoints>& points,
-      int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+      int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return DoTransformPointsJacobianDotTimesV<Scalar>(
+        cache, points, from_body_or_frame_ind, to_body_or_frame_ind);
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(
@@ -903,7 +927,7 @@ class RigidBodyTree {
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
-    for (const auto& body_ptr : bodies) {
+    for (const auto& body_ptr : bodies_) {
       std::vector<std::string> names_of_groups_to_delete;
       for (const auto& group : body_ptr->get_group_to_collision_ids_map()) {
         const std::string& group_name = group.first;
@@ -922,11 +946,33 @@ class RigidBodyTree {
     }
   }
 
+  /**
+   * Updates the collision elements registered with the collision detection
+   * engine.  Note: If U is not a double then the transforms from kinematics
+   * cache will be forcefully cast to doubles (discarding any gradient
+   * information).  Callers that set @p throw_if_missing_gradient to
+   * `false` are responsible for ensuring that future code is secure despite all
+   * gradients with respect to the collision engine being arbitrarily set to
+   * zero.
+   * @see ComputeMaximumDepthCollisionPoints for an example.
+   *
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
+   * only if @p throws_if_missing_gradient is true.
+   */
+  template <typename U>
   void updateCollisionElements(
       const RigidBody<T>& body,
-      const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
+      const Eigen::Transform<U, 3, Eigen::Isometry>& transform_to_world,
+      bool throw_if_missing_gradient = true);
 
-  void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
+  /**
+   * @see updateCollisionElements
+   * @throws std::runtime_error based on the criteria of DiscardZeroGradient()
+   * only if @p throws_if_missing_gradient is true.
+   */
+  template <typename U>
+  void updateDynamicCollisionElements(const KinematicsCache<U>& kin_cache,
+                                      bool throw_if_missing_gradient = true);
 
   /**
    * Gets the contact points defined by a body's collision elements.
@@ -1103,12 +1149,17 @@ class RigidBodyTree {
    surface of each body is stored in the PointPair structure in the frame of the
    corresponding body.
 
-   @param use_margins[in] If `true` the model uses the representation with
+   @param[in] use_margins If `true` the model uses the representation with
    margins. If `false`, the representation without margins is used instead.
+
+   @throws std::runtime_error based on the criteria of DiscardZeroGradient()
+   only if @p throws_if_missing_gradient is true.
    **/
-  std::vector<drake::multibody::collision::PointPair>
-  ComputeMaximumDepthCollisionPoints(const KinematicsCache<double>& cache,
-                                     bool use_margins = true);
+  template <typename U>
+  std::vector<drake::multibody::collision::PointPair<U>>
+  ComputeMaximumDepthCollisionPoints(const KinematicsCache<U>& cache,
+                                     bool use_margins = true, bool
+                                     throw_if_missing_gradient = true);
 
   virtual bool collidingPointsCheckOnly(
       const KinematicsCache<double>& cache,
@@ -1371,7 +1422,7 @@ class RigidBodyTree {
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
          it != joint_path.end(); ++it) {
-      RigidBody<T>& body = *bodies[*it];
+      RigidBody<T>& body = *bodies_[*it];
       int ncols_joint = in_terms_of_qdot ? body.getJoint().get_num_positions()
                                          : body.getJoint().get_num_velocities();
       int col_start = in_terms_of_qdot ? body.get_position_start_index()
@@ -1389,16 +1440,21 @@ class RigidBodyTree {
   friend std::ostream& operator<<(std::ostream&, const RigidBodyTree<double>&);
 
   /**
-   * @brief Adds and takes ownership of a rigid body.
+   * @brief Adds and takes ownership of a rigid body. This also adds a frame
+   * whose pose is the same as the body's.
    *
    * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
    * A body is assigned a unique id (RigidBody::id()) when added to a
-   * RigidBodyTree. This unique id can be use to access a body with the accessor
-   * RigidBodyTree::body.
+   * RigidBodyTree. This unique id can be use to access a body using
+   * RigidBodyTree::get_bodies()[id].
    *
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return A bare, unowned pointer to the @p body.
+   * @pre Neither a body nor frame with the same identifying information (name
+   * and model id / name) should already exist in the tree.
+   * @throws std::runtime_error if preconditions are not met.
    */
+  // TODO(eric.cousineau): Rename to `AddRigidBody`.
   RigidBody<T>* add_rigid_body(std::unique_ptr<RigidBody<T>> body);
 
   /**
@@ -1457,13 +1513,13 @@ class RigidBodyTree {
    * @brief Returns a mutable reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  RigidBody<T>& world() { return *bodies[0]; }
+  RigidBody<T>& world() { return *bodies_[0]; }
 
   /**
    * @brief Returns a const reference to the RigidBody associated with the
    * world in the model. This is the root of the RigidBodyTree.
    */
-  const RigidBody<T>& world() const { return *bodies[0]; }
+  const RigidBody<T>& world() const { return *bodies_[0]; }
 
   /**
    * Returns the number of position states outputted by this %RigidBodyTree.
@@ -1496,14 +1552,32 @@ class RigidBodyTree {
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
+ private:
   // Rigid body objects
-  // TODO(amcastro-tri): make private and start using accessors body(int).
-  // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
-  // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody<T>>> bodies;
+  std::vector<std::unique_ptr<RigidBody<T>>> bodies_;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames_;
+
+ public:
+  DRAKE_DEPRECATED(
+      "Direct access to `bodies` has been deprecated, "
+      "mutable access has been removed. Use `get_bodies` and `add_rigid_body` "
+      "instead")
+  const std::vector<std::unique_ptr<RigidBody<T>>>& bodies{bodies_};
+
+  /// List of bodies.
+  // TODO(amcastro-tri): start using accessors body(int).
+  auto& get_bodies() const { return bodies_; }
+
+  DRAKE_DEPRECATED(
+      "Direct access to `frames` has been deprecated, "
+      "mutable access has been removed. Use `get_frames` and `addFrame` "
+      "instead")
+  const std::vector<std::shared_ptr<RigidBodyFrame<T>>>& frames{frames_};
+
+  /// List of frames.
+  auto& get_frames() const { return frames_; }
 
   // Rigid body actuators
   std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
@@ -1557,7 +1631,7 @@ class RigidBodyTree {
                             std::set<int>* connected) const;
 
   // Reorder body list to ensure parents are before children in the list
-  // RigidBodyTree::bodies.
+  // of bodies.
   //
   // See RigidBodyTree::compile
   void SortTree();
@@ -1597,6 +1671,20 @@ class RigidBodyTree {
  private:
   RigidBodyTree(const RigidBodyTree&);
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar, typename PointScalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
+  DoTransformPointsJacobian(
+      const KinematicsCache<Scalar>&,
+      const Eigen::Ref<const drake::Matrix3X<PointScalar>>&,
+      int, int, bool) const;
+
+  // The positional arguments identically match the public non-Do variant above.
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> DoTransformPointsJacobianDotTimesV(
+      const KinematicsCache<Scalar>&, const Eigen::Ref<const Eigen::Matrix3Xd>&,
+      int, int) const;
 
   // TODO(SeanCurtis-TRI): This isn't properly used.
   // No query operations should work if it hasn't been initialized.  Calling

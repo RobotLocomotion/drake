@@ -21,7 +21,7 @@ namespace {
 // Simple class for converting shape specifications into LCM-compatible shapes.
 class ShapeToLcm : public ShapeReifier {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeToLcm)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShapeToLcm)
 
   ShapeToLcm() = default;
   ~ShapeToLcm() override = default;
@@ -86,6 +86,15 @@ class ShapeToLcm : public ShapeReifier {
     // Shift it down so that the origin lies on the top surface.
     box_xform.translation() << 0, 0, -thickness / 2;
     X_PG_ = X_PG_ * box_xform;
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void*) override {
+    geometry_data_.type = geometry_data_.MESH;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.string_data = mesh.filename();
   }
 
  private:
@@ -170,12 +179,8 @@ void DispatchLoadMessage(const GeometryState<double>& state) {
   }
 
   // Send a load message.
-  const int message_length = message.getEncodedSize();
-  std::vector<uint8_t> message_bytes(message_length);
-  message.encode(message_bytes.data(), 0, message_length);
   DrakeLcm lcm;
-  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
-              message_bytes.size());
+  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 void DispatchLoadMessage(const GeometrySystem<double>& system) {

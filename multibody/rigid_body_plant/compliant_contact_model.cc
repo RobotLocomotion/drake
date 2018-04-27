@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
+#include "drake/math/autodiff.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
@@ -13,6 +15,13 @@
 
 namespace drake {
 namespace systems {
+
+// 1 cm/s
+const double
+    CompliantContactModelParameters::kDefaultVStictionTolerance{1e-2};
+// 0.2 mm
+const double
+    CompliantContactModelParameters::kDefaultCharacteristicRadius{2e-4};
 
 template <typename T>
 void CompliantContactModel<T>::set_default_material(
@@ -31,8 +40,8 @@ void CompliantContactModel<T>::set_model_parameters(
 
 template <typename T>
 VectorX<T> CompliantContactModel<T>::ComputeContactForce(
-    const RigidBodyTree<T>& tree,
-    const KinematicsCache<T>& kinsol, ContactResults<T>* contacts) const {
+    const RigidBodyTree<double>& tree, const KinematicsCache<T>& kinsol,
+    ContactResults<T>* contacts) const {
   using std::sqrt;
 
   // TODO(amcastro-tri): get rid of this const_cast.
@@ -40,9 +49,9 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   // when updating the collision element poses.
   // TODO(naveenoid) : This method call limits the template instanziation of
   // this class currently to T = double only.
-  std::vector<drake::multibody::collision::PointPair> pairs =
-      const_cast<RigidBodyTree<T>*>(&tree)->ComputeMaximumDepthCollisionPoints(
-          kinsol, true);
+  std::vector<drake::multibody::collision::PointPair<T>> pairs =
+      const_cast<RigidBodyTree<double>*>(&tree)
+          ->ComputeMaximumDepthCollisionPoints(kinsol, true, false);
 
   VectorX<T> contact_force(kinsol.getV().rows(), 1);
   contact_force.setZero();
@@ -50,6 +59,18 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
   //  as a zero-force contact.
   for (const auto& pair : pairs) {
     if (pair.distance < 0.0) {  // There is contact.
+      if (!std::is_same<T, double>::value) {
+        // TODO(russt): Consider handling some important special
+        // cases.  For instance, if a point contact on a robot is
+        // colliding with a static object in the world, then there
+        // should be no lost gradient information (the gradients with
+        // respect to the point on the robot are zero, and the forces
+        // on the static object will have no effect).
+        throw std::runtime_error(
+            "Contact occurred.  Gradient information "
+            "would have been inaccurate.");
+      }
+
       CompliantMaterial parameters;
       const double s_a =
           CalcContactParameters(*pair.elementA, *pair.elementB, &parameters);
@@ -182,6 +203,9 @@ VectorX<T> CompliantContactModel<T>::ComputeContactForce(
       }
     }
   }
+  if (contacts != nullptr) {
+    contacts->set_generalized_contact_force(contact_force);
+  }
   return contact_force;
 }
 
@@ -251,8 +275,9 @@ double CompliantContactModel<T>::CalcContactParameters(
   return s_a;
 }
 
-// Explicit instantiates on the most common scalar types
-template class CompliantContactModel<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+// Explicitly instantiates on the most common scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::CompliantContactModel)

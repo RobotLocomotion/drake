@@ -226,10 +226,9 @@ class GeometrySystem final : public systems::LeafSystem<T> {
    provided. */
   //@{
 
-  /** Registers a new source to the geometry system (see GeometryWorld for the
-   discussion of "geometry source"). The caller must save the returned SourceId;
-   it is the token by which all other operations on the geometry world are
-   conducted.
+  /** Registers a new source to the geometry system. The caller must save the
+   returned SourceId; it is the token by which all other operations on the
+   geometry world are conducted.
 
    This source id can be used to register arbitrary _anchored_ geometry. But if
    dynamic geometry is registered (via RegisterGeometry/RegisterFrame), then
@@ -380,38 +379,6 @@ class GeometrySystem final : public systems::LeafSystem<T> {
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
 
-  /** Clears all of the registered frames and geometries from this source, but
-   the source is still registered, allowing future registration of frames
-   and geometries.
-   @param source_id   The id of the source whose registered elements will be
-                      cleared.
-   @throws std::logic_error  If the `source_id` does _not_ map to a registered
-                             source or if a context has been allocated. */
-  void ClearSource(SourceId source_id);
-
-  /** Removes the given frame F (indicated by `frame_id`) from the the given
-   source's registered frames. All registered geometries connected to this frame
-   will also be removed.
-   @param source_id   The id for the owner geometry source.
-   @param frame_id    The id of the frame to remove.
-   @throws std::logic_error If:
-                            1. The `source_id` is not a registered source,
-                            2. the `frame_id` doesn't belong to the source, or
-                            3. a context has been allocated. */
-  void RemoveFrame(SourceId source_id, FrameId frame_id);
-
-  /** Removes the given geometry G (indicated by `geometry_id`) from the the
-   given source's registered geometries. All registered geometries hanging from
-   this geometry will also be removed.
-   @param source_id   The identifier for the owner geometry source.
-   @param geometry_id The identifier of the geometry to remove.
-   @throws std::logic_error If:
-                            1. The `source_id` is not a registered source,
-                            2. the `geometry_id` doesn't belong to the source,
-                               or
-                            3. a context has been allocated. */
-  void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
-
   //@}
 
  private:
@@ -466,7 +433,7 @@ class GeometrySystem final : public systems::LeafSystem<T> {
   //    - instantiating a GeometryContext instance (as opposed to LeafContext),
   //    - to detect allocation in support of the topology semantics described
   //      above.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeContext() const override;
+  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
 
   // Helper method for throwing an exception if a context has *ever* been
   // allocated by this system. The invoking method should pass it's name so

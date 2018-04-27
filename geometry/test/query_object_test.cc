@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_system.h"
-#include "drake/geometry/test_utilities/expect_error_message.h"
 
 namespace drake {
 namespace geometry {
@@ -92,7 +92,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   QOT::expect_default(*default_object);
 
 #define EXPECT_DEFAULT_ERROR(expression) \
-  EXPECT_ERROR_MESSAGE(expression, std::runtime_error, \
+  DRAKE_EXPECT_THROWS_MESSAGE(expression, std::runtime_error, \
       "Attempting to perform query on invalid QueryObject.+");
 
   EXPECT_DEFAULT_ERROR(QOT::ThrowIfDefault(*default_object));
@@ -100,6 +100,7 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   // Enumerate *all* queries to confirm they throw the proper exception.
   EXPECT_DEFAULT_ERROR(default_object->GetFrameId(GeometryId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->GetSourceName(SourceId::get_new_id()));
+  EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
 
 #undef EXPECT_DEFAULT_ERROR
 }

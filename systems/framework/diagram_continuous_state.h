@@ -40,16 +40,16 @@ class DiagramContinuousState : public ContinuousState<T> {
 
   /// Returns the continuous state at the given @p index. Aborts if @p index is
   /// out-of-bounds.
-  const ContinuousState<T>* get_substate(int index) const {
+  const ContinuousState<T>& get_substate(int index) const {
     DRAKE_DEMAND(index >= 0 && index < get_num_substates());
-    return substates_[index];
+    return *substates_[index];
   }
 
   /// Returns the continuous state at the given @p index. Aborts if @p index is
   /// out-of-bounds.
-  ContinuousState<T>* get_mutable_substate(int index) {
+  ContinuousState<T>& get_mutable_substate(int index) {
     DRAKE_DEMAND(index >= 0 && index < get_num_substates());
-    return substates_[index];
+    return *substates_[index];
   }
 
  private:

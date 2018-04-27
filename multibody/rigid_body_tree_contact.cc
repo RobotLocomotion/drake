@@ -16,6 +16,10 @@ using Eigen::Vector3d;
 using Eigen::VectorXi;
 using std::vector;
 
+namespace {
+const double kEpsilon = 10e-8;
+}
+
 // Computes surface tangent vectors for a single normal vector
 // INPUTS:
 //   normal: (3 x 1) normal vector in world coordinates
@@ -29,10 +33,10 @@ void surfaceTangentsSingle(Vector3d const &normal, Matrix3kd &d) {
   Vector3d t1, t2;
   double theta;
 
-  if (1.0 - normal(2) < EPSILON) {  // handle the unit-normal case (since it's
-                                    // unit length, just check z)
+  if (1.0 - normal(2) < kEpsilon) {  // handle the unit-normal case (since it's
+                                     // unit length, just check z)
     t1 << 1.0, 0.0, 0.0;
-  } else if (1 + normal(2) < EPSILON) {
+  } else if (1 + normal(2) < kEpsilon) {
     t1 << -1.0, 0.0, 0.0;  // same for the reflected case
   } else {                 // now the general case
     t1 << normal(1), -normal(0), 0.0;
@@ -170,7 +174,8 @@ void RigidBodyTree<T>::accumulateContactJacobian(
   const size_t numCB = cindB.size();
   const size_t offset = 3 * numCA;
 
-  auto J_tmp = transformPointsJacobian(cache, bodyPoints, bodyInd, 0, true);
+  auto J_tmp = transformPointsJacobian(
+      cache, bodyPoints.template cast<Scalar>().eval(), bodyInd, 0, true);
 
   // add contributions from points in xA
   for (size_t x = 0; x < numCA; x++) {
@@ -262,21 +267,6 @@ void RigidBodyTree<T>::surfaceTangents(
   }
 }
 
-template void RigidBodyTree<double>::computeContactJacobians<
-    Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(
-    KinematicsCache<Eigen::AutoDiffScalar<
-        Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const &,
-    Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0,
-               Eigen::InnerStride<1> > const &,
-    Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0,
-               Eigen::InnerStride<1> > const &,
-    Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
-               Eigen::OuterStride<-1> > const &,
-    Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0,
-               Eigen::OuterStride<-1> > const &,
-    Eigen::Matrix<
-        Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1,
-        0, -1, -1> &) const;
 template void RigidBodyTree<double>::computeContactJacobians<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(
     KinematicsCache<Eigen::AutoDiffScalar<

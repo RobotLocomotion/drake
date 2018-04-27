@@ -174,7 +174,7 @@ void run_valkyrie_pd_ff_controller() {
           "ROBOT_COMMAND", &lcm));
 
   // lcm sub -> state decoder
-  builder.Connect(robot_state_subscriber.get_output_port(0),
+  builder.Connect(robot_state_subscriber.get_output_port(),
                   state_decoder->get_input_port(0));
 
   // state decoder -> controller
@@ -183,7 +183,7 @@ void run_valkyrie_pd_ff_controller() {
 
   // controller -> lcm pub
   builder.Connect(controller->get_output_port_atlas_command(),
-                  atlas_command_publisher.get_input_port(0));
+                  atlas_command_publisher.get_input_port());
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

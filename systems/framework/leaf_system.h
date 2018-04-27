@@ -42,11 +42,11 @@ namespace leaf_system_detail {
 // Returns the next sample time for the given @p attribute.
 template <typename T>
 static T GetNextSampleTime(
-    const typename Event<T>::PeriodicAttribute& attribute,
+    const PeriodicEventData& attribute,
     const T& current_time_sec) {
-  const double period = attribute.period_sec;
+  const double period = attribute.period_sec();
   DRAKE_ASSERT(period > 0);
-  const double offset = attribute.offset_sec;
+  const double offset = attribute.offset_sec();
   DRAKE_ASSERT(offset >= 0);
 
   // If the first sample time hasn't arrived yet, then that is the next
@@ -118,7 +118,7 @@ class LeafSystem : public System<T> {
   /// @endcond
 
   std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context = DoMakeContext();
+    std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
     // Reserve inputs that have already been declared.
     context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
@@ -303,30 +303,40 @@ class LeafSystem : public System<T> {
   // classes do *not* add new data members. If that changes, e.g., with the
   // advent of the cache, this documentation should be changed to include the
   // initialization of the sub-class's *unique* data members.
-  virtual std::unique_ptr<LeafContext<T>> DoMakeContext() const {
+  virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
   }
 
   // =========================================================================
   // Implementations of System<T> methods.
 
-  T DoEvaluateWitness(const Context<T>& context,
-                      const WitnessFunction<T>& witness_func) const final {
+  T DoCalcWitnessValue(const Context<T>& context,
+                       const WitnessFunction<T>& witness_func) const final {
     DRAKE_DEMAND(this == &witness_func.get_system());
-    return witness_func.Evaluate(context);
+    return witness_func.CalcWitnessValue(context);
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>& witness_func,
+      Event<T>* event,
       CompositeEventCollection<T>* events) const final {
-    DRAKE_DEMAND(this == &witness_func.get_system());
+    DRAKE_DEMAND(event);
+    DRAKE_DEMAND(event->get_event_data());
+    DRAKE_DEMAND(dynamic_cast<const WitnessTriggeredEventData<T>*>(
+        event->get_event_data()));
     DRAKE_DEMAND(events);
-    witness_func.AddEvent(events);
+    event->add_to_composite(events);
   }
 
   /// Computes the next update time based on the configured periodic events, for
   /// scalar types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic. Subclasses that require aperiodic events should override.
+  /// @post `time` is set to a value greater than or equal to
+  ///       `context.get_time()` on return.
+  /// @warning If you override this method, think carefully before setting
+  ///          `time` to `context.get_time()` on return, which can inadvertently
+  ///          cause simulations of systems derived from %LeafSystem to loop
+  ///          interminably. Such a loop will occur if, for example, the
+  ///          event(s) does not modify the state.
   void DoCalcNextUpdateTime(const Context<T>& context,
                             CompositeEventCollection<T>* events,
                             T* time) const override {
@@ -601,12 +611,11 @@ class LeafSystem : public System<T> {
     static_assert(std::is_base_of<Event<T>, EventType>::value,
                   "EventType must be a subclass of Event<T>.");
     EventType event(Event<T>::TriggerType::kPeriodic);
-    typename Event<T>::PeriodicAttribute attribute;
-    attribute.period_sec = period_sec;
-    attribute.offset_sec = offset_sec;
-    event.set_attribute(
-        AbstractValue::Make<typename Event<T>::PeriodicAttribute>(attribute));
-    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
+    PeriodicEventData periodic_data;
+    periodic_data.set_period_sec(period_sec);
+    periodic_data.set_offset_sec(offset_sec);
+    event.set_event_data(std::make_unique<PeriodicEventData>(periodic_data));
+    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
 
   /// Declares that this System has a simple, fixed-period event specified by
@@ -627,10 +636,10 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicEvent(double period_sec, double offset_sec,
       const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == Event<T>::TriggerType::kPeriodic);
-    typename Event<T>::PeriodicAttribute attribute;
-    attribute.period_sec = period_sec;
-    attribute.offset_sec = offset_sec;
-    periodic_events_.push_back(std::make_pair(attribute, event.Clone()));
+    PeriodicEventData periodic_data;
+    periodic_data.set_period_sec(period_sec);
+    periodic_data.set_offset_sec(offset_sec);
+    periodic_events_.push_back(std::make_pair(periodic_data, event.Clone()));
   }
 
   /// Declares a periodic discrete update event with period = @p period_sec and
@@ -805,6 +814,129 @@ class LeafSystem : public System<T> {
     model_input_values_.AddModel(next_index, model_value.Clone());
     return this->DeclareAbstractInputPort();
   }
+  //@}
+
+  // =========================================================================
+  /// @name                    Declare witness functions
+  /// Methods in this section are used by derived classes to declare any
+  /// witness functions useful for ensuring that integration ends a step upon
+  /// entering particular times or states.
+  ///
+  /// In contrast to other declaration methods (e.g., DeclareVectorOutputPort(),
+  /// for which the System class creates and stores the objects and returns
+  /// references to them, the witness function declaration functions return
+  /// heap-allocated objects that the subclass of leaf system owns. This
+  /// facilitates returning pointers to these objects in
+  /// System::DoGetWitnessFunctions().
+  //@{
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, and calculator function; and
+  /// with no event object.
+  /// @note Constructing a witness function with no corresponding event forces
+  ///       Simulator's integration of an ODE to end a step at the witness
+  ///       isolation time. For example, isolating a function's minimum or
+  ///       maximum values can be realized with a witness that triggers on a
+  ///       sign change of the function's time derivative, ensuring that the
+  ///       actual extreme value is present in the discretized trajectory.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const) const {
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc);
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, calculation function, and
+  /// publish event callback function for when this triggers.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*publish_callback)(
+          const Context<T>&, const PublishEvent<T>&) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
+    auto fn = [this, publish_callback](
+        const Context<T>& context, const PublishEvent<T>& publish_event) {
+      auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
+      return (system_ptr->*publish_callback)(context, publish_event);
+    };
+    PublishEvent<T> publish_event(fn);
+    publish_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, publish_event.Clone());
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, calculation function, and
+  /// discrete update event callback function for when this triggers.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*du_callback)(const Context<T>&,
+          const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
+    auto fn = [this, du_callback](const Context<T>& context,
+        const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
+      auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
+      return (system_ptr->*du_callback)(context, du_event, values);
+    };
+    DiscreteUpdateEvent<T> du_event(fn);
+    du_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, du_event.Clone());
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, calculation function, and
+  /// unrestricted update event callback function for when this triggers.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      void (MySystem::*uu_callback)(const Context<T>&,
+          const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
+    auto fn = [this, uu_callback](const Context<T>& context,
+        const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
+      auto system_ptr = dynamic_cast<const MySystem*>(this);
+      DRAKE_DEMAND(system_ptr);
+      return (system_ptr->*uu_callback)(context, uu_event, state);
+    };
+    UnrestrictedUpdateEvent<T> uu_event(fn);
+    uu_event.set_trigger_type(Event<T>::TriggerType::kWitness);
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, uu_event.Clone());
+  }
+
+  /// Constructs the witness function with the given description (used primarily
+  /// for debugging and logging), direction type, and calculation
+  /// function, and with a unique pointer to the event that is to be dispatched
+  /// when this witness function triggers. Example types of event objects are
+  /// publish, discrete variable update, unrestricted update events.
+  template <class MySystem>
+  std::unique_ptr<WitnessFunction<T>> DeclareWitnessFunction(
+      const std::string& description,
+      const WitnessFunctionDirection& direction_type,
+      T (MySystem::*calc)(const Context<T>&) const,
+      const Event<T>& e) const {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+      "Expected to be invoked from a LeafSystem-derived system.");
+    return std::make_unique<WitnessFunction<T>>(
+        this, description, direction_type, calc, e.Clone());
+  }
+
   //@}
 
   // =========================================================================
@@ -1252,10 +1384,10 @@ class LeafSystem : public System<T> {
   }
 
  private:
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
-    std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-        PeriodicAttributeComparator<T>> periodic_events_map;
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+    std::map<PeriodicEventData, std::vector<const Event<T>*>,
+        PeriodicEventDataComparator> periodic_events_map;
     for (const auto& i : periodic_events_) {
       periodic_events_map[i.first].push_back(i.second.get());
     }
@@ -1359,11 +1491,11 @@ class LeafSystem : public System<T> {
     // the set of registered events that will occur at that time.
     std::vector<const Event<T1>*> next_events;
     for (const auto& event_pair : periodic_events_) {
-      const typename Event<T1>::PeriodicAttribute& attribute =
+      const PeriodicEventData& event_data =
           event_pair.first;
       const Event<T>* const event = event_pair.second.get();
       const T1 t = leaf_system_detail::GetNextSampleTime(
-          attribute, context.get_time());
+          event_data, context.get_time());
       if (t < min_time) {
         min_time = t;
         next_events = {event};
@@ -1462,7 +1594,7 @@ class LeafSystem : public System<T> {
   }
 
   // Periodic Update or Publish events registered on this system.
-  std::vector<std::pair<typename Event<T>::PeriodicAttribute,
+  std::vector<std::pair<PeriodicEventData,
                         std::unique_ptr<Event<T>>>>
       periodic_events_;
 

@@ -1,0 +1,83 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+
+drake_cc_library(
+    name = "quasistatic_system",
+    srcs = [
+        "quasistatic_system.cc",
+    ],
+    hdrs = [
+        "quasistatic_system.h",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "//multibody:kinematics_cache",
+        "//multibody:rigid_body_tree",
+        "//solvers:mathematical_program",
+        "//systems/controllers:control_util",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "remote_tree_viewer_wrapper",
+    srcs = [
+        "remote_tree_viewer_wrapper.cc",
+    ],
+    hdrs = [
+        "remote_tree_viewer_wrapper.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//lcm",
+        "//lcmtypes:viewer2_comms",
+        "//multibody:rigid_body_tree",
+        "@json",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rod2d_time_stepping",
+    data = [":models"],
+    tags = gurobi_test_tags(),
+    deps = [
+        ":quasistatic_system",
+        "//common",
+        "//common:find_resource",
+        "//lcm",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody:rigid_body_tree",
+        "//multibody/joints",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:matrix_gain",
+        "//systems/primitives:signal_logger",
+    ],
+)
+
+drake_cc_binary(
+    name = "remote_tree_viewer_wrapper_demo",
+    srcs = ["test/remote_tree_viewer_wrapper_demo.cc"],
+    deps = [
+        ":remote_tree_viewer_wrapper",
+        "//common:find_resource",
+        "//multibody/parsers",
+    ],
+)
+
+install_data()
+
+add_lint_tests()

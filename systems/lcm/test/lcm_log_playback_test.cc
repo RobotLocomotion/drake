@@ -4,6 +4,7 @@
 #include "drake/lcmt_drake_signal.hpp"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_log_playback_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -120,10 +121,7 @@ void CheckLog(const std::vector<double>& expected_times,
 
     // msg.timestamp is generated with the shifted time.
     EXPECT_NEAR(msg.timestamp, expected_times[i] * 1e6, 1e-12);
-    // Note: this needs to match how we schedule event processing
-    // (DoCalcNextUpdateTime) in LcmSubscriberSystem.
-    // TODO(siyuan): fix this together with #5725.
-    EXPECT_NEAR(times[i], expected_times[i] + 0.0001, 1e-12);
+    EXPECT_NEAR(times[i], expected_times[i], 1e-12);
   }
 }
 
@@ -133,6 +131,7 @@ void CheckLog() {
   drake::lcm::DrakeLcmLog r_log("test.log", false);
 
   DiagramBuilder<double> builder;
+  builder.AddSystem<LcmLogPlaybackSystem>(&r_log);
   auto sub0 = builder.AddSystem(
       LcmSubscriberSystem::Make<lcmt_drake_signal>("Ch0", &r_log));
   sub0->set_name("sub0");
@@ -145,9 +144,9 @@ void CheckLog() {
   auto printer0 = builder.AddSystem<DummySys>();
   auto printer1 = builder.AddSystem<DummySys>();
   auto printer2 = builder.AddSystem<DummySys>();
-  builder.Connect(sub0->get_output_port(0), printer0->get_input_port(0));
-  builder.Connect(sub1->get_output_port(0), printer1->get_input_port(0));
-  builder.Connect(sub2->get_output_port(0), printer2->get_input_port(0));
+  builder.Connect(sub0->get_output_port(), printer0->get_input_port(0));
+  builder.Connect(sub1->get_output_port(), printer1->get_input_port(0));
+  builder.Connect(sub2->get_output_port(), printer2->get_input_port(0));
 
   auto diagram = builder.Build();
 

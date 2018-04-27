@@ -31,7 +31,7 @@ class PiecewiseCubicTrajectory {
    * trajectory. Its first and second derivatives are computed and stored.
    */
   explicit PiecewiseCubicTrajectory(
-      const PiecewisePolynomial<T>& position_traj) {
+      const trajectories::PiecewisePolynomial<T>& position_traj) {
     q_ = position_traj;
     qd_ = q_.derivative();
     qdd_ = qd_.derivative();
@@ -48,7 +48,7 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_velocity(double time) const {
     MatrixX<T> ret = qd_.value(time);
-    if (!q_.isTimeInRange(time)) ret.setZero();
+    if (!q_.is_time_in_range(time)) ret.setZero();
     return ret;
   }
 
@@ -58,19 +58,19 @@ class PiecewiseCubicTrajectory {
    */
   MatrixX<T> get_acceleration(double time) const {
     MatrixX<T> ret = qdd_.value(time);
-    if (!q_.isTimeInRange(time)) ret.setZero();
+    if (!q_.is_time_in_range(time)) ret.setZero();
     return ret;
   }
 
   /**
    * Returns the start time of this trajectory.
    */
-  double get_start_time() const { return q_.getStartTime(); }
+  double get_start_time() const { return q_.start_time(); }
 
   /**
    * Returns the end time of this trajectory.
    */
-  double get_end_time() const { return q_.getEndTime(); }
+  double get_end_time() const { return q_.end_time(); }
 
   /**
    * Returns true if the position trajectory and its first and second
@@ -86,24 +86,29 @@ class PiecewiseCubicTrajectory {
   /**
    * Returns the position trajectory.
    */
-  const PiecewisePolynomial<T>& get_position_trajectory() const { return q_; }
+  const trajectories::PiecewisePolynomial<T>& get_position_trajectory() const {
+    return q_;
+  }
 
   /**
    * Returns the velocity trajectory (first derivative).
    */
-  const PiecewisePolynomial<T>& get_velocity_trajectory() const { return qd_; }
+  const trajectories::PiecewisePolynomial<T>& get_velocity_trajectory() const {
+    return qd_;
+  }
 
   /**
    * Returns the acceleration trajectory (second derivative).
    */
-  const PiecewisePolynomial<T>& get_acceleration_trajectory() const {
+  const trajectories::PiecewisePolynomial<T>& get_acceleration_trajectory()
+      const {
     return qdd_;
   }
 
  private:
-  PiecewisePolynomial<T> q_;
-  PiecewisePolynomial<T> qd_;
-  PiecewisePolynomial<T> qdd_;
+  trajectories::PiecewisePolynomial<T> q_;
+  trajectories::PiecewisePolynomial<T> qd_;
+  trajectories::PiecewisePolynomial<T> qdd_;
 };
 
 /**
@@ -132,15 +137,16 @@ class PiecewiseCartesianTrajectory {
       const std::vector<T>& times, const std::vector<Isometry3<T>>& poses,
       const Vector3<T>& vel0, const Vector3<T>& vel1) {
     std::vector<MatrixX<T>> pos_knots(poses.size());
-    eigen_aligned_std_vector<Matrix3<T>> rot_knots(poses.size());
+    std::vector<Matrix3<T>> rot_knots(poses.size());
     for (size_t i = 0; i < poses.size(); ++i) {
       pos_knots[i] = poses[i].translation();
       rot_knots[i] = poses[i].linear();
     }
 
     return PiecewiseCartesianTrajectory(
-        PiecewisePolynomial<T>::Cubic(times, pos_knots, vel0, vel1),
-        PiecewiseQuaternionSlerp<T>(times, rot_knots));
+        trajectories::PiecewisePolynomial<T>::Cubic(times, pos_knots, vel0,
+                                                    vel1),
+        trajectories::PiecewiseQuaternionSlerp<T>(times, rot_knots));
   }
 
   /**
@@ -148,8 +154,9 @@ class PiecewiseCartesianTrajectory {
    * @param pos_traj Position trajectory.
    * @param rot_traj Orientation trajectory.
    */
-  PiecewiseCartesianTrajectory(const PiecewisePolynomial<T>& pos_traj,
-                               const PiecewiseQuaternionSlerp<T>& rot_traj)
+  PiecewiseCartesianTrajectory(
+      const trajectories::PiecewisePolynomial<T>& pos_traj,
+      const trajectories::PiecewiseQuaternionSlerp<T>& rot_traj)
       : PiecewiseCartesianTrajectory(PiecewiseCubicTrajectory<T>(pos_traj),
                                      rot_traj) {}
 
@@ -158,8 +165,9 @@ class PiecewiseCartesianTrajectory {
    * @param pos_traj Position trajectory.
    * @param rot_traj Orientation trajectory.
    */
-  PiecewiseCartesianTrajectory(const PiecewiseCubicTrajectory<T>& pos_traj,
-                               const PiecewiseQuaternionSlerp<T>& rot_traj) {
+  PiecewiseCartesianTrajectory(
+      const PiecewiseCubicTrajectory<T>& pos_traj,
+      const trajectories::PiecewiseQuaternionSlerp<T>& rot_traj) {
     DRAKE_DEMAND(pos_traj.get_position_trajectory().rows() == 3);
     DRAKE_DEMAND(pos_traj.get_position_trajectory().cols() == 1);
     position_ = pos_traj;
@@ -184,7 +192,7 @@ class PiecewiseCartesianTrajectory {
    */
   Vector6<T> get_velocity(double time) const {
     Vector6<T> velocity;
-    if (orientation_.isTimeInRange(time)) {
+    if (orientation_.is_time_in_range(time)) {
       velocity.template head<3>() = orientation_.angular_velocity(time);
     } else {
       velocity.template head<3>().setZero();
@@ -199,7 +207,7 @@ class PiecewiseCartesianTrajectory {
    */
   Vector6<T> get_acceleration(double time) const {
     Vector6<T> acceleration;
-    if (orientation_.isTimeInRange(time)) {
+    if (orientation_.is_time_in_range(time)) {
       acceleration.template head<3>() = orientation_.angular_acceleration(time);
     } else {
       acceleration.template head<3>().setZero();
@@ -229,13 +237,14 @@ class PiecewiseCartesianTrajectory {
   /**
    * Returns the orientation trajectory.
    */
-  const PiecewiseQuaternionSlerp<T>& get_orientation_trajectory() const {
+  const trajectories::PiecewiseQuaternionSlerp<T>& get_orientation_trajectory()
+      const {
     return orientation_;
   }
 
  private:
   PiecewiseCubicTrajectory<T> position_;
-  PiecewiseQuaternionSlerp<T> orientation_;
+  trajectories::PiecewiseQuaternionSlerp<T> orientation_;
 };
 
 }  // namespace manipulation

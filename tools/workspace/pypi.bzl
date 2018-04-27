@@ -8,9 +8,9 @@ def pypi_archive(
         build_file = None,
         sha256 = None,
         strip_prefix = None,
+        mirrors = None,
         **kwargs):
-    """
-    Downloads and unpacks a PyPI package archive and adds it to the WORKSPACE
+    """Downloads and unpacks a PyPI package archive and adds it to the WORKSPACE
     as an external. Additional keyword arguments (except "urls") will be passed
     through to the native call of "new_http_archive."
 
@@ -66,6 +66,10 @@ def pypi_archive(
 
         strip_prefix: A directory prefix to strip from the extracted files
             [String; optional].
+
+        mirrors: A dict from string to list-of-string with key "pypi", where
+            the list-of-strings are URLs to use, formatted using {package},
+            {version}, and {p} (where {p} is the first letter of {package}).
     """
     if not package:
         package = name
@@ -82,19 +86,17 @@ def pypi_archive(
         # message.
         sha256 = "0" * 64
 
+    if not mirrors:
+        fail("Missing mirrors=; see mirrors.bzl")
+
     if strip_prefix:
         strip_prefix = "{0}-{1}/{2}".format(package, version, strip_prefix)
     else:
         strip_prefix = "{0}-{1}".format(package, version)
 
-    # Packages are mirrored from PyPI to CloudFront backed by an S3 bucket.
     urls = [
-        "https://files.pythonhosted.org/packages/source/{0}/{1}/{1}-{2}.tar.gz".format(  # noqa
-            package[:1], package, version),
-        "https://drake-mirror.csail.mit.edu/pypi/{0}/{0}-{1}.tar.gz".format(
-            package, version),
-        "https://s3.amazonaws.com/drake-mirror/pypi/{0}/{0}-{1}.tar.gz".format(
-            package, version),
+        x.format(p = package[:1], package = package, version = version)
+        for x in mirrors.get("pypi")
     ]
 
     native.new_http_archive(

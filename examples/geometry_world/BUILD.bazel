@@ -23,7 +23,9 @@ drake_cc_library(
     hdrs = ["bouncing_ball_plant.h"],
     deps = [
         ":bouncing_ball_vector",
-        "//drake/systems/framework:leaf_system",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_system",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -32,11 +34,14 @@ drake_cc_binary(
     srcs = ["bouncing_ball_run_dynamics.cc"],
     deps = [
         ":bouncing_ball_plant",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/lcm",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:signal_logger",
+        "//geometry:geometry_system",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
+        "//systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 
@@ -44,11 +49,13 @@ drake_cc_library(
     name = "solar_system",
     srcs = ["solar_system.cc"],
     hdrs = ["solar_system.h"],
+    data = ["planet_rings.obj"],
     deps = [
-        "//drake/geometry:geometry_ids",
-        "//drake/geometry:geometry_system",
-        "//drake/math:geometric_transform",
-        "//drake/systems/framework:leaf_system",
+        "//common",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_system",
+        "//math:geometric_transform",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -57,14 +64,14 @@ drake_cc_binary(
     srcs = ["solar_system_run_dynamics.cc"],
     deps = [
         ":solar_system",
-        "//drake/geometry:geometry_system",
-        "//drake/geometry:geometry_visualization",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/lcm",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:signal_logger",
-        "//drake/systems/rendering:pose_bundle_to_draw_message",
+        "//geometry:geometry_system",
+        "//geometry:geometry_visualization",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:signal_logger",
+        "//systems/rendering:pose_bundle_to_draw_message",
     ],
 )
 

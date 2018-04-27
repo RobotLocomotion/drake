@@ -10,16 +10,17 @@ drake_cc_library(
     name = "trajectory",
     hdrs = ["trajectory.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "piecewise_function",
-    srcs = ["piecewise_function.cc"],
-    hdrs = ["piecewise_function.h"],
+    name = "piecewise_trajectory",
+    srcs = ["piecewise_trajectory.cc"],
+    hdrs = ["piecewise_trajectory.h"],
     deps = [
-        "//drake/common:essential",
+        ":trajectory",
+        "//common:essential",
     ],
 )
 
@@ -28,28 +29,15 @@ drake_cc_library(
     srcs = [
         "exponential_plus_piecewise_polynomial.cc",
         "piecewise_polynomial.cc",
-        "piecewise_polynomial_base.cc",
     ],
     hdrs = [
         "exponential_plus_piecewise_polynomial.h",
         "piecewise_polynomial.h",
-        "piecewise_polynomial_base.h",
     ],
     deps = [
-        ":piecewise_function",
-        "//drake/common:essential",
-        "//drake/common:polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "piecewise_polynomial_trajectory",
-    srcs = ["piecewise_polynomial_trajectory.cc"],
-    hdrs = ["piecewise_polynomial_trajectory.h"],
-    deps = [
-        ":piecewise_polynomial",
-        ":trajectory",
-        "//drake/common:essential",
+        ":piecewise_trajectory",
+        "//common:essential",
+        "//common:polynomial",
     ],
 )
 
@@ -58,9 +46,10 @@ drake_cc_library(
     srcs = ["piecewise_quaternion.cc"],
     hdrs = ["piecewise_quaternion.h"],
     deps = [
-        ":piecewise_function",
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
+        ":piecewise_polynomial",
+        ":piecewise_trajectory",
+        "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -71,14 +60,14 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["test/random_piecewise_polynomial.h"],
     deps = [
-        "//drake/common/test_utilities:random_polynomial_matrix",
+        "//common/test_utilities:random_polynomial_matrix",
     ],
 )
 
 drake_cc_googletest(
-    name = "piecewise_function_test",
+    name = "piecewise_trajectory_test",
     deps = [
-        ":piecewise_function",
+        ":piecewise_trajectory",
     ],
 )
 
@@ -89,7 +78,7 @@ drake_cc_googletest(
     srcs = ["test/piecewise_polynomial_generation_test.cc"],
     deps = [
         ":piecewise_polynomial",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -98,7 +87,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_polynomial",
         ":random_piecewise_polynomial",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -107,16 +96,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_polynomial",
         ":random_piecewise_polynomial",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "piecewise_polynomial_trajectory_test",
-    deps = [
-        ":piecewise_polynomial_trajectory",
-        ":random_piecewise_polynomial",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -124,8 +104,8 @@ drake_cc_googletest(
     name = "piecewise_quaternion_test",
     deps = [
         ":piecewise_quaternion",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//util",
     ],
 )
 

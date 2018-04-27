@@ -31,7 +31,7 @@ line arguments.
 To build this demo, from Drake's repository root path just run:
 
 ```
-bazel build drake/examples/double_pendulum:double_pendulum_demo
+bazel build examples/double_pendulum:double_pendulum_demo
 ```
 
 ## How do I run it?
@@ -45,5 +45,5 @@ To run this demo, from Drake's repository root first run:
 This will open up the visualization tool. Then run the demo with:
 
 ```
-bazel run drake/examples/double_pendulum:double_pendulum_demo -- [-simulation_time +inf] [-realtime_rate 1.0]
+bazel run examples/double_pendulum:double_pendulum_demo -- [-simulation_time +inf] [-realtime_rate 1.0]
 ```

@@ -19,6 +19,7 @@ using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::NumTraits;
+using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -184,10 +185,42 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const double L = 1.5;
   const double I_perp = (3.0 * r * r + L * L) / 12.0;
   const double I_axial = r * r / 2.0;
-  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
-  UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+  const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
+  // Compute the unit inertia for a cylinder oriented along the z-axis
+  // (the default).
+  UnitInertia<double> Gz =
+      UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
+      Gz_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit inertia for a cylinder oriented along the x-axis.
+  const UnitInertia<double> Gx =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
+  const UnitInertia<double> Gx_expected(I_axial, I_perp, I_perp);
+  EXPECT_TRUE(Gx.CopyToFullMatrix3().isApprox(
+      Gx_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit inertia for a cylinder oriented along the y-axis.
+  const UnitInertia<double> Gy =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitY());
+  const UnitInertia<double> Gy_expected(I_perp, I_axial, I_perp);
+  EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
+      Gy_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Compute the unit inertia for a cylinder oriented along a non-unit,
+  // non-axial vector.
+  const Vector3d v(1.0, 2.0, 3.0);
+  const UnitInertia<double> Gv =
+      UnitInertia<double>::SolidCylinder(r, L, v);
+  // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
+  // Zz = zhat.
+  const Matrix3d R_ZV =
+      Quaterniond::FromTwoVectors(Vector3d::UnitZ(), v).toRotationMatrix();
+  // Generate expected solution by computing it in the V frame and re-expressing
+  // in the Z frame.
+  const UnitInertia<double> Gv_expected = Gz.ReExpress(R_ZV);
+  EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(
+      Gv_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
 // Tests the static method to obtain the unit inertia of a solid cylinder

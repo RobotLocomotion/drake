@@ -3,6 +3,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/math/continuous_algebraic_riccati_equation.h"
+#include "drake/math/discrete_algebraic_riccati_equation.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -45,25 +46,49 @@ LinearQuadraticRegulatorResult LinearQuadraticRegulator(
   return ret;
 }
 
+LinearQuadraticRegulatorResult DiscreteTimeLinearQuadraticRegulator(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::MatrixXd>& B,
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R) {
+  Eigen::Index n = A.rows(), m = B.cols();
+  DRAKE_DEMAND(n > 0 && m > 0);
+  DRAKE_DEMAND(B.rows() == n && A.cols() == n);
+  DRAKE_DEMAND(Q.rows() == n && Q.cols() == n);
+  DRAKE_DEMAND(R.rows() == m && R.cols() == m);
+  DRAKE_DEMAND(is_approx_equal_abstol(R, R.transpose(), 1e-10));
+
+  LinearQuadraticRegulatorResult ret;
+
+  ret.S = math::DiscreteAlgebraicRiccatiEquation(A, B, Q, R);
+
+  Eigen::MatrixXd tmp = B.transpose() * ret.S * B + R;
+  ret.K = tmp.llt().solve(B.transpose() * ret.S * A);
+
+  return ret;
+}
+
 std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
     const LinearSystem<double>& system,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N) {
-  DRAKE_DEMAND(system.time_period() == 0.0);
-  // TODO(russt): Support discrete-time systems.
+  // DiscreteTimeLinearQuadraticRegulator does not support N yet.
+  DRAKE_DEMAND(system.time_period() == 0.0 || N.rows() == 0);
 
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  LinearQuadraticRegulatorResult lqr_result =
-      LinearQuadraticRegulator(system.A(), system.B(), Q, R, N);
+  LinearQuadraticRegulatorResult lqr_result = (system.time_period() == 0.0) ?
+    LinearQuadraticRegulator(system.A(), system.B(), Q, R, N) :
+    DiscreteTimeLinearQuadraticRegulator(system.A(), system.B(), Q, R);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
       Eigen::Matrix<double, 0, 0>::Zero(),   // A
       Eigen::MatrixXd::Zero(0, num_states),  // B
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
-      -lqr_result.K);                        // D
+      -lqr_result.K,                         // D
+      system.time_period());
 }
 
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
@@ -76,18 +101,32 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   DRAKE_DEMAND(system.get_num_input_ports() == 1);
   const int num_inputs = system.get_input_port(0).size(),
-            num_states = context.get_continuous_state().size();
+            num_states = context.get_num_total_states();
   DRAKE_DEMAND(num_states > 0);
-  DRAKE_DEMAND(context.has_only_continuous_state());
+  // The Linearize method call below will verify that the system has either
+  // continuous-time OR (only simple) discrete-time dyanmics.
+
   // TODO(russt): Confirm behavior if Q is not PSD.
 
-  auto linear_system = Linearize(system, context);
+  // Use first input and no outputs (the output dynamics are irrelevant for
+  // LQR design).
+  auto linear_system = Linearize(system, context, 0, kNoOutput);
+
+  // DiscreteTimeLinearQuadraticRegulator does not support N yet.
+  DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);
 
   LinearQuadraticRegulatorResult lqr_result =
-      LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R, N);
+      (linear_system->time_period() == 0.0)
+          ? LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q,
+                                     R, N)
+          : DiscreteTimeLinearQuadraticRegulator(linear_system->A(),
+                                                 linear_system->B(), Q, R);
 
   const Eigen::VectorXd& x0 =
-      context.get_continuous_state_vector().CopyToVector();
+      (linear_system->time_period() == 0.0)
+          ? context.get_continuous_state_vector().CopyToVector()
+          : context.get_discrete_state(0).CopyToVector();
+
   const auto& u0 = system.EvalEigenVectorInput(context, 0);
 
   // Return the affine controller: u = u0 - K(x-x0).
@@ -97,7 +136,8 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
       Eigen::Matrix<double, 0, 1>::Zero(),   // xDot0
       Eigen::MatrixXd::Zero(num_inputs, 0),  // C
       -lqr_result.K,                         // D
-      u0 + lqr_result.K * x0);               // y0
+      u0 + lqr_result.K * x0,                // y0
+      linear_system->time_period());
 }
 
 }  // namespace controllers

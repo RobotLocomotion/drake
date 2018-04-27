@@ -7,30 +7,37 @@ load(
     "install_cmake_config",
 )
 
+licenses(["notice"])  # BSD-2-Clause
+
 package(
     default_visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "fmt",
-    srcs = glob(["fmt/*.cc"]),
-    hdrs = glob(["fmt/*.h"]),
+    hdrs = glob([
+        "fmt/*.cc",
+        "fmt/*.h",
+    ]),
+    defines = ["FMT_HEADER_ONLY=1"],
     includes = ["."],
 )
 
+CMAKE_PACKAGE = "fmt"
+
 cmake_config(
-    package = "fmt",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/fmt:package-create-cps.py",
-    version_file = "CMakeLists.txt",
+    version_file = "fmt/format.h",
 )
 
-install_cmake_config(package = "fmt")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
     targets = [":fmt"],
-    hdr_dest = "include/fmt",
-    hdr_strip_prefix = ["fmt"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE.rst"],
     deps = [":install_cmake_config"],

@@ -12,8 +12,12 @@ namespace systems {
 /// to the scale of the simulation. The values must all be _strictly_ positive.
 /// See @ref drake_contacts for details.
 struct CompliantContactModelParameters {
-  double v_stiction_tolerance{1e-2};      // 1 cm/s (in m/s).
-  double characteristic_radius{2e-4};     // 0.2 mm (in m).
+  /// Stiction (in m/s).
+  static const double kDefaultVStictionTolerance;
+  double v_stiction_tolerance{kDefaultVStictionTolerance};
+  /// Characteristic radius (in m).
+  static const double kDefaultCharacteristicRadius;
+  double characteristic_radius{kDefaultCharacteristicRadius};
 };
 
 /// This class encapsulates the compliant contact model force computations as
@@ -21,6 +25,13 @@ struct CompliantContactModelParameters {
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
+/// - AutoDiffXd
+///
+/// Note: The templated ScalarTypes are used in the KinematicsCache, but all
+/// CompliantContactModels use RigidBodyTree<double>.  This effectively implies
+/// that we can e.g. AutoDiffXd with respect to the configurations, but not
+/// the RigidBodyTree parameters.  The collision engine does not (yet) support
+/// AutoDiffXd, so calls to that logic will throw errors at runtime.
 template <typename T>
 class CompliantContactModel {
  public:
@@ -28,6 +39,13 @@ class CompliantContactModel {
 
   /// Instantiates a %CompliantContactModel.
   CompliantContactModel() = default;
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit CompliantContactModel(const CompliantContactModel<U>& other)
+      : inv_v_stiction_tolerance_(other.inv_v_stiction_tolerance_),
+        characteristic_radius_(other.characteristic_radius_),
+        default_material_(other.default_material()) {}
 
   /// Computes the generalized forces on all bodies due to contact.
   ///
@@ -39,10 +57,12 @@ class CompliantContactModel {
   ///                       port.
   /// @returns              The generalized forces across all the bodies due to
   ///                       contact response.
-  VectorX<T> ComputeContactForce(
-      const RigidBodyTree<T>& tree,
-      const KinematicsCache<T>& kinsol,
-      ContactResults<T>* contacts = nullptr) const;
+  /// @throws std::runtime_error if T is non-double and potential gradient
+  ///                       information would have been lost (currently this is
+  ///                       happens precisely when penetration is detected).
+  VectorX<T> ComputeContactForce(const RigidBodyTree<double>& tree,
+                                 const KinematicsCache<T>& kinsol,
+                                 ContactResults<T>* contacts = nullptr) const;
 
   /// Defines the default material property values for this model instance.
   /// All elements with default-configured values will use the values in the
@@ -99,6 +119,10 @@ class CompliantContactModel {
   // The default compliant material properties for *this* model instance.
   // By default, it uses all hard-coded values.
   CompliantMaterial default_material_;
+
+  // For scalar-converting copy constructor.
+  template <typename U>
+  friend class CompliantContactModel;
 };
 
 }  // namespace systems

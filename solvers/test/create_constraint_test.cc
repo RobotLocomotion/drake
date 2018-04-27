@@ -1,5 +1,7 @@
 #include "drake/solvers/create_constraint.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -10,12 +12,70 @@ namespace drake {
 namespace solvers {
 namespace {
 
+void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
+  Binding<QuadraticConstraint> binding =
+      internal::ParseQuadraticConstraint(e, lb, ub);
+
+  const Expression binding_expression{
+      0.5 *
+          binding.variables().dot(binding.evaluator()->Q() *
+                                  binding.variables()) +
+      binding.evaluator()->b().dot(binding.variables())};
+  if (!std::isinf(lb)) {
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(e - lb),
+        symbolic::Polynomial(binding_expression -
+                             binding.evaluator()->lower_bound()(0)),
+        1E-10));
+  } else {
+    EXPECT_TRUE(std::isinf(binding.evaluator()->lower_bound()(0)));
+  }
+  if (!std::isinf(ub)) {
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(e - ub),
+        symbolic::Polynomial(binding_expression -
+                             binding.evaluator()->upper_bound()(0)),
+        1E-10));
+  } else {
+    EXPECT_TRUE(std::isinf(binding.evaluator()->upper_bound()(0)));
+  }
+}
+
+class ParseQuadraticConstraintTest : public ::testing::Test {
+ public:
+  ParseQuadraticConstraintTest() {
+    x_ << x0_, x1_;
+  }
+
+ protected:
+  symbolic::Variable x0_{"x0"};
+  symbolic::Variable x1_{"x1"};
+  Vector2<symbolic::Variable> x_;
+};
+
+TEST_F(ParseQuadraticConstraintTest, Test0) {
+  const double kInf = std::numeric_limits<double>::infinity();
+  CheckParseQuadraticConstraint(x0_ * x0_, 1, 1);
+  CheckParseQuadraticConstraint(x0_ * x1_, 1, 1);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_, 0, 2);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ + 3, 0, 2);
+
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_,
+                                -kInf, 1);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_, 1,
+                                kInf);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
+                                1, kInf);
+  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
+                                -kInf, 3);
+}
+
 void CheckParseLorentzConeConstraint(const Expression& linear_expression,
                                      const Expression& quadratic_expression) {
   Binding<LorentzConeConstraint> binding = internal::ParseLorentzConeConstraint(
       linear_expression, quadratic_expression);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(z(0)), symbolic::Polynomial(linear_expression),
@@ -29,8 +89,8 @@ void CheckParseRotatedLorentzConeConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v) {
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(v);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   for (int i = 0; i < z.rows(); ++i) {
     EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(i)),
@@ -44,8 +104,8 @@ void CheckParseRotatedLorentzConeConstraint(
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(
           linear_expression1, linear_expression2, quadratic_expression);
-  const Eigen::MatrixXd A = binding.constraint()->A();
-  const Eigen::VectorXd b = binding.constraint()->b();
+  const Eigen::MatrixXd A = binding.evaluator()->A();
+  const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   const double tol_check{1E-10};
   EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(0)),

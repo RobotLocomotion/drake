@@ -70,15 +70,16 @@ bool CompareToClone(const RigidBodyTree<double>& tree) {
     return false;
   }
   for (int i = 0; i < tree.get_num_bodies(); ++i) {
-    if (!rigid_body::CompareToClone(*tree.bodies.at(i), *clone->bodies.at(i))) {
+    if (!rigid_body::CompareToClone(*tree.get_bodies().at(i),
+                                    *clone->get_bodies().at(i))) {
       drake::log()->debug(
           "CompareToClone(RigidBodyTree): bodies mismatch at index {}.", i);
       return false;
     }
   }
   for (int i = 0; i < tree.get_num_frames(); ++i) {
-    if (!rigid_body_frame::CompareToClone(*tree.frames.at(i),
-        *clone->frames.at(i))) {
+    if (!rigid_body_frame::CompareToClone(*tree.get_frames().at(i),
+        *clone->get_frames().at(i))) {
       drake::log()->debug(
           "CompareToClone(RigidBodyTree): frames mismatch at index {}.", i);
       return false;

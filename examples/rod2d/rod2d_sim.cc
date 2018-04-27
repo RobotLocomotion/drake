@@ -55,7 +55,6 @@ int main(int argc, char* argv[]) {
 
   // Emit a one-time load message.
   Serializer<drake::lcmt_viewer_load_robot> load_serializer;
-  std::vector<uint8_t> message_bytes;
 
   // TODO(edrumwri): Remove the DRAKE_VIEWER_DRAW, DRAKE_VIEWER_LOAD_ROBOT
   //                 magic strings as soon as they are a named constant within
@@ -94,7 +93,7 @@ int main(int argc, char* argv[]) {
       Eigen::Isometry3d::Identity(), Eigen::Vector4d(0.7, 0.7, 0.7, 1));
 
   // Create the load message.
-  drake::lcmt_viewer_load_robot message;
+  drake::lcmt_viewer_load_robot message{};
   message.num_links = 1;
   message.link.resize(1);
   message.link.back().name = "rod";
@@ -104,11 +103,7 @@ int main(int argc, char* argv[]) {
   message.link.back().geom[0] = MakeGeometryData(rod_vis);
 
   // Send a load mesage.
-  const int message_length = message.getEncodedSize();
-  message_bytes.resize(message_length);
-  message.encode(message_bytes.data(), 0, message_length);
-  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
-              message_bytes.size());
+  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 
   // Set the names of the systems.
   rod->set_name("rod");

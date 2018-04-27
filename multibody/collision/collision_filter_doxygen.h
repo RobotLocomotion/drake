@@ -51,7 +51,7 @@ are @ref collision_filter_mapping "related but complementary".
 Before looking at the details of the collision filter mechanisms, there are a
 few key principles to make note of.
 
- <!-- TODO(SeanCurtis-TRI): Change this with the advent of GeometryWorld to
+ <!-- TODO(SeanCurtis-TRI): Change this with the advent of GeometrySystem to
  reflect current state -->
 \section collision_elements Collision Elements
 
@@ -203,7 +203,96 @@ one model to the first group, and all elements of the second model to the second
 group.  Set either group to _ignore_ the other (or both, redundancy doesn't
 hurt).
 
-\section cfg_impl The Implementation
+\section cfg_impl Declaring Collision Filter Groups
+
+\subsection cfg_impl_in_file Declaring collision filter groups in URDF/SDF files
+
+Collision filter groups can be instantiated by specifying them in URDF/SDF
+files.
+
+_Declaration_
+
+```xml
+    <collision_filter_group name="group1">
+        <member link="body1"/>
+        <member link="body2"/>
+        <ignored_collision_filter_group collision_filter_group="group2"/>
+        <ignored_collision_filter_group collision_filter_group="group3"/>
+    </collision_filter_group>
+```
+
+This XML-snippet illustrates the syntax for declaring a collision filter group.
+It declares a collision filter group named `group1`. It has
+two members, `body1` and `body2` (although it could have any number of links).
+This is short-hand for communicating that the _collision elements_ of `body1`
+and `body2` belong to `group1`. Furthermore, `group1` ignores two groups:
+`group2` and `group3`.  It is not considered an error to ignore a non-existing
+group, but it is considered an error to reference a link that hasn't been
+defined.
+
+One possible use of collision filter groups is to create a set of collision
+elements which _cannot_ collide with each other (i.e., no self-collisions in
+the group). This is achieved by having the group ignore _itself_. E.g.,
+
+```xml
+    <collision_filter_group name="no_self_collision_group">
+        <member link="body1"/>
+        <member link="body2"/>
+        <ignored_collision_filter_group collision_filter_group="no_self_collision_group"/>
+    </collision_filter_group>
+```
+
+Urdf files support the definition of a single robot. As such, all
+`<collision_filter_group>` (`<cfg>` for brevity) tags are children of the
+ `<robot>` tag.
+
+Sdf files support the definition of multiple robots (aka "models"). As such, the
+`<cfg>` tags are children of each `<model>` tag. The `<cfg>` tags can only
+include links that are defined *in that model* in its membership lists. The
+implication of that is collision filter groups defined in sdf files contain
+bodies from a single model only. However, a collision filter group in *one*
+model can ignore a collision filter group in another model. See
+<a href="https://github.com/RobotLocomotion/drake/blob/master/multibody/collision/test/multi_model_groups.sdf">multi_model_groups.sdf</a>
+for an example.
+
+\subsection cfg_impl_in_code Declaring collision filter groups in code
+
+In addition to parsing the collision filter groups from the urdf/sdf files,
+there is an API on the RigidBodyTree that allows manipulation. However, the API
+is constrained. The workflow is as follows:
+
+ - Add one or more bodies
+ - Add one or more collision filter groups
+ - Add bodies to the collision filter groups
+ - Add groups to the "ignore set" of the created groups
+ - Compile the tree
+
+Once a body in the tree has been through the compilation process, it _cannot_
+have its collision filters modified. In the historical workflow, the act of
+parsing a URDF/SDF file implicitly ends with compiling the tree. So, using the
+standard parsing API means that the bodies parsed from a file cannot be
+programmatically altered.
+
+There is a _second_ parsing API that allows for suppressing the automatic
+tree compilation. If there is a need to augment or modify the collision filter
+groups declared in a parsed file, pass `false` into this alternate API.
+By doing so, you can invoke methods to create and modify collision filter groups
+for those bodies that have not been compiled yet. However, the caller has the
+responsibility to make sure that RigidBodyTree::compile() is invoked before
+doing any work on the tree. For example:
+
+```
+ const bool do_compile = false;
+ const std::string file_name = "some_file.urdf";
+ RigidBodyTree<double> tree;
+ AddModelInstanceFromUrdfFileToWorld(file_name, kRollPitchYaw, do_compile, &tree);
+ tree.DefineCollisionFilterGroup("new_group");  // doesn't already exist.
+ tree.AddCollisionFilterGroupMember("new_group", "body1", 0); // Assumes known body name and model instance id.
+ tree.AddCollisionFilterIgnoreTarget("new_group", "group_from_urdf");
+ tree.compile();
+```
+
+\subsection cfg_impl_code In-code representation
 
 Collision filter groups are implemented as a pair of fixed-width bitmasks,
 stored with each collision element. Each
@@ -224,34 +313,9 @@ has its _own_ space of collision filter group identifiers.
  World. Each source of collision elements will get its own space of filters.
  Sources will need to be differentiated. -->
 
-Collision filter groups are instantiated by specifying them in URDF files as
-follows:
-
-<pre>
-    <collision_filter_group name="group1">
-        <member link="body1"/>
-        <member link="body2"/>
-        <ignored_collision_filter_group collision_filter_group="group2"/>
-        <ignored_collision_filter_group collision_filter_group="group3"/>
-    </collision_filter_group>
-</pre>
-
-This XML-snippet illustrates the syntax for declaring a collision filter group.
-It declares a collision filter group named `group1`. It has
-two members, `body1` and `body2` (although it could have any number of links).
-This is short-hand for communicating that the _collision elements_ of `body1`
-and `body2` belong to `group1`. Furthermore, `group1` ignores two groups:
-`group2` and `group3`.  It is not considered an error to ignore a non-existing
-group, but it is considered an error to reference a link that hasn't been
-defined.
-
 By default, all elements belong to a common, universal group which corresponds
 to bit zero. A collision element can be rendered "invisible" by assigning it
 to a group that ignores this universal group.
-
-@note Beyond instantiating the collision filter groups from parsing a URDF
-file, there is currently no interface for programmatically altering group
-membership or ignore relationships.
 
 Next topic: @ref collision_filter_mapping
 **/
@@ -327,7 +391,7 @@ definitions of groups in a URDF file.  In this case, we'll deal with a
 theoretical file with two groups (assuming all bodies/links have been
 properly defined prior to this XML snippet).
 
-<pre>
+```xml
     <collision_filter_group name="groupA">
         <member link="body1"/>
         <member link="body2"/>
@@ -338,7 +402,7 @@ properly defined prior to this XML snippet).
         <member link="body4"/>
         <ignored_collision_filter_group collision_filter_group="groupA"/>
     </collision_filter_group>
-</pre>
+```
 
 The filtering implications of these groups is that we filter collisions between
 all the collision elements of the bodies (1, 3), (1, 4), (2, 3), and (2, 4)

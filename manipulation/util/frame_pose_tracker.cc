@@ -71,10 +71,15 @@ FramePoseTracker::FramePoseTracker(
   auto frame_pose = frame_poses.begin();
   while (frame_info != frames_info.end() && frame_pose != frame_poses.end()) {
     std::string frame_name = frame_info->first;
-    RigidBody<double>* body = tree_->FindBody(
-        frame_info->second.first, "", frame_info->second.second);
+    RigidBody<double>* parent_body = nullptr;
+    Eigen::Isometry3d X_BF;
+    auto parent_frame = tree_->findFrame(
+        frame_info->second.first, frame_info->second.second);
+    parent_body = parent_frame->get_mutable_rigid_body();
+    X_BF = parent_frame->get_transform_to_body();
     frame_name_to_frame_map_[frame_name] =
-        std::make_unique<RigidBodyFrame<double>>(frame_name, body, *frame_pose);
+        std::make_unique<RigidBodyFrame<double>>(
+          frame_name, parent_body, X_BF * *frame_pose);
     ++frame_info;
     ++frame_pose;
   }

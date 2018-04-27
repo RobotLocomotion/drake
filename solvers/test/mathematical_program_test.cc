@@ -25,6 +25,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -177,6 +178,13 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
                 MathematicalProgram::VarType::CONTINUOUS);
     }
   }
+}
+
+GTEST_TEST(testMathematicalProgram, testConstructor) {
+  MathematicalProgram prog;
+  EXPECT_EQ(prog.initial_guess().rows(), 0);
+  EXPECT_EQ(prog.num_vars(), 0);
+  EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
@@ -400,9 +408,11 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
-  prog.SetDecisionVariableValues(Vector3<double>::Zero());
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
+  prog.SetSolverResult(solver_result);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
+    EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
 }
@@ -420,7 +430,9 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
-  prog.SetDecisionVariableValues(Vector6<double>::Zero());
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(Vector6<double>::Zero());
+  prog.SetSolverResult(solver_result);
   VectorDecisionVariable<6> vars_expected;
   vars_expected << y, x0, x1, x2;
   for (int i = 0; i < 6; ++i) {
@@ -593,12 +605,27 @@ GTEST_TEST(testGetSolution, testSetSolution1) {
   X2_value = -X1_value;
   Eigen::Vector4d x3_value(3, 4, 5, 6);
   Eigen::Vector4d x4_value = -x3_value;
-  for (int i = 0; i < 3; ++i) {
-    prog.SetDecisionVariableValues(X1.col(i), X1_value.col(i));
-    prog.SetDecisionVariableValues(X2.col(i), X2_value.col(i));
-  }
-  prog.SetDecisionVariableValues(x3, x3_value);
-  prog.SetDecisionVariableValues(x4, x4_value);
+
+  Eigen::VectorXd x_val(prog.num_vars());
+  auto SetDecisionVariableValue = [&prog, &x_val](
+      const Eigen::Ref<const MatrixXDecisionVariable>& variable,
+      const Eigen::Ref<const Eigen::MatrixXd>& val) {
+    for (int i = 0; i < variable.rows(); ++i) {
+      for (int j = 0; j < variable.cols(); ++j) {
+        const int variable_index =
+            prog.FindDecisionVariableIndex(variable(i, j));
+        x_val(variable_index) = val(i, j);
+      }
+    }
+  };
+  SetDecisionVariableValue(X1, X1_value);
+  SetDecisionVariableValue(X2, X2_value);
+  SetDecisionVariableValue(x3, x3_value);
+  SetDecisionVariableValue(x4, x4_value);
+
+  SolverResult solver_result(SolverId("dummy"));
+  solver_result.set_decision_variable_values(x_val);
+  prog.SetSolverResult(solver_result);
 
   CheckGetSolution(prog, X1, X1_value);
   CheckGetSolution(prog, X2, X2_value);
@@ -713,15 +740,15 @@ GTEST_TEST(testMathematicalProgram, BoundingBoxTest2) {
   // 5. Imposes constraint on a dynamic-sized vector of decision variables.
   // 6. Imposes constraint using a vector of lower/upper bound, as compared
   //    to the previous three cases which use a scalar lower/upper bound.
-  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1).constraint();
+  auto constraint1 = prog.AddBoundingBoxConstraint(0, 1, x1).evaluator();
   auto constraint2 =
-      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)}).constraint();
-  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2).constraint();
-  auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3).constraint();
-  auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4).constraint();
+      prog.AddBoundingBoxConstraint(0, 1, {x1.col(0), x1.col(1)}).evaluator();
+  auto constraint3 = prog.AddBoundingBoxConstraint(0, 1, x2).evaluator();
+  auto constraint4 = prog.AddBoundingBoxConstraint(0, 1, x3).evaluator();
+  auto constraint5 = prog.AddBoundingBoxConstraint(0, 1, x4).evaluator();
   auto constraint6 = prog.AddBoundingBoxConstraint(Eigen::Vector4d::Zero(),
                                                    Eigen::Vector4d::Ones(), x3)
-                         .constraint();
+                         .evaluator();
 
   // Checks that the bound variables are correct.
   for (const auto& binding : prog.bounding_box_constraints()) {
@@ -765,7 +792,7 @@ void VerifyAddedCost1(const MathematicalProgram& prog,
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
             num_generic_costs_expected);
   Eigen::VectorXd y, y_expected;
-  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  prog.generic_costs().back().evaluator()->Eval(x_value, y);
   cost->Eval(x_value, y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
@@ -781,7 +808,7 @@ void VerifyAddedCost2(const MathematicalProgram& prog,
   EXPECT_EQ(static_cast<int>(prog.generic_costs().size()),
             num_generic_costs_expected);
   Eigen::VectorXd y(1), y_expected(1), y_returned;
-  prog.generic_costs().back().constraint()->Eval(x_value, y);
+  prog.generic_costs().back().evaluator()->Eval(x_value, y);
   cost.eval<double>(x_value, y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
   returned_cost->Eval(x_value, y_returned);
@@ -834,7 +861,7 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // VectorDecisionVariable object.
   auto returned_cost3 =
       prog.AddCost(generic_trivial_cost2, VectorDecisionVariable<2>(x(0), y(1)))
-          .constraint();
+          .evaluator();
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost3,
                    Eigen::Vector2d(1, 2), num_generic_costs);
@@ -843,7 +870,7 @@ GTEST_TEST(testMathematicalProgram, AddCostTest) {
   // VariableRefList object.
   auto returned_cost4 =
       prog.AddCost(generic_trivial_cost2, {x.head<1>(), y.tail<1>()})
-          .constraint();
+          .evaluator();
   ++num_generic_costs;
   VerifyAddedCost2(prog, generic_trivial_cost2, returned_cost4,
                    Eigen::Vector2d(1, 2), num_generic_costs);
@@ -854,11 +881,11 @@ void CheckAddedSymbolicLinearCostUserFun(const MathematicalProgram& prog,
                                          const Binding<Cost>& binding,
                                          int num_linear_costs) {
   EXPECT_EQ(prog.linear_costs().size(), num_linear_costs);
-  EXPECT_EQ(prog.linear_costs().back().constraint(), binding.constraint());
+  EXPECT_EQ(prog.linear_costs().back().evaluator(), binding.evaluator());
   EXPECT_TRUE(CheckStructuralEquality(prog.linear_costs().back().variables(),
                                       binding.variables()));
-  EXPECT_EQ(binding.constraint()->num_outputs(), 1);
-  auto cnstr = prog.linear_costs().back().constraint();
+  EXPECT_EQ(binding.evaluator()->num_outputs(), 1);
+  auto cnstr = prog.linear_costs().back().evaluator();
   auto vars = prog.linear_costs().back().variables();
   const Expression cx{cnstr->a().dot(vars)};
   double constant_term{0};
@@ -914,8 +941,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic1) {
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
   const Expression Ax{(constraint_ptr->A() * var_vec)(0, 0)};
   const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
   const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
@@ -933,10 +960,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic2) {
   const auto binding = prog.AddLinearConstraint(e, -10, 10);
 
   // Check that the constraint in the binding is of BoundingBoxConstraint.
-  ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.constraint()));
+  ASSERT_TRUE(is_dynamic_castable<BoundingBoxConstraint>(binding.evaluator()));
   const shared_ptr<BoundingBoxConstraint> constraint_ptr{
-      static_pointer_cast<BoundingBoxConstraint>(binding.constraint())};
-  EXPECT_EQ(constraint_ptr->num_constraints(), 1u);
+      static_pointer_cast<BoundingBoxConstraint>(binding.evaluator())};
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -992,8 +1019,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic3) {
   // Check if the binding includes the correct linear constraint.
   const auto binding = prog.AddLinearConstraint(M_e, M_lb, M_ub);
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
@@ -1014,15 +1041,15 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic4) {
 
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
-            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().evaluator(),
+            binding.evaluator());
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
             binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+      CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(2)));
+      CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(2)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
@@ -1035,15 +1062,15 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic5) {
 
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1u);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
-            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().evaluator(),
+            binding.evaluator());
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
             binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(1)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-2)));
+      CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(-2)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+      CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(-1)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
@@ -1055,15 +1082,15 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic6) {
   const auto& binding = prog.AddLinearConstraint(e, 1, 3);
   EXPECT_TRUE(prog.linear_constraints().empty());
   EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().back().constraint(),
-            binding.constraint());
+  EXPECT_EQ(prog.bounding_box_constraints().back().evaluator(),
+            binding.evaluator());
   EXPECT_EQ(prog.bounding_box_constraints().back().variables(),
             binding.variables());
   EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->lower_bound(), Vector1d(-3)));
+      CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(-3)));
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->upper_bound(), Vector1d(-1)));
+      CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(-1)));
 }
 
 GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
@@ -1092,9 +1119,9 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic7) {
   EXPECT_EQ(binding.variables(),
             VectorDecisionVariable<4>(x(0), x(0), x(2), x(1)));
   EXPECT_TRUE(CompareMatrices(
-      binding.constraint()->lower_bound(),
+      binding.evaluator()->lower_bound(),
       Vector4d(-1.5, 0.25, -0.5, -numeric_limits<double>::infinity())));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
                               Vector4d(-0.5, 0.75, 0.5, 0)));
 }
 
@@ -1121,8 +1148,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
   prog.AddLinearConstraint(Expression(2), 1, 3);
   EXPECT_EQ(prog.linear_constraints().size(), 1);
   auto binding = prog.linear_constraints().back();
-  EXPECT_EQ(binding.constraint()->A().rows(), 1);
-  EXPECT_EQ(binding.constraint()->A().cols(), 0);
+  EXPECT_EQ(binding.evaluator()->A().rows(), 1);
+  EXPECT_EQ(binding.evaluator()->A().cols(), 0);
 
   Vector2<Expression> expr;
   expr << 2, x(0);
@@ -1130,10 +1157,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolic9) {
   EXPECT_EQ(prog.linear_constraints().size(), 2);
   binding = prog.linear_constraints().back();
   EXPECT_TRUE(
-      CompareMatrices(binding.constraint()->A(), Eigen::Vector2d(0, 1)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+      CompareMatrices(binding.evaluator()->A(), Eigen::Vector2d(0, 1)));
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                               Eigen::Vector2d(-1, 2)));
-  EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
                               Eigen::Vector2d(1, 4)));
 }
 
@@ -1160,8 +1187,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula1) {
     auto binding = prog.bounding_box_constraints().back();
     EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(3)));
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+        CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(3)));
+    EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                                 Vector1d(-numeric_limits<double>::infinity())));
   }
 }
@@ -1189,8 +1216,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula2) {
     auto binding = prog.bounding_box_constraints().back();
     EXPECT_EQ(binding.variables(), VectorDecisionVariable<1>(x(0)));
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(2)));
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->upper_bound(),
+        CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(2)));
+    EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(),
                                 Vector1d(numeric_limits<double>::infinity())));
   }
 }
@@ -1213,10 +1240,10 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula3) {
     EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
     auto binding = prog.linear_equality_constraints().back();
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->lower_bound(), Vector1d(1)));
+        CompareMatrices(binding.evaluator()->lower_bound(), Vector1d(1)));
 
-    VectorX<Expression> expr = binding.constraint()->A() * binding.variables() -
-                               binding.constraint()->lower_bound();
+    VectorX<Expression> expr = binding.evaluator()->A() * binding.variables() -
+                               binding.evaluator()->lower_bound();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), x(0) + x(2) - 1);
   }
@@ -1246,14 +1273,14 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula4) {
     EXPECT_EQ(prog.linear_equality_constraints().size(), 0);
     EXPECT_EQ(prog.bounding_box_constraints().size(), 0);
     auto binding = prog.linear_constraints().back();
-    EXPECT_TRUE(CompareMatrices(binding.constraint()->lower_bound(),
+    EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
                                 Vector1d(-numeric_limits<double>::infinity())));
     EXPECT_TRUE(
-        CompareMatrices(binding.constraint()->upper_bound(), Vector1d(1)));
+        CompareMatrices(binding.evaluator()->upper_bound(), Vector1d(1)));
 
     const VectorX<Expression> expr =
-        binding.constraint()->upper_bound() -
-        binding.constraint()->A() * binding.variables();
+        binding.evaluator()->upper_bound() -
+        binding.evaluator()->A() * binding.variables();
     EXPECT_EQ(expr.size(), 1);
     EXPECT_PRED2(ExprEqual, expr(0), 1 - x(0) - 2 * x(2));
   }
@@ -1278,9 +1305,9 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula5) {
   for (const auto& f_i : f) {
     const auto binding = prog.AddLinearConstraint(f_i);
     const VectorX<Expression> expr =
-        binding.constraint()->A() * binding.variables();
-    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
-    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+        binding.evaluator()->A() * binding.variables();
+    EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), x(0));
   }
 }
@@ -1298,11 +1325,11 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula6) {
   // clang-format on
   for (const auto& f_i : f) {
     const auto binding = prog.AddLinearConstraint(f_i);
-    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.evaluator()));
     const VectorX<Expression> expr =
-        binding.constraint()->A() * binding.variables();
-    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
-    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+        binding.evaluator()->A() * binding.variables();
+    EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), get_lhs_expression(f_i));
   }
 }
@@ -1320,11 +1347,11 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormula7) {
   // clang-format on
   for (const auto& f_i : f) {
     const auto binding = prog.AddLinearConstraint(f_i);
-    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.constraint()));
+    EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(binding.evaluator()));
     const VectorX<Expression> expr =
-        binding.constraint()->A() * binding.variables();
-    EXPECT_EQ(binding.constraint()->lower_bound()(0), -inf);
-    EXPECT_EQ(binding.constraint()->upper_bound()(0), inf);
+        binding.evaluator()->A() * binding.variables();
+    EXPECT_EQ(binding.evaluator()->lower_bound()(0), -inf);
+    EXPECT_EQ(binding.evaluator()->upper_bound()(0), inf);
     EXPECT_PRED2(ExprEqual, expr(0), -get_lhs_expression(f_i));
   }
 }
@@ -1394,7 +1421,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   // clang-format on
   const auto binding = prog.AddLinearConstraint(A * x == b);
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
+  const auto constraint_ptr = binding.evaluator();
   // Checks that we have LinearEqualityConstraint instead of LinearConstraint.
   EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
@@ -1430,7 +1457,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
 
   const auto binding = prog.AddLinearConstraint(f1 && f2 && f3);
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
+  const auto constraint_ptr = binding.evaluator();
   // Checks that we do not have LinearEqualityConstraint.
   EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), 3);
@@ -1514,8 +1541,8 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   // Check if the binding includes the correct linear constraint.
   const auto binding = prog.AddLinearConstraint(M_f.array());
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
-  EXPECT_EQ(constraint_ptr->num_constraints(), 5u);
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
   const auto ub_in_ctr = constraint_ptr->upper_bound();
@@ -1563,7 +1590,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   // Check if the binding includes the correct linear constraint.
   const auto binding = prog.AddLinearConstraint(M_f);
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
+  const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
@@ -1602,7 +1629,7 @@ GTEST_TEST(testMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
   // clang-format on
   const auto binding = prog.AddLinearConstraint((A * x).array() >= b.array());
   const VectorXDecisionVariable& var_vec{binding.variables()};
-  const auto constraint_ptr = binding.constraint();
+  const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->A() * var_vec;
   const auto lb_in_ctr = constraint_ptr->lower_bound();
@@ -1637,8 +1664,8 @@ void CheckAddedLinearEqualityConstraintCommon(
   EXPECT_EQ(prog.linear_equality_constraints().size(), num_linear_eq_cnstr + 1);
   // Checks if the newly added linear equality constraint in prog is the same as
   // that returned from AddLinearEqualityConstraint.
-  EXPECT_EQ(prog.linear_equality_constraints().back().constraint(),
-            binding.constraint());
+  EXPECT_EQ(prog.linear_equality_constraints().back().evaluator(),
+            binding.evaluator());
   // Checks if the bound variables of the newly added linear equality constraint
   // in prog is the same as that returned from AddLinearEqualityConstraint.
   EXPECT_EQ(prog.linear_equality_constraints().back().variables(),
@@ -1656,11 +1683,11 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
   // the input expression.
   int num_constraints_expected = v.size();
 
-  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  EXPECT_EQ(binding.evaluator()->num_constraints(), num_constraints_expected);
   // Check if the newly added linear equality constraint matches with the input
   // expression.
-  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
-                               binding.constraint()->lower_bound();
+  VectorX<Expression> flat_V = binding.evaluator()->A() * binding.variables() -
+                               binding.evaluator()->lower_bound();
 
   EXPECT_EQ(flat_V.size(), v.size());
   MatrixX<Expression> v_resize = flat_V;
@@ -1682,11 +1709,11 @@ void CheckAddedSymmetricSymbolicLinearEqualityConstraint(
   // Checks if the number of rows in the newly added constraint is the same as
   // the input expression.
   int num_constraints_expected = v.rows() * (v.rows() + 1) / 2;
-  EXPECT_EQ(binding.constraint()->num_constraints(), num_constraints_expected);
+  EXPECT_EQ(binding.evaluator()->num_constraints(), num_constraints_expected);
   // Check if the newly added linear equality constraint matches with the input
   // expression.
-  VectorX<Expression> flat_V = binding.constraint()->A() * binding.variables() -
-                               binding.constraint()->lower_bound();
+  VectorX<Expression> flat_V = binding.evaluator()->A() * binding.variables() -
+                               binding.evaluator()->lower_bound();
   EXPECT_EQ(math::ToSymmetricMatrixFromLowerTriangularColumns(flat_V), v - b);
 }
 
@@ -1850,8 +1877,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint5) {
   EXPECT_EQ(prog.linear_equality_constraints().size(), 1u);
 
   const Expression expr_in_added_constraint{
-      (binding.constraint()->A() * binding.variables() -
-       binding.constraint()->lower_bound())(0)};
+      (binding.evaluator()->A() * binding.variables() -
+       binding.evaluator()->lower_bound())(0)};
   // expr_in_added_constraint should be:
   //    lhs(f) - rhs(f)
   //  = (3x₀ + 2x₁ + 3) - 5
@@ -1888,8 +1915,8 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicLinearEqualityConstraint6) {
 
   // Checks if AddLinearEqualityConstraint added the constraint correctly.
   const Eigen::Matrix<Expression, 3, 1> exprs_in_added_constraint{
-      binding.constraint()->A() * binding.variables() -
-      binding.constraint()->lower_bound()};
+      binding.evaluator()->A() * binding.variables() -
+      binding.evaluator()->lower_bound()};
   const Eigen::Matrix<Expression, 3, 1> expected_exprs{A * x - b};
 
   // Since a conjunctive symbolic formula uses `std::set` as an internal
@@ -1952,12 +1979,12 @@ void CheckParsedSymbolicLorentzConeConstraint(
   const auto& binding1 =
       prog->AddLorentzConeConstraint(linear_expr, quadratic_expr);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
-  EXPECT_EQ(binding1.constraint(), binding2.constraint());
+  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
   EXPECT_EQ(binding1.variables(), binding2.variables());
   // Now check if the linear and quadratic constraints are parsed correctly.
   const VectorX<Expression> e_parsed =
-      binding1.constraint()->A() * binding1.variables() +
-      binding1.constraint()->b();
+      binding1.evaluator()->A() * binding1.variables() +
+      binding1.evaluator()->b();
   EXPECT_PRED2(ExprEqual, (e_parsed(0) * e_parsed(0)).Expand(),
                (linear_expr * linear_expr).Expand());
   Expression quadratic_expr_parsed =
@@ -1978,12 +2005,12 @@ void CheckParsedSymbolicLorentzConeConstraint(
   const auto& binding1 = prog->AddLorentzConeConstraint(e);
   const auto& binding2 = prog->lorentz_cone_constraints().back();
 
-  EXPECT_EQ(binding1.constraint(), binding2.constraint());
-  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
-                binding1.constraint()->b(),
+  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
+  EXPECT_EQ(binding1.evaluator()->A() * binding1.variables() +
+                binding1.evaluator()->b(),
             e);
-  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
-                binding2.constraint()->b(),
+  EXPECT_EQ(binding2.evaluator()->A() * binding2.variables() +
+                binding2.evaluator()->b(),
             e);
 
   CheckParsedSymbolicLorentzConeConstraint(prog, e(0),
@@ -1995,12 +2022,12 @@ void CheckParsedSymbolicRotatedLorentzConeConstraint(
   const auto& binding1 = prog->AddRotatedLorentzConeConstraint(e);
   const auto& binding2 = prog->rotated_lorentz_cone_constraints().back();
 
-  EXPECT_EQ(binding1.constraint(), binding2.constraint());
-  EXPECT_EQ(binding1.constraint()->A() * binding1.variables() +
-                binding1.constraint()->b(),
+  EXPECT_EQ(binding1.evaluator(), binding2.evaluator());
+  EXPECT_EQ(binding1.evaluator()->A() * binding1.variables() +
+                binding1.evaluator()->b(),
             e);
-  EXPECT_EQ(binding2.constraint()->A() * binding2.variables() +
-                binding2.constraint()->b(),
+  EXPECT_EQ(binding2.evaluator()->A() * binding2.variables() +
+                binding2.evaluator()->b(),
             e);
 }
 }  // namespace
@@ -2215,11 +2242,11 @@ GTEST_TEST(testMathematicalProgram, AddSymbolicRotatedLorentzConeConstraint5) {
       x.head<2>().cast<Expression>().dot(Q * x.head<2>() + b) + c;
   const auto binding = prog.AddRotatedLorentzConeConstraint(
       linear_expression1, linear_expression2, quadratic_expression);
-  EXPECT_EQ(binding.constraint(),
-            prog.rotated_lorentz_cone_constraints().back().constraint());
+  EXPECT_EQ(binding.evaluator(),
+            prog.rotated_lorentz_cone_constraints().back().evaluator());
   const VectorX<Expression> z =
-      binding.constraint()->A() * binding.variables() +
-      binding.constraint()->b();
+      binding.evaluator()->A() * binding.variables() +
+      binding.evaluator()->b();
   const double tol{1E-10};
   EXPECT_TRUE(
       symbolic::test::PolynomialEqual(symbolic::Polynomial(linear_expression1),
@@ -2247,8 +2274,8 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
   EXPECT_EQ(num_lin_eq_cnstr + 1, prog->linear_equality_constraints().size());
   // Check if the returned binding is the correct one.
   EXPECT_EQ(
-      binding.constraint().get(),
-      prog->positive_semidefinite_constraints().back().constraint().get());
+      binding.evaluator().get(),
+      prog->positive_semidefinite_constraints().back().evaluator().get());
   // Check if the added linear constraint is correct. M is the newly added
   // variables representing the psd matrix.
   const Eigen::Map<const MatrixX<Variable>> M(&binding.variables()(0), V.rows(),
@@ -2257,8 +2284,8 @@ CheckAddedSymbolicPositiveSemidefiniteConstraint(
   // part of the psd matrix.
   const auto& new_lin_eq_cnstr = prog->linear_equality_constraints().back();
   auto V_minus_M = math::ToSymmetricMatrixFromLowerTriangularColumns(
-      new_lin_eq_cnstr.constraint()->A() * new_lin_eq_cnstr.variables() -
-      new_lin_eq_cnstr.constraint()->lower_bound());
+      new_lin_eq_cnstr.evaluator()->A() * new_lin_eq_cnstr.variables() -
+      new_lin_eq_cnstr.evaluator()->lower_bound());
   EXPECT_EQ(V_minus_M, V - M);
 }
 }  // namespace
@@ -2267,10 +2294,10 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<4>("X");
 
-  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X).constraint();
+  auto psd_cnstr = prog.AddPositiveSemidefiniteConstraint(X).evaluator();
   EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
   const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
-  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.constraint().get());
+  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.evaluator().get());
   Eigen::Map<Eigen::Matrix<Variable, 16, 1>> X_flat(&X(0, 0));
   EXPECT_TRUE(CheckStructuralEquality(X_flat, new_psd_cnstr.variables()));
 
@@ -2293,6 +2320,10 @@ GTEST_TEST(testMathematicalProgram, AddPositiveSemidefiniteConstraint) {
   CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog,
                                                    A.transpose() * X + X * A);
 
+  // Test the MatrixX<Expression> version.
+  MatrixX<Expression> M = A.transpose() * X + X * A;
+  CheckAddedSymbolicPositiveSemidefiniteConstraint(&prog, M);
+
   // Adds [X.topLeftCorner<2, 2>()  0                        ] is psd
   //      [ 0                     X.bottomRightCorner<2, 2>()]
   Eigen::Matrix<Expression, 4, 4> Y{};
@@ -2307,12 +2338,12 @@ void CheckAddedQuadraticCost(MathematicalProgram* prog,
                              const Eigen::MatrixXd& Q, const Eigen::VectorXd& b,
                              const VectorXDecisionVariable& x) {
   int num_quadratic_cost = prog->quadratic_costs().size();
-  auto cnstr = prog->AddQuadraticCost(Q, b, x).constraint();
+  auto cnstr = prog->AddQuadraticCost(Q, b, x).evaluator();
 
   EXPECT_EQ(++num_quadratic_cost, prog->quadratic_costs().size());
   // Check if the newly added quadratic constraint, and the returned
   // quadratic constraint, both match 0.5 * x' * Q * x + b' * x
-  EXPECT_EQ(cnstr, prog->quadratic_costs().back().constraint());
+  EXPECT_EQ(cnstr, prog->quadratic_costs().back().evaluator());
   EXPECT_EQ(cnstr->Q(), Q);
   EXPECT_EQ(cnstr->b(), b);
 }
@@ -2331,10 +2362,10 @@ void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
                                             const Binding<Cost>& binding,
                                             int num_quadratic_cost) {
   EXPECT_EQ(num_quadratic_cost, prog.quadratic_costs().size());
-  EXPECT_EQ(binding.constraint(), prog.quadratic_costs().back().constraint());
+  EXPECT_EQ(binding.evaluator(), prog.quadratic_costs().back().evaluator());
   EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
 
-  auto cnstr = prog.quadratic_costs().back().constraint();
+  auto cnstr = prog.quadratic_costs().back().evaluator();
   // Check the added cost is 0.5 * x' * Q * x + b' * x
   const auto& x_bound = binding.variables();
   const Expression e_added = 0.5 * x_bound.dot(cnstr->Q() * x_bound) +
@@ -2403,8 +2434,8 @@ GTEST_TEST(testMathematicalProgram, TestL2NormCost) {
   x_desired << 5, 6;
   Eigen::Vector2d b = A * x_desired;
 
-  auto obj1 = prog.AddQuadraticErrorCost(Q, x_desired, x).constraint();
-  auto obj2 = prog.AddL2NormCost(A, b, x).constraint();
+  auto obj1 = prog.AddQuadraticErrorCost(Q, x_desired, x).evaluator();
+  auto obj2 = prog.AddL2NormCost(A, b, x).evaluator();
 
   // Test the objective at a 6 arbitrary values (to guarantee correctness
   // of the six-parameter quadratic form.
@@ -2499,9 +2530,9 @@ void CheckAddedPolynomialCost(MathematicalProgram* prog, const Expression& e) {
   int num_cost = prog->generic_costs().size();
   const auto binding = prog->AddPolynomialCost(e);
   EXPECT_EQ(prog->generic_costs().size(), ++num_cost);
-  EXPECT_EQ(binding.constraint(), prog->generic_costs().back().constraint());
+  EXPECT_EQ(binding.evaluator(), prog->generic_costs().back().evaluator());
   // Now reconstruct the symbolic expression from `binding`.
-  const auto polynomial = binding.constraint()->polynomials()(0);
+  const auto polynomial = binding.evaluator()->polynomials()(0);
 
   // var_id_to_var : Variable::Id → Variable. It keeps the relation between a
   // variable in a Polynomial<double> and symbolic::Monomial.
@@ -2682,6 +2713,177 @@ GTEST_TEST(testMathematicalProgram, testClone) {
   EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
   EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
 }
+
+GTEST_TEST(testMathematicalProgram, testEvalBinding) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // Add linear constraint x(0) + 2x(1) = 2
+  auto linear_constraint = prog.AddLinearEqualityConstraint(
+      Eigen::RowVector2d(1, 2), Vector1d(2), x.head<2>());
+  // Add constraint 0 ≤ x(1)² + 2x(2)² + x(1) + 2x(2) ≤ 1
+  auto quadratic_constraint =
+      prog.AddConstraint(std::make_shared<QuadraticConstraint>(
+                             (Eigen::Matrix2d() << 2, 0, 0, 4).finished(),
+                             Eigen::Vector2d(1, 2), 0, 1),
+                         x.tail<2>());
+  auto quadratic_cost = prog.AddQuadraticCost(x(1) * x(1) + x(2));
+
+  const Eigen::Vector3d x_val(1, 2, 3);
+  // The linear constraint should evaluate to 5.
+  // The quadratic constraint should evaluate to 30.
+  // The quadratic cost should evaluate to 7.
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(linear_constraint, x_val),
+                              Vector1d(5), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_constraint, x_val),
+                              Vector1d(30), 1E-15,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_cost, x_val),
+                              Vector1d(7), 1E-15, MatrixCompareType::absolute));
+
+  // Pass in an incorrect size input.
+  EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
+               std::logic_error);
+
+  // Pass in some variable not registered in the program.
+  symbolic::Variable y("y");
+  Binding<QuadraticCost> quadratic_cost_y(
+      std::make_shared<QuadraticCost>(Vector1d(1), Vector1d(0)),
+      VectorDecisionVariable<1>(y));
+  EXPECT_THROW(prog.EvalBinding(quadratic_cost_y, x_val), std::runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+
+  // Set initial guess for a single variable.
+  prog.SetInitialGuess(x(1), 2);
+  EXPECT_EQ(prog.GetInitialGuess(x(1)), 2);
+
+  // Set initial guess for a vector of variables.
+  prog.SetInitialGuess(x.tail<2>(), Eigen::Vector2d(3, 4));
+  EXPECT_TRUE(CompareMatrices(prog.GetInitialGuess(x.tail<2>()),
+                              Eigen::Vector2d(3, 4)));
+
+  // Now set initial guess for a variable not registered.
+  symbolic::Variable y("y");
+  EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
+  EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
+}
+
+GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
+  // min ∑ x , subject to x'x = 1.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+
+  prog.AddConstraint(x.transpose()*x == 1.);
+
+  if (SnoptSolver().available()) {
+    // Add equivalent constraints using all of the other entry points.
+    // Note: restricted to SNOPT because IPOPT complains about the redundant
+    // constraints.
+    prog.AddConstraint(x.transpose()*x >= 1.);
+    prog.AddConstraint(x.transpose()*x <= 1.);
+    prog.AddConstraint((x.transpose()*x)(0), 1., 1.);
+    prog.AddConstraint(x.transpose()*x, Vector1d{1.}, Vector1d{1.});
+  }
+
+  prog.AddCost(x(0) + x(1));
+  prog.SetInitialGuess(x, Vector2d{-.5, -.5});
+  SolutionResult result = prog.Solve();
+  EXPECT_EQ(result, kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
+                              Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
+}
+
+GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+
+  // Pretend the problem has been solved.
+  const SolverId dummy_solver_id("dummy");
+
+  // Only set the solver ID in solver_result.
+  SolverResult solver_result(dummy_solver_id);
+
+  prog.SetSolverResult(solver_result);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+
+  // Sets the variable values, the optimal cost, and lower bound cost.
+  const Eigen::Vector2d x_val(1, 2);
+  const double cost{1.0};
+  const double lower_bound_cost{1.0};
+  solver_result.set_decision_variable_values(x_val);
+  solver_result.set_optimal_cost(cost);
+  solver_result.set_optimal_cost_lower_bound(lower_bound_cost);
+  prog.SetSolverResult(solver_result);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_val));
+  EXPECT_EQ(prog.GetOptimalCost(), cost);
+  EXPECT_EQ(prog.GetLowerBoundCost(), lower_bound_cost);
+
+  // Now create a new solver_result.
+  const SolverId dummy_solver_id2("dummy2");
+  SolverResult solver_result2(dummy_solver_id2);
+  prog.SetSolverResult(solver_result2);
+  EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
+  // The decision variables, optimal cost, and lower bound should all be NaN.
+  EXPECT_TRUE(CompareMatrices(
+      prog.GetSolution(x),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+  EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
+  EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
+}
+
+GTEST_TEST(testMathematicalProgram, testAddCallback) {
+  MathematicalProgram prog;
+
+  auto x = prog.NewContinuousVariables<2>();
+  bool was_called = false;
+  auto my_callback = [&was_called](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 2);
+    EXPECT_EQ(v(0), 1.);
+    EXPECT_EQ(v(1), 2.);
+    was_called = true;
+  };
+
+  Binding<VisualizationCallback> b =
+      prog.AddVisualizationCallback(my_callback, x);
+  EXPECT_EQ(prog.visualization_callbacks().size(), 1);
+
+  const Vector2d test_x(1., 2.);
+
+  // Call it via EvalVisualizationCallbacks.
+  was_called = false;
+  prog.EvalVisualizationCallbacks(test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it via EvalBinding.
+  was_called = false;
+  prog.EvalBinding(b, test_x);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the double interface.
+  VectorXd test_y(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x, test_y);
+  EXPECT_TRUE(was_called);
+
+  // Call it directly via the autodiff interface.
+  const VectorX<AutoDiffXd> test_x_autodiff =
+      math::initializeAutoDiff(VectorXd{test_x});
+  VectorX<AutoDiffXd> test_y_autodiff(0);
+  was_called = false;
+  b.evaluator()->Eval(test_x_autodiff, test_y_autodiff);
+  EXPECT_TRUE(was_called);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

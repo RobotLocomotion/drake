@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
@@ -41,9 +43,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
   }
-
-  // TODO(siyuan): add multiple DrakeLcmInterface, so you can publish to a log
-  // and real lcm at the same time.
 
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
@@ -129,6 +128,21 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre this system is using a vector-valued port (not abstract-valued).
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
+
+  /// Returns the sole input port.
+  const InputPortDescriptor<double>& get_input_port() const {
+    DRAKE_THROW_UNLESS(this->get_num_input_ports() == 1);
+    return LeafSystem<double>::get_input_port(0);
+  }
+
+  DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
+  const InputPortDescriptor<double>& get_input_port(int index) const {
+    DRAKE_THROW_UNLESS(index == 0);
+    return get_input_port();
+  }
+
+  // This system has no output ports.
+  void get_output_port(int) = delete;
 
  private:
   // All constructors delegate to here.

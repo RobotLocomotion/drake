@@ -6,8 +6,8 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include <bot_core/pointcloud_t.hpp>
 #include <gtest/gtest.h>
+#include "bot_core/pointcloud_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcm/drake_lcm.h"

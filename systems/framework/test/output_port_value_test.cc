@@ -6,24 +6,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/output_port_listener_interface.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
-
-class TestOutputPortListener : public detail::OutputPortListenerInterface {
- public:
-  void Invalidate() override { invalidations_++; }
-  void Disconnect() override { disconnections_++; }
-
-  int get_invalidations() { return invalidations_; }
-  int get_disconnections() { return disconnections_; }
-
- private:
-  int invalidations_ = 0;
-  int disconnections_ = 0;
-};
 
 class OutputPortVectorTest : public ::testing::Test {
  protected:
@@ -45,14 +31,10 @@ TEST_F(OutputPortVectorTest, Access) {
 }
 
 TEST_F(OutputPortVectorTest, Mutation) {
-  EXPECT_EQ(0, output_port_value_->get_version());
   output_port_value_->template GetMutableVectorData<double>()
           ->get_mutable_value()
       << 7,
       8;
-
-  // Check that the version number was incremented.
-  EXPECT_EQ(1, output_port_value_->get_version());
 
   // Check that the vector contents changed.
   VectorX<double> expected(2);
@@ -79,32 +61,6 @@ TEST_F(OutputPortVectorTest, Clone) {
   EXPECT_NE(nullptr, clone->template get_vector_data<double>());
 }
 
-// Tests that listeners are notified when GetMutableVectorData is called, and
-// when the OutputPortValue is deleted.
-TEST_F(OutputPortVectorTest, Listeners) {
-  TestOutputPortListener a, b, c;
-  output_port_value_->add_dependent(&a);
-  output_port_value_->add_dependent(&b);
-  output_port_value_->template GetMutableVectorData<double>();
-  EXPECT_EQ(1, a.get_invalidations());
-  EXPECT_EQ(1, b.get_invalidations());
-  EXPECT_EQ(0, c.get_invalidations());
-
-  output_port_value_->remove_dependent(&a);
-  output_port_value_->add_dependent(&c);
-  output_port_value_->template GetMutableVectorData<double>();
-  EXPECT_EQ(1, a.get_invalidations());
-  EXPECT_EQ(2, b.get_invalidations());
-  EXPECT_EQ(1, c.get_invalidations());
-
-  // Only the listeners that are connected at the time the OutputPortValue is
-  // destroyed get a disconnect notification.
-  output_port_value_.reset();
-  EXPECT_EQ(0, a.get_disconnections());
-  EXPECT_EQ(1, b.get_disconnections());
-  EXPECT_EQ(1, c.get_disconnections());
-}
-
 class OutputPortAbstractValueTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -121,11 +77,7 @@ TEST_F(OutputPortAbstractValueTest, Access) {
 }
 
 TEST_F(OutputPortAbstractValueTest, Mutation) {
-  EXPECT_EQ(0, output_port_value_->get_version());
   output_port_value_->GetMutableData()->GetMutableValue<std::string>() = "bar";
-
-  // Check that the version number was incremented.
-  EXPECT_EQ(1, output_port_value_->get_version());
 
   // Check that the contents changed.
   EXPECT_EQ("bar",

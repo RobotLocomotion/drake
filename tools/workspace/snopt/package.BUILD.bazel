@@ -1,0 +1,158 @@
+# -*- python -*-
+
+licenses(["by_exception_only"])  # SNOPT
+
+# In some versions of SNOPT, this header provides the function declarations to
+# control SNOPT's logging.  In other versions, those declarations instead
+# appear directly in cexamples/snopt.h and this file is absent.  We'll sense
+# whether it's present, and define SNOPT_HAS_SNFILEWRAPPER only if so.
+_MAYBE_SNFILEWRAPPER = glob([
+    "cexamples/snfilewrapper.h",
+])
+
+# Drake's binary releases are allowed to redistribute SNOPT only if SNOPT is
+# not redistributed as a stand-alone package -- users must not use the SNOPT
+# code on its own, but rather only through Drake's interfaces.  To that end,
+# we (1) always link SNOPT statically, (2) use hidden symbol visibility.
+cc_library(
+    name = "snopt_c",
+    srcs = glob(
+        ["csrc/*.c"],
+        exclude = ["csrc/dummy.c"],
+    ),
+    hdrs = [
+        "cexamples/snopt.h",
+    ] + _MAYBE_SNFILEWRAPPER,
+    copts = [
+        "-w",
+        # Hide symbols per note (2) above.
+        "-fvisibility=hidden",
+    ],
+    defines = [
+        "SNOPT_HAS_SNFILEWRAPPER",
+    ] if _MAYBE_SNFILEWRAPPER else [],
+    includes = ["."],
+    linkopts = [
+        "-lm",
+    ],
+    # Link statically per note (1) above.
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [":libf2c"],
+    # Always link the entirety of SNOPT.
+    alwayslink = 1,
+)
+
+# Different revisions of SNOPT have the libf2c folder in different places.
+# Find a well-known f2c header and strip off the filename to leave, e.g.,
+# "libf2c/" as the path constant that we want.  First one wins.
+_LIBF2C = (glob([
+    "libf2c/ctype.h",
+    "f2c/libf2c/ctype.h",
+]) or fail("Could not find ctype.h"))[0][:-len("ctype.h")]
+
+cc_binary(
+    name = "arithchk",
+    srcs = [_LIBF2C + "arithchk.c"],
+    copts = [
+        "-w",
+        "-DNO_FPINIT",
+    ],
+    linkopts = ["-lm"],
+)
+
+genrule(
+    name = "arith",
+    srcs = [],
+    outs = [_LIBF2C + "arith.h"],
+    cmd = "$(location :arithchk) > $(@)",
+    tools = [":arithchk"],
+)
+
+genrule(
+    name = "f2c",
+    srcs = [_LIBF2C + "f2c.h0"],
+    outs = [_LIBF2C + "f2c.h"],
+    cmd = "cp $< $(@)",
+)
+
+genrule(
+    name = "sysdep1",
+    srcs = [_LIBF2C + "sysdep1.h0"],
+    outs = [_LIBF2C + "sysdep1.h"],
+    cmd = "cp $< $(@)",
+)
+
+genrule(
+    name = "signal1",
+    srcs = [_LIBF2C + "signal1.h0"],
+    outs = [_LIBF2C + "signal1.h"],
+    cmd = "cp $< $(@)",
+)
+
+# Some libf2c's need math.h0 copied to f2math.h, but others don't.  Check if we
+# have the input file that would need a rename.
+_MAYBE_MATH_H0 = glob([_LIBF2C + "math.h0"])
+
+# If we had the input file, this is the output.  Otherwise, this is empty.
+_MAYBE_F2MATH_H = [_LIBF2C + "f2math.h"] if _MAYBE_MATH_H0 else []
+
+# Copy the file only if needed.
+genrule(
+    name = "math",
+    srcs = _MAYBE_MATH_H0,
+    outs = _MAYBE_F2MATH_H,
+    cmd = "cp $< $(@)" if _MAYBE_F2MATH_H else ":",
+)
+
+filegroup(
+    name = "generated_headers",
+    srcs = [
+        _LIBF2C + "arith.h",
+        _LIBF2C + "f2c.h",
+        _LIBF2C + "signal1.h",
+        _LIBF2C + "sysdep1.h",
+    ] + _MAYBE_F2MATH_H,
+)
+
+filegroup(
+    name = "generated_public_headers",
+    srcs = [_LIBF2C + "f2c.h"],
+)
+
+# Replace main.c, which causes tests that link to SNOPT to erroneously pass.
+genrule(
+    name = "main_",
+    outs = [_LIBF2C + "main_.c"],
+    cmd = "echo \"int xargc; char **xargv;\" > $(@)",
+)
+
+cc_library(
+    name = "libf2c",
+    srcs = [":main_"] + glob(
+        [
+            _LIBF2C + "*.c",
+            _LIBF2C + "*.h",
+        ],
+        # Exclude optional sources and generator tools from the glob.
+        exclude = [
+            _LIBF2C + "main.c",
+            _LIBF2C + "pow_qq.c",
+            _LIBF2C + "qbitbits.c",
+            _LIBF2C + "qbitshft.c",
+            _LIBF2C + "*64*.c",
+            _LIBF2C + "arithchk.c",
+        ],
+    ),
+    hdrs = [":generated_headers"],
+    copts = [
+        "-DSkip_f2c_Undefs",
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    # Link statically so that Fortran MAIN__ resolution works on gcc.
+    linkstatic = 1,
+    # By convention, SNOPT header #includes are not fully qualified.
+    strip_include_prefix = _LIBF2C,
+    visibility = ["//visibility:public"],
+)

@@ -16,6 +16,7 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
+namespace {
 
 // EndpointXy checks.
 GTEST_TEST(EndpointXyTest, DefaultConstructor) {
@@ -487,6 +488,7 @@ INSTANTIATE_TEST_CASE_P(EndpointZ, MultilaneConnectionEndpointZTest,
                                             EndpointZ(5., 1., M_PI / 6., 1.),
                                             0., 1)));
 
+}  // namespace
 }  // namespace multilane
 }  // namespace maliput
 }  // namespace drake

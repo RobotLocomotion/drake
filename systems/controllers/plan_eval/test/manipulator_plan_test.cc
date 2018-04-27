@@ -7,7 +7,6 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/plan_eval/manipulator_move_end_effector_plan.h"
 #include "drake/systems/controllers/plan_eval/test/test_common.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace systems {

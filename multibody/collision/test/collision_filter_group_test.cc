@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/joints/drake_joints.h"
+#include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -34,6 +35,7 @@ namespace test {
 namespace {
 
 using drake::FindResourceOrThrow;
+using drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
 using Eigen::VectorXd;
@@ -458,49 +460,93 @@ GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
 
 //---------------------------------------------------------------------------
 
-// Parses a URDF file with an inherent geometric collision which is filtered
-// out using a single collision filter group with multiple members (which
-// ignores itself.)
-GTEST_TEST(CollisionFilterGroupURDF, ParseMultiMemberTest) {
+// Utility function for loading an sdf|urdf file, performing *optional*
+// pre-compile activities, configuring it to the "zero" configuration, perform
+// collision detection, and assert the expected number of collisions.
+//
+// This supports tests where the file is parsed and compiled as well as tests
+// where compilation is deferred.
+//
+// Note: The pre_compile function does *not* need to compile the tree.
+void ExpectNCollisions(
+    const std::string& file_name, const std::string& extension,
+    int collision_count,
+    std::function<void(RigidBodyTree<double>*)> pre_compile = {}) {
+  // If there is pre-compile work to do, parse without compilation.
+  bool do_compile = !pre_compile;
   RigidBodyTree<double> tree;
-  AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/collision/test/"
-          "collision_filter_group_test_multi_member.urdf"),
-      drake::multibody::joints::kRollPitchYaw, &tree);
-  Eigen::Matrix<double, 16, 1> state;
-  state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
-      0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
+  if (extension == "urdf") {
+    AddModelInstanceFromUrdfFileToWorld(
+        FindResourceOrThrow(file_name + extension),
+        drake::multibody::joints::kRollPitchYaw, do_compile, &tree);
+  } else if (extension == "sdf") {
+    AddModelInstancesFromSdfFileToWorld(
+        FindResourceOrThrow(file_name + extension),
+        drake::multibody::joints::kRollPitchYaw, do_compile, &tree);
+  }  else {
+    GTEST_FAIL() << "Unexpected model extension: " << extension;
+  }
 
-  VectorXd q = state.topRows(8);
-  VectorXd v = state.bottomRows(8);
+  if (pre_compile) {
+    pre_compile(&tree);
+    tree.compile();
+  }
+
+  // Simply initialize everything to the "zero" position.
+  const int q_size = tree.get_num_positions();
+  const int v_size = tree.get_num_velocities();
+  VectorXd q = VectorXd::Zero(q_size);
+  VectorXd v = VectorXd::Zero(v_size);
   auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
+  std::vector<PointPair<double>> pairs =
       tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
-  EXPECT_EQ(pairs.size(), 0u);
+  EXPECT_EQ(pairs.size(), collision_count)
+            << "Failure for " << file_name << extension;
 }
 
-// Parses a URDF file with an inherent geometric collision which is filtered
-// out using one collision filter group which ignores multiple other collision
-// filter groups (each with a body in it).
-GTEST_TEST(CollisionFilterGroupURDF, ParseMultiIgnoreTest) {
-  RigidBodyTree<double> tree;
-  AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/collision/test/"
-          "collision_filter_group_test_multi_ignore.urdf"),
-      drake::multibody::joints::kRollPitchYaw, &tree);
-  Eigen::Matrix<double, 16, 1> state;
-  state << 0, 0, 0, 0, 0, 0, 0, 0,  // x_0, rpy_0, joint12, joint23
-      0, 0, 0, 0, 0, 0, 0, 0;  // x_dot_0, omega_0, joint12_dot, joint23_dot
-
-  VectorXd q = state.topRows(8);
-  VectorXd v = state.bottomRows(8);
-  auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair> pairs =
-      tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
-  EXPECT_EQ(pairs.size(), 0u);
+// These tests read the files `filter_groups_in_file.[sdf|urdf]`. Each file
+// represents an identical tree with built-in collisions where all collisions
+// have been filtered out by different filter specification idioms. The
+// test confirms that no collisions are reported.
+GTEST_TEST(CollisionFilterGroupDefinition, TestCollisionFilterGroupSpecUrdf) {
+  const std::string file_name = "drake/multibody/collision/test/"
+      "filter_groups_in_file.";
+  ExpectNCollisions(file_name, "urdf", 0);
 }
+
+GTEST_TEST(CollisionFilterGroupDefinition, TestCollisionFilterGroupSpecSdf) {
+  const std::string file_name = "drake/multibody/collision/test/"
+      "filter_groups_in_file.";
+  ExpectNCollisions(file_name, "sdf", 0);
+}
+
+// This confirms that default use of parsing a urdf/sdf leaves the tree in a
+// state that prevents modification of collision filter groups for the parsed
+// bodies.
+GTEST_TEST(CollisionFilterGroupDefinition, PostParseFailure) {
+  const std::string file_name = "drake/multibody/collision/test/"
+      "no_filter_groups.";
+  // Confirm collisions without filter groups.
+  ExpectNCollisions(file_name, "urdf", 1);
+  ExpectNCollisions(file_name, "sdf", 1);
+
+  auto configure_groups = [](RigidBodyTree<double>* tree) {
+    const std::string group_name = "self_group";
+    tree->DefineCollisionFilterGroup(group_name);
+    tree->AddCollisionFilterGroupMember(group_name, "sphereA", 0);
+    tree->AddCollisionFilterGroupMember(group_name, "sphereB", 0);
+    tree->AddCollisionFilterIgnoreTarget(group_name, group_name);
+  };
+  ExpectNCollisions(file_name, "urdf", 0, configure_groups);
+  ExpectNCollisions(file_name, "sdf", 0, configure_groups);
+}
+
+GTEST_TEST(CollisionFilterGroupDefinition, MultiModelSdfFilters) {
+  const std::string file_name = "drake/multibody/collision/test/"
+      "multi_model_groups.";
+  ExpectNCollisions(file_name, "sdf", 0);
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace collision

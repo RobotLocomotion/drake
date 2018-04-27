@@ -214,7 +214,7 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
     builder.Connect(plant_->contact_results_output_port(),
                     contact_viz.get_input_port(0));
     builder.Connect(contact_viz.get_output_port(0),
-                    contact_results_publisher.get_input_port(0));
+                    contact_results_publisher.get_input_port());
 
     // Robot state encoder to robot state publisher.
     builder.Connect(robot_state_encoder, robot_state_publisher);

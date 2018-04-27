@@ -39,7 +39,7 @@ drake_cc_library(
     srcs = ["adder.cc"],
     hdrs = ["adder.h"],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -48,9 +48,19 @@ drake_cc_library(
     srcs = ["affine_system.cc"],
     hdrs = ["affine_system.h"],
     deps = [
-        "//drake/common:symbolic",
-        "//drake/common:symbolic_decompose",
-        "//drake/systems/framework",
+        "//common:symbolic",
+        "//common:symbolic_decompose",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "barycentric_system",
+    srcs = ["barycentric_system.cc"],
+    hdrs = ["barycentric_system.h"],
+    deps = [
+        "//math:barycentric",
+        "//systems/framework:vector_system",
     ],
 )
 
@@ -62,7 +72,7 @@ drake_cc_library(
         "constant_value_source-inl.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -71,8 +81,8 @@ drake_cc_library(
     srcs = ["constant_vector_source.cc"],
     hdrs = ["constant_vector_source.h"],
     deps = [
-        "//drake/common:symbolic",
-        "//drake/systems/framework",
+        "//common:symbolic",
+        "//systems/framework",
     ],
 )
 
@@ -81,7 +91,7 @@ drake_cc_library(
     srcs = ["demultiplexer.cc"],
     hdrs = ["demultiplexer.h"],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -92,7 +102,7 @@ drake_cc_library(
         "first_order_low_pass_filter.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -104,8 +114,8 @@ drake_cc_library(
         "gain-inl.h",
     ],
     deps = [
-        "//drake/common:unused",
-        "//drake/systems/framework",
+        "//common:unused",
+        "//systems/framework",
     ],
 )
 
@@ -114,8 +124,8 @@ drake_cc_library(
     srcs = ["integrator.cc"],
     hdrs = ["integrator.h"],
     deps = [
-        "//drake/common:unused",
-        "//drake/systems/framework",
+        "//common:unused",
+        "//systems/framework",
     ],
 )
 
@@ -125,11 +135,12 @@ drake_cc_library(
     hdrs = ["linear_system.h"],
     deps = [
         ":affine_system",
-        "//drake/common:symbolic",
-        "//drake/common:symbolic_decompose",
-        "//drake/math:autodiff",
-        "//drake/math:gradient",
-        "//drake/systems/framework",
+        "//common:essential",
+        "//common:symbolic",
+        "//common:symbolic_decompose",
+        "//math:autodiff",
+        "//math:gradient",
+        "//systems/framework",
     ],
 )
 
@@ -139,7 +150,7 @@ drake_cc_library(
     hdrs = ["matrix_gain.h"],
     deps = [
         ":linear_system",
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -148,7 +159,7 @@ drake_cc_library(
     srcs = ["multiplexer.cc"],
     hdrs = ["multiplexer.h"],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -160,7 +171,7 @@ drake_cc_library(
         "pass_through-inl.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -171,9 +182,9 @@ drake_cc_library(
     deps = [
         ":affine_system",
         ":time_varying_data",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/common:extract_double",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:extract_double",
     ],
 )
 
@@ -184,9 +195,9 @@ drake_cc_library(
     deps = [
         ":linear_system",
         ":time_varying_data",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/common:extract_double",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:extract_double",
     ],
 )
 
@@ -195,10 +206,10 @@ drake_cc_library(
     srcs = ["random_source.cc"],
     hdrs = ["random_source.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common:unused",
-        "//drake/systems/framework:diagram_builder",
-        "//drake/systems/framework:leaf_system",
+        "//common:essential",
+        "//common:unused",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -207,8 +218,8 @@ drake_cc_library(
     srcs = ["saturation.cc"],
     hdrs = ["saturation.h"],
     deps = [
-        "//drake/math:saturate",
-        "//drake/systems/framework",
+        "//math:saturate",
+        "//systems/framework",
     ],
 )
 
@@ -218,7 +229,7 @@ drake_cc_library(
     hdrs = ["signal_logger.h"],
     deps = [
         ":signal_log",
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -227,8 +238,8 @@ drake_cc_library(
     srcs = ["signal_log.cc"],
     hdrs = ["signal_log.h"],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -237,8 +248,8 @@ drake_cc_library(
     srcs = ["time_varying_data.cc"],
     hdrs = ["time_varying_data.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -247,8 +258,18 @@ drake_cc_library(
     srcs = ["trajectory_source.cc"],
     hdrs = ["trajectory_source.h"],
     deps = [
-        "//drake/common/trajectories:trajectory",
-        "//drake/systems/framework",
+        "//common/trajectories:trajectory",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "wrap_to_system",
+    srcs = ["wrap_to_system.cc"],
+    hdrs = ["wrap_to_system.h"],
+    deps = [
+        "//math:wrap_to",
+        "//systems/framework",
     ],
 )
 
@@ -260,7 +281,7 @@ drake_cc_library(
         "zero_order_hold-inl.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -272,7 +293,7 @@ drake_cc_library(
         "sine-inl.h",
     ],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -289,9 +310,9 @@ drake_cc_googletest(
     name = "adder_test",
     deps = [
         ":adder",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -300,9 +321,19 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":affine_system",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "barycentric_system_test",
+    deps = [
+        ":barycentric_system",
+        ":matrix_gain",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
     ],
 )
 
@@ -310,9 +341,9 @@ drake_cc_googletest(
     name = "constant_value_source_test",
     deps = [
         ":constant_value_source",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities:scalar_conversion",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
@@ -320,9 +351,9 @@ drake_cc_googletest(
     name = "constant_vector_source_test",
     deps = [
         ":constant_vector_source",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities:my_vector",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -330,9 +361,9 @@ drake_cc_googletest(
     name = "demultiplexer_test",
     deps = [
         ":demultiplexer",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -343,9 +374,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":first_order_low_pass_filter",
-        "//drake/common:unused",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common:unused",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -357,10 +388,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":gain",
-        "//drake/common:symbolic",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -368,9 +399,9 @@ drake_cc_googletest(
     name = "integrator_test",
     deps = [
         ":integrator",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -379,10 +410,10 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":linear_system",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/examples/pendulum:pendulum_plant",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/pendulum:pendulum_plant",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -391,9 +422,9 @@ drake_cc_googletest(
     deps = [
         ":affine_linear_test",
         ":matrix_gain",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -401,10 +432,10 @@ drake_cc_googletest(
     name = "multiplexer_test",
     deps = [
         ":multiplexer",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:is_dynamic_castable",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -416,9 +447,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":pass_through",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -434,9 +465,9 @@ drake_cc_googletest(
     deps = [
         ":piecewise_linear_affine_test",
         ":piecewise_polynomial_affine_system",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -445,9 +476,9 @@ drake_cc_googletest(
     deps = [
         ":piecewise_linear_affine_test",
         ":piecewise_polynomial_linear_system",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -457,8 +488,8 @@ drake_cc_googletest(
         ":constant_vector_source",
         ":random_source",
         ":signal_logger",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/analysis",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis",
     ],
 )
 
@@ -475,9 +506,9 @@ drake_cc_googletest(
         ":affine_system",
         ":linear_system",
         ":signal_logger",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/analysis:simulator",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
+        "//systems/framework",
     ],
 )
 
@@ -488,10 +519,10 @@ drake_cc_googletest(
     ],
     deps = [
         ":sine",
-        "//drake/common:symbolic",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -500,7 +531,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_linear_affine_test",
         ":time_varying_data",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -508,9 +539,17 @@ drake_cc_googletest(
     name = "trajectory_source_test",
     deps = [
         ":trajectory_source",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrap_to_system_test",
+    deps = [
+        ":wrap_to_system",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -518,9 +557,9 @@ drake_cc_googletest(
     name = "zero_order_hold_test",
     deps = [
         ":zero_order_hold",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
-        "//drake/systems/framework/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 

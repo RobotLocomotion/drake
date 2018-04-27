@@ -347,32 +347,32 @@ void LinearProgram3::CheckSolution(SolverType solver_type) const {
   ExpectSolutionCostAccurate(*prog(), cost_tol);
 }
 
-
 LinearProgramTest::LinearProgramTest() {
   auto cost_form = std::get<0>(GetParam());
   auto constraint_form = std::get<1>(GetParam());
   switch (std::get<2>(GetParam())) {
-    case LinearProblems::kLinearFeasibilityProgram : {
+    case LinearProblems::kLinearFeasibilityProgram: {
       prob_ = std::make_unique<LinearFeasibilityProgram>(constraint_form);
       break;
     }
-    case LinearProblems::kLinearProgram0 : {
+    case LinearProblems::kLinearProgram0: {
       prob_ = std::make_unique<LinearProgram0>(cost_form, constraint_form);
       break;
     }
-    case LinearProblems::kLinearProgram1 : {
+    case LinearProblems::kLinearProgram1: {
       prob_ = std::make_unique<LinearProgram1>(cost_form, constraint_form);
       break;
     }
-    case LinearProblems::kLinearProgram2 : {
+    case LinearProblems::kLinearProgram2: {
       prob_ = std::make_unique<LinearProgram2>(cost_form, constraint_form);
       break;
     }
-    case LinearProblems::kLinearProgram3 : {
+    case LinearProblems::kLinearProgram3: {
       prob_ = std::make_unique<LinearProgram3>(cost_form, constraint_form);
       break;
     }
-    default : throw std::runtime_error("Un-recognized linear problem.");
+    default:
+      throw std::runtime_error("Un-recognized linear problem.");
   }
 }
 
@@ -400,6 +400,15 @@ UnboundedLinearProgramTest0::UnboundedLinearProgramTest0()
   prog_->AddLinearConstraint(2 * x(0) + x(1) >= 4);
   prog_->AddLinearConstraint(x(0) >= 0);
   prog_->AddLinearConstraint(x(1) >= 2);
+}
+
+UnboundedLinearProgramTest1::UnboundedLinearProgramTest1()
+    : prog_(std::make_unique<MathematicalProgram>()) {
+  auto x = prog_->NewContinuousVariables<4>("x");
+  prog_->AddCost(x(0) + 2 * x(1) + 3 * x(2) + 2.5 * x(3) + 2);
+  prog_->AddLinearConstraint(x(0) + x(1) - x(2) + x(3) <= 3);
+  prog_->AddLinearConstraint(x(0) + 2 * x(1) - 2 * x(2) + 4 * x(3), 1, 3);
+  prog_->AddBoundingBoxConstraint(0, 1, VectorDecisionVariable<2>(x(0), x(2)));
 }
 }  // namespace test
 }  // namespace solvers

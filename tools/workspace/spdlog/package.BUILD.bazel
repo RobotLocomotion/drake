@@ -7,6 +7,8 @@ load(
     "install_cmake_config",
 )
 
+licenses(["notice"])  # BSD-2-Clause AND MIT
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -33,20 +35,23 @@ cc_library(
     deps = ["@fmt"],
 )
 
+CMAKE_PACKAGE = "spdlog"
+
 cmake_config(
-    package = "spdlog",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/spdlog:package-create-cps.py",
     version_file = "CMakeLists.txt",
     deps = ["@fmt//:cps"],
 )
 
-install_cmake_config(package = "spdlog")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install(
     name = "install",
     targets = [":spdlog"],
-    hdr_dest = "include/spdlog",
-    hdr_strip_prefix = ["include/spdlog"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    hdr_strip_prefix = ["include"],
     guess_hdrs = "PACKAGE",
     docs = ["LICENSE"],
     deps = [":install_cmake_config"],

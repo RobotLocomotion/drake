@@ -83,17 +83,17 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kVectorValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kVectorValued, 0, nullopt);
     return context.EvalVectorInput(nullptr, descriptor);
   }
 
   // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
   // connected to @p context at @p index.
-  static const std::string* ReadStringInputPort(
-      const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+  static const std::string* ReadStringInputPort(const Context<double>& context,
+                                                int index) {
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt);
     return context.EvalInputValue<std::string>(nullptr, descriptor);
   }
 
@@ -101,8 +101,8 @@ class LeafContextTest : public ::testing::Test {
   // connected to @p context at @p index.
   static const AbstractValue* ReadAbstractInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, index, kAbstractValued, 0,
-                                           nullopt);
+    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
+                                           kAbstractValued, 0, nullopt);
     return context.EvalAbstractInput(nullptr, descriptor);
   }
 
@@ -125,6 +125,11 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(2, clone.get_discrete_state().num_groups());
   const BasicVector<double>& xd0 = clone.get_discrete_state().get_vector(0);
   const BasicVector<double>& xd1 = clone.get_discrete_state().get_vector(1);
+
+  // Check that sugar methods work too.
+  EXPECT_EQ(&clone.get_discrete_state(0), &xd0);
+  EXPECT_EQ(&clone.get_discrete_state(1), &xd1);
+
   {
     VectorX<double> contents = xd0.CopyToVector();
     VectorX<double> expected(1);
@@ -175,8 +180,8 @@ TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
   EXPECT_EQ(2, context_.get_num_discrete_state_groups());
 }
 
-TEST_F(LeafContextTest, GetNumAbstractStateGroups) {
-  EXPECT_EQ(1, context_.get_num_abstract_state_groups());
+TEST_F(LeafContextTest, GetNumAbstractStates) {
+  EXPECT_EQ(1, context_.get_num_abstract_states());
 }
 
 TEST_F(LeafContextTest, IsStateless) {
@@ -254,19 +259,6 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
-// Tests that items can be stored and retrieved in the cache, even when
-// the LeafContext is const.
-TEST_F(LeafContextTest, SetAndGetCache) {
-  const LeafContext<double>& ctx = context_;
-  CacheTicket ticket = ctx.CreateCacheEntry({});
-  ctx.InitCachedValue(ticket, PackValue(42));
-  const AbstractValue* value = ctx.GetCachedValue(ticket);
-  EXPECT_EQ(42, UnpackIntValue(value));
-
-  ctx.SetCachedValue<int>(ticket, 43);
-  EXPECT_EQ(43, UnpackIntValue(ctx.GetCachedValue(ticket)));
-}
-
 TEST_F(LeafContextTest, Clone) {
   std::unique_ptr<Context<double>> clone = context_.Clone();
   // Verify that the time was copied.
@@ -299,6 +291,11 @@ TEST_F(LeafContextTest, Clone) {
   xd1.SetAtIndex(0, 1024.0);
   EXPECT_EQ(1024.0, clone->get_discrete_state(1).GetAtIndex(0));
   EXPECT_EQ(256.0, context_.get_discrete_state(1).GetAtIndex(0));
+
+  // Check State indexed discrete methods too.
+  State<double>& state = clone->get_mutable_state();
+  EXPECT_EQ(1024.0, state.get_discrete_state(1).GetAtIndex(0));
+  EXPECT_EQ(1024.0, state.get_mutable_discrete_state(1).GetAtIndex(0));
 
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;

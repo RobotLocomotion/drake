@@ -1,8 +1,10 @@
 #include "drake/examples/geometry_world/solar_system.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "drake/common/find_resource.h"
 #include "drake/geometry/frame_id_vector.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -21,8 +23,10 @@ using geometry::FrameId;
 using geometry::FrameIdVector;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
+using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::GeometrySystem;
+using geometry::Mesh;
 using geometry::SourceId;
 using geometry::Sphere;
 using systems::BasicVector;
@@ -139,7 +143,7 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
       source_id_, make_unique<GeometryInstance>(Isometry3<double>::Identity(),
                                                 make_unique<Sphere>(1.f)));
 
-  // The fixed pose on which Sun sits and around which all planets rotate.
+  // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;
   Isometry3<double> post_pose = Isometry3<double>::Identity();
   post_pose.translation() << 0, 0, (orrery_bottom + post_height / 2);
@@ -151,88 +155,99 @@ void SolarSystem<T>::AllocateGeometry(GeometrySystem<T>* geometry_system) {
   // Allocate the "celestial bodies": two planets orbiting on different planes,
   // each with a moon.
 
-  // Earth - Earth's frame lies directly *below* the sun (to account for the
+  // For the full description of the frame labels, see solar_system.h.
+
+  // Earth's frame E lies directly *below* the sun (to account for the
   // orrery arm).
   const double kEarthBottom = orrery_bottom + 0.25;
-  Isometry3<double> planet_pose = Isometry3<double>::Identity();
-  planet_pose.translation() << 0, 0, kEarthBottom;
+  Isometry3<double> X_SE{Translation3<double>{0, 0, kEarthBottom}};
   FrameId planet_id = geometry_system->RegisterFrame(
-      source_id_, GeometryFrame("Earth", planet_pose));
+      source_id_, GeometryFrame("Earth", X_SE));
   body_ids_.push_back(planet_id);
-  body_offset_.push_back(planet_pose);
+  body_offset_.push_back(X_SE);
   axes_.push_back(Vector3<double>::UnitZ());
 
   // The geometry is displaced from the Earth _frame_ so that it orbits.
   const double kEarthOrbitRadius = 3.0;
-  Isometry3<double> earth_pose = Isometry3<double>::Identity();
-  earth_pose.translation() << kEarthOrbitRadius, 0, -kEarthBottom;
+  Isometry3<double> X_EGe{
+      Translation3<double>{kEarthOrbitRadius, 0, -kEarthBottom}};
   geometry_system->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(earth_pose, make_unique<Sphere>(0.25f)));
+      make_unique<GeometryInstance>(X_EGe, make_unique<Sphere>(0.25f)));
   // Earth's orrery arm.
   MakeArm(source_id_, planet_id, kEarthOrbitRadius, -kEarthBottom, pipe_radius,
           geometry_system);
 
-  // Luna - Luna's frame is at the center of the Earth.
+  // Luna's frame L is at the center of Earth's geometry (Ge). So, X_EL = X_EGe.
+  const Isometry3<double>& X_EL = X_EGe;
   FrameId luna_id = geometry_system->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("Luna", earth_pose));
+      source_id_, planet_id, GeometryFrame("Luna", X_EL));
   body_ids_.push_back(luna_id);
-  body_offset_.push_back(earth_pose);
-  Vector3<double> plane_normal;
-  plane_normal << 1, 1, 1;
+  body_offset_.push_back(X_EL);
+  Vector3<double> plane_normal{1, 1, 1};
   axes_.push_back(plane_normal.normalized());
 
   // The geometry is displaced from Luna's frame so that it orbits.
   const double kLunaOrbitRadius = 0.35;
-  Isometry3<double> luna_pose = Isometry3<double>::Identity();
   // Pick a position at kLunaOrbitRadius distance from the Earth's origin on
-  // the plane _perpendicular_ to the moon's normal (axes_.back()).
-  Vector3<double> luna_position(-1, 0.5, 0.5);
-  luna_pose.translation() = luna_position.normalized() * kLunaOrbitRadius;
+  // the plane _perpendicular_ to the moon's normal (<1, 1, 1>).
+  // luna_position.dot(plane_normal) will be zero.
+  Vector3<double> luna_position =
+      Vector3<double>(-1, 0.5, 0.5).normalized() * kLunaOrbitRadius;
+  Isometry3<double> X_LGl{Translation3<double>{luna_position}};
   geometry_system->RegisterGeometry(
       source_id_, luna_id,
-      make_unique<GeometryInstance>(luna_pose, make_unique<Sphere>(0.075f)));
+      make_unique<GeometryInstance>(X_LGl, make_unique<Sphere>(0.075f)));
 
-  // Mars - Mars's frame lies directly *below* the sun (to account for the
-  // orrery arm).
-  planet_pose.translation() << 0, 0, orrery_bottom;
+  // Mars's frame M lies directly *below* the sun (to account for the orrery
+  // arm).
+  Isometry3<double> X_SM{Translation3<double>{0, 0, orrery_bottom}};
   planet_id = geometry_system->RegisterFrame(
-      source_id_, GeometryFrame("Mars", planet_pose));
+      source_id_, GeometryFrame("Mars", X_SM));
   body_ids_.push_back(planet_id);
-  body_offset_.push_back(planet_pose);
+  body_offset_.push_back(X_SM);
   plane_normal << 0, 0.1, 1;
   axes_.push_back(plane_normal.normalized());
 
   // The geometry is displaced from the Mars _frame_ so that it orbits.
   const double kMarsOrbitRadius = 5.0;
-  Isometry3<double> mars_pose = Isometry3<double>::Identity();
-  mars_pose.translation() << kMarsOrbitRadius, 0, -orrery_bottom;
-  geometry_system->RegisterGeometry(
+  const double kMarsSize = 0.24;
+  Isometry3<double> X_MGm{
+      Translation3<double>{kMarsOrbitRadius, 0, -orrery_bottom}};
+  GeometryId mars_geometry_id = geometry_system->RegisterGeometry(
       source_id_, planet_id,
-      make_unique<GeometryInstance>(mars_pose, make_unique<Sphere>(0.24f)));
+      make_unique<GeometryInstance>(X_MGm, make_unique<Sphere>(kMarsSize)));
+
+  std::string rings_absolute_path =
+      FindResourceOrThrow("drake/examples/geometry_world/planet_rings.obj");
+  Vector3<double> axis = Vector3<double>(1, 1, 1).normalized();
+  Isometry3<double> X_GmGr(AngleAxis<double>(M_PI / 3, axis));
+  geometry_system->RegisterGeometry(
+      source_id_, mars_geometry_id,
+      make_unique<GeometryInstance>(
+          X_GmGr, make_unique<Mesh>(rings_absolute_path, kMarsSize)));
+
   // Mars's orrery arm.
   MakeArm(source_id_, planet_id, kMarsOrbitRadius, -orrery_bottom, pipe_radius,
           geometry_system);
 
-  // Mars moon - Phobos's frame is centered on Mars, but its orientation is
-  // reversed so that it revolves in the opposite direction
-  Isometry3<T> phobos_rotation_pose = Isometry3<double>::Identity();
-  phobos_rotation_pose.linear() =
-      AngleAxis<T>(M_PI / 2, Vector3<T>::UnitX()).matrix();
+  // Phobos's frame P is at the center of Mars's geometry (Gm).
+  // So, X_MP = X_MGm. The normal of the plane is negated so it orbits in the
+  // opposite direction.
+  const Isometry3<double>& X_MP = X_MGm;
   FrameId phobos_id = geometry_system->RegisterFrame(
-      source_id_, planet_id, GeometryFrame("phobos", phobos_rotation_pose));
+      source_id_, planet_id, GeometryFrame("phobos", X_MP));
   body_ids_.push_back(phobos_id);
-  body_offset_.push_back(mars_pose);
-  plane_normal << 0, 0, 1;
+  body_offset_.push_back(X_MP);
+  plane_normal << 0, 0, -1;
   axes_.push_back(plane_normal.normalized());
 
-  // The geometry is displaced from the Phobos's _frame_ so that it orbits.
+  // The geometry is displaced from the Phobos's frame so that it orbits.
   const double kPhobosOrbitRadius = 0.34;
-  Isometry3<double> phobos_pose = Isometry3<double>::Identity();
-  phobos_pose.translation() << kPhobosOrbitRadius, 0, 0;
+  Isometry3<double> X_PGp{Translation3<double>{kPhobosOrbitRadius, 0, 0}};
   geometry_system->RegisterGeometry(
       source_id_, phobos_id,
-      make_unique<GeometryInstance>(phobos_pose, make_unique<Sphere>(0.06f)));
+      make_unique<GeometryInstance>(X_PGp, make_unique<Sphere>(0.06f)));
 
   DRAKE_DEMAND(static_cast<int>(body_ids_.size()) == kBodyCount);
 }

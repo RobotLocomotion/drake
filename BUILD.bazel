@@ -3,9 +3,8 @@
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
-load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -15,7 +14,6 @@ exports_files([
     "CPPLINT.cfg",
     ".bazelproject",
     ".clang-format",
-    # TODO(jwnimmer-tri) This won't appear until #6996 merges.
     ".drake-find_resource-sentinel",
 ])
 
@@ -34,20 +32,41 @@ alias(
     actual = "@com_google_protobuf//:protobuf_python",
 )
 
+# Drake's top-level module; all drake_py_stuff rules add this to deps.
+# (We use py_library here because drake_py_library would be circular.)
+# This file should NOT be installed (see commits in __init__.py).
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+)
+
+_INSTALL_TEST_COMMANDS = "install_test_commands"
+
 install(
     name = "install",
+    install_tests_script = _INSTALL_TEST_COMMANDS,
     docs = ["LICENSE.TXT"],
-    deps = adjust_labels_for_drake_hoist([
-        "//drake/automotive/models:install_data",
-        "//drake/bindings/pydrake:install",
-        "//drake/common:install",
-        "//drake/common/proto:install",
-        "//drake/examples:install",
-        "//drake/lcmtypes:install",
-        "//drake/manipulation/models:install_data",
+    deps = [
+        "//automotive/models:install_data",
+        "//bindings/pydrake:install",
+        "//common:install",
+        "//common/proto:install",
+        "//examples:install",
+        "//lcmtypes:install",
+        "//manipulation/models:install_data",
+        "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",
-    ]),
+    ],
+)
+
+install_test(
+    name = "install_test",
+    args = ["$(location :" + _INSTALL_TEST_COMMANDS + ")"],
+    data = [
+        ":install",
+        _INSTALL_TEST_COMMANDS,
+    ],
 )
 
 add_lint_tests()

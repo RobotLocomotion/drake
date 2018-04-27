@@ -58,6 +58,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestPriusSimpleCar) {
   // Set up a basic simulation with just a Prius SimpleCar.
   auto simulator = std::make_unique<AutomotiveSimulator<double>>(
       std::make_unique<lcm::DrakeMockLcm>());
+
   const int id = simulator->AddPriusSimpleCar("Foo", kCommandChannelName);
   EXPECT_EQ(id, 0);
 
@@ -186,8 +187,10 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMobilControlledSimpleCar) {
   simple_car_state.set_y(-2);
   simple_car_state.set_velocity(10);
   const int id_mobil =
-      simulator->AddMobilControlledSimpleCar("mobil", true /* with_s */,
-                                             simple_car_state);
+      simulator->AddMobilControlledSimpleCar(
+          "mobil", true /* with_s */, ScanStrategy::kPath,
+          RoadPositionStrategy::kExhaustiveSearch,
+          0. /* time period (unused) */, simple_car_state);
   EXPECT_EQ(id_mobil, 0);
 
   MaliputRailcarState<double> decoy_state;
@@ -396,12 +399,15 @@ std::unique_ptr<AutomotiveSimulator<double>> MakeWithIdmCarAndDecoy(
 
   // Expect to throw when given a nullptr Lane.
   EXPECT_THROW(simulator->AddIdmControlledCar(
-      "idm_car", true /* with_s */, initial_state, nullptr),
-               std::runtime_error);
+      "idm_car", true /* with_s */, initial_state, nullptr,
+      ScanStrategy::kPath, RoadPositionStrategy::kExhaustiveSearch,
+      0. /* time period (unused) */), std::runtime_error);
 
   int id_idm_car{};
   EXPECT_NO_THROW(id_idm_car = simulator->AddIdmControlledCar(
-      "idm_car", true /* with_s */, initial_state, goal_lane));
+      "idm_car", true /* with_s */, initial_state, goal_lane,
+      ScanStrategy::kPath,
+      RoadPositionStrategy::kExhaustiveSearch, 0. /* time period (unused) */));
   EXPECT_EQ(id_idm_car, 0);
 
   auto dragway = dynamic_cast<const maliput::dragway::RoadGeometry*>(road);
@@ -690,11 +696,15 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControllerUniqueName) {
           std::numeric_limits<double>::epsilon() /* linear_tolerance */,
           std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   simulator->AddIdmControlledPriusMaliputRailcar(
-      "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
-      MaliputRailcarState<double>() /* initial state */);
+      "Alice", LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, RoadPositionStrategy::kExhaustiveSearch,
+      0. /* time period (unused) */,
+      params, MaliputRailcarState<double>() /* initial state */);
   simulator->AddIdmControlledPriusMaliputRailcar(
-      "Bob", LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
-      MaliputRailcarState<double>() /* initial state */);
+      "Bob", LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, RoadPositionStrategy::kExhaustiveSearch,
+      0. /* time period (unused) */,
+      params, MaliputRailcarState<double>() /* initial state */);
 
   EXPECT_NO_THROW(simulator->Start());
 }
@@ -721,7 +731,9 @@ GTEST_TEST(AutomotiveSimulatorTest, TestRailcarVelocityOutput) {
       LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
       alice_initial_state);
   const int bob_id = simulator->AddIdmControlledPriusMaliputRailcar("Bob",
-      LaneDirection(road->junction(0)->segment(0)->lane(0)), params,
+      LaneDirection(road->junction(0)->segment(0)->lane(0)),
+      ScanStrategy::kPath, RoadPositionStrategy::kExhaustiveSearch,
+      0. /* time period (unused) */, params,
       MaliputRailcarState<double>() /* initial state */);
 
   EXPECT_NO_THROW(simulator->Start());

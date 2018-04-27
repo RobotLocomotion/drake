@@ -112,7 +112,7 @@ GTEST_TEST(QuadrotorTest, Equality) {
   // Set the initial conditions for the discrete plant.
   Context<double>& discrete_context = discrete_model.GetMutableSubsystemContext(
       discrete_plant, &discrete_sim.get_mutable_context());
-  discrete_context.get_mutable_discrete_state().get_mutable_vector().
+  discrete_context.get_mutable_discrete_state(0).
       SetFromVector(x0);
 
   // Step both forward by one step into the future.

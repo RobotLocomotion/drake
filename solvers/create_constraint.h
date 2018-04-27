@@ -21,7 +21,14 @@ namespace internal {
 // TODO(eric.cousineau): Use Eigen::Ref more pervasively when no temporaries
 // are allocated (or if it doesn't matter if they are).
 
-Binding<LinearConstraint> ParseLinearConstraint(
+/**
+ * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
+ * LinearEqualityConstraint, or ExpressionConstraint, depending on the
+ * arguments.  Constraints of the form x == 1 (which could be created as a
+ * BoundingBoxConstraint or LinearEqualityConstraint) will be
+ * constructed as a LinearEqualityConstraint.
+ */
+Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub);
@@ -29,21 +36,21 @@ Binding<LinearConstraint> ParseLinearConstraint(
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
-inline Binding<LinearConstraint> ParseLinearConstraint(
+inline Binding<Constraint> ParseConstraint(
     const symbolic::Expression& e, const double lb, const double ub) {
-  return ParseLinearConstraint(Vector1<symbolic::Expression>(e),
-                               Vector1<double>(lb), Vector1<double>(ub));
+  return ParseConstraint(Vector1<symbolic::Expression>(e), Vector1<double>(lb),
+                         Vector1<double>(ub));
 }
 
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
-Binding<LinearConstraint> ParseLinearConstraint(const symbolic::Formula& f);
+Binding<Constraint> ParseConstraint(const symbolic::Formula& f);
 
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
  */
-Binding<LinearConstraint> ParseLinearConstraint(
+Binding<Constraint> ParseConstraint(
     const std::set<symbolic::Formula>& formulas);
 
 /*
@@ -51,8 +58,8 @@ Binding<LinearConstraint> ParseLinearConstraint(
  */
 template <typename Derived>
 typename std::enable_if<is_eigen_scalar_same<Derived, symbolic::Formula>::value,
-                        Binding<LinearConstraint>>::type
-ParseLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
+                        Binding<Constraint>>::type
+ParseConstraint(const Eigen::ArrayBase<Derived>& formulas) {
   const auto n = formulas.rows() * formulas.cols();
 
   // Decomposes 2D-array of formulas into 1D-vector of expression, `v`, and
@@ -87,7 +94,7 @@ ParseLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
         ub(k) = std::numeric_limits<double>::infinity();
       } else {
         std::ostringstream oss;
-        oss << "ParseLinearConstraint is called with an "
+        oss << "ParseConstraint is called with an "
                "array of formulas which includes a formula "
             << f
             << " which is not a relational formula using one of {==, <=, >=} "
@@ -97,7 +104,7 @@ ParseLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
       k++;
     }
   }
-  return ParseLinearConstraint(v, lb, ub);
+  return ParseConstraint(v, lb, ub);
 }
 
 /*
@@ -200,6 +207,13 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
     return DoParseLinearEqualityConstraint(flat_V, flat_B);
   }
 }
+
+/**
+ * Assists MathematicalProgram::AddConstraint(...) to create a quadratic
+ * constraint binding.
+ */
+Binding<QuadraticConstraint> ParseQuadraticConstraint(
+    const symbolic::Expression& e, double lower_bound, double upper_bound);
 
 /*
  * Assist MathematicalProgram::AddPolynomialConstraint(...).

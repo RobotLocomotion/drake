@@ -25,8 +25,8 @@ drake_cc_library(
         "free_body.h",
     ],
     deps = [
-        "//drake/common",
-        "//drake/math:geometric_transform",
+        "//common",
+        "//math:geometric_transform",
     ],
 )
 
@@ -38,15 +38,15 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":free_body",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:autodiff",
-        "//drake/multibody/parsers",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/systems/analysis:runge_kutta3_integrator",
-        "//drake/systems/framework:diagram",
-        "//drake/systems/framework:diagram_builder",
-        "//drake/systems/primitives:constant_vector_source",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 

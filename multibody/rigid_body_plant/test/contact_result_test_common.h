@@ -29,6 +29,7 @@ template <typename DerivedA, typename DerivedB>
 // Base class for testing the CompliantContactModel class as well as the
 // RigidBodyPlant's logic for populating its output port for collision response
 // data.
+template <typename T>
 class ContactResultTestCommon : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactResultTestCommon)
@@ -96,12 +97,12 @@ class ContactResultTestCommon : public ::testing::Test {
   //  Returns a raw pointer so that tests can use it for result validation.
   RigidBody<double>* AddSphere(RigidBodyTree<double> *tree,
       const Eigen::Vector3d& pos, const std::string& name) {
-    RigidBody<double>* body;
-    tree->add_rigid_body(
-        std::unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+    RigidBody<double>* body = new RigidBody<double>();
     body->set_name(name);
     body->set_mass(1.0);
     body->set_spatial_inertia(Matrix6<double>::Identity());
+    tree->add_rigid_body(
+        std::unique_ptr<RigidBody<double>>(body));
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.translate(pos);
     body->add_joint(&tree->world(),
@@ -114,7 +115,7 @@ class ContactResultTestCommon : public ::testing::Test {
   }
 
   // Abstract method to be implemented by child classes.
-  virtual const ContactResults<double>& RunTest(double distance) = 0;
+  virtual const ContactResults<T>& RunTest(double distance) = 0;
 
   // These pointers are merely reference pointers; the underlying instances
   //  are owned by objects which, ultimately, are owned by the test class.
@@ -125,7 +126,7 @@ class ContactResultTestCommon : public ::testing::Test {
   //  x-axis from this point.
   double x_anchor_{};
 
-  ContactResults<double> contact_results_{};
+  ContactResults<T> contact_results_{};
 };
 
 }  // namespace test

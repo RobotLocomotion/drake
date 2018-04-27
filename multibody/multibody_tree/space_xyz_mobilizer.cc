@@ -39,12 +39,10 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
   DRAKE_ASSERT(q.size() == kNq);
   // Project matrix to closest orthonormal matrix in case the user provides a
   // rotation matrix with round-off errors.
-  Matrix3<T> Rproj_FM = math::ProjectMatToOrthonormalMat(R_FM);
-  if (Rproj_FM.determinant() < 0.0) {  // Case where determinant equals -1.
-    throw std::logic_error(
-        "Input matrix doest not represent to a valid rotation.");
-  }
-  q = math::rotmat2rpy(Rproj_FM);
+  const math::RotationMatrix<T> Rproj_FM =
+      math::RotationMatrix<T>::ProjectToRotationMatrix(R_FM);
+
+  q = math::rotmat2rpy(Rproj_FM.matrix());
   return *this;
 }
 
@@ -273,9 +271,9 @@ std::unique_ptr<Mobilizer<ToScalar>>
 SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
-      tree_clone.get_variant(this->get_inboard_frame());
+      tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
-      tree_clone.get_variant(this->get_outboard_frame());
+      tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<SpaceXYZMobilizer<ToScalar>>(
       inboard_frame_clone, outboard_frame_clone);
 }

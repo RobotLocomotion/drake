@@ -125,5 +125,19 @@ int AddFloatingJoint(
 /// drake compliance.
 systems::CompliantMaterial ParseCollisionCompliance(tinyxml2::XMLElement* node);
 
+/// Parses the Drake collision filter group specification. Attempts to add
+/// collision filter groups (with their member lists and ignore lists) to the
+/// tree specification.  Inconsistent definitions will lead to thrown
+/// exceptions.
+///
+/// See @ref cfg_impl "this discussion" for details on the XML specification.
+///
+/// @param tree                  The rigid body tree containing the bodies to
+///                              which the filters will be applied.
+/// @param node                  The XML node containing the filter details.
+/// @param model_instance_id     The id of the current model instance.
+void ParseCollisionFilterGroup(RigidBodyTree<double>* tree,
+                               tinyxml2::XMLElement* node,
+                               int model_instance_id);
 }  // namespace parsers
 }  // namespace drake

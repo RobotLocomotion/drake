@@ -63,7 +63,7 @@ class Element : public DrakeShapes::Element {
    * @param[in] body                    The associated rigid body.
    */
   Element(const Eigen::Isometry3d& T_element_to_local,
-          const RigidBody<double>* body);
+          const ::RigidBody<double>* body);
 
   /**
    * Full constructor.
@@ -73,7 +73,7 @@ class Element : public DrakeShapes::Element {
    */
   Element(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local,
-          const RigidBody<double>* body);
+          const ::RigidBody<double>* body);
 
   ~Element() override {}
 
@@ -129,10 +129,10 @@ class Element : public DrakeShapes::Element {
   /** Returns a pointer to the `RigidBody` to which this `Element`
    *  is attached.
    */
-  const RigidBody<double>* get_body() const;
+  const ::RigidBody<double>* get_body() const;
 
   /** Sets the `RigidBody` this collision element is attached to. */
-  void set_body(const RigidBody<double> *body);
+  void set_body(const ::RigidBody<double> *body);
 
   /** Sets the collision filter state of the element: the groups to which this
    * element belongs and the groups that it should ignore.
@@ -171,7 +171,7 @@ class Element : public DrakeShapes::Element {
   void operator=(Element&&) = delete;
 
   bool is_anchored_{false};
-  const RigidBody<double>* body_{};
+  const ::RigidBody<double>* body_{};
 
   // Collision cliques are defined as a set of collision elements that do not
   // collide.

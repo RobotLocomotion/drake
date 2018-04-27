@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -18,17 +18,17 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
 
-SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
-    int input_size, int position_index)
+SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
+                                                           int position_index)
     : position_index_(position_index),
-      target_output_port_(
-          this->DeclareVectorOutputPort(
-              BasicVector<double>(2),
-              &SchunkWsgTrajectoryGenerator::OutputTarget).get_index()),
-      max_force_output_port_(
-          this->DeclareVectorOutputPort(
-              BasicVector<double>(1),
-              &SchunkWsgTrajectoryGenerator::OutputForce).get_index()) {
+      target_output_port_(this->DeclareVectorOutputPort(
+                                  BasicVector<double>(2),
+                                  &SchunkWsgTrajectoryGenerator::OutputTarget)
+                              .get_index()),
+      max_force_output_port_(this->DeclareVectorOutputPort(
+                                     BasicVector<double>(1),
+                                     &SchunkWsgTrajectoryGenerator::OutputForce)
+                                 .get_index()) {
   this->DeclareAbstractInputPort();
   this->DeclareInputPort(systems::kVectorValued, input_size);
   // The update period below matches the polling rate from
@@ -37,9 +37,7 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(
 }
 
 void SchunkWsgTrajectoryGenerator::OutputTarget(
-    const Context<double>& context,
-    BasicVector<double>* output) const {
-
+    const Context<double>& context, BasicVector<double>* output) const {
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
@@ -48,15 +46,13 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
     output->get_mutable_value() = trajectory_->value(
         context.get_time() - traj_state->trajectory_start_time());
   } else {
-    output->get_mutable_value()=
+    output->get_mutable_value() =
         Eigen::Vector2d(traj_state->last_position(), 0);
   }
 }
 
 void SchunkWsgTrajectoryGenerator::OutputForce(
-    const Context<double>& context,
-    BasicVector<double>* output) const {
-
+    const Context<double>& context, BasicVector<double>* output) const {
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
@@ -80,8 +76,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     target_position = 0;
   }
 
-  const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, 1);
+  const systems::BasicVector<double>* state = this->EvalVectorInput(context, 1);
   const double cur_position = state->GetAtIndex(position_index_);
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
@@ -123,7 +118,7 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
   // values available for manual control through the gripper's web
   // interface.
   const double kMaxVelocity = 0.42;  // m/s
-  const double kMaxAccel = 5.;  // m/s^2
+  const double kMaxAccel = 5.;       // m/s^2
   const double kTimeToMaxVelocity = kMaxVelocity / kMaxAccel;
   // TODO(sam.creasey) this should probably consider current speed
   // if the gripper is already moving.
@@ -135,7 +130,7 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
   knots.push_back(Eigen::Vector2d(cur_position, 0));
   times.push_back(0);
 
-  const double direction = (cur_position < target_position) ? 1  : -1;
+  const double direction = (cur_position < target_position) ? 1 : -1;
   const double delta = std::abs(target_position - cur_position);
 
   // The trajectory creation code below is, to say the best, a bit
@@ -158,30 +153,36 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
     knots.push_back(Eigen::Vector2d(target_position, 0));
     times.push_back(mid_time * 2);
   } else {
-    knots.push_back(Eigen::Vector2d(
-        cur_position + (kDistanceToMaxVelocity * direction),
-        kMaxVelocity * direction));
+    knots.push_back(
+        Eigen::Vector2d(cur_position + (kDistanceToMaxVelocity * direction),
+                        kMaxVelocity * direction));
     times.push_back(kTimeToMaxVelocity);
 
     const double time_at_max =
         (delta - 2 * kDistanceToMaxVelocity) / kMaxVelocity;
-    knots.push_back(Eigen::Vector2d(
-        target_position - (kDistanceToMaxVelocity * direction),
-        kMaxVelocity * direction));
+    knots.push_back(
+        Eigen::Vector2d(target_position - (kDistanceToMaxVelocity * direction),
+                        kMaxVelocity * direction));
     times.push_back(kTimeToMaxVelocity + time_at_max);
 
     knots.push_back(Eigen::Vector2d(target_position, 0));
     times.push_back(kTimeToMaxVelocity + time_at_max + kTimeToMaxVelocity);
   }
-  trajectory_.reset(new PiecewisePolynomialTrajectory(
-      PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
+  trajectory_.reset(new trajectories::PiecewisePolynomial<double>(
+      trajectories::PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
 }
 
-SchunkWsgStatusSender::
-SchunkWsgStatusSender(int input_size,
-                      int position_index, int velocity_index)
+SchunkWsgStatusSender::SchunkWsgStatusSender(int input_state_size,
+                                             int input_torque_size,
+                                             int position_index,
+                                             int velocity_index)
     : position_index_(position_index), velocity_index_(velocity_index) {
-  this->DeclareInputPort(systems::kVectorValued, input_size);
+  input_port_wsg_state_ =
+      this->DeclareInputPort(systems::kVectorValued, input_state_size)
+          .get_index();
+  input_port_measured_torque_ =
+      this->DeclareInputPort(systems::kVectorValued, input_torque_size)
+          .get_index();
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }
 
@@ -191,18 +192,21 @@ void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
 
   status.utime = context.get_time() * 1e6;
   const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, 0);
+      this->EvalVectorInput(context, input_port_wsg_state_);
+  const systems::BasicVector<double>* force =
+      this->EvalVectorInput(context, input_port_measured_torque_);
   // The position and speed reported in this message are between the
   // two fingers rather than the position/speed of a single finger
   // (so effectively doubled).
   status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
-  // TODO(sam.creasey) Figure out how to get the actual force from
-  // the plant so that we can populate this field.
-  status.actual_force = 0;
-  status.actual_speed_mm_per_s =
-      -2 * state->GetAtIndex(velocity_index_) * 1e3;
-}
+  status.actual_speed_mm_per_s = -2 * state->GetAtIndex(velocity_index_) * 1e3;
 
+  if (force) {
+    status.actual_force = -force->GetAtIndex(0);
+  } else {
+    status.actual_force = 0;
+  }
+}
 
 }  // namespace schunk_wsg
 }  // namespace manipulation

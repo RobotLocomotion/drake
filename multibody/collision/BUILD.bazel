@@ -19,11 +19,11 @@ drake_cc_library(
         "point_pair.h",
     ],
     deps = [
-        "//drake/common:autodiff",
-        "//drake/common:essential",
-        "//drake/common:sorted_vectors_have_intersection",
-        "//drake/multibody/rigid_body_plant:compliant_material",
-        "//drake/multibody/shapes",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:sorted_vectors_have_intersection",
+        "//multibody/rigid_body_plant:compliant_material",
+        "//multibody/shapes",
     ],
 )
 
@@ -43,7 +43,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_api",
-        "//drake/common:unused",
+        "//common:unused",
         "@bullet//:BulletCollision",
     ],
 )
@@ -73,7 +73,7 @@ drake_cc_library(
     ],
     deps = [
         ":collision_api",
-        "//drake/common:unused",
+        "//common:unused",
         "@fcl",
     ],
 )
@@ -99,8 +99,8 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -109,10 +109,10 @@ drake_cc_googletest(
     data = [":test_models"],
     deps = [
         ":collision",
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//multibody:rigid_body_tree",
+        "//multibody/joints",
+        "//multibody/parsers",
     ],
 )
 

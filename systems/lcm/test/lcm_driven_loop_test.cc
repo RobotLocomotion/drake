@@ -1,7 +1,7 @@
 #include "drake/systems/lcm/lcm_driven_loop.h"
 
 #include <gtest/gtest.h>
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcm/drake_lcm.h"

@@ -3,9 +3,9 @@
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/manipulation/perception/optitrack_pose_extractor.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/pass_through.h"
-#include "drake/util/lcmUtil.h"
 
 namespace drake {
 namespace examples {

@@ -7,6 +7,11 @@ set -e -u
 # TODO(eric.cousineau): Rewrite this in Python for an easier-to-understand
 # testing API (#7703).
 
+if [[ "${OSTYPE}" == "darwin"* ]]; then
+    echo "Skipping $(basename $0) on Mac" >&2
+    exit 0
+fi
+
 no_plotting=
 # By default, set backend so that the test does not open windows.
 export MPLBACKEND="ps"
@@ -30,19 +35,8 @@ cc_bin=${cur}/call_python_test
 py_client_cli=${cur}/call_python_client_cli
 # TODO(eric.cousineau): Use `tempfile` once we can choose which file C++
 # uses.
-filename=$(mktemp)
+filename="${TEST_TMPDIR}/python_rpc"
 done_file=${filename}_done
-
-is_mac=
-if [[ "${OSTYPE}" == "darwin"* ]]; then
-    is_mac=1
-    # Do not test if Mac has matplotlib 2.1.0:
-    # @ref https://github.com/matplotlib/matplotlib/issues/9345
-    mpl_ver=$(python -c "import matplotlib as mpl; print(mpl.__version__)")
-    if [[ ${mpl_ver} == "2.1.0" ]]; then
-        no_plotting=1
-    fi
-fi
 
 cc_bin_flags=
 if [[ ${no_plotting} == 1 ]]; then
@@ -139,29 +133,48 @@ do-setup() {
     echo 0 > ${done_file}
 }
 
+do-kill-after() {
+    pid=${1}
+    done_count_max=${2}
+    # Ensure that we wait until the client is fully done with both
+    # executions.
+    done_count=0
+    while [[ ${done_count} -lt ${done_count_max} ]]; do
+        done_count=$(cat ${done_file})
+        pause
+    done
+    # Kill the client with Ctrl+C.
+    # TODO(eric.cousineau): In script form, this generally works well (only
+    # one interrupt needed); however, interactively we need a few more.
+    while ps -p ${pid} > /dev/null; do
+        kill -INT ${pid} || :
+        pause
+    done
+}
+
 # Execute tests using FIFO.
 use_fifo=1
 
-no_threading-no_loop() {
+no_threading-no_wait() {
     # Start Python binary in the background.
-    ${py_client_cli} --no_threading --no_loop ${py_flags} &
+    ${py_client_cli} --no_threading --no_wait ${py_flags} &
     pid=$!
     # Execute C++.
     cc-check ${cc_bin} ${cc_bin_flags} ${cc_flags}
     # When this is done, Python client should exit.
     py-check wait ${pid}
 }
-sub-tests no_threading-no_loop
+sub-tests no_threading-no_wait
 
-threading-no_loop() {
-    ${py_client_cli} --no_loop ${py_flags} &
+threading-no_wait() {
+    ${py_client_cli} --no_wait ${py_flags} &
     pid=$!
     cc-check ${cc_bin} ${cc_bin_flags} ${cc_flags}
     py-check wait ${pid}
 }
-sub-tests threading-no_loop
+sub-tests threading-no_wait
 
-threading-loop() {
+threading-wait() {
     ${py_client_cli} ${py_flags} &
     pid=$!
     cc-check ${cc_bin} ${cc_bin_flags} ${cc_flags}
@@ -169,45 +182,49 @@ threading-loop() {
         # If the client will not halt execution based on an error, execute C++
         # client once more.
         cc-check ${cc_bin} ${cc_bin_flags} ${cc_flags}
-        # Ensure that we wait until the client is fully done with both
-        # executions.
-        done_count=0
-        while [[ ${done_count} -lt 2 ]]; do
-            done_count=$(cat ${done_file})
-            pause
-        done
-        # Kill the client with Ctrl+C.
-        # TODO(eric.cousineau): In script form, this generally works well (only
-        # one interrupt needed); however, interactively we need a few more.
-        while ps -p ${pid} > /dev/null; do
-            kill -INT ${pid} || :
-            pause
-        done
+        do-kill-after ${pid} 2
     fi
     py-check wait ${pid}
 }
-# TODO(eric.cousineau): Re-enable this on Mac once the root cause is identified
-# for failure on CI machines.
-if [[ -z ${is_mac} ]]; then
-    sub-tests threading-loop
-else
-    echo "SKIPPING: sub-tests threading-loop"
-fi
-
+sub-tests threading-wait
 
 # Execute tests without FIFO.
 use_fifo=0
 
-no_fifo-no_threading-no_loop() {
+no_fifo-no_threading-no_wait() {
     # Execute C++ first.
     ${cc_bin} ${cc_bin_flags} ${cc_flags}
     # Start Python binary to consume generated file.
-    py-check ${py_client_cli} --no_threading --no_loop ${py_flags}
+    py-check ${py_client_cli} --no_threading --no_wait ${py_flags}
 }
-sub-tests no_fifo-no_threading-no_loop
+sub-tests no_fifo-no_threading-no_wait
 
-no_fifo-threading-no_loop() {
+no_fifo-threading-no_wait() {
     ${cc_bin} ${cc_bin_flags} ${cc_flags}
-    py-check ${py_client_cli} --no_loop ${py_flags}
+    py-check ${py_client_cli} --no_wait ${py_flags}
 }
-sub-tests no_fifo-threading-no_loop
+sub-tests no_fifo-threading-no_wait
+
+no_fifo-no_threading-wait() {
+    # Execute C++ first.
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    # Start Python binary to consume generated file.
+    ${py_client_cli} --no_threading ${py_flags} &
+    pid=$!
+    if [[ ${py_stop_on_error} -ne 1 ]]; then
+        do-kill-after ${pid} 1
+    fi
+    py-check wait ${pid}
+}
+sub-tests no_fifo-no_threading-wait
+
+no_fifo-threading-wait() {
+    ${cc_bin} ${cc_bin_flags} ${cc_flags}
+    ${py_client_cli} ${py_flags} &
+    pid=$!
+    if [[ ${py_stop_on_error} -ne 1 ]]; then
+        do-kill-after ${pid} 1
+    fi
+    py-check wait ${pid}
+}
+sub-tests no_fifo-threading-wait

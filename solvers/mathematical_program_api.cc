@@ -6,7 +6,11 @@
 #include <stdexcept>
 
 // This file contains the portions of mathematical_program.h's implementation
-// that are called by MathematicalProgramSolverInterface implementations.
+// that are referred to by MathematicalProgramSolverInterface implementations.
+//
+// The MathematicalProgram destructor is listed here because the typeinfo for
+// MathematicalProgram might be needed by ...SolverInterface implementations,
+// not because they would usually destroy MathematicalProgram objects.
 
 namespace drake {
 namespace solvers {
@@ -16,16 +20,27 @@ using std::runtime_error;
 
 using symbolic::Variable;
 
+MathematicalProgram::~MathematicalProgram() = default;
+
 int MathematicalProgram::FindDecisionVariableIndex(const Variable& var) const {
   auto it = decision_variable_index_.find(var.get_id());
   if (it == decision_variable_index_.end()) {
     ostringstream oss;
     oss << var
         << " is not a decision variable in the mathematical program, "
-           "when calling GetSolution.\n";
+           "when calling FindDecisionVariableIndex.\n";
     throw runtime_error(oss.str());
   }
   return it->second;
+}
+
+std::vector<int> MathematicalProgram::FindDecisionVariableIndices(
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) const {
+  std::vector<int> x_indices(vars.rows());
+  for (int i = 0; i < vars.rows(); ++i) {
+    x_indices[i] = FindDecisionVariableIndex(vars(i));
+  }
+  return x_indices;
 }
 
 size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
@@ -40,23 +55,26 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   return it->second;
 }
 
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  SetDecisionVariableValues(decision_variables_, values);
-}
-
-void MathematicalProgram::SetDecisionVariableValues(
-    const Eigen::Ref<const VectorXDecisionVariable>& variables,
-    const Eigen::Ref<const Eigen::VectorXd>& values) {
-  DRAKE_ASSERT(values.rows() == variables.rows());
-  for (int i = 0; i < values.rows(); ++i) {
-    x_values_[FindDecisionVariableIndex(variables(i))] = values(i);
+void MathematicalProgram::SetSolverResult(const SolverResult& solver_result) {
+  this->solver_id_ = solver_result.solver_id();
+  if (solver_result.decision_variable_values()) {
+    DRAKE_DEMAND(solver_result.decision_variable_values()->rows() ==
+                 num_vars());
+    x_values_ = *(solver_result.decision_variable_values());
+  } else {
+    x_values_ = Eigen::VectorXd::Constant(
+        num_vars(), std::numeric_limits<double>::quiet_NaN());
   }
-}
-
-void MathematicalProgram::SetDecisionVariableValue(const Variable& var,
-                                                   double value) {
-  x_values_[FindDecisionVariableIndex(var)] = value;
+  if (solver_result.optimal_cost()) {
+    optimal_cost_ = *(solver_result.optimal_cost());
+  } else {
+    optimal_cost_ = std::numeric_limits<double>::quiet_NaN();
+  }
+  if (solver_result.optimal_cost_lower_bound()) {
+    lower_bound_cost_ = *(solver_result.optimal_cost_lower_bound());
+  } else {
+    lower_bound_cost_ = optimal_cost_;
+  }
 }
 
 }  // namespace solvers

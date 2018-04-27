@@ -7,17 +7,19 @@
 ///
 /// When a plan is received, it will immediately begin executing that
 /// plan on the arm (replacing any plan in progress).
+///
+/// If a stop message is received, it will immediately discard the
+/// current plan and wait until a new plan is received.
 
 #include <iostream>
 #include <memory>
 
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/common/trajectories/piecewise_polynomial_trajectory.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -40,8 +42,10 @@ namespace {
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
+const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
+using trajectories::PiecewisePolynomial;
 typedef PiecewisePolynomial<double> PPType;
 typedef PPType::PolynomialType PPPoly;
 typedef PPType::PolynomialMatrix PPMatrix;
@@ -56,6 +60,8 @@ class RobotPlanRunner {
                     &RobotPlanRunner::HandleStatus, this);
     lcm_.subscribe(kLcmPlanChannel,
                     &RobotPlanRunner::HandlePlan, this);
+    lcm_.subscribe(kLcmStopChannel,
+                    &RobotPlanRunner::HandleStop, this);
   }
 
   void Run() {
@@ -153,16 +159,22 @@ class RobotPlanRunner {
       input_time.push_back(plan->plan[k].utime / 1e6);
     }
     const Eigen::MatrixXd knot_dot = Eigen::MatrixXd::Zero(kNumJoints, 1);
-    plan_.reset(new PiecewisePolynomialTrajectory(
+    plan_.reset(new PiecewisePolynomial<double>(
         PiecewisePolynomial<double>::Cubic(input_time, knots,
                                            knot_dot, knot_dot)));
     ++plan_number_;
   }
 
+  void HandleStop(const lcm::ReceiveBuffer*, const std::string&,
+                    const robotlocomotion::robot_plan_t*) {
+    std::cout << "Received stop command. Discarding plan." << std::endl;
+    plan_.reset();
+  }
+
   lcm::LCM lcm_;
   const RigidBodyTree<double>& tree_;
   int plan_number_{};
-  std::unique_ptr<PiecewisePolynomialTrajectory> plan_;
+  std::unique_ptr<PiecewisePolynomial<double>> plan_;
   lcmt_iiwa_status iiwa_status_;
 };
 

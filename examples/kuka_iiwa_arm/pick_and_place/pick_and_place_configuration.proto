@@ -52,7 +52,7 @@ message ModelInstance {
     optional Pose pose = 3;
 }
 
-// Next ID: 5
+// Next ID: 6
 message PickAndPlaceTask {
     // The index of the robot arm to be used for this task.
     // DEFAULT: 0
@@ -63,7 +63,12 @@ message PickAndPlaceTask {
     // The name of the end-effector body in the robot.
     required string end_effector_name = 3;
     // The gripping force to apply (in Newtons).
+    // DEFAULT: 40
     optional double grip_force = 4;
+    // The distance from the end effector link to the grasp frame's
+    // origin (position between the fingertips of the gripper).
+    // DEFAULT: 0.19
+    optional double grasp_frame_translational_offset = 5;
 }
 
 // Next ID: 5

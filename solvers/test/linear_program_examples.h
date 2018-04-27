@@ -186,6 +186,25 @@ class UnboundedLinearProgramTest0 : public ::testing::Test {
  protected:
   std::unique_ptr<MathematicalProgram> prog_;
 };
+
+/**
+ * An unbounded linear program.
+ * min x0 + 2*x1 + 3*x2 + 2.5*x3 + 2
+ * s.t x0 + x1 - x2 + x3 <= 3
+ *     1 <= x0 + 2 * x1 - 2 * x2 + 4 * x3 <= 3
+ *     0 <= x0, x2 <= 1
+ */
+class UnboundedLinearProgramTest1 : public ::testing::Test {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnboundedLinearProgramTest1)
+
+  UnboundedLinearProgramTest1();
+
+  ~UnboundedLinearProgramTest1() override {}
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

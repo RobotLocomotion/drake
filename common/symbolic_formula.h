@@ -15,6 +15,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
@@ -484,10 +485,18 @@ struct RelationalOpTraits {
                    EigenSizeMinPreferFixed<DerivedA::ColsAtCompileTime,
                                            DerivedB::ColsAtCompileTime>::value>;
 };
-/// Returns @p f1 ∧ @p f2. We have it because gcc-4.8 does not have
-/// `std::logical_and`.
+/// Returns @p f1 ∧ @p f2.
+/// Note that this function returns a `Formula` while
+/// `std::logical_and<Formula>{}` returns a bool.
 inline Formula logic_and(const Formula& f1, const Formula& f2) {
   return f1 && f2;
+}
+
+/// Returns @p f1 ∨ @p f2.
+/// Note that this function returns a `Formula` while
+/// `std::logical_or<Formula>{}` returns a bool.
+inline Formula logic_or(const Formula& f1, const Formula& f2) {
+  return f1 || f2;
 }
 }  // namespace detail
 
@@ -911,8 +920,8 @@ operator==(const DerivedA& m1, const DerivedB& m2) {
   return m1.binaryExpr(m2, std::equal_to<void>()).redux(detail::logic_and);
 }
 
-/// Returns a symbolic formula representing element-wise comparison between two
-/// matrices @p m1 and @p m2 using not-equal (!=) operator.
+/// Returns a symbolic formula representing the condition whether @p m1 and @p
+/// m2 are not the same.
 ///
 /// The following table describes the return type of @p m1 != @p m2.
 ///
@@ -941,7 +950,7 @@ typename std::enable_if<
 operator!=(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
-  return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(detail::logic_and);
+  return m1.binaryExpr(m2, std::not_equal_to<void>()).redux(detail::logic_or);
 }
 
 /// Returns a symbolic formula representing element-wise comparison between two
@@ -1070,6 +1079,14 @@ struct ConditionTraits<symbolic::Formula> {
   static bool Evaluate(const symbolic::Formula&) { return true; }
 };
 }  // namespace assert
+
+/// Specialization of ExtractBoolOrThrow for `Bool<symbolic::Expression>` which
+/// includes `symbolic::Formula`. It calls `Evaluate` with an empty environment
+/// and throws if there are free variables in the expression.
+template <>
+inline bool ExtractBoolOrThrow(const Bool<symbolic::Expression>& b) {
+  return b.value().Evaluate();
+}
 
 }  // namespace drake
 

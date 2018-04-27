@@ -41,11 +41,9 @@
 <h3>How do I document the code I am contributing?</h3>
 
 <p>
-If you want to make your own Doxygen locally, run
-<b><i>make documentation</i></b> or <b><i>ninja documentation</i></b> in
-the <code>drake-distro/build/drake</code> directory.  You may need to install Doxygen (e.g., with <i>sudo
-apt-get install doxygen</i> on Ubuntu).</p>
-<p>
+If you want to make your own Doxygen locally, see
+<a href="http://drake.mit.edu/documentation_instructions.html">Documentation
+Generation Instructions</a></p>
 
 <p><a href="https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html">Check
 out the Doxygen C++ documentation</a></p>

@@ -54,7 +54,7 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
   multibody::constraint::ConstraintSolver<T> constraint_solver_;
 
   void CalcContactStiffnessAndDamping(
-      const drake::multibody::collision::PointPair& contact,
+      const drake::multibody::collision::PointPair<double>& contact,
       double* stiffness,
       double* damping) const;
   Vector3<T> CalcRelTranslationalVelocity(
@@ -64,21 +64,21 @@ class TimeSteppingRigidBodyPlant : public RigidBodyPlant<T> {
       const KinematicsCache<T>& kcache, int body_a_index, int body_b_index,
       const Vector3<T>& p, const Vector3<T>& f, VectorX<T>* gf) const;
   VectorX<T> N_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& w) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& w) const;
   VectorX<T> N_transpose_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f) const;
   VectorX<T> F_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& w) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& w) const;
   VectorX<T> F_transpose_mult(
-      const std::vector<drake::multibody::collision::PointPair>& contacts,
-      const KinematicsCache<T>& kcache,
-      const VectorX<T>& f) const;
+      const std::vector<drake::multibody::collision::PointPair<double>>&
+          contacts,
+      const KinematicsCache<T>& kcache, const VectorX<T>& f) const;
 
   // Half of the number of edges in the friction cone approximation for
   // contacts in 3D. Must be no fewer than 2 (equates to a friction pyramid).

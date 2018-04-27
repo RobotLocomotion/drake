@@ -191,6 +191,11 @@ pick_and_place::PlannerConfiguration DoParsePlannerConfiguration(
     planner_configuration.grip_force = task.grip_force();
   }
 
+  if (task.grasp_frame_translational_offset() != 0) {
+    planner_configuration.grasp_frame_translational_offset =
+        task.grasp_frame_translational_offset();
+  }
+
   // Extract number of tables
   planner_configuration.num_tables = configuration.table_size();
 

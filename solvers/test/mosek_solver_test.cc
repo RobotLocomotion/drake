@@ -23,6 +23,24 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(linear_constraint_form()),
                        ::testing::ValuesIn(linear_problems())));
 
+TEST_F(UnboundedLinearProgramTest0, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(*prog_);
+    // Mosek can only detect dual infeasibility, not primal unboundedness.
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
+}
+
+TEST_F(UnboundedLinearProgramTest1, Test) {
+  MosekSolver solver;
+  if (solver.available()) {
+    const SolutionResult result = solver.Solve(*prog_);
+    // Mosek can only detect dual infeasibility, not primal unboundedness.
+    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);

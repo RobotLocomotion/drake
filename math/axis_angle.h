@@ -1,5 +1,7 @@
 /// @file
 /// Utilities for arithmetic on axis-angle rotations.
+// TODO(mitiguy) Replace the functionality in this file with related methods
+// in Eigen::AngleAxis and Eigen::Quaternion and then delete this file.
 
 #pragma once
 
@@ -50,37 +52,6 @@ Vector4<typename Derived::Scalar> axis2quat(
   Vector4<typename Derived::Scalar> ret;
   ret << c, s * axis;
   return ret;
-}
-
-/**
- * Converts Drake's axis-angle representation to rotation matrix.
- * @param axis_angle. A 4 x 1 column vector [axis; angle]. axis is the unit
- * length rotation axis, angle is within [-PI, PI].
- * @return A 3 x 3 rotation matrix.
- */
-template <typename Derived>
-Matrix3<typename Derived::Scalar> axis2rotmat(
-    const Eigen::MatrixBase<Derived>& axis_angle) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's AngleAxis when we fix
-  // the range problem in Eigen
-  using std::cos;
-  using std::sin;
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  const auto& axis =
-      (axis_angle.template head<3>()) / (axis_angle.template head<3>()).norm();
-  const auto& theta = axis_angle(3);
-  auto x = axis(0);
-  auto y = axis(1);
-  auto z = axis(2);
-  auto ctheta = cos(theta);
-  auto stheta = sin(theta);
-  auto c = 1 - ctheta;
-  Matrix3<typename Derived::Scalar> R;
-  R << ctheta + x * x * c, x * y * c - z * stheta, x * z * c + y * stheta,
-      y * x * c + z * stheta, ctheta + y * y * c, y * z * c - x * stheta,
-      z * x * c - y * stheta, z * y * c + x * stheta, ctheta + z * z * c;
-
-  return R;
 }
 
 /**

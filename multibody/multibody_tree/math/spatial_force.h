@@ -84,6 +84,22 @@ class SpatialForce : public SpatialVector<SpatialForce, T> {
   /// </pre>
   /// where τ and f represent the torque and force components respectively.
   ///
+  /// Notice this operation is linear. [Jain 2010], (§1.5, page 15) uses the
+  /// "rigid body transformation operator" to write this as: <pre>
+  ///   F_Bq = Φ(p_BqBp)F_Bp = Φ(-p_BpBq)F_Bp
+  /// </pre>
+  /// where `Φ(p_PQ)` is the linear operator: <pre>
+  ///   Φ(p_PQ) = | I₃ p_PQx |
+  ///             | 0     I₃ |
+  /// </pre>
+  /// where `p_PQx` denotes the cross product, skew-symmetric, matrix such that
+  /// `p_PQx v = p_PQ x v`.
+  /// The transpose of this operator allow us to shift spatial velocities, see
+  /// SpatialVelocity::Shift().
+  ///
+  /// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+  ///               algorithms. Springer Science & Business Media, pp. 123-130.
+  ///
   /// For computation, all quantities above must be expressed in a common
   /// frame E; we add an `_E` suffix to each symbol to indicate that.
   ///

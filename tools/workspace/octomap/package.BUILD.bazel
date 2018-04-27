@@ -5,6 +5,8 @@ load(
     "install",
 )
 
+licenses(["notice"])  # BSD-3-Clause
+
 package(default_visibility = ["//visibility:public"])
 
 # Lets other packages inspect the CMake code, e.g., for the version number.
@@ -22,7 +24,9 @@ cc_library(
     hdrs = glob([
         "octomap/include/octomap/math/*.h*",
     ]),
+    copts = ["-fvisibility=hidden"],
     includes = ["octomap/include"],
+    linkstatic = 1,
 )
 
 # Generates the library exported to users.  The explicitly listed srcs= matches
@@ -44,6 +48,7 @@ cc_library(
     hdrs = glob([
         "octomap/include/octomap/*.h*",
     ]),
+    copts = ["-fvisibility=hidden"],
     includes = ["octomap/include"],
     linkstatic = 1,
     deps = [":octomath"],

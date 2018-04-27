@@ -20,7 +20,15 @@ load(
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
+licenses(["notice"])  # Apache-2.0
+
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "linux",
+    values = {"cpu": "k8"},
+    visibility = ["//visibility:private"],
+)
 
 PROJECT_NAME = "ignition-rndf"
 
@@ -57,12 +65,25 @@ cmake_configure_file(
 )
 
 generate_file(
-    name = "export_genrule",
-    out = "include/ignition/rndf/Export.hh",
+    name = "include/ignition/rndf/Export.hh",
     content = """
 #pragma once
 
+// IGN_DEPRECATED is defined by all ignition libraries, but the version below
+// is a simplified version.  When mixing the regular ignition libraries and
+// the drake compiled ignition libraries, the compiler throws a warning about
+// the macro being multiply defined.  We undefine it before redefining it here
+// to work around that issue.  Note that the IGNITION_RNDF_VISIBLE macro
+// shouldn't be defined multiple times, but we undefine it just in case.
+
+#ifdef IGNITION_RNDF_VISIBLE
+#undef IGNITION_RNDF_VISIBLE
+#endif
 #define IGNITION_RNDF_VISIBLE __attribute__ ((visibility("default")))
+
+#ifdef IGN_DEPRECATED
+#undef IGN_DEPRECATED
+#endif
 #define IGN_DEPRECATED(version) __attribute__ ((__deprecated__))
     """,
     visibility = ["//visibility:private"],
@@ -110,7 +131,7 @@ public_headers = public_headers_no_gen + [
 ]
 
 cc_binary(
-    name = "libignition_rndf.so",
+    name = "libdrake_ignition_rndf0.so",
     srcs = [
         "src/Checkpoint.cc",
         "src/Exit.cc",
@@ -125,8 +146,15 @@ cc_binary(
         "src/Waypoint.cc",
         "src/Zone.cc",
     ] + public_headers,
-    copts = ["-w"],
+    copts = [
+        "-fvisibility-inlines-hidden",
+        "-w",
+    ],
     includes = ["include"],
+    linkopts = select({
+        ":linux": ["-Wl,-soname,libdrake_ignition_rndf0.so"],
+        "//conditions:default": [],
+    }),
     linkshared = 1,
     visibility = [],
     deps = [
@@ -136,7 +164,7 @@ cc_binary(
 
 cc_library(
     name = "ignition_rndf",
-    srcs = ["libignition_rndf.so"],
+    srcs = ["libdrake_ignition_rndf0.so"],
     hdrs = public_headers,
     includes = ["include"],
     visibility = ["//visibility:public"],
@@ -160,8 +188,9 @@ install_cmake_config(package = CMAKE_PACKAGE)
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
-    targets = [":libignition_rndf.so"],
+    targets = [":libdrake_ignition_rndf0.so"],
     hdrs = public_headers,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
     docs = [
         "COPYING",

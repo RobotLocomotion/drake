@@ -210,7 +210,7 @@ class SixHumpCamelCost {
 GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
-  auto cost = prog.AddCost(SixHumpCamelCost(), x).constraint();
+  auto cost = prog.AddCost(SixHumpCamelCost(), x).evaluator();
 
   prog.SetInitialGuess(x, Vector2d::Random());
   RunNonlinearProgram(&prog, [&]() {
@@ -251,7 +251,7 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
       problem.AddPolynomialConstraint(VectorXPoly::Constant(1, x), var_mapping,
                                       Vector1d::Constant(2),
                                       Vector1d::Constant(2), x_var)
-             .constraint();
+             .evaluator();
   // Check that the resulting constraint is a LinearConstraint.
   EXPECT_TRUE(is_dynamic_castable<LinearConstraint>(resulting_constraint));
   // Check that it gives the correct answer as well.
@@ -382,6 +382,62 @@ GTEST_TEST(testNonlinearProgram, ConvexCubicProgramExample) {
   prob.SetInitialGuessForAllVariables(Vector1d(1));
   RunNonlinearProgram(&prob, [&]() {prob.CheckSolution();});
 }
+
+GTEST_TEST(testNonlinearProgram, UnitLengthConstraint) {
+  UnitLengthProgramExample prob;
+
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 0, 0, 0));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
+
+  // Try a different initial guess, that doesn't satisfy the unit length
+  // constraint.
+  prob.SetInitialGuessForAllVariables(Vector4d(1, 2, 3, 4));
+  RunNonlinearProgram(&prob, [&prob]() {prob.CheckSolution(1E-8);});
+}
+
+GTEST_TEST(testNonlinearProgram, CallbackTest) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>();
+  // Solve a trivial feasibilty program
+  // find x, s.t. xᵀx<=1
+  // Note: We intentionally do not add an objective here, because the solver
+  // wrappers implement the EvalVisualizationCallbacks() alongside their
+  // evaluation of any registered costs.  We want to ensure that the callback
+  // are still called, even if there are no registered costs.
+  prog.AddConstraint(x.transpose()*x <= 1.0);
+
+  int num_calls = 0;
+  auto my_callback = [&num_calls](const Eigen::Ref<const Eigen::VectorXd>& v) {
+    EXPECT_EQ(v.size(), 3);
+    num_calls++;
+  };
+
+  prog.AddVisualizationCallback(my_callback, x);
+
+  IpoptSolver ipopt_solver;
+  NloptSolver nlopt_solver;
+  SnoptSolver snopt_solver;
+
+  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
+      std::make_pair("SNOPT", &snopt_solver),
+      std::make_pair("NLopt", &nlopt_solver),
+      std::make_pair("Ipopt", &ipopt_solver)};
+
+  for (const auto& solver : solvers) {
+    if (!solver.second->available()) {
+      continue;
+    }
+    SolutionResult result = SolutionResult::kUnknownError;
+
+    num_calls = 0;
+    ASSERT_NO_THROW(result = solver.second->Solve(prog))
+        << "Using solver: " << solver.first;
+    EXPECT_EQ(result, SolutionResult::kSolutionFound)
+        << "Using solver: " << solver.first;
+    EXPECT_GT(num_calls, 0);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

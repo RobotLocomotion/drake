@@ -26,7 +26,6 @@ load(
     "drake_vector_gen_lcm_sources",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 drake_lcm_cc_library(
     name = "acrobot",
@@ -236,12 +235,12 @@ _AUTOMOTIVE_LCM_SRCS = [
 # Generate *.lcm sources from *.named_vector files.
 drake_vector_gen_lcm_sources(
     name = "automotive_sources",
-    srcs = adjust_labels_for_drake_hoist([
-        "//drake/automotive:{}.named_vector".format(
+    srcs = [
+        "//automotive:{}.named_vector".format(
             x[len("lcmt_"):-len("_t.lcm")],
         )
         for x in _AUTOMOTIVE_LCM_SRCS
-    ]),
+    ],
 )
 
 # Generate C++ sources and a library from *.lcm sources.
@@ -278,13 +277,24 @@ drake_lcm_cc_library(
     ],
 )
 
+drake_lcm_cc_library(
+    name = "viewer2_comms",
+    lcm_package = "drake",
+    lcm_srcs = [
+        "lcmt_viewer2_comms.lcm",
+    ],
+)
+
 # TODO(jwnimmer-tri) Many more C++ messages are missing ...
 
 drake_lcm_py_library(
     name = "lcmtypes_py",
+    add_current_package_to_imports = False,  # Use //:module_py instead.
+    extra_srcs = ["__init__.py"],
     lcm_package = "drake",
     lcm_srcs = glob(["*.lcm"]) + _AUTOMOTIVE_LCM_SRCS,
     deps = [
+        "//:module_py",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core_py",
     ],
 )
@@ -326,6 +336,7 @@ DRAKE_LCMTYPES = [
     ":schunk",
     ":support_data",
     ":viewer",
+    ":viewer2_comms",
     ":whole_body_data",
     ":zmp_data",
     ":zmp_com_observer_state",
@@ -366,6 +377,7 @@ install(
 
 install(
     name = "install",
+    install_tests = [":test/drake-lcm-spy_install_test.py"],
     targets = [
         ":drake-lcm-spy-launcher",
         ":drake-lcm-spy",
@@ -386,24 +398,15 @@ install(
 )
 
 # === test/ ===
-
-# `//:install` is run in this test to verify that once installed
-# drake-lcm-spy still works. Cannot be run on its own, needs to be
-# run as part of all the drake tests to have access to //:install
-drake_py_test(
-    name = "drake-lcm-spy_install_test",
-    size = "large",
-    srcs = ["test/drake-lcm-spy_install_test.py"],
-    main = "test/drake-lcm-spy_install_test.py",
-    deps = ["//tools/install:install_test_helper"],
-)
-
 drake_py_test(
     name = "polynomial_matrix_test",
-    srcs = ["test/polynomial_matrix_test.py"],
     deps = [
         ":lcmtypes_py",
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/drake-lcm-spy_install_test.py",
+    ],
+)

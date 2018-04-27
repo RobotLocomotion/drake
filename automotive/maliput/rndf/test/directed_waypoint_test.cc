@@ -12,6 +12,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // Checks the DirectedWaypoint's default constructor and the getters.
 GTEST_TEST(RNDFBuilderTest, DirectedWaypointDefaultConstructorTest) {
@@ -110,6 +111,7 @@ GTEST_TEST(RNDFBuilderTest, DirectedWaypointBoundingBoxTest) {
       kZeroTolerance));
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

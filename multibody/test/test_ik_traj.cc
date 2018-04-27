@@ -29,11 +29,11 @@ GTEST_TEST(testIKtraj, testIKtraj) {
 
   int r_hand{};
   int pelvis{};
-  for (int i = 0; i < static_cast<int>(model->bodies.size()); i++) {
-    if (!model->bodies[i]->get_name().compare(std::string("r_hand"))) {
+  for (int i = 0; i < static_cast<int>(model->get_bodies().size()); i++) {
+    if (!model->get_bodies()[i]->get_name().compare(std::string("r_hand"))) {
       r_hand = i;
     }
-    if (!model->bodies[i]->get_name().compare(std::string("pelvis"))) {
+    if (!model->get_bodies()[i]->get_name().compare(std::string("pelvis"))) {
       pelvis = i;
     }
   }

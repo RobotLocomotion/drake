@@ -1,81 +1,128 @@
 #include "drake/systems/framework/cache.h"
 
-#include <memory>
-#include <utility>
+#include <typeindex>
+#include <typeinfo>
+
+#include "drake/systems/framework/dependency_tracker.h"
 
 namespace drake {
 namespace systems {
 
-namespace internal {
-
-CacheEntry::CacheEntry() {}
-CacheEntry::~CacheEntry() {}
-
-CacheEntry::CacheEntry(const CacheEntry& other) {
-  *this = other;
+std::string CacheEntryValue::GetPathDescription() const {
+  DRAKE_DEMAND(owning_subcontext_!= nullptr);
+  return owning_subcontext_->GetSystemPathname() + ":" + description();
 }
 
-CacheEntry& CacheEntry::operator=(const CacheEntry& other) {
-  is_valid_ = other.is_valid();
-  if (other.value() != nullptr) {
-    value_ = other.value()->Clone();
+void CacheEntryValue::ThrowIfBadCacheEntryValue(
+    const internal::ContextMessageInterface* owning_subcontext) const {
+  if (owning_subcontext_ == nullptr) {
+    // Can't use FormatName() here because that depends on us having an owning
+    // context to talk to.
+    throw std::logic_error("CacheEntryValue(" + description() + ")::" +
+                           __func__ + "(): entry has no owning subcontext.");
   }
-  dependents_ = other.dependents();
-  return *this;
-}
-
-}  // namespace internal
-
-using internal::CacheEntry;
-
-Cache::Cache() {}
-
-Cache::~Cache() {}
-
-CacheTicket Cache::MakeCacheTicket(const std::set<CacheTicket>& prerequisites) {
-  // Create a new ticket.
-  CacheTicket ticket = static_cast<int>(store_.size());
-
-  // Add the ticket to the dependency map. Because prerequisites may not be
-  // added after the fact, the dependency map is guaranteed acyclic.
-  for (const CacheTicket& prerequisite : prerequisites) {
-    store_[prerequisite].add_dependent(ticket);
+  if (owning_subcontext && owning_subcontext_ != owning_subcontext) {
+    throw std::logic_error(FormatName(__func__) + "wrong owning subcontext.");
   }
-
-  // Reserve a null, invalid CacheEntry for this ticket.
-  store_.emplace_back();
-  return ticket;
-}
-
-void Cache::Invalidate(CacheTicket ticket) {
-  InvalidateRecursively({ticket});
-}
-
-void Cache::InvalidateRecursively(const std::set<CacheTicket>& to_invalidate) {
-  for (CacheTicket ticket : to_invalidate) {
-    // Invalidate the ticket.
-    store_[ticket].set_is_valid(false);
-    // Visit all the tickets that depend on this one.
-    InvalidateRecursively(store_[ticket].dependents());
+  if ((flags_ & ~(kValueIsOutOfDate | kCacheEntryIsDisabled)) != 0) {
+    throw std::logic_error(FormatName(__func__) +
+                           "flags value is out of range.");
+  }
+  if (serial_number() < 0) {
+    throw std::logic_error(FormatName(__func__) + "serial number is negative.");
+  }
+  if (!(cache_index_.is_valid() && ticket_.is_valid())) {
+    throw std::logic_error(FormatName(__func__) +
+                           "cache index or dependency ticket invalid.");
   }
 }
 
-AbstractValue* Cache::Init(CacheTicket ticket,
-                           std::unique_ptr<AbstractValue> value) {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
-  store_[ticket].set_is_valid(true);
-  store_[ticket].set_value(std::move(value));
-  InvalidateRecursively(store_[ticket].dependents());
-  return store_[ticket].value();
+void CacheEntryValue::ThrowIfBadOtherValue(
+    const char* api,
+    const std::unique_ptr<AbstractValue>* other_value_ptr) const {
+  if (other_value_ptr == nullptr)
+    throw std::logic_error(FormatName(api) + "null other_value pointer.");
+
+  auto& other_value = *other_value_ptr;
+  if (other_value == nullptr)
+    throw std::logic_error(FormatName(api) + "other_value is empty.");
+
+  DRAKE_DEMAND(value_ != nullptr);  // Should have been checked already.
+
+  // Extract these outside typeid() to avoid warnings.
+  const AbstractValue& abstract_value = *value_;
+  const AbstractValue& other_abstract_value = *other_value;
+  if (std::type_index(typeid(abstract_value)) !=
+      std::type_index(typeid(other_abstract_value))) {
+    throw std::logic_error(FormatName(api) +
+                           "other_value has wrong concrete type " +
+                           NiceTypeName::Get(*other_value) + ". Expected " +
+                           NiceTypeName::Get(*value_) + ".");
+  }
 }
 
-const AbstractValue* Cache::Get(CacheTicket ticket) const {
-  DRAKE_DEMAND(ticket < static_cast<int>(store_.size()));
-  if (store_[ticket].is_valid()) {
-    return store_[ticket].value();
-  } else {
-    return nullptr;
+CacheEntryValue& Cache::CreateNewCacheEntryValue(
+    CacheIndex index, DependencyTicket ticket,
+    const std::string& description,
+    const std::vector<DependencyTicket>& prerequisites,
+    DependencyGraph* trackers) {
+  DRAKE_DEMAND(trackers != nullptr);
+  DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
+
+  // Make sure there is a place for this cache entry in the cache.
+  if (index >= cache_size())
+    store_.resize(index + 1);
+
+  // Create the new cache entry value and install it into this Cache. Note that
+  // indirection here means the CacheEntryValue object's address is stable
+  // even when store_ is resized.
+  DRAKE_DEMAND(store_[index] == nullptr);
+  // Can't use make_unique because constructor is private.
+  store_[index] = std::unique_ptr<CacheEntryValue>(
+      new CacheEntryValue(index, ticket, description, owning_subcontext_,
+                          nullptr /* no value yet */));
+  CacheEntryValue& value = *store_[index];
+
+  // Allocate a DependencyTracker for this cache entry. Note that a pointer
+  // to the new CacheEntryValue is retained so must have a lifetime matching
+  // the tracker. That requires that the Cache and DependencyGraph are contained
+  // in the same Context.
+  DependencyTracker& tracker = trackers->CreateNewDependencyTracker(
+      ticket,
+      "cache " + description,
+      &value);
+
+  // Subscribe to prerequisites (trackers must already exist).
+  for (auto prereq : prerequisites) {
+    auto& prereq_tracker = trackers->get_mutable_tracker(prereq);
+    tracker.SubscribeToPrerequisite(&prereq_tracker);
   }
+  return value;
+}
+
+void Cache::DisableCaching() {
+  for (auto& entry : store_)
+    if (entry) entry->disable_caching();
+}
+
+
+void Cache::EnableCaching() {
+  for (auto& entry : store_)
+    if (entry) entry->enable_caching();
+}
+
+void Cache::SetAllEntriesOutOfDate() {
+  for (auto& entry : store_)
+    if (entry) entry->mark_out_of_date();
+}
+
+void Cache::RepairCachePointers(
+    const internal::ContextMessageInterface* owning_subcontext) {
+  DRAKE_DEMAND(owning_subcontext != nullptr);
+  DRAKE_DEMAND(owning_subcontext_ == nullptr);
+  owning_subcontext_ = owning_subcontext;
+  for (auto& entry : store_)
+    if (entry) entry->set_owning_subcontext(owning_subcontext);
 }
 
 }  // namespace systems

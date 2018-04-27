@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from drake.tools.install.cpsutils import read_defs
 
@@ -11,11 +11,11 @@ content = """
   "Description": "Lightweight C++ template library for vector and matrix math",
   "License": ["MPL-2.0", "LGPL-2.1+", "BSD-3-Clause"],
   "Version": "%(WORLD_VERSION)s.%(MAJOR_VERSION)s.%(MINOR_VERSION)s",
-  "Default-Components": [ ":Eigen" ],
+  "Default-Components": [":Eigen"],
   "Components": {
     "Eigen": {
       "Type": "interface",
-      "Includes": [ "@prefix@/include/eigen3" ]
+      "Includes": ["@prefix@/include/eigen3"]
     }
   },
   "X-CMake-Variables": {

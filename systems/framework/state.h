@@ -65,6 +65,16 @@ class State {
     return *discrete_state_.get();
   }
 
+  const BasicVector<T>& get_discrete_state(int index) const {
+    const DiscreteValues<T>& xd = get_discrete_state();
+    return xd.get_vector(index);
+  }
+
+  BasicVector<T>& get_mutable_discrete_state(int index) {
+    DiscreteValues<T>& xd = get_mutable_discrete_state();
+    return xd.get_mutable_vector(index);
+  }
+
   void set_abstract_state(std::unique_ptr<AbstractValues> xa) {
     DRAKE_DEMAND(xa != nullptr);
     abstract_state_ = std::move(xa);

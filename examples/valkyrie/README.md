@@ -9,18 +9,21 @@ buildcop cannot trivially resolve them, a GitHub issue will be assigned to
 the Valkyrie team. If the issue is not resolved within 24 hours, the author
 or buildcop may disable the offending targets.
 
+To compile this example
+  $ cd drake
+  $ bazel build //tools:drake_visualizer //examples/valkyrie/...
 
 To run the visualizer:
-  $ cd drake-distro
-  $ ./build/install/bin/drake-visualizer
+  $ cd drake
+  $ bazel-bin/tools/drake_visualizer &
 
 To run the pd + feedforward controller:
-  $ cd drake-distro
-  $ ./build/drake/examples/valkyrie/valkyrie_pd_ff_controller
+  $ cd drake
+  $ bazel-bin/examples/valkyrie/valkyrie_pd_ff_controller &
 
 To run the simulation:
-  $ cd drake-distro
-  $ ./build/drake/examples/valkyrie/valkyrie_simulation
+  $ cd drake
+  $ bazel-bin/examples/valkyrie/valkyrie_simulation &
 
 The visualizer needs to be started before the simulator.
 The controller and simulator are not synchronized in any way, and they both

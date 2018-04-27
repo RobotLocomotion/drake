@@ -12,9 +12,9 @@ drake_cc_library(
     deps = [
         ":pose_bundle",
         ":pose_vector",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
-        "//drake/systems/framework:leaf_system",
+        "//common:default_scalars",
+        "//common:essential",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -24,9 +24,9 @@ drake_cc_library(
     hdrs = ["pose_bundle_to_draw_message.h"],
     deps = [
         ":pose_bundle",
-        "//drake/common:essential",
-        "//drake/lcmtypes:viewer",
-        "//drake/systems/framework:leaf_system",
+        "//common:essential",
+        "//lcmtypes:viewer",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -36,8 +36,8 @@ drake_cc_library(
     hdrs = ["pose_stamped_t_pose_vector_translator.h"],
     deps = [
         ":pose_vector",
-        "//drake/common:essential",
-        "//drake/systems/lcm:translator",
+        "//common:essential",
+        "//systems/lcm:translator",
         "@lcmtypes_robotlocomotion",
     ],
 )
@@ -48,8 +48,8 @@ drake_cc_library(
     srcs = ["pose_vector.cc"],
     hdrs = ["pose_vector.h"],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/systems/framework:vector",
+        "//common:default_scalars",
+        "//systems/framework:vector",
     ],
 )
 
@@ -58,9 +58,9 @@ drake_cc_library(
     srcs = ["frame_velocity.cc"],
     hdrs = ["frame_velocity.h"],
     deps = [
-        "//drake/common:default_scalars",
-        "//drake/multibody/multibody_tree/math:spatial_velocity",
-        "//drake/systems/framework:vector",
+        "//common:default_scalars",
+        "//multibody/multibody_tree/math:spatial_velocity",
+        "//systems/framework:vector",
     ],
 )
 
@@ -70,8 +70,8 @@ drake_cc_library(
     hdrs = ["pose_bundle.h"],
     deps = [
         ":frame_velocity",
-        "//drake/common:default_scalars",
-        "//drake/common:essential",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -80,9 +80,9 @@ drake_cc_library(
     srcs = ["drake_visualizer_client.cc"],
     hdrs = ["drake_visualizer_client.h"],
     deps = [
-        "//drake/lcmtypes:viewer",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/shapes",
+        "//lcmtypes:viewer",
+        "//math:geometric_transform",
+        "//multibody/shapes",
         "@eigen",
     ],
 )
@@ -91,8 +91,8 @@ drake_cc_googletest(
     name = "pose_aggregator_test",
     deps = [
         ":pose_aggregator",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
     ],
 )
 
@@ -100,8 +100,8 @@ drake_cc_googletest(
     name = "pose_vector_test",
     deps = [
         ":pose_vector",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/common/test_utilities:symbolic_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -116,7 +116,7 @@ drake_cc_googletest(
     name = "frame_velocity_test",
     deps = [
         ":frame_velocity",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -130,12 +130,12 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_visualizer_client_test",
     data = [
-        "//drake/multibody/shapes:test_models",
+        "//multibody/shapes:test_models",
     ],
     deps = [
         ":drake_visualizer_client",
-        "//drake/common:find_resource",
-        "//drake/lcmtypes:viewer",
+        "//common:find_resource",
+        "//lcmtypes:viewer",
     ],
 )
 

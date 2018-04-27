@@ -27,8 +27,8 @@ class LcmtDrakeSignalUtilsTest : public ::testing::Test {
     message2_ = message1_;
   }
 
-  drake::lcmt_drake_signal message1_;
-  drake::lcmt_drake_signal message2_;
+  drake::lcmt_drake_signal message1_{};
+  drake::lcmt_drake_signal message2_{};
 };
 
 // Tests CompareLcmtDrakeSignalMessages()'s ability to determine that two

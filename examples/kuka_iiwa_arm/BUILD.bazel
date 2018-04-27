@@ -7,12 +7,15 @@ load(
     "drake_cc_googletest",
     "drake_example_cc_binary",
 )
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
 load("//tools/install:install_data.bzl", "install", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:6996.bzl",
-    "adjust_label_for_drake_hoist",
-    "adjust_labels_for_drake_hoist",
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_test",
 )
 
 package(
@@ -29,11 +32,11 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//drake/common:find_resource",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/trajectories:piecewise_polynomial",
+        "//multibody:inverse_kinematics",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -43,13 +46,16 @@ drake_cc_library(
     name = "iiwa_lcm",
     srcs = ["iiwa_lcm.cc"],
     hdrs = ["iiwa_lcm.h"],
+    # TODO(hongkai.dai): move this package to manipulation folder.
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/lcmtypes:iiwa",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework:leaf_system",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:iiwa",
+        "//multibody:inverse_kinematics",
+        "//multibody:rigid_body_tree",
+        "//multibody/rigid_body_plant:contact_results",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -57,10 +63,10 @@ drake_cc_library(
     name = "oracular_state_estimator",
     srcs = ["oracular_state_estimator.cc"],
     hdrs = ["oracular_state_estimator.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//drake/manipulation/util:robot_state_msg_translator",
-        "//drake/systems/framework:leaf_system",
-        "//drake/util:lcm_util",
+        "//manipulation/util:robot_state_msg_translator",
+        "//systems/framework:leaf_system",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -71,12 +77,14 @@ drake_cc_library(
     hdrs = [
         "lcm_plan_interpolator.h",
     ],
+    # TODO(hongkai.dai): move this package to manipulation folder.
+    visibility = ["//visibility:public"],
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "//drake/manipulation/planner:robot_plan_interpolator",
-        "//drake/systems/framework:diagram_builder",
-        "//drake/systems/primitives:demultiplexer",
+        "//manipulation/planner:robot_plan_interpolator",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:demultiplexer",
     ],
 )
 
@@ -85,7 +93,7 @@ drake_example_cc_binary(
     srcs = ["iiwa_controller.cc"],
     data = [
         ":models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":iiwa_common",
@@ -100,8 +108,8 @@ drake_example_cc_binary(
     add_test_rule = 1,
     data = [
         ":models",
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/manipulation/models/wsg_50_description:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
     # causes timeouts in kcov.
@@ -113,7 +121,7 @@ drake_example_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "@gflags",
     ],
 )
@@ -124,7 +132,7 @@ drake_example_cc_binary(
     add_test_rule = 1,
     data = [
         ":models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
     # causes timeouts in kcov.
@@ -144,7 +152,7 @@ drake_example_cc_binary(
     srcs = ["kuka_plan_runner.cc"],
     data = [
         ":models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":iiwa_common",
@@ -159,15 +167,15 @@ drake_cc_binary(
     srcs = ["move_iiwa_ee.cc"],
     data = [
         ":models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":iiwa_common",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcmtypes:iiwa",
-        "//drake/manipulation/planner:constraint_relaxing_ik",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/parsers",
+        "//common:text_logging_gflags",
+        "//lcmtypes:iiwa",
+        "//manipulation/planner:constraint_relaxing_ik",
+        "//math:geometric_transform",
+        "//multibody/parsers",
         "@lcm",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -176,17 +184,13 @@ drake_cc_binary(
 
 alias(
     name = "models",
-    actual = adjust_label_for_drake_hoist(
-        "//drake/examples/kuka_iiwa_arm/models:models",
-    ),
+    actual = "//examples/kuka_iiwa_arm/models:models",
     visibility = ["//visibility:public"],
 )
 
 alias(
     name = "prod_models",
-    actual = adjust_label_for_drake_hoist(
-        "//drake/examples/kuka_iiwa_arm/models:prod_models",
-    ),
+    actual = "//examples/kuka_iiwa_arm/models:prod_models",
     visibility = ["//visibility:public"],
 )
 
@@ -194,10 +198,14 @@ alias(
 
 drake_cc_googletest(
     name = "iiwa_lcm_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":iiwa_lcm",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/systems/framework",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/util:world_sim_tree_builder",
+        "//systems/framework",
     ],
 )
 
@@ -210,9 +218,7 @@ drake_cc_googletest(
 
 alias(
     name = "dual_iiwa14_polytope_collision.urdf",
-    actual = adjust_label_for_drake_hoist(
-        "//drake/manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
-    ),
+    actual = "//manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
 )
 
 # Test that kuka_simulation can load the dual arm urdf
@@ -240,6 +246,11 @@ sh_test(
 # This examples needs to be install for external projects such as Spartan.
 install(
     name = "install",
+    install_tests = [
+        ":test/iiwa_wsg_simulation_installed_test.py",
+        ":test/kuka_plan_runner_installed_test.py",
+        ":test/kuka_simulation_installed_test.py",
+    ],
     targets = [
         ":iiwa_wsg_simulation",
         ":kuka_plan_runner",
@@ -264,9 +275,15 @@ install(
     ],
     data_dest = "share/drake/" + package_name(),
     visibility = ["//visibility:public"],
-    deps = adjust_labels_for_drake_hoist([
-        "//drake/examples/kuka_iiwa_arm/models:install_data",
-    ]),
+    deps = [
+        "//examples/kuka_iiwa_arm/models:install_data",
+    ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        ":test/iiwa_wsg_simulation_installed_test.py",
+        ":test/kuka_plan_runner_installed_test.py",
+        ":test/kuka_simulation_installed_test.py",
+    ],
+)

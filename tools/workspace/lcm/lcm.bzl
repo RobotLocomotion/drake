@@ -57,22 +57,12 @@ def _lcm_outs(lcm_srcs, lcm_package, lcm_structs, extension):
 
     # Assemble the expected output paths, inferring struct names from what we
     # got in lcm_srcs, if necessary.
-    if extension == ".h":
-        h_outs = [
-            join_paths(subdir, lcm_package + "_" + lcm_struct + extension)
-            for lcm_struct in (lcm_structs or lcm_names)]
-        c_outs = [
-            join_paths(subdir, lcm_package + "_" + lcm_struct + ".c")
-            for lcm_struct in (lcm_structs or lcm_names)]
-        outs = struct(hdrs = h_outs, srcs = c_outs)
-
-    else:
-        outs = [
-            join_paths(subdir, lcm_package, lcm_struct + extension)
-            for lcm_struct in (lcm_structs or lcm_names)]
+    outs = [
+        join_paths(subdir, lcm_package, lcm_struct + extension)
+        for lcm_struct in (lcm_structs or lcm_names)]
 
     # Some languages have extra metadata.
-    (extension in [".h", ".hpp", ".py", ".java"]) or fail(extension)
+    (extension in [".hpp", ".py", ".java"]) or fail(extension)
     if extension == ".py":
         outs.append(join_paths(subdir, lcm_package, "__init__.py"))
 
@@ -85,22 +75,17 @@ def _lcmgen_impl(ctx):
     https://bazel.build/versions/master/docs/skylark/lib/ctx.html
     """
     # We are given ctx.outputs.outs, which is the full path and file name of
-    # the generated file we want to create.  However, except for the C
-    # language, the lcm-gen tool places its outputs into a subdirectory of the
-    # path we ask for, based on the LCM message's package name.  To set the
-    # correct path, we need to both remove the filename from outs (which we do
-    # via ".dirname"), as well as the package-name-derived directory name
-    # (which we do via slicing off striplen characters), including the '/'
-    # right before it (thus the "+ 1" below).
-    if ctx.attr.language == "c":
-        outpath = ctx.outputs.outs[0].dirname
-    else:
-        striplen = len(ctx.attr.lcm_package) + 1
-        outpath = ctx.outputs.outs[0].dirname[:-striplen]
+    # the generated file we want to create.  However, the lcm-gen tool places
+    # its outputs into a subdirectory of the path we ask for, based on the LCM
+    # message's package name.  To set the correct path, we need to both remove
+    # the filename from outs (which we do via ".dirname"), as well as the
+    # package-name-derived directory name (which we do via slicing off striplen
+    # characters), including the '/' right before it (thus the "+ 1" below).
 
-    if ctx.attr.language == "c":
-        arguments = ["--c", "--c-cpath=" + outpath, "--c-hpath=" + outpath]
-    elif ctx.attr.language == "cc":
+    striplen = len(ctx.attr.lcm_package) + 1
+    outpath = ctx.outputs.outs[0].dirname[:-striplen]
+
+    if ctx.attr.language == "cc":
         arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
     elif ctx.attr.language == "py":
         arguments = ["--python", "--ppath=" + outpath]
@@ -108,7 +93,7 @@ def _lcmgen_impl(ctx):
         arguments = ["--java", "--jpath=" + outpath]
     else:
         fail("Unknown language")
-    ctx.action(
+    ctx.actions.run(
         inputs = ctx.files.lcm_srcs,
         outputs = ctx.outputs.outs,
         arguments = arguments + [
@@ -137,9 +122,9 @@ _lcm_library_gen = rule(
 
 def lcm_cc_library(
         name,
-        lcm_srcs = None,
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
         aggregate_hdr = None,
         aggregate_hdr_strip_prefix = ["**/include/"],
         **kwargs):
@@ -188,8 +173,14 @@ def lcm_cc_library(
             "hpp",
             aggregate_hdr_strip_prefix)
 
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm"]
-    includes = depset(kwargs.pop('includes', [])) | ["."]
+    deps = kwargs.pop("deps", [])
+    if "@lcm" not in deps:
+        deps = deps + ["@lcm"]
+
+    includes = kwargs.pop("includes", [])
+    if "." not in includes:
+        includes = includes + ["."]
+
     native.cc_library(
         name = name,
         hdrs = outs,
@@ -202,9 +193,12 @@ def lcm_cc_library(
 
 def lcm_py_library(
         name,
-        lcm_srcs = None,
+        imports = [],
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
+        add_current_package_to_imports = True,
+        extra_srcs = [],
         **kwargs):
     """Declares a py_library on message classes generated from `*.lcm` files.
 
@@ -214,6 +208,15 @@ def lcm_py_library(
     This library has an ${lcm_package}/__init__.py, which means that this macro
     should only be used once for a given lcm_package in a given subdirectory.
     (Bazel will fail-fast with a "duplicate file" error if this is violated.)
+
+    The add_current_package_to_imports argument controls whether or not this
+    library adds an `imports = ["."]` attribute so that `from ${lcm_package}
+    import ${lcm_src}` will work in Python code (as opposed to needing to
+    prefix import statements with the bazel package name).  It is True by
+    default, but can be set to False if a package needs its own manually-
+    written __init__.py handling, or if the current bazel package should
+    not be imported by default. Additional sources can be added via
+    `extra_srcs`.
     """
     if not lcm_srcs:
         fail("lcm_srcs is required")
@@ -228,18 +231,21 @@ def lcm_py_library(
         lcm_package = lcm_package,
         outs = outs)
 
-    imports = depset(kwargs.pop('imports', [])) | ["."]
+    if add_current_package_to_imports:
+        if "." not in imports:
+            imports = imports + ["."]
+
     native.py_library(
         name = name,
-        srcs = outs,
+        srcs = outs + extra_srcs,
         imports = imports,
         **kwargs)
 
 def lcm_java_library(
         name,
-        lcm_srcs = None,
+        lcm_srcs = [],
         lcm_package = None,
-        lcm_structs = None,
+        lcm_structs = [],
         **kwargs):
     """Declares a java_library on message classes generated from `*.lcm` files.
 
@@ -260,7 +266,10 @@ def lcm_java_library(
         lcm_package = lcm_package,
         outs = outs)
 
-    deps = depset(kwargs.pop('deps', [])) | ["@lcm//:lcm-java"]
+    deps = kwargs.pop("deps", [])
+    if "@lcm//:lcm-java" not in deps:
+        deps = deps + ["@lcm//:lcm-java"]
+
     native.java_library(
         name = name,
         srcs = outs,

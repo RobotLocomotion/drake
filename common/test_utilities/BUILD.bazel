@@ -5,9 +5,17 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "drake_py_unittest_main.py",
+])
 
 # This should encompass every cc_library in this package, except for items that
 # should only ever be linked into main() programs.
@@ -19,6 +27,7 @@ drake_cc_library(
     deps = [
         ":eigen_geometry_compare",
         ":eigen_matrix_compare",
+        ":expect_throws_message",
         ":is_dynamic_castable",
         ":is_memcpy_movable",
         ":measure_execution",
@@ -36,7 +45,7 @@ drake_cc_library(
     hdrs = ["eigen_geometry_compare.h"],
     deps = [
         ":eigen_matrix_compare",
-        "//drake/common:essential",
+        "//common:essential",
         "@gtest//:without_main",
     ],
 )
@@ -46,9 +55,15 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
-        "//drake/common:essential",
+        "//common:essential",
         "@gtest//:without_main",
     ],
+)
+
+drake_cc_library(
+    name = "expect_throws_message",
+    testonly = 1,
+    hdrs = ["expect_throws_message.h"],
 )
 
 drake_cc_library(
@@ -56,7 +71,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["is_dynamic_castable.h"],
     deps = [
-        "//drake/common:nice_type_name",
+        "//common:nice_type_name",
     ],
 )
 
@@ -77,7 +92,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["random_polynomial_matrix.h"],
     deps = [
-        "//drake/common:polynomial",
+        "//common:polynomial",
     ],
 )
 
@@ -86,7 +101,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["symbolic_test_util.h"],
     deps = [
-        "//drake/common:symbolic",
+        "//common:symbolic",
     ],
 )
 
@@ -97,7 +112,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["drake_cc_googletest_main.cc"],
     deps = [
-        "//drake/common:text_logging_gflags",
+        "//common:text_logging_gflags",
         "@gtest//:without_main",
     ],
 )
@@ -106,7 +121,7 @@ drake_cc_googletest(
     name = "eigen_matrix_compare_test",
     deps = [
         ":eigen_matrix_compare",
-        "//drake/common:essential",
+        "//common:essential",
     ],
 )
 
@@ -122,6 +137,12 @@ drake_cc_googletest(
     deps = [
         ":is_memcpy_movable",
     ],
+)
+
+drake_py_library(
+    name = "disable_python_unittest",
+    srcs = ["disable_python_unittest/unittest/__init__.py"],
+    imports = ["disable_python_unittest"],
 )
 
 add_lint_tests()

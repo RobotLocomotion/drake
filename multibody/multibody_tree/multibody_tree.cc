@@ -9,6 +9,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/body_node_welded.h"
+#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/spatial_inertia.h"
 
@@ -17,6 +18,14 @@ namespace multibody {
 
 using internal::BodyNode;
 using internal::BodyNodeWelded;
+
+// Helper macro to throw an exception within methods that should not be called
+// post-finalize.
+#define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
+
+// Helper macro to throw an exception within methods that should not be called
+// pre-finalize.
+#define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 namespace internal {
 template <typename T>
@@ -27,7 +36,7 @@ class JointImplementationBuilder {
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
-    DRAKE_DEMAND(implementation->get_num_mobilizers() != 0);
+    DRAKE_DEMAND(implementation->num_mobilizers() != 0);
     for (auto& mobilizer : blue_print->mobilizers_) {
       tree->AddMobilizer(std::move(mobilizer));
     }
@@ -43,7 +52,39 @@ class JointImplementationBuilder {
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
-  world_body_ = &AddBody<RigidBody>(SpatialInertia<double>());
+  world_body_ = &AddRigidBody("WorldBody", SpatialInertia<double>());
+}
+
+template <typename T>
+void MultibodyTree<T>:: AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+  DRAKE_DEMAND(!topology_is_valid());
+  // Skip the world.
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = get_body(body_index);
+    const BodyTopology& body_topology =
+        get_topology().get_body(body.index());
+    if (!body_topology.inboard_mobilizer.is_valid()) {
+      this->template AddMobilizer<QuaternionFloatingMobilizer>(
+          world_body().body_frame(), body.body_frame());
+    }
+  }
+}
+
+template <typename T>
+const QuaternionFloatingMobilizer<T>&
+MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
+    const Body<T>& body) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  DRAKE_DEMAND(body.index() != world_index());
+  const BodyTopology& body_topology = get_topology().get_body(body.index());
+  const QuaternionFloatingMobilizer<T>* mobilizer =
+      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
+          &get_mobilizer(body_topology.inboard_mobilizer));
+  if (mobilizer == nullptr) {
+    throw std::logic_error(
+        "Body '" + body.name() + "' is not a free floating body.");
+  }
+  return *mobilizer;
 }
 
 template <typename T>
@@ -69,23 +110,25 @@ void MultibodyTree<T>::FinalizeInternals() {
         "MultibodyTree::FinalizeInternals().");
   }
 
-  // Give bodies the chance to perform any finalize-time setup.
+  // Give different multiobody elements the chance to perform any finalize-time
+  // setup.
   for (const auto& body : owned_bodies_) {
     body->SetTopology(topology_);
   }
-
-  // Give frames the chance to perform any finalize-time setup.
   for (const auto& frame : owned_frames_) {
     frame->SetTopology(topology_);
   }
-
-  // Give mobilizers the chance to perform any finalize-time setup.
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->SetTopology(topology_);
   }
+  for (const auto& force_element : owned_force_elements_) {
+    force_element->SetTopology(topology_);
+  }
+  for (const auto& actuator : owned_actuators_) {
+    actuator->SetTopology(topology_);
+  }
 
-  // Create a list of body nodes organized by levels.
-  body_node_levels_.resize(topology_.get_tree_height());
+  body_node_levels_.resize(topology_.tree_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
@@ -100,10 +143,14 @@ void MultibodyTree<T>::FinalizeInternals() {
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     CreateBodyNode(body_node_index);
   }
+
+  // TODO(amcastro-tri): Remove when MultibodyCachingEvaluatorInterface lands.
+  AllocateFakeCacheEntries();
 }
 
 template <typename T>
 void MultibodyTree<T>::Finalize() {
+  DRAKE_MBT_THROW_IF_FINALIZED();
   // Create Joint objects's implementation. Joints are implemented using a
   // combination of MultibodyTree's building blocks such as Body, Mobilizer,
   // ForceElement and Constraint. For a same physical Joint, several
@@ -119,6 +166,11 @@ void MultibodyTree<T>::Finalize() {
   for (auto& joint : owned_joints_) {
     internal::JointImplementationBuilder<T>::Build(joint.get(), this);
   }
+  // It is VERY important to add quaternions if needed only AFTER joints had a
+  // chance to get implemented with mobilizers. This is because joints's
+  // implementations change the topology of the tree. Therefore, do not change
+  // this order!
+  AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -133,7 +185,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(&get_world_body());
+    body_node = std::make_unique<BodyNodeWelded<T>>(&world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
@@ -184,6 +236,75 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    systems::Context<T>* context) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  SetFreeBodySpatialVelocityOrThrow(
+      body, V_WB, *context, &context->get_mutable_state());
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
+    const Body<T>& body, const Isometry3<T>& X_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
+  mobilizer.set_position(context, X_WB.translation(), state);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
+    const Body<T>& body, const SpatialVelocity<T>& V_WB,
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
+  mobilizer.set_translational_velocity(context, V_WB.translational(), state);
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcAllBodyPosesInWorld(
+    const systems::Context<T>& context,
+    std::vector<Isometry3<T>>* X_WB) const {
+  DRAKE_THROW_UNLESS(X_WB != nullptr);
+  if (static_cast<int>(X_WB->size()) != num_bodies()) {
+    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
+  }
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    X_WB->at(body_index) = pc.get_X_WB(node_index);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcAllBodySpatialVelocitiesInWorld(
+    const systems::Context<T>& context,
+    std::vector<SpatialVelocity<T>>* V_WB) const {
+  DRAKE_THROW_UNLESS(V_WB != nullptr);
+  if (static_cast<int>(V_WB->size()) != num_bodies()) {
+    V_WB->resize(num_bodies(), SpatialVelocity<T>::Zero());
+  }
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const BodyNodeIndex node_index = get_body(body_index).node_index();
+    V_WB->at(body_index) = vc.get_V_WB(node_index);
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::CalcPositionKinematicsCache(
     const systems::Context<T>& context,
     PositionKinematicsCache<T>* pc) const {
@@ -201,12 +322,12 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
   // This skips the world, level = 0.
-  for (int level = 1; level < get_tree_height(); ++level) {
+  for (int level = 1; level < tree_height(); ++level) {
     for (BodyNodeIndex body_node_index : body_node_levels_[level]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Update per-node kinematics.
       node.CalcPositionKinematicsCache_BaseToTip(mbt_context, pc);
@@ -227,17 +348,17 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // corresponding to flexible bodies.
 
   // TODO(amcastro-tri): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
-  for (int depth = 1; depth < get_tree_height(); ++depth) {
+  for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Jacobian matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
       // number of mobilities for this node. Therefore, the return is a
@@ -263,9 +384,9 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
     const VectorX<T>& known_vdot,
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == num_bodies());
 
-  DRAKE_DEMAND(known_vdot.size() == topology_.get_num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -278,12 +399,12 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
 
   // Performs a base-to-tip recursion computing body accelerations.
   // This skips the world, depth = 0.
-  for (int depth = 1; depth < get_tree_height(); ++depth) {
+  for (int depth = 1; depth < tree_height(); ++depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Update per-node kinematics.
       node.CalcSpatialAcceleration_BaseToTip(
@@ -300,7 +421,7 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
     const VectorX<T>& known_vdot,
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
-  DRAKE_DEMAND(known_vdot.size() == topology_.get_num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
 
   // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
   // corresponding to flexible bodies.
@@ -321,20 +442,20 @@ void MultibodyTree<T>::CalcInverseDynamics(
     std::vector<SpatialAcceleration<T>>* A_WB_array,
     std::vector<SpatialForce<T>>* F_BMo_W_array,
     EigenPtr<VectorX<T>> tau_array) const {
-  DRAKE_DEMAND(known_vdot.size() == get_num_velocities());
+  DRAKE_DEMAND(known_vdot.size() == num_velocities());
   const int Fapplied_size = static_cast<int>(Fapplied_Bo_W_array.size());
-  DRAKE_DEMAND(Fapplied_size == get_num_bodies() || Fapplied_size == 0);
+  DRAKE_DEMAND(Fapplied_size == num_bodies() || Fapplied_size == 0);
   const int tau_applied_size = tau_applied_array.size();
   DRAKE_DEMAND(
-      tau_applied_size == get_num_velocities() || tau_applied_size == 0);
+      tau_applied_size == num_velocities() || tau_applied_size == 0);
 
   DRAKE_DEMAND(A_WB_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(A_WB_array->size()) == num_bodies());
 
   DRAKE_DEMAND(F_BMo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == get_num_bodies());
+  DRAKE_DEMAND(static_cast<int>(F_BMo_W_array->size()) == num_bodies());
 
-  DRAKE_DEMAND(tau_array->size() == get_num_velocities());
+  DRAKE_DEMAND(tau_array->size() == num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
@@ -356,12 +477,12 @@ void MultibodyTree<T>::CalcInverseDynamics(
   // This includes the world (depth = 0) so that F_BMo_W_array[world_index()]
   // contains the total force of the bodies connected to the world by a
   // mobilizer.
-  for (int depth = get_tree_height() - 1; depth >= 0; --depth) {
+  for (int depth = tree_height() - 1; depth >= 0; --depth) {
     for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
       const BodyNode<T>& node = *body_nodes_[body_node_index];
 
       DRAKE_ASSERT(node.get_topology().level == depth);
-      DRAKE_ASSERT(node.get_index() == body_node_index);
+      DRAKE_ASSERT(node.index() == body_node_index);
 
       // Make a copy to the total applied forces since the call to
       // CalcInverseDynamics_TipToBase() below could overwrite the entry for the
@@ -413,15 +534,15 @@ void MultibodyTree<T>::MapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_DEMAND(qdot.size() == get_num_positions());
+  DRAKE_DEMAND(qdot.size() == num_positions());
   DRAKE_DEMAND(v != nullptr);
-  DRAKE_DEMAND(v->size() == get_num_velocities());
+  DRAKE_DEMAND(v->size() == num_velocities());
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
   VectorUpTo6<T> v_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
     const auto qdot_mobilizer = mobilizer->get_positions_from_array(qdot);
-    v_mobilizer.resize(mobilizer->get_num_velocities());
+    v_mobilizer.resize(mobilizer->num_velocities());
     mobilizer->MapQDotToVelocity(mbt_context, qdot_mobilizer, &v_mobilizer);
     mobilizer->get_mutable_velocities_from_array(v) = v_mobilizer;
   }
@@ -432,15 +553,18 @@ void MultibodyTree<T>::MapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_DEMAND(v.size() == get_num_velocities());
+  DRAKE_DEMAND(v.size() == num_velocities());
   DRAKE_DEMAND(qdot != nullptr);
-  DRAKE_DEMAND(qdot->size() == get_num_positions());
+  DRAKE_DEMAND(qdot->size() == num_positions());
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
-  VectorUpTo6<T> qdot_mobilizer;
+  const int kMaxQdot = 7;
+  // qdot_mobilizer is a dynamic sized vector of max size equal to seven.
+  Eigen::Matrix<T, Eigen::Dynamic, 1, 0, kMaxQdot, 1> qdot_mobilizer;
   for (const auto& mobilizer : owned_mobilizers_) {
     const auto v_mobilizer = mobilizer->get_velocities_from_array(v);
-    qdot_mobilizer.resize(mobilizer->get_num_positions());
+    DRAKE_DEMAND(mobilizer->num_positions() <= kMaxQdot);
+    qdot_mobilizer.resize(mobilizer->num_positions());
     mobilizer->MapVelocityToQDot(mbt_context, v_mobilizer, &qdot_mobilizer);
     mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;
   }
@@ -450,12 +574,9 @@ template <typename T>
 void MultibodyTree<T>::CalcMassMatrixViaInverseDynamics(
     const systems::Context<T>& context, EigenPtr<MatrixX<T>> H) const {
   DRAKE_DEMAND(H != nullptr);
-  DRAKE_DEMAND(H->rows() == get_num_velocities());
-  DRAKE_DEMAND(H->cols() == get_num_velocities());
-
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  DRAKE_DEMAND(H->rows() == num_velocities());
+  DRAKE_DEMAND(H->cols() == num_velocities());
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   DoCalcMassMatrixViaInverseDynamics(context, pc, H);
 }
 
@@ -470,12 +591,12 @@ void MultibodyTree<T>::DoCalcMassMatrixViaInverseDynamics(
   vc.InitializeToZero();
 
   // Compute one column of the mass matrix via inverse dynamics at a time.
-  const int nv = get_num_velocities();
+  const int nv = num_velocities();
   VectorX<T> vdot(nv);
   VectorX<T> tau(nv);
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
 
   for (int j = 0; j < nv; ++j) {
     vdot = VectorX<T>::Unit(nv, j);
@@ -490,16 +611,10 @@ template <typename T>
 void MultibodyTree<T>::CalcBiasTerm(
     const systems::Context<T>& context, EigenPtr<VectorX<T>> Cv) const {
   DRAKE_DEMAND(Cv != nullptr);
-  DRAKE_DEMAND(Cv->rows() == get_num_velocities());
+  DRAKE_DEMAND(Cv->rows() == num_velocities());
   DRAKE_DEMAND(Cv->cols() == 1);
-
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcVelocityKinematicsCache(context, pc, &vc);
-
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   DoCalcBiasTerm(context, pc, vc, Cv);
 }
 
@@ -509,12 +624,12 @@ void MultibodyTree<T>::DoCalcBiasTerm(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     EigenPtr<VectorX<T>> Cv) const {
-  const int nv = get_num_velocities();
+  const int nv = num_velocities();
   const VectorX<T> vdot = VectorX<T>::Zero(nv);
 
   // Auxiliary arrays used by inverse dynamics.
-  std::vector<SpatialAcceleration<T>> A_WB_array(get_num_bodies());
-  std::vector<SpatialForce<T>> F_BMo_W_array(get_num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(num_bodies());
+  std::vector<SpatialForce<T>> F_BMo_W_array(num_bodies());
 
   // TODO(amcastro-tri): provide specific API for when vdot = 0.
   CalcInverseDynamics(context, pc, vc, vdot, {}, VectorX<T>(),
@@ -524,33 +639,51 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 template <typename T>
 Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
-    const Frame<T>& to_frame_A, const Frame<T>& from_frame_B) const {
-  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
-  PositionKinematicsCache<T> pc(this->get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+    const Frame<T>& frame_A, const Frame<T>& frame_B) const {
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   const Isometry3<T>& X_WA =
-      pc.get_X_WB(to_frame_A.get_body().get_node_index());
+      pc.get_X_WB(frame_A.body().node_index()) *
+      frame_A.CalcPoseInBodyFrame(context);
   const Isometry3<T>& X_WB =
-      pc.get_X_WB(from_frame_B.get_body().get_node_index());
+      pc.get_X_WB(frame_B.body().node_index()) *
+      frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
 }
 
 template <typename T>
 void MultibodyTree<T>::CalcPointsPositions(
     const systems::Context<T>& context,
-    const Frame<T>& from_frame_B,
+    const Frame<T>& frame_B,
     const Eigen::Ref<const MatrixX<T>>& p_BQi,
-    const Frame<T>& to_frame_A,
+    const Frame<T>& frame_A,
     EigenPtr<MatrixX<T>> p_AQi) const {
   DRAKE_THROW_UNLESS(p_BQi.rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
   DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
   const Isometry3<T> X_AB =
-      CalcRelativeTransform(context, to_frame_A, from_frame_B);
+      CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
   // Eigen so.
   p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
+}
+
+template <typename T>
+const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
+    const systems::Context<T>& context,
+    const Body<T>& body_B) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  body_B.HasThisParentTreeOrThrow(this);
+  return EvalPositionKinematics(context).get_X_WB(body_B.node_index());
+}
+
+template <typename T>
+const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
+    const systems::Context<T>& context,
+    const Body<T>& body_B) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  body_B.HasThisParentTreeOrThrow(this);
+  return EvalVelocityKinematics(context).get_V_WB(body_B.node_index());
 }
 
 template <typename T>
@@ -559,13 +692,13 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
     const PositionKinematicsCache<T>& pc,
     std::vector<Vector6<T>>* H_PB_W_cache) const {
   DRAKE_DEMAND(H_PB_W_cache != nullptr);
-  DRAKE_DEMAND(static_cast<int>(H_PB_W_cache->size()) == get_num_velocities());
+  DRAKE_DEMAND(static_cast<int>(H_PB_W_cache->size()) == num_velocities());
 
   const auto& mbt_context =
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   for (BodyNodeIndex node_index(1);
-       node_index < get_num_bodies(); ++node_index) {
+       node_index < num_bodies(); ++node_index) {
     const BodyNode<T>& node = *body_nodes_[node_index];
 
     // Jacobian matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the number
@@ -586,37 +719,35 @@ template <typename T>
 void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
-    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> J_WQi) const {
+    EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const {
   DRAKE_THROW_UNLESS(p_BQi_set.rows() == 3);
   const int num_points = p_BQi_set.cols();
   DRAKE_THROW_UNLESS(p_WQi_set != nullptr);
   DRAKE_THROW_UNLESS(p_WQi_set->cols() == num_points);
-  DRAKE_THROW_UNLESS(J_WQi != nullptr);
-  DRAKE_THROW_UNLESS(J_WQi->rows() == 3 * num_points);
-  DRAKE_THROW_UNLESS(J_WQi->cols() == get_num_velocities());
+  DRAKE_THROW_UNLESS(Jv_WQi != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WQi->rows() == 3 * num_points);
+  DRAKE_THROW_UNLESS(Jv_WQi->cols() == num_velocities());
 
   // Body to which frame B is attached to:
-  const Body<T>& body_B = frame_B.get_body();
+  const Body<T>& body_B = frame_B.body();
 
   // Compute kinematic path from body B to the world:
   std::vector<BodyNodeIndex> path_to_world;
-  topology_.GetKinematicPathToWorld(body_B.get_node_index(), &path_to_world);
+  topology_.GetKinematicPathToWorld(body_B.node_index(), &path_to_world);
 
-  // TODO(amcastro-tri): retrieve (Eval) pc from the cache.
-  PositionKinematicsCache<T> pc(this->get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Eval H_PB_W from the cache.
-  std::vector<Vector6<T>> H_PB_W_cache(get_num_velocities());
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
   CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
 
   CalcPointsPositions(context,
                       frame_B, p_BQi_set,            /* From frame B */
-                      get_world_frame(), p_WQi_set); /* To world frame W */
+                      world_frame(), p_WQi_set); /* To world frame W */
 
   // Performs a scan of all bodies in the kinematic path from body_B to the
-  // world computing each node's contribution to J_WQi.
-  const int Jnrows = 3 * num_points;  // Number of rows in J_WQi.
+  // world computing each node's contribution to Jv_WQi.
+  const int Jnrows = 3 * num_points;  // Number of rows in Jv_WQi.
   // Skip the world (ilevel = 0).
   for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
     BodyNodeIndex body_node_index = path_to_world[ilevel];
@@ -628,10 +759,10 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
     // Across-node Jacobian.
     Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
         node.GetJacobianFromArray(H_PB_W_cache);
-    auto J_PBq_W = J_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
+    auto J_PBq_W = Jv_WQi->block(0, start_index_in_v, Jnrows, num_velocities);
 
     // Position of this node's body Bi in the world W.
-    const Vector3<T>& p_WBi = pc.get_X_WB(node.get_index()).translation();
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
 
     for (int ipoint = 0; ipoint < num_points; ++ipoint) {
       const auto p_WQi = p_WQi_set->col(ipoint);
@@ -654,11 +785,80 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
+void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
+    const systems::Context<T>& context,
+    const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BoFo_B,
+    EigenPtr<MatrixX<T>> Jv_WF) const {
+  DRAKE_THROW_UNLESS(Jv_WF != nullptr);
+  DRAKE_THROW_UNLESS(Jv_WF->rows() == 6);
+  DRAKE_THROW_UNLESS(Jv_WF->cols() == num_velocities());
+
+  // Body to which frame B is attached to:
+  const Body<T>& body_B = frame_B.body();
+
+  // Compute kinematic path from body B to the world:
+  std::vector<BodyNodeIndex> path_to_world;
+  topology_.GetKinematicPathToWorld(body_B.node_index(), &path_to_world);
+
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+
+  // TODO(amcastro-tri): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Compute the position of F's origin in the world frame.
+  Vector3<T> p_WoFo_W;
+  CalcPointsPositions(context,
+                      frame_B, p_BoFo_B,             /* From frame B */
+                      world_frame(), &p_WoFo_W);  /* To world frame W */
+
+  // Performs a scan of all bodies in the kinematic path from the world to
+  // body_B, computing each node's contribution to Jv_WF.
+  // Skip the world (ilevel = 0).
+  for (size_t ilevel = 1; ilevel < path_to_world.size(); ++ilevel) {
+    BodyNodeIndex body_node_index = path_to_world[ilevel];
+    const BodyNode<T>& node = *body_nodes_[body_node_index];
+    const BodyNodeTopology& node_topology = node.get_topology();
+    const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
+    const int num_velocities = node_topology.num_mobilizer_velocities;
+
+    // Across-node Jacobian.
+    Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
+        node.GetJacobianFromArray(H_PB_W_cache);
+
+    // Output block corresponding to mobilities in the current node.
+    // This correspond to the geometric Jacobian to compute the spatial velocity
+    // of frame Bf (frame B shifted to Fo) measured in the inboard body frame P
+    // and expressed in world. That is, V_PBf_W = J_PBf_W * v(B), with v(B) the
+    // mobilities that correspond to the current node.
+    auto J_PBf_W = Jv_WF->block(0, start_index_in_v, 6, num_velocities);
+
+    // Position of this node's body Bi in the world W.
+    const Vector3<T>& p_WBi = pc.get_X_WB(node.index()).translation();
+
+    // Position of origin Fo measured from Bi, expressed in the world W.
+    const Vector3<T> p_BiFo_W = p_WoFo_W - p_WBi;
+
+    // Mutable aliases to Hw_PBf_W and Hv_PBf_W. Hw (Hv) denotes the
+    // rotational (translational) components of the full geometric Jacobian.
+    auto Hw_PBf_W = J_PBf_W.template topRows<3>();
+    auto Hv_PBf_W = J_PBf_W.template bottomRows<3>();
+
+    // Aliases to angular and translational components in H_PB_W:
+    const auto Hw_PB_W = H_PB_W.template topRows<3>();
+    const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+
+    // Now "shift" (See SpatialVelocity::Shift()) H_PB_W to H_PBf_W.
+    // We do it by shifting one column at a time:
+    Hw_PBf_W = Hw_PB_W;  // angular component statys the same.
+    Hv_PBf_W = Hv_PB_W + Hw_PB_W.colwise().cross(p_BiFo_W);
+  }  // body_node_index
+}
+
+template <typename T>
 T MultibodyTree<T>::CalcPotentialEnergy(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   return DoCalcPotentialEnergy(context, pc);
 }
 
@@ -680,12 +880,8 @@ T MultibodyTree<T>::DoCalcPotentialEnergy(
 template <typename T>
 T MultibodyTree<T>::CalcConservativePower(
     const systems::Context<T>& context) const {
-  // TODO(amcastro-tri): Eval PositionKinematicsCache when caching lands.
-  PositionKinematicsCache<T> pc(get_topology());
-  CalcPositionKinematicsCache(context, &pc);
-  // TODO(amcastro-tri): Eval VelocityKinematicsCache when caching lands.
-  VelocityKinematicsCache<T> vc(get_topology());
-  CalcVelocityKinematicsCache(context, pc, &vc);
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
   return DoCalcConservativePower(context, pc, vc);
 }
 
@@ -704,6 +900,78 @@ T MultibodyTree<T>::DoCalcConservativePower(
         force_element->CalcConservativePower(mbt_context, pc, vc);
   }
   return conservative_power;
+}
+
+template<typename T>
+void MultibodyTree<T>::AllocateFakeCacheEntries() {
+  // Temporary hack before MultibodyCachingEvaluoatorInterface lands.
+  pc_ = std::make_unique<PositionKinematicsCache<T>>(get_topology());
+  vc_ = std::make_unique<VelocityKinematicsCache<T>>(get_topology());
+}
+
+template<typename T>
+const PositionKinematicsCache<T>& MultibodyTree<T>::EvalPositionKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalPositionKinematics()
+  // when MultibodyCachingEvaluatorInterface lands.
+  CalcPositionKinematicsCache(context, pc_.get());
+  return *pc_;
+}
+
+template<typename T>
+const VelocityKinematicsCache<T>& MultibodyTree<T>::EvalVelocityKinematics(
+    const systems::Context<T>& context) const {
+  // TODO(amcastro-tri): Replace by cache_evaluator_->EvalVelocityKinematics()
+  // when MultibodyCachingEvaluatorInterface lands.
+  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  CalcVelocityKinematicsCache(context, pc, vc_.get());
+  return *vc_;
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowIfFinalized(const char* source_method) const {
+  if (topology_is_valid()) {
+    throw std::logic_error(
+        "Post-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; calls to this method must happen before Finalize().");
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::ThrowIfNotFinalized(const char* source_method) const {
+  if (!topology_is_valid()) {
+    throw std::logic_error(
+        "Pre-finalize calls to '" + std::string(source_method) + "()' are "
+        "not allowed; you must call Finalize() first.");
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
+    const systems::Context<T>& context,
+    const PositionKinematicsCache<T>& pc,
+    ArticulatedBodyInertiaCache<T>* abc) const {
+  DRAKE_DEMAND(abc != nullptr);
+
+  const auto& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+
+  // TODO(bobbyluig): Eval H_PB_W from the cache.
+  std::vector<Vector6<T>> H_PB_W_cache(num_velocities());
+  CalcAcrossNodeGeometricJacobianExpressedInWorld(context, pc, &H_PB_W_cache);
+
+  // Perform tip-to-base recursion, skipping the world.
+  for (int depth = tree_height() - 1; depth > 0; depth--) {
+    for (BodyNodeIndex body_node_index : body_node_levels_[depth]) {
+      const BodyNode<T>& node = *body_nodes_[body_node_index];
+
+      // Get hinge mapping matrix.
+      const MatrixUpTo6<T> H_PB_W = node.GetJacobianFromArray(H_PB_W_cache);
+
+      node.CalcArticulatedBodyInertiaCache_TipToBase(
+          mbt_context, pc, H_PB_W, abc);
+    }
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.

@@ -124,11 +124,11 @@ std::unique_ptr<Mobilizer<ToScalar>>
 RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
-      tree_clone.get_variant(this->get_inboard_frame());
+      tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
-      tree_clone.get_variant(this->get_outboard_frame());
+      tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<RevoluteMobilizer<ToScalar>>(
-      inboard_frame_clone, outboard_frame_clone, this->get_revolute_axis());
+      inboard_frame_clone, outboard_frame_clone, this->revolute_axis());
 }
 
 template <typename T>

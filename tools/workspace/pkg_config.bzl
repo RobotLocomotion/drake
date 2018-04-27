@@ -4,9 +4,14 @@ _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
 _DEFAULT_STATIC = False
 
-def _run_pkg_config(repository_ctx, command_line):
-    """Run command_line and return its tokenized output."""
-    result = repository_ctx.execute(command_line)
+def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
+    """Run command_line with PKG_CONFIG_PATH = pkg_config_paths and return its
+    tokenized output."""
+    pkg_config_path = ":".join(pkg_config_paths)
+    result = repository_ctx.execute(command_line,
+                                    environment = {
+                                        "PKG_CONFIG_PATH": pkg_config_path,
+                                    })
     if result.return_code != 0:
         return struct(error = "error {} from {}: {}{}".format(
             result.return_code, command_line, result.stdout, result.stderr))
@@ -29,8 +34,12 @@ def setup_pkg_config_repository(repository_ctx):
             repository_ctx.os.environ["PATH"]))
     args = [tool_path, repository_ctx.attr.modname]
 
+    pkg_config_paths = getattr(repository_ctx.attr,
+                               "pkg_config_paths",
+                               [])
+
     # Check if we can find the required *.pc file of any version.
-    result = _run_pkg_config(repository_ctx, args)
+    result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
     if result.error != None:
         return result
 
@@ -38,7 +47,7 @@ def setup_pkg_config_repository(repository_ctx):
     atleast_version = getattr(repository_ctx.attr, "atleast_version", "")
     if atleast_version:
         result = _run_pkg_config(repository_ctx, args + [
-            "--atleast-version", atleast_version])
+            "--atleast-version", atleast_version], pkg_config_paths)
         if result.error != None:
             return struct(error = result.error + "during version check")
 
@@ -47,7 +56,7 @@ def setup_pkg_config_repository(repository_ctx):
     libs_args = args + ["--libs"]
     if static:
         libs_args = libs_args + ["--static"]
-    result = _run_pkg_config(repository_ctx, libs_args)
+    result = _run_pkg_config(repository_ctx, libs_args, pkg_config_paths)
     if result.error != None:
         return result
     linkopts = result.tokens
@@ -60,21 +69,37 @@ def setup_pkg_config_repository(repository_ctx):
     # unchanged by a pop.
     for i in reversed(range(len(linkopts))):
         linkopt = linkopts[i]
-        # Absolute system paths to *.so files get turned into -l instead.
-        # This fixup is only implemented for Ubuntu (not macOS) so far.
-        if linkopt.endswith(".so"):
-            possible_libdirs = [
-                "/usr/lib",
-                "/usr/lib/x86_64-linux-gnu",
-            ]
+        # Absolute system paths to *.dylib and *.so files get turned into -l
+        # instead.
+        if linkopt.endswith(".dylib") or linkopt.endswith(".so"):
+            if linkopt.endswith(".dylib"):
+                possible_libdirs = [
+                    "/usr/lib",
+                    "/usr/local/lib",
+                ]
+                suffix = ".dylib"
+            elif linkopt.endswith(".so"):
+                possible_libdirs = [
+                    "/usr/lib",
+                    "/usr/lib/x86_64-linux-gnu",
+                ]
+                suffix = ".so"
+            else:
+                return struct(error = ("expected linkopt {} to end with " +
+                                       ".dylib or .so").format(linkopt))
             for dir in possible_libdirs:
                 prefix = dir + "/lib"
                 if linkopt.startswith(prefix):
-                    name = linkopt[len(prefix):-len(".so")]
+                    name = linkopt[len(prefix):-len(suffix)]
                     if "/" not in name:
                         linkopt = "-l" + name
                         linkopts[i] = linkopt
                         break
+        # Add `-Wl,-rpath <path>` for `-L<path>`.
+        # See https://github.com/RobotLocomotion/drake/issues/7387#issuecomment-359952616  # noqa
+        if linkopt.startswith("-L"):
+            linkopts[i] = "-Wl,-rpath " + linkopt[2:] + " " + linkopt
+            continue
         # Switches stay put.
         if linkopt.startswith("-"):
             continue
@@ -85,7 +110,9 @@ def setup_pkg_config_repository(repository_ctx):
         linkopts[i - 1] += " " + non_switch_arg
 
     # Determine cflags; we'll split into includes and defines in a moment.
-    result = _run_pkg_config(repository_ctx, args + ["--cflags"])
+    result = _run_pkg_config(repository_ctx,
+                             args + ["--cflags"],
+                             pkg_config_paths)
     if result.error != None:
         return result
     cflags = result.tokens
@@ -101,9 +128,13 @@ def setup_pkg_config_repository(repository_ctx):
     # We process in reserve order to keep our loop index unchanged by a pop.
     for cflag in cflags:
         if cflag.startswith("-I"):
-            absolute_includes += [cflag[2:]]
+            value = cflag[2:]
+            if value not in absolute_includes:
+                absolute_includes.append(value)
         elif cflag.startswith("-D"):
-            defines += [cflag[2:]]
+            value = cflag[2:]
+            if value not in defines:
+                defines.append(value)
         elif cflag in [
                 "-frounding-math",
                 "-ffloat-store",
@@ -125,6 +156,10 @@ def setup_pkg_config_repository(repository_ctx):
     includes = []
     hdrs_path = repository_ctx.path("include")
     for item in absolute_includes:
+        if item == "/usr/include" or item == "/usr/local/include":
+            print(("pkg-config of {} returned an include path that " +
+                   "contains {} that may contain unrelated headers").format(
+                       repository_ctx.attr.modname, item))
         symlink_dest = item.replace('/', '_')
         repository_ctx.symlink(
             repository_ctx.path(item),
@@ -132,8 +167,11 @@ def setup_pkg_config_repository(repository_ctx):
         includes += ["include/" + symlink_dest]
     hdrs_prologue = "glob([\"include/**\"]) + "
 
-    # Write out the BUILD file.
+    # Write out the BUILD.bazel file.
     substitutions = {
+        "%{topcomment}": "DO NOT EDIT: generated by pkg_config_repository()",
+        "%{licenses}": repr(
+            getattr(repository_ctx.attr, "licenses", [])),
         "%{name}": repr(
             repository_ctx.name),
         "%{srcs}": repr(
@@ -154,7 +192,7 @@ def setup_pkg_config_repository(repository_ctx):
     }
     template = getattr(
         repository_ctx.attr, "build_file_template", _DEFAULT_TEMPLATE)
-    repository_ctx.template("BUILD", template, substitutions)
+    repository_ctx.template("BUILD.bazel", template, substitutions)
 
     return struct(value = True, error = None)
 
@@ -165,7 +203,11 @@ def _impl(repository_ctx):
              format(repository_ctx.name, result.error))
 
 pkg_config_repository = repository_rule(
+    # TODO(jamiesnape): Make licenses mandatory.
+    # TODO(jamiesnape): Use of this rule may cause additional transitive
+    # dependencies to be linked and their licenses must also be enumerated.
     attrs = {
+        "licenses": attr.string_list(),
         "modname": attr.string(mandatory = True),
         "atleast_version": attr.string(),
         "static": attr.bool(default = _DEFAULT_STATIC),
@@ -181,10 +223,10 @@ pkg_config_repository = repository_rule(
         "extra_includes": attr.string_list(),
         "extra_linkopts": attr.string_list(),
         "extra_deps": attr.string_list(),
+        "pkg_config_paths": attr.string_list(),
     },
     environ = [
         "PATH",
-        "PKG_CONFIG_PATH",
     ],
     local = True,
     implementation = _impl,
@@ -215,6 +257,10 @@ Example:
 
 Args:
     name: A unique name for this rule.
+    licenses: Licenses of the library. Valid license types include restricted,
+              reciprocal, notice, permissive, and unencumbered. See
+              https://docs.bazel.build/versions/master/be/functions.html#licenses_args
+              for more information.
     modname: The library name as known to pkg-config.
     atleast_version: (Optional) The --atleast-version to pkg-config.
     static: (Optional) Add linkopts for static linking to the library target.
@@ -226,4 +272,7 @@ Args:
     extra_includes: (Optional) Extra items to add to the library target.
     extra_linkopts: (Optional) Extra items to add to the library target.
     extra_deps: (Optional) Extra items to add to the library target.
+    pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
+                      that we ignore the enviornment variable PKG_CONFIG_PATH
+                      set by the user.
 """

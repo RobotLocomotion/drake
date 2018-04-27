@@ -7,6 +7,7 @@
 using Eigen::Dynamic;
 using Eigen::Map;
 using Eigen::VectorXd;
+using drake::trajectories::PiecewisePolynomial;
 
 void encodePolynomial(const Polynomial<double>& polynomial,
                       // NOLINTNEXTLINE(runtime/references)
@@ -25,11 +26,11 @@ void encodePiecewisePolynomial(
     const PiecewisePolynomial<double>& piecewise_polynomial,
     // NOLINTNEXTLINE(runtime/references)
     drake::lcmt_piecewise_polynomial& msg) {
-  msg.num_segments = piecewise_polynomial.getNumberOfSegments();
-  msg.num_breaks = piecewise_polynomial.getNumberOfSegments() + 1;
-  msg.breaks = piecewise_polynomial.getSegmentTimes();
-  msg.polynomial_matrices.resize(piecewise_polynomial.getNumberOfSegments());
-  for (int i = 0; i < piecewise_polynomial.getNumberOfSegments(); ++i) {
+  msg.num_segments = piecewise_polynomial.get_number_of_segments();
+  msg.num_breaks = piecewise_polynomial.get_number_of_segments() + 1;
+  msg.breaks = piecewise_polynomial.get_segment_times();
+  msg.polynomial_matrices.resize(piecewise_polynomial.get_number_of_segments());
+  for (int i = 0; i < piecewise_polynomial.get_number_of_segments(); ++i) {
     encodePolynomialMatrix<Eigen::Dynamic, Eigen::Dynamic>(
         piecewise_polynomial.getPolynomialMatrix(i),
         msg.polynomial_matrices[i]);

@@ -14,6 +14,7 @@
 #include "drake/automotive/maliput/utility/generate_urdf.h"
 #include "drake/automotive/prius_vis.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
@@ -97,8 +98,8 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
   const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
-  builder_->Connect(pose_output, ports.first);
-  builder_->Connect(velocity_output, ports.second);
+  builder_->Connect(pose_output, ports.pose_descriptor);
+  builder_->Connect(velocity_output, ports.velocity_descriptor);
   if (lcm_) {
     car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   }
@@ -141,7 +142,8 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
 
 template <typename T>
 int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
-    const std::string& name, bool initial_with_s,
+    const std::string& name, bool initial_with_s, ScanStrategy path_or_branches,
+    RoadPositionStrategy road_position_strategy, double period_sec,
     const SimpleCarState<T>& initial_state) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
@@ -155,9 +157,14 @@ int AutomotiveSimulator<T>::AddMobilControlledSimpleCar(
   const int id = allocate_vehicle_number();
 
   auto mobil_planner =
-      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s);
+      builder_->template AddSystem<MobilPlanner<T>>(*road_, initial_with_s,
+                                                    road_position_strategy,
+                                                    period_sec);
   mobil_planner->set_name(name + "_mobil_planner");
-  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  auto idm_controller =
+      builder_->template AddSystem<IdmController<T>>(*road_, path_or_branches,
+                                                     road_position_strategy,
+                                                     period_sec);
   idm_controller->set_name(name + "_idm_controller");
 
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
@@ -239,7 +246,8 @@ template <typename T>
 int AutomotiveSimulator<T>::AddIdmControlledCar(
     const std::string& name, bool initial_with_s,
     const SimpleCarState<T>& initial_state,
-    const maliput::api::Lane* goal_lane) {
+    const maliput::api::Lane* goal_lane, ScanStrategy path_or_branches,
+    RoadPositionStrategy road_position_strategy, double period_sec) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(aggregator_ != nullptr);
   DRAKE_THROW_UNLESS(goal_lane != nullptr);
@@ -254,7 +262,10 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   CheckNameUniqueness(name);
   const int id = allocate_vehicle_number();
 
-  auto idm_controller = builder_->template AddSystem<IdmController<T>>(*road_);
+  auto idm_controller =
+      builder_->template AddSystem<IdmController<T>>(*road_, path_or_branches,
+                                                     road_position_strategy,
+                                                     period_sec);
   idm_controller->set_name(name + "_idm_controller");
 
   const LaneDirection lane_direction(goal_lane, initial_with_s);
@@ -345,6 +356,8 @@ template <typename T>
 int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
     const std::string& name,
     const LaneDirection& initial_lane_direction,
+    ScanStrategy path_or_branches,
+    RoadPositionStrategy road_position_strategy, double period_sec,
     const MaliputRailcarParams<T>& params,
     const MaliputRailcarState<T>& initial_state) {
   const int id = AddPriusMaliputRailcar(name, initial_lane_direction, params,
@@ -353,7 +366,9 @@ int AutomotiveSimulator<T>::AddIdmControlledPriusMaliputRailcar(
       dynamic_cast<const MaliputRailcar<T>*>(vehicles_.at(id));
   DRAKE_DEMAND(railcar != nullptr);
   auto controller =
-      builder_->template AddSystem<IdmController<T>>(*road_);
+      builder_->template AddSystem<IdmController<T>>(*road_, path_or_branches,
+                                                     road_position_strategy,
+                                                     period_sec);
   controller->set_name(name + "_IdmController");
 
   builder_->Connect(railcar->pose_output(), controller->ego_pose_input());
@@ -429,10 +444,11 @@ void AutomotiveSimulator<T>::GenerateAndLoadRoadNetworkUrdf() {
   std::string filename = road_->id().string();
   std::transform(filename.begin(), filename.end(), filename.begin(),
                  [](char ch) { return ch == ' ' ? '_' : ch; });
+  const std::string tmpdir = drake::temp_directory();
   maliput::utility::GenerateUrdfFile(road_.get(),
-                                     "/tmp", filename,
+                                     tmpdir, filename,
                                      maliput::utility::ObjFeatures());
-  const std::string urdf_filepath = "/tmp/" + filename + ".urdf";
+  const std::string urdf_filepath = tmpdir + "/" + filename + ".urdf";
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       urdf_filepath,
       drake::multibody::joints::kFixed,
@@ -449,7 +465,7 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
   auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port(0));
+  builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -462,7 +478,7 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port(0));
+  builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -475,7 +491,7 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  builder_->Connect(system.raw_pose_output(), publisher->get_input_port(0));
+  builder_->Connect(system.raw_pose_output(), publisher->get_input_port());
 }
 
 template <typename T>
@@ -530,12 +546,7 @@ template <typename T>
 void AutomotiveSimulator<T>::SendLoadRobotMessage(
     const lcmt_viewer_load_robot& message) {
   DRAKE_DEMAND(lcm_ != nullptr);
-  const int num_bytes = message.getEncodedSize();
-  std::vector<uint8_t> message_bytes(num_bytes);
-  const int num_bytes_encoded =
-      message.encode(message_bytes.data(), 0, num_bytes);
-  DRAKE_ASSERT(num_bytes_encoded == num_bytes);
-  lcm_->Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(), num_bytes);
+  Publish(lcm_.get(), "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
 template <typename T>
@@ -554,7 +565,7 @@ void AutomotiveSimulator<T>::Build() {
                                                    lcm_.get()));
     builder_->Connect(
         bundle_to_draw_->get_output_port(0),
-        lcm_publisher_->get_input_port(0));
+        lcm_publisher_->get_input_port());
   }
   pose_bundle_output_port_ =
       builder_->ExportOutput(aggregator_->get_output_port(0));
@@ -591,7 +602,6 @@ void AutomotiveSimulator<T>::Start(
 
   if (lcm_) {
     TransmitLoadMessage();
-    lcm_->StartReceiveThread();
   }
 
   simulator_->set_target_realtime_rate(target_realtime_rate);

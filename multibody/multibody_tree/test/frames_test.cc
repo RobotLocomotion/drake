@@ -43,13 +43,13 @@ class FrameTests : public ::testing::Test {
     model_ = std::make_unique<MultibodyTree<double>>();
 
     bodyB_ = &model_->AddBody<RigidBody>(M_Bo_B);
-    frameB_ = &bodyB_->get_body_frame();
+    frameB_ = &bodyB_->body_frame();
 
     // Mobilizer connecting bodyB to the world.
     // The mobilizer is only needed because it is a requirement of MultibodyTree
     // that all bodies in the model must have an inboard mobilizer.
     model_->AddMobilizer<RevoluteMobilizer>(
-        model_->get_world_frame(), bodyB_->get_body_frame(),
+        model_->world_frame(), bodyB_->body_frame(),
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.
@@ -58,7 +58,7 @@ class FrameTests : public ::testing::Test {
             Translation3d(0.0, -1.0, 0.0);
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
-        &model_->AddFrame<FixedOffsetFrame>(bodyB_->get_body_frame(), X_BP_);
+        &model_->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
 
     // Some arbitrary pose of frame Q in frame P.
     X_PQ_ = AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *

@@ -26,10 +26,10 @@ namespace constraint {
 /// <h3>Definition of variables specific to this class</h3>
 /// (See @ref constraint_variable_defs) for the more general set of
 /// definitions).
-/// - s ∈ ℕ   The number of contacts at which sliding is occurring. Note
-///           that p = s + y, where p is the number of points of contact.
-/// - y ∈ ℕ   The number of contacts at which sliding is not occurring. Note
-///           that p = s + y.
+/// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
+///            that nc = ns + ny, where nc is the number of points of contact.
+/// - ny ∈ ℕ   The number of contacts at which sliding is not occurring. Note
+///            that nc = ns + ny.
 template <class T>
 struct ConstraintAccelProblemData {
   /// Constructs acceleration problem data for a system with a @p gv_dim
@@ -182,10 +182,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿᶜ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
-
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝⁿᶜ vector represents the diagonal matrix γᴺ.
-  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for non-sliding contact friction constraints
@@ -229,12 +225,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿᶻ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
-
-  /// This ℝⁿᶻ vector represents the diagonal matrix γᶠ.
-  VectorX<T> gammaF;
-
-  /// This ℝⁿʸ vector represents the diagonal matrix γᴱ.
-  VectorX<T> gammaE;
   /// @}
 
   /// @name Data for unilateral constraints at the acceleration level
@@ -277,9 +267,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿᵘ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
-
-  /// This ℝⁿᵘ vector represents the diagonal matrix γᴸ.
-  VectorX<T> gammaL;
   /// @}
 
   /// The ℝⁿᵛ vector tau, the generalized external force vector that
@@ -333,7 +320,7 @@ struct ConstraintVelProblemData {
   /// approximation.
   std::vector<int> r;
 
-  /// Coefficients of friction for the nn contacts. This problem specification
+  /// Coefficients of friction for the nc contacts. This problem specification
   /// does not distinguish between static and dynamic friction coefficients.
   VectorX<T> mu;
 

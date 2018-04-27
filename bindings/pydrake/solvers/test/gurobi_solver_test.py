@@ -20,7 +20,3 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         x_expected = np.array([1, 1])
         self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
-
-
-if __name__ == '__main__':
-    unittest.main()

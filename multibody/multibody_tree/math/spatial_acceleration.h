@@ -225,6 +225,26 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   /// are composed, frame B is located with its origin `Bo` at `p_PoBo` from P's
   /// origin Po.
   ///
+  /// This operation can be written in a more compact fom in terms of the
+  /// rigid shift operator `Φᵀ(p_PoBo)` (see SpatialVelocity::Shift()) as: <pre>
+  ///   A_WB = Φᵀ(p_PoBo)A_WP + Ac_WB(w_WP, V_PB) + A_PB_W
+  /// </pre>
+  /// where `Φᵀ(p_PoBo)A_WP` denotes the application of the rigid shift
+  /// operation as in SpatialVelocity::Shift() and `Ac_WB(w_WP, V_PB)` contains
+  /// the centrifugal and Coriolis terms: <pre>
+  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                            |
+  ///                       | w_WP x w_WP x p_PoBo_W + 2 w_WP x v_PB_W |
+  ///                                   ^^^                ^^^
+  ///                               centrifugal         Coriolis
+  /// </pre>
+  /// The equation above shows that composing spatial accelerations cannot be
+  /// simply accomplished by adding `A_WP` with `A_PB` (this is the reason why
+  /// this class does not overload the `operator+()` and provides this method
+  /// instead). Moreover, we see that, unlike with angular velocities, angular
+  /// accelerations cannot be added in order to compose them. That is
+  /// `w_AC = w_AB + w_BC` but `alpha_AC ≠ alpha_AB + alpha_BC` due to the cross
+  /// term `w_AC x w_BC`. See the derivation below for more details.
+  ///
   /// @see SpatialVelocity::ComposeWithMovingFrameVelocity() for the composition
   /// of SpatialVelocity quantities.
   ///
@@ -327,16 +347,28 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
   ///
   /// The rotational and translational components of the spatial acceleration
   /// are given by Eqs. (10) and (6) respectively: <pre>
-  ///   A_WB.rotational() = alpha_WB = {alpha_WP} + alpha_PB + w_WP x w_PB
+  ///   A_WB.rotational() = alpha_WB = {alpha_WP} + alpha_PB + w_WP x w_PB (11)
   ///   A_WB.translational() = a_WBo
   ///                      = {a_WPo + alpha_WP x p_PoBo + w_WP x w_WP x p_PoBo}
-  ///                      + 2 * w_WP x v_PBo + a_PBo
+  ///                      + 2 * w_WP x v_PBo + a_PBo                      (12)
   /// </pre>
   /// where we have placed within curly brackets `{}` all the terms that also
   /// appear in the Shift() operation, which is equivalent to this method when
   /// `V_PB` and `A_PB` are both zero.
   /// In the equations above `alpha_WP = A_WP.rotational()` and
   /// `a_WPo = A_WP.translational()`.
+  /// The above expression can be written in a more compact fom in terms of the
+  /// rigid shift operator `Φᵀ(p_PoBo)` (see SpatialVelocity::Shift()) as
+  /// presented in the main body of this documentation: <pre>
+  ///   A_WB = Φᵀ(p_PoBo)A_WP + Ac_WB(w_WP, V_PB) + A_PB_W                 (13)
+  /// </pre>
+  /// where `Ac_WB(w_WP, V_PB)` contains the centrifugal and Coriolis terms:
+  /// <pre>
+  ///   Ac_WB(w_WP, V_PB) = | w_WP x w_PB_W                            |
+  ///                       | w_WP x w_WP x p_PoBo_W + 2 w_WP x v_PB_W |
+  ///                                   ^^^                ^^^
+  ///                               centrifugal         Coriolis
+  /// </pre>
   /// As usual, for computation, all quantities above must be expressed in a
   /// common frame E; we add an `_E` suffix to each symbol to indicate that.
   SpatialAcceleration<T> ComposeWithMovingFrameAcceleration(

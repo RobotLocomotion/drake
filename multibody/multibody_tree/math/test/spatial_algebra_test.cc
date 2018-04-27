@@ -8,6 +8,8 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +17,9 @@ namespace math {
 namespace {
 
 using Eigen::AngleAxis;
+using symbolic::Expression;
+using symbolic::MakeVectorContinuousVariable;
+using symbolic::Variable;
 
 // Generic declaration boilerplate of a traits class for spatial vectors.
 // This is used by the (templated on SpatialQuantityUnderTest)
@@ -37,6 +42,12 @@ struct spatial_vector_traits<SpatialForce<T>> {
 // traits specialization for SpatialAcceleration.
 template <typename T>
 struct spatial_vector_traits<SpatialAcceleration<T>> {
+  typedef T ScalarType;
+};
+
+// traits specialization for SpatialMomentum.
+template <typename T>
+struct spatial_vector_traits<SpatialMomentum<T>> {
   typedef T ScalarType;
 };
 
@@ -64,9 +75,15 @@ typedef ::testing::Types<
     SpatialVelocity<double>,
     SpatialForce<double>,
     SpatialAcceleration<double>,
+    SpatialMomentum<double>,
     SpatialVelocity<AutoDiffXd>,
     SpatialForce<AutoDiffXd>,
-    SpatialAcceleration<AutoDiffXd>> SpatialQuantityTypes;
+    SpatialAcceleration<AutoDiffXd>,
+    SpatialMomentum<AutoDiffXd>,
+    SpatialVelocity<Expression>,
+    SpatialForce<Expression>,
+    SpatialAcceleration<Expression>,
+    SpatialMomentum<Expression>> SpatialQuantityTypes;
 TYPED_TEST_CASE(SpatialQuantityTest, SpatialQuantityTypes);
 
 // Tests default construction and proper size at compile time.
@@ -131,9 +148,8 @@ TYPED_TEST(SpatialQuantityTest, ConstructionFromTwo3DVectors) {
   // Verify compile-time size.
   EXPECT_EQ(V_AB.size(), 6);
 
-  // Comparison to Eigen::NumTraits<double>::epsilon() precision.
-  EXPECT_TRUE(V_AB.translational().isApprox(v_AB));
-  EXPECT_TRUE(V_AB.rotational().isApprox(w_AB));
+  EXPECT_TRUE(V_AB.translational() == v_AB);
+  EXPECT_TRUE(V_AB.rotational() == w_AB);
 }
 
 // Tests array accessors.
@@ -242,9 +258,13 @@ TYPED_TEST(SpatialQuantityTest, IsApprox) {
   const Vector3<T>& w = this->w_;
 
   const double precision = 1.0e-10;
+  const T max_v = v.template lpNorm<Eigen::Infinity>();
+  const T max_w = w.template lpNorm<Eigen::Infinity>();
+  using std::max;
+  const double max_V = ExtractDoubleOrThrow(max(max_v, max_w));
   SpatialQuantity other(
       (1.0 + precision) * w, (1.0 + precision) * v);
-  EXPECT_TRUE(V.IsApprox(other, (1.0 + 1.0e-7) * precision));
+  EXPECT_TRUE(V.IsApprox(other, (max_V + 1.0e-6) * precision));
   EXPECT_FALSE(V.IsApprox(other, precision));
 }
 
@@ -278,6 +298,26 @@ TYPED_TEST(SpatialQuantityTest, MulitplicationByAScalar) {
   EXPECT_EQ(sxV.translational(), Vxs.translational());
 }
 
+// Test the unary minus operator on a spatial vector.
+TYPED_TEST(SpatialQuantityTest, UnaryMinusOperator) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+
+  // Two non-zero rotational and translational components.
+  const Vector3<T> w(1.0, 2.0, 3.0);
+  const Vector3<T> v(4.0, 5.0, 6.0);
+
+  // A spatial vector V from w and v.
+  const SpatialQuantity V(w, v);
+
+  // Negate V.
+  const SpatialQuantity Vminus = -V;
+
+  // Verify the result using Eigen operations.
+  EXPECT_EQ(V.rotational(), -Vminus.rotational());
+  EXPECT_EQ(V.translational(), -Vminus.translational());
+}
+
 // Re-express in another frame. Given a spatial vector V_F expressed in a frame
 // F, re-express this same spatial vector in another frame E as:
 //   V_E = R_EF * V_F
@@ -301,7 +341,7 @@ TYPED_TEST(SpatialQuantityTest, ReExpressInAnotherFrame) {
 }
 
 // Create a list of scalar types for the unit tests that follow below.
-typedef ::testing::Types<double, AutoDiffXd> ScalarTypes;
+typedef ::testing::Types<double, AutoDiffXd, Expression> ScalarTypes;
 
 // SpatialVelocity specific unit tests.
 template <typename T>
@@ -394,46 +434,93 @@ TYPED_TEST(SpatialVelocityTest, DotProductWithSpatialForce) {
   EXPECT_EQ(FdotV, VdotF_expected);
 }
 
-// SpatialForce specific unit tests.
-template <typename T>
-class SpatialForceTest : public ::testing::Test {
+// Tests that we can take the dot product of a SpatialVelocity with a
+// SpatialMomentum.
+TYPED_TEST(SpatialVelocityTest, DotProductWithSpatialMomentum) {
+  typedef typename TestFixture::ScalarType T;
+
+  SpatialVelocity<T> V(Vector3<T>(1.0, 2.0, 3.0), /*rotational component*/
+                       Vector3<T>(-2.0, -5.0, 8.0) /*translational component*/);
+  SpatialMomentum<T> F(Vector3<T>(4.0, 1.0, -3.0), /*rotational component*/
+                       Vector3<T>(11.0, 9.0, -2.0) /*translational component*/);
+  T VdotF = V.dot(F);
+  T VdotF_expected(-86);
+  // Verify the result.
+  EXPECT_EQ(VdotF, VdotF_expected);
+
+  // Verify the dot product is commutative.
+  T FdotV = F.dot(V);
+  // Verify the result.
+  EXPECT_EQ(FdotV, VdotF_expected);
+}
+
+// Unit tests specific to elements in F⁶.
+template <class SpatialForceQuantityUnderTest>
+class ElementsInF6Test : public ::testing::Test {
  public:
-  // Useful typedefs when witting unit tests to access types.
-  typedef T ScalarType;
+  // Useful typedefs when writing unit tests to access types.
+  typedef SpatialForceQuantityUnderTest SpatialQuantityType;
+  typedef typename spatial_vector_traits<
+      SpatialQuantityType>::ScalarType ScalarType;
  protected:
-  // Consider a force applied at the origin of Frame A, expressed in a Frame E.
+  // Consider a force (or impulse) applied at the origin of Frame A, expressed
+  // in a Frame E.
   Vector3<ScalarType> f_Ao_E_{1, 2, 0};
 
   // Consider a torque applied about the origin of Frame A, expressed in a
   // Frame E.
   Vector3<ScalarType> tau_Ao_E_{0, 0, 3};
 
-  // Consider a spatial force about the origin of Frame A, expressed in a
-  // frame A.
-  SpatialForce<ScalarType> F_Ao_E_{tau_Ao_E_, f_Ao_E_};
+  // Consider a spatial force (or spatial impulse) about the origin of Frame A,
+  // expressed in a frame A.
+  SpatialQuantityType F_Ao_E_{tau_Ao_E_, f_Ao_E_};
 };
-TYPED_TEST_CASE(SpatialForceTest, ScalarTypes);
+
+// Create a list of force types in F⁶ to be tested.
+typedef ::testing::Types<
+    SpatialForce<double>,
+    SpatialMomentum<double>,
+    SpatialForce<AutoDiffXd>,
+    SpatialMomentum<AutoDiffXd>,
+    SpatialForce<Expression>,
+    SpatialMomentum<Expression>> ElementsInF6Types;
+TYPED_TEST_CASE(ElementsInF6Test, ElementsInF6Types);
 
 // Tests the shifting of a spatial force between two moving frames rigidly
 // attached to each other.
-TYPED_TEST(SpatialForceTest, ShiftOperation) {
+TYPED_TEST(ElementsInF6Test, ShiftOperation) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
   typedef typename TestFixture::ScalarType T;
-  const SpatialForce<T>& F_Ao_E = this->F_Ao_E_;
+  const SpatialQuantity& F_Ao_E = this->F_Ao_E_;
   const Vector3<T>& f_Ao_E = this->f_Ao_E_;
 
   // Consider a vector from the origin of a frame A to the origin of a frame B,
   // expressed in a third frame E.
   Vector3<T> p_AB_E(2., -2., 1.);
 
-  // Consider now shifting the spatial force as applied about the origin of
-  // frame A measured in frame E to the spatial force as applied about frame B
-  // also measured in frame E knowing that frames A and B are rigidly attached
-  // to each other.
-  SpatialForce<T> F_Bo_E = F_Ao_E.Shift(p_AB_E);
+  // Consider now shifting the spatial vector of F⁶ as applied about the origin
+  // of frame A measured in frame E to the spatial vector of F⁶ as applied about
+  // frame B also measured in frame E knowing that frames A and B are rigidly
+  // attached to each other.
+  SpatialQuantity F_Bo_E = F_Ao_E.Shift(p_AB_E);
 
   // Verify the result.
-  SpatialForce<T> expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
+  SpatialQuantity expected_F_Bo_E(Vector3<T>(2.0, -1.0, -3.0), f_Ao_E);
   EXPECT_TRUE(F_Bo_E.IsApprox(expected_F_Bo_E));
+}
+
+// Tests operator+().
+TYPED_TEST(ElementsInF6Test, AdditionOperation) {
+  typedef typename TestFixture::SpatialQuantityType SpatialQuantity;
+  typedef typename TestFixture::ScalarType T;
+  const SpatialQuantity& F_Ao_E = this->F_Ao_E_;
+  const Vector3<T>& f_Ao_E = this->f_Ao_E_;
+  const Vector3<T>& tau_Ao_E = this->tau_Ao_E_;
+
+  SpatialQuantity V = F_Ao_E + F_Ao_E;
+
+  EXPECT_EQ(V.rotational(), tau_Ao_E + tau_Ao_E);
+  EXPECT_EQ(V.translational(), f_Ao_E + f_Ao_E);
 }
 
 // SpatialAcceleration specific unit tests.
@@ -618,6 +705,71 @@ TYPED_TEST(SpatialAccelerationTest, WithTranslationalAcceleration) {
 
 // TODO(sherm1,mitiguy) Add independently-developed unit tests here by Mitiguy
 // for the scary Shift() and Compose() methods, just to double check!
+
+template <class SymbolicSpatialQuantityType>
+class SymbolicSpatialQuantityTest : public ::testing::Test {
+ protected:
+  // A translational component ∈ ℝ³.
+  Vector3<Expression> v_{Variable("vx"), Variable("vy"), Variable("vz")};
+
+  // A rotational component ∈ ℝ³.
+  Vector3<Expression> w_{Variable("wx"), Variable("wy"), Variable("wz")};
+
+  // A spatial quantity related to the above rotational and translational
+  // components.
+  SymbolicSpatialQuantityType V_{w_, v_};
+
+  // A spatial quantity from a 6D vector of symbolic variables.
+  SymbolicSpatialQuantityType Q_{MakeVectorContinuousVariable(6, "Q")};
+};
+
+// Create a list of SpatialVector with symbolic::Variable entries. These will
+// get tested through fixture SymbolicSpatialQuantityTest.
+typedef ::testing::Types<
+    SpatialVelocity<Expression>,
+    SpatialForce<Expression>,
+    SpatialAcceleration<Expression>,
+    SpatialMomentum<Expression>> SymbolicSpatialQuantityTypes;
+TYPED_TEST_CASE(SymbolicSpatialQuantityTest, SymbolicSpatialQuantityTypes);
+
+TYPED_TEST(SymbolicSpatialQuantityTest, ShiftOperatorIntoStream) {
+  std::stringstream V_stream;
+  V_stream << this->V_;
+  std::string V_expected_string = "[wx, wy, wz, vx, vy, vz]ᵀ";
+  EXPECT_EQ(V_expected_string, V_stream.str());
+  std::stringstream Q_stream;
+  Q_stream << this->Q_;
+  std::string Q_expected_string = "[Q(0), Q(1), Q(2), Q(3), Q(4), Q(5)]ᵀ";
+  EXPECT_EQ(Q_expected_string, Q_stream.str());
+}
+
+// Tests the dot product between spatial momentum and spatial velocity
+// quantities for a variety of scalar types.
+template <typename T>
+class MomentumDotVelocityTest : public ::testing::Test {
+ public:
+  // Useful typedefs when writing unit tests to access types.
+  typedef T ScalarType;
+ protected:
+  SpatialMomentum<T> L_WBp_{Vector3<T>{1, 2, 3}, Vector3<T>{4, 5, 6}};
+  SpatialVelocity<T> V_WBp_{Vector3<T>{7, 8, 9}, Vector3<T>{-1, -2, -3}};
+  Vector3<T> p_PQ_{7, -3, 5};
+};
+TYPED_TEST_CASE(MomentumDotVelocityTest, ScalarTypes);
+
+// Verifies the result of the dot product of a spatial momentum L_WBp (of a body
+// B in a frame W about a point P) with the spatial velocity V_WBp of frame Bp
+// (body frame B shifted to point P) in frame W, is independent of point P.
+TYPED_TEST(MomentumDotVelocityTest, InvariantUnderShiftOperation) {
+  typedef typename TestFixture::ScalarType T;
+  const SpatialMomentum<T>& L_WBp = this->L_WBp_;
+  const SpatialVelocity<T>& V_WBp = this->V_WBp_;
+  const Vector3<T>& p_PQ = this->p_PQ_;
+  const T LdotV_P = L_WBp.dot(V_WBp);
+  // Perform L_WBq.dot(V_WBq):
+  const T HdotV_Q = L_WBp.Shift(p_PQ).dot(V_WBp.Shift(p_PQ));
+  EXPECT_EQ(LdotV_P, HdotV_Q);
+}
 
 }  // namespace
 }  // namespace math

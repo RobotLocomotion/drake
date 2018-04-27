@@ -78,6 +78,10 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
   // TODO(liang.fok) Replace this with a Google Test matcher.
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message,
                                              expected_message));
+
+  EXPECT_EQ(
+      lcm->get_last_publication_time(dut->get_channel_name()).value_or(-1.0),
+      time);
 }
 
 // Tests LcmPublisherSystem using a translator.

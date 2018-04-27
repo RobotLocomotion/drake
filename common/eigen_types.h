@@ -50,6 +50,27 @@ using VectorX = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 template <typename Scalar>
 using VectorUpTo6 = Eigen::Matrix<Scalar, Eigen::Dynamic, 1, 0, 6, 1>;
 
+/// A row vector of size 2, templated on scalar type.
+template <typename Scalar>
+using RowVector2 = Eigen::Matrix<Scalar, 1, 2>;
+
+/// A row vector of size 3, templated on scalar type.
+template <typename Scalar>
+using RowVector3 = Eigen::Matrix<Scalar, 1, 3>;
+
+/// A row vector of size 4, templated on scalar type.
+template <typename Scalar>
+using RowVector4 = Eigen::Matrix<Scalar, 1, 4>;
+
+/// A row vector of size 6.
+template <typename Scalar>
+using RowVector6 = Eigen::Matrix<Scalar, 1, 6>;
+
+/// A row vector of any size, templated on scalar type.
+template <typename Scalar>
+using RowVectorX = Eigen::Matrix<Scalar, 1, Eigen::Dynamic>;
+
+
 /// A matrix of 2 rows and 2 columns, templated on scalar type.
 template <typename Scalar>
 using Matrix2 = Eigen::Matrix<Scalar, 2, 2>;
@@ -108,9 +129,6 @@ using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 /// A translation in 3D templated on scalar type.
 template <typename Scalar>
 using Translation3 = Eigen::Translation<Scalar, 3>;
-
-/// A column vector of dynamic size, up to a maximum of 73 elements.
-using VectorUpTo73d = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>;
 
 /// A column vector consisting of one twist.
 template <typename Scalar>
@@ -260,11 +278,30 @@ struct is_eigen_nonvector_of
 /// }
 /// // Note that, call sites should be changed to:
 /// foo(&M);
-
+///
 /// // We need tmp to avoid taking the address of a temporary object such as the
 /// // return value of .block().
 /// auto tmp = M.block(0, 0, 2, 2);
 /// foo(&tmp);
+/// @endcode
+///
+/// Notice that methods taking an EigenPtr can mutate the entries of a matrix as
+/// in method `foo()` in the example code above, but cannot change its size.
+/// This is because `operator*` and `operator->` return an `Eigen::Ref<T>`
+/// object and only plain matrices/arrays can be resized and not expressions.
+/// This **is** the desired behavior, since resizing the block of a matrix or
+/// even a more general expression should not be allowed. If you do want to be
+/// able to resize a mutable matrix argument, then you must pass it as a
+/// `Matrix<T>*`, like so:
+/// @code
+/// void bar(Eigen::MatrixXd* M) {
+///   DRAKE_THROW_UNLESS(M != nullptr);
+///   // In this case this method only works with 4x3 matrices.
+///   if (M->rows() != 4 && M->cols() != 3) {
+///     M->resize(4, 3);
+///   }
+///   (*M)(0, 0) = 0;
+/// }
 /// @endcode
 ///
 /// @note This class provides a way to avoid the `const_cast` hack introduced in

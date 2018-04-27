@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/reinit_after_move.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
 
 namespace drake {
@@ -41,6 +41,9 @@ using ImageLabel16I = Image<PixelType::kLabel16I>;
 /// The type for greyscale image where the channel has the type of uint8_t.
 using ImageGrey8U = Image<PixelType::kGrey8U>;
 
+/// The type for symbolic image where the channel has the type of
+/// symbolic::Expression.
+using ImageExpr = Image<PixelType::kExpr>;
 
 /// Simple data format for Image. For the complex calculation with the image,
 /// consider converting this to other libaries' Matrix data format, i.e.,
@@ -142,8 +145,8 @@ class Image {
   }
 
  private:
-  reinit_after_move<int> width_;
-  reinit_after_move<int> height_;
+  reset_after_move<int> width_;
+  reset_after_move<int> height_;
   std::vector<T> data_;
 };
 

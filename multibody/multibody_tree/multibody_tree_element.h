@@ -83,7 +83,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   }
 
   /// Returns this element's unique index in its parent MultibodyTree.
-  ElementIndexType get_index() const { return index_;}
+  ElementIndexType index() const { return index_;}
 
   /// Checks whether this MultibodyTreeElement has been registered into a
   /// MultibodyTree. If not, it throws an exception of type std::logic_error.

@@ -15,12 +15,49 @@ namespace drake {
 /// This is especially useful for function-local static variables that are not
 /// trivially destructable.  We shouldn't call their destructor at program exit
 /// because of the "indeterminate order of ... destruction" as mentioned in
-/// cppguide's #Static_and_Global_Variables section, but other solutions to
-/// this problem place the objects on the heap through an indirection.
+/// cppguide's
+/// <a href="http://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables">Static
+/// and Global Variables</a> section, but other solutions to this problem place
+///  the objects on the heap through an indirection.
 ///
 /// Compared with other approaches, this mechanism more clearly describes the
 /// intent to readers, avoids "possible leak" warnings from memory-checking
 /// tools, and is probably slightly faster.
+///
+/// Example uses:
+///
+/// The singleton pattern:
+/// @code
+/// class Singleton {
+///  public:
+///   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Singleton)
+///   static Singleton& getInstance() {
+///     static never_destroyed<Singleton> instance;
+///     return instance.access();
+///   }
+///  private:
+///   friend never_destroyed<Singleton>;
+///   Singleton() = default;
+/// };
+/// @endcode
+///
+/// A lookup table, created on demand the first time its needed, and then
+/// reused thereafter:
+/// @code
+/// enum class Foo { kBar, kBaz };
+/// Foo ParseFoo(const std::string& foo_string) {
+///   using Dict = std::unordered_map<std::string, Foo>;
+///   static const drake::never_destroyed<Dict> string_to_enum{
+///     std::initializer_list<Dict::value_type>{
+///       {"bar", Foo::kBar},
+///       {"baz", Foo::kBaz},
+///     }
+///   };
+///   return string_to_enum.access().at(foo_string);
+/// }
+/// @endcode
+//
+// The above examples are repeated in the unit test; keep them in sync.
 template <typename T>
 class never_destroyed {
  public:

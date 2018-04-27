@@ -265,20 +265,16 @@ GTEST_TEST(ValkyrieIK_Test, ValkyrieIK_Test_StandingPose_Test) {
   systems::BasicVector<double> q_draw(x);
 
   lcm::DrakeLcm lcm;
-  std::vector<uint8_t> message_bytes;
 
   lcmt_viewer_load_robot load_msg =
       multibody::CreateLoadRobotMessage<double>(*tree);
-  const int length = load_msg.getEncodedSize();
-  message_bytes.resize(length);
-  load_msg.encode(message_bytes.data(), 0, length);
-  lcm.Publish("DRAKE_VIEWER_LOAD_ROBOT", message_bytes.data(),
-              message_bytes.size());
+  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", load_msg);
 
   systems::ViewerDrawTranslator posture_drawer(*tree);
+  std::vector<uint8_t> message_bytes;
   posture_drawer.Serialize(0, q_draw, &message_bytes);
   lcm.Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
-              message_bytes.size());
+              message_bytes.size(), {});
 }
 
 }  // namespace

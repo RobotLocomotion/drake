@@ -72,15 +72,6 @@ class DrakeJoint {
   static const int MAX_NUM_VELOCITIES = 6;
 
   /**
-   * Defines the maximum automatic differentiation data type size a joint can
-   * have.
-   */
-  typedef Eigen::AutoDiffScalar<
-      Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>>
-      AutoDiffFixedMaxSize;  // 73 is number of states of quat-parameterized
-                             // Atlas
-
-  /**
    * A constructor for use by concrete joints to define the joint's name, fixed
    * frame, and number of degrees of freedom.
    *
@@ -188,7 +179,7 @@ class DrakeJoint {
   /**
    * Returns `true` if this joint is a FixedJoint.
    */
-  bool is_fixed() const { return num_positions == 0; }
+  bool is_fixed() const { return num_positions_ == 0; }
 
   virtual Eigen::VectorXd zeroConfiguration() const = 0;
 
@@ -206,17 +197,15 @@ class DrakeJoint {
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
 
-  POSITION_AND_VELOCITY_DEPENDENT_METHODS(AutoDiffFixedMaxSize)
-
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  const std::string name;
-  Eigen::VectorXd joint_limit_min;
-  Eigen::VectorXd joint_limit_max;
+  const std::string name_;
+  Eigen::VectorXd joint_limit_min_;
+  Eigen::VectorXd joint_limit_max_;
   Eigen::VectorXd joint_limit_stiffness_;
   Eigen::VectorXd joint_limit_dissipation_;
 
@@ -232,7 +221,7 @@ class DrakeJoint {
   virtual void DoInitializeClone(DrakeJoint* clone) const = 0;
 
  private:
-  const Eigen::Isometry3d transform_to_parent_body;
-  const int num_positions{};
-  const int num_velocities{};
+  const Eigen::Isometry3d transform_to_parent_body_;
+  const int num_positions_;
+  const int num_velocities_;
 };

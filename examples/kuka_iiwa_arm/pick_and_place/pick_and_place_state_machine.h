@@ -23,7 +23,6 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
-
 /// Different states for the pick and place task.
 enum class PickAndPlaceState {
   kOpenGripper,
@@ -46,10 +45,10 @@ class PickAndPlaceStateMachine {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PickAndPlaceStateMachine)
 
-  typedef std::function<void(
-      const robotlocomotion::robot_plan_t*)> IiwaPublishCallback;
-  typedef std::function<void(
-      const lcmt_schunk_wsg_command*)> WsgPublishCallback;
+  typedef std::function<void(const robotlocomotion::robot_plan_t*)>
+      IiwaPublishCallback;
+  typedef std::function<void(const lcmt_schunk_wsg_command*)>
+      WsgPublishCallback;
 
   /// Construct a pick and place state machine.  The state machine will move the
   /// item counter-clockwise around the tables specified in @p configuration.
@@ -73,10 +72,12 @@ class PickAndPlaceStateMachine {
   PickAndPlaceState state() const { return state_; }
 
  private:
-  optional<std::map<PickAndPlaceState, PiecewisePolynomial<double>>>
-  ComputeTrajectories(const WorldState& env_state,
-                      const PiecewisePolynomial<double>& q_traj_seed,
-                      RigidBodyTree<double>* iiwa) const;
+  optional<
+      std::map<PickAndPlaceState, trajectories::PiecewisePolynomial<double>>>
+  ComputeTrajectories(
+      const WorldState& env_state,
+      const trajectories::PiecewisePolynomial<double>& q_traj_seed,
+      RigidBodyTree<double>* iiwa) const;
 
   bool single_move_;
 
@@ -105,14 +106,15 @@ class PickAndPlaceStateMachine {
   pick_and_place::PlannerConfiguration configuration_;
 
   // Desired interpolation results for various states
-  optional<std::map<PickAndPlaceState, PiecewisePolynomial<double>>>
+  optional<
+      std::map<PickAndPlaceState, trajectories::PiecewisePolynomial<double>>>
       interpolation_result_map_{};
 
   // Measured location of object at planning time
   Isometry3<double> expected_object_pose_;
 
   // Joint position seed
-  optional<PiecewisePolynomial<double>> q_traj_seed_;
+  optional<trajectories::PiecewisePolynomial<double>> q_traj_seed_;
 
   // Counter for number of planning failures
   int planning_failure_count_{0};

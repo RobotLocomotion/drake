@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 
 namespace drake {
 namespace geometry {
@@ -84,6 +85,39 @@ class QueryObject {
 
   //@}
 
+  //----------------------------------------------------------------------------
+  /** @name                Collision Queries
+
+   These queries detect _collisions_ between geometry. Two geometries collide
+   if they overlap each other and are not explicitly excluded through
+   @ref collision_filter_concepts "collision filtering". These algorithms find
+   those colliding cases, characterize them, and report the essential
+   characteristics of that collision.  */
+  //@{
+
+  /** Computes the penetrations across all pairs of geometries in the world.
+   Only reports results for _penetrating_ geometries; if two geometries are
+   separated, there will be no result for that pair. Pairs of _anchored_
+   geometry are also not reported. The penetration between two geometries is
+   characterized as a point pair (see PenetrationAsPointPair).
+
+   <!--
+   This method is affected by collision filtering; element pairs that
+   have been filtered will not produce contacts, even if their collision
+   geometry is penetrating.
+   TODO(SeanCurtis-TRI): This isn't true yet.
+
+   NOTE: This is currently declared as double because we haven't exposed FCL's
+   templated functionality yet. When that happens, double -> T.
+   -->
+
+   @returns A vector populated with all detected penetrations characterized as
+            point pairs. */
+  std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration()
+      const;
+
+  //@}
+
  private:
   // GeometrySystem is the only class that can instantiate QueryObjects.
   friend class GeometrySystem<T>;
@@ -116,7 +150,7 @@ class QueryObject {
   //
   // Several issues:
   //  1. Leads to a clunky API (passing self and context into *every* query).
-  //  2. The index value would be insufficient if the GeoemtrySystem were buried
+  //  2. The index value would be insufficient if the GeometrySystem were buried
   //     in a diagram with its query object port exported in the diagram.
   // This is documented for future consideration, and should not necessarily be
   // interpreted as a guaranteed task.
@@ -126,8 +160,8 @@ class QueryObject {
   // on the current context (fully-dependent on context). These pointers must
   // be null for "baked" contexts (e.g., the result of copying a "live"
   // context).
-  const GeometryContext<T>* context_{};
-  const GeometrySystem<T>* system_{};
+  const GeometryContext<T>* context_{nullptr};
+  const GeometrySystem<T>* system_{nullptr};
 };
 
 }  // namespace geometry

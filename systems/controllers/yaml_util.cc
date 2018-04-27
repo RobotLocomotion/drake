@@ -77,10 +77,10 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
 // NOLINTNEXTLINE(runtime/references)
 void loadBodyMotionParams(QPControllerParams& params, const YAML::Node& config,
                           const RigidBodyTree<double>& robot) {
-  for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
-       ++body_it) {
+  for (auto body_it = robot.get_bodies().begin();
+       body_it != robot.get_bodies().end(); ++body_it) {
     try {
-      params.body_motion[body_it - robot.bodies.begin()] =
+      params.body_motion[body_it - robot.get_bodies().begin()] =
           get(config, (*body_it)->get_name()).as<BodyMotionParams>();
     } catch (...) {
       std::cerr << "error converting node: "
@@ -125,11 +125,11 @@ void loadSingleJointParams(QPControllerParams& params,
     std::string disable_body_name =
         get(soft_limits_config, "disable_when_body_in_support")
             .as<std::string>();
-    for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end();
-         ++body_it) {
+    for (auto body_it = robot.get_bodies().begin();
+         body_it != robot.get_bodies().end(); ++body_it) {
       if (disable_body_name == (*body_it)->get_name()) {
         params.joint_soft_limits.disable_when_body_in_support(position_index) =
-            body_it - robot.bodies.begin() + 1;
+            body_it - robot.get_bodies().begin() + 1;
         // break;
       }
     }

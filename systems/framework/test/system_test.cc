@@ -98,14 +98,14 @@ class TestSystem : public System<double> {
     return updated_numbers_;
   }
 
-  double DoEvaluateWitness(const Context<double>&,
-                           const WitnessFunction<double>&) const override {
+  double DoCalcWitnessValue(const Context<double>&,
+                            const WitnessFunction<double>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<double>&,
+      Event<double>*,
       CompositeEventCollection<double>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -204,9 +204,9 @@ class TestSystem : public System<double> {
         UnrestrictedUpdateEvent<double>>::MakeForcedEventCollection();
   }
 
-  std::map<Event<double>::PeriodicAttribute,
+  std::map<PeriodicEventData,
       std::vector<const Event<double>*>,
-      PeriodicAttributeComparator<double>>
+      PeriodicEventDataComparator>
       DoGetPeriodicEvents() const override {
     return {};
   }
@@ -434,14 +434,14 @@ class ValueIOTestSystem : public System<T> {
 
   ~ValueIOTestSystem() override {}
 
-  T DoEvaluateWitness(const Context<T>&,
-                      const WitnessFunction<T>&) const override {
+  T DoCalcWitnessValue(const Context<T>&,
+                       const WitnessFunction<T>&) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      const WitnessFunction<T>&,
+      Event<T>*,
       CompositeEventCollection<T>*) const override {
     // This system uses no witness functions.
     DRAKE_ABORT();
@@ -556,8 +556,8 @@ class ValueIOTestSystem : public System<T> {
         UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   }
 
-  std::map<typename Event<T>::PeriodicAttribute, std::vector<const Event<T>*>,
-      PeriodicAttributeComparator<T>> DoGetPeriodicEvents() const override {
+  std::map<PeriodicEventData, std::vector<const Event<T>*>,
+      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
     return {};
   }
 };
@@ -594,6 +594,15 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
+
+  // Connected inputs ports can be evaluated.  (Port #1 was set to [2]).
+  const auto& block = test_sys_.EvalEigenVectorInput(*context_, 1);
+  ASSERT_EQ(block.size(), 1);
+  ASSERT_EQ(block[0], 2.0);
+
+  // Disconnected inputs are nullptr, or generate an exception (not assert).
+  EXPECT_EQ(test_sys_.EvalVectorInput(*context_, 2), nullptr);
+  EXPECT_THROW(test_sys_.EvalEigenVectorInput(*context_, 2), std::exception);
 
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the

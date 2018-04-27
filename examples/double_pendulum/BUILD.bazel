@@ -18,9 +18,9 @@ drake_cc_library(
         "sdf_helpers.h",
     ],
     deps = [
-        "//drake/common:essential",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsing:frame_cache",
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsing:frame_cache",
         "@eigen",
         "@sdformat",
     ],
@@ -37,15 +37,15 @@ drake_cc_binary(
     ],
     deps = [
         ":sdf_helpers",
-        "//drake/common:essential",
-        "//drake/common:find_resource",
-        "//drake/common:text_logging_gflags",
-        "//drake/lcm",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/rigid_body_plant",
-        "//drake/multibody/rigid_body_plant:drake_visualizer",
-        "//drake/systems/analysis",
-        "//drake/systems/framework",
+        "//common:essential",
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//multibody:rigid_body_tree",
+        "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis",
+        "//systems/framework",
         "@sdformat",
     ],
 )
@@ -62,8 +62,8 @@ drake_cc_library(
         "test/rigid_body_types_compare.h",
     ],
     deps = [
-        "//drake/multibody:rigid_body",
-        "//drake/multibody/shapes",
+        "//multibody:rigid_body",
+        "//multibody/shapes",
         "@gtest//:without_main",
     ],
 )
@@ -76,9 +76,9 @@ drake_cc_googletest(
     deps = [
         ":rigid_body_types_compare",
         ":sdf_helpers",
-        "//drake/common:find_resource",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/joints",
+        "//common:find_resource",
+        "//multibody:rigid_body_tree",
+        "//multibody/joints",
     ],
 )
 

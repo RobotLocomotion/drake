@@ -353,6 +353,49 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   EXPECT_NEAR(products(2), Iyz, kEpsilon);
 }
 
+// Verifies the operator*(const SpatialVelocity&) by computing the kinetic
+// energy of a cylindrical body B with spatial velocity V_WBp, where P is a
+// point that is fixed in the body frame B.
+// The computation involves the product ot the body's spatial inertia M_Bp_W
+// with its spatial velocity V_WBp: ke_WB = 0.5 * V_WBp.dot(M_Bp_W * V_WBp).
+// This result is verified against a calculation invoving quantities about the
+// bodies COM: ke_WB = 0.5 * mass * v_WBcm² + 0.5 * w_WBᵀ * I_Bcm_W * w_WB.
+GTEST_TEST(SpatialInertia, KineticEnergy) {
+  // Parameters for a cylindrical body of a given mass, length and radius.
+  const double mass = 1.2;
+  const double radius = 0.05, length = 1.5;
+
+  // Axis for a cylinder arbitrarily oriented, expressed in world W.
+  const Vector3<double> axis_W = Vector3<double>(1, 2, 3).normalized();
+  // Create rotational inertia for the cylinder:
+  const RotationalInertia<double> I_Bcm_W =
+      mass * UnitInertia<double>::SolidCylinder(radius, length, axis_W);
+
+  // Create the spatial inertia of body B about an arbitrary point P.
+  const Vector3<double> p_BcmP_W(1, -2, 5);
+  const SpatialInertia<double> M_BP_W =
+      SpatialInertia<double>::MakeFromCentralInertia(mass, -p_BcmP_W, I_Bcm_W);
+
+  // Say body B moves with spatial velocity V_WBcm.
+  const SpatialVelocity<double> V_WBcm(Vector3<double>(1, 2, 3),
+                                       Vector3<double>(4, 5, 6));
+
+  // Point P on body B will move with spatial velocity V_WBp.
+  const SpatialVelocity<double> V_WBp = V_WBcm.Shift(p_BcmP_W);
+
+  // Compute the kinetic energy of B (in frame W) from V_WBp:
+  const double ke_WB = 0.5 * V_WBp.dot(M_BP_W * V_WBp);
+
+  // We expect the energy to be (computed from COM quantities.)
+  const Vector3<double>& w_WB = V_WBcm.rotational();
+  const Vector3<double>& v_WBcm = V_WBcm.translational();
+  const double ke_WB_expected =
+      0.5 * w_WB.dot(I_Bcm_W * w_WB) +
+      0.5 * mass * v_WBcm.squaredNorm();
+
+  EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

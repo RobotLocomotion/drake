@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from drake.tools.install.cpsutils import read_version_defs, read_requires
 
@@ -18,16 +18,16 @@ content = """
     "ignition-math4": {
       "Version": "%(ignition-math4_VERSION)s",
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
-      "X-CMake-Find-Args": [ "CONFIG" ]
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
-  "Default-Components": [ ":ignition-rndf0" ],
+  "Default-Components": [":ignition-rndf0"],
   "Components": {
     "ignition-rndf0": {
       "Type": "dylib",
-      "Location": "@prefix@/lib/libignition_rndf.so",
-      "Includes": [ "@prefix@/include" ],
-      "Requires": [ "ignition-math4:ignition-math4" ]
+      "Location": "@prefix@/lib/libdrake_ignition_rndf0.so",
+      "Includes": ["@prefix@/include/ignition-rndf0"],
+      "Requires": ["ignition-math4:ignition-math4"]
     }
   }
 }

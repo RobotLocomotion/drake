@@ -8,6 +8,12 @@ load(
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
 
+licenses([
+    "notice",  # BSD-3-Clause
+    "reciprocal",  # MPL-2.0
+    "unencumbered",  # Public-Domain
+])
+
 package(
     default_visibility = ["//visibility:public"],
 )

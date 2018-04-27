@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -92,16 +93,15 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   MessageSubscriber subscriber(channel_name, dut.get_lcm_instance());
 
-  std::vector<uint8_t> buffer(message_.getEncodedSize());
-  EXPECT_EQ(message_.encode(&buffer[0], 0, message_.getEncodedSize()),
-            message_.getEncodedSize());
-
   // Start the LCM recieve thread after all objects it can potentially use like
   // subscribers are instantiated. Since objects are destructed in the reverse
   // order of construction, this ensures the LCM receive thread stops before any
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
+
+  EXPECT_FALSE(dut.IsReceiveThreadRunning());
   dut.StartReceiveThread();
+  EXPECT_TRUE(dut.IsReceiveThreadRunning());
 
   // Records whether the receiver received an LCM message published by the DUT.
   bool done = false;
@@ -116,7 +116,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
   // We must periodically call dut.Publish(...) since we do not know when the
   // receiver will actually receive the message.
   while (!done && count++ < kMaxCount) {
-    dut.Publish(channel_name, &buffer[0], message_.getEncodedSize());
+    Publish(&dut, channel_name, message_);
 
     // Gets the received message.
     const drake::lcmt_drake_signal received_message =
@@ -129,8 +129,15 @@ TEST_F(DrakeLcmTest, PublishTest) {
 
   dut.StopReceiveThread();
   EXPECT_TRUE(done);
+  EXPECT_FALSE(dut.IsReceiveThreadRunning());
 }
 
+// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
+// deleted, refactor this test to use the HandlerFunction interface.  For now,
+// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
+// keep this all as-is so that all codepaths are covered by tests.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Handles received LCM messages.
 class MessageHandler : public DrakeLcmMessageHandlerInterface {
  public:
@@ -174,6 +181,7 @@ class MessageHandler : public DrakeLcmMessageHandlerInterface {
   std::mutex message_mutex_;
   drake::lcmt_drake_signal received_message_;
 };
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Tests DrakeLcm's ability to subscribe to an LCM message.
 TEST_F(DrakeLcmTest, SubscribeTest) {
@@ -213,6 +221,16 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
   dut.StopReceiveThread();
   EXPECT_TRUE(done);
+}
+
+TEST_F(DrakeLcmTest, EmptyChannelTest) {
+  DrakeLcm dut;
+
+  MessageHandler handler;
+  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+
+  lcmt_drake_signal message{};
+  EXPECT_THROW(Publish(&dut, "", message), std::exception);
 }
 
 }  // namespace

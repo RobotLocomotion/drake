@@ -27,10 +27,10 @@ drake_cc_library(
         "segment.h",
     ],
     deps = [
-        "//drake/automotive/maliput/api",
-        "//drake/common:essential",
-        "//drake/common:unused",
-        "//drake/math:saturate",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "//common:unused",
+        "//math:saturate",
     ],
 )
 
@@ -39,9 +39,9 @@ drake_cc_binary(
     srcs = ["dragway_to_urdf.cc"],
     deps = [
         ":dragway",
-        "//drake/automotive/maliput/utility",
-        "//drake/common:essential",
-        "//drake/common:text_logging_gflags",
+        "//automotive/maliput/utility",
+        "//common:essential",
+        "//common:text_logging_gflags",
         "@gflags",
         "@spruce",
     ],
@@ -56,8 +56,8 @@ drake_cc_googletest(
     srcs = ["test/dragway_test.cc"],
     deps = [
         ":dragway",
-        "//drake/automotive/maliput/api/test_utilities",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//automotive/maliput/api/test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

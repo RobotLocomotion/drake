@@ -7,6 +7,7 @@
 #include <map>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -17,11 +18,75 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/proto/matlab_rpc.pb.h"
+#include "drake/common/proto/rpc_pipe_temp_directory.h"
 #include "drake/common/unused.h"
 
-// clang-format off to disable clang-format-includes
-#include "mex_util.h"
-// clang-format on
+namespace {
+
+bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[],
+                       const char* filename) {
+  mxArray* ex = mexCallMATLABWithTrap(nlhs, plhs, nrhs, prhs, filename);
+
+  if (ex != nullptr) {
+    mexPrintf(
+        "DrakeSystem mexCallMATLABsafe: error when calling ''%s'' with the "
+        "following "
+        "arguments:\n",
+        filename);
+
+    for (int i = 0; i < nrhs; i++) {
+      mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+    }
+
+    mxArray* report;
+    mexCallMATLAB(1, &report, 1, &ex, "getReport");
+    char* errmsg = mxArrayToString(report);
+    mexPrintf(errmsg);
+    mxFree(errmsg);
+    mxDestroyArray(report);
+    mxDestroyArray(ex);
+    return true;
+  }
+
+  for (int i = 0; i < nlhs; i++) {
+    if (plhs[i] == nullptr) {
+      mexPrintf(
+          "Drake mexCallMATLABsafe: error when calling ''%s'' with the "
+          "following arguments:\n",
+          filename);
+
+      for (i = 0; i < nrhs; i++) {
+        mexCallMATLAB(0, nullptr, 1, &prhs[i], "disp");
+      }
+
+      mexPrintf(
+          "Not Enough Outputs: Asked for %d outputs, but function only "
+          "returned %d.\n",
+          nrhs, i);
+      return true;
+    }
+  }
+  return false;
+}
+
+std::string mxGetStdString(const mxArray* array) {
+  mwSize buffer_length = mxGetNumberOfElements(array) + 1;
+  auto* buffer = new char[buffer_length];
+  const int status = mxGetString(array, buffer, buffer_length);
+
+  if (status != 0) {
+    delete[] buffer;
+    throw std::runtime_error(
+        "mxGetStdString failed. Possible cause: mxArray is not a string "
+        "array.");
+  } else {
+    std::string ret(buffer);
+    delete[] buffer;
+    return ret;
+  }
+}
+
+}  // namespace
 
 // Mex client for MATLAB remote procedure calls (RPCs).
 
@@ -37,7 +102,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   drake::unused(nlhs);
   drake::unused(plhs);
 
-  std::string filename = "/tmp/matlab_rpc";
+  std::string filename
+      = drake::common::GetRpcPipeTempDirectory() + "/matlab_rpc";
 
   if (nrhs == 1) {
     filename = mxGetStdString(prhs[0]);

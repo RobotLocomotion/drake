@@ -25,20 +25,20 @@ class UnusableModel : public Model {
   bool UpdateElementWorldTransform(
       ElementId, const Eigen::Isometry3d& T_local_to_world) override;
 
-  bool ClosestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
+  bool ClosestPointsAllToAll(
+      const std::vector<ElementId>& ids_to_check, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
 
   bool ComputeMaximumDepthCollisionPoints(
-      bool use_margins, std::vector<PointPair>* points) override;
+      bool use_margins, std::vector<PointPair<double>>* points) override;
 
-  bool ClosestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>* closest_points) override;
+  bool ClosestPointsPairwise(
+      const std::vector<ElementIdPair>& id_pairs, bool use_margins,
+      std::vector<PointPair<double>>* closest_points) override;
 
   void CollisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>* closest_points) override;
+      std::vector<PointPair<double>>* closest_points) override;
 
   void ClearCachedResults(bool use_margins) override;
 

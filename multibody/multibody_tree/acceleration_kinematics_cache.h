@@ -100,7 +100,7 @@ class AccelerationKinematicsCache {
 
   // Allocates resources for this acceleration kinematics cache.
   void Allocate(const MultibodyTreeTopology& topology) {
-    const int num_nodes = topology.get_num_bodies();
+    const int num_nodes = topology.num_bodies();
     A_WB_pool_.resize(num_nodes);
     DRAKE_ASSERT(static_cast<int>(A_WB_pool_.size()) == num_nodes);
   }

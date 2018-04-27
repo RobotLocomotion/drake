@@ -137,7 +137,7 @@ int main() {
   builder.Connect(plant->contact_results_output_port(),
                   contact_viz.get_input_port(0));
   builder.Connect(contact_viz.get_output_port(0),
-                  contact_results_publisher.get_input_port(0));
+                  contact_results_publisher.get_input_port());
 
   // Set up the model and simulator and set their starting state.
   const std::unique_ptr<systems::Diagram<double>> model = builder.Build();

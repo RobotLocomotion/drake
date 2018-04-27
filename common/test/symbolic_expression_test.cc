@@ -43,6 +43,7 @@ using test::ExprEqual;
 using test::ExprLess;
 using test::ExprNotEqual;
 using test::ExprNotLess;
+using test::FormulaEqual;
 
 template <typename T>
 size_t get_std_hash(const T& item) {
@@ -472,6 +473,16 @@ TEST_F(SymbolicExpressionTest, GetProductsInMultiplication) {
   EXPECT_PRED2(ExprEqual, products.at(z_), y_);
 }
 
+TEST_F(SymbolicExpressionTest, GetIfThenElse) {
+  const Formula conditional{x_ > y_};
+  const Expression e1{x_ + y_};
+  const Expression e2{x_ - y_};
+  const Expression e{if_then_else(conditional, e1, e2)};
+  EXPECT_PRED2(FormulaEqual, get_conditional_formula(e), conditional);
+  EXPECT_PRED2(ExprEqual, get_then_expression(e), e1);
+  EXPECT_PRED2(ExprEqual, get_else_expression(e), e2);
+}
+
 TEST_F(SymbolicExpressionTest, IsPolynomial) {
   const vector<pair<Expression, bool>> test_vec{
       {e_constant_, true}, {e_var_, true},   {e_neg_, true},
@@ -890,7 +901,13 @@ TEST_F(SymbolicExpressionTest, HashUnary) {
   EXPECT_EQ(hash_set.size(), exprs.size());
 }
 
+TEST_F(SymbolicExpressionTest, UnaryPlus) {
+  EXPECT_PRED2(ExprEqual, c3_, +c3_);
+  EXPECT_PRED2(ExprEqual, Expression(var_x_), +var_x_);
+}
+
 TEST_F(SymbolicExpressionTest, UnaryMinus) {
+  EXPECT_PRED2(ExprEqual, -Expression(var_x_), -var_x_);
   EXPECT_PRED2(ExprNotEqual, c3_, -c3_);
   EXPECT_DOUBLE_EQ(c3_.Evaluate(), -(-c3_).Evaluate());
   EXPECT_PRED2(ExprEqual, c3_, -(-c3_));
@@ -1861,6 +1878,36 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
   // 2x - 7 -2x + 2 => -5
   const Expression e3{2 * x_ - 7 - 2 * x_ + 2};
   EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
+}
+
+TEST_F(SymbolicExpressionTest, Jacobian) {
+  // J1 = (x * y + sin(x)).Jacobian([x, y])
+  //    = [y + cos(y), x]
+  const Vector2<Variable> vars{var_x_, var_y_};
+  const auto J1 = (x_ * y_ + sin(x_)).Jacobian(vars);
+  // This should be matched with the non-member function Jacobian.
+  const auto J2 = Jacobian(Vector1<Expression>(x_ * y_ + sin(x_)), vars);
+  // Checks the sizes.
+  EXPECT_EQ(J1.rows(), 1);
+  EXPECT_EQ(J2.rows(), 1);
+  EXPECT_EQ(J1.cols(), 2);
+  EXPECT_EQ(J2.cols(), 2);
+  // Checks the elements.
+  EXPECT_EQ(J1(0), y_ + cos(x_));
+  EXPECT_EQ(J1(1), x_);
+  EXPECT_EQ(J2(0), J1(0));
+  EXPECT_EQ(J2(1), J1(1));
+}
+
+TEST_F(SymbolicExpressionTest, GetDistinctVariables) {
+  EXPECT_EQ(GetDistinctVariables(Vector1<Expression>{x_plus_y_}),
+            Variables({var_x_, var_y_}));
+  EXPECT_EQ(GetDistinctVariables(Vector1<Expression>{x_plus_z_}),
+            Variables({var_x_, var_z_}));
+  EXPECT_EQ(GetDistinctVariables(Vector2<Expression>{x_plus_y_, x_plus_z_}),
+            Variables({var_x_, var_y_, var_z_}));
+  EXPECT_EQ(GetDistinctVariables(RowVector2<Expression>{x_plus_z_, e_cos_}),
+            Variables({var_x_, var_z_}));
 }
 
 }  // namespace

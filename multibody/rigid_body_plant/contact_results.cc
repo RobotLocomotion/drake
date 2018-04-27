@@ -1,5 +1,6 @@
 #include "drake/multibody/rigid_body_plant/contact_results.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -32,8 +33,9 @@ ContactInfo<T>& ContactResults<T>::AddContact(
   return contacts_.back();
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class ContactResults<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+// Explicitly instantiates on the most common scalar types.
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::ContactResults)

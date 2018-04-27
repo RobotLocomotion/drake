@@ -37,7 +37,7 @@ class PositionKinematicsCache {
   /// Constructs a position kinematics cache entry for the given
   /// MultibodyTreeTopology.
   explicit PositionKinematicsCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.get_num_bodies()) {
+      num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 

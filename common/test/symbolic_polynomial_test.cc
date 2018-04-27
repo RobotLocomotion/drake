@@ -137,7 +137,7 @@ TEST_F(SymbolicPolynomialTest, ConstructFromExpression) {
   }
 }
 
-TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates) {
+TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates1) {
   const Polynomial p1{1.0, var_xyz_};  // p₁ = 1.0,
   EXPECT_EQ(p1.monomial_to_coefficient_map(),
             Polynomial::MapType({{Monomial{}, Expression(1.0)}}));
@@ -165,6 +165,16 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates) {
             Polynomial::MapType(
                 {{Monomial{{{var_x_, 2}, {var_y_, 1}}}, 3 * a_ * pow(b_, 2)},
                  {Monomial{{{var_x_, 3}}}, -b_ * c_}}));
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
+  const Expression e{x_ * x_ + y_ * y_};  // e = x² + y².
+  // Show that providing a set of indeterminates {x, y, z} which is a super-set
+  // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial
+  // .
+  const Polynomial p1{e, {var_x_, var_y_}};
+  const Polynomial p2{e, {var_x_, var_y_, var_z_}};
+  EXPECT_EQ(p1, p2);
 }
 
 TEST_F(SymbolicPolynomialTest, IndeterminatesAndDecisionVariables) {
@@ -760,6 +770,18 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
   EXPECT_THROW(p.EvaluatePartial(env), runtime_error);
 }
+
+TEST_F(SymbolicPolynomialTest, Hash) {
+  const auto h = std::hash<Polynomial>{};
+  Polynomial p1{x_ * x_};
+  const Polynomial p2{x_ * x_};
+  EXPECT_EQ(p1, p2);
+  EXPECT_EQ(h(p1), h(p2));
+  p1 += Polynomial{y_};
+  EXPECT_NE(p1, p2);
+  EXPECT_NE(h(p1), h(p2));
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

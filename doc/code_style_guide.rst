@@ -46,13 +46,8 @@ incorporates `PEP 257 -- Docstring Conventions
 <https://www.python.org/dev/peps/pep-0257/>`_, Drake follows its
 recommendations as well.
 
-In addition, Drake recommends use of ``pylint`` for automatic error
-checking. See :ref:`tools for complying with coding style <code-style-tools>`
-for full guidance.
-
-Sadly ``pylint`` does not check all the conditions enumerated by
-PEP 8. Therefore, Drake recommends the use of ``pep8.py`` as well. See
-:ref:`tools for complying with coding style <code-style-tools>` for details.`
+See :ref:`tools for complying with coding style <code-style-tools>` for details
+about the automated style checks.
 
 .. _code-style-guide-python-clarifications:
 
@@ -89,11 +84,12 @@ Additional Rules
   ``stderr``, but are otherwise ignored, and thus may escape notice.
 * Executable files should use the following "shebang" line::
 
-    #!/usr/bin/env python
+    #!/usr/bin/env python2
 
-  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for python. On macOS
-  systems configured for Drake, this gives a better result than
-  ``/usr/bin/python``.
+  Rationale: ``/usr/bin/env`` enables a ``PATH`` search for the Python 2.7
+  executable. On macOS systems configured for Drake, this gives a better result
+  than ``/usr/bin/python`` (system Python 2.7). This is also recommended by
+  `PEP 394 <https://www.python.org/dev/peps/pep-0394/>`_`.
 
 .. _code-style-guide-matlab:
 
@@ -161,7 +157,7 @@ refer to resources like mesh files via a ``package://`` syntax, whose full paths
 are resolved by the ``package.xml`` files.
 
 When adding a model to Drake
-(typically in `drake-distro/drake/examples/ <https://github.com/RobotLocomotion/drake/tree/master/drake/examples>`_),
+(typically in `drake/examples/ <https://github.com/RobotLocomotion/drake/tree/master/examples>`_),
 you will need to add a ``package.xml`` file to the example's directory to enable
 modeling files like URDF and SDF to refer to resources like mesh files contained
 within the example's directory. Please ensure that your ``package.xml`` file
@@ -171,7 +167,7 @@ The following minimal ``package.xml`` file can get you started::
 
     <!--
     This XML file is used by:
-      drake-distro/drake/systems/plants/xmlUtil.cpp
+      drake/systems/plants/xmlUtil.cpp
     Method:
       searchDirectory()
     -->

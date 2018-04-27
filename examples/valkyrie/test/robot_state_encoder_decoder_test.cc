@@ -316,7 +316,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
 
   // Can't compare q vectors directly due to quaternion floating joints, hence
   // the following:
-  for (const auto& body : tree.bodies) {
+  for (const auto& body : tree.get_bodies()) {
     if (body->has_parent_body()) {
       const auto& joint = body->getJoint();
       if (!joint.is_fixed()) {

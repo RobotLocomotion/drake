@@ -12,8 +12,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 using std::default_random_engine;
+using Eigen::MatrixXd;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 namespace drake {
+namespace trajectories {
 namespace {
 
 // Computes the maximum or minimum velocity in interval [0, t].
@@ -62,8 +66,8 @@ bool CheckContinuity(const PiecewisePolynomial<CoefficientType>& traj,
 
   CoefficientType val0, val1;
 
-  for (int n = 0; n < traj.getNumberOfSegments() - 1; ++n) {
-    double dt = traj.getDuration(n);
+  for (int n = 0; n < traj.get_number_of_segments() - 1; ++n) {
+    double dt = traj.duration(n);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -108,8 +112,8 @@ bool CheckValues(
 
   CoefficientType val0, val1;
 
-  for (int n = 0; n < traj.getNumberOfSegments(); ++n) {
-    double dt = traj.getDuration(n);
+  for (int n = 0; n < traj.get_number_of_segments(); ++n) {
+    double dt = traj.duration(n);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -123,7 +127,7 @@ bool CheckValues(
           }
 
           // Checks the last time step's values.
-          if (check_last_time_step && n == traj.getNumberOfSegments() - 1) {
+          if (check_last_time_step && n == traj.get_number_of_segments() - 1) {
             // Values evaluated at the end.
             val1 = poly.EvaluateUnivariate(dt);
             if (std::abs(val1 - value.at(n + 1)(i, j)) > tol) {
@@ -187,10 +191,10 @@ void PchipTest(const std::vector<double>& breaks,
   EXPECT_TRUE(CheckInterpolatedValuesAtBreakTime(traj, T, Y, tol));
 
   // Check monotonic.
-  for (int n = 0; n < traj.getNumberOfSegments(); ++n) {
-    double dt = traj.getDuration(n);
+  for (int n = 0; n < traj.get_number_of_segments(); ++n) {
+    double dt = traj.duration(n);
 
-    EXPECT_NEAR(T[n], traj.getStartTime(n), tol);
+    EXPECT_NEAR(T[n], traj.start_time(n), tol);
 
     for (int i = 0; i < rows; ++i) {
       for (int j = 0; j < cols; ++j) {
@@ -254,8 +258,8 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[5] << 1, 0, 0, 0;
 
   PiecewisePolynomial<double> spline = PiecewisePolynomial<double>::Pchip(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
-  for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
+  EXPECT_EQ(spline.get_number_of_segments(), static_cast<int>(T.size()) - 1);
+  for (int t = 0; t < spline.get_number_of_segments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
     EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t],
@@ -281,8 +285,8 @@ GTEST_TEST(SplineTests, PchipAndCubicSplineCompareWithMatlabTest) {
   coeffs[4] << 1, 0.5, -0.75, 0.25;
   coeffs[5] << 1, -0.25, 0, 0.25;
   spline = PiecewisePolynomial<double>::Cubic(T, Y);
-  EXPECT_EQ(spline.getNumberOfSegments(), static_cast<int>(T.size()) - 1);
-  for (int t = 0; t < spline.getNumberOfSegments(); ++t) {
+  EXPECT_EQ(spline.get_number_of_segments(), static_cast<int>(T.size()) - 1);
+  for (int t = 0; t < spline.get_number_of_segments(); ++t) {
     const PiecewisePolynomial<double>::PolynomialMatrix& poly_matrix =
         spline.getPolynomialMatrix(t);
     EXPECT_TRUE(CompareMatrices(poly_matrix(0, 0).GetCoefficients(), coeffs[t],
@@ -319,7 +323,7 @@ GTEST_TEST(SplineTests, RandomizedLinearSplineTest) {
 
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
@@ -340,7 +344,7 @@ GTEST_TEST(SplineTests, RandomizedConstantSplineTest) {
 
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
@@ -362,7 +366,7 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
 
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
@@ -375,8 +379,8 @@ GTEST_TEST(SplineTests, RandomizedPchipSplineTest) {
     PchipTest(T, Y, spline, 1e-8);
     // Derivatives at end points should be zero.
     PiecewisePolynomial<double> spline_dot = spline.derivative();
-    EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
-    EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
+    EXPECT_NEAR(spline_dot.value(spline_dot.start_time()).norm(), 0, 1e-10);
+    EXPECT_NEAR(spline_dot.value(spline_dot.end_time()).norm(), 0, 1e-10);
   }
 }
 
@@ -390,8 +394,8 @@ GTEST_TEST(SplineTests, PchipLength2Test) {
       PiecewisePolynomial<double>::Pchip(T, Y, true);
   PiecewisePolynomial<double> spline_dot = spline.derivative();
 
-  EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
-  EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.start_time()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.end_time()).norm(), 0, 1e-10);
 
   // Computes the minimal velocity from T = 0 to T = 1. Since this segment is
   // increasing, the minimal velocity needs to be greater than 0.
@@ -404,8 +408,8 @@ GTEST_TEST(SplineTests, PchipLength2Test) {
   spline = PiecewisePolynomial<double>::Pchip(T, Y, true);
   spline_dot = spline.derivative();
 
-  EXPECT_NEAR(spline_dot.value(spline_dot.getStartTime()).norm(), 0, 1e-10);
-  EXPECT_NEAR(spline_dot.value(spline_dot.getEndTime()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.start_time()).norm(), 0, 1e-10);
+  EXPECT_NEAR(spline_dot.value(spline_dot.end_time()).norm(), 0, 1e-10);
 
   // Max velocity should be non positive.
   double v_max = ComputeExtremeVel(
@@ -423,7 +427,7 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
   // Test Cubic(T, Y)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
@@ -437,7 +441,7 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
   // Test Cubic(T, Y, Ydot0, Ydot1)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     for (int i = 0; i < N; ++i) Y[i] = MatrixX<double>::Random(rows, cols);
 
@@ -461,7 +465,7 @@ GTEST_TEST(SplineTests, RandomizedCubicSplineTest) {
   // Test Cubic(T, Y, Ydots)
   for (int ctr = 0; ctr < num_tests; ++ctr) {
     std::vector<double> T =
-        PiecewiseFunction::randomSegmentTimes(N - 1, generator);
+        PiecewiseTrajectory<double>::RandomSegmentTimes(N - 1, generator);
     std::vector<MatrixX<double>> Y(N);
     std::vector<MatrixX<double>> Ydot(N);
 
@@ -497,6 +501,51 @@ GTEST_TEST(SplineTests, CubicSplineSize2) {
 
   // Calling Cubic(times, Y) with only 2 knots should not be allowed.
   EXPECT_THROW(PiecewisePolynomial<double>::Cubic(T, Y), std::runtime_error);
+}
+
+// Test that the Eigen API methods return the same results as the std::vector
+// versions.
+GTEST_TEST(SplineTests, EigenTest) {
+  const double tol = 1e-12;
+
+  Vector3d breaks_mat{0., 1., 2.};
+  std::vector<double> breaks_vec{0., 1., 2.};
+
+  Matrix3d knots_mat = Matrix3d::Identity();
+  std::vector<MatrixXd> knots_vec = {Vector3d{1., 0., 0.}, Vector3d{0., 1., 0.},
+                                     Vector3d{0., 0., 1.}};
+
+  // Keep the code cleaner below.
+  using PP = PiecewisePolynomial<double>;
+
+  EXPECT_TRUE(PP::ZeroOrderHold(breaks_mat, knots_mat)
+                  .isApprox(PP::ZeroOrderHold(breaks_vec, knots_vec), tol));
+
+  EXPECT_TRUE(PP::FirstOrderHold(breaks_mat, knots_mat)
+                  .isApprox(PP::FirstOrderHold(breaks_vec, knots_vec), tol));
+
+  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, false)
+                  .isApprox(PP::Pchip(breaks_vec, knots_vec, false), tol));
+
+  EXPECT_TRUE(PP::Pchip(breaks_mat, knots_mat, true)
+                  .isApprox(PP::Pchip(breaks_vec, knots_vec, true), tol));
+
+  EXPECT_TRUE(PP::Cubic(breaks_mat, knots_mat)
+                  .isApprox(PP::Cubic(breaks_vec, knots_vec), tol));
+
+  Matrix3d knots_dot_mat = 2. * Matrix3d::Identity();
+  std::vector<MatrixXd> knots_dot_vec = {
+      Vector3d{2., 0., 0.}, Vector3d{0., 2., 0.}, Vector3d{0., 0., 2.}};
+
+  EXPECT_TRUE(
+      PP::Cubic(breaks_mat, knots_mat, knots_dot_mat)
+          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec), tol));
+
+  EXPECT_TRUE(
+      PP::Cubic(breaks_mat, knots_mat, knots_dot_vec[0], knots_dot_vec[2])
+          .isApprox(PP::Cubic(breaks_vec, knots_vec, knots_dot_vec[0],
+                              knots_dot_vec[2]),
+                    tol));
 }
 
 template <typename CoefficientType>
@@ -600,4 +649,5 @@ GTEST_TEST(SplineTests, TestException) {
 }
 
 }  // namespace
+}  // namespace trajectories
 }  // namespace drake

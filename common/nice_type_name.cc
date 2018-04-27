@@ -97,5 +97,19 @@ string drake::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
+string drake::NiceTypeName::RemoveNamespaces(const string& canonical) {
+  // Removes everything up to and including the last "::" that isn't part of a
+  // template argument. If the string ends with "::", returns the original
+  // string unprocessed. We are depending on the fact that namespaces can't be
+  // templatized to avoid bad behavior for template types where the template
+  // argument might include namespaces (those should not be touched).
+  static const never_destroyed<std::regex> regex{"^[^<>]*::"};
+
+  const std::string no_namespace =
+      std::regex_replace(canonical, regex.access(), "");
+
+  return no_namespace.empty() ? canonical : no_namespace;
+}
+
 }  // namespace drake
 

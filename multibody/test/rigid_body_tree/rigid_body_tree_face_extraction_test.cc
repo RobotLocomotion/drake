@@ -41,7 +41,7 @@ GTEST_TEST(RBTFaceExtractionTests, ExtractVertsAndFaces) {
   // can access.
   bool found_box = false;
   bool found_sphere = false;
-  for (const auto& body : tree.bodies) {
+  for (const auto& body : tree.get_bodies()) {
     auto collision_elems = body->get_collision_element_ids();
     for (const auto& collision_elem : collision_elems) {
       auto element = tree.FindCollisionElement(collision_elem);

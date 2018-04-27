@@ -1,6 +1,8 @@
 /// @file
 /// Utilities for arithmetic on AutoDiffScalar.
 
+// TODO(russt): rename methods to be GSG compliant.
+
 #pragma once
 
 #include <cmath>
@@ -18,8 +20,7 @@ template <typename Derived>
 struct AutoDiffToValueMatrix {
   typedef typename Eigen::Matrix<typename Derived::Scalar::Scalar,
                                  Derived::RowsAtCompileTime,
-                                 Derived::ColsAtCompileTime>
-      type;
+                                 Derived::ColsAtCompileTime> type;
 };
 
 template <typename Derived>
@@ -34,6 +35,61 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
   }
   return ret;
 }
+
+/** `B = DiscardGradient(A)` enables casting from a matrix of AutoDiffScalars
+ * to AutoDiffScalar::Scalar type, explicitly throwing away any gradient
+ * information. For a matrix of type, e.g. `MatrixX<AutoDiffXd> A`, the
+ * comparable operation
+ *   `B = A.cast<double>()`
+ * should (and does) fail to compile.  Use `DiscardGradient(A)` if you want to
+ * force the cast (and explicitly declare that information is lost).
+ *
+ * This method is overloaded to permit the user to call it for double types and
+ * AutoDiffScalar types (to avoid the calling function having to handle the
+ * two cases differently).
+ *
+ * @see DiscardZeroGradient
+ */
+template <typename Derived>
+typename std::enable_if<
+    !std::is_same<typename Derived::Scalar, double>::value,
+    Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime,
+                  Derived::MaxColsAtCompileTime>>::type
+DiscardGradient(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
+  return autoDiffToValueMatrix(auto_diff_matrix);
+}
+
+/// @see DiscardGradient().
+template <typename Derived>
+typename std::enable_if<
+    std::is_same<typename Derived::Scalar, double>::value,
+    const Eigen::MatrixBase<Derived>&>::type
+DiscardGradient(const Eigen::MatrixBase<Derived>& matrix) {
+  return matrix;
+}
+
+/// @see DiscardGradient().
+template <typename _Scalar, int _Dim, int _Mode, int _Options>
+typename std::enable_if<
+    !std::is_same<_Scalar, double>::value,
+    Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>>::type
+DiscardGradient(const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>&
+                    auto_diff_transform) {
+  return Eigen::Transform<typename _Scalar::Scalar, _Dim, _Mode, _Options>(
+      autoDiffToValueMatrix(auto_diff_transform.matrix()));
+}
+
+/// @see DiscardGradient().
+template <typename _Scalar, int _Dim, int _Mode, int _Options>
+typename std::enable_if<std::is_same<_Scalar, double>::value,
+                        const Eigen::Transform<_Scalar, _Dim, _Mode,
+    _Options>&>::type
+DiscardGradient(
+    const Eigen::Transform<_Scalar, _Dim, _Mode, _Options>& transform) {
+  return transform;
+}
+
 
 /** \brief Initialize a single autodiff matrix given the corresponding value
  *matrix.
@@ -80,7 +136,7 @@ void initializeAutoDiff(const Eigen::MatrixBase<Derived>& val,
  */
 template <typename Derived, int Nq>
 using AutoDiffMatrixType = Eigen::Matrix<
-    Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1> >,
+    Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1>>,
     Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
     Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
@@ -122,7 +178,7 @@ struct ResizeDerivativesToMatchScalarImpl {
 
 template <typename Derived, typename DerivType>
 struct ResizeDerivativesToMatchScalarImpl<Derived,
-                                          Eigen::AutoDiffScalar<DerivType> > {
+                                          Eigen::AutoDiffScalar<DerivType>> {
   using Scalar = Eigen::AutoDiffScalar<DerivType>;
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {

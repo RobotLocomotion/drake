@@ -7,8 +7,8 @@
 #include <list>
 #include <memory>
 
-#include <lcm/lcm-cpp.hpp>
 #include "bot_core/robot_state_t.hpp"
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -18,7 +18,7 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/util/lcmUtil.h"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 namespace drake {
 namespace examples {
@@ -98,13 +98,8 @@ class WorldStateSubscriber {
 void RunPickAndPlaceDemo() {
   lcm::LCM lcm;
 
-  const std::string iiwa_absolute_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_primitive_collision.urdf");
-  const std::string iiwa_end_effector_name = "iiwa_link_ee";
-
   // Makes a WorldState, and sets up LCM subscriptions.
-  WorldState env_state(iiwa_absolute_path, iiwa_end_effector_name);
+  WorldState env_state;
   WorldStateSubscriber env_state_subscriber(&lcm, &env_state);
 
   // Spins until at least one message is received from every LCM channel.

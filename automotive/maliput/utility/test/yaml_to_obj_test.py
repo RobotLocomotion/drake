@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """Attempts to generate a Wavefront OBJ file from each non-blacklisted
 *.yaml file from parent directory, returning a non-zero exit code if any
 file fails.
@@ -16,14 +14,15 @@ _THIS_DIR = os.path.dirname(_THIS_FILE)
 
 
 class TestYamlObjing(unittest.TestCase):
-    YAML_TO_OBJ = "yaml_to_obj"
+
+    def setUp(self):
+        self._yaml_to_obj, = sys.argv[1:]
+        self.assertTrue(os.path.exists(self._yaml_to_obj),
+                        self._yaml_to_obj + " not found")
 
     def test_yaml_files(self):
         this_dir = os.path.dirname(_THIS_DIR)
         yaml_dir = os.path.join(this_dir, '../monolane')
-
-        self.assertTrue(os.path.exists(self.YAML_TO_OBJ),
-                        self.YAML_TO_OBJ + " not found")
 
         yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
         # NB:  Blacklist is empty now, but still here in case it is needed
@@ -35,12 +34,7 @@ class TestYamlObjing(unittest.TestCase):
 
         for yf in test_yaml_files:
             subprocess.check_call([
-                self.YAML_TO_OBJ,
+                self._yaml_to_obj,
                 "-yaml_file", yf,
                 "-obj_file", "/dev/null",
             ])
-
-
-if __name__ == '__main__':
-    TestYamlObjing.YAML_TO_OBJ = sys.argv.pop()
-    unittest.main()

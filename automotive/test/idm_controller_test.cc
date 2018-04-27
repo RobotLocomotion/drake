@@ -3,7 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
@@ -11,6 +13,9 @@ namespace drake {
 namespace automotive {
 namespace {
 
+using maliput::api::Lane;
+using maliput::api::LanePosition;
+using maliput::api::RoadPosition;
 using maliput::dragway::RoadGeometry;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
@@ -19,9 +24,10 @@ static constexpr double kEgoSPosition{10.};
 static constexpr int kLeadIndex{0};
 static constexpr int kEgoIndex{1};
 
-class IdmControllerTest : public ::testing::Test {
+class IdmControllerTest
+    : public ::testing::TestWithParam<RoadPositionStrategy> {
  protected:
-  void SetUp() override {
+  void SetUpIdm(ScanStrategy path_or_branches) {
     // Create a straight road with one lane.
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
@@ -30,8 +36,12 @@ class IdmControllerTest : public ::testing::Test {
         std::numeric_limits<double>::epsilon() /* linear_tolerance */,
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
 
+    cache_or_search_ = this->GetParam();
+    period_sec_ = 1.;
+
     // Initialize IdmController with the road.
-    dut_.reset(new IdmController<double>(*road_));
+    dut_.reset(new IdmController<double>(*road_, path_or_branches,
+               cache_or_search_, period_sec_));
     context_ = dut_->CreateDefaultContext();
     output_ = dut_->AllocateOutput(*context_);
 
@@ -98,9 +108,14 @@ class IdmControllerTest : public ::testing::Test {
   int ego_velocity_input_index_;
   int traffic_input_index_;
   int acceleration_output_index_;
+
+  RoadPositionStrategy cache_or_search_;
+  double period_sec_{};
 };
 
-TEST_F(IdmControllerTest, Topology) {
+TEST_P(IdmControllerTest, Topology) {
+  SetUpIdm(ScanStrategy::kPath);
+
   ASSERT_EQ(3, dut_->get_num_input_ports());
   const auto& ego_pose_input_descriptor =
       dut_->get_input_port(ego_pose_input_index_);
@@ -121,7 +136,37 @@ TEST_F(IdmControllerTest, Topology) {
   EXPECT_EQ(1 /* accleration output */, output_port.size());
 }
 
-TEST_F(IdmControllerTest, Output) {
+// Tests that the unrestricted update has been registered and updates to the
+// state are correctly made.
+TEST_P(IdmControllerTest, UnrestrictedUpdate) {
+  SetUpIdm(ScanStrategy::kPath);
+  if (cache_or_search_ == RoadPositionStrategy::kCache) {
+    EXPECT_EQ(1, context_->get_num_abstract_states());
+
+    SetDefaultPoses(10. /* ego_speed */, 0. /* s_offset */, -5. /* rel_sdot */);
+
+    // Check that the unrestricted event has been registered.
+    systems::LeafCompositeEventCollection<double> events;
+    double t = dut_->CalcNextUpdateTime(*context_, &events);
+    EXPECT_EQ(t, period_sec_);
+    const systems::EventCollection<systems::UnrestrictedUpdateEvent<double>>&
+        e = events.get_unrestricted_update_events();
+    const auto& leaf_events = static_cast<const systems::LeafEventCollection<
+      systems::UnrestrictedUpdateEvent<double>>&>(e);
+    EXPECT_EQ(leaf_events.get_events().size(), 1);
+
+    systems::State<double>& state = context_->get_mutable_state();
+    dut_->CalcUnrestrictedUpdate(*context_, &state);
+    const RoadPosition& rp = state.get_abstract_state<RoadPosition>(0);
+    const Lane* expected_lane = road_->junction(0)->segment(0)->lane(0);
+    EXPECT_EQ(expected_lane->id(), rp.lane->id());
+    EXPECT_TRUE(CompareMatrices(
+        LanePosition{kEgoSPosition, 0., 0.}.srh(), rp.pos.srh()));
+  }
+}
+
+TEST_P(IdmControllerTest, Output) {
+  SetUpIdm(ScanStrategy::kPath);
   // Define a pointer to where the BasicVector results end up.
   const auto result = output_->get_vector_data(acceleration_output_index_);
 
@@ -176,7 +221,8 @@ TEST_F(IdmControllerTest, Output) {
   EXPECT_GT(closing_accel, (*result)[0]);
 }
 
-TEST_F(IdmControllerTest, ToAutoDiff) {
+TEST_P(IdmControllerTest, ToAutoDiff) {
+  SetUpIdm(ScanStrategy::kPath);
   SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
 
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
@@ -223,6 +269,29 @@ TEST_F(IdmControllerTest, ToAutoDiff) {
     EXPECT_EQ(0., (*result)[0].derivatives()(0));
   }));
 }
+
+// Check that, when path_or_branches == ScanStrategy::kBranches, we can
+// instantiate an IdmController and CalcOutput and it produces an expected
+// result.
+TEST_P(IdmControllerTest, CheckBranches) {
+  SetUpIdm(ScanStrategy::kBranches);
+
+  // Set the lead car to be immediately ahead of the ego car and moving
+  // slower than it.
+  SetDefaultPoses(10. /* ego_speed */, 6. /* s_offset */, -5. /* rel_sdot */);
+  dut_->CalcOutput(*context_, output_.get());
+  const auto result = output_->get_vector_data(acceleration_output_index_);
+  const double closing_accel = (*result)[0];
+
+  // Expect the car to decelerate.
+  EXPECT_GT(0., closing_accel);
+}
+
+// Perform all tests with cache and exhaustive search options.
+INSTANTIATE_TEST_CASE_P(
+    RoadPositionStrategy, IdmControllerTest,
+    testing::Values(RoadPositionStrategy::kCache,
+                    RoadPositionStrategy::kExhaustiveSearch));
 
 }  // namespace
 }  // namespace automotive

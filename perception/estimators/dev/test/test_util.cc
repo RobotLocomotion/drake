@@ -210,7 +210,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       // R_WmB does not precisely belong to O(3) given that its entries are
       // only specified with 6 digits of precision. Therefore we project it
       // onto O(3) before using it:
-      X_WmB.linear() = math::ProjectMatToOrthonormalMat(R_WmB);
+      X_WmB.linear() =
+          math::RotationMatrix<double>::ProjectToRotationMatrix(R_WmB).matrix();
       X_WmB.translation() << -0.026111, 0.0496843, 0.548844;
 
       setup->X_WB = X_WmB;
@@ -238,9 +239,7 @@ void PointCloudVisualizer::PublishCloud(const Matrix3Xd& points,
                                  const string& suffix) {
   bot_core::pointcloud_t pt_msg{};
   PointCloudToLcm(points, &pt_msg);
-  vector<uint8_t> bytes(pt_msg.getEncodedSize());
-  pt_msg.encode(bytes.data(), 0, bytes.size());
-  lcm_.Publish("DRAKE_POINTCLOUD_" + suffix, bytes.data(), bytes.size());
+  Publish(&lcm_, "DRAKE_POINTCLOUD_" + suffix, pt_msg);
 }
 
 void PointCloudVisualizer::PublishFrames(
@@ -266,9 +265,7 @@ void PointCloudVisualizer::PublishFrames(
     msg.quaternion[i][2] = quat.y();
     msg.quaternion[i][3] = quat.z();
   }
-  vector<uint8_t> bytes(msg.getEncodedSize());
-  msg.encode(bytes.data(), 0, bytes.size());
-  lcm_.Publish("DRAKE_DRAW_FRAMES", bytes.data(), bytes.size());
+  Publish(&lcm_, "DRAKE_DRAW_FRAMES", msg);
 }
 
 }  // namespace estimators

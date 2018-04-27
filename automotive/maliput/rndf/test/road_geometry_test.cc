@@ -13,6 +13,7 @@
 namespace drake {
 namespace maliput {
 namespace rndf {
+namespace {
 
 // The following tolerances are very strict as they are not used to compute
 // anything in the following tests. However, we need them for the RoadGeometry
@@ -66,6 +67,7 @@ GTEST_TEST(RNDFRoadGeometryTest, GettersTest) {
   EXPECT_EQ(rg.angular_tolerance(), kAngularTolerance);
 }
 
+}  // namespace
 }  // namespace rndf
 }  // namespace maliput
 }  // namespace drake

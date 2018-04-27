@@ -21,11 +21,6 @@
       "Hints": ["@prefix@/lib/cmake/eigen3"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "fmt": {
-      "Version": "3.0.1",
-      "Hints": ["@prefix@/lib/cmake/fmt"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "ignition-math4": {
       "Version": "4.0.0",
       "Hints": ["@prefix@/lib/cmake/ignition-math4"],
@@ -53,11 +48,6 @@
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
     },
-    "SDFormat": {
-      "Version": "6.0.0",
-      "Hints": ["@prefix@/lib/cmake/sdformat"],
-      "X-CMake-Find-Args": ["CONFIG"]
-    },
     "spdlog": {
       "Version": "1.0.0",
       "Hints": ["@prefix@/lib/cmake/spdlog"],
@@ -76,10 +66,6 @@
       "Includes": ["@prefix@/include"],
       "Compile-Features": ["c++14"],
       "Link-Flags": ["-ltinyxml2"],
-      "Link-Requires": [
-        "fmt:fmt",
-        "SDFormat:sdformat"
-      ],
       "Requires": [
         ":drake-lcmtypes-cpp",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
@@ -88,7 +74,7 @@
         "ignition-math4:ignition-math4",
         "ignition-rndf0:ignition-rndf0",
         "lcm:lcm",
-        "optitrack:lcmtypes_optitrack-cpp",
+        "optitrack:optitrack-lcmtypes-cpp",
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
@@ -113,10 +99,11 @@
     }
   },
   "X-CMake-Variables": {
+    "drake_PYTHON_DIRS": "${CMAKE_CURRENT_LIST_DIR}/../../python2.7/site-packages",
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   },
   "X-CMake-Variables-Init": {
     "_Boost_IMPORTED_TARGETS": 1,
-    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}"
+    "CMAKE_MODULE_PATH": "${CMAKE_CURRENT_LIST_DIR}/modules/3.10;${CMAKE_MODULE_PATH}"
   }
 }

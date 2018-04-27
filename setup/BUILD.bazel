@@ -1,0 +1,32 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+install_files(
+    name = "install",
+    dest = "share/drake/setup",
+    files = select({
+        "//tools/cc_toolchain:apple": [
+            "mac/binary_distribution/Brewfile",
+            "mac/binary_distribution/install_prereqs.sh",
+            "mac/binary_distribution/requirements.txt",
+        ],
+        "//tools/cc_toolchain:linux": [
+            "ubuntu/16.04/binary_distribution/install_prereqs.sh",
+            "ubuntu/16.04/binary_distribution/packages.txt",
+        ],
+        "//conditions:default": [],
+    }),
+    strip_prefix = [
+        "mac/binary_distribution",
+        "ubuntu/16.04/binary_distribution",
+    ],
+    rename = {
+        "share/drake/setup/install_prereqs.sh": "install_prereqs",
+    },
+)
+
+add_lint_tests()

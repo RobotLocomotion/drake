@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -16,6 +17,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic.h"
+#include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
 
@@ -99,16 +102,22 @@ class Constraint : public EvaluatorBase {
   const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
 
   /** Number of rows in the output constraint. */
-  // TODO(eric.cousineau): Change return type to `int`.
-  size_t num_constraints() const { return num_outputs(); }
+  int num_constraints() const { return num_outputs(); }
 
-  /** Updates the lower bound. */
+ protected:
+  /** Updates the lower bound.
+   * @note if the users want to expose this method in a sub-class, do
+   * using Constraint::set_bounds, as in LinearConstraint.
+   */
   template <typename Derived>
   void UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
     set_bounds(new_lb, upper_bound_);
   }
 
-  /** Updates the upper bound. */
+  /** Updates the upper bound.
+   * @note if the users want to expose this method in a sub-class, do
+   * using Constraint::set_bounds, as in LinearConstraint.
+   */
   template <typename Derived>
   void UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
     set_bounds(lower_bound_, new_ub);
@@ -118,11 +127,14 @@ class Constraint : public EvaluatorBase {
    * Set the upper and lower bounds of the constraint.
    * @param lower_bound. A `num_constraints` x 1 vector.
    * @param upper_bound. A `num_constraints` x 1 vector.
+   * @note If the users want to expose this method in a sub-class, do
+   * using Constraint::set_bounds, as in LinearConstraint.
    */
   template <typename DerivedL, typename DerivedU>
   void set_bounds(const Eigen::MatrixBase<DerivedL>& lower_bound,
                   const Eigen::MatrixBase<DerivedU>& upper_bound) {
-    if (lower_bound.rows() != upper_bound.rows() || lower_bound.cols() != 1 ||
+    if (lower_bound.rows() != num_constraints() ||
+        upper_bound.rows() != num_constraints() || lower_bound.cols() != 1 ||
         upper_bound.cols() != 1) {
       throw std::runtime_error("New constraints have invalid dimensions.");
     }
@@ -131,7 +143,6 @@ class Constraint : public EvaluatorBase {
     upper_bound_ = upper_bound;
   }
 
- protected:
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 const double tol) const {
     Eigen::VectorXd y(num_constraints());
@@ -149,11 +160,11 @@ class Constraint : public EvaluatorBase {
   }
 
  private:
-  void check(size_t num_constraints) {
+  void check(int num_constraints) {
     static_cast<void>(num_constraints);
-    DRAKE_ASSERT(static_cast<size_t>(lower_bound_.size()) == num_constraints &&
+    DRAKE_ASSERT(lower_bound_.size() == num_constraints &&
                  "Size of lower bound must match number of constraints.");
-    DRAKE_ASSERT(static_cast<size_t>(upper_bound_.size()) == num_constraints &&
+    DRAKE_ASSERT(upper_bound_.size() == num_constraints &&
                  "Size of upper bound must match number of constraints.");
   }
 
@@ -162,7 +173,7 @@ class Constraint : public EvaluatorBase {
 };
 
 /**
- * lb <= .5 x'Qx + b'x <= ub
+ * lb ≤ .5 xᵀQx + bᵀx ≤ ub
  * Without loss of generality, the class stores a symmetric matrix Q.
  * For a non-symmetric matrix Q₀, we can define Q = (Q₀ + Q₀ᵀ) / 2, since
  * xᵀQ₀x = xᵀQ₀ᵀx = xᵀ*(Q₀+Q₀ᵀ)/2 *x. The first equality holds because the
@@ -239,14 +250,14 @@ class QuadraticConstraint : public Constraint {
 
 /**
  Constraining the linear expression \f$ z=Ax+b \f$ lies within the Lorentz cone.
- A vector \f$ z \in \mathbb{R}^n \f$ lies within Lorentz cone if
+ A vector z ∈ ℝ ⁿ lies within Lorentz cone if
  @f[
  z_0 \ge \sqrt{z_1^2+...+z_{n-1}^2}
  @f]
  <!-->
- z(0) >= sqrt(z(1)^2 + ... + z(n-1)^2)
+ z₀ ≥ sqrt(z₁² + ... + zₙ₋₁²)
  <-->
- where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^{n}@f$ are given matrices.
+ where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
  Ideally this constraint should be handled by a second-order cone solver.
  In case the user wants to enforce this constraint through general nonlinear
  optimization, with smooth gradient, we alternatively impose the following
@@ -298,17 +309,17 @@ class LorentzConeConstraint : public Constraint {
 /**
  * Constraining that the linear expression \f$ z=Ax+b \f$ lies within rotated
  * Lorentz cone.
- * A vector \f$ z \in\mathbb{R}^n \f$ lies within rotated Lorentz cone, if
+ * A vector z ∈ ℝ ⁿ lies within rotated Lorentz cone, if
  * @f[
  * z_0 \ge 0\\
  * z_1 \ge 0\\
  * z_0  z_1 \ge z_2^2 + z_3^2 + ... + z_{n-1}^2
  * @f]
- * where @f$ A\in\mathbb{R}^{n\times m}, b\in\mathbb{R}^n@f$ are given matrices.
+ * where A ∈ ℝ ⁿˣᵐ, b ∈ ℝ ⁿ are given matrices.
  * <!-->
- * z(0) >= 0
- * z(1) >= 0
- * z(0) * z(1) >= z(2)^2 + z(3)^2 + ... + z(n-1)^2
+ * z₀ ≥ 0
+ * z₁ ≥ 0
+ * z₀ * z₁ ≥ z₂² + z₃² + ... zₙ₋₁²
  * <-->
  * For more information and visualization, please refer to
  * https://inst.eecs.berkeley.edu/~ee127a/book/login/l_socp_soc.html
@@ -370,6 +381,10 @@ class EvaluatorConstraint : public Constraint {
       : Constraint(evaluator->num_outputs(), evaluator->num_vars(),
                    std::forward<Args>(args)...),
         evaluator_(evaluator) {}
+
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+  using Constraint::set_bounds;
 
  protected:
   /** Reference to the nested evaluator. */
@@ -481,8 +496,13 @@ class LinearConstraint : public Constraint {
     }
 
     A_ = new_A;
+    set_num_outputs(A_.rows());
     set_bounds(new_lb, new_ub);
   }
+
+  using Constraint::UpdateLowerBound;
+  using Constraint::UpdateUpperBound;
+  using Constraint::set_bounds;
 
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
@@ -523,6 +543,20 @@ class LinearEqualityConstraint : public LinearConstraint {
   void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
                           const Eigen::MatrixBase<DerivedB>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
+  }
+
+ private:
+  /**
+   * The user should not call this function. Call UpdateCoefficients(Aeq, beq)
+   * instead.
+   */
+  template <typename DerivedA, typename DerivedL, typename DerivedU>
+  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
+                          const Eigen::MatrixBase<DerivedL>& new_lb,
+                          const Eigen::MatrixBase<DerivedU>& new_ub) {
+    static_assert(
+        !std::is_same<DerivedA, DerivedA>::value,
+        "This method should not be called form `LinearEqualityConstraint`");
   }
 };
 
@@ -746,6 +780,49 @@ class LinearMatrixInequalityConstraint : public Constraint {
  private:
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
+};
+
+
+/**
+ * Impose a generic (potentially nonlinear) constraint represented as a
+ * vector of symbolic Expression.  Expression::Evaluate is called on every
+ * constraint evaluation.
+ *
+ * Uses symbolic::Jacobian to provide the gradients to the AutoDiff method.
+ */
+class ExpressionConstraint : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExpressionConstraint)
+
+  ExpressionConstraint(const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+                       const Eigen::Ref<const Eigen::VectorXd>& lb,
+                       const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+  /**
+   * @return the list of the variables involved in the vector of expressions,
+   * in the order that they are expected to be received during DoEval.
+   * Any Binding that connects this constraint to decision variables should
+   * pass this list of variables to the Binding.
+   */
+  const VectorXDecisionVariable& vars() const { return vars_; }
+
+ protected:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd& y) const override;
+
+ private:
+  VectorX<symbolic::Expression> expressions_{0};
+  MatrixX<symbolic::Expression> derivatives_{0, 0};
+
+  // map_var_to_index_[vars_(i).get_id()] = i.
+  VectorXDecisionVariable vars_{0};
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index_;
+
+  // Only for caching, does not carrying hidden state.
+  mutable symbolic::Environment environment_;
 };
 
 }  // namespace solvers

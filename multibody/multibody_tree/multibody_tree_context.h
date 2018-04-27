@@ -45,16 +45,15 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       systems::LeafContext<T>(), topology_(topology) {
     using systems::AbstractValue;
     using systems::BasicVector;
-    using systems::CacheTicket;
     using systems::Context;
     using systems::ContinuousState;
     using systems::LeafContext;
     using systems::Value;
 
     // Allocate continuous state.
-    const int num_positions = topology_.get_num_positions();
-    const int num_velocities = topology_.get_num_velocities();
-    const int num_states = topology_.get_num_states();
+    const int num_positions = topology_.num_positions();
+    const int num_velocities = topology_.num_velocities();
+    const int num_states = topology_.num_states();
 
     // TODO(amcastro-tri): Consider inheriting a more specific BasicVector.
     // See EndlessRoadCar<T>::AllocateContinuousState().
@@ -69,34 +68,34 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
   /// Returns the size of the generalized positions vector.
-  int get_num_positions() const {
+  int num_positions() const {
     return this->get_continuous_state().get_generalized_position().size();
   }
 
   /// Returns the size of the generalized velocities vector.
-  int get_num_velocities() const {
+  int num_velocities() const {
     return this->get_continuous_state().get_generalized_velocity().size();
   }
 
   /// Returns an Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<const VectorX<T>> get_positions() const {
-    return get_state_segment(0, get_num_positions());
+    return get_state_segment(0, num_positions());
   }
 
   /// Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_velocities() const {
-    return get_state_segment(get_num_positions(), get_num_velocities());
+    return get_state_segment(num_positions(), num_velocities());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<VectorX<T>> get_mutable_positions() {
-    return get_mutable_state_segment(0, get_num_positions());
+    return get_mutable_state_segment(0, num_positions());
   }
 
   /// Returns a mutable Eigen expression of the vector of generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>> get_mutable_velocities() {
-    return get_mutable_state_segment(get_num_positions(), get_num_velocities());
+    return get_mutable_state_segment(num_positions(), num_velocities());
   }
 
   /// Returns a const fixed-size Eigen::VectorBlock of `count` elements

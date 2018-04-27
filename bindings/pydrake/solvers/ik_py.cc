@@ -1,12 +1,14 @@
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/eigen.h"
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/multibody/ik_options.h"
 #include "drake/multibody/rigid_body_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 
-namespace py = pybind11;
+namespace drake {
+namespace pydrake {
 
 PYBIND11_MODULE(_ik_py, m) {
   m.doc() = "RigidBodyTree inverse kinematics";
@@ -181,14 +183,9 @@ PYBIND11_MODULE(_ik_py, m) {
 
   py::class_<QuasiStaticConstraint, RigidBodyConstraint>(
     m, "QuasiStaticConstraint")
-    .def("__init__",
-         [](QuasiStaticConstraint& instance,
-            RigidBodyTree<double>* model,
-            const Eigen::Vector2d& tspan) {
-            new (&instance) QuasiStaticConstraint(model, tspan);
-          },
-          py::arg("model"),
-          py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
+    .def(py::init<RigidBodyTree<double>*, const Eigen::Vector2d&>(),
+        py::arg("model"),
+        py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan)
     .def(py::init<RigidBodyTree<double>*,
                   const Eigen::Vector2d&,
                   const std::set<int>& >())
@@ -201,7 +198,7 @@ PYBIND11_MODULE(_ik_py, m) {
                  &QuasiStaticConstraint::addContact));
 
   py::class_<IKoptions>(m, "IKoptions")
-    .def(py::init<RigidBodyTree<double> *>())
+    .def(py::init<RigidBodyTree<double>*>())
     .def("setQ", &IKoptions::setQ)
     .def("getQ", &IKoptions::getQ)
     .def("setQa", &IKoptions::setQa)
@@ -261,3 +258,6 @@ PYBIND11_MODULE(_ik_py, m) {
     .def_readonly("info", &IKResults::info)
     .def_readonly("infeasible_constraints", &IKResults::infeasible_constraints);
 }
+
+}  // namespace pydrake
+}  // namespace drake

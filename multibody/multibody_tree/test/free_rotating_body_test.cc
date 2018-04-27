@@ -29,7 +29,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   // The numerical tolerance accepted for these tests.
   const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
-  const double kEndTime = 10.0;
+  const double kEndTime = 5.0;
 
   // Initial position and translational velocity are zero; only rotations are
   // considered.

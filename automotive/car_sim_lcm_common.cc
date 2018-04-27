@@ -213,7 +213,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
   //
   MatrixX<double> matrix_gain(
       controller->get_input_port(1).size(),
-      command_subscriber->get_output_port(0).size());
+      command_subscriber->get_output_port().size());
   matrix_gain <<
       1,                 0,
       0,                 0,
@@ -223,7 +223,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
       0, 1. / kWheelRadius;
   DRAKE_ASSERT(matrix_gain.rows() == controller->get_input_port(1).size());
   DRAKE_ASSERT(matrix_gain.cols() ==
-      command_subscriber->get_output_port(0).size());
+      command_subscriber->get_output_port().size());
 
   // TODO(liang.fok): Consider replacing the the MatrixGain system below with a
   // custom system that converts the user's commands to the vehicle's actuator's
@@ -247,7 +247,7 @@ std::unique_ptr<systems::Diagram<double>> CreateCarSimLcmDiagram(
                   controller->get_control_input_port());
 
   // Connects the system that converts from user commands to actuator commands.
-  builder.Connect(command_subscriber->get_output_port(0),
+  builder.Connect(command_subscriber->get_output_port(),
                   user_to_actuator_cmd_sys->get_input_port());
 
   // Connects the controller, which includes the plant being controlled.

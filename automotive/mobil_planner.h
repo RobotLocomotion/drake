@@ -3,9 +3,11 @@
 #include <map>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Geometry>
 
+#include "drake/automotive/calc_ongoing_road_position.h"
 #include "drake/automotive/gen/idm_planner_parameters.h"
 #include "drake/automotive/gen/mobil_planner_parameters.h"
 #include "drake/automotive/idm_planner.h"
@@ -87,11 +89,16 @@ class MobilPlanner : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilPlanner)
 
   /// A constructor that initializes the MOBIL planner.
-  /// @param road is the pre-defined RoadGeometry.
-  /// @param initial_with_s is the initial direction of travel in the lane
+  /// @param road The pre-defined RoadGeometry.
+  /// @param initial_with_s The initial direction of travel in the lane
   /// corresponding to the ego vehicle's initial state.
-  explicit MobilPlanner(const maliput::api::RoadGeometry& road,
-                        bool initial_with_s);
+  /// @param road_position_strategy Determines whether or not to memorize
+  /// RoadPosition. See `calc_ongoing_road_position.h`.
+  /// @param period_sec The update period to use if road_position_strategy ==
+  /// RoadPositionStrategy::kCache.
+  MobilPlanner(const maliput::api::RoadGeometry& road, bool initial_with_s,
+               RoadPositionStrategy road_position_strategy,
+               double period_sec);
 
   /// See the class description for details on the following input ports.
   /// @{
@@ -117,6 +124,12 @@ class MobilPlanner : public systems::LeafSystem<T> {
   }
   /// @}
 
+ protected:
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<T>& context,
+      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
+      systems::State<T>* state) const override;
+
  private:
   void CalcLaneDirection(const systems::Context<T>& context,
                          LaneDirection* lane_direction) const;
@@ -129,6 +142,7 @@ class MobilPlanner : public systems::LeafSystem<T> {
       const systems::BasicVector<T>& ego_accel_command,
       const IdmPlannerParameters<T>& idm_params,
       const MobilPlannerParameters<T>& mobil_params,
+      const maliput::api::RoadPosition& ego_rp,
       LaneDirection* lane_direction) const;
 
   // Computes a pair of incentive measures for the provided neighboring lanes.
@@ -141,8 +155,8 @@ class MobilPlanner : public systems::LeafSystem<T> {
           lanes,
       const IdmPlannerParameters<T>& idm_params,
       const MobilPlannerParameters<T>& mobil_params,
+      const ClosestPose<T>& ego_closest_pose,
       const systems::rendering::PoseVector<T>& ego_pose,
-      const systems::rendering::FrameVelocity<T>& ego_velocity,
       const systems::rendering::PoseBundle<T>& traffic_poses,
       const T& ego_acceleration) const;
 
@@ -170,6 +184,7 @@ class MobilPlanner : public systems::LeafSystem<T> {
 
   const maliput::api::RoadGeometry& road_;
   const bool with_s_{true};
+  const RoadPositionStrategy road_position_strategy_{};
 
   // Indices for the input / output ports.
   const int ego_pose_index_{};

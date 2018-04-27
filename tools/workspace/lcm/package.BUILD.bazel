@@ -1,5 +1,8 @@
 # -*- python -*-
-
+load(
+    "@drake//tools/skylark:drake_java.bzl",
+    "drake_java_binary",
+)
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 load(
     "@drake//tools/workspace:generate_export_header.bzl",
@@ -13,6 +16,11 @@ load(
     "install_files",
 )
 load("@drake//tools/lint:python_lint.bzl", "python_lint")
+
+licenses([
+    "notice",  # BSD-3-Clause
+    "restricted",  # LGPL-2.1 AND LGPL-2.1+
+])
 
 package(default_visibility = ["//visibility:public"])
 
@@ -67,7 +75,7 @@ LCM_PUBLIC_HEADER_INCLUDES = [
 # linked dynamically.  The `name = "lcm"` rule below provides the compile-time
 # artifact that combines the shared library with its headers.
 cc_binary(
-    name = "liblcm.so",
+    name = "libdrake_lcm.so",
     srcs = [
         # Sources
         "lcm/eventlog.c",
@@ -93,7 +101,10 @@ cc_binary(
     copts = LCM_COPTS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
     linkopts = select({
-        ":linux": ["-pthread"],  # For lcm_(mp)udpm.c.
+        ":linux": [
+            "-pthread",  # For lcm_(mp)udpm.c.
+            "-Wl,-soname,libdrake_lcm.so",
+        ],
         "@//conditions:default": [],
     }),
     linkshared = 1,
@@ -104,7 +115,7 @@ cc_binary(
 # This is the compile-time target for liblcm.  See above for details.
 cc_library(
     name = "lcm",
-    srcs = ["liblcm.so"],
+    srcs = ["libdrake_lcm.so"],
     hdrs = LCM_PUBLIC_HEADERS,
     includes = LCM_PUBLIC_HEADER_INCLUDES,
 )
@@ -204,8 +215,7 @@ cc_binary(
 # that, we pre-load the shared library before calling the upstream __init__,
 # using python ctypes with the realpath to the shared library.
 generate_file(
-    name = "init_genrule",
-    out = "__init__.py",
+    name = "__init__.py",
     content = """
 import ctypes
 import os.path
@@ -243,7 +253,13 @@ java_library(
     deps = ["@net_sf_jchart2d//jar"],
 )
 
-java_binary(
+drake_java_binary(
+    name = "lcm-logplayer-gui",
+    main_class = "lcm.logging.LogPlayer",
+    runtime_deps = [":lcm-java"],
+)
+
+drake_java_binary(
     name = "lcm-spy",
     jvm_flags = [
         # These flags are copied from the lcm/lcm-java/lcm-spy.sh.in.
@@ -256,13 +272,16 @@ java_binary(
     ],
 )
 
+CMAKE_PACKAGE = "lcm"
+
 cmake_config(
-    package = "lcm",
+    package = CMAKE_PACKAGE,
     script = "@drake//tools/workspace/lcm:package-create-cps.py",
     version_file = "lcm/lcm_version.h",
 )
 
-install_cmake_config(package = "lcm")  # Creates rule :install_cmake_config.
+# Creates rule :install_cmake_config.
+install_cmake_config(package = CMAKE_PACKAGE)
 
 install_files(
     name = "install_extra_cmake",
@@ -283,16 +302,23 @@ install(
 
 install(
     name = "install",
+    install_tests = [
+        "@drake//tools/workspace/lcm:test/lcm-gen_install_test.py",
+    ],
     targets = [
         ":lcm-gen",
         ":lcm-java",
         ":lcm-logger",
         ":lcm-logplayer",
+        ":lcm-logplayer-gui",
+        ":lcm-logplayer-gui-launcher",
         ":lcm-spy",
-        ":liblcm.so",
+        ":lcm-spy-launcher",
+        ":libdrake_lcm.so",
     ],
     py_strip_prefix = ["lcm-python"],
     hdrs = LCM_PUBLIC_HEADERS,
+    hdr_dest = "include/" + CMAKE_PACKAGE,
     docs = [
         "AUTHORS",
         "COPYING",
@@ -300,6 +326,8 @@ install(
     ],
     rename = {
         "share/java/liblcm-java.jar": "lcm.jar",
+        "bin/lcm-logplayer-gui-launcher.sh": "lcm-logplayer-gui",
+        "bin/lcm-spy-launcher.sh": "lcm-spy",
     },
     deps = [
         ":install_cmake_config",
@@ -308,4 +336,4 @@ install(
     ],
 )
 
-python_lint()
+python_lint(extra_srcs = [":test/lcm-gen_install_test.py"])

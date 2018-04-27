@@ -10,12 +10,11 @@ load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
 )
-load("//tools/skylark:6996.bzl", "adjust_labels_for_drake_hoist")
 
 package(
-    default_visibility = adjust_labels_for_drake_hoist([
-        "//drake/examples/kuka_iiwa_arm:__subpackages__",
-    ]),
+    default_visibility = [
+        "//examples/kuka_iiwa_arm:__subpackages__",
+    ],
 )
 
 drake_cc_library(
@@ -23,9 +22,10 @@ drake_cc_library(
     hdrs = [
         "pick_and_place_configuration.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
-        "//drake/common",
-        "//drake/multibody/rigid_body_plant:compliant_contact_model",
+        "//common",
+        "//multibody/rigid_body_plant:compliant_contact_model",
     ],
 )
 
@@ -44,13 +44,14 @@ drake_cc_library(
     hdrs = [
         "pick_and_place_configuration_parsing.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":pick_and_place_configuration",
         ":pick_and_place_configuration_proto",
-        "//drake/common:find_resource",
-        "//drake/common/proto:protobuf",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/math:geometric_transform",
+        "//common:find_resource",
+        "//common/proto:protobuf",
+        "//manipulation/util:world_sim_tree_builder",
+        "//math:geometric_transform",
     ],
 )
 
@@ -68,18 +69,18 @@ drake_cc_library(
     ],
     deps = [
         ":pick_and_place_configuration",
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/common/trajectories:piecewise_quaternion",
-        "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/lcmtypes:schunk",
-        "//drake/lcmtypes:viewer",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/multibody:inverse_kinematics",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/parsers",
-        "//drake/util:lcm_util",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_quaternion",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//lcmtypes:schunk",
+        "//lcmtypes:viewer",
+        "//manipulation/util:bot_core_lcm_encode_decode",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody:inverse_kinematics",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -91,19 +92,19 @@ drake_cc_googletest(
     name = "pick_and_place_configuration_parsing_test",
     data = [
         ":configuration",
-        "//drake/examples/kuka_iiwa_arm:models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration_parsing",  # noqa
     ],
 )
 
 drake_cc_googletest(
     name = "pick_and_place_state_machine_test",
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     # TODO(avalenzu) The "snopt" tag is required because IPOPT doesn't find
     # a reasonable solution for one of the steps in this test.  We should see
@@ -113,19 +114,19 @@ drake_cc_googletest(
     ],
     deps = [
         ":pick_and_place",
-        "//drake/common:find_resource",
+        "//common:find_resource",
     ],
 )
 
 drake_cc_googletest(
     name = "world_state_test",
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":pick_and_place",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

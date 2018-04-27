@@ -27,14 +27,14 @@ drake_cc_library(
     srcs = ["controlled_spring_mass_system.cc"],
     hdrs = ["controlled_spring_mass_system.h"],
     deps = [
-        "//drake/systems/controllers:pid_controller",
-        "//drake/systems/framework",
-        "//drake/systems/plants/spring_mass_system",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:gain",
-        "//drake/systems/primitives:multiplexer",
+        "//systems/controllers:pid_controller",
+        "//systems/framework",
+        "//systems/plants/spring_mass_system",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:gain",
+        "//systems/primitives:multiplexer",
     ],
 )
 
@@ -61,7 +61,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["logistic_system.h"],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 
@@ -70,7 +70,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["my_spring_mass_system.h"],
     deps = [
-        "//drake/systems/plants/spring_mass_system",
+        "//systems/plants/spring_mass_system",
     ],
 )
 
@@ -86,7 +86,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["spring_mass_damper_system.h"],
     deps = [
-        "//drake/systems/plants/spring_mass_system",
+        "//systems/plants/spring_mass_system",
     ],
 )
 
@@ -95,7 +95,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["stateless_system.h"],
     deps = [
-        "//drake/systems/framework",
+        "//systems/framework",
     ],
 )
 

@@ -12,8 +12,8 @@ template <typename T>
 lcmt_viewer_load_robot CreateLoadRobotMessage(
     const RigidBodyTree<double>& tree) {
   lcmt_viewer_load_robot load_message;
-  load_message.num_links = tree.bodies.size();
-  for (const auto& body : tree.bodies) {
+  load_message.num_links = tree.get_bodies().size();
+  for (const auto& body : tree.get_bodies()) {
     lcmt_viewer_link_data link;
     link.name = body->get_name();
     link.robot_num = body->get_model_instance_id();

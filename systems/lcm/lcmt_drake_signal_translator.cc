@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <lcm/lcm-cpp.hpp>
+#include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
 #include "drake/lcmt_drake_signal.hpp"

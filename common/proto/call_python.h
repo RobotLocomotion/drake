@@ -127,19 +127,31 @@ template <typename Policy>
 class PythonAccessor : public internal::PythonApi<PythonAccessor<Policy>> {
  public:
   using KeyType = typename Policy::KeyType;
+
+  // Given a variable (and key), makes a PythonAccessor.
   PythonAccessor(PythonRemoteVariable obj, const KeyType& key)
       : obj_(obj), key_(key) {}
 
+  // Copying a PythonAccessor aliases the original remote variable (reference
+  // semantics), it does not create a new remote variable.
+  PythonAccessor(const PythonAccessor&) = default;
+
+  // Implicitly converts to a PythonRemoteVariable.
   operator PythonRemoteVariable() const { return value(); }
 
+  // Assigning from another PythonAccessor delegates to set_value from that
+  // `value`'s underlying PythonRemoteVariable.
   PythonRemoteVariable operator=(const PythonAccessor& value) {
     return set_value(value);
   }
 
+  // Assigning from another PythonRemoteVariable delegates to set_value from it.
   PythonRemoteVariable operator=(const PythonRemoteVariable& value) {
     return set_value(value);
   }
 
+  // Assigning from some literal value creates a new PythonRemoveVariable to
+  // bind the value.
   template <typename T>
   PythonRemoteVariable operator=(const T& value) {
     return set_value(NewPythonVariable(value));

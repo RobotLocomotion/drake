@@ -12,7 +12,8 @@ namespace drake {
 namespace manipulation {
 namespace util {
 
-template<typename T> struct ModelInstanceInfo {
+template <typename T>
+struct ModelInstanceInfo {
   std::string absolute_model_path;
   int instance_id;
   std::shared_ptr<RigidBodyFrame<T>> world_offset;
@@ -66,6 +67,34 @@ class WorldSimTreeBuilder {
       std::shared_ptr<RigidBodyFrame<T>> weld_to_frame,
       const drake::multibody::joints::FloatingBaseType floating_base_type =
           drake::multibody::joints::kFixed);
+
+  /// Adds a model instance specified by its model name, @p model_name, to the
+  /// `RigidBodyTree` being built. The model instance is welded to
+  /// a new frame `F` constructed within this function. This new frame `F` is
+  /// fixed on a body of name @p weld_to_body_name, with a transformation to
+  /// this body as @p X_BF, where `B` is the body frame. The new frame is named
+  /// @p frame_name. The model instance is connected to the body using a joint
+  /// of type @p floating_base_type. The model name must have been previously
+  /// loaded via a call to StoreModel().
+  /// The function will search for the body with name @p weld_to_body_name, on
+  /// the model with ID @p weld_to_body_model_instance_id.
+  /// @param model_name The model with this name will be added to the tree.
+  /// @param weld_to_body_name The added model will be welded to a body with
+  /// this name.
+  /// @param weld_to_body_model_instance_id The added model will be welded to
+  /// a body with this model instance ID.
+  /// @param frame_name The name of the newly added frame.
+  /// @param X_BF The pose of the newly added frame `F` in the added body
+  /// frame `B`.
+  /// @param floating_base_type The type of the joint to weld the added model
+  /// to the frame `F` on the body `B`.
+  ///
+  /// @return model_instance_id of the object that is added.
+  int AddModelInstanceToFrame(
+      const std::string& model_name, const std::string& weld_to_body_name,
+      int weld_to_body_model_instance_id, const std::string& frame_name,
+      const Eigen::Isometry3d& X_BF,
+      const drake::multibody::joints::FloatingBaseType floating_base_type);
 
   /// Adds a flat terrain to the simulation.
   void AddGround();
@@ -123,7 +152,6 @@ class WorldSimTreeBuilder {
   systems::CompliantMaterial default_contact_material() const {
     return default_contact_material_;
   }
-
 
  private:
   std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{

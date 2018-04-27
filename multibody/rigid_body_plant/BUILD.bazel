@@ -25,10 +25,11 @@ drake_cc_library(
         "point_contact_detail.h",
     ],
     deps = [
-        "//drake/common:copyable_unique_ptr",
-        "//drake/common:essential",
-        "//drake/math:orthonormal_basis",
-        "//drake/multibody:rigid_body_tree",
+        "//common:copyable_unique_ptr",
+        "//common:default_scalars",
+        "//common:essential",
+        "//math:orthonormal_basis",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -37,7 +38,7 @@ drake_cc_library(
     srcs = ["compliant_material.cc"],
     hdrs = ["compliant_material.h"],
     deps = [
-        "//drake/common",
+        "//common",
     ],
 )
 
@@ -48,9 +49,9 @@ drake_cc_library(
     deps = [
         ":compliant_material",
         ":contact_results",
-        "//drake/common",
-        "//drake/common:copyable_unique_ptr",
-        "//drake/multibody:rigid_body_tree",
+        "//common",
+        "//common:copyable_unique_ptr",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -66,13 +67,24 @@ drake_cc_library(
     ],
     deps = [
         ":compliant_contact_model",
-        "//drake/common:copyable_unique_ptr",
-        "//drake/common:essential",
-        "//drake/math:orthonormal_basis",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/multibody/constraint:constraint_solver",
-        "//drake/solvers:mathematical_program",
-        "//drake/systems/framework",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//math:orthonormal_basis",
+        "//multibody:rigid_body_tree",
+        "//multibody/constraint:constraint_solver",
+        "//solvers:mathematical_program",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_plant_bridge",
+    srcs = ["rigid_body_plant_bridge.cc"],
+    hdrs = ["rigid_body_plant_bridge.h"],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry:geometry_system",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -86,8 +98,8 @@ drake_cc_library(
     ],
     deps = [
         ":rigid_body_plant",
-        "//drake/lcmtypes:contact_info_for_viz",
-        "//drake/lcmtypes:contact_results_for_viz",
+        "//lcmtypes:contact_info_for_viz",
+        "//lcmtypes:contact_results_for_viz",
     ],
 )
 
@@ -96,24 +108,9 @@ drake_cc_library(
     srcs = ["create_load_robot_message.cc"],
     hdrs = ["create_load_robot_message.h"],
     deps = [
-        "//drake/lcmtypes:viewer",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/rendering:drake_visualizer_client",
-    ],
-)
-
-drake_cc_library(
-    name = "rigid_body_plant_that_publishes_xdot",
-    srcs = [
-        "rigid_body_plant_that_publishes_xdot.cc",
-    ],
-    hdrs = [
-        "rigid_body_plant_that_publishes_xdot.h",
-    ],
-    deps = [
-        ":rigid_body_plant",
-        "//drake/lcm",
-        "//drake/lcmtypes:drake_signal",
+        "//lcmtypes:viewer",
+        "//multibody:rigid_body_tree",
+        "//systems/rendering:drake_visualizer_client",
     ],
 )
 
@@ -129,12 +126,12 @@ drake_cc_library(
     ],
     deps = [
         ":create_load_robot_message",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/lcmtypes:viewer",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/lcm",
-        "//drake/systems/primitives:signal_log",
-        "//drake/systems/rendering:drake_visualizer_client",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:viewer",
+        "//multibody:rigid_body_tree",
+        "//systems/lcm",
+        "//systems/primitives:signal_log",
+        "//systems/rendering:drake_visualizer_client",
     ],
 )
 
@@ -143,9 +140,9 @@ drake_cc_library(
     srcs = ["frame_visualizer.cc"],
     hdrs = ["frame_visualizer.h"],
     deps = [
-        "//drake/lcmtypes:viewer",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/lcm",
+        "//lcmtypes:viewer",
+        "//multibody:rigid_body_tree",
+        "//systems/lcm",
     ],
 )
 
@@ -160,7 +157,7 @@ drake_cc_googletest(
     name = "contact_force_test",
     deps = [
         ":rigid_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -168,7 +165,7 @@ drake_cc_googletest(
     name = "contact_force_formula_test",
     deps = [
         ":rigid_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -184,7 +181,7 @@ drake_cc_googletest(
     deps = [
         ":contact_result_test_common",
         ":rigid_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -199,8 +196,8 @@ drake_cc_googletest(
     deps = [
         ":contact_result_test_common",
         ":rigid_body_plant",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -209,8 +206,8 @@ drake_cc_googletest(
     deps = [
         ":compliant_contact_model",
         ":contact_result_test_common",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
     ],
 )
 
@@ -221,36 +218,36 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_visualizer_test",
-    data = ["//drake/multibody/collision:test_models"],
+    data = ["//multibody/collision:test_models"],
     deps = [
         ":drake_visualizer",
-        "//drake/common:find_resource",
-        "//drake/lcm:mock",
-        "//drake/systems/analysis",
+        "//common:find_resource",
+        "//lcm:mock",
+        "//systems/analysis",
     ],
 )
 
 drake_cc_googletest(
     name = "frame_visualizer_test",
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":frame_visualizer",
-        "//drake/common:find_resource",
-        "//drake/lcm:mock",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//lcm:mock",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "kinematics_results_test",
-    data = ["//drake/multibody:test_models"],
+    data = ["//multibody:test_models"],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -258,30 +255,19 @@ drake_cc_googletest(
     name = "rigid_body_plant_test",
     data = [
         ":test_models",
-        "//drake/manipulation/models/iiwa_description:models",
-        "//drake/multibody:models",
-        "//drake/multibody:test_models",
+        "//examples/pendulum:models",
+        "//manipulation/models/iiwa_description:models",
+        "//multibody:models",
+        "//multibody:test_models",
     ],
     deps = [
         ":rigid_body_plant",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody:rigid_body_tree_construction",
-        "//drake/multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rigid_body_plant_that_publishes_xdot_test",
-    data = [
-        "//drake/multibody:models",
-    ],
-    deps = [
-        ":rigid_body_plant_that_publishes_xdot",
-        "//drake/common:find_resource",
-        "//drake/lcm:lcmt_drake_signal_utils",
-        "//drake/lcm:mock",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/pendulum:pendulum_vector_types",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/parsers",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -303,4 +289,8 @@ filegroup(
     ]),
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = glob([
+        "visualization/*.py",
+    ]),
+)

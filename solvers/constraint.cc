@@ -1,8 +1,10 @@
 #include "drake/solvers/constraint.h"
 
 #include <cmath>
+#include <unordered_map>
 
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/symbolic_extraction.h"
 
 using std::abs;
 
@@ -111,15 +113,14 @@ bool LinearComplementarityConstraint::DoCheckSatisfied(
 
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd> &x, Eigen::VectorXd &y) const {
-  DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
-               num_constraints() * num_constraints());
+  DRAKE_ASSERT(x.rows() == num_constraints() * num_constraints());
   Eigen::MatrixXd S(num_constraints(), num_constraints());
 
-  for (int i = 0; i < static_cast<int>(num_constraints()); ++i) {
+  for (int i = 0; i < num_constraints(); ++i) {
     S.col(i) = x.segment(i * num_constraints(), num_constraints());
   }
 
-  DRAKE_ASSERT(S.rows() == static_cast<int>(num_constraints()));
+  DRAKE_ASSERT(S.rows() == num_constraints());
 
   // This uses the lower diagonal part of S to compute the eigen values.
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigen_solver(S);
@@ -167,5 +168,72 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
   }
 }
+
+ExpressionConstraint::ExpressionConstraint(
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub)
+    : Constraint(v.rows(), GetDistinctVariables(v).size(), lb, ub),
+      expressions_(v) {
+  // Setup map_var_to_index_ and vars_ so that
+  //   map_var_to_index_[vars_(i).get_id()] = i.
+  for (int i = 0; i < expressions_.size(); ++i) {
+    internal::ExtractAndAppendVariablesFromExpression(expressions_(i), &vars_,
+                                                      &map_var_to_index_);
+  }
+
+  derivatives_ = symbolic::Jacobian(expressions_, vars_);
+
+  // Setup the environment.
+  for (int i = 0; i < vars_.size(); i++) {
+    environment_.insert(vars_[i], 0.0);
+  }
+}
+
+void ExpressionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                  Eigen::VectorXd& y) const {
+  DRAKE_DEMAND(x.rows() == vars_.rows());
+
+  // Set environment with current x values.
+  for (int i = 0; i < vars_.size(); i++) {
+    environment_[vars_[i]] = x(map_var_to_index_.at(vars_[i].get_id()));
+  }
+
+  // Evaluate into the output, y.
+  y.resize(num_constraints());
+  for (int i = 0; i < num_constraints(); i++) {
+    y[i] = expressions_[i].Evaluate(environment_);
+  }
+}
+
+void ExpressionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                  AutoDiffVecXd& y) const {
+  DRAKE_DEMAND(x.rows() == vars_.rows());
+
+  // Set environment with current x values.
+  for (int i = 0; i < vars_.size(); i++) {
+    environment_[vars_[i]] = x(map_var_to_index_.at(vars_[i].get_id())).value();
+  }
+
+  // Evaluate value and derivatives into the output, y.
+  // Using ∂yᵢ/∂zⱼ = ∑ₖ ∂fᵢ/∂xₖ ∂xₖ/∂zⱼ.
+  y.resize(num_constraints());
+  Eigen::VectorXd dyidx(x.size());
+  for (int i = 0; i < num_constraints(); i++) {
+    y[i].value() = expressions_[i].Evaluate(environment_);
+    for (int k = 0; k < x.size(); k++) {
+      dyidx[k] = derivatives_(i, k).Evaluate(environment_);
+    }
+
+    y[i].derivatives().resize(x(0).derivatives().size());
+    for (int j = 0; j < x(0).derivatives().size(); j++) {
+      y[i].derivatives()[j] = 0.0;
+      for (int k = 0; k < x.size(); k++) {
+        y[i].derivatives()[j] += dyidx[k] * x(k).derivatives()[j];
+      }
+    }
+  }
+}
+
 }  // namespace solvers
 }  // namespace drake

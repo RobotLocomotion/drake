@@ -32,7 +32,12 @@ TEST_F(AutodiffJacobianTest, QuadraticForm) {
   Matrix3d A;
   FillWithNumbersIncreasingFromZero(A);
 
+  // Work around GCC 5.4 Wshadow bug; the bug is fixed as of GCC 6.1.
+  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67273.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   auto quadratic_form = [&](const auto& x) {
+#pragma GCC diagnostic pop
     using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
     return (x.transpose() * A.cast<Scalar>().eval() * x).eval();
   };
@@ -98,7 +103,12 @@ TEST_F(AutoDiffHessianTest, QuadraticFunction) {
   FillWithNumbersIncreasingFromZero(D);
   FillWithNumbersIncreasingFromZero(e);
 
+  // Work around GCC 5.4 Wshadow bug; the bug is fixed as of GCC 6.1.
+  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67273.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
   auto quadratic_function = [&](const auto& x) {
+#pragma GCC diagnostic pop
     using Scalar = typename std::remove_reference<decltype(x)>::type::Scalar;
     return ((A.cast<Scalar>() * x + b.cast<Scalar>()).transpose() *
             C.cast<Scalar>() * (D.cast<Scalar>() * x + e.cast<Scalar>()))

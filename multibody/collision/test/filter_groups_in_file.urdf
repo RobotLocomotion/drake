@@ -1,0 +1,124 @@
+<robot name="simple_anchored">
+    <!--
+        A *conceptual* chain of overlapping spheres. The spheres are, in fact,
+        placed directly on top of each other (all centered on the world origin).
+        However, they form a chain (A -> B -> C -> D) in that there is a joint
+        between spheres A and B, B and C, and C and D.
+
+        Physically, the spheres all overlap. However, pairs (A, B), (B, C), and
+        (C, D) will never report collisions because of the logic which precludes
+        *sibling* links from being considered in collision. Without collision
+        filters, pairs (A, C), (A, D), and (B, D) will report collisions.
+
+        The purpose of this system is to explicitly test the collision filtering
+        specification logic. As such, each of the three enumerated potential
+        collisions are filtered using different, equivalent specification
+        idioms.
+
+        There is also an SDF version of this file: filter_groups_in_file.sdf.
+        Both files should specify the same links, joints, and collision filter
+        groups.
+
+        NOTE: Inertia values are introduced to prevent the parser from welding
+        links.
+    -->
+ <link name="sphereA">
+   <inertial>
+     <mass value="1"/>
+   </inertial>
+   <collision>
+     <geometry>
+       <sphere radius="1" />
+     </geometry>
+   </collision>
+  </link>
+
+  <link name="sphereB">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="sphereC">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="sphereD">
+    <inertial>
+        <mass value="1"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="1" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="jointAB" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="sphereA"/>
+    <child link="sphereB"/>
+  </joint>
+
+  <joint name="jointBC" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="sphereB"/>
+    <child link="sphereC"/>
+  </joint>
+
+  <joint name="jointCD" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="sphereC"/>
+    <child link="sphereD"/>
+  </joint>
+
+  <!-- These collision filter groups implement filters in four different ways:
+    1. One-sided filtering where one group unilaterally ignores the other group.
+    2. Two-sided filtering where two groups ignore each other.
+    3. Self filtering where a group ignores itself.
+    -->
+
+  <!-- A is in a group that unilaterally ignores the group C is in. This
+  prevents non-sibling spheres A & C from reporting collisions. -->
+  <collision_filter_group name="groupC">
+      <member link="sphereC"/>
+    </collision_filter_group>
+  <collision_filter_group name="one_sided">
+    <member link="sphereA"/>
+    <ignored_collision_filter_group collision_filter_group="groupC"/>
+  </collision_filter_group>
+
+  <!-- A and D are in groups that ignore each other. This prevents non-sibling
+  spheres A & D from reporting collisions. -->
+    <collision_filter_group name="groupA">
+    <member link="sphereA"/>
+    <ignored_collision_filter_group collision_filter_group="groupD"/>
+  </collision_filter_group>
+  <collision_filter_group name="groupD">
+    <member link="sphereD"/>
+    <ignored_collision_filter_group collision_filter_group="groupA"/>
+  </collision_filter_group>
+
+  <!-- B and D belong to the same group that ignores itself. This prevents
+  non-sibling spheres B & D from reporting collisions. -->
+  <collision_filter_group name="self_group">
+    <member link="sphereB"/>
+    <member link="sphereD"/>
+    <ignored_collision_filter_group collision_filter_group="self_group"/>
+  </collision_filter_group>
+</robot>

@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -35,10 +37,13 @@ namespace lcm {
  * operations are taken care of by the Simulator. On the other hand, the user
  * needs to manually replicate this process without the Simulator.
  *
+ * If LCM service in use is a drake::lcm::DrakeLcmLog (not live operation),
+ * then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
+ * the log cursor in concert with the simulation.
+ *
  * @ingroup message_passing
  */
-class LcmSubscriberSystem : public LeafSystem<double>,
-                            public drake::lcm::DrakeLcmMessageHandlerInterface {
+class LcmSubscriberSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmSubscriberSystem)
 
@@ -126,11 +131,36 @@ class LcmSubscriberSystem : public LeafSystem<double>,
    */
   const LcmAndVectorBaseTranslator& get_translator() const;
 
+  /// Returns the sole output port.
+  const OutputPort<double>& get_output_port() const {
+    DRAKE_THROW_UNLESS(this->get_num_output_ports() == 1);
+    return LeafSystem<double>::get_output_port(0);
+  }
+
+  DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
+  const OutputPort<double>& get_output_port(int index) const {
+    DRAKE_THROW_UNLESS(index == 0);
+    return get_output_port();
+  }
+
+  // This system has no input ports.
+  void get_input_port(int) = delete;
+
   /**
-   * Blocks the caller until @p old_message_count is different from the
-   * internal message counter, and the internal message counter is returned.
+   * Blocks the caller until its internal message count exceeds
+   * `old_message_count`.
+   * @param old_message_count Internal message counter.
+   * @param message If non-null, will return the received message.
+   * @pre If `message` is specified, this system must be abstract-valued.
    */
-  int WaitForMessage(int old_message_count) const;
+  int WaitForMessage(
+      int old_message_count, AbstractValue* message = nullptr) const;
+
+  /**
+   * Returns the internal message counter. Meant to be used with
+   * `WaitForMessage`.
+   */
+  int GetInternalMessageCount() const;
 
   /**
    * Returns the message counter stored in @p context.
@@ -177,10 +207,8 @@ class LcmSubscriberSystem : public LeafSystem<double>,
   void ProcessMessageAndStoreToAbstractState(
       AbstractValues* abstract_state) const;
 
-  // Callback entry point from LCM into this class. Also wakes up one thread
-  // block on notification_ if it's not nullptr.
-  void HandleMessage(const std::string& channel, const void* message_buffer,
-                     int message_size) override;
+  // Callback entry point from LCM into this class.
+  void HandleMessage(const void*, int);
 
   // This pair of methods is used for the output port when we're using a
   // translator.
@@ -216,8 +244,6 @@ class LcmSubscriberSystem : public LeafSystem<double>,
 
   // A message counter that's incremented every time the handler is called.
   int received_message_count_{0};
-
-  drake::lcm::DrakeLcmInterface* lcm_interface_;
 };
 
 }  // namespace lcm

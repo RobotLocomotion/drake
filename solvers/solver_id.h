@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/reinit_after_move.h"
+#include "drake/common/reset_after_move.h"
 
 namespace drake {
 namespace solvers {
@@ -33,7 +33,7 @@ class SolverId {
   friend bool operator!=(const SolverId&, const SolverId&);
   friend struct std::less<SolverId>;
 
-  reinit_after_move<int> id_;
+  reset_after_move<int> id_;
   std::string name_;
 };
 

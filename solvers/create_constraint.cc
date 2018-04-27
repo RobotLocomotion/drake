@@ -24,7 +24,9 @@ using std::vector;
 
 using symbolic::Expression;
 using symbolic::Formula;
+using symbolic::Polynomial;
 using symbolic::Variable;
+using symbolic::Variables;
 
 using internal::DecomposeLinearExpression;
 using internal::DecomposeQuadraticPolynomial;
@@ -32,11 +34,34 @@ using internal::ExtractAndAppendVariablesFromExpression;
 using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
 
-Binding<LinearConstraint> ParseLinearConstraint(
+
+Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
+
+  bool is_linear = true;
+  // Check that all elements are linear.
+  for (int i = 0; i < v.size(); ++i) {
+    if (!v(i).is_polynomial()) {
+      is_linear = false;
+      break;
+    }
+    const Polynomial p{v(i)};
+    if (p.TotalDegree() > 1) {
+      is_linear = false;
+      break;
+    }
+  }
+  if (!is_linear) {
+    auto constraint = make_shared<ExpressionConstraint>(v, lb, ub);
+    return CreateBinding(constraint, constraint->vars());
+  }  // else, continue on to linear-specific version below.
+
+  if ((ub-lb).isZero()) {
+    return ParseLinearEqualityConstraint(v, lb);
+  }
 
   // Setup map_var_to_index and var_vec.
   // such that map_var_to_index[var(i)] = i
@@ -101,10 +126,9 @@ Binding<LinearConstraint> ParseLinearConstraint(
     }
     return CreateBinding(make_shared<BoundingBoxConstraint>(new_lb, new_ub),
                          bounding_box_x);
-  } else {
-    return CreateBinding(make_shared<LinearConstraint>(A, new_lb, new_ub),
-                         vars);
   }
+
+  return CreateBinding(make_shared<LinearConstraint>(A, new_lb, new_ub), vars);
 }
 
 namespace {
@@ -220,7 +244,7 @@ void FindBound(const Expression& e1, const Expression& e2, Expression* const e,
 }
 }  // namespace
 
-Binding<LinearConstraint> ParseLinearConstraint(const set<Formula>& formulas) {
+Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
   const auto n = formulas.size();
 
   // Decomposes a set of formulas into a 1D-vector of expressions, `v`, and two
@@ -233,6 +257,7 @@ Binding<LinearConstraint> ParseLinearConstraint(const set<Formula>& formulas) {
   // if `are_all_formulas_equal` is still true. Otherwise, we call
   // `ParseLinearConstraint`.  on the value of this Boolean flag.
   bool are_all_formulas_equal{true};
+  bool is_linear{true};
   for (const Formula& f : formulas) {
     if (is_equal_to(f)) {
       // f := (lhs == rhs)
@@ -256,28 +281,40 @@ Binding<LinearConstraint> ParseLinearConstraint(const set<Formula>& formulas) {
       are_all_formulas_equal = false;
     } else {
       ostringstream oss;
-      oss << "ParseLinearConstraint(const set<Formula>& "
+      oss << "ParseConstraint(const set<Formula>& "
           << "formulas) is called while its argument 'formulas' includes "
           << "a formula " << f
           << " which is not a relational formula using one of {==, <=, >=} "
           << "operators.";
       throw runtime_error(oss.str());
     }
+
+    // Check that elements are linear.
+    if (is_linear) {
+      if (!v(i).is_polynomial()) {
+        is_linear = false;
+      } else {
+        const Polynomial p{v(i)};
+        if (p.TotalDegree() > 1) {
+          is_linear = false;
+        }
+      }
+    }
     ++i;
   }
-  if (are_all_formulas_equal) {
+  if (are_all_formulas_equal && is_linear) {
     return ParseLinearEqualityConstraint(v, lb);
   } else {
-    return ParseLinearConstraint(v, lb, ub);
+    return ParseConstraint(v, lb, ub);
   }
 }
 
-Binding<LinearConstraint> ParseLinearConstraint(const Formula& f) {
+Binding<Constraint> ParseConstraint(const Formula& f) {
   if (is_equal_to(f)) {
     // e1 == e2
     const Expression& e1{get_lhs_expression(f)};
     const Expression& e2{get_rhs_expression(f)};
-    return ParseLinearEqualityConstraint(e1 - e2, 0.0);
+    return ParseConstraint(e1 - e2, 0.0, 0.0);
   } else if (is_greater_than_or_equal_to(f)) {
     // e1 >= e2
     const Expression& e1{get_lhs_expression(f)};
@@ -285,7 +322,7 @@ Binding<LinearConstraint> ParseLinearConstraint(const Formula& f) {
     Expression e;
     double ub = 0.0;
     FindBound(e2, e1, &e, &ub);
-    return ParseLinearConstraint(e, -numeric_limits<double>::infinity(), ub);
+    return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
   } else if (is_less_than_or_equal_to(f)) {
     // e1 <= e2
     const Expression& e1{get_lhs_expression(f)};
@@ -293,13 +330,13 @@ Binding<LinearConstraint> ParseLinearConstraint(const Formula& f) {
     Expression e;
     double ub = 0.0;
     FindBound(e1, e2, &e, &ub);
-    return ParseLinearConstraint(e, -numeric_limits<double>::infinity(), ub);
+    return ParseConstraint(e, -numeric_limits<double>::infinity(), ub);
   }
   if (is_conjunction(f)) {
-    return ParseLinearConstraint(get_operands(f));
+    return ParseConstraint(get_operands(f));
   }
   ostringstream oss;
-  oss << "ParseLinearConstraint is called with a formula " << f
+  oss << "ParseConstraint is called with a formula " << f
       << " which is neither a relational formula using one of {==, <=, >=} "
          "operators nor a conjunction of those relational formulas.";
   throw runtime_error(oss.str());
@@ -365,6 +402,29 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
     beq(i) = b(i) - constant_term;
   }
   return CreateBinding(make_shared<LinearEqualityConstraint>(A, beq), vars);
+}
+
+Binding<QuadraticConstraint> ParseQuadraticConstraint(
+    const symbolic::Expression& e, double lower_bound, double upper_bound) {
+  // First build an Eigen vector that contains all the bound variables.
+  auto p = ExtractVariablesFromExpression(e);
+  const auto& vars_vec = p.first;
+  const auto& map_var_to_index = p.second;
+
+  // Now decompose the expression into coefficients and monomials.
+  const symbolic::Polynomial poly{e};
+
+  Eigen::MatrixXd Q(vars_vec.size(), vars_vec.size());
+  Eigen::VectorXd b(vars_vec.size());
+  double constant_term;
+  // Decompose the polynomial as 0.5xᵀQx + bᵀx + k.
+  DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
+  // The constraint to be imposed is
+  // lb - k ≤ 0.5 xᵀQx + bᵀx ≤ ub - k
+  return CreateBinding(
+      make_shared<QuadraticConstraint>(Q, b, lower_bound - constant_term,
+                                       upper_bound - constant_term),
+      vars_vec);
 }
 
 shared_ptr<Constraint> MakePolynomialConstraint(

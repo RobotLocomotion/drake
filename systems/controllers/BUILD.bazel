@@ -9,8 +9,22 @@ drake_cc_library(
     name = "state_feedback_controller_interface",
     hdrs = ["state_feedback_controller_interface.h"],
     deps = [
-        "//drake/systems/framework:input_port_descriptor",
-        "//drake/systems/framework:system",
+        "//systems/framework:input_port_descriptor",
+        "//systems/framework:system",
+    ],
+)
+
+drake_cc_library(
+    name = "dynamic_programming",
+    srcs = ["dynamic_programming.cc"],
+    hdrs = ["dynamic_programming.h"],
+    deps = [
+        "//common:essential",
+        "//math:wrap_to",
+        "//solvers:mathematical_program",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/primitives:barycentric_system",
     ],
 )
 
@@ -19,8 +33,8 @@ drake_cc_library(
     srcs = ["inverse_dynamics.cc"],
     hdrs = ["inverse_dynamics.h"],
     deps = [
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
     ],
 )
 
@@ -32,12 +46,12 @@ drake_cc_library(
         ":inverse_dynamics",
         ":pid_controller",
         ":state_feedback_controller_interface",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:demultiplexer",
-        "//drake/systems/primitives:pass_through",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:pass_through",
     ],
 )
 
@@ -46,9 +60,9 @@ drake_cc_library(
     srcs = ["linear_model_predictive_controller.cc"],
     hdrs = ["linear_model_predictive_controller.h"],
     deps = [
-        "//drake/common/trajectories:piecewise_polynomial_trajectory",
-        "//drake/systems/primitives:linear_system",
-        "//drake/systems/trajectory_optimization:direct_transcription",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/primitives:linear_system",
+        "//systems/trajectory_optimization:direct_transcription",
     ],
 )
 
@@ -57,10 +71,11 @@ drake_cc_library(
     srcs = ["linear_quadratic_regulator.cc"],
     hdrs = ["linear_quadratic_regulator.h"],
     deps = [
-        "//drake/common:is_approx_equal_abstol",
-        "//drake/math:continuous_algebraic_riccati_equation",
-        "//drake/systems/framework",
-        "//drake/systems/primitives:linear_system",
+        "//common:is_approx_equal_abstol",
+        "//math:continuous_algebraic_riccati_equation",
+        "//math:discrete_algebraic_riccati_equation",
+        "//systems/framework",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -70,8 +85,8 @@ drake_cc_library(
     hdrs = ["pid_controller.h"],
     deps = [
         ":state_feedback_controller_interface",
-        "//drake/systems/framework:leaf_system",
-        "//drake/systems/primitives:matrix_gain",
+        "//systems/framework:leaf_system",
+        "//systems/primitives:matrix_gain",
     ],
 )
 
@@ -81,9 +96,9 @@ drake_cc_library(
     hdrs = ["pid_controlled_system.h"],
     deps = [
         ":pid_controller",
-        "//drake/systems/primitives:adder",
-        "//drake/systems/primitives:constant_vector_source",
-        "//drake/systems/primitives:saturation",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:saturation",
     ],
 )
 
@@ -92,8 +107,8 @@ drake_cc_library(
     srcs = ["setpoint.cc"],
     hdrs = ["setpoint.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/math:geometric_transform",
+        "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 
@@ -102,14 +117,14 @@ drake_cc_library(
     srcs = ["controlUtil.cpp"],
     hdrs = ["controlUtil.h"],
     deps = [
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/math:autodiff",
-        "//drake/math:expmap",
-        "//drake/math:geometric_transform",
-        "//drake/multibody:resolve_center_of_pressure",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/util",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:autodiff",
+        "//math:expmap",
+        "//math:geometric_transform",
+        "//multibody:resolve_center_of_pressure",
+        "//multibody:rigid_body_tree",
+        "//util",
     ],
 )
 
@@ -127,9 +142,9 @@ drake_cc_library(
     deps = [
         ":control_util",
         ":side",
-        "//drake/common:essential",
-        "//drake/multibody:rigid_body_tree",
-        "//drake/util",
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//util",
     ],
 )
 
@@ -139,8 +154,8 @@ drake_cc_library(
     hdrs = ["zmp_planner.h"],
     deps = [
         ":linear_quadratic_regulator",
-        "//drake/common:essential",
-        "//drake/common/trajectories:piecewise_polynomial",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -149,7 +164,7 @@ drake_cc_library(
     srcs = ["zmpUtil.cpp"],
     hdrs = ["zmpUtil.h"],
     deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
+        "//common/trajectories:piecewise_polynomial",
     ],
 )
 
@@ -163,7 +178,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":qp_common",
-        "//drake/common:essential",
+        "//common:essential",
         "@yaml_cpp",
     ],
 )
@@ -173,11 +188,11 @@ drake_cc_library(
     srcs = ["polynomial_encode_decode.cc"],
     hdrs = ["polynomial_encode_decode.h"],
     deps = [
-        "//drake/common/trajectories:piecewise_polynomial",
-        "//drake/lcmtypes:piecewise_polynomial",
-        "//drake/lcmtypes:polynomial",
-        "//drake/lcmtypes:polynomial_matrix",
-        "//drake/util",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:piecewise_polynomial",
+        "//lcmtypes:polynomial",
+        "//lcmtypes:polynomial_matrix",
+        "//util",
     ],
 )
 
@@ -197,17 +212,16 @@ drake_cc_library(
         ":polynomial_encode_decode",
         ":qp_common",
         ":yaml_util",
-        "//drake/common:essential",
-        "//drake/common:find_resource",
-        "//drake/common:is_approx_equal_abstol",
-        "//drake/lcmtypes:qp_controller_input",
-        "//drake/lcmtypes:zmp_com_observer_state",
-        "//drake/math:geometric_transform",
-        "//drake/multibody/joints",
-        "//drake/multibody/parsers",
-        "//drake/solvers:gurobi_qp",
-        "//drake/util",
-        "//drake/util:lcm_util",
+        "//common:essential",
+        "//common:find_resource",
+        "//common:is_approx_equal_abstol",
+        "//lcmtypes:qp_controller_input",
+        "//lcmtypes:zmp_com_observer_state",
+        "//math:geometric_transform",
+        "//multibody/joints",
+        "//multibody/parsers",
+        "//solvers:gurobi_qp",
+        "//util",
     ],
 )
 
@@ -224,38 +238,52 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "dynamic_programming_test",
+    # Test size increased to not timeout when run with Valgrind.
+    size = "medium",
+    deps = [
+        ":dynamic_programming",
+        ":linear_quadratic_regulator",
+        "//common/proto:call_matlab",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/primitives:integrator",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_encode_decode_test",
     deps = [
         ":polynomial_encode_decode",
-        "//drake/common/test_utilities",
-        "//drake/common/trajectories:random_piecewise_polynomial",
+        "//common/test_utilities",
+        "//common/trajectories:random_piecewise_polynomial",
     ],
 )
 
 drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
-        "//drake/examples/simple_four_bar:models",
-        "//drake/manipulation/models/iiwa_description:models",
+        "//examples/simple_four_bar:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_dynamics",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
 drake_cc_googletest(
     name = "inverse_dynamics_controller_test",
     data = [
-        "//drake/manipulation/models/iiwa_description:models",
+        "//manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":inverse_dynamics_controller",
-        "//drake/common:find_resource",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsers",
     ],
 )
 
@@ -263,9 +291,9 @@ drake_cc_googletest(
     name = "linear_model_predictive_controller_test",
     deps = [
         ":linear_model_predictive_controller",
-        "//drake/common/test_utilities:eigen_matrix_compare",
-        "//drake/math:discrete_algebraic_riccati_equation",
-        "//drake/systems/analysis:simulator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:discrete_algebraic_riccati_equation",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -273,7 +301,7 @@ drake_cc_googletest(
     name = "linear_quadratic_regulator_test",
     deps = [
         ":linear_quadratic_regulator",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -281,7 +309,7 @@ drake_cc_googletest(
     name = "pid_controlled_system_test",
     deps = [
         ":pid_controlled_system",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -289,7 +317,7 @@ drake_cc_googletest(
     name = "pid_controller_test",
     deps = [
         ":pid_controller",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -298,7 +326,7 @@ drake_cc_googletest(
     srcs = ["test/setpoint_test.cc"],
     deps = [
         ":setpoint",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -306,7 +334,7 @@ drake_cc_googletest(
     name = "zmp_planner_test",
     deps = [
         ":zmp_test_util",
-        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

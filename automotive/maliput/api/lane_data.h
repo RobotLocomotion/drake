@@ -4,10 +4,12 @@
 #include <ostream>
 #include <string>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -169,6 +171,14 @@ class GeoPositionT {
   void set_z(const T& z) { xyz_.z() = z; }
   //@}
 
+  /// Constructs a GeoPositionT<double> from other types, producing a clone if
+  /// already double.
+  GeoPositionT<double> MakeDouble() const {
+    return {ExtractDoubleOrThrow(xyz_.x()),
+            ExtractDoubleOrThrow(xyz_.y()),
+            ExtractDoubleOrThrow(xyz_.z())};
+  }
+
  private:
   explicit GeoPositionT(const Vector3<T>& xyz) : xyz_(xyz) {}
 
@@ -242,6 +252,14 @@ class LanePositionT {
   /// Sets `h` value.
   void set_h(const T& h) { srh_.z() = h; }
   //@}
+
+  /// Constructs a LanePositionT<double> from other types, producing a clone if
+  /// already double.
+  LanePositionT<double> MakeDouble() const {
+    return {ExtractDoubleOrThrow(srh_.x()),
+            ExtractDoubleOrThrow(srh_.y()),
+            ExtractDoubleOrThrow(srh_.z())};
+  }
 
  private:
   explicit LanePositionT(const Vector3<T>& srh) : srh_(srh) {}

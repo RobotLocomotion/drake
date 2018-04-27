@@ -61,7 +61,7 @@ int DoMain() {
       (!FLAGS_urdf.empty() ? FLAGS_urdf : FindResourceOrThrow(kIiwaUrdf));
   auto plan_source = builder.AddSystem<RobotPlanInterpolator>(urdf);
 
-  builder.Connect(plan_sub->get_output_port(0),
+  builder.Connect(plan_sub->get_output_port(),
                   plan_source->get_plan_input_port());
 
   const int num_joints = FLAGS_num_joints;
@@ -77,7 +77,7 @@ int DoMain() {
   auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
       num_joints, num_fingers);
 
-  builder.Connect(status_sub->get_output_port(0),
+  builder.Connect(status_sub->get_output_port(),
                   status_receiver->get_input_port(0));
   builder.Connect(status_receiver->get_output_port(0),
                   plan_source->get_state_input_port());
@@ -143,7 +143,7 @@ int DoMain() {
   builder.Connect(command_mux->get_output_port(0),
                   command_sender->get_input_port(0));
   builder.Connect(command_sender->get_output_port(0),
-                  command_pub->get_input_port(0));
+                  command_pub->get_input_port());
 
   auto diagram = builder.Build();
 

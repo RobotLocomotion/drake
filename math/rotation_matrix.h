@@ -6,386 +6,687 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/common/number_traits.h"
+#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace math {
-/**
- * Computes one of the quaternion from a rotation matrix.
- * This implementation is adapted from simbody
- * https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
- * Notice that there are two quaternions corresponding to the same rotation,
- * namely `q` and `-q` represent the same rotation.
- * @param M A 3 x 3 rotation matrix.
- * @return a 4 x 1 unit length vector, the quaternion corresponding to the
- * rotation matrix.
- */
-template <typename Derived>
-Vector4<typename Derived::Scalar> rotmat2quat(
-    const Eigen::MatrixBase<Derived>& M) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
 
-  typedef typename Derived::Scalar Scalar;
+/// This class represents a 3x3 rotation matrix between two arbitrary frames
+/// A and B and helps ensure users create valid rotation matrices.  This class
+/// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A
+/// to right-handed orthogonal unit vectors Bx, By, Bz fixed in frame B.
+/// The monogram notation for the rotation matrix relating A to B is `R_AB`.
+/// See @ref multibody_quantities for monogram notation for dynamics.
+/// See @ref orientation_discussion "a discussion on rotation matrices".
+///
+/// @note This class does not store the frames associated with a rotation matrix
+/// nor does it enforce strict proper usage of this class with vectors.
+///
+/// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+/// - double
+/// - AutoDiffXd
+///
+// TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
+template <typename T>
+class RotationMatrix {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationMatrix)
 
-  Vector4<Scalar> q;
+  /// Constructs a 3x3 identity %RotationMatrix -- which corresponds to
+  /// aligning two frames (so that unit vectors Ax = Bx, Ay = By, Az = Bz).
+  RotationMatrix() {}
 
-  // Check if the trace is larger than any diagonal
-  Scalar tr = M.trace();
-  if (tr >= M(0, 0) && tr >= M(1, 1) && tr >= M(2, 2)) {
-    q(0) = 1 + tr;
-    q(1) = M(2, 1) - M(1, 2);
-    q(2) = M(0, 2) - M(2, 0);
-    q(3) = M(1, 0) - M(0, 1);
-  } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
-    q(0) = M(2, 1) - M(1, 2);
-    q(1) = Scalar(1) - (tr - 2 * M(0, 0));
-    q(2) = M(0, 1) + M(1, 0);
-    q(3) = M(0, 2) + M(2, 0);
-  } else if (M(1, 1) >= M(2, 2)) {
-    q(0) = M(0, 2) - M(2, 0);
-    q(1) = M(0, 1) + M(1, 0);
-    q(2) = Scalar(1) - (tr - 2 * M(1, 1));
-    q(3) = M(1, 2) + M(2, 1);
-  } else {
-    q(0) = M(1, 0) - M(0, 1);
-    q(1) = M(0, 2) + M(2, 0);
-    q(2) = M(1, 2) + M(2, 1);
-    q(3) = 1 - (tr - 2 * M(2, 2));
-  }
-  Scalar scale = q.norm();
-  q /= scale;
-  return q;
-}
-
-/**
- * Computes the angle axis representation from a rotation matrix.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param R  the 3 x 3 rotation matrix.
- * @return angle-axis representation, 4 x 1 vector as [x, y, z, angle].
- * [x, y, z] is a unit vector and 0 <= angle <= PI.
- */
-template <typename Derived>
-Vector4<typename Derived::Scalar> rotmat2axis(
-    const Eigen::MatrixBase<Derived>& R) {
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
-  Eigen::AngleAxis<typename Derived::Scalar> angle_axis(R);
-
-  // Before October 2016, Eigen calculated  0 <= angle <= 2*PI.
-  // After  October 2016, Eigen calculates  0 <= angle <= PI.
-  // Ensure consistency between pre/post October 2016 Eigen versions.
-  using Scalar = typename Derived::Scalar;
-  Scalar& angle = angle_axis.angle();
-  Vector3<Scalar>& axis = angle_axis.axis();
-  if (angle >= M_PI) {
-    angle = 2 * M_PI - angle;
-    axis = -axis;
+  /// Constructs a %RotationMatrix from a Matrix3.
+  /// @param[in] R an allegedly valid rotation matrix.
+  /// @throws exception std::logic_error in debug builds if R fails IsValid(R).
+  explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    SetOrThrowIfNotValid(R);
+#else
+    SetUnchecked(R);
+#endif
   }
 
-  Eigen::Vector4d aa;
-  aa.head<3>() = axis;
-  aa(3) = angle_axis.angle();
-  DRAKE_ASSERT(0 <= aa(3) && aa(3) <= M_PI);
-  return aa;
-}
+  /// Constructs a %RotationMatrix from an Eigen::Quaternion.
+  /// @param[in] quaternion a non-zero, finite quaternion which may or may not
+  /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `quaternion` fails IsValid(R).  For example, an
+  /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
+  /// @note This method has the effect of normalizing its `quaternion` argument,
+  /// without the inefficiency of the square-root associated with normalization.
+  // TODO(mitiguy) Although this method is fairly efficient, consider adding an
+  // optional second argument if `quaternion` is known to be normalized apriori
+  // or for some reason the calling site does not want `quaternion` normalized.
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    // Cost for various way to create a rotation matrix from a quaternion.
+    // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
+    // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
+    // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
+    // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
+    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
 
-/**
- * Computes SpaceXYZ Euler angles from rotation matrix.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param R 3x3 rotation matrix.
- * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
- * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
- * @see rpy2rotmat
- */
-template <typename Derived>
-Vector3<typename Derived::Scalar> rotmat2rpy(
-    const Eigen::MatrixBase<Derived>& R) {
-  // TO-DO(daihongkai@gmail.com) uncomment this block when the Eigen bug
-  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1301
-  // is fixed. Currently Eigen's EulerAngles does not guarantee the range of
-  // the second angle covers PI.
-  // Also delete Simbody's derived implementation
+  /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
+  /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
+  /// direction herein called `lambda`) is non-zero and finite, but which may or
+  /// may not have unit length [i.e., `lambda.norm()` does not have to be 1].
+  /// @throws exception std::logic_error in debug builds if the rotation matrix
+  /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
+  /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
+  /// @note In general, the %RotationMatrix constructed by passing a non-unit
+  /// `lambda` to this method is different than the %RotationMatrix produced by
+  /// converting `lambda` to an un-normalized quaternion and calling the
+  /// %RotationMatrix constructor (above) with that un-normalized quaternion.
+  // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
+  // known to be normalized apriori or calling site does not want normalization.
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    const Vector3<T>& lambda = theta_lambda.axis();
+    const T norm = lambda.norm();
+    const T& theta = theta_lambda.angle();
+    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
 
-  /*EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
+  /// @param[in] theta radian measure of rotation angle about Ax.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Ax = Bx`.
+  /// ```
+  ///        ⎡ 1       0                 0  ⎤
+  /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
+  ///        ⎣ 0   sin(theta)    cos(theta) ⎦
+  /// ```
+  static RotationMatrix<T> MakeXRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << 1,  0,  0,
+         0,  c, -s,
+         0,  s,  c;
+    // clang-format on
+    return RotationMatrix(R);
+  }
 
-  auto euler_angles =
-      Eigen::EulerAngles<typename Derived::Scalar, Eigen::EulerSystemZYX>::
-          template FromRotation<false, false, false>(R);
-  return drake::Vector3<typename Derived::Scalar>(
-      euler_angles.gamma(), euler_angles.beta(), euler_angles.alpha());
-*/
-  // This implementation is adapted from simbody
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
+  /// @param[in] theta radian measure of rotation angle about Ay.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Ay = By`.
+  /// ```
+  ///        ⎡  cos(theta)   0   sin(theta) ⎤
+  /// R_AB = ⎢          0    1           0  ⎥
+  ///        ⎣ -sin(theta)   0   cos(theta) ⎦
+  /// ```
+  static RotationMatrix<T> MakeYRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R <<  c,  0,  s,
+          0,  1,  0,
+         -s,  0,  c;
+    // clang-format on
+    return RotationMatrix(R);
+  }
+
+  /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
+  /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
+  /// @param[in] theta radian measure of rotation angle about Az.
+  /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
+  /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
+  /// a right-handed rotation relative to A by an angle `theta` about `Az = Bz`.
+  /// ```
+  ///        ⎡ cos(theta)  -sin(theta)   0 ⎤
+  /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
+  ///        ⎣         0            0    1 ⎦
+  /// ```
+  static RotationMatrix<T> MakeZRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << c, -s,  0,
+         s,  c,  0,
+         0,  0,  1;
+    // clang-format on
+    return RotationMatrix(R);
+  }
+
+  /// Makes the %RotationMatrix for a Body-fixed (intrinsic) Z-Y-X rotation by
+  /// "yaw-pitch-roll" angles `[y, p, r]`, which is equivalent to a Space-fixed
+  /// (extrinsic) X-Y-Z rotation by "roll-pitch-yaw angles" `[r, p, y]`.
+  /// @param[in] ypr radian measures of three angles [yaw, pitch, roll].
+  /// @note Denoting yaw `y`, pitch `p`, roll `r`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  ///      =       R_AB          *        R_BC          *        R_CD
+  /// ```
+  /// Note: In this discussion, A is the Space frame and D is the Body frame.
+  /// One way to visualize this rotation sequence is by introducing intermediate
+  /// frames B and C (useful constructs to understand this rotation sequence).
+  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
+  /// Then D is subjected to successive right-handed rotations relative to A.
+  /// @li 1st rotation R_AB: Frames B, C, D collectively (as if welded together)
+  /// rotate relative to frame A by a yaw angle `y` about `Az = Bz`.
+  /// @li 2nd rotation R_BC: Frames C, D collectively (as if welded together)
+  /// rotate relative to frame B by a pitch angle `p` about `By = Cy`.
+  /// @li 3rd rotation R_CD: %Frame D rotates relative to frame C by a roll
+  /// angle `r` about `Cx = Dx`.
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeBodyZYXRotation(const Vector3<T>& ypr) {
+    const Vector3<T> roll_pitch_yaw(ypr(2), ypr(1), ypr(0));
+    return RotationMatrix<T>::MakeSpaceXYZRotation(roll_pitch_yaw);
+  }
+
+  /// Makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
+  /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
+  /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
+  /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
+  /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
+  /// ```
+  ///        ⎡cos(y) -sin(y)  0⎤   ⎡ cos(p)  0  sin(p)⎤   ⎡1      0        0 ⎤
+  /// R_AD = ⎢sin(y)  cos(y)  0⎥ * ⎢     0   1      0 ⎥ * ⎢0  cos(r)  -sin(r)⎥
+  ///        ⎣    0       0   1⎦   ⎣-sin(p)  0  cos(p)⎦   ⎣0  sin(r)   cos(r)⎦
+  ///      =       R_AB          *        R_BC          *        R_CD
+  /// ```
+  /// Note: In this discussion, A is the Space frame and D is the Body frame.
+  /// One way to visualize this rotation sequence is by introducing intermediate
+  /// frames B and C (useful constructs to understand this rotation sequence).
+  /// Initially, the frames are aligned so `Di = Ci = Bi = Ai (i = x, y, z)`.
+  /// Then D is subjected to successive right-handed rotations relative to A.
+  /// @li 1st rotation R_CD: %Frame D rotates relative to frames C, B, A by a
+  /// roll angle `r` about `Dx = Cx`.  Note: D and C are no longer aligned.
+  /// @li 2nd rotation R_BC: Frames D, C (collectively -- as if welded together)
+  /// rotate relative to frame B, A by a pitch angle `p` about `Cy = By`.
+  /// Note: C and B are no longer aligned.
+  /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
+  /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
+  /// Note: B and A are no longer aligned.
+  /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
+  static RotationMatrix<T> MakeSpaceXYZRotation(const Vector3<T>& rpy) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c0 = cos(rpy(0)), s0 = sin(rpy(0));
+    const T c1 = cos(rpy(1)), s1 = sin(rpy(1));
+    const T c2 = cos(rpy(2)), s2 = sin(rpy(2));
+    // clang-format off
+    R << c2 * c1,  c2 * s1 * s0 - s2 * c0,  c2 * s1 * c0 + s2 * s0,
+         s2 * c1,  s2 * s1 * s0 + c2 * c0,  s2 * s1 * c0 - c2 * s0,
+        -s1,            c1 * s0,                 c1 * c0;
+    // clang-format on
+    return RotationMatrix(R);
+  }
+
+  /// Creates a %RotationMatrix templatized on a scalar type U from a
+  /// %RotationMatrix templatized on scalar type T.  For example,
+  /// ```
+  /// RotationMatrix<double> source = RotationMatrix<double>::Identity();
+  /// RotationMatrix<AutoDiffXd> foo = source.cast<AutoDiffXd>();
+  /// ```
+  /// @tparam U Scalar type on which the returned %RotationMatrix is templated.
+  /// @note `RotationMatrix<From>::cast<To>()` creates a new
+  /// `RotationMatrix<To>` from a `RotationMatrix<From>` but only if
+  /// type `To` is constructible from type `From`.
+  /// This cast method works in accordance with Eigen's cast method for Eigen's
+  /// %Matrix3 that underlies this %RotationMatrix.  For example, Eigen
+  /// currently allows cast from type double to AutoDiffXd, but not vice-versa.
+  template <typename U>
+  RotationMatrix<U> cast() const {
+    const Matrix3<U> m = R_AB_.template cast<U>();
+    return RotationMatrix<U>(m, true);
+  }
+
+  /// Sets `this` %RotationMatrix from a Matrix3.
+  /// @param[in] R an allegedly valid rotation matrix.
+  /// @throws exception std::logic_error in debug builds if R fails IsValid(R).
+  void SetOrThrowIfNotValid(const Matrix3<T>& R) {
+    ThrowIfNotValid(R);
+    SetUnchecked(R);
+  }
+
+  /// Returns the 3x3 identity %RotationMatrix.
+  // @internal This method's name was chosen to mimic Eigen's Identity().
+  static const RotationMatrix<T>& Identity() {
+    static const never_destroyed<RotationMatrix<T>> kIdentity;
+    return kIdentity.access();
+  }
+
+  /// Returns `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
+  /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
+  // @internal This method's name was chosen to mimic Eigen's inverse().
+  RotationMatrix<T> inverse() const {
+    return RotationMatrix<T>(R_AB_.transpose());
+  }
+
+  /// Returns the Matrix3 underlying a %RotationMatrix.
+  const Matrix3<T>& matrix() const { return R_AB_; }
+
+  /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
+  /// matrix `R_BC`.  On return, `this` is set to equal `R_AB * R_BC`.
+  /// @param[in] other %RotationMatrix that post-multiplies `this`.
+  /// @returns `this` rotation matrix which has been multiplied by `other`.
+  /// @note It is possible (albeit improbable) to create an invalid rotation
+  /// matrix by accumulating round-off error with a large number of multiplies.
+  RotationMatrix<T>& operator*=(const RotationMatrix<T>& other) {
+    SetUnchecked(matrix() * other.matrix());
+    return *this;
+  }
+
+  /// Calculates `this` rotation matrix `R_AB` multiplied by `other` rotation
+  /// matrix `R_BC`, returning the composition `R_AB * R_BC`.
+  /// @param[in] other %RotationMatrix that post-multiplies `this`.
+  /// @returns rotation matrix that results from `this` multiplied by `other`.
+  /// @note It is possible (albeit improbable) to create an invalid rotation
+  /// matrix by accumulating round-off error with a large number of multiplies.
+  RotationMatrix<T> operator*(const RotationMatrix<T>& other) const {
+    return RotationMatrix<T>(matrix() * other.matrix(), true);
+  }
+
+  /// Calculates `this` rotation matrix R multiplied by an arbitrary Vector3.
+  /// @param[in] v 3x1 vector that post-multiplies `this`.
+  /// @returns 3x1 vector that results from `R * v`.
+  Vector3<T> operator*(const Vector3<T>& v) const {
+    return Vector3<T>(matrix() * v);
+  }
+
+  /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
+  /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
+  /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
+  /// @param[in] R matrix being checked for orthonormality.
+  /// @returns `‖R ⋅ Rᵀ - I‖∞`
+  static T GetMeasureOfOrthonormality(const Matrix3<T>& R) {
+    const Matrix3<T> m = R * R.transpose();
+    return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
+  }
+
+  /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
+  /// specified by `tolerance`.
+  /// @param[in] R an allegedly orthonormal rotation matrix.
+  /// @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
+  /// and the identity matrix I, i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`.
+  /// @returns `true` if R is an orthonormal matrix.
+  static bool IsOrthonormal(const Matrix3<T>& R, double tolerance) {
+    return GetMeasureOfOrthonormality(R) <= tolerance;
+  }
+
+  /// Tests if a generic Matrix3 seems to be a proper orthonormal rotation
+  /// matrix to within the threshold specified by `tolerance`.
+  /// @param[in] R an allegedly valid rotation matrix.
+  /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
+  /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
+  /// @returns `true` if R is a valid rotation matrix.
+  static bool IsValid(const Matrix3<T>& R, double tolerance) {
+    return IsOrthonormal(R, tolerance) && R.determinant() > 0;
+  }
+
+  /// Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
+  /// within the threshold of get_internal_tolerance_for_orthonormality().
+  /// @param[in] R an allegedly valid rotation matrix.
+  /// @returns `true` if R is a valid rotation matrix.
+  static bool IsValid(const Matrix3<T>& R) {
+    return IsValid(R, get_internal_tolerance_for_orthonormality());
+  }
+
+  /// Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
+  /// to within the threshold of get_internal_tolerance_for_orthonormality().
+  /// @returns `true` if `this` is a valid rotation matrix.
+  bool IsValid() const { return IsValid(matrix()); }
+
+  /// Returns `true` if `this` is exactly equal to the identity matrix.
+  bool IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
+
+  /// Returns true if `this` is equal to the identity matrix to within the
+  /// threshold of get_internal_tolerance_for_orthonormality().
+  bool IsIdentityToInternalTolerance() const {
+    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
+                           get_internal_tolerance_for_orthonormality());
+  }
+
+  /// Compares each element of `this` to the corresponding element of `other`
+  /// to check if they are the same to within a specified `tolerance`.
+  /// @param[in] other %RotationMatrix to compare to `this`.
+  /// @param[in] tolerance maximum allowable absolute difference between the
+  /// matrix elements in `this` and `other`.
+  /// @returns `true` if `‖this - other‖∞ <= tolerance`.
+  bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
+    return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+  }
+
+  /// Compares each element of `this` to the corresponding element of `other`
+  /// to check if they are exactly the same.
+  /// @param[in] other %RotationMatrix to compare to `this`.
+  /// @returns true if each element of `this` is exactly equal to the
+  /// corresponding element in `other`.
+  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+    return matrix() == other.matrix();
+  }
+
+  /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
+  /// value of the difference between the elements of `this` and `other`).
+  /// @param[in] other %RotationMatrix to subtract from `this`.
+  /// @returns `‖this - other‖∞`
+  T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
+    return GetMaximumAbsoluteDifference(matrix(), other.matrix());
+  }
+
+  /// Given an approximate rotation matrix M, finds the %RotationMatrix R
+  /// closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  /// with a Frobenius norm).  Hence, this method creates a %RotationMatrix R
+  /// from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  /// subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  /// problem, closeness can also be measured by forming the orthonormal matrix
+  /// R whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  /// where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  /// this double-summation is called the Frobenius norm.
+  /// @param[in] M a 3x3 matrix.
+  /// @param[out] quality_factor.  The quality of M as a rotation matrix.
+  /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
+  /// that when M multiplies a unit vector (magnitude 1), a vector of magnitude
+  /// as large as 1.25 may result.  `quality_factor` = 0.8 means that when M
+  /// multiplies a unit vector, a vector of magnitude as small as 0.8 may
+  /// result.  `quality_factor` = 0 means M is singular, so at least one of the
+  /// bases related by matrix M does not span 3D space (when M multiples a unit
+  /// vector, a vector of magnitude as small as 0 may result).
+  /// @returns proper orthonormal matrix R that is closest to M.
+  /// @throws exception std::logic_error if R fails IsValid(R).
+  /// @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
+  /// Institute) proved that for this problem, the same R that minimizes the
+  /// Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
+  /// which is defined [Dahleh, Section 4.2] as the column matrix u which
+  /// maximizes `‖(R - M) u‖ / ‖u‖`, where `u ≠ 0`.  Since the matrix-2 norm of
+  /// any matrix A is equal to the maximum singular value of A, minimizing the
+  /// matrix-2 norm of (R - M) is equivalent to minimizing the maximum singular
+  /// value of (R - M).
+  ///
+  /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
+  /// Engineering and Computer Science, Massachusetts Institute of Technology"
+  /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
+  // @internal This function is not generated for symbolic Expression.
+  // @internal This function's name is referenced in Doxygen documentation.
+  template <typename S = T>
+  static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
+  ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
+    const Matrix3<S> M_orthonormalized =
+        ProjectMatrix3ToOrthonormalMatrix3(M, quality_factor);
+    ThrowIfNotValid(M_orthonormalized);
+    return RotationMatrix<S>(M_orthonormalized, true);
+  }
+
+  /// Returns an internal tolerance that checks rotation matrix orthonormality.
+  /// @returns internal tolerance (small multiplier of double-precision epsilon)
+  /// used to check whether or not a rotation matrix is orthonormal.
+  /// @note The tolerance is chosen by developers to ensure a reasonably
+  /// valid (orthonormal) rotation matrix.
+  /// @note To orthonormalize a 3x3 matrix, use ProjectToRotationMatrix().
+  static double get_internal_tolerance_for_orthonormality() {
+    return kInternalToleranceForOrthonormality_;
+  }
+
+  /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
+  /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
+  /// returned by this method chooses the quaternion with q(0) >= 0.
+  // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
-  using std::atan2;
-  using std::sqrt;
-  using Scalar = typename Derived::Scalar;
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
+  Eigen::Quaternion<T> ToQuaternion() const {
+    const Matrix3<T>& M = R_AB_;
+    T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
 
-  int i = 2;
-  int j = 1;
-  int k = 0;
-
-  Scalar plusMinus = -1;
-  Scalar minusPlus = 1;
-
-  // Calculates theta2 using lots of information in the rotation matrix.
-  Scalar Rsum = sqrt((R(i, i) * R(i, i) + R(i, j) * R(i, j) +
-                      R(j, k) * R(j, k) + R(k, k) * R(k, k)) /
-                     2);
-
-  // Rsum = abs(cos(theta2)) is inherently positive.
-  Scalar theta2 = atan2(plusMinus * R(i, k), Rsum);
-  Scalar theta1, theta3;
-
-  // There is a singularity when cos(theta2) == 0.
-  if (Rsum > 4 * Eigen::NumTraits<Scalar>::epsilon()) {
-    theta1 = atan2(minusPlus * R(j, k), R(k, k));
-    theta3 = atan2(minusPlus * R(i, j), R(i, i));
-  } else if (plusMinus * R(i, k) > 0) {
-    // spos = 2*sin(theta1 + plusMinus*theta3)
-    Scalar spos = R(j, i) + plusMinus * R(k, j);
-    // cpos = 2*cos(theta1 + plusMinus*theta3)
-    Scalar cpos = R(j, j) + minusPlus * R(k, i);
-    Scalar theta1PlusMinusTheta3 = atan2(spos, cpos);
-    theta1 = theta1PlusMinusTheta3;  // Arbitrary split
-    theta3 = 0;                      // Arbitrary split
-  } else {
-    // sneg = 2*sin(theta1+minusPlus*theta3)
-    Scalar sneg = plusMinus * (R(k, j) + minusPlus * R(j, i));
-    // cneg = 2*cos(theta1+minusPlus*theta3)
-    Scalar cneg = R(j, j) + plusMinus * R(k, i);
-    Scalar theta1MinusPlusTheta3 = atan2(sneg, cneg);
-    theta1 = theta1MinusPlusTheta3;  // Arbitrary split
-    theta3 = 0;                      // Arbitrary split
-  }
-
-  // Return values have the following ranges
-  // -pi   <= theta1 <= pi
-  // -pi/2 <= theta2 <= pi/2
-  // -pi   <= theta3 <= pi
-
-  // Return in Drake/ROS conventional SpaceXYZ (roll-pitch-yaw) order
-  // (which is equivalent to BodyZYX theta1, theta2, theta3 order).
-  return drake::Vector3<Scalar>(theta3, theta2, theta1);
-}
-
-template <typename Derived>
-VectorX<typename Derived::Scalar> rotmat2Representation(
-    const Eigen::MatrixBase<Derived>& R, int rotation_type) {
-  typedef typename Derived::Scalar Scalar;
-  switch (rotation_type) {
-    case 0:
-      return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>(0, 1);
-    case 1:
-      return rotmat2rpy(R);
-    case 2:
-      return rotmat2quat(R);
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-}
-
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive X axis.
-template <typename T>
-Matrix3<T> XRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R << 1, 0,  0,
-       0, c, -s,
-       0, s,  c;
-  // clang-format on
-  return R;
-}
-
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive Y axis.
-template <typename T>
-Matrix3<T> YRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R <<  c, 0, s,
-        0, 1, 0,
-       -s, 0, c;
-  // clang-format on
-  return R;
-}
-
-/// Computes the rotation matrix for rotating by theta (radians) around the
-/// positive Z axis.
-template <typename T>
-Matrix3<T> ZRotation(const T& theta) {
-  Matrix3<T> R;
-  using std::sin;
-  using std::cos;
-  const double c = cos(theta), s = sin(theta);
-  // clang-format off
-  R << c, -s, 0,
-       s,  c, 0,
-       0,  0,  1;
-  // clang-format on
-  return R;
-}
-
-/// Projects a full-rank 3x3 matrix @p M onto O(3), defined as
-/// <pre>
-///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
-///  subject to   R*R^T = I  =>  R ∈ O(3)
-/// </pre>
-///
-/// The algorithm (just SVD) can be derived as a small modification of
-/// section 3.2 in http://haralick.org/conferences/pose_estimation.pdf .
-///
-/// Note that it does not enforce det(R)=1; you could get det(R)=-1 if that
-/// solution is closer to the matrix M using the norm above.
-template <typename Derived>
-Matrix3<typename Derived::Scalar> ProjectMatToOrthonormalMat(
-    const Eigen::MatrixBase<Derived>& M) {
-  DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
-  const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
-  return svd.matrixU() * svd.matrixV().transpose();
-}
-
-/// Projects a full-rank 3x3 matrix @p M onto SO(3), defined as
-/// <pre>
-///   min_R  \sum_i,j | R(i,j) - M(i,j) |^2
-///  subject to   R*R^T = I, det(R)=1  =>  R ∈ SO(3)
-/// </pre>
-///
-/// This algorithm is from Section 3.1, Eq. (3.7), of:
-///   Moakher M (2002). "Means and averaging in the group of rotations."
-/// This reference was obtained from R's documentation and C++ implementation of
-/// project_SO3C.
-template <typename Derived>
-Matrix3<typename Derived::Scalar> ProjectMatToRotMat(
-    const Eigen::MatrixBase<Derived>& M) {
-  DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
-  using Scalar = typename Derived::Scalar;
-  const Scalar det = M.determinant();
-  using std::abs;
-  DRAKE_THROW_UNLESS(abs(det) > std::numeric_limits<Scalar>::epsilon());
-  const Eigen::SelfAdjointEigenSolver<Matrix3<Scalar>> eig(M.transpose() * M);
-  // Get reciprocal square root.
-  Vector3<Scalar> L = eig.eigenvalues().array().rsqrt();
-  if (det < 0) {
-    // Flip the sign on the smallest eigenvalue. Note that
-    // SelfAdjointEigenSolver sorts eigenvalues in real-value ascending order.
-    L(0) *= -1;
-  }
-  const Matrix3<Scalar> U = eig.eigenvectors();
-  return M * U * L.asDiagonal() * U.transpose();
-}
-
-/**
- * Projects a 3 x 3 matrix `M` onto SO(3). The projected rotation matrix `R`
- * has a given rotation axis `a`, and its rotation angle θ is bounded as
- * angle_lb <= θ <= angle_ub. One use case for this function is to reconstruct
- * the rotation matrix for a revolute joint with joint limits.
- * @see GlobalInverseKinematics for an usage of this function.
- * We can formulate this as an optimization problem
- * <pre>
- *   min_θ trace((R - M)ᵀ*(R - M))
- *   subject to R = I + sinθ * A + (1 - cosθ) * A²   (1)
- *              angle_lb <= θ <= angle_ub
- * </pre>
- * where `A` is the cross product matrix of the rotation axis `a`.
- * <pre>
- *   A = [ 0  -a₃  a₂]
- *       [ a₃  0  -a₁]
- *       [-a₂  a₁  0 ]
- * </pre>
- * Equation (1) is the Rodriguez Formula, to compute the rotation matrix from
- * the rotation axis `a` and the rotation angle θ. For more details, refer to
- * http://mathworld.wolfram.com/RodriguesRotationFormula.html
- * The objective function can be simplified as
- * <pre>
- *   max_θ trace(Rᵀ * M + Mᵀ * R)
- * </pre>
- * By substituting the matrix `R` with the axis-angle representation, the
- * optimization problem is formulated as
- * <pre>
- *   max_θ sinθ * trace(Aᵀ*M) - cosθ * trace(Mᵀ * A²)
- *   subject to angle_lb <= θ <= angle_ub
- * </pre>
- * By introducing α = atan2(-trace(Mᵀ * A²), trace(Aᵀ*M)), we can compute the
- * optimal θ as
- * <pre>
- * θ = π/2 + 2kπ - α, if angle_lb <= π/2 + 2kπ - α <= angle_ub, k ∈ ℤ
- * else
- * θ = angle_lb if sin(angle_lb + α) >= sin(angle_ub + α)
- * θ = angle_ub if sin(angle_lb + α) < sin(angle_ub + α)
- * </pre>
- * @tparam Derived A 3 x 3 matrix
- * @param M The matrix to be projected.
- * @param axis The axis of the rotation matrix. A unit length vector.
- * @param angle_lb The lower bound of the rotation angle.
- * @param angle_ub The upper bound of the rotation angle.
- * @return The rotation angle of the projected matrix.
- * @pre angle_ub >= angle_lb.
- * Throw std::runtime_error if these bounds are violated.
- */
-template <typename Derived>
-double ProjectMatToRotMatWithAxis(const Eigen::MatrixBase<Derived>& M,
-                                  const Eigen::Ref<const Eigen::Vector3d>& axis,
-                                  double angle_lb, double angle_ub) {
-  using Scalar = typename Derived::Scalar;
-  if (M.rows() != 3 || M.cols() != 3) {
-    throw std::runtime_error("The input matrix should be of size 3 x 3.");
-  }
-  if (angle_ub < angle_lb) {
-    throw std::runtime_error(
-        "The angle upper bound should be no smaller than the angle lower "
-        "bound.");
-  }
-  Vector3<Scalar> a = axis;
-  a = a / a.norm();
-  Eigen::Matrix3d A;
-  // clang-format off
-  A << 0, -a(2), a(1),
-       a(2), 0, -a(0),
-       -a(1), a(0), 0;
-  // clang-format on
-  Scalar alpha =
-      atan2(-(M.transpose() * A * A).trace(), (A.transpose() * M).trace());
-  Scalar theta{};
-  // The bounds on θ + α is [angle_lb + α, angle_ub + α].
-  if (std::isinf(angle_lb) && std::isinf(angle_ub)) {
-    theta = M_PI_2 - alpha;
-  } else if (std::isinf(angle_ub)) {
-    // First if the angle upper bound is inf, start from the angle_lb, and
-    // find the angle θ, such that θ + α = 0.5π + 2kπ
-    int k = ceil((angle_lb + alpha - M_PI_2) / (2 * M_PI));
-    theta = (2 * k + 0.5) * M_PI - alpha;
-  } else if (std::isinf(angle_lb)) {
-    // If the angle lower bound is inf, start from the angle_ub, and find the
-    // angle θ, such that θ + α = 0.5π + 2kπ
-    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
-    theta = (2 * k + 0.5) * M_PI - alpha;
-  } else {
-    // Now neither angle_lb nor angle_ub is inf. Check if there exists an
-    // integer k, such that 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
-    int k = floor((angle_ub + alpha - M_PI_2) / (2 * M_PI));
-    double max_sin_angle = M_PI_2 + 2 * k * M_PI;
-    if (max_sin_angle >= angle_lb + alpha) {
-      // 0.5π + 2kπ ∈ [angle_lb + α, angle_ub + α]
-      theta = max_sin_angle - alpha;
+    const T trace = M.trace();
+    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
+      // This branch occurs if the trace is larger than any diagonal element.
+      w = T(1) + trace;
+      x = M(2, 1) - M(1, 2);
+      y = M(0, 2) - M(2, 0);
+      z = M(1, 0) - M(0, 1);
+    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+      // This branch occurs if M(0,0) is largest among the diagonal elements.
+      w = M(2, 1) - M(1, 2);
+      x = T(1) - (trace - 2 * M(0, 0));
+      y = M(0, 1) + M(1, 0);
+      z = M(0, 2) + M(2, 0);
+    } else if (M(1, 1) >= M(2, 2)) {
+      // This branch occurs if M(1,1) is largest among the diagonal elements.
+      w = M(0, 2) - M(2, 0);
+      x = M(0, 1) + M(1, 0);
+      y = T(1) - (trace - 2 * M(1, 1));
+      z = M(1, 2) + M(2, 1);
     } else {
-      // Now the maximal is at the boundary, either θ = angle_lb or angle_ub
-      if (sin(angle_lb + alpha) >= sin(angle_ub + alpha)) {
-        theta = angle_lb;
-      } else {
-        theta = angle_ub;
-      }
+      // This branch occurs if M(2,2) is largest among the diagonal elements.
+      w = M(1, 0) - M(0, 1);
+      x = M(0, 2) + M(2, 0);
+      y = M(1, 2) + M(2, 1);
+      z = T(1) - (trace - 2 * M(2, 2));
     }
+
+    // Create a quantity q (which is not yet a quaternion).
+    // Note: Eigen's Quaternion constructor does not normalize.
+    Eigen::Quaternion<T> q(w, x, y, z);
+
+    // Since the quaternions q and -q correspond to the same rotation matrix,
+    // choose a "canonical" quaternion with q(0) > 0.
+    const T canonical_factor = (w < 0) ? T(-1) : T(1);
+
+    // The quantity q calculated thus far in this algorithm is not a quaternion
+    // with magnitude 1.  It differs from a quaternion in that all elements of q
+    // are scaled by the same factor (the value of this factor depends on which
+    // branch of the if/else-statements was used). To return a valid quaternion,
+    // q must be normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
+    const T scale = canonical_factor / q.norm();
+    q.coeffs() *= scale;
+    return q;
   }
-  return theta;
-}
+
+  /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
+  /// vector (axis direction) `lambda` that represents `this` %RotationMatrix.
+  /// @note The orientation and %RotationMatrix associated with `theta * lambda`
+  /// is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
+  /// this method chooses to have `0 <= theta <= pi`.
+  /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
+  Eigen::AngleAxis<T> ToAngleAxis() const {
+    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
+    return theta_lambda;
+  }
+
+ private:
+  // Make RotationMatrix<U> templatized on any typename U be a friend of a
+  // %RotationMatrix templatized on any other typename T.
+  // This is needed for the method RotationMatrix<T>::cast<U>() to be able to
+  // use the necessary private constructor.
+  template <typename U>
+  friend class RotationMatrix;
+
+  // Declares the allowable tolerance (small multiplier of double-precision
+  // epsilon) used to check whether or not a rotation matrix is orthonormal.
+  static constexpr double kInternalToleranceForOrthonormality_{
+      128 * std::numeric_limits<double>::epsilon() };
+
+  // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
+  // whether or not the parameter R is a valid rotation matrix.
+  // @param[in] R an allegedly valid rotation matrix.
+  // @note The second parameter is just a dummy to distinguish this constructor
+  // from one of the public constructors.
+  RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
+
+  // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
+  // test whether or not the parameter R is a valid rotation matrix.
+  // @param[in] R an allegedly valid rotation matrix.
+  void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
+
+  // Computes the infinity norm of R - `other` (i.e., the maximum absolute
+  // value of the difference between the elements of R and `other`).
+  // @param[in] R matrix from which `other` is subtracted.
+  // @param[in] other matrix to subtract from R.
+  // @returns `‖R - other‖∞`
+  static T GetMaximumAbsoluteDifference(const Matrix3<T>& R,
+                                        const Matrix3<T>& other) {
+    const Matrix3<T> R_difference = R - other;
+    return R_difference.template lpNorm<Eigen::Infinity>();
+  }
+
+  // Compares corresponding elements in two matrices to check if they are the
+  // same to within a specified `tolerance`.
+  // @param[in] R matrix to compare to `other`.
+  // @param[in] other matrix to compare to R.
+  // @param[in] tolerance maximum allowable absolute difference between the
+  // matrix elements in R and `other`.
+  // @returns `true` if `‖R - `other`‖∞ <= tolerance`.
+  static bool IsNearlyEqualTo(const Matrix3<T>& R, const Matrix3<T>& other,
+                              double tolerance) {
+    const T R_max_difference = GetMaximumAbsoluteDifference(R, other);
+    return R_max_difference <= tolerance;
+  }
+
+  // Throws an exception if R is not a valid %RotationMatrix.
+  // @param[in] R an allegedly valid rotation matrix.
+  static void ThrowIfNotValid(const Matrix3<T>& R) {
+    if (!R.allFinite()) {
+      throw std::logic_error(
+          "Error: Rotation matrix contains an element that is infinity or "
+          "NaN.");
+    }
+    if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()))
+      throw std::logic_error("Error: Rotation matrix is not orthonormal.");
+    if (R.determinant() < 0)
+      throw std::logic_error("Error: Rotation matrix determinant is negative. "
+                                 "It is possible a basis is left-handed");
+  }
+
+  // Given an approximate rotation matrix M, finds the orthonormal matrix R
+  // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
+  // with a Frobenius norm).  Hence, this method creates an orthonormal matrix R
+  // from a 3x3 matrix M by minimizing `‖R - M‖₂` (the matrix-2 norm of (R-M))
+  // subject to `R * Rᵀ = I`, where I is the 3x3 identity matrix.  For this
+  // problem, closeness can also be measured by forming the orthonormal matrix R
+  // whose elements minimize the double-summation `∑ᵢ ∑ⱼ (R(i,j) - M(i,j))²`
+  // where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
+  // this double-summation is called the Frobenius norm.
+  // @param[in] M a 3x3 matrix.
+  // @param[out] quality_factor.  The quality of M as a rotation matrix.
+  // `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
+  // that when M multiplies a unit vector (magnitude 1), a vector of magnitude
+  // as large as 1.25 may result.  `quality_factor` = -1 means M relates two
+  // perfectly orthonormal bases, but one is right-handed whereas the other is
+  // left-handed (M is a "reflection").  `quality_factor` = -0.8 means M
+  // relates a right-handed basis to a left-handed basis and when M multiplies
+  // a unit vector, a vector of magnitude as small as 0.8 may result.
+  // `quality_factor` = 0 means M is singular, so at least one of the bases
+  // related by matrix M does not span 3D space (when M multiples a unit vector,
+  // a vector of magnitude as small as 0 may result).
+  // @return orthonormal matrix R that is closest to M (note det(R) may be -1).
+  // @note The SVD part of this algorithm can be derived as a modification of
+  // section 3.2 in http://haralick.org/conferences/pose_estimation.pdf.
+  // @note William Kahan (UC Berkeley) and Hongkai Dai (Toyota Research
+  // Institute) proved that for this problem, the same R that minimizes the
+  // Frobenius norm also minimizes the matrix-2 norm (a.k.a an induced-2 norm),
+  // which is defined [Dahleh, Section 4.2] as the column matrix u which
+  // maximizes `‖(R - M) u‖ / ‖u‖`, where `u ≠ 0`.  Since the matrix-2 norm of
+  // any matrix A is equal to the maximum singular value of A, minimizing the
+  // matrix-2 norm of (R - M) is equivalent to minimizing the maximum singular
+  // value of (R - M).
+  //
+  // - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
+  // Engineering and Computer Science, Massachusetts Institute of Technology"
+  // https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
+  template <typename Derived>
+  static Matrix3<typename Derived::Scalar> ProjectMatrix3ToOrthonormalMatrix3(
+      const Eigen::MatrixBase<Derived>& M, T* quality_factor) {
+    DRAKE_DEMAND(M.rows() == 3 && M.cols() == 3);
+    const auto svd = M.jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeFullV);
+    if (quality_factor != nullptr) {
+      // Singular values are always non-negative and sorted in decreasing order.
+      const auto singular_values = svd.singularValues();
+      const T s_max = singular_values(0);  // maximum singular value.
+      const T s_min = singular_values(2);  // minimum singular value.
+      const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+      const T det = M.determinant();
+      const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
+      *quality_factor = s_f * sign_det;
+    }
+    return svd.matrixU() * svd.matrixV().transpose();
+  }
+
+  // Constructs a 3x3 rotation matrix from a Quaternion.
+  // @param[in] quaternion a quaternion which may or may not have unit length.
+  // @param[in] two_over_norm_squared is supplied by the calling method and is
+  // usually pre-computed as `2 / quaternion.squaredNorm()`.  If `quaternion`
+  // has already been normalized [`quaternion.norm() = 1`] or there is a reason
+  // (unlikely) that the calling method determines that normalization is
+  // unwanted, the calling method should just past `two_over_norm_squared = 2`.
+  // @internal The cost of Eigen's quaternion.toRotationMatrix() is 12 adds and
+  // 12 multiplies.  This function also costs 12 adds and 12 multiplies, but
+  // has a provision for an efficient algorithm for always calculating an
+  // orthogonal rotation matrix (whereas Eigen's algorithm does not).
+  static Matrix3<T> QuaternionToRotationMatrix(
+      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
+    Matrix3<T> m;
+
+    const T w = quaternion.w();
+    const T x = quaternion.x();
+    const T y = quaternion.y();
+    const T z = quaternion.z();
+    const T sx  = two_over_norm_squared * x;  // scaled x-value.
+    const T sy  = two_over_norm_squared * y;  // scaled y-value.
+    const T sz  = two_over_norm_squared * z;  // scaled z-value.
+    const T swx = sx * w;
+    const T swy = sy * w;
+    const T swz = sz * w;
+    const T sxx = sx * x;
+    const T sxy = sy * x;
+    const T sxz = sz * x;
+    const T syy = sy * y;
+    const T syz = sz * y;
+    const T szz = sz * z;
+
+    m.coeffRef(0, 0) = T(1) - syy - szz;
+    m.coeffRef(0, 1) = sxy - swz;
+    m.coeffRef(0, 2) = sxz + swy;
+    m.coeffRef(1, 0) = sxy + swz;
+    m.coeffRef(1, 1) = T(1) - sxx - szz;
+    m.coeffRef(1, 2) = syz - swx;
+    m.coeffRef(2, 0) = sxz - swy;
+    m.coeffRef(2, 1) = syz + swx;
+    m.coeffRef(2, 2) = T(1) - sxx - syy;
+
+    return m;
+  }
+
+  // Stores the underlying rotation matrix relating two frames (e.g. A and B).
+  // The default initialization is the identity matrix.
+  Matrix3<T> R_AB_{Matrix3<T>::Identity()};
+};
+
 }  // namespace math
 }  // namespace drake
+
+
+// TODO(mitiguy): Remove the following #include statement when the included file
+// has been deleted.  See the included file for file deletion conditions.
+// Note: This #include intentionally appears at the end of rotation_matrix.h as
+// a temporary stop-gap measure to support backward compatability.  It is
+// understood that including this file here is not style-guide compliant.
+// clang-format off
+#define DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
+#include "drake/math/rotation_matrix_deprecated.h"
+#undef DRAKE_MATH_ROTATION_MATRIX_DEPRECATED_HEADER_IS_ENABLED
+// clang-format on

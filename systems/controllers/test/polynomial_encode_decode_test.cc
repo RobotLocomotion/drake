@@ -10,6 +10,11 @@ using Eigen::Dynamic;
 using Eigen::VectorXd;
 
 namespace drake {
+
+using trajectories::test::MakeRandomPiecewisePolynomial;
+using drake::trajectories::PiecewiseTrajectory;
+using drake::trajectories::PiecewisePolynomial;
+
 namespace {
 
 // TODO(jwnimmer-tri) Unit tests should not use unseeded randomness.
@@ -28,7 +33,7 @@ GTEST_TEST(TestLcmUtil, testPolynomial) {
 }
 
 GTEST_TEST(TestLcmUtil, testPolynomialMatrix) {
-  auto poly_matrix = drake::test::RandomPolynomialMatrix<double>(6, 5, 8);
+  auto poly_matrix = test::RandomPolynomialMatrix<double>(6, 5, 8);
   drake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix<Eigen::Dynamic, Eigen::Dynamic>(poly_matrix, msg);
   EXPECT_EQ(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));
@@ -51,9 +56,9 @@ GTEST_TEST(TestLcmUtil, testPiecewisePolynomial) {
   int cols = 7;
   int num_coefficients = 3;
   std::vector<double> segment_times =
-      PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+      PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
   PiecewisePolynomial<double> piecewise_polynomial =
-      test::MakeRandomPiecewisePolynomial<double>(
+      MakeRandomPiecewisePolynomial<double>(
           rows, cols, num_coefficients, segment_times);
   drake::lcmt_piecewise_polynomial msg;
   encodePiecewisePolynomial(piecewise_polynomial, msg);

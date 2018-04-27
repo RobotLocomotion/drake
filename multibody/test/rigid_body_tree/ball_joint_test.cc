@@ -41,7 +41,7 @@ GTEST_TEST(RigidBodyTreeTest, BallJointTest) {
 
   // Get the second link's (connected to the first link through a ball joint)
   // pose and velocity in the world frame.
-  const RigidBody<double>& body = *tree.bodies[2];
+  const RigidBody<double>& body = *tree.get_bodies()[2];
   Isometry3<double> X_WB = tree.CalcBodyPoseInWorldFrame(cache, body);
   Vector6<double> V_WB = tree.CalcBodySpatialVelocityInWorldFrame(cache, body);
 
