@@ -193,10 +193,10 @@ struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
  * @param R The rotation matrix.
  * @param num_intervals_per_half_axis Same as NumIntervalsPerHalfAxis, use this
  * variable when NumIntervalsPerHalfAxis is dynamic.
- * @param add_mccormick_for_sphere_box_intersection Set to true if we add some
- * constraint to tighten the relaxation, that can be obtained by considering
- * the McCormick Envelope of an intersection region, between an axis-aligned box
- * and the surface of the sphere.
+ * @param add_mccormick_for_sphere_box_intersection If set to true, then we add
+ * some constraint to tighten the relaxation, that can be obtained by
+ * considering the McCormick Envelope of an intersection region, between an
+ * axis-aligned box and the surface of the sphere.
  * @return pair. pair = (B, φ). B[i][j] is a column vector. If B[i][j]
  * represents integer M in the reflected Gray code, then R(i, j) is in the
  * interval [φ(M), φ(M+1)]. φ contains the end points of the all the intervals,
