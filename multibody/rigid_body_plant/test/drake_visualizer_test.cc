@@ -523,6 +523,32 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   }
 }
 
+// Tests that PlaybackTrajectory() works with both num_position and num_position
+// + num_velocity trajectories.
+GTEST_TEST(DrakeVisualizerTests, TestPlaybackTrajectory) {
+  unique_ptr<RigidBodyTree<double>> tree = CreateRigidBodyTree();
+  drake::lcm::DrakeMockLcm lcm;
+
+  // Instantiates the "device under test".
+  DrakeVisualizer dut(*tree, &lcm);
+
+  // Create a trivial position trajectory.
+  const VectorX<double> q_zero = tree->getZeroConfiguration();
+  const auto x_zero =
+      (VectorX<double>(tree->get_num_positions() + tree->get_num_velocities())
+           << q_zero, VectorX<double>::Zero(tree->get_num_velocities()))
+          .finished();
+  const auto position_trajectory =
+      trajectories::PiecewisePolynomial<double>::ZeroOrderHold(
+          {0, 1}, {q_zero, q_zero});
+  const auto state_trajectory =
+      trajectories::PiecewisePolynomial<double>::ZeroOrderHold(
+          {0, 1}, {x_zero, x_zero});
+
+  EXPECT_NO_THROW(dut.PlaybackTrajectory(position_trajectory));
+  EXPECT_NO_THROW(dut.PlaybackTrajectory(state_trajectory));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
