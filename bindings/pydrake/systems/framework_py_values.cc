@@ -17,6 +17,11 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
+// TODO(eric.cousineau): At present, we only bind doubles.
+// In the future, we will bind more scalar types, and enable scalar
+// conversion.
+using T = double;
+
 using pysystems::AddValueInstantiation;
 using pysystems::DefClone;
 
@@ -24,49 +29,33 @@ void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
 
-  auto bind_common_scalar_types = [m](auto dummy) {
-    using T = decltype(dummy);
-    // Value types.
-    DefineTemplateClassWithDefault<VectorBase<T>>(
-      m, "VectorBase", GetPyParam<T>())
-      .def("CopyToVector", &VectorBase<T>::CopyToVector)
-      .def("SetFromVector", &VectorBase<T>::SetFromVector)
-      .def("size", &VectorBase<T>::size);
+  // Value types.
+  py::class_<VectorBase<T>>(m, "VectorBase")
+    .def("CopyToVector", &VectorBase<T>::CopyToVector)
+    .def("SetFromVector", &VectorBase<T>::SetFromVector)
+    .def("size", &VectorBase<T>::size);
 
-    // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<>
-    // patterns.
-    auto basic_vector =
-        DefineTemplateClassWithDefault<BasicVector<T>, VectorBase<T>>(
-            m, "BasicVector", GetPyParam<T>());
-    DefClone(&basic_vector);
-    basic_vector
-      // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
-      // convert scalar-size `np.array` objects to `int` (since this is normally
-      // permitted).
-      .def(py::init<VectorX<T>>())
-      .def(py::init<int>())
-      .def("get_value",
-          [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
-            return self->get_value();
-          }, py_reference_internal)
-      // TODO(eric.cousineau): Remove this once `get_value` is changed, or
-      // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
-      .def("get_mutable_value",
-          [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
-            return self->get_mutable_value();
-          }, py_reference_internal);
+  // TODO(eric.cousineau): Make a helper function for the Eigen::Ref<> patterns.
+  py::class_<BasicVector<T>, VectorBase<T>> basic_vector(m, "BasicVector");
+  DefClone(&basic_vector);
+  basic_vector
+    // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
+    // convert scalar-size `np.array` objects to `int` (since this is normally
+    // permitted).
+    .def(py::init<VectorX<T>>())
+    .def(py::init<int>())
+    .def("get_value",
+        [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
+          return self->get_value();
+        }, py_reference_internal)
+    .def("get_mutable_value",
+        [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
+          return self->get_mutable_value();
+        }, py_reference_internal);
 
-    DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
-        m, "Supervector", GetPyParam<T>());
+  py::class_<Supervector<T>, VectorBase<T>>(m, "Supervector");
 
-    DefineTemplateClassWithDefault<Subvector<T>, VectorBase<T>>(
-        m, "Subvector", GetPyParam<T>());
-  };
-  type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
+  py::class_<Subvector<T>, VectorBase<T>>(m, "Subvector");
 
   // `AddValueInstantiation` will define methods specific to `T` for
   // `Value<T>`. Since Python is nominally dynamic, these methods are

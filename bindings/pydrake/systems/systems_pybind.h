@@ -5,9 +5,7 @@
 
 #include <string>
 
-#include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
 #include "drake/common/drake_throw.h"
@@ -87,23 +85,6 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
   AddTemplateClass(py_module, "Value", py_class, GetPyParam<T>());
   return py_class;
 }
-
-/// Type pack defining common scalar types.
-// N.B. This should be kept in sync with the `*_DEFAULT_SCALARS` macro in
-// `default_scalars.h`.
-using CommonScalarPack = type_pack<
-    double,
-    AutoDiffXd,
-    symbolic::Expression
-    >;
-
-/// Type pack for non-symbolic common scalar types.
-// N.B. This should be kept in sync with the `*_DEFAULT_NONSYMBOLIC_SCALARS`
-// macro in `default_scalars.h`.
-using NonSymbolicScalarPack = type_pack<
-    double,
-    AutoDiffXd
-    >;
 
 }  // namespace pysystems
 }  // namespace pydrake
