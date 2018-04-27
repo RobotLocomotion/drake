@@ -119,10 +119,7 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kMosek) {
-    // TODO(hongkai.dai): the default parameter in Mosek 8 generates low
-    // accuracy solution. We should set the accuracy tolerance
-    // MSK_DPARAM_INTPNT_QO_REL_TOL_GAP to 1E-10 to improve the accuracy.
-    tol = 3E-5;
+    tol = 1E-9;
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
@@ -207,7 +204,7 @@ void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kMosek) {
-    tol = 1E-7;
+    tol = 1E-9;
   }
   EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
