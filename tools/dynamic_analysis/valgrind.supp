@@ -91,6 +91,70 @@
    fun:_ZN5drake7solvers11MosekSolver14AcquireLicenseEv
 }
 
+{
+   <mosek-8>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+}
+ 
+{
+   <mosek-9>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeqo
+   fun:MSK_contoptimizer
+}
+
+{
+    <mosek-10>
+    Memcheck:Cond
+    fun:prselim_dopivot
+    fun:MSK_prslv_eliminator
+    fun:prslv_checkinitial
+    fun:MSK_prslv_reduce
+    fun:MSK_opt_ipmslv
+    fun:MSK_contoptimizer
+    fun:MSK_eorpgtpsj
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+    <mosek-11>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:mm_account_ptr_by_tid..0
+    fun:mkl_serv_allocate
+    fun:DSYEVD
+    fun:MSK_GENERIC_CPU_mathenv_symeig
+    fun:intpnt_call_ntupdate_fast
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+    <mosek-12>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    fun:mkl_serv_allocate
+    fun:mkl_blas_avx2_xdtrsm_v1
+    fun:mkl_blas_avx2_xdtrsm
+    fun:DTRSM
+    fun:cblas_dtrsm
+    fun:MSK_GENERIC_CPU_mathenv_trsm_
+}
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>
