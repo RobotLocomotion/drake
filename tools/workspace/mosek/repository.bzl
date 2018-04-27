@@ -55,16 +55,15 @@ def _impl(repository_ctx):
     if repository_ctx.os.name == "mac os x":
         install_name_tool = which(repository_ctx, "install_name_tool")
 
+        # Note that in the 8.1.0.51 packages, libmosek64.dylib is a copy of
+        # libmosek64.8.1.dylib instead of a symlink. Otherwise, the list of
+        # files should include the following in place of bin/libmosek64.dylib:
+        #
+        # "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
+        #                                     mosek_minor_version)
         files = [
-            # N.B. We are using and installing MOSEK's copy of libcilkrts.so.5,
-            # even though Ubuntu installs the same shared library by default on
-            # all systems already. For some reason, Mosek fails when used with
-            # Ubuntu's shared library. If Drake users have other third-party
-            # code that assumes use of Ubunut's libcilkrts, there could be
-            # runtime conflicts; however, this risk seems low.
             "bin/libcilkrts.5.dylib",
-            "bin/libmosek64.{}.{}.dylib".format(mosek_major_version,
-                                                mosek_minor_version),
+            "bin/libmosek64.dylib",
         ]
 
         for file in files:
