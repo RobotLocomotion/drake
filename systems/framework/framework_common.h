@@ -72,7 +72,19 @@ rather depends on what it is connected to (not yet implemented). */
 constexpr int kAutoSize = -1;
 
 #ifndef DRAKE_DOXYGEN_CXX
+class AbstractValue;
 class ContextBase;
+
+// (Stub, please ignore) An empty type-agnostic base class for input ports.
+// TODO(sherm1) Replace with the real InputPortBase in its own header (see
+// caching branch).
+class InputPortBase {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortBase)
+  InputPortBase() = default;
+  virtual ~InputPortBase() = default;
+};
+
 namespace internal {
 
 // SystemBase should implement this interface so that its contained objects
@@ -135,6 +147,36 @@ class ContextMessageInterface {
  protected:
   ContextMessageInterface() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContextMessageInterface);
+};
+
+// A System that contains child subsystems should implement this to provide
+// services that the children can request. In current practice, this is
+// only implemented by Diagram<T>. This allows us to expose just necessary
+// Diagram functionality to Leaf subsystems.
+class SystemParentServiceInterface {
+ public:
+  virtual ~SystemParentServiceInterface() = default;
+
+  // This method is invoked when we need to evaluate a connected input port of
+  // a child subsystem of this System. This need arises only if this System
+  // contains subsystems, and the framework promises only to invoke this method
+  // under that circumstance. Hence Diagram must implement this to evaluate the
+  // connected-to output port (likely belonging to a different child subsystem)
+  // and returning its value as the value for the given input port.
+  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
+      const ContextBase& context,
+      const InputPortBase& input_port) const = 0;
+
+  // Generates and returns the full path name of the parent subsystem, starting
+  // at the root of the containing Diagram, with path name separators between
+  // segments. The returned string must be what would be returned by invoking
+  // GetSystemPathname() on the parent subsystem. (See SystemMessageInterface
+  // above.)
+  virtual std::string GetParentPathname() const = 0;
+
+ protected:
+  SystemParentServiceInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemParentServiceInterface);
 };
 
 // These dependency ticket numbers are common to all systems and contexts so

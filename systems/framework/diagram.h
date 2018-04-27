@@ -155,7 +155,7 @@ class DiagramOutput : public SystemOutput<T> {
 ///
 /// @tparam T The mathematical scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class Diagram : public System<T> {
+class Diagram : public System<T>, internal::SystemParentServiceInterface {
  public:
   // Diagram objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Diagram)
@@ -608,51 +608,6 @@ class Diagram : public System<T> {
 
   //@}
 
-  /// (Internal use only) Evaluates the value of the specified subsystem input
-  /// port in the given context. The port has already been determined _not_ to
-  /// be a freestanding port, so it must be connected either
-  /// - to the output port of a peer subsystem, or
-  /// - to an input port of this Diagram,
-  /// - or not connected at all in which case we return null.
-  const AbstractValue* EvalConnectedSubsystemInputPort(
-      const Context<T>& context,
-      const InputPortDescriptor<T>& input_port) const override {
-    auto& diagram_context =
-        dynamic_cast<const DiagramContext<T>&>(context);
-    const InputPortLocator id{input_port.get_system(), input_port.get_index()};
-
-    // Find if this input port is exported (connected to an input port of this
-    // containing diagram).
-    // TODO(sherm1) Fix this. Shouldn't have to search.
-    const auto external_it =
-        std::find(input_port_ids_.begin(), input_port_ids_.end(), id);
-    const bool is_exported = (external_it != input_port_ids_.end());
-
-    // Find if this input port is connected to an output port.
-    // TODO(sherm1) Fix this. Shouldn't have to search.
-    const auto upstream_it = connection_map_.find(id);
-    const bool is_connected = (upstream_it != connection_map_.end());
-
-    if (!(is_exported || is_connected))
-      return nullptr;
-
-    DRAKE_DEMAND(is_exported ^ is_connected);
-
-    if (is_exported) {
-      // The upstream source is an input to this whole Diagram; evaluate that
-      // input port and use the result as the value for this one.
-      const InputPortIndex i(external_it - input_port_ids_.begin());
-      return this->EvalAbstractInput(diagram_context, i);
-    }
-
-    // The upstream source is an output port of one of this Diagram's child
-    // subsystems; evaluate it.
-    // TODO(david-german-tri): Add online algebraic loop detection here.
-    DRAKE_ASSERT(is_connected);
-    const OutputPortLocator& prerequisite = upstream_it->second;
-    return &this->EvalSubsystemOutputPort(diagram_context, prerequisite);
-  }
-
   /// Returns the index of the given @p sys in this diagram, or aborts if @p sys
   /// is not a member of the diagram.
   SubsystemIndex GetSystemIndexOrAbort(const System<T>* sys) const {
@@ -1031,6 +986,57 @@ class Diagram : public System<T> {
       const Context<T>& subcontext = context.GetSubsystemContext(i);
       SystemBase::ValidateAllocatedContext(sys, subcontext);
     }
+  }
+
+  // Evaluates the value of the specified subsystem input
+  // port in the given context. The port has already been determined _not_ to
+  // be a freestanding port, so it must be connected either
+  // - to the output port of a peer subsystem, or
+  // - to an input port of this Diagram,
+  // - or not connected at all in which case we return null.
+  const AbstractValue* EvalConnectedSubsystemInputPort(
+      const ContextBase& context,
+      const InputPortBase& input_port_base) const final {
+    auto& diagram_context =
+        dynamic_cast<const DiagramContext<T>&>(context);
+    auto& input_port =
+        dynamic_cast<const InputPortDescriptor<T>&>(input_port_base);
+    const InputPortLocator id{input_port.get_system(), input_port.get_index()};
+
+    // Find if this input port is exported (connected to an input port of this
+    // containing diagram).
+    // TODO(sherm1) Fix this. Shouldn't have to search.
+    const auto external_it =
+        std::find(input_port_ids_.begin(), input_port_ids_.end(), id);
+    const bool is_exported = (external_it != input_port_ids_.end());
+
+    // Find if this input port is connected to an output port.
+    // TODO(sherm1) Fix this. Shouldn't have to search.
+    const auto upstream_it = connection_map_.find(id);
+    const bool is_connected = (upstream_it != connection_map_.end());
+
+    if (!(is_exported || is_connected))
+      return nullptr;
+
+    DRAKE_DEMAND(is_exported ^ is_connected);
+
+    if (is_exported) {
+      // The upstream source is an input to this whole Diagram; evaluate that
+      // input port and use the result as the value for this one.
+      const InputPortIndex i(external_it - input_port_ids_.begin());
+      return this->EvalAbstractInput(diagram_context, i);
+    }
+
+    // The upstream source is an output port of one of this Diagram's child
+    // subsystems; evaluate it.
+    // TODO(david-german-tri): Add online algebraic loop detection here.
+    DRAKE_ASSERT(is_connected);
+    const OutputPortLocator& prerequisite = upstream_it->second;
+    return &this->EvalSubsystemOutputPort(diagram_context, prerequisite);
+  }
+
+  std::string GetParentPathname() const final {
+    return this->GetSystemPathname();
   }
 
   // Returns true if there might be direct feedthrough from the given
@@ -1440,7 +1446,7 @@ class Diagram : public System<T> {
     // order.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
-      SystemBase::set_parent(this, registered_systems_[i].get());
+      SystemBase::set_parent_service(this, registered_systems_[i].get());
     }
 
     // Generate constraints for the diagram from the constraints on the

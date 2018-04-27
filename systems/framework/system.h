@@ -1837,18 +1837,6 @@ class System : public SystemBase {
     return error.norm();
   }
 
-  /// (Internal use only) Diagram systems must reimplement this to evaluate the
-  /// input port in the given `context`. The subsystem having
-  /// the input port must be owned by this Diagram. The default implementation
-  /// just aborts.
-  // TODO(sherm1) Move to SystemBase when there is an InputPortBase to act on.
-  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
-      const Context<T>& context,
-      const InputPortDescriptor<T>& input_port) const {
-    unused(context, input_port);
-    DRAKE_ABORT_MSG("EvaluateSubsystemInputPort(): not implemented");
-  }
-
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)
   //@{
@@ -1904,14 +1892,6 @@ class System : public SystemBase {
   // Refer to SystemImpl comments for details.
   friend class SystemImpl;
 
-  // Returns the parent %System or `nullptr` if this is the root %System.
-  // Diagram builder ensures we have the same scalar type all the way up.
-  const System<T>* get_parent() const {
-    auto const parent = dynamic_cast<const System<T>*>(get_parent_base());
-    DRAKE_ASSERT(parent != nullptr);
-    return parent;
-  }
-
   // SystemBase override checks a Context of same type T.
   void DoCheckValidContext(const ContextBase& context_base) const final {
     const Context<T>* context = dynamic_cast<const Context<T>*>(&context_base);
@@ -1935,11 +1915,11 @@ class System : public SystemBase {
 
     // The only way to satisfy an input port of a root System is to make
     // it freestanding. Since it wasn't freestanding, it is unconnected.
-    if (get_parent_base() == nullptr) return nullptr;
+    if (get_parent_service() == nullptr) return nullptr;
 
     // This is not the root System, and the port isn't freestanding, so ask
     // our parent to evaluate it.
-    return get_parent()->EvalConnectedSubsystemInputPort(
+    return get_parent_service()->EvalConnectedSubsystemInputPort(
         *detail::SystemContextAttorney<T>::get_parent(context),
         get_input_port(port_index));
   }

@@ -451,18 +451,21 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   SystemBase() = default;
 
-  /** Returns a pointer to the immediately enclosing Diagram if one has been
-  set, otherwise nullptr. */
-  const SystemBase* get_parent_base() const {
-    return parent_;
+  /** Returns a pointer to the service interface of the immediately enclosing
+  Diagram if one has been set, otherwise nullptr. */
+  const internal::SystemParentServiceInterface* get_parent_service() const {
+    return parent_service_;
   }
 
-  /** Declares that `parent` is the Diagram that owns this subsystem.
-  Aborts if the parent has already been set to something else. */
+  /** Declares that `parent_service` is the service interface of the Diagram
+  that owns this subsystem. Aborts if the parent service has already been set to
+  something else. */
   // Use static method so Diagram can invoke this on behalf of a child.
-  static void set_parent(const SystemBase* parent, SystemBase* child) {
+  static void set_parent_service(
+      const internal::SystemParentServiceInterface* parent_service,
+      SystemBase* child) {
     DRAKE_DEMAND(child != nullptr);
-    child->set_parent(parent);
+    child->set_parent_service(parent_service);
   }
 
   /** Allows Diagram to use private MakeContext() to invoke the same method
@@ -549,12 +552,14 @@ class SystemBase : public internal::SystemMessageInterface {
     return next_available_ticket_++;
   }
 
-  // Declares that `parent` is the immediately enclosing Diagram. The enclosing
-  // Diagram is needed for interactions between peer subsystems via input and
-  // output ports. Aborts if the parent has already been set to something else.
-  void set_parent(const SystemBase* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
+  // Declares that `parent_service` is the service interface of the immediately
+  // enclosing Diagram. Aborts if the parent service has already been set to
+  // something else.
+  void set_parent_service(
+      const internal::SystemParentServiceInterface* parent_service) {
+    DRAKE_DEMAND(parent_service_ == nullptr ||
+        parent_service_ == parent_service);
+    parent_service_ = parent_service;
   }
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
@@ -573,7 +578,7 @@ class SystemBase : public internal::SystemMessageInterface {
   DependencyTicket next_available_ticket_{internal::kNextAvailableTicket};
 
   // The enclosing Diagram. Null/invalid when this is the root system.
-  const SystemBase* parent_{nullptr};
+  const internal::SystemParentServiceInterface* parent_service_{nullptr};
 
   // Name of this subsystem.
   std::string name_;

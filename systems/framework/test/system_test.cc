@@ -563,7 +563,8 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+           PeriodicEventDataComparator>
+  DoGetPeriodicEvents() const override {
     return {};
   }
 };

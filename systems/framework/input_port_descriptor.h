@@ -18,7 +18,7 @@ class System;
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class InputPortDescriptor {
+class InputPortDescriptor : public InputPortBase {
  public:
   /// @param system The system to which this descriptor belongs.
   /// @param index The index of the input port described, starting from zero and
