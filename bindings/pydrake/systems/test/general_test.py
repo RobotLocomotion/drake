@@ -36,6 +36,7 @@ from pydrake.systems.framework import (
     Subvector_,
     Supervector_,
     System_,
+    SystemScalarConverter,
     SystemOutput_,
     VectorBase_,
     VectorSystem_,
@@ -49,6 +50,7 @@ from pydrake.systems.primitives import (
     LinearSystem,
     SignalLogger,
     )
+from pydrake.util.cpp_template import is_instantiation_of, TemplateClass
 
 # TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
