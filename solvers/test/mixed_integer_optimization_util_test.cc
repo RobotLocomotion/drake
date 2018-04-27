@@ -252,147 +252,235 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
       "lambda's type is incorrect");
 }
 
-class BilinearProductMcCormickEnvelopeSos2Test
-    : public ::testing::TestWithParam<std::tuple<int, int, IntervalBinning>> {
+class BilinearProductMcCormickEnvelopeTest {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeTest)
 
-  BilinearProductMcCormickEnvelopeSos2Test()
+  BilinearProductMcCormickEnvelopeTest(int num_interval_x, int num_interval_y)
       : prog_{},
-        num_interval_x_{std::get<0>(GetParam())},
-        num_interval_y_{std::get<1>(GetParam())},
-        binning_{std::get<2>(GetParam())},
+        num_interval_x_{num_interval_x},
+        num_interval_y_{num_interval_y},
         w_{prog_.NewContinuousVariables<1>()(0)},
         x_{prog_.NewContinuousVariables<1>()(0)},
         y_{prog_.NewContinuousVariables<1>()(0)},
         phi_x_{Eigen::VectorXd::LinSpaced(num_interval_x_ + 1, 0, 1)},
-        phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)},
-        Bx_size_{binning_ == IntervalBinning::kLogarithmic
-                     ? CeilLog2(num_interval_x_)
-                     : num_interval_x_},
-        By_size_{binning_ == IntervalBinning::kLogarithmic
-                     ? CeilLog2(num_interval_y_)
-                     : num_interval_y_},
-        Bx_{prog_.NewBinaryVariables(Bx_size_)},
-        By_{prog_.NewBinaryVariables(By_size_)} {}
+        phi_y_{Eigen::VectorXd::LinSpaced(num_interval_y_ + 1, 0, 1)} {}
+
+  virtual ~BilinearProductMcCormickEnvelopeTest() = default;
+
+  virtual Eigen::VectorXd SetBinaryValue(int active_interval,
+                                         int num_interval) const = 0;
+
+  Eigen::VectorXd SetBinaryValueLinearBinning(int active_interval,
+                                              int num_interval) const {
+    Eigen::VectorXd b = Eigen::VectorXd::Zero(num_interval);
+    b(active_interval) = 1;
+    return b;
+  }
+
+  void TestFeasiblePoint() {
+    auto x_constraint = prog_.AddBoundingBoxConstraint(0, 0, x_);
+    auto y_constraint = prog_.AddBoundingBoxConstraint(0, 0, y_);
+    auto w_constraint = prog_.AddBoundingBoxConstraint(0, 0, w_);
+
+    auto CheckFeasibility = [&x_constraint, &y_constraint, &w_constraint](
+        MathematicalProgram* prog, double x_val, double y_val, double w_val,
+        bool is_feasible) {
+      auto UpdateBound = [](Binding<BoundingBoxConstraint>* constraint,
+                            double val) {
+        constraint->evaluator()->UpdateLowerBound(Vector1d(val));
+        constraint->evaluator()->UpdateUpperBound(Vector1d(val));
+      };
+      UpdateBound(&x_constraint, x_val);
+      UpdateBound(&y_constraint, y_val);
+      UpdateBound(&w_constraint, w_val);
+
+      prog->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
+
+      GurobiSolver solver;
+      if (solver.available()) {
+        const auto result = solver.Solve(*prog);
+        EXPECT_EQ(result,
+                  is_feasible ? SolutionResult::kSolutionFound
+                              : SolutionResult::kInfeasibleConstraints);
+      }
+    };
+
+    // Feasible points
+    CheckFeasibility(&prog_, 0, 0, 0, true);
+    CheckFeasibility(&prog_, 0, 1, 0, true);
+    CheckFeasibility(&prog_, 1, 0, 0, true);
+    CheckFeasibility(&prog_, 1, 1, 1, true);
+    CheckFeasibility(&prog_, 0.5, 1, 0.5, true);
+    CheckFeasibility(&prog_, 1, 0.5, 0.5, true);
+    CheckFeasibility(&prog_, 0.5, 0.5, 0.25, true);
+
+    if (num_interval_x_ == 2 && num_interval_y_ == 2) {
+      CheckFeasibility(&prog_, 0.5, 0.5, 0.26, false);
+      CheckFeasibility(&prog_, 0.25, 0.25, 0.1, true);
+      CheckFeasibility(&prog_, 0.25, 0.25, 0.126, false);
+      CheckFeasibility(&prog_, 0.5, 0.6, 0.301, false);
+    }
+    if (num_interval_x_ == 3 && num_interval_y_ == 3) {
+      CheckFeasibility(&prog_, 1.0 / 3, 1.0 / 3, 0.1, false);
+      CheckFeasibility(&prog_, 0.5, 0.5, 0.26, true);
+      CheckFeasibility(&prog_, 1.0 / 3, 2.0 / 3, 2.0 / 9, true);
+      CheckFeasibility(&prog_, 0.5, 0.5, 5.0 / 18, true);
+      CheckFeasibility(&prog_, 0.5, 0.5, 5.0 / 18 + 0.001, false);
+    }
+  }
+
+  void TestLinearObjective() {
+    // We will assign the binary variables Bx_ and By_ to determine which
+    // interval is active. If we use logarithmic binning, then Bx_ and By_ take
+    // values in the gray code, representing integer i and j, such that x is
+    // constrained in [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
+    auto Bx_constraint =
+        prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
+                                       Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
+    auto By_constraint =
+        prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(By_.rows()),
+                                       Eigen::VectorXd::Zero(By_.rows()), By_);
+    VectorDecisionVariable<3> xyw{x_, y_, w_};
+    auto cost = prog_.AddLinearCost(Eigen::Vector3d::Zero(), xyw);
+    Eigen::Matrix<double, 3, 8> a;
+    // clang-format off
+    a << 1, 1, 1, 1, -1, -1, -1, -1,
+         1, 1, -1, -1, 1, 1, -1, -1,
+         1, -1, 1, -1, 1, -1, 1, -1;
+    // clang-format on
+    for (int i = 0; i < num_interval_x_; ++i) {
+      const auto Bx_val = SetBinaryValue(i, num_interval_x_);
+
+      Bx_constraint.evaluator()->UpdateLowerBound(Bx_val);
+      Bx_constraint.evaluator()->UpdateUpperBound(Bx_val);
+      for (int j = 0; j < num_interval_y_; ++j) {
+        const auto By_val = SetBinaryValue(j, num_interval_y_);
+        By_constraint.evaluator()->UpdateLowerBound(By_val);
+        By_constraint.evaluator()->UpdateUpperBound(By_val);
+
+        // vertices.col(l) is the l'th vertex of the tetrahedron.
+        Eigen::Matrix<double, 3, 4> vertices;
+        vertices.row(0) << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1);
+        vertices.row(1) << phi_y_(j), phi_y_(j + 1), phi_y_(j), phi_y_(j + 1);
+        vertices.row(2) = vertices.row(0).cwiseProduct(vertices.row(1));
+        for (int k = 0; k < a.cols(); ++k) {
+          cost.evaluator()->UpdateCoefficients(a.col(k));
+          GurobiSolver gurobi_solver;
+          if (gurobi_solver.available()) {
+            const auto result = gurobi_solver.Solve(prog_);
+            EXPECT_EQ(result, SolutionResult::kSolutionFound);
+            Eigen::Matrix<double, 1, 4> cost_at_vertices =
+                a.col(k).transpose() * vertices;
+            EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(),
+                        1E-4);
+
+            TestLinearObjectiveCheck(i, j, k);
+          }
+        }
+      }
+    }
+  }
+
+  virtual void TestLinearObjectiveCheck(int i, int j, int k) const {}
 
  protected:
   MathematicalProgram prog_;
   const int num_interval_x_;
   const int num_interval_y_;
-  const IntervalBinning binning_;
   const symbolic::Variable w_;
   const symbolic::Variable x_;
   const symbolic::Variable y_;
   const Eigen::VectorXd phi_x_;
   const Eigen::VectorXd phi_y_;
-  const int Bx_size_;
-  const int By_size_;
-  const VectorXDecisionVariable Bx_;
-  const VectorXDecisionVariable By_;
+  VectorXDecisionVariable Bx_;
+  VectorXDecisionVariable By_;
 };
 
-TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
-  // Solve the program min aᵀ * [x;y;w]
-  // s.t (x, y, w) is in the convex hull of the (x, y, x*y).
-  // We fix x and y to each intervals.
-  // We expect the optimum obtained at one of the vertices of the tetrahedron.
-  const MatrixXDecisionVariable lambda =
-      AddBilinearProductMcCormickEnvelopeSos2(
-          &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
-          By_.cast<symbolic::Expression>(), binning_);
-  const Eigen::MatrixXi gray_codes_x =
-      math::CalculateReflectedGrayCodes(Bx_.rows());
-  const Eigen::MatrixXi gray_codes_y =
-      math::CalculateReflectedGrayCodes(By_.rows());
+class BilinearProductMcCormickEnvelopeSos2Test
+    : public ::testing::TestWithParam<std::tuple<int, int, IntervalBinning>>,
+      public BilinearProductMcCormickEnvelopeTest {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BilinearProductMcCormickEnvelopeSos2Test)
 
-  // We will assign the binary variables Bx_ and By_ to determine which interval
-  // is active. If we use logarithmic binning, then Bx_ and By_ take values in
-  // the gray code, representing integer i and j, such that x is constrained in
-  // [φx(i), φx(i+1)], y is constrained in [φy(j), φy(j+1)].
-  auto Bx_constraint =
-      prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(Bx_.rows()),
-                                     Eigen::VectorXd::Zero(Bx_.rows()), Bx_);
-  auto By_constraint =
-      prog_.AddBoundingBoxConstraint(Eigen::VectorXd::Zero(By_.rows()),
-                                     Eigen::VectorXd::Zero(By_.rows()), By_);
-  VectorDecisionVariable<3> xyw{x_, y_, w_};
-  auto cost = prog_.AddLinearCost(Eigen::Vector3d::Zero(), xyw);
-  Eigen::Matrix<double, 3, 8> a;
-  // clang-format off
-  a << 1, 1, 1, 1, -1, -1, -1, -1,
-       1, 1, -1, -1, 1, 1, -1, -1,
-       1, -1, 1, -1, 1, -1, 1, -1;
-  // clang-format on
-  for (int i = 0; i < num_interval_x_; ++i) {
-    Eigen::VectorXd Bx_val(Bx_size_);
+  BilinearProductMcCormickEnvelopeSos2Test()
+      : BilinearProductMcCormickEnvelopeTest(std::get<0>(GetParam()),
+                                             std::get<1>(GetParam())),
+        binning_{std::get<2>(GetParam())},
+        Bx_size_{binning_ == IntervalBinning::kLogarithmic
+                     ? CeilLog2(num_interval_x_)
+                     : num_interval_x_},
+        By_size_{binning_ == IntervalBinning::kLogarithmic
+                     ? CeilLog2(num_interval_y_)
+                     : num_interval_y_} {
+    Bx_ = prog_.NewBinaryVariables(Bx_size_);
+    By_ = prog_.NewBinaryVariables(By_size_);
+    lambda_ = AddBilinearProductMcCormickEnvelopeSos2(
+        &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
+        By_.cast<symbolic::Expression>(), binning_);
+  }
+
+  Eigen::VectorXd SetBinaryValueLogarithmicBinning(int active_interval,
+                                                   int num_interval) const {
+    const Eigen::MatrixXi gray_codes =
+        math::CalculateReflectedGrayCodes(solvers::CeilLog2(num_interval));
+    return gray_codes.row(active_interval).cast<double>().transpose();
+  }
+
+  Eigen::VectorXd SetBinaryValue(int active_interval,
+                                 int num_interval) const override {
     switch (binning_) {
-      case IntervalBinning::kLogarithmic :
-        Bx_val = gray_codes_x.cast<double>().row(i).transpose();
-        break;
-      case IntervalBinning::kLinear :
-        Bx_val.setZero();
-        Bx_val(i) = 1;
-        break;
-    }
-
-    Bx_constraint.evaluator()->UpdateLowerBound(Bx_val);
-    Bx_constraint.evaluator()->UpdateUpperBound(Bx_val);
-    for (int j = 0; j < num_interval_y_; ++j) {
-      Eigen::VectorXd By_val(By_size_);
-      switch (binning_) {
-        case IntervalBinning::kLogarithmic :
-          By_val = gray_codes_y.cast<double>().row(j).transpose();
-          break;
-        case IntervalBinning::kLinear :
-          By_val.setZero();
-          By_val(j) = 1;
-          break;
+      case IntervalBinning::kLinear: {
+        return SetBinaryValueLinearBinning(active_interval, num_interval);
       }
-      By_constraint.evaluator()->UpdateLowerBound(By_val);
-      By_constraint.evaluator()->UpdateUpperBound(By_val);
-
-      // vertices.col(l) is the l'th vertex of the tetrahedron.
-      Eigen::Matrix<double, 3, 4> vertices;
-      vertices.row(0) << phi_x_(i), phi_x_(i), phi_x_(i + 1), phi_x_(i + 1);
-      vertices.row(1) << phi_y_(j), phi_y_(j + 1), phi_y_(j), phi_y_(j + 1);
-      vertices.row(2) = vertices.row(0).cwiseProduct(vertices.row(1));
-      for (int k = 0; k < a.cols(); ++k) {
-        cost.evaluator()->UpdateCoefficients(a.col(k));
-        GurobiSolver gurobi_solver;
-        if (gurobi_solver.available()) {
-          auto result = gurobi_solver.Solve(prog_);
-          EXPECT_EQ(result, SolutionResult::kSolutionFound);
-          Eigen::Matrix<double, 1, 4> cost_at_vertices =
-              a.col(k).transpose() * vertices;
-          EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(),
-                      1E-4);
-          // Check that λ has the correct value, except λ(i, j), λ(i, j+1),
-          // λ(i+1, j) and λ(i+1, j+1), all other entries in λ are zero.
-          double w{0};
-          double x{0};
-          double y{0};
-          for (int m = 0; m <= num_interval_x_; ++m) {
-            for (int n = 0; n <= num_interval_y_; ++n) {
-              if (!((m == i && n == j) || (m == i && n == (j + 1)) ||
-                    (m == (i + 1) && n == j) ||
-                    (m == (i + 1) && n == (j + 1)))) {
-                EXPECT_NEAR(prog_.GetSolution(lambda(m, n)), 0, 1E-5);
-              } else {
-                double lambda_mn{prog_.GetSolution(lambda(m, n))};
-                x += lambda_mn * phi_x_(m);
-                y += lambda_mn * phi_y_(n);
-                w += lambda_mn * phi_x_(m) * phi_y_(n);
-              }
-            }
-          }
-          EXPECT_NEAR(prog_.GetSolution(x_), x, 1E-4);
-          EXPECT_NEAR(prog_.GetSolution(y_), y, 1E-4);
-          EXPECT_NEAR(prog_.GetSolution(w_), w, 1E-4);
-        }
+      case IntervalBinning::kLogarithmic: {
+        return SetBinaryValueLogarithmicBinning(active_interval, num_interval);
+      }
+      default: {
+        throw std::runtime_error(
+            "This default case should not be reached. We add the default case "
+            "due to a gcc-5 pitfall.");
       }
     }
   }
+
+  void TestLinearObjectiveCheck(int i, int j, int k) const override {
+    // Check that λ has the correct value, except λ(i, j), λ(i, j+1),
+    // λ(i+1, j) and λ(i+1, j+1), all other entries in λ are zero.
+    double w{0};
+    double x{0};
+    double y{0};
+    for (int m = 0; m <= num_interval_x_; ++m) {
+      for (int n = 0; n <= num_interval_y_; ++n) {
+        if (!((m == i && n == j) || (m == i && n == (j + 1)) ||
+              (m == (i + 1) && n == j) || (m == (i + 1) && n == (j + 1)))) {
+          EXPECT_NEAR(prog_.GetSolution(lambda_(m, n)), 0, 1E-5);
+        } else {
+          double lambda_mn{prog_.GetSolution(lambda_(m, n))};
+          x += lambda_mn * phi_x_(m);
+          y += lambda_mn * phi_y_(n);
+          w += lambda_mn * phi_x_(m) * phi_y_(n);
+        }
+      }
+    }
+    EXPECT_NEAR(prog_.GetSolution(x_), x, 1E-4);
+    EXPECT_NEAR(prog_.GetSolution(y_), y, 1E-4);
+    EXPECT_NEAR(prog_.GetSolution(w_), w, 1E-4);
+  }
+
+ protected:
+  const IntervalBinning binning_;
+  const int Bx_size_;
+  const int By_size_;
+  MatrixXDecisionVariable lambda_;
+};
+
+TEST_P(BilinearProductMcCormickEnvelopeSos2Test, LinearObjectiveTest) {
+  TestLinearObjective();
+}
+
+TEST_P(BilinearProductMcCormickEnvelopeSos2Test, FeasiblePointTest) {
+  TestFeasiblePoint();
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -402,6 +490,43 @@ INSTANTIATE_TEST_CASE_P(
                        ::testing::ValuesIn(std::vector<IntervalBinning>{
                            IntervalBinning::kLogarithmic,
                            IntervalBinning::kLinear})));
+
+class BilinearProductMcCormickEnvelopeMultipleChoiceTest
+    : public ::testing::TestWithParam<std::tuple<int, int>>,
+      public BilinearProductMcCormickEnvelopeTest {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
+      BilinearProductMcCormickEnvelopeMultipleChoiceTest)
+
+  BilinearProductMcCormickEnvelopeMultipleChoiceTest()
+      : BilinearProductMcCormickEnvelopeTest(std::get<0>(GetParam()),
+                                             std::get<1>(GetParam())) {
+    Bx_ = prog_.NewBinaryVariables(num_interval_x_);
+    By_ = prog_.NewBinaryVariables(num_interval_y_);
+    AddBilinearProductMcCormickEnvelopeMultipleChoice(
+        &prog_, x_, y_, w_, phi_x_, phi_y_, Bx_.cast<symbolic::Expression>(),
+        By_.cast<symbolic::Expression>());
+  }
+
+  Eigen::VectorXd SetBinaryValue(int active_interval,
+                                 int num_interval) const override {
+    return SetBinaryValueLinearBinning(active_interval, num_interval);
+  }
+};
+
+TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest,
+       LinearObjectiveTest) {
+  TestLinearObjective();
+}
+
+TEST_P(BilinearProductMcCormickEnvelopeMultipleChoiceTest, FeasiblePointTest) {
+  TestFeasiblePoint();
+}
+
+INSTANTIATE_TEST_CASE_P(
+    TestMixedIntegerUtil, BilinearProductMcCormickEnvelopeMultipleChoiceTest,
+    ::testing::Combine(::testing::ValuesIn(std::vector<int>{2, 3}),
+                       ::testing::ValuesIn(std::vector<int>{2, 3})));
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
