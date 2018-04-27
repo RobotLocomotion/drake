@@ -1837,17 +1837,18 @@ class System : public SystemBase {
     return error.norm();
   }
 
-  /// (Internal use only) Diagram systems must reimplement this to evaluate the
-  /// input port in the given `context`. The subsystem having
-  /// the input port must be owned by this Diagram. The default implementation
-  /// just aborts.
+  /// (Internal use only) This method is invoked when we need to evaluate a
+  /// connected input port of a child subsystem of this System. This need arises
+  /// only if this System contains subsystems, and the framework promises only
+  /// to invoke this method under that circumstance. Hence Diagram must
+  /// implement this to evaluate the connected-to output port (likely belonging
+  /// to a different child subsystem) and returning its value as the value for
+  /// the given input port. A concrete System with no children should implement
+  /// this just to abort since the method should not have been called.
   // TODO(sherm1) Move to SystemBase when there is an InputPortBase to act on.
   virtual const AbstractValue* EvalConnectedSubsystemInputPort(
       const Context<T>& context,
-      const InputPortDescriptor<T>& input_port) const {
-    unused(context, input_port);
-    DRAKE_ABORT_MSG("EvaluateSubsystemInputPort(): not implemented");
-  }
+      const InputPortDescriptor<T>& input_port) const = 0;
 
   //----------------------------------------------------------------------------
   /// @name                 Utility methods (protected)

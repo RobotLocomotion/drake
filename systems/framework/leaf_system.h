@@ -1534,6 +1534,14 @@ class LeafSystem : public System<T> {
     }
   }
 
+  // This should never be called on a System that has no subsystems.
+  const AbstractValue* EvalConnectedSubsystemInputPort(
+      const Context<T>&, const InputPortDescriptor<T>&) const final {
+    DRAKE_ABORT_MSG(
+        "LeafSystem::EvalConnectedSubsystemInputPort() should never "
+        "have been called.");
+  }
+
   // Returns a SystemSymbolicInspector for this system, or nullptr if a
   // SystemSymbolicInspector cannot be constructed because this System has no
   // symbolic representation.

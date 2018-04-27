@@ -215,6 +215,11 @@ class TestSystem : public System<double> {
 
   void DoValidateAllocatedContext(const ContextBase&) const final {}
 
+  const AbstractValue* EvalConnectedSubsystemInputPort(
+      const Context<double>&, const InputPortDescriptor<double>&) const final {
+    DRAKE_ABORT_MSG("test should not get here");
+  }
+
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
   mutable std::vector<int> published_numbers_;
@@ -563,8 +568,14 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+           PeriodicEventDataComparator>
+  DoGetPeriodicEvents() const override {
     return {};
+  }
+
+  const AbstractValue* EvalConnectedSubsystemInputPort(
+      const Context<T>&, const InputPortDescriptor<T>&) const final {
+    DRAKE_ABORT_MSG("test should not get here");
   }
 };
 
