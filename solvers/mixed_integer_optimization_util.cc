@@ -143,6 +143,7 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j) {
       prog->AddConstraint(
+          // +v converts a symbolic variable v to a symbolic expression.
           CreateLogicalAndConstraint(+Bx(i), +By(j), +Bxy(i, j)));
 
       w_constraint_rhs(0) -= phi_x(i) * phi_y(j) * Bxy(i, j);

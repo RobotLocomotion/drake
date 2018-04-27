@@ -150,12 +150,13 @@ enum class IntervalBinning {
 
 /**
  * Add constraints to the optimization program, such that the bilinear product
- * x * y is approximated by w.
+ * x * y is approximated by w, using Special Ordered Set of Type 2 (sos2)
+ * constraint.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
- * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
+ * is [y_min, y_max]. We first consider two arrays φˣ, φʸ, satisfying
  * ```
  * x_min = φˣ₀ < φˣ₁ < ... < φˣₘ = x_max
- * y_min = φʸ₀ < φʸ₁ < ... < φʸₘ = y_max
+ * y_min = φʸ₀ < φʸ₁ < ... < φʸₙ = y_max
  * ```
  * , and divide the range of x into intervals
  * [φˣ₀, φˣ₁], [φˣ₁, φˣ₂], ... , [φˣₘ₋₁, φˣₘ]
@@ -188,13 +189,14 @@ enum class IntervalBinning {
  * logarithmic binning.
  * @return lambda The auxiliary continuous variables.
  *
- * The constraint we impose are
- * <pre>
- * x = φxᵀ * (λ.rowwise().sum())
- * y = φyᵀ * (λ.colwise().sum())
- * w = sum_{i, j} φx(i) * φy(j) * λ(i, j)
- * Both λ.rowwise().sum() and λ.colwise().sum() satisfy SOS2 constraint.
- * </pre>
+ * The constraints we impose are
+ * ```
+ * x = (φˣ)ᵀ * ∑ⱼ λᵢⱼ
+ * y = (φʸ)ᵀ * ∑ᵢ λᵢⱼ
+ * w = ∑ᵢⱼ φˣᵢ * φʸⱼ * λᵢⱼ
+ * Both ∑ⱼ λᵢⱼ = λ.rowwise().sum() and ∑ᵢ λᵢⱼ = λ.colwise().sum() satisfy SOS2
+ * constraint.
+ * ```
  *
  * If x ∈ [φx(M), φx(M+1)] and y ∈ [φy(N), φy(N+1)], then only λ(M, N),
  * λ(M + 1, N), λ(M, N + 1) and λ(M+1, N+1) can be strictly positive, all other
@@ -279,12 +281,13 @@ AddBilinearProductMcCormickEnvelopeSos2(
 
 /**
  * Add constraints to the optimization program, such that the bilinear product
- * x * y is approximated by w.
+ * x * y is approximated by w, using Mixed Integer constraint with "Multiple
+ * Choice" model.
  * To do so, we assume that the range of x is [x_min, x_max], and the range of y
- * is [y_min, y_max]. We first consider two arrays φx, φy, satisfying
+ * is [y_min, y_max]. We first consider two arrays φˣ, φʸ, satisfying
  * ```
  * x_min = φˣ₀ < φˣ₁ < ... < φˣₘ = x_max
- * y_min = φʸ₀ < φʸ₁ < ... < φʸₘ = y_max
+ * y_min = φʸ₀ < φʸ₁ < ... < φʸₙ = y_max
  * ```
  * , and divide the range of x into intervals
  * [φˣ₀, φˣ₁], [φˣ₁, φˣ₂], ... , [φˣₘ₋₁, φˣₘ]
@@ -298,7 +301,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * @param prog The optimization problem to which the constraints will be added.
  * @param x A variable in the bilinear product.
  * @param y A variable in the bilinear product.
- * @param w The expression that will approximates the bilinear product x * y.
+ * @param w The expression that approximates the bilinear product x * y.
  * @param phi_x φˣ in the documentation above. Will be used to cut the range of
  * x into small intervals.
  * @param phi_y φʸ in the documentation above. Will be used to cut the range of
@@ -309,6 +312,7 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * By(i) = 1 => φʸⱼ ≤ y ≤ φʸⱼ₊₁.
  *
  * One formulation of the constraint is
+ * ```
  * x = ∑ᵢⱼ x̂ᵢⱼ
  * y = ∑ᵢⱼ ŷᵢⱼ
  * Bˣʸᵢⱼ = Bˣᵢ ∧ Bʸⱼ
@@ -328,8 +332,11 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * Bˣʸᵢⱼ ≤ Bʸⱼ
  * 0 ≤ Bˣʸᵢⱼ ≤ 1
  * ```
- * We can further simplify these constraints, by defining two vectors
- * `x̅ ∈ ℝⁿ`, `y̅ ∈ ℝᵐ` as
+ * This formulation will introduce slack variables x̂, ŷ and Bˣʸ, in total
+ * 3 * m * n variables.
+ *
+ * In order to reduce the number of slack variables, we can further simplify
+ * these constraints, by defining two vectors `x̅ ∈ ℝⁿ`, `y̅ ∈ ℝᵐ` as
  * ```
  * x̅ⱼ = ∑ᵢ x̂ᵢⱼ
  * y̅ᵢ = ∑ⱼ ŷᵢⱼ
@@ -350,10 +357,11 @@ AddBilinearProductMcCormickEnvelopeSos2(
  * In this formulation, we introduce new continuous variables `x̅`, `y̅`, `Bˣʸ`.
  * The total number of new variables is m + n + m * n.
  *
- * In section 3.3 of
- * Mixed-Integer Models for Nonseparable Piecewise Linear Optimization: Unifying
- * Framework and Extensions by Juan P Vielma, Shabbir Ahmed and George Nemhauser
- * this formulation is called "Multiple Choice Model"
+ * In section 3.3 of Mixed-Integer Models for Nonseparable Piecewise Linear
+ * Optimization: Unifying Framework and Extensions by Juan P Vielma, Shabbir
+ * Ahmed and George Nemhauser, this formulation is called "Multiple Choice
+ * Model".
+ *
  * @note We DO NOT add the constraint
  * Bx(i) ∈ {0, 1}, By(j) ∈ {0, 1}
  * in this function. It is the user's responsibility to ensure that these binary
