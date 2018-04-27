@@ -5,45 +5,38 @@
 // This copyright notice must appear in all copies and distributions.
 // MotionGenesis Professional Licensee: Toyota Research Institute
 // -----------------------------------------------------------------------------
-#include <iostream>
 #include "drake/examples/particle1d/MG/particle1dMG.h"
 #include "drake/common/autodiff.h"
 
 // -----------------------------------------------------------------------------
 namespace MotionGenesis {
+template <typename T>
+Particle1dMG<T>::Particle1dMG() {
+
+  // Assign default value for this class's constant parameters (for this class,
+  // only mass).
+  mass = 1;
+}
 
 // -----------------------------------------------------------------------------
 template <typename T>
 void Particle1dMG<T>::CalcDerivativesToStateDt(const T t,
                                                const T state[],
-                                               T state_Dt[])  {
+                                               T stateDt[])  {
   SetVariablesFromState(state);
-  CalculateSpecifiedAssignedQuantities(t);
 
-  state_Dt[0] = xp;
-  state_Dt[1] = xpp;
-}
+  F = cos(t);
+  xDDt = F / mass;
 
-template <typename T>
-Particle1dMG<T>::Particle1dMG() {
-
-  // initialize constants, variables, and initial states. These are default
-  // values, actual model values should be assigned from the plant.
-  m = 1;
+  stateDt[0] = xDt;
+  stateDt[1] = xDDt;
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
 void Particle1dMG<T>::SetVariablesFromState(const T state[])  {
   x = state[0];
-  xp = state[1];
-}
-
-// -----------------------------------------------------------------------------
-template <typename T>
-void Particle1dMG<T>::CalculateSpecifiedAssignedQuantities(const T t) {
-  F = cos(t);
-  xpp = F / m;
+  xDt = state[1];
 }
 
 // -----------------------------------------------------------------------------

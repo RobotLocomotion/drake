@@ -10,30 +10,34 @@
 
 // -----------------------------------------------------------------------------
 namespace MotionGenesis {
-
+// This is a model of a particle that is only allowed to move horizontally on
+// earth (a Newtonian reference frame N). The particle has mass, No is a point
+// fixed on earth, and Nx is a horizontal unit vector fixed on earth.
 // -----------------------------------------------------------------------------
 template <typename T>
 class Particle1dMG {
  public:
-  // Construct a model of a particle.
+  // Constructs a particle and assigns the default value of 1 kg for its sole
+  // constant parameter (mass).
   Particle1dMG();
 
-  // Calculates the time-derivative of the state and assigns the value to the
-  // state_Dt array.
-  void CalcDerivativesToStateDt(const T t, const T state[], T state_Dt[]);
+  // Calculates the time-derivative of the state and assigns these values to the
+  // stateDt array.
+  void CalcDerivativesToStateDt(const T t, const T state[], T stateDt[]);
 
   // Model parameters (constants), only need to be set once (e.g., at t = 0).
-  T m;
+  T mass;
 
  private:
-  // Assigns state variables from system context to local variables
+  // Set local state variables x and xDt from their corresponding values in
+  // state[].
   void SetVariablesFromState(const T state[]);
 
-  // Calculate any specialized outputs
-  void CalculateSpecifiedAssignedQuantities(const T t);
-
-  // Model variables (not constants), set privately from state.
-  T x, xp, xpp, F;
+  // Model variables set privately via CalcDerivativesToStateDt. x is the
+  // particle's Nx measure from No. xDt and xDDt are the first and second
+  // time-derivatives of x, respectively. F is the Nx measure of the force on
+  // the particle.
+  T x, xDt, xDDt, F;
 };
 
 // -----------------------------------------------------------------------------
