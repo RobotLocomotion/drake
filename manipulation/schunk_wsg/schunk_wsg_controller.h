@@ -21,7 +21,7 @@ class SchunkWsgController : public systems::Diagram<double> {
   // The gains here are somewhat arbitrary.  The goal is to make sure
   // that the maximum force is generated except when very close to the
   // target.
-  explicit SchunkWsgController(double kp = 2000.0, double ki = 0.0,
+  SchunkWsgController(double kp = 2000.0, double ki = 0.0,
                                double kd = 5.0);
 
   const systems::InputPortDescriptor<double>& get_command_input_port() const {
