@@ -45,7 +45,7 @@ Isometry3<double> ParsePose(const proto::Pose& pose) {
     DRAKE_THROW_UNLESS(pose.xyz_size() == 3);
     X.translation() = Vector3<double>(pose.xyz(0), pose.xyz(1), pose.xyz(2));
   }
-  if (!pose.rpy().empty()) {
+  if (!pose.rpy().vector().empty()) {
     DRAKE_THROW_UNLESS(pose.rpy_size() == 3);
     X.linear() =
         rpy2rotmat(Vector3<double>(pose.rpy(0), pose.rpy(1), pose.rpy(2)));

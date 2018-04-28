@@ -17,8 +17,6 @@
 namespace drake {
 namespace math {
 
-template <typename T> class RollPitchYaw;
-
 /// This class represents a 3x3 rotation matrix between two arbitrary frames
 /// A and B and helps ensure users create valid rotation matrices.  This class
 /// relates right-handed orthogonal unit vectors Ax, Ay, Az fixed in frame A

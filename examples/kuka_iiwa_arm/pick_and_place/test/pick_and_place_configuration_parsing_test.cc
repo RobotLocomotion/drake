@@ -18,7 +18,6 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
 
-using math::rpy2rotmat;
 using pick_and_place::PlannerConfiguration;
 using pick_and_place::SimulatedPlantConfiguration;
 using pick_and_place::OptitrackConfiguration;
