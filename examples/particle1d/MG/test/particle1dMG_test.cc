@@ -24,8 +24,8 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
   EXPECT_TRUE(test_particle.mass == 1);
 
   // for loop to check the repeated statements
-  for(int i = 0; i<=2; i++){
-    if(i == 1){
+  for (int i = 0; i < 3; i++) {
+    if (i == 1) {
       // Test calculations for another value of time and another state.
       time = 0.75;
       state[0] = 0.26831113112;
@@ -56,12 +56,13 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiff) {
   // Unit test for the Particle1dMG class.
   MotionGenesis::Particle1dMG<AutoDiffXd> test_particle;
   // Construct new context based on AutoDiff
-  double time = 0.0;
-  double state[2] = {0};
-  double stateDt[2] = {0};
-  double test_mass = 1;
+  AutoDiffXd time = 0.0;
+  AutoDiffXd state[2] = {0};
+  AutoDiffXd stateDt[2] = {0};
+  AutoDiffXd test_mass = 1;
 
   test_particle.CalcDerivativesToStateDt(time, state, stateDt);
+
 }
 
 } // namespace
