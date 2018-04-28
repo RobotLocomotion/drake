@@ -270,6 +270,7 @@ drake_cc_library(
     ],
     deps = [
         ":bilinear_product_util",
+        ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
         "//math:gradient",
@@ -1053,6 +1054,7 @@ drake_cc_googletest(
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],
+    use_default_main = False,
     deps = [
         ":gurobi_solver",
         ":mathematical_program",

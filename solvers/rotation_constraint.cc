@@ -9,7 +9,9 @@
 #include <limits>
 
 #include "drake/math/cross_product.h"
+#include "drake/math/gray_code.h"
 #include "drake/solvers/bilinear_product_util.h"
+#include "drake/solvers/integer_optimization_util.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
@@ -184,9 +186,9 @@ namespace {
 // Decodes the discretization of the axes.
 // For compactness, this method is referred to as phi(i) in the documentation
 // below.  The implementation must give a valid number even for i<0 and
-// i>num_binary_variables_per_half_axis.
-double EnvelopeMinValue(int i, int num_binary_variables_per_half_axis) {
-  return static_cast<double>(i) / num_binary_variables_per_half_axis;
+// i>num_intervals_per_half_axis.
+double EnvelopeMinValue(int i, int num_intervals_per_half_axis) {
+  return static_cast<double>(i) / num_intervals_per_half_axis;
 }
 
 // Given (an integer enumeration of) the orthant, takes a vector in the
@@ -450,6 +452,15 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   prog_normal.Solve();
   *n = prog_normal.GetSolution(n_var);
   *d = prog_normal.GetSolution(d_var(0));
+
+  // The optimization problem might not be solved to super high precision. To
+  // guarantee that the constraints d <= nᵀ * pts.col(i), nᵀ * n = 1 are
+  // satisfied, we "polish" the optimization solution below.
+  n->normalize();
+  *d = std::numeric_limits<double>::infinity();
+  for (const auto& pt : pts) {
+    *d = std::min(*d, n->dot(pt));
+  }
 
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
@@ -1087,28 +1098,60 @@ void AddCrossProductImpliedOrthantConstraint(
     }
   }
 }
+
+// This function just calls AddMcCormickVectorConstraints for each row/column
+// of R.
+void AddMcCormickVectorConstraintsForR(
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    const std::vector<Matrix3<symbolic::Expression>> & CRpos,
+    const std::vector<Matrix3<symbolic::Expression>> & CRneg,
+    int num_intervals_per_half_axis, MathematicalProgram* prog) {
+  // Add constraints to the column and row vectors.
+  std::vector<Vector3<Expression>> cpos(num_intervals_per_half_axis),
+      cneg(num_intervals_per_half_axis);
+  for (int i = 0; i < 3; i++) {
+    // Make lists of the decision variables in terms of column vectors and row
+    // vectors to facilitate the calls below.
+    // TODO(russt): Consider reorganizing the original CRpos/CRneg variables to
+    // avoid this (albeit minor) cost?
+    for (int k = 0; k < num_intervals_per_half_axis; k++) {
+      cpos[k] = CRpos[k].col(i);
+      cneg[k] = CRneg[k].col(i);
+    }
+    AddMcCormickVectorConstraints(prog, R.col(i), cpos, cneg,
+                                  R.col((i + 1) % 3), R.col((i + 2) % 3));
+
+    for (int k = 0; k < num_intervals_per_half_axis; k++) {
+      cpos[k] = CRpos[k].row(i).transpose();
+      cneg[k] = CRneg[k].row(i).transpose();
+    }
+    AddMcCormickVectorConstraints(prog, R.row(i).transpose(), cpos, cneg,
+                                  R.row((i + 1) % 3).transpose(),
+                                  R.row((i + 2) % 3).transpose());
+  }
+}
 }  // namespace
 
 AddRotationMatrixMcCormickEnvelopeReturnType
 AddRotationMatrixMcCormickEnvelopeMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_binary_vars_per_half_axis, RollPitchYawLimits limits) {
-  DRAKE_DEMAND(num_binary_vars_per_half_axis >= 1);
+    int num_intervals_per_half_axis, RollPitchYawLimits limits) {
+  DRAKE_DEMAND(num_intervals_per_half_axis >= 1);
 
   // Use a simple lambda to make the constraints more readable below.
   // Note that
   //  forall k>=0, 0<=phi(k), and
-  //  forall k<=num_binary_vars_per_half_axis, phi(k)<=1.
+  //  forall k<=num_intervals_per_half_axis, phi(k)<=1.
   auto phi = [&](int k) -> double {
-    return EnvelopeMinValue(k, num_binary_vars_per_half_axis);
+    return EnvelopeMinValue(k, num_intervals_per_half_axis);
   };
 
   // Creates binary decision variables which discretize each axis.
   //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
   //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
   std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
-  for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
+  for (int k = 0; k < num_intervals_per_half_axis; k++) {
     BRpos.push_back(
         prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
     BRneg.push_back(
@@ -1117,23 +1160,27 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
 
   // For convenience, we also introduce additional expressions to
   // represent the individual sections of the real line
+  // CRpos[k](i, j) = 1 => phi(k) <= R(i, j) <= phi(k + 1)
   //   CRpos[k](i,j) = BRpos[k](i,j) if k=N-1, otherwise
   //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
+  // Similarly CRneg[k](i, j) = 1 => -phi(k + 1) <= R(i, j) <= -phi(k)
+  //   CRneg[k](i, j) = CRneg[k](i, j) if k = N-1, otherwise
+  //   CRneg[k](i, j) = CRneg[k](i, j) - CRneg[k+1](i, j)
   std::vector<Matrix3<Expression>> CRpos, CRneg;
-  CRpos.reserve(num_binary_vars_per_half_axis);
-  CRneg.reserve(num_binary_vars_per_half_axis);
-  for (int k = 0; k < num_binary_vars_per_half_axis - 1; k++) {
+  CRpos.reserve(num_intervals_per_half_axis);
+  CRneg.reserve(num_intervals_per_half_axis);
+  for (int k = 0; k < num_intervals_per_half_axis - 1; k++) {
     CRpos.push_back(BRpos[k] - BRpos[k + 1]);
     CRneg.push_back(BRneg[k] - BRneg[k + 1]);
   }
   CRpos.push_back(
-    BRpos[num_binary_vars_per_half_axis - 1].cast<symbolic::Expression>());
+    BRpos[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
   CRneg.push_back(
-    BRneg[num_binary_vars_per_half_axis - 1].cast<symbolic::Expression>());
+    BRneg[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
+      for (int k = 0; k < num_intervals_per_half_axis; k++) {
         // R(i,j) > phi(k) => BRpos[k](i,j) = 1
         // R(i,j) < phi(k) => BRpos[k](i,j) = 0
         // R(i,j) = phi(k) => BRpos[k](i,j) = 0 or 1
@@ -1181,36 +1228,97 @@ AddRotationMatrixMcCormickEnvelopeMilpConstraints(
   AddBoundingBoxConstraintsImpliedByRollPitchYawLimitsToBinary(prog, BRpos[0],
                                                                limits);
 
-  // Add constraints to the column and row vectors.
-  std::vector<Vector3<Expression>>
-      cpos(num_binary_vars_per_half_axis),
-      cneg(num_binary_vars_per_half_axis);
-  for (int i = 0; i < 3; i++) {
-    // Make lists of the decision variables in terms of column vectors and row
-    // vectors to facilitate the calls below.
-    // TODO(russt): Consider reorganizing the original CRpos/CRneg variables to
-    // avoid this (albeit minor) cost?
-    for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
-      cpos[k] = CRpos[k].col(i);
-      cneg[k] = CRneg[k].col(i);
-    }
-    AddMcCormickVectorConstraints(prog, R.col(i), cpos, cneg,
-                                  R.col((i + 1) % 3), R.col((i + 2) % 3));
-
-    for (int k = 0; k < num_binary_vars_per_half_axis; k++) {
-      cpos[k] = CRpos[k].row(i).transpose();
-      cneg[k] = CRneg[k].row(i).transpose();
-    }
-    AddMcCormickVectorConstraints(prog, R.row(i).transpose(), cpos, cneg,
-                                  R.row((i + 1) % 3).transpose(),
-                                  R.row((i + 2) % 3).transpose());
-  }
+  AddMcCormickVectorConstraintsForR(R, CRpos, CRneg,
+                                    num_intervals_per_half_axis, prog);
 
   AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
   AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());
 
   return make_tuple(CRpos, CRneg, BRpos, BRneg);
 }
+
+namespace {
+// Returns true if n is positive and n is a power of 2.
+bool is_power_of_two(int n) {
+  DRAKE_ASSERT(n > 0);
+  return  (n & (n-1)) == 0;
+}
+
+// B[i][j] contains a vector of binary variables, such that if B[i][j] is the
+// reflected gray code representation of integer k, then R(i, j) is in the k'th
+// interval. We will write CRpos and CRneg as expressions of B, such that
+// CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k + 1) => B[i][j] represents
+// num_interval_per_half_axis + k in reflected gray code.
+// CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k) => B[i][j]
+// represents num_interval_per_half_axis - k - 1 in reflected gray code.
+template <typename T>
+void GetCRposAndCRnegForLogarithmicBinning(
+    const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
+    MathematicalProgram* prog, std::vector<Matrix3<Expression>>* CRpos,
+    std::vector<Matrix3<Expression>>* CRneg) {
+
+  if (num_intervals_per_half_axis > 1) {
+    const auto gray_codes = math::CalculateReflectedGrayCodes(
+        CeilLog2(num_intervals_per_half_axis) + 1);
+    CRpos->clear();
+    CRneg->clear();
+    CRpos->reserve(num_intervals_per_half_axis);
+    CRneg->reserve(num_intervals_per_half_axis);
+    for (int k = 0; k < num_intervals_per_half_axis; ++k) {
+      CRpos->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRpos[" + std::to_string(k) + "]"));
+      CRneg->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRneg[" + std::to_string(k) + "]"));
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          prog->AddConstraint(CreateBinaryCodeMatchConstraint(
+              B[i][j],
+              gray_codes.row(num_intervals_per_half_axis + k).transpose(),
+              (*CRpos)[k](i, j)));
+          prog->AddConstraint(CreateBinaryCodeMatchConstraint(
+              B[i][j],
+              gray_codes.row(num_intervals_per_half_axis - k - 1).transpose(),
+              (*CRneg)[k](i, j)));
+        }
+      }
+    }
+  } else {
+    // num_interval_per_half_axis = 1 is the special case, B[i][j](0) = 0 if
+    // -1 <= R(i, j) <= 0, and B[i][j](0) = 1 if 0 <= R(i, j) <= 1
+    CRpos->resize(1);
+    CRneg->resize(1);
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        (*CRpos)[0](i, j) = B[i][j](0);
+        (*CRneg)[0](i, j) = 1 - B[i][j](0);
+      }
+    }
+  }
+}
+
+template <typename T>
+void GetCRposAndCRnegForLinearBinning(const std::array<std::array<T, 3>, 3>& B,
+                                      int num_intervals_per_half_axis,
+                                      MathematicalProgram* prog,
+                                      std::vector<Matrix3<Expression>>* CRpos,
+                                      std::vector<Matrix3<Expression>>* CRneg) {
+  CRpos->resize(num_intervals_per_half_axis);
+  CRneg->resize(num_intervals_per_half_axis);
+
+  // CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k + 1)
+  //   <=> B[i][j](num_interval_per_half_axis + k) = 1
+  // CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k)
+  //   <=> B[i][j](num_interval_per_half_axis - k - 1) = 1
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      for (int k = 0; k < num_intervals_per_half_axis; ++k) {
+        (*CRpos)[k](i, j) = B[i][j](num_intervals_per_half_axis + k);
+        (*CRneg)[k](i, j) = B[i][j](num_intervals_per_half_axis - k - 1);
+      }
+    }
+  }
+}
+}  // namespace
 
 template <int kNumIntervalsPerHalfAxis>
 typename std::enable_if<
@@ -1221,7 +1329,8 @@ typename std::enable_if<
 AddRotationMatrixBilinearMcCormickMilpConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_intervals_per_half_axis) {
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection) {
   typedef typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
       kNumIntervalsPerHalfAxis>::BinaryVarType Btype;
   typedef typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
@@ -1276,7 +1385,7 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
   // B[i][j](0) = 0 => R(i, j) <= 0
   // B[i][j](0) = 1 => R(i, j) >= 0
   // We can thus impose constraints on B[i][j](0).
-  if ((num_intervals_per_half_axis & (num_intervals_per_half_axis - 1)) == 0) {
+  if (is_power_of_two(num_intervals_per_half_axis)) {
     // num_intervals_per_half_axis is a power of 2.
 
     // Bpos(i, j) = sign(R(i, j)).
@@ -1312,41 +1421,50 @@ AddRotationMatrixBilinearMcCormickMilpConstraints(
     }
   }
 
+  if (add_mccormick_for_sphere_box_intersection) {
+    std::vector<Matrix3<symbolic::Expression>> CRpos, CRneg;
+    GetCRposAndCRnegForLogarithmicBinning(B, num_intervals_per_half_axis, prog,
+                                          &CRpos, &CRneg);
+    AddMcCormickVectorConstraintsForR(R, CRpos, CRneg,
+                                      num_intervals_per_half_axis, prog);
+  }
   return std::make_pair(B, phi);
 }
 
 template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
     Eigen::Dynamic>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints<Eigen::Dynamic>(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
-    int num_intervals_per_half_axis);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection);
 
-template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-    1>::type
+template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<1>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints<1>(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
-    int num_intervals_per_half_axis);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection);
 
-template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-    2>::type
+template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<2>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints<2>(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
-    int num_intervals_per_half_axis);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection);
 
-template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-    3>::type
+template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<3>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints<3>(
-    MathematicalProgram *prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>> &R,
-    int num_intervals_per_half_axis);
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection);
 
 template AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<4>::type
 AddRotationMatrixBilinearMcCormickMilpConstraints<4>(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_intervals_per_half_axis);
+    int num_intervals_per_half_axis,
+    bool add_mccormick_for_sphere_box_intersection);
 }  // namespace solvers
 }  // namespace drake
