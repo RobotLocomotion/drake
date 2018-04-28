@@ -568,7 +568,7 @@ GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
       drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
       tree_ptr.get());
 
-  const double timestep = 0.1;
+  const double timestep = 1e-6;
   RigidBodyPlant<double> continuous_plant(tree_ptr->Clone());
   RigidBodyPlant<double> time_stepping_plant(move(tree_ptr), timestep);
 

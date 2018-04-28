@@ -1710,6 +1710,12 @@ void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
   if (!generalized_impulse)
     throw std::logic_error("generalized_impulse vector is null.");
 
+  // Look for fast exit.
+  if (cf.size() == 0) {
+    generalized_impulse->setZero(problem_data.Mv.size(), 1);
+    return;
+  }
+
   // Get number of contacts.
   const int num_contacts = problem_data.mu.size();
   const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),

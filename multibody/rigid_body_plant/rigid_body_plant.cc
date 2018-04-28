@@ -1112,7 +1112,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // Set up the N multiplication operator (projected velocity along the contact
   // normals) and the N' multiplication operator (effect of contact normal
-  // forces on generalized forces).
+  // forces on generalized forces). Note that Nᵀ is scaled by dt which makes
+  // the contact forces non-impulsive.
   data.N_mult = [this, &contacts, &q](const VectorX<T>& w) -> VectorX<T> {
     return ContactNormalJacobianMult(contacts, q, w);
   };
@@ -1124,7 +1125,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // Set up the F multiplication operator (projected velocity along the contact
   // tangent directions) and the F' multiplication operator (effect of contact
-  // frictional forces on generalized forces).
+  // frictional forces on generalized forces). Note that Fᵀ is scaled by dt
+  // which makes the contact forces non-impulsive.
   data.F_mult = [this, &contacts, &q, &data](const VectorX<T>& w) ->
       VectorX<T> {
     return ContactTangentJacobianMult(contacts, q, w, data.r);
@@ -1136,7 +1138,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   };
 
   // Set the range-of-motion (L) Jacobian multiplication operator and the
-  // transpose_mult() operation.
+  // transpose_mult() operation. Note that Lᵀ is scaled by dt which makes the
+  // contact forces non-impulsive.
   data.L_mult = [&limits](const VectorX<T>& w) -> VectorX<T> {
     VectorX<T> result(limits.size());
     for (int i = 0; static_cast<size_t>(i) < limits.size(); ++i) {
@@ -1234,6 +1237,8 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 
   // TODO(edrumwri): Relocate this block of code to the contact output function
   // when caching is in place.
+  // Note that constraint forces are non-impulsive, so scaling by dt is
+  // unnecessary.
   ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
                                     constraint_force,
                                     &discretized_system_contact_results_);
