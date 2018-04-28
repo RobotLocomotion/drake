@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
 #include "drake/common/autodiff.h"
 
 namespace drake {
@@ -54,15 +55,13 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
 GTEST_TEST(PlantTest, MGClassTestAutoDiff) {
   // Unit test for the Particle1dMG class.
   MotionGenesis::Particle1dMG<AutoDiffXd> test_particle;
-  //double time = 0.0;
-  //double state[2] = {0};
-  //double stateDt[2] = {0};
-  Eigen::AutoDiffScalar<VectorXd> test_mass(1);
+  // Construct new context based on AutoDiff
+  double time = 0.0;
+  double state[2] = {0};
+  double stateDt[2] = {0};
   double test_mass = 1;
 
-  test_particle.mass = test_mass;
-  EXPECT_TRUE(test_particle.mass = test_mass);
-
+  test_particle.CalcDerivativesToStateDt(time, state, stateDt);
 }
 
 } // namespace
