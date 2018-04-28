@@ -123,7 +123,7 @@ endif()
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 7.5.2 MODULE REQUIRED)
+  find_package(Gurobi 8.0.0 MODULE REQUIRED)
 
   list(APPEND BAZEL_ARGS --config=gurobi)
 
