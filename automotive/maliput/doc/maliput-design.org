@@ -12,7 +12,7 @@
 
 #+TITLE: maliput: Modeling Road Networks for Simulation
 #+AUTHOR: Matt Marjanović (maddog@tri.global)
-#+DATE: March 21, 2017
+#+DATE: April 20, 2018
 
 This document describes =maliput=, a model of road networks for use in
 agent and traffic simulations.  At the core of =maliput= is a
@@ -66,7 +66,7 @@ fragments of very large, complex road networks on-demand and disposing
 of fragments that are no longer immediately necessary.
 
 
-* Mathematical Model
+* Geometry Model
 ** Overview
 At the core of =maliput= is a mathematical model for the geometry of
 the space around a road network; it is a model of both the road
@@ -83,9 +83,9 @@ able to describe objects and events which are not glued to the surface
 trucks.
 
 In super-mathy terms:
- * The surface of the Earth (and the volume around it) is generally
-   approximated by locally flat 3-dimensional Cartesian space referred to
-   as the /world frame/.
+ * The world containing the road network is approximated by an inertial,
+   locally (if not globally) flat, 3-dimensional Cartesian coordinate
+   system referred to as the /world frame/.
  * The road surface is a bounded compact orientable 2-dimensional manifold
    embedded in the $\mathbb{R}^3$ world frame via a $G^1$ continuous map from
    $\mathbb{R}^2 \to \mathbb{R}^3$.
@@ -123,15 +123,26 @@ Two types of coordinate frames are used in this model: the (single)
 =World=-frame and the (multiple) =Lane=-frames.  In both, distances
 are typically measured in units of meters.
 
-The =World=-frame corresponds to a locally-flat projection of the
-Earth's surface, e.g., via UTM projection (although no specific
-projection is currently mandated by =maliput=).  The =World=-frame is
-a right-handed orthonormal inertial coordinate system, with basis
-$(\hat{x},\hat{y},\hat{z})$ and positions expressed as triples
-$(x,y,z)$.  $\hat{z}$ is /up/, with $z$ representing an altitude or
-elevation.  $\hat{x}$ and $\hat{y}$ span the horizontal plane.  Typically,
-the "ENU" convention is used:  $\hat{x}$ points /East/ and $\hat{y}$
-points /North/.
+The =World=-frame is any right-handed 3D inertial Cartesian coordinate
+system, with orthonormal basis $(\hat{x},\hat{y},\hat{z})$ and
+positions expressed as triples $(x,y,z)$.  This could be a
+globally-flat coordinate system, e.g., ECEF ("Earth-centered,
+Earth-fixed").  Or, it could be a locally-flat projection of the
+Earth's surface, e.g., a UTM ("Universal Transverse Mercator")
+projection coupled with elevation.  No specific projection is mandated
+by =maliput=.
+
+#+BEGIN_QUOTE
+/Currently:/  $\hat{z}$ is assumed to be /up/, with $z$ representing an
+altitude or elevation.  $\hat{x}$ and $\hat{y}$ span the horizontal
+plane.  Typically, the "ENU" convention is used: $\hat{x}$ points /East/
+and $\hat{y}$ points /North/.
+
+/In the future:/ the =maliput= API will be extended to provide a
+description of the geographic coordinate system (if any) used by a
+=RoadGeometry=, as well as a local gravity vector as a function of
+position.
+#+END_QUOTE
 
 A =Lane=-frame is a right-handed orthonormal coordinate system, with
 basis $(\hat{s},\hat{r},\hat{h})$ and positions expressed as
@@ -253,8 +264,8 @@ $H_\text{driveable}$ conflate the bounds of the /driveable/ volume
 (e.g., pavement and free space under bridges) with the bounds of the
 /modelled/ volume (e.g., the bounds on $r$ and $h$ which maintain
 $G^1$ continuity, avoiding cusps).  Hence, the road surface may continue
-into regions that cannot be properly represented by a =Lane='s
-parameterization.
+into regions that cannot be properly represented by the parameterization
+of a given =Lane=.
 #+END_QUOTE
 
 ** Lanes Joined End-to-End via =BranchPoints=
@@ -345,7 +356,7 @@ increasing $r$.  In other words:
  * A =Lane= $K$ is considered "left of" =Lane= $J$ if and only if
    there exists a point on the centerline $C_{LK}$ of $K$ that has a
    position with $r > 0$ in the =Lane=-frame of $J$.  $K$ is "right
-   of" $J$ if and only if a point exist on $C_{LK}$ with position
+   of" $J$ if and only if a point exists on $C_{LK}$ with position
    $r < 0$ in the frame of $J$.
  * If =Lane= $K$ is to the left of =Lane= $J$, then $J$ must be to
    the right of $K$.
@@ -468,3 +479,6 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 #+LATEX_HEADER: \usepackage[margin=1.0in]{geometry}
 #+LATEX_HEADER: \setlength{\parindent}{0pt}
 #+LATEX_HEADER: \setlength{\parskip}{0.5em}
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \setlist[itemize]{itemsep=0.1em,parsep=0.1em,topsep=0.1em,partopsep=0.1em}
+#+LATEX_HEADER: \usepackage{amsmath}
