@@ -94,7 +94,7 @@ class Rotation {
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
   math::RollPitchYaw<double> rpy() const {
-    return math::RollPitchYaw(quaternion_);
+    return math::RollPitchYaw<double>(quaternion_);
   }
 
   // TODO(maddog@tri.global)  Deprecate and/or remove roll()/pitch()/yaw(),
