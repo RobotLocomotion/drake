@@ -123,8 +123,8 @@ Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
   }
 
   // Joint axis, by default in the joint frame J.
-  // TODO(amcastro-tri): Verify this capability indeed is supported by
-  // sdformat.
+  // TODO(amcastro-tri): Verify JointAxis::UseParentModelFrame is actually
+  // supported by sdformat.
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
     const Isometry3d X_MJ = ToIsometry3(joint_spec.Pose());
@@ -197,7 +197,7 @@ void AddJointFromSpecification(
       throw std::logic_error(
           "Joint type not supported for joint '" + joint_spec.Name() + "'.");
     }
-  }  // switch
+  }
 }
 
 }  // namespace

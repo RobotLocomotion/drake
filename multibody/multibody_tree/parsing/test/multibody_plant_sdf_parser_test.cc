@@ -37,14 +37,17 @@ class AcrobotModelTests : public ::testing::Test {
     AddModelFromSdfFile(full_name, plant_.get());
     // We are done adding models.
     plant_->Finalize();
+
+    ASSERT_TRUE(plant_->HasJointNamed("ShoulderJoint"));
+    ASSERT_TRUE(plant_->HasJointNamed("ElbowJoint"));
+
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
     elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
     context_ = plant_->CreateDefaultContext();
 
-    // Create an benchmakr model for verification of the parsed model.
+    // Create an benchmark model for verification of the parsed model.
     // The benchmark model is created programmatically through Drake's API.
-    AcrobotParameters parameters;
-    benchmark_plant_ = MakeAcrobotPlant(parameters, true);
+    benchmark_plant_ = MakeAcrobotPlant(parameters_, true);
     benchmark_shoulder_ =
         &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
     benchmark_elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
@@ -79,6 +82,7 @@ class AcrobotModelTests : public ::testing::Test {
   const RevoluteJoint<double>* elbow_{nullptr};
   std::unique_ptr<systems::Context<double>> context_;
 
+  AcrobotParameters parameters_;
   std::unique_ptr<MultibodyPlant<double>> benchmark_plant_;
   const RevoluteJoint<double>* benchmark_shoulder_{nullptr};
   const RevoluteJoint<double>* benchmark_elbow_{nullptr};
@@ -89,24 +93,23 @@ class AcrobotModelTests : public ::testing::Test {
 // and joint models were properly added.
 TEST_F(AcrobotModelTests, ModelBasics) {
   // Model Size. Counting the world body, there should be three bodies.
-  EXPECT_EQ(3, plant_->num_bodies());
-  EXPECT_EQ(2, plant_->num_joints());
+  EXPECT_EQ(benchmark_plant_->num_bodies(), plant_->num_bodies());
+  EXPECT_EQ(benchmark_plant_->num_joints(), plant_->num_joints());
+  // Even though our benchmark model does, the parsed model has not actuators.
   EXPECT_EQ(0, plant_->num_actuators());
   EXPECT_EQ(0, plant_->num_actuated_dofs());
 
   // State size.
-  EXPECT_EQ(plant_->num_positions(), 2);
-  EXPECT_EQ(plant_->num_velocities(), 2);
-  EXPECT_EQ(plant_->num_multibody_states(), 4);
-
-  EXPECT_TRUE(plant_->HasJointNamed("ShoulderJoint"));
-  EXPECT_TRUE(plant_->HasJointNamed("ElbowJoint"));
+  EXPECT_EQ(plant_->num_positions(), benchmark_plant_->num_positions());
+  EXPECT_EQ(plant_->num_velocities(), benchmark_plant_->num_velocities());
+  EXPECT_EQ(plant_->num_multibody_states(),
+            benchmark_plant_->num_multibody_states());
 
   // Get links by name.
-  const Body<double>& link1 = plant_->GetBodyByName("Link1");
-  EXPECT_EQ(link1.name(), "Link1");
-  const Body<double>& link2 = plant_->GetBodyByName("Link2");
-  EXPECT_EQ(link2.name(), "Link2");
+  const Body<double>& link1 = plant_->GetBodyByName(parameters_.link1_name());
+  EXPECT_EQ(link1.name(), parameters_.link1_name());
+  const Body<double>& link2 = plant_->GetBodyByName(parameters_.link2_name());
+  EXPECT_EQ(link2.name(), parameters_.link2_name());
 
   // Get joints by name.
   const Joint<double>& shoulder_joint = plant_->GetJointByName("ShoulderJoint");
@@ -117,9 +120,9 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   // Drake uses a different convention for naming the world body and therefore
   // we just check its index.
   EXPECT_EQ(shoulder_joint.parent_body().index(), world_index());
-  EXPECT_EQ(shoulder_joint.child_body().name(), "Link1");
-  EXPECT_EQ(elbow_joint.parent_body().name(), "Link1");
-  EXPECT_EQ(elbow_joint.child_body().name(), "Link2");
+  EXPECT_EQ(shoulder_joint.child_body().name(), parameters_.link1_name());
+  EXPECT_EQ(elbow_joint.parent_body().name(), parameters_.link1_name());
+  EXPECT_EQ(elbow_joint.child_body().name(), parameters_.link2_name());
 }
 
 // Verify the parsed model computes the same mass matrix as a Drake benchmark
