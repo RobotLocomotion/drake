@@ -10,7 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -200,15 +199,6 @@ Matrix3<typename Derived::Scalar> quat2rotmat(
       quat2eigenQuaternion(quaternion);
   const RotationMatrix<typename Derived::Scalar> R(q);
   return R.matrix();
-}
-
-/// (Deprecated), use @ref math::RollPitchYaw(quaternion).
-// TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.
-template <typename T>
-DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                  "Use constructor RollPitchYaw(quaternion).")
-Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
-  return math::RollPitchYaw<T>(quaternion).vector();
 }
 
 /**

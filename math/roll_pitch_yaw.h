@@ -266,8 +266,8 @@ class RollPitchYaw {
   // @note This algorithm is specific to SpaceXYZ (roll-pitch-yaw) order.
   // It is easily modified for other SpaceIJK and BodyIJI rotation sequences.
   // @author Paul Mitiguy
-  static Vector3<T> MakeRollPitchYaw(const Eigen::Quaternion<T>& quaternion,
-                                     const RotationMatrix<T>& rotation_matrix);
+  RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
+               const RotationMatrix<T>& rotation_matrix);
 
   // Throws an exception if rpy is not a valid %RollPitchYaw.
   // @param[in] rpy an allegedly valid rotation matrix.
@@ -290,6 +290,15 @@ class RollPitchYaw {
   // There is no default initialization needed.
   Vector3<T> roll_pitch_yaw_;
 };
+
+/// (Deprecated), use @ref math::RollPitchYaw(quaternion).
+// TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use constructor RollPitchYaw(quaternion).")
+Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
+  return RollPitchYaw<T>(quaternion).vector();
+}
 
 }  // namespace math
 }  // namespace drake
