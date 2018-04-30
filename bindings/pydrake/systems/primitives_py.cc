@@ -34,7 +34,7 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<Adder<T>, LeafSystem<T>>(
         m, "Adder", GetPyParam<T>())
-        .def(py::init<int, int>());
+        .def(py::init<int, int>(), py::arg("num_inputs"), py::arg("size"));
 
     DefineTemplateClassWithDefault<AffineSystem<T>, LeafSystem<T>>(
         m, "AffineSystem", GetPyParam<T>())
