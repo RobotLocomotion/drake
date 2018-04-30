@@ -42,7 +42,7 @@ GTEST_TEST(PoseVelocityTest, Accessors) {
   using std::sqrt;
 
   const Translation<double, 3> translation{1., 2., 3.};
-  const math::RollPitchYaw rpy<double>(0.4, 0.5, 0.6);
+  const math::RollPitchYaw<double> rpy(0.4, 0.5, 0.6);
   const Quaternion<double> quaternion = rpy.ToQuaternion();
   const Vector3d w{8., 9., 10.};
   const Vector3d v{11., 12., 13.};
