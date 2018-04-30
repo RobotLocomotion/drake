@@ -333,3 +333,20 @@ class TestMathematicalProgram(unittest.TestCase):
         # Test setting all values at once.
         prog.SetInitialGuessForAllVariables(x0)
         check_and_reset()
+
+    def test_lorentz_cone_constraint(self):
+        # Set Up Mathematical Program
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+
+        # Add LorentzConeConstraint
+        prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
+
+        # Test result
+        result = prog.Solve()
+        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+
+        # Check answer
+        x_expected = np.array([1-2**(-0.5), 1-2**(-0.5)])
+        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
