@@ -16,9 +16,9 @@ namespace parsing {
 /// ignored by this method.
 ///
 /// @throws std::runtime_error if the file is not in accordance with the SDF
-/// specification containing a message with a list errors encountered while
+/// specification containing a message with a list of errors encountered while
 /// parsing the file.
-/// @throws std::logic_error if there is more than one `<model>` element or
+/// @throws std::runtime_error if there is more than one `<model>` element or
 /// zero of them.
 /// @throws std::exception if plant is nullptr or if MultibodyPlant::Finalize()
 /// was already called on `plant`.

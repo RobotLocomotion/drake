@@ -11,8 +11,8 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-using Eigen::Matrix3d;
 using Eigen::Isometry3d;
+using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 
@@ -25,43 +25,55 @@ using drake::multibody::UnitInertia;
 // Unnamed namespace for free functions local to this file.
 namespace {
 // Helper function to express an ignition::math::Vector3d instance as
-// a Vector3<double> instance.
-Vector3<double> ToVector3(const ignition::math::Vector3d& vector) {
-  return Vector3<double>(vector.X(), vector.Y(), vector.Z());
+// a Vector3d instance.
+Vector3d ToVector3(const ignition::math::Vector3d& vector) {
+  return Vector3d(vector.X(), vector.Y(), vector.Z());
 }
 
 // Helper function to express an ignition::math::Pose3d instance as
-// an Isometry3<double> instance.
-Isometry3<double> ToIsometry3(const ignition::math::Pose3d& pose) {
-  const Isometry3<double>::TranslationType translation(ToVector3(pose.Pos()));
+// an Isometry3d instance.
+Isometry3d ToIsometry3(const ignition::math::Pose3d& pose) {
+  const Isometry3d::TranslationType translation(ToVector3(pose.Pos()));
   const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
                                     pose.Rot().Y(), pose.Rot().Z());
   return translation * rotation;
 }
 
-RotationalInertia<double> ExtractRotationalInertia(
-    const ignition::math::Inertiald& inertial) {
-  // TODO(amcastro-tri): From MOI() method docs: "Get the moment of inertia
-  // matrix expressed in the base coordinate frame.", What is the "base frame"?
-  const ignition::math::Matrix3d I = inertial.MOI();
+// Given an ignition::math::Inertial object, extract a RotationalInertia object
+// for the rotational inertia of body B, about its center of mass Bcm and,
+// expressed in the inertial frame Bi (as specified in <inertial> in the SDF
+// file.)
+RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
+    const ignition::math::Inertiald &inertial) {
+  // TODO(amcastro-tri): Verify that ignition::math::Inertial::MOI() ALWAYS is
+  // expresed in the body frame B, regardless of how a user might have
+  // specified frames in the sdf file. That is, that it always returns R_BBcm_B.
+  // TODO(amcastro-tri): Verify that ignition::math::Inertial::MassMatrix()
+  // ALWAYS is in the inertial frame Bi, regardless of how a user might have
+  // specified frames in the sdf file. That is, that it always returns
+  // M_BBcm_Bi.
+  const ignition::math::Matrix3d I = inertial.MassMatrix().MOI();
   return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
-SpatialInertia<double> ExtractSpatialInertia(
-    const ignition::math::Inertiald& Inertial_BBcm_Bi) {
+// Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
+// frame origin Bo and, expressed in body frame B, from an ignition::Inertial
+// object.
+SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
+    const ignition::math::Inertiald &Inertial_BBcm_Bi) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
 
   const RotationalInertia<double> I_BBcm_Bi =
-      ExtractRotationalInertia(Inertial_BBcm_Bi);
+      ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
   // TODO(amcastro-tri): Verify we don't get funny results when X_BBi is not
   // the identity matrix.
   // TODO(amcastro-tri): SDF seems to provide <inertial><frame/></inertial>
   // together with <inertial><pose/></inertial>. It'd seem then the frame B
-  // in X_BI could be another frame. This is currently NOT supported by this
-  // parser.
+  // in X_BI could be another frame. We really on Inertial::Pose() to ALWAYS
+  // give us X_BI. Verify this.
   const Isometry3d X_BBi = ToIsometry3(Inertial_BBcm_Bi.Pose());
 
   // B and Bi are not necessarily aligned.
@@ -70,7 +82,8 @@ SpatialInertia<double> ExtractSpatialInertia(
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
 
-  // Bi's origin is at the COM.
+  // Bi's origin is at the COM as documented in
+  // http://sdformat.org/spec?ver=1.6&elem=link#inertial_pose
   const Vector3d p_BoBcm_B = X_BBi.translation();
 
   // Return the spatial inertia M_BBo_B of body B, about its body frame origin
@@ -100,17 +113,15 @@ void AddModelFromSdfFile(
   }
 
   if (root.ModelCount() != 1) {
-    throw std::logic_error("File must have a single <model> element.");
+    throw std::runtime_error("File must have a single <model> element.");
   }
 
-  // Get a pointer to the only model in the file.
-  const sdf::Model* model = root.ModelByIndex(0);
-  DRAKE_ASSERT(model != nullptr);
+  // Get the only model in the file.
+  const sdf::Model& model = *root.ModelByIndex(0);
 
   // Add all the links
-  for (uint64_t link_index = 0; link_index < model->LinkCount(); ++link_index) {
-    const sdf::Link* link = model->LinkByIndex(link_index);
-    DRAKE_ASSERT(link != nullptr);
+  for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
+    const sdf::Link& link = *model.LinkByIndex(link_index);
 
     // Get the link's inertia relative to the Bcm frame.
     // Inertial provides a representation for the SpatialInertia M_Bcm_Bi of
@@ -118,26 +129,26 @@ void AddModelFromSdfFile(
     // Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
-    const ignition::math::Inertiald& Inertial_Bcm_Bi = link->Inertial();
+    const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
-        ExtractSpatialInertia(Inertial_Bcm_Bi);
+        ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
-    plant->AddRigidBody(link->Name(), M_BBo_B);
+    plant->AddRigidBody(link.Name(), M_BBo_B);
   }
 
   // Pose of the model frame M in the world frame W.
-  const Isometry3d X_WM = ToIsometry3(model->Pose());
+  const Isometry3d X_WM = ToIsometry3(model.Pose());
 
   // Add all the joints
-  for (uint64_t joint_index = 0; joint_index < model->JointCount();
+  for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
-    const sdf::Joint* joint = model->JointByIndex(joint_index);
+    const sdf::Joint& joint = *model.JointByIndex(joint_index);
 
     // Axis expressed in the joint frame J.
-    const sdf::JointAxis* axis = joint->Axis();
+    const sdf::JointAxis& axis = *joint.Axis();
 
     // Get the pose of frame J in the model frame M, as specified in
     // <joint> <pose> ... </pose></joint>.
@@ -149,37 +160,37 @@ void AddModelFromSdfFile(
     //  - <joint> <frame><pose> <frame/> </pose></frame> </pose></joint>.
     // And combinations of the above?
     // There is no way to verify at this level which one is supported or not.
-    // Here we trust that no mather how a user specified the file, joint->Pose()
+    // Here we trust that no mather how a user specified the file, joint.Pose()
     // will ALWAYS return X_MJ.
-    const Isometry3d X_MJ = ToIsometry3(joint->Pose());
+    const Isometry3d X_MJ = ToIsometry3(joint.Pose());
 
     // Get the pose of the child link C in the model frame M.
     const Isometry3d X_MC =
-        ToIsometry3(model->LinkByName(joint->ChildLinkName())->Pose());
+        ToIsometry3(model.LinkByName(joint.ChildLinkName())->Pose());
 
     // Compute the location of the child joint in the child link's frame.
     const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
 
     // Only supporting revolute joints for now.
-    switch (joint->Type()) {
+    switch (joint.Type()) {
       case sdf::JointType::REVOLUTE: {
         // Joint axis, by default in the joint frame J.
         // TODO(amcastro-tri): Verify this capability indeed is supported by
         // sdformat.
-        Vector3d axis_J = ToVector3(axis->Xyz());
-        if (axis->UseParentModelFrame()) {
+        Vector3d axis_J = ToVector3(axis.Xyz());
+        if (axis.UseParentModelFrame()) {
           // axis_J actually contains axis_M, expressed in the model frame M.
-          axis_J = X_MJ.inverse() * axis_J;
+          axis_J = X_MJ.linear().transpose() * axis_J;
         }
 
         // Special case for a joint connected to the world.
-        if (joint->ParentLinkName().empty() ||
-            joint->ParentLinkName() == "world") {
+        if (joint.ParentLinkName().empty() ||
+            joint.ParentLinkName() == "world") {
           // TODO(amcastro-tri): Remove these when sdformat guarantees a model
           // with basic structural checks.
-          if (!model->LinkNameExists(joint->ChildLinkName())) {
+          if (!model.LinkNameExists(joint.ChildLinkName())) {
             throw std::logic_error("There is no child link named '" +
-                joint->ChildLinkName() + "' in the model.");
+                joint.ChildLinkName() + "' in the model.");
           }
 
           // If X_PG is left empty, P IS the world frame W, no new frame gets
@@ -188,39 +199,39 @@ void AddModelFromSdfFile(
           if (!X_WM.isApprox(Isometry3d::Identity())) X_PJ = X_WM;
 
           plant->AddJoint<RevoluteJoint>(
-              joint->Name(),
+              joint.Name(),
               plant->world_body(), X_PJ,
-              plant->GetBodyByName(joint->ChildLinkName()), X_CJ, axis_J);
+              plant->GetBodyByName(joint.ChildLinkName()), X_CJ, axis_J);
         } else {
           // TODO(amcastro-tri): Remove these when sdformat guarantees a model
           // with basic structural checks.
-          if (!model->LinkNameExists(joint->ParentLinkName())) {
+          if (!model.LinkNameExists(joint.ParentLinkName())) {
             throw std::logic_error("There is no parent link named '" +
-                joint->ParentLinkName() + "' in the model.");
+                joint.ParentLinkName() + "' in the model.");
           }
-          if (!model->LinkNameExists(joint->ChildLinkName())) {
+          if (!model.LinkNameExists(joint.ChildLinkName())) {
             throw std::logic_error("There is no child link named '" +
-                joint->ChildLinkName() + "' in the model.");
+                joint.ChildLinkName() + "' in the model.");
           }
 
           // Get the pose of the parent link P in the model frame M.
           const Isometry3d X_MP =
-              ToIsometry3(model->LinkByName(joint->ParentLinkName())->Pose());
+              ToIsometry3(model.LinkByName(joint.ParentLinkName())->Pose());
 
           // Pose of the frame J in the parent body frame P.
           const Isometry3d X_PJ = X_MP.inverse() * X_MJ;
 
           plant->AddJoint<RevoluteJoint>(
-              joint->Name(),
-              plant->GetBodyByName(joint->ParentLinkName()), X_PJ,
-              plant->GetBodyByName(joint->ChildLinkName()), X_CJ,
+              joint.Name(),
+              plant->GetBodyByName(joint.ParentLinkName()), X_PJ,
+              plant->GetBodyByName(joint.ChildLinkName()), X_CJ,
               axis_J);
         }
         break;
       }
       default: {
         throw std::logic_error(
-            "Joint type not supported for joint '" + joint->Name() + "'.");
+            "Joint type not supported for joint '" + joint.Name() + "'.");
       }
     }  // switch
   }  // joint_index
