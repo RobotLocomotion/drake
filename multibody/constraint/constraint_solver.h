@@ -678,7 +678,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   FormSustainedConstraintLCP(problem_data, trunc_neg_invA_a, &MM, &qq);
 
   // Get the zero tolerance for solving the LCP.
-  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
+  const T zero_tol = lcp_.ComputeZeroTolerance(MM, qq);
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;
@@ -1045,7 +1045,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   FormImpactingConstraintLCP(problem_data, trunc_neg_invA_a, &MM, &qq);
 
   // Get the tolerance for zero used by the LCP solver.
-  const T zero_tol = lcp_.ComputeZeroTolerance(MM);
+  const T zero_tol = lcp_.ComputeZeroTolerance(MM, qq);
 
   // Solve the LCP and compute the values of the slack variables.
   VectorX<T> zz;

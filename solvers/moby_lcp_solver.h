@@ -79,8 +79,10 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
   template <class U>
-  static U ComputeZeroTolerance(const MatrixX<U>& M) {
-    return M.rows() * M.template lpNorm<Eigen::Infinity>() *
+  static U ComputeZeroTolerance(const MatrixX<U>& M, const VectorX<T>& q) {
+    using std::max;
+    return M.rows() * max(M.template lpNorm<Eigen::Infinity>(),
+                          q.template lpNorm<Eigen::Infinity>()) *
         (10 * std::numeric_limits<double>::epsilon());
   }
 
