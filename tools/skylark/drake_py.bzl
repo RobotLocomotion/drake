@@ -41,11 +41,6 @@ def _py_target_isolated(
             main = main,
             visibility = ["//visibility:private"],
             **kwargs)
-        native.alias(
-            name = name,
-            actual = actual,
-            visibility = visibility,
-        )
     else:
         py_target(
             name = name,
