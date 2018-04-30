@@ -61,7 +61,7 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
 // frame origin Bo and, expressed in body frame B, from an ignition::Inertial
 // object.
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
-    const ignition::math::Inertiald &Inertial_BBcm_Bi) {
+    const ignition::math::Inertiald& Inertial_BBcm_Bi) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
 
   const RotationalInertia<double> I_BBcm_Bi =
@@ -90,6 +90,114 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   // Bo, and expressed in the body frame B.
   return SpatialInertia<double>::MakeFromCentralInertia(
       mass, p_BoBcm_B, I_BBcm_B);
+}
+
+// Helper method to retrieve a Body given the name of the linke specification.
+const Body<double>& GetBodyByLinkSpecificationName(
+    const sdf::Model& model, const std::string& link_name,
+    const MultibodyPlant<double>& plant) {
+  if (link_name.empty() || link_name == "world") {
+    return plant.world_body();
+  } else {
+    // TODO(amcastro-tri): Remove this when sdformat guarantees a model
+    // with basic structural checks.
+    if (!model.LinkNameExists(link_name)) {
+      throw std::logic_error("There is no parent link named '" +
+          link_name + "' in the model.");
+    }
+    return plant.GetBodyByName(link_name);
+  }
+}
+
+// For joints with an axis, this helper to extracts a Vector3d representation of
+// the joint axis.
+Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
+  DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+
+  // Joint axis, by default in the joint frame J.
+  // TODO(amcastro-tri): Verify this capability indeed is supported by
+  // sdformat.
+  Vector3d axis_J = ToVector3(axis->Xyz());
+  if (axis->UseParentModelFrame()) {
+    const Isometry3d X_MJ = ToIsometry3(joint_spec.Pose());
+    // axis_J actually contains axis_M, expressed in the model frame M.
+    axis_J = X_MJ.linear().transpose() * axis_J;
+  }
+  return axis_J;
+}
+
+// Helper method to add joints to a MultibodyPlant given an sdf::Joint
+// specification object.
+void AddJointFromSpecification(
+    const sdf::Model& model_spec, const sdf::Joint& joint_spec,
+    MultibodyPlant<double>* plant) {
+  // Pose of the model frame M in the world frame W.
+  const Isometry3d X_WM = ToIsometry3(model_spec.Pose());
+
+  const Body<double>& parent_body = GetBodyByLinkSpecificationName(
+      model_spec, joint_spec.ParentLinkName(), *plant);
+  const Body<double>& child_body = GetBodyByLinkSpecificationName(
+      model_spec, joint_spec.ChildLinkName(), *plant);
+
+  // Get the pose of frame J in the model frame M, as specified in
+  // <joint> <pose> ... </pose></joint>.
+  // TODO(amcastro-tri): Verify sdformat supports frame specifications
+  // correctly.
+  // There are many ways by which a joint frame pose can be specified in SDF:
+  //  - <joint> <pose> </pose></joint>.
+  //  - <joint> <pose> <frame/> </pose></joint>.
+  //  - <joint> <frame><pose> <frame/> </pose></frame> </pose></joint>.
+  // And combinations of the above?
+  // There is no way to verify at this level which one is supported or not.
+  // Here we trust that no mather how a user specified the file, joint.Pose()
+  // will ALWAYS return X_MJ.
+  const Isometry3d X_MJ = ToIsometry3(joint_spec.Pose());
+
+  // Get the pose of the child link C in the model frame M.
+  const Isometry3d X_MC =
+      ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
+
+  // Compute the location of the joint in the child link's frame.
+  const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
+
+  // Pose of the frame J in the parent body frame P.
+  optional<Isometry3d> X_PJ;
+  if (parent_body.index() == world_index()) {
+    X_PJ = X_WM;
+  } else {
+    // Get the pose of the parent link P in the model frame M.
+    const Isometry3d X_MP =
+        ToIsometry3(model_spec.LinkByName(joint_spec.ParentLinkName())->Pose());
+    X_PJ = X_MP.inverse() * X_MJ;
+  }
+
+  // If P and J are coincident, we won't create a new frame for J, but use frame
+  // P directly. We indicate that by passing a nullopt.
+  if (X_PJ.value().isApprox(Isometry3d::Identity())) X_PJ = nullopt;
+
+  // Only supporting revolute joints for now.
+  switch (joint_spec.Type()) {
+    case sdf::JointType::REVOLUTE: {
+      Vector3d axis_J = ExtractJointAxis(joint_spec);
+      plant->AddJoint<RevoluteJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ, axis_J);
+      break;
+    }
+    default: {
+      throw std::logic_error(
+          "Joint type not supported for joint '" + joint_spec.Name() + "'.");
+    }
+  }  // switch
 }
 
 }  // namespace
@@ -124,9 +232,9 @@ void AddModelFromSdfFile(
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
     // Get the link's inertia relative to the Bcm frame.
-    // Inertial provides a representation for the SpatialInertia M_Bcm_Bi of
-    // body B, about its center of mass Bcm, and expressed in an inertial frame
-    // Bi as defined in <inertial> <pose></pose> </inertial>.
+    // sdf::Link::Inertial() provides a representation for the SpatialInertia
+    // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
+    // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
     const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
@@ -138,103 +246,13 @@ void AddModelFromSdfFile(
     plant->AddRigidBody(link.Name(), M_BBo_B);
   }
 
-  // Pose of the model frame M in the world frame W.
-  const Isometry3d X_WM = ToIsometry3(model.Pose());
-
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-
-    // Axis expressed in the joint frame J.
-    const sdf::JointAxis& axis = *joint.Axis();
-
-    // Get the pose of frame J in the model frame M, as specified in
-    // <joint> <pose> ... </pose></joint>.
-    // TODO(amcastro-tri): Verify sdformat supports frame specifications
-    // correctly.
-    // There are many ways by which a joint frame pose can be specified in SDF:
-    //  - <joint> <pose> </pose></joint>.
-    //  - <joint> <pose> <frame/> </pose></joint>.
-    //  - <joint> <frame><pose> <frame/> </pose></frame> </pose></joint>.
-    // And combinations of the above?
-    // There is no way to verify at this level which one is supported or not.
-    // Here we trust that no mather how a user specified the file, joint.Pose()
-    // will ALWAYS return X_MJ.
-    const Isometry3d X_MJ = ToIsometry3(joint.Pose());
-
-    // Get the pose of the child link C in the model frame M.
-    const Isometry3d X_MC =
-        ToIsometry3(model.LinkByName(joint.ChildLinkName())->Pose());
-
-    // Compute the location of the child joint in the child link's frame.
-    const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
-
-    // Only supporting revolute joints for now.
-    switch (joint.Type()) {
-      case sdf::JointType::REVOLUTE: {
-        // Joint axis, by default in the joint frame J.
-        // TODO(amcastro-tri): Verify this capability indeed is supported by
-        // sdformat.
-        Vector3d axis_J = ToVector3(axis.Xyz());
-        if (axis.UseParentModelFrame()) {
-          // axis_J actually contains axis_M, expressed in the model frame M.
-          axis_J = X_MJ.linear().transpose() * axis_J;
-        }
-
-        // Special case for a joint connected to the world.
-        if (joint.ParentLinkName().empty() ||
-            joint.ParentLinkName() == "world") {
-          // TODO(amcastro-tri): Remove these when sdformat guarantees a model
-          // with basic structural checks.
-          if (!model.LinkNameExists(joint.ChildLinkName())) {
-            throw std::logic_error("There is no child link named '" +
-                joint.ChildLinkName() + "' in the model.");
-          }
-
-          // If X_PG is left empty, P IS the world frame W, no new frame gets
-          // created.
-          optional<Isometry3d> X_PJ;
-          if (!X_WM.isApprox(Isometry3d::Identity())) X_PJ = X_WM;
-
-          plant->AddJoint<RevoluteJoint>(
-              joint.Name(),
-              plant->world_body(), X_PJ,
-              plant->GetBodyByName(joint.ChildLinkName()), X_CJ, axis_J);
-        } else {
-          // TODO(amcastro-tri): Remove these when sdformat guarantees a model
-          // with basic structural checks.
-          if (!model.LinkNameExists(joint.ParentLinkName())) {
-            throw std::logic_error("There is no parent link named '" +
-                joint.ParentLinkName() + "' in the model.");
-          }
-          if (!model.LinkNameExists(joint.ChildLinkName())) {
-            throw std::logic_error("There is no child link named '" +
-                joint.ChildLinkName() + "' in the model.");
-          }
-
-          // Get the pose of the parent link P in the model frame M.
-          const Isometry3d X_MP =
-              ToIsometry3(model.LinkByName(joint.ParentLinkName())->Pose());
-
-          // Pose of the frame J in the parent body frame P.
-          const Isometry3d X_PJ = X_MP.inverse() * X_MJ;
-
-          plant->AddJoint<RevoluteJoint>(
-              joint.Name(),
-              plant->GetBodyByName(joint.ParentLinkName()), X_PJ,
-              plant->GetBodyByName(joint.ChildLinkName()), X_CJ,
-              axis_J);
-        }
-        break;
-      }
-      default: {
-        throw std::logic_error(
-            "Joint type not supported for joint '" + joint.Name() + "'.");
-      }
-    }  // switch
-  }  // joint_index
+    AddJointFromSpecification(model, joint, plant);
+  }
 }
 
 }  // namespace parsing
