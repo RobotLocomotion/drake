@@ -26,8 +26,8 @@ def _py_target_isolated(
     # Do not isolate targets that are already isolated. This generally happens
     # when linting tests (which are isolated) are invoked for isolated Python
     # targets. Without this check, the actual test turns into
-    # `_isolated/_isolated/{name}`.
-    prefix = "_isolated/"
+    # `py/py/{name}`.
+    prefix = "py/"
     if isolate and not name.startswith(prefix):
         actual = prefix + name
         # Preserve original functionality.
