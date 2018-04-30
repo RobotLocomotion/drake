@@ -453,15 +453,6 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   *n = prog_normal.GetSolution(n_var);
   *d = prog_normal.GetSolution(d_var(0));
 
-  // The optimization problem might not be solved to super high precision. To
-  // guarantee that the constraints d <= nᵀ * pts.col(i), nᵀ * n = 1 are
-  // satisfied, we "polish" the optimization solution below.
-  n->normalize();
-  *d = std::numeric_limits<double>::infinity();
-  for (const auto& pt : pts) {
-    *d = std::min(*d, n->dot(pt));
-  }
-
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);
 }
