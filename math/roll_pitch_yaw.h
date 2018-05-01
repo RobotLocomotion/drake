@@ -196,14 +196,6 @@ class RollPitchYaw {
   //           `e0 = cos(theta/2)`, `e1 = L1*sin(theta/2)`,
   //           `e2 = L2*sin(theta/2)`, `e3 = L3*sin(theta/2)`.
   //
-  // Note:  There are only 5 elements of the 3x3 rotation matrix R used in this
-  //        algorithm and they are solely used (in conjunction with the atan2
-  //        function) to accurately compute the pitch angle q2.
-  //        Since only 5 elements of R are used, the algorithm could be made
-  //        slightly more efficient by computing/passing only those 5 elements
-  //        (4 elements are ignored) and/or manipulating those elements to
-  //        reduce calculations.
-  //
   // Step 1. The 3x3 rotation matrix R is only used (in conjunction with the
   //         atan2 function) to accurately calculate the pitch angle q2.
   //         Note: Since only 5 elements of R are used, the algorithm could be
@@ -298,6 +290,19 @@ DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                      "Use constructor RollPitchYaw(quaternion).")
 Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
   return RollPitchYaw<T>(quaternion).vector();
+}
+
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
+// TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
+template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use RollPitchYaw::ToQuaternion().")
+Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const Eigen::Quaternion<Scalar> quaternion = roll_pitch_yaw.ToQuaternion();
 }
 
 }  // namespace math

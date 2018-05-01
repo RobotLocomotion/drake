@@ -337,7 +337,6 @@ TEST_F(RotationConversionTest, quat2RotmatTest) {
   }
 }
 
-#if 1
 TEST_F(RotationConversionTest, QuatRPY) {
   for (const Quaterniond& qi : quaternion_test_cases_) {
     const RollPitchYaw<double> rpy(qi);
@@ -347,7 +346,6 @@ TEST_F(RotationConversionTest, QuatRPY) {
     EXPECT_TRUE(rpy.IsRollPitchYawInCanonicalRange());
   }
 }
-#endif
 
 TEST_F(RotationConversionTest, QuatEigenQuaternion) {
   for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
@@ -374,7 +372,6 @@ TEST_F(RotationConversionTest, RotmatQuat) {
   }
 }
 
-#if 1
 TEST_F(RotationConversionTest, rotmat2rpyTest) {
   for (const RotationMatrix<double> Ri : rotation_matrix_test_cases_) {
     const RollPitchYaw<double> rpy(Ri);
@@ -414,7 +411,6 @@ TEST_F(RotationConversionTest, rpy2QuatTest) {
     EXPECT_TRUE(rpyi.IsNearlySameOrientation(rpy_expected, 512 * kEpsilon));
   }
 }
-#endif
 
 }  // namespace
 }  // namespace math
