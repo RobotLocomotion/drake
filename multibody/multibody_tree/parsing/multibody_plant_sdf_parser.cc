@@ -1,7 +1,5 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
-#include <memory>
-
 #include <sdf/sdf.hh>
 
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
@@ -72,7 +70,7 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   // the identity matrix.
   // TODO(amcastro-tri): SDF seems to provide <inertial><frame/></inertial>
   // together with <inertial><pose/></inertial>. It'd seem then the frame B
-  // in X_BI could be another frame. We really on Inertial::Pose() to ALWAYS
+  // in X_BI could be another frame. We rely on Inertial::Pose() to ALWAYS
   // give us X_BI. Verify this.
   const Isometry3d X_BBi = ToIsometry3(Inertial_BBcm_Bi.Pose());
 
@@ -92,10 +90,13 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
       mass, p_BoBcm_B, I_BBcm_B);
 }
 
-// Helper method to retrieve a Body given the name of the linke specification.
+// Helper method to retrieve a Body given the name of the link specification.
 const Body<double>& GetBodyByLinkSpecificationName(
     const sdf::Model& model, const std::string& link_name,
     const MultibodyPlant<double>& plant) {
+  // SDF's convention to indicate a joint is connected to the world is to either
+  // name the corresponding link "world" or just leave it unnamed.
+  // Thus this the "if" statement in the following line.
   if (link_name.empty() || link_name == "world") {
     return plant.world_body();
   } else {
@@ -109,8 +110,7 @@ const Body<double>& GetBodyByLinkSpecificationName(
   }
 }
 
-// For joints with an axis, this helper to extracts a Vector3d representation of
-// the joint axis.
+// Extracts a Vector3d representation of the joint axis for joints with an axis.
 Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -154,7 +154,7 @@ void AddJointFromSpecification(
   // There are many ways by which a joint frame pose can be specified in SDF:
   //  - <joint> <pose> </pose></joint>.
   //  - <joint> <pose> <frame/> </pose></joint>.
-  //  - <joint> <frame><pose> <frame/> </pose></frame> </pose></joint>.
+  //  - <joint> <frame> <pose> <frame/> </pose> </frame> </joint>.
   // And combinations of the above?
   // There is no way to verify at this level which one is supported or not.
   // Here we trust that no mather how a user specified the file, joint.Pose()

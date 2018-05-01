@@ -1,7 +1,8 @@
 <sdf version='1.6'>
   <model name='acrobot'>
     <!-- This sdf file produces a model with the default parameters documented
-         in AcrobotParameters in make_acrobot_plant.h. -->
+         in AcrobotParameters in make_acrobot_plant.h.
+         They MUST be kept in sync. -->
     <link name='Link1'>
       <pose>0 0 -0.5 0 0 0</pose>
       <inertial>
