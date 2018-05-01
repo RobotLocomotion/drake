@@ -128,8 +128,9 @@ MakeAcrobotPlantSdf() {
     SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::MakeFromCentralInertia(
           I_Bcm_Bi.MassMatrix().Mass(),
-          // SDF's inertial frame must be coincident with the links COM.
-          Vector3d(0, 0, 0),
+          Vector3d(I_Bcm_Bi.Pose().Pos().X(),
+                   I_Bcm_Bi.Pose().Pos().Y(),
+                   I_Bcm_Bi.Pose().Pos().Z()),
           RotationalInertia<double>(
             I_BBcm_B(0, 0), I_BBcm_B(1, 1), I_BBcm_B(2, 2),
             I_BBcm_B(1, 0), I_BBcm_B(2, 0), I_BBcm_B(2, 1)));
