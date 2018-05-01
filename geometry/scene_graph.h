@@ -13,6 +13,12 @@
 #include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
+
+// Forward declarations to give LCM message publication appropriate access.
+namespace lcm {
+class DrakeLcmInterface;
+}  // namespace lcm
+
 namespace geometry {
 
 class GeometryInstance;
@@ -381,7 +387,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void MakeSourcePorts(SourceId source_id);
 
   // Allow the load dispatch to peek into SceneGraph.
-  friend void DispatchLoadMessage(const SceneGraph<double>&);
+  friend void DispatchLoadMessage(const SceneGraph<double>&,
+                                  lcm::DrakeLcmInterface*);
 
   // Constructs a QueryObject for OutputPort allocation.
   QueryObject<T> MakeQueryObject() const;

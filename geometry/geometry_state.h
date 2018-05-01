@@ -18,7 +18,6 @@
 #include "drake/geometry/proximity_engine.h"
 
 namespace drake {
-
 namespace geometry {
 
 #ifndef DRAKE_DOXYGEN_CXX
