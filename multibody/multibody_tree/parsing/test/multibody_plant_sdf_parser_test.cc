@@ -18,7 +18,6 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::parsing::AddModelFromSdfFile;
 using systems::Context;
-using systems::LeafSystem;
 
 namespace multibody {
 namespace multibody_plant {
