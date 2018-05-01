@@ -47,8 +47,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[int], 1)
         self.assertEquals(template.get_instantiation(int), (1, (int,)))
         self.assertEquals(template.get_param_set(1), {(int,)})
-        self.assertTrue(m.is_instantiation_of(1, template))
-        self.assertFalse(m.is_instantiation_of(10, template))
+        self.assertTrue(template.is_instantiation(1))
+        self.assertFalse(template.is_instantiation(10))
         # Duplicate parameters.
         self.assertRaises(
             RuntimeError, lambda: template.add_instantiation(int, 4))
@@ -74,13 +74,21 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[[int, int]], 3)
 
         # List instantiation.
-        def instantiation_func(template, param):
-            self.assertIsInstance(template, m.TemplateBase)
+        def instantiation_func(param):
             return 100 + len(param)
         dummy_a = (str,) * 5
         dummy_b = (str,) * 10
         template.add_instantiations(instantiation_func, [dummy_a, dummy_b])
         self.assertEquals(template[dummy_a], 105)
+
+        # Add more instantiations.
+        def instantiation_func_double(param):
+            return 200 + len(param)
+        dummy_c = (str,) * 15
+        template.add_instantiations(instantiation_func_double, [dummy_c])
+        self.assertEquals(template[dummy_c], 215)
+
+        # Ensure that the old instantiation function was "flushed".
         self.assertEquals(template[dummy_b], 110)
 
     def test_class(self):
@@ -99,10 +107,13 @@ class TestCppTemplate(unittest.TestCase):
             _TEST_MODULE))
 
     def test_user_class(self):
+        test = self
 
         @m.TemplateClass.define("MyTemplate", param_list=((int,), (float,)))
-        def MyTemplate(_, param):
+        def MyTemplate(param):
             T, = param
+            # Ensure that we have deferred evaluation.
+            test.assertEqual(MyTemplate.param_list, [(int,), (float,)])
 
             class MyTemplateInstantiation(object):
                 def __init__(self):
@@ -117,6 +128,16 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(MyInt().T, int)
         MyFloat = MyTemplate[float]
         self.assertEqual(MyFloat().T, float)
+
+        # Test subclass checks.
+        class Subclass(MyTemplate[float]):
+            pass
+
+        self.assertFalse(MyTemplate.is_instantiation(Subclass))
+        self.assertFalse(MyTemplate.is_subclass_of_instantiation(object))
+        result = MyTemplate.is_subclass_of_instantiation(Subclass)
+        self.assertTrue(result)
+        self.assertEqual(result, MyTemplate[float])
 
     def test_function(self):
         template = m.TemplateFunction("func")
