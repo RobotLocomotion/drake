@@ -298,6 +298,7 @@ drake_cc_library(
         ":lane_direction",
         "//automotive/maliput/api",
         "//common:symbolic",
+        "//math:geometric_transform",
         "//math:saturate",
         "//systems/rendering:pose_vector",
     ],
@@ -695,6 +696,7 @@ drake_cc_googletest(
     deps = [
         "//automotive:pure_pursuit",
         "//automotive/maliput/dragway",
+        "//automotive/maliput/multilane",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
