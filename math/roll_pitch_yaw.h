@@ -15,6 +15,9 @@
 namespace drake {
 namespace math {
 
+template <typename T>
+class RotationMatrix;
+
 /// This class represents the orientation between two arbitrary frames A and D
 /// associated with a Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw"
 /// angles `[r, p, y]`, which is equivalent to a Body-fixed (intrinsic) Z-Y-X
@@ -81,6 +84,22 @@ class RollPitchYaw {
     SetOrThrowIfNotValidInDebugBuild(rpy);
   }
 
+  /// Constructs a %RollPitchYaw from a %RotationMatrix with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// @param[in] R a %RotationMatrix.
+  /// @note This new high-accuracy algorithm avoids numerical round-off issues
+  /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
+  explicit RollPitchYaw(const RotationMatrix<T>& R);
+
+  /// Constructs a %RollPitchYaw from a %Quaternion with
+  /// roll-pitch-yaw angles `[r, p, y]` in the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  /// @param[in] quaternion unit %Quaternion.
+  /// @note This new high-accuracy algorithm avoids numerical round-off issues
+  /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
+  explicit RollPitchYaw(const Eigen::Quaternion<T>& quaternion);
+
   /// Returns the Vector3 underlying a %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
 
@@ -103,10 +122,12 @@ class RollPitchYaw {
     const T c0 = cos(q0Half), s0 = sin(q0Half);
     const T c1 = cos(q1Half), s1 = sin(q1Half);
     const T c2 = cos(q2Half), s2 = sin(q2Half);
-    const T w = c0 * c1 * c2 + s0 * s1 * s2;
-    const T x = s0 * c1 * c2 - c0 * s1 * s2;
-    const T y = c0 * s1 * c2 + s0 * c1 * s2;
-    const T z = c0 * c1 * s2 - s0 * s1 * c2;
+    const T c1_c2 = c1 * c2, s1_c2 = s1 * c2;
+    const T s1_s2 = s1 * s2, c1_s2 = c1 * s2;
+    const T w = c0 * c1_c2 + s0 * s1_s2;
+    const T x = s0 * c1_c2 - c0 * s1_s2;
+    const T y = c0 * s1_c2 + s0 * c1_s2;
+    const T z = c0 * c1_s2 - s0 * s1_c2;
     return Eigen::Quaternion<T>(w, x, y, z);
   }
 
@@ -121,12 +142,125 @@ class RollPitchYaw {
     return difference.template lpNorm<Eigen::Infinity>() <= tolerance;
   }
 
+  /// Compares each element of the %RotationMatrix R1 produced by `this` to the
+  /// corresponding element of the %RotationMatrix R2 produced by `other` to
+  /// check if they are the same to within a specified `tolerance`.
+  /// @param[in] other %RollPitchYaw to compare to `this`.
+  /// @param[in] tolerance maximum allowable absolute difference between R1, R2.
+  /// @returns `true` if `‖R1 - R2‖∞ <= tolerance`.
+  bool IsNearlySameOrientation(const RollPitchYaw<T>& other,
+                               double tolerance) const;
+
+  /// Returns true if roll-pitch-yaw angles `[r, p, y]` are the range
+  /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  bool IsRollPitchYawInCanonicalRange() const {
+    const T& r = get_roll_angle();
+    const T& p = get_pitch_angle();
+    const T& y = get_yaw_angle();
+    return (-M_PI <= r && r <= M_PI) && (-M_PI / 2 <= p && p <= M_PI / 2) &&
+        (-M_PI <= y && y <= M_PI);
+  }
+
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
   /// @param[in] rpy allegedly valid roll, pitch, yaw angles.
   /// @note an angle is invalid if it is NaN or infinite.
   static bool IsValid(const Vector3<T>& rpy) { return rpy.allFinite(); }
 
  private:
+  // Constructs roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles) from a
+  // quaternion and its associated rotation matrix.
+  // @param[in] quaternion unit quaternion with elements [e0, e1, e2, e3].
+  // @param[in] R The %RotationMatrix corresponding to `quaternion`.
+  // @return %RollPitchYaw containing angles `[r, p, y]` with range
+  // `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
+  //
+  // This accurate algorithm avoids numerical round-off issues encountered by
+  // some algorithms when pitch angle is within 1E-6 of π/2 or -π/2.
+  //
+  // <h3>Theory</h3>
+  //
+  // This algorithm was created October 2016 by Paul Mitiguy for TRI (Toyota).
+  // We believe this is a new algorithm (not previously published).
+  // Some theory/formulation of this algorithm is provided below.  More detail
+  // is in Chapter 6 Rotation Matrices II [Mitiguy 2017] (reference below).
+  // <pre>
+  // Notation: Angles q1, q2, q3 designate SpaceXYZ "roll, pitch, yaw" angles.
+  //           A quaternion can be defined in terms of an angle-axis rotation by
+  //           an angle `theta` about a unit vector `lambda`.  For example,
+  //           consider right-handed orthogonal unit vectors Ax, Ay, Az and
+  //           Bx, By, Bz fixed in a frame A and a rigid body B, respectively.
+  //           Initially, Bx = Ax, By = Ay, Bz = Az, then B is subjected to a
+  //           right-handed rotation relative to frame A by an angle `theta`
+  //           about `lambda = L1*Ax + L2*Ay + L3*Az = L1*Bx + L2*By + L3*Bz`.
+  //           The elements of `quaternion` are defined e0, e1, e2, e3 as
+  //           `e0 = cos(theta/2)`, `e1 = L1*sin(theta/2)`,
+  //           `e2 = L2*sin(theta/2)`, `e3 = L3*sin(theta/2)`.
+  //
+  // Step 1. The 3x3 rotation matrix R is only used (in conjunction with the
+  //         atan2 function) to accurately calculate the pitch angle q2.
+  //         Note: Since only 5 elements of R are used, the algorithm could be
+  //         made slightly more efficient by computing/passing only those 5
+  //         elements (e.g., not calculating the other 4 elements) and/or
+  //         manipulating the relationship between `R` and quaternion to
+  //         further reduce calculations.
+  //
+  // Step 2. Realize the quaternion passed to the function can be regarded as
+  //         resulting from multiplication of certain 4x4 and 4x1 matrices, or
+  //         multiplying three rotation quaternions (Hamilton product), to give:
+  //         e0 = sin(q1/2)*sin(q2/2)*sin(q3/2) + cos(q1/2)*cos(q2/2)*cos(q3/2)
+  //         e1 = sin(q3/2)*cos(q1/2)*cos(q2/2) - sin(q1/2)*sin(q2/2)*cos(q3/2)
+  //         e2 = sin(q1/2)*sin(q3/2)*cos(q2/2) + sin(q2/2)*cos(q1/2)*cos(q3/2)
+  //         e3 = sin(q1/2)*cos(q2/2)*cos(q3/2) - sin(q2/2)*sin(q3/2)*cos(q1/2)
+  //
+  //         Reference for step 2: Chapter 6 Rotation Matrices II [Mitiguy 2017]
+  //
+  // Step 3.  Since q2 has already been calculated (in Step 1), substitute
+  //          cos(q2/2) = A and sin(q2/2) = f*A.
+  //          Note: The final results are independent of A and f = tan(q2/2).
+  //          Note: -pi/2 <= q2 <= pi/2  so -0.707 <= [A = cos(q2/2)] <= 0.707
+  //          and  -1 <= [f = tan(q2/2)] <= 1.
+  //
+  // Step 4.  Referring to Step 2 form: (1+f)*e1 + (1+f)*e3 and rearrange to:
+  //          sin(q1/2+q3/2) = (e1+e3)/(A*(1-f))
+  //
+  //          Referring to Step 2 form: (1+f)*e0 - (1+f)*e2 and rearrange to:
+  //          cos(q1/2+q3/2) = (e0-e2)/(A*(1-f))
+  //
+  //          Combine the two previous results to produce:
+  //          1/2*( q1 + q3 ) = atan2( e1+e3, e0-e2 )
+  //
+  // Step 5.  Referring to Step 2 form: (1-f)*e1 - (1-f)*e3 and rearrange to:
+  //          sin(q1/5-q3/5) = -(e1-e3)/(A*(1+f))
+  //
+  //          Referring to Step 2 form: (1-f)*e0 + (1-f)*e2 and rearrange to:
+  //          cos(q1/2-q3/2) = (e0+e2)/(A*(1+f))
+  //
+  //          Combine the two previous results to produce:
+  //          1/2*( q1 - q3 ) = atan2( e3-e1, e0+e2 )
+  //
+  // Step 6.  Combine Steps 4 and 5 and solve the linear equations for q1, q3.
+  //          Use zA, zB to handle case in which both atan2 arguments are 0.
+  //          zA = (e1+e3==0  &&  e0-e2==0) ? 0 : atan2( e1+e3, e0-e2 );
+  //          zB = (e3-e1==0  &&  e0+e2==0) ? 0 : atan2( e3-e1, e0+e2 );
+  //          Solve: 1/2*( q1 + q3 ) = zA     To produce:  q1 = zA + zB
+  //                 1/2*( q1 - q3 ) = zB                  q3 = zA - zB
+  //
+  // Step 7.  As necessary, modify angles by 2*PI to return angles in range:
+  //          -pi   <= q1 <= pi
+  //          -pi/2 <= q2 <= pi/2
+  //          -pi   <= q3 <= pi
+  //
+  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
+  //                   For professional engineers and scientists,"
+  //                   Prodigy Press, Sunnyvale CA, 2017 (Paul Mitiguy).
+  //                   Available at www.MotionGenesis.com
+  // </pre>
+  // @note This algorithm is specific to SpaceXYZ (roll-pitch-yaw) order.
+  // It is easily modified for other SpaceIJK and BodyIJI rotation sequences.
+  // @author Paul Mitiguy
+  RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
+               const RotationMatrix<T>& rotation_matrix);
+
   // Throws an exception if rpy is not a valid %RollPitchYaw.
   // @param[in] rpy an allegedly valid rotation matrix.
   static void ThrowIfNotValid(const Vector3<T>& rpy) {
@@ -149,7 +283,27 @@ class RollPitchYaw {
   Vector3<T> roll_pitch_yaw_;
 };
 
+/// (Deprecated), use @ref math::RollPitchYaw(quaternion).
+// TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.
+template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use constructor RollPitchYaw(quaternion).")
+Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
+  return RollPitchYaw<T>(quaternion).vector();
+}
+
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
+// TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
+template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                     "Use RollPitchYaw::ToQuaternion().")
+Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const Eigen::Quaternion<Scalar> quaternion = roll_pitch_yaw.ToQuaternion();
+}
+
 }  // namespace math
 }  // namespace drake
-
-

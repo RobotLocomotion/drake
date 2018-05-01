@@ -11,6 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -92,8 +93,8 @@ class Rotation {
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
-  Vector3<double> rpy() const {
-    return math::QuaternionToSpaceXYZ(quaternion_);
+  math::RollPitchYaw<double> rpy() const {
+    return math::RollPitchYaw<double>(quaternion_);
   }
 
   // TODO(maddog@tri.global)  Deprecate and/or remove roll()/pitch()/yaw(),
@@ -101,13 +102,13 @@ class Rotation {
   //                          most call-sites should probably be using something
   //                          else (e.g., quaternion) anyway.
   /// Returns the roll component of the Rotation (in radians).
-  double roll() const { return rpy().x(); }
+  double roll() const { return rpy().get_roll_angle(); }
 
   /// Returns the pitch component of the Rotation (in radians).
-  double pitch() const { return rpy().y(); }
+  double pitch() const { return rpy().get_pitch_angle(); }
 
   /// Returns the yaw component of the Rotation (in radians).
-  double yaw() const { return rpy().z(); }
+  double yaw() const { return rpy().get_yaw_angle(); }
 
  private:
   explicit Rotation(const Quaternion<double>& quat) : quaternion_(quat) {}

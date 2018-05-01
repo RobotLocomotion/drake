@@ -53,7 +53,8 @@ class PoseVelocity final {
   /// Accesses the projection of the pose of frame A to the x-y components of
   /// translation and the z-component of rotation.
   Eigen::Vector3d pose3() const {
-    const double w_z = math::QuaternionToSpaceXYZ(rotation_).z();
+    const math::RollPitchYaw<double> rpy(rotation_);
+    const double w_z = rpy.get_yaw_angle();
     return Eigen::Vector3d{translation_.x(), translation_.y(), w_z};
   }
 

@@ -8,6 +8,9 @@
  * so quaternion.h can include roll_pitch_yaw_not_using_quaternion.h
  * to call rpy2rotmat in quaternion.h, without circular dependency problems.
  *
+ * Note: As of April 27, 2018, roll_pitch_yaw_using_quaternion.h was deleted
+ * from the code-base.
+ *
  * Most users should just include roll_pitch_yaw.h (ignore the half-files).
 */
 #pragma once

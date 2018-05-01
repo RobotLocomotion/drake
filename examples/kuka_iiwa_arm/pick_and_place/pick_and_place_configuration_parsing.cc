@@ -47,8 +47,9 @@ Isometry3<double> ParsePose(const proto::Pose& pose) {
   }
   if (!pose.rpy().empty()) {
     DRAKE_THROW_UNLESS(pose.rpy_size() == 3);
-    X.linear() =
-        rpy2rotmat(Vector3<double>(pose.rpy(0), pose.rpy(1), pose.rpy(2)));
+    const math::RollPitchYaw<double> rpy(pose.rpy(0), pose.rpy(1), pose.rpy(2));
+    const math::RotationMatrix<double> R(rpy);
+    X.linear() = R.matrix();
   }
   return X;
 }
