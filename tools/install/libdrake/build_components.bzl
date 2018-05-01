@@ -115,6 +115,7 @@ LIBDRAKE_COMPONENTS = [
     "//lcm:lcm",
     "//lcm:lcm_log",
     "//lcm:mock",
+    "//lcm:real",
     "//lcm:translator_base",
     "//manipulation/perception:optitrack_pose_extractor",
     "//manipulation/perception:perception",
@@ -332,6 +333,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/lcm:lcm",
     "//systems/lcm:lcm_driven_loop",
     "//systems/lcm:lcm_log_playback_system",
+    "//systems/lcm:lcm_pubsub_system",
     "//systems/lcm:lcmt_drake_signal_translator",
     "//systems/lcm:translator",
     "//systems/lcm:translator_system",
@@ -394,6 +396,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/trajectory_optimization:multiple_shooting",
     "//systems/trajectory_optimization:position_constraint_force_evaluator",
     "//systems/trajectory_optimization:trajectory_optimization",
-    "//util:lcm_util",
     "//util:util",
 ]

@@ -34,20 +34,6 @@ drake_cc_library(
     ],
 )
 
-# TODO(jwnimmer-tri) Remove this forwarding header sometime after 2018-05-01.
-drake_cc_library(
-    name = "lcm_util",
-    hdrs = ["lcmUtil.h"],
-    tags = [
-        # Don't add this library into the ":util" package library, since its a
-        # deprecated forwarding convenience and should not be used in batch.
-        "exclude_from_package",
-    ],
-    deps = [
-        "//manipulation/util:bot_core_lcm_encode_decode",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(

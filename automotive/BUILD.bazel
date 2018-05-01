@@ -448,7 +448,7 @@ drake_cc_library(
         "//multibody/parsers",
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:lcmt_drake_signal_translator",
         "//systems/primitives:constant_value_source",
         "//systems/primitives:multiplexer",
