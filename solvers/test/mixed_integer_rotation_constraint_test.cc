@@ -237,7 +237,10 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<
             MixedIntegerRotationConstraintGenerator::ConstraintType>>(
             {MixedIntegerRotationConstraintGenerator::ConstraintType::
-                 kBilinearMcCormick}),
+                 kBilinearMcCormick,
+             MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBoxSphereIntersection,
+             MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth}),
         ::testing::ValuesIn<std::vector<int>>({1, 2}),
         ::testing::ValuesIn<std::vector<IntervalBinning>>(
             {IntervalBinning::kLinear, IntervalBinning::kLogarithmic})));

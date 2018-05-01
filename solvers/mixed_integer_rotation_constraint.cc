@@ -1,6 +1,8 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include "drake/math/gray_code.h"
 #include "drake/solvers/bilinear_product_util.h"
+#include "drake/solvers/integer_optimization_util.h"
 #include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 
 using drake::symbolic::Expression;
@@ -392,7 +394,7 @@ void AddRotationMatrixBilinearMcCormickConstraints(
   AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       prog, R, phi, B, lambda, interval_binning);
 }
-/*
+
 // Given (an integer enumeration of) the orthant, takes a vector in the
 // positive orthant into that orthant by flipping the signs of the individual
 // elements.
@@ -706,7 +708,58 @@ void AddMcCormickVectorConstraintsForR(
         R.row((i + 2) % 3).transpose(), box_sphere_intersection_vertices,
         box_sphere_intersection_halfspace);
   }
-}*/
+}
+
+// B[i][j] contains a vector of binary variables, such that if B[i][j] is the
+// reflected gray code representation of integer k, then R(i, j) is in the k'th
+// interval. We will write CRpos and CRneg as expressions of B, such that
+// CRpos[k](i, j) = 1 <=> phi(k) <= R(i, j) <= phi(k + 1) => B[i][j] represents
+// num_interval_per_half_axis + k in reflected gray code.
+// CRneg[k](i, j) = 1 <=> -phi(k + 1) <= R(i, j) <= -phi(k) => B[i][j]
+// represents num_interval_per_half_axis - k - 1 in reflected gray code.
+template <typename T>
+void GetCRposAndCRnegForLogarithmicBinning(
+    const std::array<std::array<T, 3>, 3>& B, int num_intervals_per_half_axis,
+    MathematicalProgram* prog, std::vector<Matrix3<Expression>>* CRpos,
+    std::vector<Matrix3<Expression>>* CRneg) {
+  if (num_intervals_per_half_axis > 1) {
+    const auto gray_codes = math::CalculateReflectedGrayCodes(
+        CeilLog2(num_intervals_per_half_axis) + 1);
+    CRpos->clear();
+    CRneg->clear();
+    CRpos->reserve(num_intervals_per_half_axis);
+    CRneg->reserve(num_intervals_per_half_axis);
+    for (int k = 0; k < num_intervals_per_half_axis; ++k) {
+      CRpos->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRpos[" + std::to_string(k) + "]"));
+      CRneg->push_back(prog->NewContinuousVariables<3, 3>(
+          "CRneg[" + std::to_string(k) + "]"));
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          prog->AddConstraint(CreateBinaryCodeMatchConstraint(
+              B[i][j],
+              gray_codes.row(num_intervals_per_half_axis + k).transpose(),
+              (*CRpos)[k](i, j)));
+          prog->AddConstraint(CreateBinaryCodeMatchConstraint(
+              B[i][j],
+              gray_codes.row(num_intervals_per_half_axis - k - 1).transpose(),
+              (*CRneg)[k](i, j)));
+        }
+      }
+    }
+  } else {
+    // num_interval_per_half_axis = 1 is the special case, B[i][j](0) = 0 if
+    // -1 <= R(i, j) <= 0, and B[i][j](0) = 1 if 0 <= R(i, j) <= 1
+    CRpos->resize(1);
+    CRneg->resize(1);
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        (*CRpos)[0](i, j) = B[i][j](0);
+        (*CRneg)[0](i, j) = 1 - B[i][j](0);
+      }
+    }
+  }
+}
 }  // namespace
 
 std::string to_string(
@@ -852,10 +905,43 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
   AddConstraintInferredFromTheSign(prog, ret.B_, num_intervals_per_half_axis_,
                                    interval_binning_);
 
+  // Add mixed-integer constraint by replacing the bilinear product with another
+  // term in the McCormick envelope of w = x * y
   if (constraint_type_ == ConstraintType::kBilinearMcCormick ||
       constraint_type_ == ConstraintType::kBoth) {
     AddRotationMatrixBilinearMcCormickConstraints(prog, R, ret.B_, ret.lambda_,
                                                   phi_, interval_binning_);
+  }
+
+  // Add mixed-integer constraint by considering the intersection between the
+  // sphere surface and boxes.
+  if (constraint_type_ == ConstraintType::kBoxSphereIntersection ||
+      constraint_type_ == ConstraintType::kBoth) {
+    // CRpos[k](i, j) = 1 => φ₊(k) ≤ R(i, j) ≤ φ₊(k+1)
+    // CRneg[k](i, j) = 1 => -φ₊(k+1) ≤ R(i, j) ≤ -φ₊(k)
+    std::vector<Matrix3<Expression>> CRpos(num_intervals_per_half_axis_);
+    std::vector<Matrix3<Expression>> CRneg(num_intervals_per_half_axis_);
+    if (interval_binning_ == IntervalBinning::kLinear) {
+      // CRpos[k](i, j) = 1 => φ₊(k) ≤ R(i, j) ≤ φ₊(k+1) => B[i][j](N+k) = 1
+      // CRneg[k](i, j) = 1 => -φ₊(k+1) ≤ R(i, j) ≤ -φ₊(k) => B[i][j](N-k-1)=1
+      // where N = num_intervals_per_half_axis_.
+      for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+          for (int k = 0; k < num_intervals_per_half_axis_; ++k) {
+            CRpos[k](i, j) = +ret.B_[i][j](num_intervals_per_half_axis_ + k);
+            CRneg[k](i, j) =
+                +ret.B_[i][j](num_intervals_per_half_axis_ - k - 1);
+          }
+        }
+      }
+    } else if (interval_binning_ == IntervalBinning::kLogarithmic) {
+      GetCRposAndCRnegForLogarithmicBinning(
+          ret.B_, num_intervals_per_half_axis_, prog, &CRpos, &CRneg);
+    }
+    AddMcCormickVectorConstraintsForR(R, CRpos, CRneg,
+                                      num_intervals_per_half_axis_,
+                                      box_sphere_intersection_vertices_,
+                                      box_sphere_intersection_halfspace_, prog);
   }
   return ret;
 }
