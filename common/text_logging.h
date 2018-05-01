@@ -51,13 +51,19 @@ printed without any special handling.
 #define SPDLOG_DEBUG_ON 1
 #define SPDLOG_TRACE_ON 1
 
-#define DRAKE_SPDLOG_TRACE(logger, ...) \
-  if (logger->level() <= spdlog::level::trace) \
-    SPDLOG_TRACE(logger, __VA_ARGS__)
+#define DRAKE_SPDLOG_TRACE(logger, ...)            \
+  do {                                             \
+    if (logger->level() <= spdlog::level::trace) { \
+      SPDLOG_TRACE(logger, __VA_ARGS__);           \
+    }                                              \
+  } while (0)
 
-#define DRAKE_SPDLOG_DEBUG(logger, ...) \
-  if (logger->level() <= spdlog::level::debug) \
-    SPDLOG_DEBUG(logger, __VA_ARGS__)
+#define DRAKE_SPDLOG_DEBUG(logger, ...)            \
+  do {                                             \
+    if (logger->level() <= spdlog::level::debug) { \
+      SPDLOG_DEBUG(logger, __VA_ARGS__);           \
+    }                                              \
+  } while (0)
 #else
 #define DRAKE_SPDLOG_TRACE(logger, ...)
 #define DRAKE_SPDLOG_DEBUG(logger, ...)

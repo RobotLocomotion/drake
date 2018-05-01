@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_java.bzl",
@@ -22,6 +23,40 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "automotive",
+    deps = [
+        ":agent_trajectory",
+        ":automotive_simulator",
+        ":bicycle_car",
+        ":box_car_vis",
+        ":calc_ongoing_road_position",
+        ":calc_smooth_acceleration",
+        ":car_vis",
+        ":car_vis_applicator",
+        ":create_trajectory_params",
+        ":curve2",
+        ":generated_translators",
+        ":generated_vectors",
+        ":idm_controller",
+        ":idm_planner",
+        ":lane_direction",
+        ":maliput_railcar",
+        ":mobil_planner",
+        ":monolane_onramp_merge",
+        ":pose_selector",
+        ":prius_vis",
+        ":pure_pursuit",
+        ":pure_pursuit_controller",
+        ":road_odometry",
+        ":road_path",
+        ":simple_car",
+        ":simple_powertrain",
+        ":trajectory_car",
+        ":trivial_right_of_way_state_provider",
+    ],
+)
 
 # Keep this list in sync with the list of _AUTOMOTIVE_LCM_SRCS within
 # ../lcmtypes/BUILD.bazel.  TODO(jwnimmer-tri) De-duplicate the two lists,

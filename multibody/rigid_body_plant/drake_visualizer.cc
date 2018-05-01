@@ -110,7 +110,9 @@ void DrakeVisualizer::PlaybackTrajectory(
 
   // Final evaluation is at the final time stamp, guaranteeing the final state
   // is visualized.
-  data.set_value(input_trajectory.value(input_trajectory.end_time()));
+  data.set_value(input_trajectory.value(input_trajectory.end_time())
+                     .col(0)
+                     .head(num_positions));
   std::vector<uint8_t> message_bytes;
   draw_message_translator_.Serialize(sim_time, data, &message_bytes);
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),

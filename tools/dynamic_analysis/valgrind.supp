@@ -91,6 +91,304 @@
    fun:_ZN5drake7solvers11MosekSolver14AcquireLicenseEv
 }
 
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-8>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_xdtrsm_v1
+   fun:mkl_blas_avx2_xdtrsm
+   fun:DTRSM
+   fun:cblas_dtrsm
+   fun:MSK_GENERIC_CPU_mathenv_trsm_
+   fun:MSK_GENERIC_CPU_mathenv_ptrsm
+   fun:spchol_recursivepotrfseq
+   fun:spchol_pulltosuperandupdate_l
+   fun:spchol_updatefromleafgroup_l
+   fun:cotton_for32
+   fun:spchol_factor
+   fun:ipfac_factornew
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-9>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:DSYEVD
+   fun:MSK_GENERIC_CPU_mathenv_symeig
+   fun:intpnt_call_ntupdate_fast
+   fun:cotton_for32
+   fun:intpnt_start
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+}
+
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-10>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+   fun:MSK_optimizetrm
+   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+   fun:_ZN5drake7solvers4test9RunSolverEPNS0_19MathematicalProgramERKNS0_34MathematicalProgramSolverInterfaceE
+}
+
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-11>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeqo
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+   fun:MSK_optimizetrm
+   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-12>
+   Memcheck:Cond
+   fun:prselim_dopivot
+   fun:MSK_prslv_eliminator
+   fun:prslv_checkinitial
+   fun:MSK_prslv_reduce
+   fun:MSK_opt_ipmslv
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+   fun:MSK_optimizetrm
+   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-13>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mkl_serv_allocate
+   fun:mkl_lapack_dsteqr
+   fun:mkl_lapack_dstedc
+   fun:mkl_lapack_dsyevd
+   fun:DSYEVD
+   fun:MSK_GENERIC_CPU_mathenv_symeig
+   fun:intpnt_call_ntupdate_fast
+   fun:cotton_for32
+   fun:intpnt_start
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-14>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mkl_serv_allocate
+   fun:DSYEVD
+   fun:MSK_GENERIC_CPU_mathenv_symeig
+   fun:intpnt_call_ntupdate_fast
+   fun:cotton_for32
+   fun:intpnt_start
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+   fun:MSK_optimizetrm
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-15>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_dgemm_get_bufs
+   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
+   fun:mkl_blas_avx2_xdsyrk
+   fun:DSYRK
+   fun:cblas_dsyrk
+   fun:MSK_GENERIC_CPU_mathenv_syrk_
+   fun:ipfac_computehatschurpushpartial
+   fun:ipfac_computehatschur
+   fun:ipfac_factor
+   fun:hom_start
+   fun:MSK_hom_optlp
+   fun:MSK_hs_optlp
+   fun:MSK_opt_ipmslv
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-16>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_xdtrsm_v1
+   fun:mkl_blas_avx2_xdtrsm
+   fun:DTRSM
+   fun:cblas_dtrsm
+   fun:MSK_GENERIC_CPU_mathenv_trsm_
+   fun:MSK_GENERIC_CPU_mathenv_ptrsm
+   fun:intpnt_call_ntupdate_fast
+   fun:cotton_for32
+   fun:intpnt_start
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-17>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_xdtrsm_v1
+   fun:mkl_blas_avx2_xdtrsm
+   fun:DTRSM
+   fun:cblas_dtrsm
+   fun:MSK_GENERIC_CPU_mathenv_trsm_
+   fun:MSK_GENERIC_CPU_mathenv_ptrsm
+   fun:intpnt_call_ntupdate_fast
+   fun:cotton_for32
+   fun:intpnt_start
+   fun:intpnt_conicoptimizer
+   fun:MSK_intpnt_optcone
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-18>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_dgemm_get_bufs
+   fun:mkl_blas_avx2_xdsyrk_fullacopybcopy
+   fun:mkl_blas_avx2_xdsyrk
+   fun:DSYRK
+   fun:cblas_dsyrk
+   fun:MSK_GENERIC_CPU_mathenv_syrk_
+   fun:MSK_GENERIC_CPU_mathenv_psyrk
+   fun:MSK_GENERIC_CPU_mathenv_ppartialsyrk
+   fun:spchol_sparsepullupdate
+   fun:ipfac_hatschurspaatsparsepullupdate
+   fun:spaat_mapsparsepullnew
+   fun:cotton_for32
+   fun:spaat_computeaat
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-19>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_zyrotlkgq
+   fun:opti_optimize
+   fun:opti_optimize_maxiter
+   fun:solve_root
+   fun:root_main_loop
+   fun:mski_solve
+   fun:MSK_mioptimizer
+   fun:MSK_eorpgtpsj
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-20>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:mm_account_ptr_by_tid..0
+   fun:mkl_serv_allocate
+   fun:mkl_blas_avx2_xdtrsm_v1
+   fun:mkl_blas_avx2_xdtrsm
+   fun:DTRSM
+   fun:cblas_dtrsm
+   fun:MSK_GENERIC_CPU_mathenv_trsm_
+   fun:MSK_GENERIC_CPU_mathenv_ptrsm
+   fun:spchol_recursivepotrfseq
+   fun:spchol_pulltosuperandupdate_l
+   fun:spchol_updatefromleafgroup_l
+   fun:cotton_for32
+   fun:spchol_factor
+   fun:ipfac_factornew
+   fun:intpnt_conicoptimizer
+}
+
+# Started happening when Mosek got updated to 8.1.0.51. PR 8673
+{
+   <mosek-21>
+   Memcheck:Cond
+   fun:prslv_checkcones
+   fun:MSK_prslv_checkproblem
+   fun:MSK_prslv_reduce
+   fun:conic_rawoptimizer
+   fun:MSK_conic_optimizer
+   fun:MSKP_optimizeconic
+   fun:MSK_contoptimizer
+   fun:MSK_eorpgtpsj
+   fun:MSK_optimize
+   fun:MSK_optimizetrm
+   fun:_ZNK5drake7solvers11MosekSolver5SolveERNS0_19MathematicalProgramE
+}
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {
     <gurobi-1>

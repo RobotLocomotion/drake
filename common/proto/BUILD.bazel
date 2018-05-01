@@ -1,9 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_proto.bzl",
@@ -14,6 +15,17 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "proto",
+    deps = [
+        ":call_matlab",
+        ":call_python",
+        ":matlab_rpc",
+        ":protobuf",
+        ":rpc_pipe_temp_directory",
+    ],
+)
 
 drake_cc_proto_library(
     name = "matlab_rpc",
@@ -92,6 +104,9 @@ cc_library(
     hdrs = [_UBSAN_H],
     include_prefix = "drake/common/proto",
     strip_include_prefix = "/third_party/com_github_google_protobuf",
+    tags = [
+        "exclude_from_package",
+    ],
 )
 
 drake_cc_library(

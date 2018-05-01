@@ -1,9 +1,37 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "controllers",
+    deps = [
+        ":control_util",
+        ":dynamic_programming",
+        ":instantaneous_qp_controller",
+        ":inverse_dynamics",
+        ":inverse_dynamics_controller",
+        ":linear_model_predictive_controller",
+        ":linear_quadratic_regulator",
+        ":pid_controlled_system",
+        ":pid_controller",
+        ":polynomial_encode_decode",
+        ":qp_common",
+        ":setpoint",
+        ":side",
+        ":state_feedback_controller_interface",
+        ":yaml_util",
+        ":zmp_planner",
+        ":zmp_util",
+    ],
+)
 
 drake_cc_library(
     name = "state_feedback_controller_interface",

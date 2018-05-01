@@ -105,6 +105,23 @@ class TestAutomotive(unittest.TestCase):
         self.assertEqual(len(steering.get_value()), 1)
         self.assertTrue(steering.get_value() < 0.)
 
+    def test_simple_car_state(self):
+        simple_car_state = SimpleCarState()
+        self.assertTrue(isinstance(simple_car_state, framework.BasicVector))
+        self.assertEqual(simple_car_state.size(), 4)
+        self.assertNotEqual(simple_car_state.x(), 5.)
+        simple_car_state.set_x(5.)
+        self.assertEqual(simple_car_state.x(), 5.)
+        self.assertNotEqual(simple_car_state.y(), 2.)
+        simple_car_state.set_y(2.)
+        self.assertEqual(simple_car_state.y(), 2.)
+        self.assertNotEqual(simple_car_state.heading(), 14.)
+        simple_car_state.set_heading(14.)
+        self.assertEqual(simple_car_state.heading(), 14.)
+        self.assertNotEqual(simple_car_state.velocity(), 52.)
+        simple_car_state.set_velocity(52.)
+        self.assertEqual(simple_car_state.velocity(), 52.)
+
     def test_idm_controller(self):
         rg = make_two_lane_road()
         idm = IdmController(
