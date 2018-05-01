@@ -6,7 +6,6 @@
 // MotionGenesis Professional Licensee: Toyota Research Institute
 // -----------------------------------------------------------------------------
 #include "drake/examples/particle1d/MG/particle1dMG.h"
-#include "drake/common/autodiff.h"
 
 // -----------------------------------------------------------------------------
 namespace MotionGenesis {

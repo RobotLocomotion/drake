@@ -10,12 +10,13 @@
 // - double
 // - AutoDiffXd
 #include <cmath>
+#include "drake/common/autodiff.h"
 
 // -----------------------------------------------------------------------------
 namespace MotionGenesis {
 // This is a model of a particle that is only allowed to move horizontally on
-// earth (a Newtonian reference frame N). The particle has mass, No is a point
-// fixed on earth, and Nx is a horizontal unit vector fixed on earth.
+// Earth (a Newtonian reference frame N). The particle has mass, No is a point
+// fixed on Earth, and Nx is a horizontal unit vector fixed on Earth.
 // -----------------------------------------------------------------------------
 template <typename T>
 class Particle1dMG {
@@ -35,7 +36,6 @@ class Particle1dMG {
   // Set local state variables x and xDt from their corresponding values in
   // state[].
   void SetVariablesFromState(const T state[]);
-
   // Model variables set privately via CalcDerivativesToStateDt. x is the
   // particle's Nx measure from No. xDt and xDDt are the first and second
   // time-derivatives of x, respectively. F is the Nx measure of the force on
