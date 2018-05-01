@@ -165,9 +165,9 @@ TEST_P(ContactResultTest, SingleCollision) {
 }
 
 class ThreeLeggedStoolTest : public ::testing::TestWithParam<bool> {
-  protected:
-    void SetUp() {
-    }
+ protected:
+  void SetUp() {
+  }
 
   // Gets the forces for the specified sphere from the stool in contact with the
   // ground.
