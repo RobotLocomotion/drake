@@ -125,7 +125,7 @@ class TestRigidBodyPlant(unittest.TestCase):
 
         id_1 = 42
         id_2 = 43
-        info = results.AddContact(element_a_id=id_1, element_b_id=id_2)
+        info = results.AddContact(element_a=id_1, element_b=id_2)
         self.assertEquals(results.get_num_contacts(), 1)
         info_dup = results.get_contact_info(0)
         self.assertIsInstance(info_dup, mut.ContactInfo)

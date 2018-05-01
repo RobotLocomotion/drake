@@ -89,14 +89,13 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("get_contact_info",
              &Class::get_contact_info, py_reference_internal)
         .def("set_generalized_contact_force",
-            [](Class* self,
-               const Eigen::VectorXd& f) {
+            [](Class* self, const Eigen::VectorXd& f) {
                 self->set_generalized_contact_force(f);
             })
         .def("get_generalized_contact_force",
              &Class::get_generalized_contact_force, py_reference_internal)
         .def("AddContact", &Class::AddContact, py_reference_internal,
-            py::arg("element_a_id"), py::arg("element_b_id"))
+            py::arg("element_a"), py::arg("element_b"))
         .def("Clear", &Class::Clear);
     pysystems::AddValueInstantiation<Class>(m);
   }
