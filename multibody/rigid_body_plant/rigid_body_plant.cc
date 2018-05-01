@@ -1239,7 +1239,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   // when caching is in place.
   // Note that constraint forces are non-impulsive, so scaling by dt is
   // unnecessary.
-  ComputeDiscretizedSystemContactResults(dt, contacts, data, kinematics_cache,
+  ComputeDiscretizedSystemContactResults(contacts, data, kinematics_cache,
                                     constraint_force,
                                     &discretized_system_contact_results_);
 
@@ -1256,7 +1256,6 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
 // contact force (impulse) solution.
 template <typename T>
 void RigidBodyPlant<T>::ComputeDiscretizedSystemContactResults(
-    const T& dt,
     const std::vector<multibody::collision::PointPair<T>>& contacts,
     const multibody::constraint::ConstraintVelProblemData<T>& data,
     const KinematicsCache<T>& kinematics_cache,
