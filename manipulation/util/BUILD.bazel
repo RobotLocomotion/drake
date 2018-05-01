@@ -1,14 +1,29 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "util",
+    deps = [
+        ":bot_core_lcm_encode_decode",
+        ":frame_pose_tracker",
+        ":moving_average_filter",
+        ":robot_state_msg_translator",
+        ":sim_diagram_builder",
+        ":simple_tree_visualizer",
+        ":trajectory_utils",
+        ":world_sim_tree_builder",
+    ],
+)
 
 drake_cc_library(
     name = "world_sim_tree_builder",

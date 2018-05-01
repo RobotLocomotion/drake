@@ -1,9 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -13,6 +14,16 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
     default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "schunk_wsg",
+    deps = [
+        ":schunk_wsg_constants",
+        ":schunk_wsg_controller",
+        ":schunk_wsg_lcm",
+        ":schunk_wsg_trajectory_generator_state_vector",
+    ],
 )
 
 drake_cc_library(

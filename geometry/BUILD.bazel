@@ -1,13 +1,35 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "geometry",
+    deps = [
+        ":frame_kinematics",
+        ":geometry_context",
+        ":geometry_frame",
+        ":geometry_ids",
+        ":geometry_index",
+        ":geometry_instance",
+        ":geometry_state",
+        ":geometry_visualization",
+        ":identifier",
+        ":internal_frame",
+        ":internal_geometry",
+        ":materials",
+        ":proximity_engine",
+        ":scene_graph",
+        ":shape_specification",
+    ],
+)
 
 drake_cc_library(
     name = "proximity_engine",

@@ -1,9 +1,27 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "rendering",
+    deps = [
+        ":drake_visualizer_client",
+        ":frame_velocity",
+        ":pose_aggregator",
+        ":pose_bundle",
+        ":pose_bundle_to_draw_message",
+        ":pose_stamped_t_pose_vector_translator",
+        ":pose_vector",
+    ],
+)
 
 drake_cc_library(
     name = "pose_aggregator",
