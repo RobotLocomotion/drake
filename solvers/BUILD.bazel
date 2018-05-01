@@ -1,15 +1,57 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "solvers",
+    deps = [
+        ":bilinear_product_util",
+        ":binding",
+        ":branch_and_bound",
+        ":constraint",
+        ":cost",
+        ":create_constraint",
+        ":create_cost",
+        ":decision_variable",
+        ":dreal_solver",
+        ":equality_constrained_qp_solver",
+        ":evaluator_base",
+        ":function",
+        ":gurobi_qp",
+        ":gurobi_solver",
+        ":indeterminate",
+        ":integer_optimization_util",
+        ":ipopt_solver",
+        ":linear_system_solver",
+        ":mathematical_program",
+        ":mathematical_program_api",
+        ":mixed_integer_optimization_util",
+        ":moby_lcp_solver",
+        ":mosek_solver",
+        ":nlopt_solver",
+        ":non_convex_optimization_util",
+        ":osqp_solver",
+        ":rotation_constraint",
+        ":scs_solver",
+        ":snopt_solver",
+        ":solver_id",
+        ":solver_type",
+        ":solver_type_converter",
+        ":symbolic_extraction",
+        ":system_identification",
+        ":unrevised_lemke_solver",
+    ],
+)
 
 drake_cc_library(
     name = "binding",
