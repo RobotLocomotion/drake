@@ -147,6 +147,10 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifySdfModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
 }
 
+TEST_F(AcrobotModelTests, VerifyVisuals) {
+
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
