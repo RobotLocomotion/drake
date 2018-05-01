@@ -79,7 +79,7 @@ struct AddMixedIntegerRotationConstraintReturn<
 template <MixedIntegerRotationConstraintType ConstraintType>
 class MixedIntegerRotationConstraintGenerator {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
       MixedIntegerRotationConstraintGenerator)
 
   MixedIntegerRotationConstraintGenerator(int num_intervals_per_half_axis,
