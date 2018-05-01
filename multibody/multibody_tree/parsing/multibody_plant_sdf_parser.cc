@@ -170,8 +170,11 @@ void AddJointFromSpecification(
 
   // Pose of the frame J in the parent body frame P.
   optional<Isometry3d> X_PJ;
+  // We need to treat the world case separately since sdformat does not create
+  // a "world" link from which we can request its pose (which in that case would
+  // be the identity).
   if (parent_body.index() == world_index()) {
-    X_PJ = X_WM;
+    X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     // Get the pose of the parent link P in the model frame M.
     const Isometry3d X_MP =
