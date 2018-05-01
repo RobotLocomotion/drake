@@ -12,6 +12,33 @@ def drake_py_library(
         deps = deps,
         **kwargs)
 
+def _deprecated_target_impl(ctx):
+    info = dict(
+        bad_target = ctx.attr.bad_target,
+        good_target = ctx.attr.good_target,
+    )
+    content = """#!/bin/bash
+echo "Label '{bad_target}' is deprecated; please use '{good_target}'." >&2
+exit 1
+""".format(**info)
+    ctx.actions.write(
+        output = ctx.outputs.executable,
+        content = content,
+    )
+    return [DefaultInfo()]
+
+# Defines a test which will fail when run via `bazel run` or `bazel test`,
+# pointing the user to the correct binary to use. This should typically have
+# a "manual" tag.
+_deprecated_test = rule(
+    attrs = {
+        "bad_target": attr.string(mandatory = True),
+        "good_target": attr.string(mandatory = True),
+    },
+    test = True,
+    implementation = _deprecated_target_impl,
+)
+
 def _py_target_isolated(
         name,
         py_target = None,
@@ -39,11 +66,15 @@ def _py_target_isolated(
             name = actual,
             srcs = srcs,
             main = main,
-            visibility = ["//visibility:private"],
+            visibility = visibility,
             **kwargs)
-        native.alias(
+        # Deprecate alias.
+        package_prefix = "//" + native.package_name() + ":"
+        _deprecated_test(
             name = name,
-            actual = actual,
+            good_target = package_prefix + actual,
+            bad_target = package_prefix + name,
+            tags = ["manual"],
             visibility = visibility,
         )
     else:
