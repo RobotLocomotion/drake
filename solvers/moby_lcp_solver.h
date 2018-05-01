@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <limits>
 #include <string>
