@@ -298,24 +298,10 @@ void AddCrossProductImpliedOrthantConstraint(
   }
 }
 
-void AddRotationMatrixBilinearMcCormickConstraints(
+void AddConstraintInferredFromTheSign(
     MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const std::array<std::array<VectorXDecisionVariable, 3>, 3>& B,
-    const std::array<std::array<VectorXDecisionVariable, 3>, 3>& lambda,
-    const Eigen::Ref<const Eigen::VectorXd>& phi,
     int num_intervals_per_half_axis, IntervalBinning interval_binning) {
-  for (int row = 0; row < 3; ++row) {
-    AddUnitLengthConstraintWithSos2Lambda(prog, phi, lambda[row][0],
-                                          lambda[row][1], lambda[row][2]);
-  }
-  for (int col = 0; col < 3; ++col) {
-    AddUnitLengthConstraintWithSos2Lambda(prog, phi, lambda[0][col],
-                                          lambda[1][col], lambda[2][col]);
-  }
-  AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
-      prog, R, phi, B, lambda, interval_binning);
-
   // Bpos(i, j) = 1 => R(i, j) >= 0
   // Bpos(i, j) = 0 => R(i, j) <= 0
   MatrixDecisionVariable<3, 3> Bpos;
@@ -388,6 +374,25 @@ void AddRotationMatrixBilinearMcCormickConstraints(
   }
 }
 
+void AddRotationMatrixBilinearMcCormickConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    const std::array<std::array<VectorXDecisionVariable, 3>, 3>& B,
+    const std::array<std::array<VectorXDecisionVariable, 3>, 3>& lambda,
+    const Eigen::Ref<const Eigen::VectorXd>& phi,
+    IntervalBinning interval_binning) {
+  for (int row = 0; row < 3; ++row) {
+    AddUnitLengthConstraintWithSos2Lambda(prog, phi, lambda[row][0],
+                                          lambda[row][1], lambda[row][2]);
+  }
+  for (int col = 0; col < 3; ++col) {
+    AddUnitLengthConstraintWithSos2Lambda(prog, phi, lambda[0][col],
+                                          lambda[1][col], lambda[2][col]);
+  }
+  AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
+      prog, R, phi, B, lambda, interval_binning);
+}
+/*
 // Given (an integer enumeration of) the orthant, takes a vector in the
 // positive orthant into that orthant by flipping the signs of the individual
 // elements.
@@ -701,18 +706,21 @@ void AddMcCormickVectorConstraintsForR(
         R.row((i + 2) % 3).transpose(), box_sphere_intersection_vertices,
         box_sphere_intersection_halfspace);
   }
-}
+}*/
 }  // namespace
 
-std::string to_string(MixedIntegerRotationConstraintType type) {
+std::string to_string(
+    MixedIntegerRotationConstraintGenerator::ConstraintType type) {
   switch (type) {
-    case MixedIntegerRotationConstraintType::kBoxSphereIntersection: {
+    case MixedIntegerRotationConstraintGenerator::ConstraintType::
+        kBoxSphereIntersection: {
       return "box_sphere_intersection";
     }
-    case MixedIntegerRotationConstraintType::kBilinearMcCormick: {
+    case MixedIntegerRotationConstraintGenerator::ConstraintType::
+        kBilinearMcCormick: {
       return "bilinear_mccormick";
     }
-    case MixedIntegerRotationConstraintType::kBoth: {
+    case MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth: {
       return "both";
     }
   }
@@ -721,17 +729,19 @@ std::string to_string(MixedIntegerRotationConstraintType type) {
   throw std::runtime_error("Should not reach this part of the code.\n");
 }
 
-std::ostream& operator<<(std::ostream& os,
-                         const MixedIntegerRotationConstraintType& type) {
+std::ostream& operator<<(
+    std::ostream& os,
+    const MixedIntegerRotationConstraintGenerator::ConstraintType& type) {
   os << to_string(type);
   return os;
 }
 
-template <MixedIntegerRotationConstraintType ConstraintType>
-MixedIntegerRotationConstraintGenerator<ConstraintType>::
-    MixedIntegerRotationConstraintGenerator(int num_intervals_per_half_axis,
-                                            IntervalBinning interval_binning)
-    : num_intervals_per_half_axis_(num_intervals_per_half_axis),
+MixedIntegerRotationConstraintGenerator::
+    MixedIntegerRotationConstraintGenerator(
+        MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type,
+        int num_intervals_per_half_axis, IntervalBinning interval_binning)
+    : constraint_type_{constraint_type},
+      num_intervals_per_half_axis_(num_intervals_per_half_axis),
       interval_binning_(interval_binning),
       phi_nonnegative_{
           Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis_ + 1, 0, 1)} {
@@ -744,9 +754,8 @@ MixedIntegerRotationConstraintGenerator<ConstraintType>::
 
   // If we consider the box-sphere intersection, then we need to compute the
   // halfspace nᵀx≥ d, as the tightest halfspace for each intersection region.
-  if (ConstraintType ==
-          MixedIntegerRotationConstraintType::kBoxSphereIntersection ||
-      ConstraintType == MixedIntegerRotationConstraintType::kBoth) {
+  if (constraint_type_ == ConstraintType::kBoxSphereIntersection ||
+      constraint_type_ == ConstraintType::kBoth) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
 
     box_sphere_intersection_vertices_.resize(num_intervals_per_half_axis_);
@@ -804,61 +813,54 @@ MixedIntegerRotationConstraintGenerator<ConstraintType>::
   }
 }
 
-template <MixedIntegerRotationConstraintType ConstraintType>
-typename AddMixedIntegerRotationConstraintReturn<ConstraintType>::Type
-MixedIntegerRotationConstraintGenerator<ConstraintType>::AddToProgram(
+MixedIntegerRotationConstraintGenerator::ReturnType
+MixedIntegerRotationConstraintGenerator::AddToProgram(
     MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {}
-
-// Template specializating for adding SO(3) relaxation, by replacing bilinear
-// products with new variables, in the McCormick envelope of the bilinear
-// product w = x * y.
-template <>
-AddMixedIntegerRotationConstraintReturn<
-    MixedIntegerRotationConstraintType::kBilinearMcCormick>::Type
-MixedIntegerRotationConstraintGenerator<
-    MixedIntegerRotationConstraintType::kBilinearMcCormick>::
-    AddToProgram(
-        MathematicalProgram* prog,
-        const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {
-  std::array<std::array<VectorXDecisionVariable, 3>, 3> lambda;
-  AddMixedIntegerRotationConstraintReturn<
-      MixedIntegerRotationConstraintType::kBilinearMcCormick>::Type B;
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {
+  ReturnType ret;
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       const std::string lambda_name =
           "lambda[" + std::to_string(i) + "][" + std::to_string(j) + "]";
-      lambda[i][j] = prog->NewContinuousVariables(
+      ret.lambda_[i][j] = prog->NewContinuousVariables(
           2 * num_intervals_per_half_axis_ + 1, lambda_name);
       // R(i, j) = φᵀ * λ[i][j]
       prog->AddLinearConstraint(
           R(i, j) -
-              phi_.dot(lambda[i][j].template cast<symbolic::Expression>()) ==
+              phi_.dot(
+                  ret.lambda_[i][j].template cast<symbolic::Expression>()) ==
           0);
       switch (interval_binning_) {
         case IntervalBinning::kLogarithmic: {
-          B[i][j] = AddLogarithmicSos2Constraint(
-              prog, lambda[i][j].cast<symbolic::Expression>());
+          ret.B_[i][j] = AddLogarithmicSos2Constraint(
+              prog, ret.lambda_[i][j].cast<symbolic::Expression>());
           break;
         }
         case IntervalBinning::kLinear: {
-          B[i][j] = prog->NewBinaryVariables(
+          ret.B_[i][j] = prog->NewBinaryVariables(
               2 * num_intervals_per_half_axis_,
               "B[" + std::to_string(i) + "][" + std::to_string(j) + "]");
-          AddSos2Constraint(prog, lambda[i][j].cast<symbolic::Expression>(),
-                            B[i][j].cast<symbolic::Expression>());
+          AddSos2Constraint(prog,
+                            ret.lambda_[i][j].cast<symbolic::Expression>(),
+                            ret.B_[i][j].cast<symbolic::Expression>());
           break;
         }
       }
     }
   }
 
-  AddRotationMatrixBilinearMcCormickConstraints(prog, R, B, lambda, phi_,
-                                                num_intervals_per_half_axis_,
-                                                interval_binning_);
-  return B;
+  AddConstraintInferredFromTheSign(prog, ret.B_, num_intervals_per_half_axis_,
+                                   interval_binning_);
+
+  if (constraint_type_ == ConstraintType::kBilinearMcCormick ||
+      constraint_type_ == ConstraintType::kBoth) {
+    AddRotationMatrixBilinearMcCormickConstraints(prog, R, ret.B_, ret.lambda_,
+                                                  phi_, interval_binning_);
+  }
+  return ret;
 }
 
+/*
 // Template specialization for adding SO(3) relaxation, based on the
 // intersection region between the unit sphere surface and boxes.
 template <>
@@ -971,12 +973,7 @@ MixedIntegerRotationConstraintGenerator<
   AddCrossProductImpliedOrthantConstraint(prog, BRpos(0));
   AddCrossProductImpliedOrthantConstraint(prog, BRpos(0).transpose());
   return ret;
-}
+}*/
 
-// Explicit instantiation
-template class MixedIntegerRotationConstraintGenerator<
-    MixedIntegerRotationConstraintType::kBilinearMcCormick>;
-template class MixedIntegerRotationConstraintGenerator<
-    MixedIntegerRotationConstraintType::kBoxSphereIntersection>;
 }  // namespace solvers
 }  // namespace drake
