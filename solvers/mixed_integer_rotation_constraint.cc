@@ -352,6 +352,7 @@ void AddRotationMatrixBilinearMcCormickConstraints(
           }
         }
       }
+      break;
     }
     case IntervalBinning::kLinear: {
       // Bpos(i, j) = B[i][j](N) ∨ B[i][j](N+1) ∨ ... ∨ B[i][j](2*N-1)
@@ -379,10 +380,34 @@ void AddRotationMatrixBilinearMcCormickConstraints(
 
       AddCrossProductImpliedOrthantConstraint(prog, Bpos);
       AddCrossProductImpliedOrthantConstraint(prog, Bpos.transpose());
+      break;
     }
   }
 }
 }  // namespace
+
+std::string to_string(MixedIntegerRotationConstraintType type) {
+  switch (type) {
+    case MixedIntegerRotationConstraintType::kBoxSphereIntersection: {
+      return "box_sphere_intersection";
+    }
+    case MixedIntegerRotationConstraintType::kBilinearMcCormick: {
+      return "bilinear_mccormick";
+    }
+    case MixedIntegerRotationConstraintType::kBoth: {
+      return "both";
+    }
+  }
+  // The following line should not be reached. We add it due to a compiler
+  // defect.
+  throw std::runtime_error("Should not reach this part of the code.\n");
+}
+
+std::ostream& operator<<(std::ostream& os,
+                         const MixedIntegerRotationConstraintType& type) {
+  os << to_string(type);
+  return os;
+}
 
 template <MixedIntegerRotationConstraintType ConstraintType>
 MixedIntegerRotationConstraintGenerator<ConstraintType>::
@@ -391,11 +416,11 @@ MixedIntegerRotationConstraintGenerator<ConstraintType>::
     : num_intervals_per_half_axis_(num_intervals_per_half_axis),
       interval_binning_(interval_binning),
       phi_nonnegative_{
-          Eigen::VectorXd::LinSpaced(0, 1, num_intervals_per_half_axis_ + 1)} {
+          Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis_ + 1, 0, 1)} {
   phi_.resize(2 * num_intervals_per_half_axis_ + 1);
   phi_(num_intervals_per_half_axis_) = 0;
-  for (int i = 0; i < num_intervals_per_half_axis_; ++i) {
-    phi_(num_intervals_per_half_axis_ - i - 1) = -phi_nonnegative_(i);
+  for (int i = 1; i <= num_intervals_per_half_axis_; ++i) {
+    phi_(num_intervals_per_half_axis_ - i) = -phi_nonnegative_(i);
     phi_(num_intervals_per_half_axis_ + i) = phi_nonnegative_(i);
   }
 

@@ -17,6 +17,11 @@ enum class MixedIntegerRotationConstraintType {
                            // bilinear product.
 };
 
+std::string to_string(MixedIntegerRotationConstraintType type); 
+
+std::ostream& operator<<(std::ostream& os,
+                         const MixedIntegerRotationConstraintType& type);
+
 /**
  * The return type of adding mixed integer relaxation for SO(3) constraint, if
  * the approach is to consider the intersection between the box and the unit
@@ -75,11 +80,15 @@ struct AddMixedIntegerRotationConstraintReturn<
  * described in
  * Global Inverse Kinematics via Mixed-integer Convex Optimization
  * by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR, 2017
+ *
+ * This class is templated, based on the approach to relax SO(3) constraint.
+ * The return type of adding the mixed-integer constraint to the program is
+ * different, depending on the relaxation approach.
  */
 template <MixedIntegerRotationConstraintType ConstraintType>
 class MixedIntegerRotationConstraintGenerator {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       MixedIntegerRotationConstraintGenerator)
 
   MixedIntegerRotationConstraintGenerator(int num_intervals_per_half_axis,
@@ -96,9 +105,19 @@ class MixedIntegerRotationConstraintGenerator {
   AddToProgram(MathematicalProgram* prog,
                const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const;
 
+  const Eigen::VectorXd& phi() const { return phi_; };
+
+  const Eigen::VectorXd phi_nonnegative() const { return phi_nonnegative_; }
+
+  int num_intervals_per_half_axis() const {
+    return num_intervals_per_half_axis_;
+  }
+
+  IntervalBinning interval_binning() const { return interval_binning_; }
+
  private:
-  const int num_intervals_per_half_axis_;
-  const IntervalBinning interval_binning_;
+  int num_intervals_per_half_axis_;
+  IntervalBinning interval_binning_;
   // φ(i) = -1 + 1 / num_intervals_per_half_axis_ * i
   Eigen::VectorXd phi_;
   // φ₊(i) = 1 / num_intervals_per_half_axis_ * i
