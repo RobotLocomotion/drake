@@ -53,6 +53,7 @@ drake_cc_package_library(
         ":road_path",
         ":simple_car",
         ":simple_powertrain",
+        ":trajectory_agent",
         ":trajectory_car",
         ":trivial_right_of_way_state_provider",
     ],
@@ -396,6 +397,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "trajectory_agent",
+    srcs = ["trajectory_agent.cc"],
+    hdrs = ["trajectory_agent.h"],
+    deps = [
+        ":agent_trajectory",
+        ":generated_vectors",
+        "//common:autodiff",
+        "//common:extract_double",
+        "//systems/framework:leaf_system",
+        "//systems/rendering:frame_velocity",
+        "//systems/rendering:pose_vector",
+    ],
+)
+
+drake_cc_library(
     name = "trajectory_car",
     srcs = ["trajectory_car.cc"],
     hdrs = ["trajectory_car.h"],
@@ -734,6 +750,16 @@ drake_cc_googletest(
         "//automotive/maliput/dragway",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "trajectory_agent_test",
+    deps = [
+        "//automotive:trajectory_agent",
+        "//common:extract_double",
+        "//systems/analysis:simulator",
+        "//systems/framework/test_utilities",
     ],
 )
 
