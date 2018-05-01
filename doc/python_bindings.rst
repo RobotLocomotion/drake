@@ -214,6 +214,19 @@ To illustrate, you can print out the string representations of ``Adder``,
     >>> print(Adder_[Expression])
     <class 'pydrake.systems.primitives.Adder_[Expression]'>
 
+Additionally, you may convert an instance (if the conversion is available) using
+``System_[T].ToAutoDiffXd`` and ``System_[T].ToSymbolic``:
+
+.. code-block:: pycon
+
+    >>> adder = Adder(num_inputs=1, size=1)
+    >>> print(adder)
+    <pydrake.systems.primitives.Adder_[float] object at 0x...>
+    >>> print(adder.ToAutoDiffXd())
+    <pydrake.systems.primitives.Adder_[AutoDiffXd] object at 0x...>
+    >>> print(adder.ToSymbolic())
+    <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
+
 For Developers
 --------------
 
