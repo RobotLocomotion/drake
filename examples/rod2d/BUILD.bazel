@@ -32,7 +32,7 @@ drake_cc_binary(
         "//lcmtypes:viewer",
         "//systems/analysis",
         "//systems/framework",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:drake_visualizer_client",
         "//systems/rendering:pose_aggregator",
         "//systems/rendering:pose_bundle_to_draw_message",

@@ -256,7 +256,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant",
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:pose_stamped_t_pose_vector_translator",
         "@gflags",
     ],
