@@ -22,6 +22,24 @@ using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
+// Unnamed namespace for free functions local to this file.
+namespace {
+// Helper function to express an ignition::math::Vector3d instance as
+// a Vector3d instance.
+Vector3d ToVector3(const ignition::math::Vector3d& vector) {
+  return Vector3d(vector.X(), vector.Y(), vector.Z());
+}
+
+// Helper function to express an ignition::math::Pose3d instance as
+// an Isometry3d instance.
+Isometry3d ToIsometry3(const ignition::math::Pose3d& pose) {
+  const Isometry3d::TranslationType translation(ToVector3(pose.Pos()));
+  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
+                                    pose.Rot().Y(), pose.Rot().Z());
+  return translation * rotation;
+}
+}  // namespace
+
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
 MakeAcrobotPlantSdf() {
   auto plant = std::make_unique<MultibodyPlant<double>>();
@@ -93,22 +111,28 @@ MakeAcrobotPlantSdf() {
     const sdf::Link* link = model->LinkByIndex(link_index);
 
     // Get the link's inertia relative to the Bcm frame.
-    const ignition::math::Inertiald& I_Bcm_B = link->Inertial();
+    // Inertial provides a representation for the SpatialInertia
+    // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
+    // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
+    // Per SDF specification, Bi's origin is at the COM Bcm, but Bi
+    // is not necessarily aligned with B.
+    const ignition::math::Inertiald& I_Bcm_Bi = link->Inertial();
 
     // The axes of the inertial reference frame do not need to be aligned
     // with the principal axes of inertia.
-    const ignition::math::Matrix3d I_BBcm_Bi = I_Bcm_B.MOI();
+    // MOI() returns the rotational massmatrix of body B about the body's
+    // COM, Bcm, expressed in the body's frame.
+    const ignition::math::Matrix3d I_BBcm_B = I_Bcm_Bi.MOI();
 
     // Create the multibody inertia
     SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::MakeFromCentralInertia(
-          I_Bcm_B.MassMatrix().Mass(),
-          Vector3d(I_Bcm_B.Pose().Pos().X(),
-                   I_Bcm_B.Pose().Pos().Y(),
-                   I_Bcm_B.Pose().Pos().Z()),
+          I_Bcm_Bi.MassMatrix().Mass(),
+          // SDF's inertial frame must be coincident with the links COM.
+          Vector3d(0, 0, 0),
           RotationalInertia<double>(
-            I_BBcm_Bi(0, 0), I_BBcm_Bi(1, 1), I_BBcm_Bi(2, 2),
-            I_BBcm_Bi(1, 0), I_BBcm_Bi(2, 0), I_BBcm_Bi(2, 1)));
+            I_BBcm_B(0, 0), I_BBcm_B(1, 1), I_BBcm_B(2, 2),
+            I_BBcm_B(1, 0), I_BBcm_B(2, 0), I_BBcm_B(2, 1)));
 
     // Add a rigid body to model each link.
     plant->AddRigidBody(link->Name(), M_BBo_B);
@@ -122,16 +146,14 @@ MakeAcrobotPlantSdf() {
     const sdf::JointAxis* axis = joint->Axis();
 
     // Get the location of the joint in the model frame.
-    ignition::math::Matrix4d X_MJ(joint->Pose());
+    const Isometry3d X_MJ = ToIsometry3(joint->Pose());
 
     // Get the location of the child link in the model frame.
-    ignition::math::Matrix4d X_MC(
+    const Isometry3d X_MC = ToIsometry3(
         model->LinkByName(joint->ChildLinkName())->Pose());
 
-    ignition::math::Matrix4d X_CM = X_MC.Inverse();
-
     // Compute the location of the child joint in the child link's frame.
-    ignition::math::Matrix4d X_CJ = X_CM * X_MJ;
+    const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
 
     // Only supporting revolute joints for now.
     if (joint->Type() == sdf::JointType::REVOLUTE) {
@@ -143,30 +165,20 @@ MakeAcrobotPlantSdf() {
           joint->ParentLinkName() == "world") {
         plant->AddJoint<RevoluteJoint>(joint->Name(),
             plant->world_body(), {},
-            plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(Vector3d(X_CJ.Translation().X(),
-                                              X_CJ.Translation().Y(),
-                                              X_CJ.Translation().Z()))),
-            Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
+            plant->GetBodyByName(joint->ChildLinkName()), X_CJ,
+            ToVector3(axis->Xyz()));
       } else {
         // Get the location of the parent link in the model frame.
-        ignition::math::Matrix4d X_MP(
+        const Isometry3d X_MP = ToIsometry3(
             model->LinkByName(joint->ParentLinkName())->Pose());
-        ignition::math::Matrix4d X_PM = X_MP.Inverse();
 
         // Compute the location of the parent joint in the parent link's frame.
-        ignition::math::Matrix4d X_PJ = X_PM *  X_MJ;
+        const Isometry3d X_PJ = X_MP.inverse() * X_MJ;
 
         plant->AddJoint<RevoluteJoint>(joint->Name(),
-            plant->GetBodyByName(joint->ParentLinkName()),
-            Isometry3d(Translation3d(Vector3d(X_PJ.Translation().X(),
-                                              X_PJ.Translation().Y(),
-                                              X_PJ.Translation().Z()))),
-            plant->GetBodyByName(joint->ChildLinkName()),
-            Isometry3d(Translation3d(Vector3d(X_CJ.Translation().X(),
-                                              X_CJ.Translation().Y(),
-                                              X_CJ.Translation().Z()))),
-            Vector3d(axis->Xyz().X(), axis->Xyz().Y(), axis->Xyz().Z()));
+            plant->GetBodyByName(joint->ParentLinkName()), X_PJ,
+            plant->GetBodyByName(joint->ChildLinkName()), X_CJ,
+            ToVector3(axis->Xyz()));
       }
     }
   }
