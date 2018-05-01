@@ -148,6 +148,10 @@ enum class IntervalBinning {
   kLinear
 };
 
+std::string to_string(IntervalBinning interval_binning);
+
+std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
+
 /**
  * Add constraints to the optimization program, such that the bilinear product
  * x * y is approximated by w, using Special Ordered Set of Type 2 (sos2)

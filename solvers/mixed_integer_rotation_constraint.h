@@ -28,10 +28,19 @@ std::ostream& operator<<(std::ostream& os,
  * sphere surface.
  */
 struct MixedIntegerRotationConstraintBoxSphereIntersectionReturn {
+  // CRpos[k](i, j) = 1 if φ₊(k) ≤ R(i, j) ≤ φ₊(k + 1)
+  // CRneg[k](i, j) = 1 if -φ₊(k+1) ≤ R(i, j) ≤ -φ₊(k)
   std::vector<Matrix3<symbolic::Expression>> CRpos;
   std::vector<Matrix3<symbolic::Expression>> CRneg;
-  std::vector<Matrix3<symbolic::Variable>> BRpos;
-  std::vector<Matrix3<symbolic::Variable>> BRneg;
+  // If we use logarithmic binning, and 
+  // [B[0](i, j), B[1](i, j), ..., B[N](i, j)] represents integer k in reflected
+  // Gray code, then φ(k) ≤ R(i, j) ≤ φ(k + 1).
+  // If we use linear binning, and B.size() = 2 * N, then
+  // B[N + k](i, j) = 1 if R(i, j) ≥ φ₊(k),
+  // B[k](i, j) = 1 if R(i, j) ≤ -φ₊(k)
+  // Namely the first half of B is `BRneg` in the code, while the second half
+  // of B is `BRpos` in the mixed_integer_rotation_constraint.cc
+  std::vector<Matrix3<symbolic::Variable>> B;
 };
 
 /**

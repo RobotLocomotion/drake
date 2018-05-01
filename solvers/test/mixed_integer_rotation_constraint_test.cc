@@ -172,9 +172,8 @@ class TestMixedIntegerRotationConstraintBilinearMcCormick
       : TestMixedIntegerRotationConstraint(
             MixedIntegerRotationConstraintType::kBilinearMcCormick,
             std::get<0>(GetParam()), std::get<1>(GetParam())),
-        rotation_generator_(num_intervals_per_half_axis_, interval_binning_) {
-    rotation_generator_.AddToProgram(&prog_, R_);
-  }
+        rotation_generator_(num_intervals_per_half_axis_, interval_binning_),
+        B_{rotation_generator_.AddToProgram(&prog_, R_)} {}
 
   ~TestMixedIntegerRotationConstraintBilinearMcCormick() = default;
 
@@ -182,11 +181,72 @@ class TestMixedIntegerRotationConstraintBilinearMcCormick
   MixedIntegerRotationConstraintGenerator<
       MixedIntegerRotationConstraintType::kBilinearMcCormick>
       rotation_generator_;
+  std::array<std::array<VectorXDecisionVariable, 3>, 3> B_;
 };
 
 TEST_P(TestMixedIntegerRotationConstraintBilinearMcCormick, TestConstructor) {
-  EXPECT_TRUE(CompareMatrices(rotation_generator_.phi(), Eigen::VectorXd::LinSpaced(2 * num_intervals_per_half_axis_ + 1, -1, 1), 1E-12));
-  EXPECT_TRUE(CompareMatrices(rotation_generator_.phi_nonnegative(), Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis_ + 1, 0, 1), 1E-12));
+  EXPECT_TRUE(CompareMatrices(
+      rotation_generator_.phi(),
+      Eigen::VectorXd::LinSpaced(2 * num_intervals_per_half_axis_ + 1, -1, 1),
+      1E-12));
+  EXPECT_TRUE(CompareMatrices(
+      rotation_generator_.phi_nonnegative(),
+      Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis_ + 1, 0, 1),
+      1E-12));
+}
+
+TEST_P(TestMixedIntegerRotationConstraintBilinearMcCormick,
+       TestBinaryAssignment) {
+  const Eigen::Matrix3d R_test =
+      Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  auto b_constraint = prog_.AddBoundingBoxConstraint(0, 0, B_[0][0]);
+  auto UpdateBConstraint =
+      [&b_constraint](const Eigen::Ref<const Eigen::VectorXd>& b_val) {
+        b_constraint.evaluator()->UpdateLowerBound(b_val);
+        b_constraint.evaluator()->UpdateUpperBound(b_val);
+      };
+  switch (interval_binning_) {
+    case IntervalBinning::kLinear: {
+      switch (num_intervals_per_half_axis_) {
+        case 1:
+          UpdateBConstraint(Eigen::Vector2d(0, 1));
+          EXPECT_TRUE(IsFeasible(R_test));
+          UpdateBConstraint(Eigen::Vector2d(1, 0));
+          EXPECT_FALSE(IsFeasible(R_test));
+          break;
+        case 2:
+          UpdateBConstraint(Eigen::Vector4d(0, 0, 0, 1));
+          EXPECT_TRUE(IsFeasible(R_test));
+          UpdateBConstraint(Eigen::Vector4d(0, 0, 1, 0));
+          EXPECT_FALSE(IsFeasible(R_test));
+          break;
+        default:
+          throw std::runtime_error("Unsuppored num_intervals_per_half_axis_.");
+      }
+      break;
+    }
+    case IntervalBinning::kLogarithmic: {
+      switch (num_intervals_per_half_axis_) {
+        case 1: {
+          UpdateBConstraint(Vector1d(1));
+          EXPECT_TRUE(IsFeasible(R_test));
+          UpdateBConstraint(Vector1d(0));
+          EXPECT_FALSE(IsFeasible(R_test));
+          break;
+        }
+        case 2: {
+          UpdateBConstraint(Eigen::Vector2d(1, 0));
+          EXPECT_TRUE(IsFeasible(R_test));
+          UpdateBConstraint(Eigen::Vector2d(0, 1));
+          EXPECT_FALSE(IsFeasible(R_test));
+          break;
+        }
+        default:
+          throw std::runtime_error("Unsupported num_intervals_per_half_axis_.");
+      }
+      break;
+    }
+  }
 }
 
 TEST_P(TestMixedIntegerRotationConstraintBilinearMcCormick,

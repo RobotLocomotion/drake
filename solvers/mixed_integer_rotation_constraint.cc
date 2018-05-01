@@ -1,7 +1,9 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
-#include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 #include "drake/solvers/bilinear_product_util.h"
+#include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
+
+using drake::symbolic::Expression;
 
 namespace drake {
 namespace solvers {
@@ -366,12 +368,13 @@ void AddRotationMatrixBilinearMcCormickConstraints(
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
           prog->AddLinearConstraint(Bpos(i, j) <=
-                                    B[i][j].tail(num_intervals_per_half_axis)
+                                    B[i][j]
+                                        .tail(num_intervals_per_half_axis)
                                         .cast<symbolic::Expression>()
                                         .sum());
           for (int k = 0; k < num_intervals_per_half_axis; ++k) {
-            prog->AddLinearConstraint(
-                Bpos(i, j) >= B[i][j](num_intervals_per_half_axis + k));
+            prog->AddLinearConstraint(Bpos(i, j) >=
+                                      B[i][j](num_intervals_per_half_axis + k));
           }
         }
       }
@@ -382,6 +385,321 @@ void AddRotationMatrixBilinearMcCormickConstraints(
       AddCrossProductImpliedOrthantConstraint(prog, Bpos.transpose());
       break;
     }
+  }
+}
+
+// Given (an integer enumeration of) the orthant, takes a vector in the
+// positive orthant into that orthant by flipping the signs of the individual
+// elements.
+Eigen::Vector3d FlipVector(const Eigen::Ref<const Eigen::Vector3d>& vpos,
+                           int orthant) {
+  DRAKE_ASSERT(vpos(0) >= 0 && vpos(1) >= 0 && vpos(2) >= 0);
+  DRAKE_DEMAND(orthant >= 0 && orthant <= 7);
+  Eigen::Vector3d v = vpos;
+  if (orthant & (1 << 2)) v(0) = -v(0);
+  if (orthant & (1 << 1)) v(1) = -v(1);
+  if (orthant & 1) v(2) = -v(2);
+  return v;
+}
+
+// Given (an integer enumeration of) the orthant, return a vector c with
+// c(i) = a(i) if element i is positive in the indicated orthant, otherwise
+// c(i) = b(i).
+template <typename Derived>
+Eigen::Matrix<Derived, 3, 1> PickPermutation(
+    const Eigen::Matrix<Derived, 3, 1>& a,
+    const Eigen::Matrix<Derived, 3, 1>& b, int orthant) {
+  DRAKE_DEMAND(orthant >= 0 && orthant <= 7);
+  Eigen::Matrix<Derived, 3, 1> c = a;
+  if (orthant & (1 << 2)) c(0) = b(0);
+  if (orthant & (1 << 1)) c(1) = b(1);
+  if (orthant & 1) c(2) = b(2);
+  return c;
+}
+
+void AddMcCormickVectorConstraints(
+    MathematicalProgram* prog, const VectorDecisionVariable<3>& v,
+    const std::vector<Vector3<Expression>>& cpos,
+    const std::vector<Vector3<Expression>>& cneg,
+    const VectorDecisionVariable<3>& v1, const VectorDecisionVariable<3>& v2,
+    const std::vector<std::vector<std::vector<std::vector<Eigen::Vector3d>>>>&
+        box_sphere_intersection_vertices,
+    const std::vector<
+        std::vector<std::vector<std::pair<Eigen::Vector3d, double>>>>&
+        box_sphere_intersection_halfspace) {
+  const int N = cpos.size();  // number of discretization points.
+
+  // Iterate through regions.
+  for (int xi = 0; xi < N; xi++) {
+    for (int yi = 0; yi < N; yi++) {
+      for (int zi = 0; zi < N; zi++) {
+        Vector3<Expression> this_cpos, this_cneg;
+        this_cpos << cpos[xi](0), cpos[yi](1), cpos[zi](2);
+        this_cneg << cneg[xi](0), cneg[yi](1), cneg[zi](2);
+
+        // If the box and the sphere surface has intersection
+        if (box_sphere_intersection_vertices[xi][yi][zi].size() > 0) {
+          // The box intersects with the surface of the unit sphere.
+          // Two possible cases
+          // 1. If the box bmin <= x <= bmax intersects with the surface of the
+          // unit sphere at a unique point (either bmin or bmax),
+          // 2. Otherwise, there is a region of intersection.
+
+          if (box_sphere_intersection_vertices[xi][yi][zi].size() == 1) {
+            // If box_min or box_max is on the sphere, then denote the point on
+            // the sphere as u, we have the following condition
+            // if c[xi](0) = 1 and c[yi](1) == 1 and c[zi](2) == 1, then
+            //     v = u
+            //     vᵀ * v1 = 0
+            //     vᵀ * v2 = 0
+            //     v.cross(v1) = v2
+            // Translate this to constraint, we have
+            //   2 * (c[xi](0) + c[yi](1) + c[zi](2)) - 6
+            //       <= v - u <= -2 * (c[xi](0) + c[yi](1) + c[zi](2)) + 6
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v1 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   c[xi](0) + c[yi](1) + c[zi](2) - 3
+            //       <= vᵀ * v2 <= 3 - (c[xi](0) + c[yi](1) + c[zi](2))
+            //
+            //   2 * c[xi](0) + c[yi](1) + c[zi](2) - 6
+            //       <= v.cross(v1) - v2 <= 6 - 2 * (c[xi](0) + c[yi](1) +
+            //       c[zi](2))
+
+            // `u` in the documentation above.
+            const Eigen::Vector3d unique_intersection =
+                box_sphere_intersection_vertices[xi][yi][zi][0];
+            Eigen::Vector3d orthant_u;
+            Vector3<Expression> orthant_c;
+            for (int o = 0; o < 8; o++) {  // iterate over orthants
+              orthant_u = FlipVector(unique_intersection, o);
+              orthant_c = PickPermutation(this_cpos, this_cneg, o);
+
+              // TODO(hongkai.dai): remove this for loop when we can handle
+              // Eigen::Array of symbolic formulae.
+              Expression orthant_c_sum = orthant_c.cast<Expression>().sum();
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v(i) - orthant_u(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v(i) - orthant_u(i) >=
+                                          2 * orthant_c_sum - 6);
+              }
+              const Expression v_dot_v1 = orthant_u.dot(v1);
+              const Expression v_dot_v2 = orthant_u.dot(v2);
+              prog->AddLinearConstraint(v_dot_v1 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v1);
+              prog->AddLinearConstraint(v_dot_v2 <= 3 - orthant_c_sum);
+              prog->AddLinearConstraint(orthant_c_sum - 3 <= v_dot_v2);
+              const Vector3<Expression> v_cross_v1 = orthant_u.cross(v1);
+              for (int i = 0; i < 3; ++i) {
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) <=
+                                          6 - 2 * orthant_c_sum);
+                prog->AddLinearConstraint(v_cross_v1(i) - v2(i) >=
+                                          2 * orthant_c_sum - 6);
+              }
+            }
+          } else {
+            // Find the intercepts of the unit sphere with the box, then find
+            // the tightest linear constraint of the form:
+            //    d <= n'*v
+            // that puts v inside (but as close as possible to) the unit circle.
+
+            const double d =
+                box_sphere_intersection_halfspace[xi][yi][zi].second;
+            const Eigen::Vector3d& normal =
+                box_sphere_intersection_halfspace[xi][yi][zi].first;
+
+            Eigen::VectorXd b(0);
+            Eigen::Matrix<double, Eigen::Dynamic, 3> A(0, 3);
+
+            internal::ComputeInnerFacetsForBoxSphereIntersection(
+                box_sphere_intersection_vertices[xi][yi][zi], &A, &b);
+
+            // theta is the maximal angle between v and normal, where v is an
+            // intersecting point between the box and the sphere.
+            double cos_theta = d;
+            const double theta = std::acos(cos_theta);
+
+            Eigen::Matrix<double, 1, 6> a;
+            Eigen::Matrix<double, 3, 9> A_cross;
+
+            Eigen::Vector3d orthant_normal;
+            Vector3<Expression> orthant_c;
+            for (int o = 0; o < 8; o++) {  // iterate over orthants
+              orthant_normal = FlipVector(normal, o);
+              orthant_c = PickPermutation(this_cpos, this_cneg, o);
+
+              for (int i = 0; i < A.rows(); ++i) {
+                // Add the constraint that A * v <= b, representing the inner
+                // facets f the convex hull, obtained from the vertices of the
+                // intersection region.
+                // This constraint is only active if the box is active.
+                // We impose the constraint
+                // A.row(i) * v - b(i) <= 3 - 3 * b(i) + (b(i) - 1) * (c[xi](0)
+                // + c[yi](1) + c[zi](2))
+                // Or in words
+                // If c[xi](0) = 1 and c[yi](1) = 1 and c[zi](1) = 1
+                //   A.row(i) * v <= b(i)
+                // Otherwise
+                //   A.row(i) * v -b(i) is not constrained
+                Eigen::Vector3d orthant_a =
+                    -FlipVector(-A.row(i).transpose(), o);
+                prog->AddLinearConstraint(
+                    orthant_a.dot(v) - b(i) <=
+                    3 - 3 * b(i) +
+                        (b(i) - 1) *
+                            orthant_c.cast<symbolic::Expression>().sum());
+              }
+
+              // Max vector norm constraint: -1 <= normal'*x <= 1.
+              // No need to restrict to this orthant, but also no need to apply
+              // the same constraint twice (would be the same for opposite
+              // orthants), so skip all of the -x orthants.
+              if (o % 2 == 0)
+                prog->AddLinearConstraint(orthant_normal.transpose(), -1, 1, v);
+
+              const symbolic::Expression orthant_c_sum{orthant_c.sum()};
+
+              // Dot-product constraint: ideally v.dot(v1) = v.dot(v2) = 0.
+              // The cone of (unit) vectors within theta of the normal vector
+              // defines a band of admissible vectors v1 and v2 which are
+              // orthogonal to v.  They must satisfy the constraint:
+              //    -sin(theta) <= normal.dot(vi) <= sin(theta)
+              // Proof sketch:
+              //   v is within theta of normal.
+              //   => vi must be within theta of a vector orthogonal to
+              //      the normal.
+              //   => vi must be pi/2 +/- theta from the normal.
+              //   => |normal||vi| cos(pi/2 + theta) <= normal.dot(vi) <=
+              //                |normal||vi| cos(pi/2 - theta).
+              // Since normal and vi are both unit length,
+              //     -sin(theta) <= normal.dot(vi) <= sin(theta).
+              // Note: (An alternative tighter, but SOCP constraint)
+              //   v, v1, v2 forms an orthornormal basis. So n'*v is the
+              //   projection of n in the v direction, same for n'*v1, n'*v2.
+              //   Thus
+              //     (n'*v)² + (n'*v1)² + (n'*v2)² = n'*n
+              //   which translates to "The norm of a vector is equal to the
+              //   sum of squares of the vector projected onto each axes of an
+              //   orthornormal basis".
+              //   This equation is the same as
+              //     (nᵀ*v1)² + (nᵀ*v2)² <= sin(theta)²
+              //   we can impose a tighter Lorentz cone constraint
+              //     [|sin(theta)|, nᵀ*v1, nᵀ*v2] is in the Lorentz cone.
+              // We relax this Lorentz cone constraint by linear constraints
+              // -sinθ <= nᵀ * v1 <= sinθ
+              // -sinθ <= nᵀ * v2 <= sinθ
+              // To activate this constraint, we define
+              // c_sum = c[xi](0) + c[yi](1) + c[zi](2), and impose the
+              // following constraint using big-M approach.
+              // nᵀ * v1 - sinθ <= (1 - sinθ)*(3 - c_sum)
+              // nᵀ * v2 - sinθ <= (1 - sinθ)*(3 - c_sum)
+              // nᵀ * v1 + sinθ >= (-1 + sinθ)*(3 - c_sum)
+              // nᵀ * v2 + sinθ >= (-1 + sinθ)*(3 - c_sum)
+              const double sin_theta{sin(theta)};
+              prog->AddLinearConstraint(orthant_normal.dot(v1) + sin_theta >=
+                                        (-1 + sin_theta) * (3 - orthant_c_sum));
+              prog->AddLinearConstraint(orthant_normal.dot(v2) + sin_theta >=
+                                        (-1 + sin_theta) * (3 - orthant_c_sum));
+
+              prog->AddLinearConstraint(orthant_normal.dot(v1) - sin_theta <=
+                                        (1 - sin_theta) * (3 - orthant_c_sum));
+              prog->AddLinearConstraint(orthant_normal.dot(v2) - sin_theta <=
+                                        (1 - sin_theta) * (3 - orthant_c_sum));
+
+              // Cross-product constraint: ideally v2 = v.cross(v1).
+              // Since v is within theta of normal, we will prove that
+              // |v2 - normal.cross(v1)| <= 2 * sin(θ / 2)
+              // Notice that (v2 - normal.cross(v1))ᵀ * (v2 - normal.cross(v1))
+              // = v2ᵀ * v2 + |normal.cross(v1))|² -
+              //      2 * v2ᵀ * (normal.cross(v1))
+              // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*(v1.cross(v2))
+              // = 1 + |normal.cross(v1))|² - 2 * normalᵀ*v
+              // <= 1 + 1 - 2 * cos(θ)
+              // = (2 * sin(θ / 2))²
+              // Thus we get |v2 - normal.cross(v1)| <= 2 * sin(θ / 2)
+              // Here we consider to use an elementwise linear constraint
+              // -2*sin(theta / 2) <=  v2 - normal.cross(v1) <= 2*sin(θ / 2)
+              // Since 0<=θ<=pi/2, this should be enough to rule out the
+              // det(R)=-1 case (the shortest projection of a line across the
+              // circle onto a single axis has length 2sqrt(3)/3 > 1.15), and
+              // can be significantly tighter.
+
+              // To activate this only when the box is active, the complete
+              // constraints are
+              //  -2*sin(θ/2)-(2 - 2sin(θ/2))*(3-(cxi+cyi+czi))
+              //   <= v2-normal.cross(v1)
+              //     <= 2*sin(θ/2)+(2 - 2sin(θ/2))*(3-(cxi+cyi+czi))
+              // Note: Again this constraint could be tighter as a Lorenz cone
+              // constraint of the form:
+              //   |v2 - normal.cross(v1)| <= 2*sin(θ/2).
+              const double sin_theta2 = sin(theta / 2);
+              const Vector3<symbolic::Expression> v2_minus_n_cross_v1{
+                  v2 - orthant_normal.cross(v1)};
+              prog->AddLinearConstraint(
+                  v2_minus_n_cross_v1 <=
+                  Vector3<symbolic::Expression>::Constant(
+                      2 * sin_theta2 +
+                      (2 - 2 * sin_theta2) * (3 - orthant_c_sum)));
+              prog->AddLinearConstraint(
+                  v2_minus_n_cross_v1 >=
+                  Vector3<symbolic::Expression>::Constant(
+                      -2 * sin_theta2 +
+                      (-2 + 2 * sin_theta2) * (3 - orthant_c_sum)));
+            }
+          }
+        } else {
+          // This box does not intersect with the surface of the sphere.
+          for (int o = 0; o < 8; ++o) {  // iterate over orthants
+            prog->AddLinearConstraint(PickPermutation(this_cpos, this_cneg, o)
+                                          .cast<Expression>()
+                                          .sum(),
+                                      0.0, 2.0);
+          }
+        }
+      }
+    }
+  }
+}
+
+// This function just calls AddMcCormickVectorConstraints for each row/column
+// of R.
+void AddMcCormickVectorConstraintsForR(
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    const std::vector<Matrix3<symbolic::Expression>>& CRpos,
+    const std::vector<Matrix3<symbolic::Expression>>& CRneg,
+    int num_intervals_per_half_axis,
+    const std::vector<std::vector<std::vector<std::vector<Eigen::Vector3d>>>>&
+        box_sphere_intersection_vertices,
+    const std::vector<
+        std::vector<std::vector<std::pair<Eigen::Vector3d, double>>>>&
+        box_sphere_intersection_halfspace,
+    MathematicalProgram* prog) {
+  // Add constraints to the column and row vectors.
+  std::vector<Vector3<Expression>> cpos(num_intervals_per_half_axis),
+      cneg(num_intervals_per_half_axis);
+  for (int i = 0; i < 3; i++) {
+    // Make lists of the decision variables in terms of column vectors and row
+    // vectors to facilitate the calls below.
+    // TODO(russt): Consider reorganizing the original CRpos/CRneg variables to
+    // avoid this (albeit minor) cost?
+    for (int k = 0; k < num_intervals_per_half_axis; k++) {
+      cpos[k] = CRpos[k].col(i);
+      cneg[k] = CRneg[k].col(i);
+    }
+    AddMcCormickVectorConstraints(
+        prog, R.col(i), cpos, cneg, R.col((i + 1) % 3), R.col((i + 2) % 3),
+        box_sphere_intersection_vertices, box_sphere_intersection_halfspace);
+
+    for (int k = 0; k < num_intervals_per_half_axis; k++) {
+      cpos[k] = CRpos[k].row(i).transpose();
+      cneg[k] = CRneg[k].row(i).transpose();
+    }
+    AddMcCormickVectorConstraints(
+        prog, R.row(i).transpose(), cpos, cneg, R.row((i + 1) % 3).transpose(),
+        R.row((i + 2) % 3).transpose(), box_sphere_intersection_vertices,
+        box_sphere_intersection_halfspace);
   }
 }
 }  // namespace
@@ -492,6 +810,9 @@ MixedIntegerRotationConstraintGenerator<ConstraintType>::AddToProgram(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {}
 
+// Template specializating for adding SO(3) relaxation, by replacing bilinear
+// products with new variables, in the McCormick envelope of the bilinear
+// product w = x * y.
 template <>
 AddMixedIntegerRotationConstraintReturn<
     MixedIntegerRotationConstraintType::kBilinearMcCormick>::Type
@@ -538,8 +859,124 @@ MixedIntegerRotationConstraintGenerator<
   return B;
 }
 
+// Template specialization for adding SO(3) relaxation, based on the
+// intersection region between the unit sphere surface and boxes.
+template <>
+AddMixedIntegerRotationConstraintReturn<
+    MixedIntegerRotationConstraintType::kBoxSphereIntersection>::Type
+MixedIntegerRotationConstraintGenerator<
+    MixedIntegerRotationConstraintType::kBoxSphereIntersection>::
+    AddToProgram(
+        MathematicalProgram* prog,
+        const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {
+  AddMixedIntegerRotationConstraintReturn<
+      MixedIntegerRotationConstraintType::kBoxSphereIntersection>::Type ret;
+  if (interval_binning_ == IntervalBinning::kLinear) {
+    // Creates binary decision variables which discretize each axis.
+    //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
+    //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
+    ret.B.resize(2 * num_intervals_per_half_axis_);
+    for (int k = 0; k < num_intervals_per_half_axis_; k++) {
+      ret.B[num_intervals_per_half_axis_ + k] =
+          prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k));
+      ret.B[k] = prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k));
+    }
+  } else if (interval_binning_ == IntervalBinning::kLogarithmic) {
+    ret.B.resize(solvers::CeilLog2(num_intervals_per_half_axis_) + 1);
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+      }
+    }
+  }
+
+  // Use an lambda to query Bpos and Bneg
+  auto BRpos = [&ret, this](int k) -> const MatrixDecisionVariable<3, 3>& {
+    return ret.B[this->num_intervals_per_half_axis_ + k];
+  };
+
+  auto BRneg = [&ret](int k) -> const MatrixDecisionVariable<3, 3>& {
+    return ret.B[k];
+  };
+
+  // For convenience, we also introduce additional expressions to
+  // represent the individual sections of the real line
+  // CRpos[k](i, j) = 1 => phi(k) <= R(i, j) <= phi(k + 1)
+  //   CRpos[k](i,j) = BRpos[k](i,j) if k=N-1, otherwise
+  //   CRpos[k](i,j) = BRpos[k](i,j) - BRpos[k+1](i,j)
+  // Similarly CRneg[k](i, j) = 1 => -phi(k + 1) <= R(i, j) <= -phi(k)
+  //   CRneg[k](i, j) = CRneg[k](i, j) if k = N-1, otherwise
+  //   CRneg[k](i, j) = CRneg[k](i, j) - CRneg[k+1](i, j)
+  ret.CRpos.reserve(num_intervals_per_half_axis_);
+  ret.CRneg.reserve(num_intervals_per_half_axis_);
+  for (int k = 0; k < num_intervals_per_half_axis_ - 1; k++) {
+    ret.CRpos.push_back(BRpos(k) - BRpos(k + 1));
+    ret.CRneg.push_back(BRneg(k) - BRneg(k + 1));
+  }
+  ret.CRpos.push_back(
+      BRpos(num_intervals_per_half_axis_ - 1).cast<symbolic::Expression>());
+  ret.CRneg.push_back(
+      BRneg(num_intervals_per_half_axis_ - 1).cast<symbolic::Expression>());
+
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      for (int k = 0; k < num_intervals_per_half_axis_; k++) {
+        // R(i,j) > phi(k) => BRpos[k](i,j) = 1
+        // R(i,j) < phi(k) => BRpos[k](i,j) = 0
+        // R(i,j) = phi(k) => BRpos[k](i,j) = 0 or 1
+        // Since -s1 <= R(i, j) - phi(k) <= s2,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
+        // [R(i,j) - phi(k), BRpos[k](i,j)] has to lie within the convex hull,
+        // whose vertices are (-s1, 0), (0, 0), (s2, 1), (0, 1). By computing
+        // the edges of this convex hull, we get
+        // -s1 + s1*BRpos[k](i,j) <= R(i,j)-phi(k) <= s2 * BRpos[k](i,j)
+        double s1 = 1 + phi_nonnegative_(k);
+        double s2 = 1 - phi_nonnegative_(k);
+        prog->AddLinearConstraint(R(i, j) - phi_nonnegative_(k) >=
+                                  -s1 + s1 * BRpos(k)(i, j));
+        prog->AddLinearConstraint(R(i, j) - phi_nonnegative_(k) <=
+                                  s2 * BRpos(k)(i, j));
+
+        // -R(i,j) > phi(k) => BRneg[k](i,j) = 1
+        // -R(i,j) < phi(k) => BRneg[k](i,j) = 0
+        // -R(i,j) = phi(k) => BRneg[k](i,j) = 0 or 1
+        // Since -s2 <= R(i, j) + phi(k) <= s1,
+        // where s1 = 1 + phi(k), s2 = 1 - phi(k). The point
+        // [R(i,j) + phi(k), BRneg[k](i,j)] has to lie within the convex hull
+        // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
+        // the edges of the convex hull, we get
+        // -s2 * BRneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*BRneg[k](i,j)
+        prog->AddLinearConstraint(R(i, j) + phi_nonnegative_(k) <=
+                                  s1 - s1 * BRneg(k)(i, j));
+        prog->AddLinearConstraint(R(i, j) + phi_nonnegative_(k) >=
+                                  -s2 * BRneg(k)(i, j));
+      }
+      // R(i,j) has to pick a side, either non-positive or non-negative.
+      prog->AddLinearConstraint(BRpos(0)(i, j) + BRneg(0)(i, j) == 1);
+
+      // for debugging: constrain to positive orthant.
+      //      prog->AddBoundingBoxConstraint(1,1,{BRpos[0].block<1,1>(i,j)});
+    }
+  }
+
+  // Add constraint that no two rows (or two columns) can lie in the same
+  // orthant (or opposite orthant).
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos(0));
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos(0).transpose());
+
+  AddMcCormickVectorConstraintsForR(R, ret.CRpos, ret.CRneg,
+                                    num_intervals_per_half_axis_,
+                                    box_sphere_intersection_vertices_,
+                                    box_sphere_intersection_halfspace_, prog);
+
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos(0));
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos(0).transpose());
+  return ret;
+}
+
 // Explicit instantiation
 template class MixedIntegerRotationConstraintGenerator<
     MixedIntegerRotationConstraintType::kBilinearMcCormick>;
+template class MixedIntegerRotationConstraintGenerator<
+    MixedIntegerRotationConstraintType::kBoxSphereIntersection>;
 }  // namespace solvers
 }  // namespace drake
