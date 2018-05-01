@@ -637,7 +637,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput<WrongVector>(*context_, 2), std::logic_error,
       ".*EvalVectorInput.*expected.*WrongVector"
-          ".*input port.*2.*actual.*BasicVector.*");
+          ".*input port.*2.*actual.*MyVector.*");
 
   EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(

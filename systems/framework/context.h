@@ -478,11 +478,13 @@ class Context : public ContextBase {
     context->SetInputPortValue(index, std::move(port_value));
   }
 
-  /// Declares that @p parent is the context of the enclosing Diagram. The
-  /// enclosing Diagram context is needed to evaluate inputs recursively.
+  /// Declares that @p parent is the context of @p child's enclosing Diagram.
+  /// The enclosing Diagram context is needed to evaluate inputs recursively.
   /// Aborts if the parent has already been set to something else.
   // Use static method so DiagramContext can invoke this on behalf of a child.
-  static void set_parent(const Context<T>* parent, Context<T>* child) {
+  // Output argument is listed first because it is serving as the 'this'
+  // pointer here.
+  static void set_parent(Context<T>* child, const Context<T>* parent) {
     DRAKE_DEMAND(child != nullptr);
     child->set_parent(parent);
   }

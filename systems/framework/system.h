@@ -361,6 +361,12 @@ class System : public SystemBase {
   /// `Calc` method from the "Calculations" group. Evaluations of input ports
   /// instead delegate to the containing Diagram, which arranges to have the
   /// appropriate subsystem evaluate the source output port.
+  ///
+  /// Methods in this group that specify preconditions operate as follows:
+  /// The preconditions will be checked in Debug builds but some or all might
+  /// not be checked in Release builds for performance reasons. If we do check
+  /// and a precondition is violated, an std::logic_error will be thrown with
+  /// a helpful message.
   //@{
 
   /// Returns a reference to the cached value of the conservative power. If
@@ -395,11 +401,6 @@ class System : public SystemBase {
   /// @pre the port must have been declared to be vector-valued.
   /// @pre the port's value must be of type Vec<T>.
   ///
-  /// The preconditions will be checked in Debug builds but some or all might
-  /// not be checked in Release builds for performance reasons. If we do check
-  /// and a precondition is violated, an std::logic_error will be thrown with
-  /// a helpful message.
-  ///
   /// @tparam Vec The template type of the input vector, which must be a
   ///             subclass of BasicVector.
   template <template <typename> class Vec = BasicVector>
@@ -410,7 +411,8 @@ class System : public SystemBase {
         "In EvalVectorInput<Vec>, Vec must be a subclass of BasicVector.");
 
     // The API allows an int but we'll use InputPortIndex internally.
-    if (port_index < 0) ThrowNegativeInputPortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
     const InputPortIndex iport_index(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -422,7 +424,7 @@ class System : public SystemBase {
     if (value == nullptr) {
       ThrowInputPortHasWrongType(__func__, iport_index,
                                  NiceTypeName::Get<Vec<T>>(),
-                                 NiceTypeName::Get<BasicVector<T>>());
+                                 NiceTypeName::Get(*basic_value));
     }
 
     return value;
@@ -437,13 +439,11 @@ class System : public SystemBase {
   /// @pre the port must have been declared to be vector-valued.
   /// @pre the port must be evaluable (connected or freestanding).
   ///
-  /// The preconditions will be checked in Debug builds but some or all might
-  /// not be checked in Release builds for performance reasons. If we do check
-  /// and a precondition is violated, an std::logic_error will be thrown with
-  /// a helpful message.
+  /// @see EvalVectorInput()
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
-    if (port_index < 0) ThrowNegativeInputPortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -463,15 +463,11 @@ class System : public SystemBase {
   /// @pre `port_index` must be non-negative.
   /// @pre `port_index` must designate an existing input port.
   ///
-  /// The precondition will be checked in Debug builds but might not be checked
-  /// in Release builds for performance reasons. If we do check and the
-  /// precondition is violated, an std::out_of_range error will be thrown with
-  /// a helpful message.
-  ///
   /// @see EvalInputValue(), EvalVectorInput(), EvalEigenVectorInput()
   const AbstractValue* EvalAbstractInput(const Context<T>& context,
                                          int port_index) const {
-    if (port_index < 0) ThrowNegativeInputPortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
@@ -489,15 +485,11 @@ class System : public SystemBase {
   /// @pre the port's value must be retrievable from the stored abstract value
   ///      using `AbstractValue::GetValue<V>`.
   ///
-  /// The preconditions will be checked in Debug builds but some or all might
-  /// not be checked in Release builds for performance reasons. If we do check
-  /// and a precondition is violated, an std::logic_error will be thrown with
-  /// a helpful message.
-  ///
   /// @tparam V The type of data expected.
   template <typename V>
   const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    if (port_index < 0) ThrowNegativeInputPortIndex(__func__, port_index);
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
@@ -1030,12 +1022,9 @@ class System : public SystemBase {
   }
 
   /// Returns the descriptor of the input port at index @p port_index.
+  /// Throws std::out_of_range if @p port_index doesn't select an existing port.
   const InputPortDescriptor<T>& get_input_port(int port_index) const {
-    if (port_index < 0) ThrowNegativeInputPortIndex(__func__, port_index);
-    const InputPortIndex port(port_index);
-    if (port_index >= get_num_input_ports())
-      ThrowInputPortIndexOutOfRange(__func__, port, get_num_input_ports());
-    return *input_ports_[port];
+    return GetInputPortOrThrow(__func__, port_index);
   }
 
   /// Returns the output port at index @p port_index.
@@ -1932,13 +1921,17 @@ class System : public SystemBase {
   const BasicVector<T>* EvalBasicVectorInputImpl(
       const char* func, const Context<T>& context,
       InputPortIndex port_index) const {
+    // Make sure this is the right kind of port before worrying about whether
+    // it is connected up properly.
+    const InputPortDescriptor<T>& port = GetInputPortOrThrow(func, port_index);
+    if (port.get_data_type() != kVectorValued)
+      ThrowNotAVectorInputPort(func, port_index);
+
+    // If there is no value at all, the port is not connected which is not
+    // a problem here.
     const AbstractValue* const abstract_value =
         EvalAbstractInputImpl(func, context, port_index);
     if (abstract_value == nullptr) return nullptr;
-
-    const InputPortDescriptor<T>& port = get_input_port(port_index);
-    if (port.get_data_type() != kVectorValued)
-      ThrowNotAVectorInputPort(func, port_index);
 
     // We have a vector port with a value, it better be a BasicVector!
     const BasicVector<T>* const basic_value =
@@ -1950,6 +1943,19 @@ class System : public SystemBase {
     DRAKE_DEMAND(basic_value->size() == port.size());
 
     return basic_value;
+  }
+
+  // Returns the descriptor of the input port at index @p port_index, throwing
+  // std::out_of_range we don't like the port index. The message is reported
+  // as though issued by API method @p func.
+  const InputPortDescriptor<T>& GetInputPortOrThrow(const char* func,
+                                                    int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(func, port_index);
+    const InputPortIndex port(port_index);
+    if (port_index >= get_num_input_ports())
+      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
+    return *input_ports_[port];
   }
 
   // input_ports_ and output_ports_ are vectors of unique_ptr so that references

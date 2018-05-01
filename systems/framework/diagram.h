@@ -1446,7 +1446,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // order.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
       system_index_map_[registered_systems_[i].get()] = i;
-      SystemBase::set_parent_service(this, registered_systems_[i].get());
+      SystemBase::set_parent_service(registered_systems_[i].get(), this);
     }
 
     // Generate constraints for the diagram from the constraints on the

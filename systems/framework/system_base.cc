@@ -4,9 +4,9 @@
 
 namespace {
 
-// Output a string like "System::EvalInput()".
+// Output a string like "System<T>::EvalInput()".
 std::string FmtFunc(const char* func) {
-  return fmt::format("System::{}()", func);
+  return fmt::format("System<T>::{}()", func);
 }
 
 }

@@ -29,7 +29,7 @@ class MyContextBase final : public ContextBase {
 
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 
   // For testing error checking for bad contexts.
@@ -63,7 +63,7 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
   MySystemBase system;
   EXPECT_EQ(system.get_name(), "");
   EXPECT_EQ(system.GetSystemName(), "_");  // Current dummy name.
-  EXPECT_EQ(system.GetSystemPathname(), "::_");  // Please change this!
+  EXPECT_EQ(system.GetSystemPathname(), "::_");
 
   system.set_name("any_name_will_do");
   EXPECT_EQ(system.get_name(), "any_name_will_do");

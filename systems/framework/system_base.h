@@ -461,9 +461,11 @@ class SystemBase : public internal::SystemMessageInterface {
   that owns this subsystem. Aborts if the parent service has already been set to
   something else. */
   // Use static method so Diagram can invoke this on behalf of a child.
+  // Output argument is listed first because it is serving as the 'this'
+  // pointer here.
   static void set_parent_service(
-      const internal::SystemParentServiceInterface* parent_service,
-      SystemBase* child) {
+      SystemBase* child,
+      const internal::SystemParentServiceInterface* parent_service) {
     DRAKE_DEMAND(child != nullptr);
     child->set_parent_service(parent_service);
   }
@@ -481,13 +483,13 @@ class SystemBase : public internal::SystemMessageInterface {
     system.ValidateAllocatedContext(context);
   }
 
-  /** Throws std::out_of_range apparently from API function `func` which has
-  been given this negative input port index. */
+  /** Throws std::out_of_range to report a negative `port_index` that was
+  passed to API method `func`. */
   // We're taking an int here for the index; InputPortIndex can't be negative.
   [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
                                                 int port_index) const;
 
-  /** Throws std::out_of_range to report bad port_index that was passed to
+  /** Throws std::out_of_range to report bad `port_index` that was passed to
   API method `func`. */
   [[noreturn]] void ThrowInputPortIndexOutOfRange(const char* func,
                                                   InputPortIndex port_index,

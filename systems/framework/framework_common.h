@@ -87,6 +87,11 @@ class InputPortBase {
 
 namespace internal {
 
+// TODO(sherm1) These interface classes shouldn't be here -- split into their
+// own headers. As written they obscure the limited use of these interfaces
+// in the framework, and require forward declarations that would not be
+// required if moved.
+
 // SystemBase should implement this interface so that its contained objects
 // can provide helpful error messages and log diagnostics that identify the
 // offending object within a diagram. Providing this as a separate interface
