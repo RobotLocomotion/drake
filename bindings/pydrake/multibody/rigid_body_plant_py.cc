@@ -51,8 +51,6 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = ContactInfo<T>;
     py::class_<Class> cls(m, "ContactInfo");
     cls
-        .def(py::init<const drake::multibody::collision::ElementId,
-                      const drake::multibody::collision::ElementId>())
         .def("get_element_id_1", &Class::get_element_id_1)
         .def("get_element_id_2", &Class::get_element_id_2)
         .def("get_resultant_force", &Class::get_resultant_force,
@@ -65,14 +63,14 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     cls
         .def(
             py::init<
-                const Eigen::Vector3d&,
-                const Eigen::Vector3d&,
-                const Eigen::Vector3d&,
-                const Eigen::Vector3d&>(),
+                const Vector3<T>&,
+                const Vector3<T>&,
+                const Vector3<T>&,
+                const Vector3<T>&>(),
             py::arg("application_point"),
             py::arg("normal"),
             py::arg("force"),
-            py::arg("torque") = Eigen::Vector3d::Zero())
+            py::arg("torque") = Vector3<T>::Zero())
         .def("get_reaction_force", &Class::get_reaction_force)
         .def("get_application_point", &Class::get_application_point)
         .def("get_force", &Class::get_force)
@@ -91,13 +89,14 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("get_contact_info",
              &Class::get_contact_info, py_reference_internal)
         .def("set_generalized_contact_force",
-            [](Class * cr,
+            [](Class* self,
                const Eigen::VectorXd& f) {
-                cr->set_generalized_contact_force(f);
+                self->set_generalized_contact_force(f);
             })
         .def("get_generalized_contact_force",
              &Class::get_generalized_contact_force, py_reference_internal)
-        .def("AddContact", &Class::AddContact, py_reference_internal)
+        .def("AddContact", &Class::AddContact, py_reference_internal,
+            py::arg("element_a_id"), py::arg("element_b_id"))
         .def("Clear", &Class::Clear);
     pysystems::AddValueInstantiation<Class>(m);
   }

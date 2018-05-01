@@ -125,9 +125,11 @@ class TestRigidBodyPlant(unittest.TestCase):
 
         id_1 = 42
         id_2 = 43
-        info = results.AddContact(id_1, id_2)
+        info = results.AddContact(element_a_id=id_1, element_b_id=id_2)
         self.assertEquals(results.get_num_contacts(), 1)
-        self.assertEquals(results.get_contact_info(0), info)
+        info_dup = results.get_contact_info(0)
+        self.assertIsInstance(info_dup, mut.ContactInfo)
+        self.assertIs(info, info_dup)
         self.assertEquals(info.get_element_id_1(), id_1)
         self.assertEquals(info.get_element_id_2(), id_2)
 
@@ -135,7 +137,10 @@ class TestRigidBodyPlant(unittest.TestCase):
         normal = np.array([0.0, 1.0, 0.0])
         force = np.array([0.9, 0.1, 0.9])
         torque = np.array([0.6, 0.6, 0.6])
-        cf = mut.ContactForce(pt, normal, force, torque)
+        cf = mut.ContactForce(application_point=pt,
+                              normal=normal,
+                              force=force,
+                              torque=torque)
         self.assertTrue(np.allclose(cf.get_application_point(), pt))
         self.assertTrue(np.allclose(cf.get_force(), force))
         self.assertTrue(np.allclose(cf.get_normal_force(),
