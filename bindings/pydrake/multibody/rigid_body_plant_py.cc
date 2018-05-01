@@ -51,6 +51,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = ContactInfo<T>;
     py::class_<Class> cls(m, "ContactInfo");
     cls
+        .def(py::init<>())
         .def("get_element_id_1", &Class::get_element_id_1)
         .def("get_element_id_2", &Class::get_element_id_2)
         .def("get_resultant_force", &Class::get_resultant_force,
