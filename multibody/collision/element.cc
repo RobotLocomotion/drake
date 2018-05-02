@@ -58,10 +58,10 @@ bool Element::CanCollideWith(const Element* other) const {
     // Group filtering didn't exclude the pair, try cliques.
     // If collision_cliques_.size() = N and other->collision_cliques_.size() = M
     // The worst case (overlapping elements without intersection) is O(N+M).
-    return !SortedVectorsHaveIntersection(collision_cliques_,
-                                          other->collision_cliques_);
+    excluded = SortedVectorsHaveIntersection(collision_cliques_,
+                                             other->collision_cliques_);
   }
-  return false;
+  return !excluded;
 }
 
 void Element::AddToCollisionClique(int clique_id) {
@@ -73,8 +73,16 @@ void Element::AddToCollisionClique(int clique_id) {
   // explanation.
   auto it = std::lower_bound(collision_cliques_.begin(),
                              collision_cliques_.end(), clique_id);
+
+  // This test precludes duplicate clique id values.
   if (it == collision_cliques_.end() || clique_id < *it)
     collision_cliques_.insert(it, clique_id);
+}
+
+void Element::AddCliquesFromElement(const Element& element) {
+  for (int clique_id : element.collision_cliques()) {
+    this->AddToCollisionClique(clique_id);
+  }
 }
 
 int Element::get_num_cliques() const {
@@ -85,11 +93,16 @@ const std::vector<int>& Element::collision_cliques() const {
   return collision_cliques_;
 }
 
-void Element::set_collision_filter(
-    const drake::multibody::collision::bitmask& group,
-    const drake::multibody::collision::bitmask& ignores) {
+void Element::set_collision_filter(const bitmask& group,
+                                   const bitmask& ignores) {
   collision_filter_group_ = group;
   collision_filter_ignores_ = ignores;
+}
+
+void Element::merge_collision_filter(const bitmask& group,
+                                     const bitmask& ignores) {
+  collision_filter_group_ |= group;
+  collision_filter_ignores_ |= ignores;
 }
 
 ostream& operator<<(ostream& out, const Element& ee) {

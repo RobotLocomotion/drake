@@ -134,6 +134,7 @@ drake_cc_googletest(
     deps = [
         ":collision",
         "//common:find_resource",
+        "//common/test_utilities:expect_throws_message",
         "//multibody:rigid_body_tree",
         "//multibody/joints",
         "//multibody/parsers",
