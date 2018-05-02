@@ -47,7 +47,6 @@ drake_cc_library(
         "multibody_plant_sdf_parser.h",
     ],
     deps = [
-        "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
         "@sdformat",
     ],

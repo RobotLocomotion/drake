@@ -16,22 +16,6 @@
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
-
-      <visual name='Link1_visual'>
-        <pose>0 0 -0.5 0 0 0</pose>
-        <geometry>
-          <cylinder>
-            <radius>0.05</radius>
-            <length>1.1</length>
-          </cylinder>
-        </geometry>
-
-	<!-- Red visual material -->
-        <material>
-	  <diffuse> 1 0 0 1 </diffuse>
-        </material>
-      </visual>
-
     </link>
     <link name='Link2'>
       <pose>0 0 -2.0 0 0 0</pose>
