@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "multibody_plant_sdf_parser",
+    srcs = [
+        "multibody_plant_sdf_parser.cc",
+    ],
+    hdrs = [
+        "multibody_plant_sdf_parser.h",
+    ],
+    deps = [
+        "//multibody/multibody_tree/multibody_plant",
+        "@sdformat",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_sdf_parser_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":multibody_plant_sdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+add_lint_tests()

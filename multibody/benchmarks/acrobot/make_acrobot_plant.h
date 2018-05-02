@@ -18,6 +18,10 @@ namespace acrobot {
 /// an acrobot with the method MakeAcrobotPlant().
 /// Refer to this the documentation of this class's constructor for further
 /// details on the parameters stored by this class and their default values.
+///
+/// @note The default constructor initializes the parameters in accordance to
+/// the `acrobot.sdf` file in this same directory. Therefore this file and
+/// `acrobot.sdf` MUST be kept in sync.
 class AcrobotParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
