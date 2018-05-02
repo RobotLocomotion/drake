@@ -302,7 +302,7 @@ class TestBoxSphereCorner : public ::testing::TestWithParam<
       }
     } else {
       std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
-          AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
+          AddRotationMatrixBoxSphereIntersectionMilpConstraints(&prog_, R_, 3);
     }
   }
 

@@ -424,7 +424,7 @@ Eigen::Matrix<Derived, 3, 1> PickPermutation(
   return c;
 }
 
-void AddMcCormickVectorConstraints(
+void AddBoxSphereIntersectionConstraints(
     MathematicalProgram* prog, const VectorDecisionVariable<3>& v,
     const std::vector<Vector3<Expression>>& cpos,
     const std::vector<Vector3<Expression>>& cneg,
@@ -670,9 +670,9 @@ void AddMcCormickVectorConstraints(
   }
 }
 
-// This function just calls AddMcCormickVectorConstraints for each row/column
+// This function just calls AddBoxSphereIntersectionConstraints for each row/column
 // of R.
-void AddMcCormickVectorConstraintsForR(
+void AddBoxSphereIntersectionConstraintsForR(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const std::vector<Matrix3<symbolic::Expression>>& CRpos,
     const std::vector<Matrix3<symbolic::Expression>>& CRneg,
@@ -695,7 +695,7 @@ void AddMcCormickVectorConstraintsForR(
       cpos[k] = CRpos[k].col(i);
       cneg[k] = CRneg[k].col(i);
     }
-    AddMcCormickVectorConstraints(
+    AddBoxSphereIntersectionConstraints(
         prog, R.col(i), cpos, cneg, R.col((i + 1) % 3), R.col((i + 2) % 3),
         box_sphere_intersection_vertices, box_sphere_intersection_halfspace);
 
@@ -703,7 +703,7 @@ void AddMcCormickVectorConstraintsForR(
       cpos[k] = CRpos[k].row(i).transpose();
       cneg[k] = CRneg[k].row(i).transpose();
     }
-    AddMcCormickVectorConstraints(
+    AddBoxSphereIntersectionConstraints(
         prog, R.row(i).transpose(), cpos, cneg, R.row((i + 1) % 3).transpose(),
         R.row((i + 2) % 3).transpose(), box_sphere_intersection_vertices,
         box_sphere_intersection_halfspace);
@@ -760,6 +760,72 @@ void GetCRposAndCRnegForLogarithmicBinning(
     }
   }
 }
+
+/**
+ * Compute the vertices of the intersection region between the boxes and the
+ * sphere surface. Also compute the tightest halfspace that contains the
+ * intersection region.
+ */
+void ComputeBoxSphereIntersectionAndHalfSpace(
+    int num_intervals_per_half_axis,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_nonnegative,
+    std::vector<std::vector<std::vector<std::vector<Eigen::Vector3d>>>>*
+        box_sphere_intersection_vertices,
+    std::vector<std::vector<std::vector<std::pair<Eigen::Vector3d, double>>>>*
+        box_sphere_intersection_halfspace) {
+  const double kEpsilon = std::numeric_limits<double>::epsilon();
+
+  box_sphere_intersection_vertices->resize(num_intervals_per_half_axis);
+  box_sphere_intersection_halfspace->resize(num_intervals_per_half_axis);
+  for (int xi = 0; xi < num_intervals_per_half_axis; ++xi) {
+    (*box_sphere_intersection_vertices)[xi].resize(num_intervals_per_half_axis);
+    (*box_sphere_intersection_halfspace)[xi].resize(
+        num_intervals_per_half_axis);
+    for (int yi = 0; yi < num_intervals_per_half_axis; ++yi) {
+      (*box_sphere_intersection_vertices)[xi][yi].resize(
+          num_intervals_per_half_axis);
+      (*box_sphere_intersection_halfspace)[xi][yi].resize(
+          num_intervals_per_half_axis);
+      for (int zi = 0; zi < num_intervals_per_half_axis; ++zi) {
+        const Eigen::Vector3d box_min(phi_nonnegative(xi), phi_nonnegative(yi),
+                                      phi_nonnegative(zi));
+        const Eigen::Vector3d box_max(phi_nonnegative(xi + 1),
+                                      phi_nonnegative(yi + 1),
+                                      phi_nonnegative(zi + 1));
+        const double box_min_norm = box_min.lpNorm<2>();
+        const double box_max_norm = box_max.lpNorm<2>();
+        if (box_min_norm <= 1.0 - kEpsilon && box_max_norm >= 1.0 + kEpsilon) {
+          // box_min is strictly inside the sphere, box_max is strictly
+          // outside of the sphere.
+          // We choose eps here, because if a vector x has unit length, and
+          // another vector y is different from x by eps (||x - y||∞ < eps),
+          // then max ||y||₂ - 1 is eps.
+          (*box_sphere_intersection_vertices)[xi][yi][zi] =
+              internal::ComputeBoxEdgesAndSphereIntersection(box_min, box_max);
+          DRAKE_DEMAND((*box_sphere_intersection_vertices)[xi][yi][zi].size() >=
+                       3);
+
+          Eigen::Vector3d normal{};
+          internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
+              (*box_sphere_intersection_vertices)[xi][yi][zi],
+              &((*box_sphere_intersection_halfspace)[xi][yi][zi].first),
+              &((*box_sphere_intersection_halfspace)[xi][yi][zi].second));
+        } else if (std::abs(box_min_norm - 1) < kEpsilon) {
+          // box_min is on the surface. This is the unique intersection point
+          // between the sphere surface and the box.
+          (*box_sphere_intersection_vertices)[xi][yi][zi].push_back(
+              box_min / box_min_norm);
+        } else if (std::abs(box_max_norm - 1) < kEpsilon) {
+          // box_max is on the surface. This is the unique intersection point
+          // between the sphere surface and the box.
+          (*box_sphere_intersection_vertices)[xi][yi][zi].push_back(
+              box_max / box_max_norm);
+        }
+      }
+    }
+  }
+}
+
 }  // namespace
 
 std::string to_string(
@@ -809,60 +875,10 @@ MixedIntegerRotationConstraintGenerator::
   // halfspace nᵀx≥ d, as the tightest halfspace for each intersection region.
   if (constraint_type_ == ConstraintType::kBoxSphereIntersection ||
       constraint_type_ == ConstraintType::kBoth) {
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-
-    box_sphere_intersection_vertices_.resize(num_intervals_per_half_axis_);
-    box_sphere_intersection_halfspace_.resize(num_intervals_per_half_axis_);
-    for (int xi = 0; xi < num_intervals_per_half_axis_; ++xi) {
-      box_sphere_intersection_vertices_[xi].resize(
-          num_intervals_per_half_axis_);
-      box_sphere_intersection_halfspace_[xi].resize(
-          num_intervals_per_half_axis_);
-      for (int yi = 0; yi < num_intervals_per_half_axis_; ++yi) {
-        box_sphere_intersection_vertices_[xi][yi].resize(
-            num_intervals_per_half_axis_);
-        box_sphere_intersection_halfspace_[xi][yi].resize(
-            num_intervals_per_half_axis_);
-        for (int zi = 0; zi < num_intervals_per_half_axis_; ++zi) {
-          const Eigen::Vector3d box_min(
-              phi_nonnegative_(xi), phi_nonnegative_(yi), phi_nonnegative_(zi));
-          const Eigen::Vector3d box_max(phi_nonnegative_(xi + 1),
-                                        phi_nonnegative_(yi + 1),
-                                        phi_nonnegative_(zi + 1));
-          const double box_min_norm = box_min.lpNorm<2>();
-          const double box_max_norm = box_max.lpNorm<2>();
-          if (box_min_norm <= 1.0 - kEpsilon &&
-              box_max_norm >= 1.0 + kEpsilon) {
-            // box_min is strictly inside the sphere, box_max is strictly
-            // outside of the sphere.
-            // We choose eps here, because if a vector x has unit length, and
-            // another vector y is different from x by eps (||x - y||∞ < eps),
-            // then max ||y||₂ - 1 is eps.
-            box_sphere_intersection_vertices_[xi][yi][zi] =
-                internal::ComputeBoxEdgesAndSphereIntersection(box_min,
-                                                               box_max);
-            DRAKE_DEMAND(box_sphere_intersection_vertices_[xi][yi][zi].size() >=
-                         3);
-
-            Eigen::Vector3d normal{};
-            internal::ComputeHalfSpaceRelaxationForBoxSphereIntersection(
-                box_sphere_intersection_vertices_[xi][yi][zi],
-                &(box_sphere_intersection_halfspace_[xi][yi][zi].first),
-                &(box_sphere_intersection_halfspace_[xi][yi][zi].second));
-          } else if (std::abs(box_min_norm - 1) < kEpsilon) {
-            // box_min is on the surface. This is the unique intersection point
-            // between the sphere surface and the box.
-            box_sphere_intersection_vertices_[xi][yi][zi].push_back(
-                box_min / box_min_norm);
-          } else if (std::abs(box_max_norm - 1) < kEpsilon) {
-            // box_max is on the surface. This is the unique intersection point
-            // between the sphere surface and the box.
-            box_sphere_intersection_vertices_[xi][yi][zi].push_back(
-                box_max / box_max_norm);
-          }
-        }
-      }
-    }
+    ComputeBoxSphereIntersectionAndHalfSpace(
+        num_intervals_per_half_axis_, phi_nonnegative_,
+        &box_sphere_intersection_vertices_,
+        &box_sphere_intersection_halfspace_);
   }
 }
 
@@ -938,7 +954,7 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
       GetCRposAndCRnegForLogarithmicBinning(
           ret.B_, num_intervals_per_half_axis_, prog, &CRpos, &CRneg);
     }
-    AddMcCormickVectorConstraintsForR(R, CRpos, CRneg,
+    AddBoxSphereIntersectionConstraintsForR(R, CRpos, CRneg,
                                       num_intervals_per_half_axis_,
                                       box_sphere_intersection_vertices_,
                                       box_sphere_intersection_halfspace_, prog);
@@ -946,45 +962,30 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
   return ret;
 }
 
-/*
-// Template specialization for adding SO(3) relaxation, based on the
-// intersection region between the unit sphere surface and boxes.
-template <>
-AddMixedIntegerRotationConstraintReturn<
-    MixedIntegerRotationConstraintType::kBoxSphereIntersection>::Type
-MixedIntegerRotationConstraintGenerator<
-    MixedIntegerRotationConstraintType::kBoxSphereIntersection>::
-    AddToProgram(
-        MathematicalProgram* prog,
-        const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {
-  AddMixedIntegerRotationConstraintReturn<
-      MixedIntegerRotationConstraintType::kBoxSphereIntersection>::Type ret;
-  if (interval_binning_ == IntervalBinning::kLinear) {
-    // Creates binary decision variables which discretize each axis.
-    //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
-    //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
-    ret.B.resize(2 * num_intervals_per_half_axis_);
-    for (int k = 0; k < num_intervals_per_half_axis_; k++) {
-      ret.B[num_intervals_per_half_axis_ + k] =
-          prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k));
-      ret.B[k] = prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k));
-    }
-  } else if (interval_binning_ == IntervalBinning::kLogarithmic) {
-    ret.B.resize(solvers::CeilLog2(num_intervals_per_half_axis_) + 1);
-    for (int i = 0; i < 3; ++i) {
-      for (int j = 0; j < 3; ++j) {
-      }
-    }
+AddRotationMatrixBoxSphereIntersectionReturnType
+AddRotationMatrixBoxSphereIntersectionMilpConstraints(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    int num_intervals_per_half_axis) {
+  DRAKE_DEMAND(num_intervals_per_half_axis >= 1);
+
+  // Use a simple lambda to make the constraints more readable below.
+  // Note that
+  //  forall k>=0, 0<=phi(k), and
+  //  forall k<=num_intervals_per_half_axis, phi(k)<=1.
+  const Eigen::VectorXd phi_nonnegative =
+      Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis + 1, 0, 1);
+
+  // Creates binary decision variables which discretize each axis.
+  //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
+  //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
+  std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
+  for (int k = 0; k < num_intervals_per_half_axis; k++) {
+    BRpos.push_back(
+        prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
+    BRneg.push_back(
+        prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k)));
   }
-
-  // Use an lambda to query Bpos and Bneg
-  auto BRpos = [&ret, this](int k) -> const MatrixDecisionVariable<3, 3>& {
-    return ret.B[this->num_intervals_per_half_axis_ + k];
-  };
-
-  auto BRneg = [&ret](int k) -> const MatrixDecisionVariable<3, 3>& {
-    return ret.B[k];
-  };
 
   // For convenience, we also introduce additional expressions to
   // represent the individual sections of the real line
@@ -994,20 +995,21 @@ MixedIntegerRotationConstraintGenerator<
   // Similarly CRneg[k](i, j) = 1 => -phi(k + 1) <= R(i, j) <= -phi(k)
   //   CRneg[k](i, j) = CRneg[k](i, j) if k = N-1, otherwise
   //   CRneg[k](i, j) = CRneg[k](i, j) - CRneg[k+1](i, j)
-  ret.CRpos.reserve(num_intervals_per_half_axis_);
-  ret.CRneg.reserve(num_intervals_per_half_axis_);
-  for (int k = 0; k < num_intervals_per_half_axis_ - 1; k++) {
-    ret.CRpos.push_back(BRpos(k) - BRpos(k + 1));
-    ret.CRneg.push_back(BRneg(k) - BRneg(k + 1));
+  std::vector<Matrix3<Expression>> CRpos, CRneg;
+  CRpos.reserve(num_intervals_per_half_axis);
+  CRneg.reserve(num_intervals_per_half_axis);
+  for (int k = 0; k < num_intervals_per_half_axis - 1; k++) {
+    CRpos.push_back(BRpos[k] - BRpos[k + 1]);
+    CRneg.push_back(BRneg[k] - BRneg[k + 1]);
   }
-  ret.CRpos.push_back(
-      BRpos(num_intervals_per_half_axis_ - 1).cast<symbolic::Expression>());
-  ret.CRneg.push_back(
-      BRneg(num_intervals_per_half_axis_ - 1).cast<symbolic::Expression>());
+  CRpos.push_back(
+      BRpos[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
+  CRneg.push_back(
+      BRneg[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < num_intervals_per_half_axis_; k++) {
+      for (int k = 0; k < num_intervals_per_half_axis; k++) {
         // R(i,j) > phi(k) => BRpos[k](i,j) = 1
         // R(i,j) < phi(k) => BRpos[k](i,j) = 0
         // R(i,j) = phi(k) => BRpos[k](i,j) = 0 or 1
@@ -1017,12 +1019,12 @@ MixedIntegerRotationConstraintGenerator<
         // whose vertices are (-s1, 0), (0, 0), (s2, 1), (0, 1). By computing
         // the edges of this convex hull, we get
         // -s1 + s1*BRpos[k](i,j) <= R(i,j)-phi(k) <= s2 * BRpos[k](i,j)
-        double s1 = 1 + phi_nonnegative_(k);
-        double s2 = 1 - phi_nonnegative_(k);
-        prog->AddLinearConstraint(R(i, j) - phi_nonnegative_(k) >=
-                                  -s1 + s1 * BRpos(k)(i, j));
-        prog->AddLinearConstraint(R(i, j) - phi_nonnegative_(k) <=
-                                  s2 * BRpos(k)(i, j));
+        double s1 = 1 + phi_nonnegative(k);
+        double s2 = 1 - phi_nonnegative(k);
+        prog->AddLinearConstraint(R(i, j) - phi_nonnegative(k) >=
+                                  -s1 + s1 * BRpos[k](i, j));
+        prog->AddLinearConstraint(R(i, j) - phi_nonnegative(k) <=
+                                  s2 * BRpos[k](i, j));
 
         // -R(i,j) > phi(k) => BRneg[k](i,j) = 1
         // -R(i,j) < phi(k) => BRneg[k](i,j) = 0
@@ -1033,13 +1035,13 @@ MixedIntegerRotationConstraintGenerator<
         // whose vertices are (-s2, 1), (0, 0), (s1, 0), (0, 1). By computing
         // the edges of the convex hull, we get
         // -s2 * BRneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*BRneg[k](i,j)
-        prog->AddLinearConstraint(R(i, j) + phi_nonnegative_(k) <=
-                                  s1 - s1 * BRneg(k)(i, j));
-        prog->AddLinearConstraint(R(i, j) + phi_nonnegative_(k) >=
-                                  -s2 * BRneg(k)(i, j));
+        prog->AddLinearConstraint(R(i, j) + phi_nonnegative(k) <=
+                                  s1 - s1 * BRneg[k](i, j));
+        prog->AddLinearConstraint(R(i, j) + phi_nonnegative(k) >=
+                                  -s2 * BRneg[k](i, j));
       }
       // R(i,j) has to pick a side, either non-positive or non-negative.
-      prog->AddLinearConstraint(BRpos(0)(i, j) + BRneg(0)(i, j) == 1);
+      prog->AddLinearConstraint(BRpos[0](i, j) + BRneg[0](i, j) == 1);
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{BRpos[0].block<1,1>(i,j)});
@@ -1048,18 +1050,25 @@ MixedIntegerRotationConstraintGenerator<
 
   // Add constraint that no two rows (or two columns) can lie in the same
   // orthant (or opposite orthant).
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos(0));
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos(0).transpose());
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0]);
+  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose());
 
-  AddMcCormickVectorConstraintsForR(R, ret.CRpos, ret.CRneg,
-                                    num_intervals_per_half_axis_,
-                                    box_sphere_intersection_vertices_,
-                                    box_sphere_intersection_halfspace_, prog);
+  std::vector<std::vector<std::vector<std::vector<Eigen::Vector3d>>>>
+      box_sphere_intersection_vertices;
+  std::vector<std::vector<std::vector<std::pair<Eigen::Vector3d, double>>>>
+      box_sphere_intersection_halfspace;
+  ComputeBoxSphereIntersectionAndHalfSpace(
+      num_intervals_per_half_axis, phi_nonnegative,
+      &box_sphere_intersection_vertices, &box_sphere_intersection_halfspace);
+  AddBoxSphereIntersectionConstraintsForR(R, CRpos, CRneg,
+                                    num_intervals_per_half_axis,
+                                    box_sphere_intersection_vertices,
+                                    box_sphere_intersection_halfspace, prog);
 
-  AddCrossProductImpliedOrthantConstraint(prog, BRpos(0));
-  AddCrossProductImpliedOrthantConstraint(prog, BRpos(0).transpose());
-  return ret;
-}*/
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
+  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());
 
+  return make_tuple(CRpos, CRneg, BRpos, BRneg);
+}
 }  // namespace solvers
 }  // namespace drake
