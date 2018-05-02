@@ -219,7 +219,7 @@ class SteeringCommandPublisher:
 def publish_driving_command(lcm_tag, throttle, steering_angle):
     lc = lcm.LCM()
     last_msg = lcm_msg()
-    last_msg.accleration = throttle
+    last_msg.acceleration = throttle
     last_msg.steering_angle = steering_angle
     lc.publish(lcm_tag, last_msg.encode())
 
