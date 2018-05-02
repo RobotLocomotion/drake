@@ -3,6 +3,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
@@ -15,6 +16,8 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 
 using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::parsing::detail::ToIsometry3;
+using drake::multibody::parsing::detail::ToVector3;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
@@ -22,21 +25,6 @@ using drake::multibody::UnitInertia;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
-// Helper function to express an ignition::math::Vector3d instance as
-// a Vector3d instance.
-Vector3d ToVector3(const ignition::math::Vector3d& vector) {
-  return Vector3d(vector.X(), vector.Y(), vector.Z());
-}
-
-// Helper function to express an ignition::math::Pose3d instance as
-// an Isometry3d instance.
-Isometry3d ToIsometry3(const ignition::math::Pose3d& pose) {
-  const Isometry3d::TranslationType translation(ToVector3(pose.Pos()));
-  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
-                                    pose.Rot().Y(), pose.Rot().Z());
-  return translation * rotation;
-}
-
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
