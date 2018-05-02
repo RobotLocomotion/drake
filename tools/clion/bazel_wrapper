@@ -15,25 +15,9 @@ def _write_stderr(bytes):
 def gdb_compatible_strings(args):
     '''Examine the args and conditionally inject the compiler flag for clang
     to compile gdb-friendly STL symbols. Modifies the args in place.'''
-    # Condition 1: must be clang
-    using_clang = True
-    compiler_args = filter(lambda x: x.startswith('--compiler'), args)
-    if compiler_args:
-        if len(compiler_args) > 1:
-            warnings.warn('Multiple compiler flags; no action taken')
-            return
-        if '=' in compiler_args[0]:
-            tokens = compiler_args[0].split('=')
-            compiler = tokens[1]
-        else:
-            compiler = args[args.index(compiler_args[0])]
-        if not compiler.startswith('clang'):
-            using_clang = False
-
-    # Condition 2: must be debug
-    is_debug = 'dbg' in args
-
-    if using_clang and is_debug:
+    # Inject the macro regardless of compiler, relying on non-clang compilers
+    # to simply ignore it.
+    if 'dbg' in args:
         # Place the compiler argument after the dbg command.
         insert_point = args.index('dbg') + 1
         args.insert(insert_point, '--copt=-D_GLIBCXX_DEBUG')
