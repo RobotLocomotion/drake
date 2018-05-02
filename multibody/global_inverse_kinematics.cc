@@ -19,8 +19,14 @@ using drake::solvers::VectorDecisionVariable;
 
 namespace drake {
 namespace multibody {
+GlobalInverseKinematics::Options::Options()
+    : num_intervals_per_half_axis_{2},
+      constraint_type_{solvers::MixedIntegerRotationConstraintGenerator::
+                           ConstraintType::kBilinearMcCormick},
+      interval_binning_{solvers::IntervalBinning::kLogarithmic} {}
+
 GlobalInverseKinematics::GlobalInverseKinematics(
-    const RigidBodyTreed& robot, int num_binary_vars_per_half_axis)
+    const RigidBodyTreed& robot, const GlobalInverseKinematics::Options& options)
     : robot_(&robot),
       joint_lower_bounds_{
           Eigen::VectorXd::Constant(robot_->get_num_positions(),
@@ -31,6 +37,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   const int num_bodies = robot_->get_num_bodies();
   R_WB_.resize(num_bodies);
   p_WBo_.resize(num_bodies);
+
+  solvers::MixedIntegerRotationConstraintGenerator rotation_generator(
+      options.constraint_type_, options.num_intervals_per_half_axis_,
+      options.interval_binning_);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int body_idx = 1; body_idx < num_bodies; ++body_idx) {
@@ -94,10 +104,9 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             // Should NOT do this evil dynamic cast here, but currently we do
             // not have a method to tell if a joint is revolute or not.
             if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
-              // Adding McCormick Envelope will add binary variables into
+              // Adding mixed-integer constraint will add binary variables into
               // the program.
-              solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-                  this, R_WB_[body_idx], num_binary_vars_per_half_axis);
+              rotation_generator.AddToProgram(this, R_WB_[body_idx]);
 
               const RevoluteJoint* revolute_joint =
                   dynamic_cast<const RevoluteJoint*>(joint);
@@ -133,8 +142,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           case 6: {
             // This is the floating base case, just add the rotation matrix
             // constraint.
-            solvers::AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-                this, R_WB_[body_idx], num_binary_vars_per_half_axis);
+            rotation_generator.AddToProgram(this, R_WB_[body_idx]);
             break;
           }
           default:
