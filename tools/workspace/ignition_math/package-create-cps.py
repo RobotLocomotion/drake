@@ -24,7 +24,8 @@ content = """
     "IGNITION-MATH_INCLUDE_DIRS": "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include",
     "IGNITION-MATH_LINK_DIRS": "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib",
     "IGNITION-MATH_LIBRARY_DIRS": "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib",
-    "IGNITION-MATH_LIBRARIES": "ignition_math"
+    "IGNITION-MATH_LIBRARIES": "ignition_math",
+    "ignition-math4_PKGCONFIG_ENTRY": "ignition-math4"
   }
 }
 """ % defs

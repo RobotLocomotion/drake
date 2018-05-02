@@ -29,6 +29,9 @@ content = """
       "Includes": ["@prefix@/include/ignition-rndf0"],
       "Requires": ["ignition-math4:ignition-math4"]
     }
+  },
+  "X-CMake-Variables": {
+    "ignition-rndf0_PKGCONFIG_ENTRY": "ignition-rndf0"
   }
 }
 """ % defs

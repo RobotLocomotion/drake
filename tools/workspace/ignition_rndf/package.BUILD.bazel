@@ -185,6 +185,26 @@ cmake_config(
 # Creates rule :install_cmake_config.
 install_cmake_config(package = CMAKE_PACKAGE)
 
+generate_file(
+    name = "ign_rndf_pkgconfig",
+    out = "ignition-rndf%d.pc" % (PROJECT_MAJOR),
+    content = """
+prefix=${pcfiledir}/../..
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: Ignition rndf
+Description: A set of rndf classes for robot applications
+Version: %d.%d.%d
+Requires: ignition-math4
+Requires.private:
+Libs: -L${libdir} -lignition_rndf
+Libs.private: -ldl
+CFlags: -I${includedir}
+    """ % (PROJECT_MAJOR, PROJECT_MINOR, PROJECT_PATCH),
+    visibility = ["//visibility:private"],
+)
+
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
@@ -192,6 +212,8 @@ install(
     hdrs = public_headers,
     hdr_dest = "include/" + CMAKE_PACKAGE,
     hdr_strip_prefix = ["include"],
+    data = [":ign_rndf_pkgconfig"],
+    data_dest = "lib/pkgconfig",
     docs = [
         "COPYING",
         "LICENSE",
