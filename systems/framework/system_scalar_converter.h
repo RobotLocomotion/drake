@@ -100,6 +100,8 @@ class SystemScalarConverter {
   SystemScalarConverter(
       SystemTypeTag<S>, GuaranteedSubtypePreservation subtype_preservation)
       : SystemScalarConverter() {
+    // N.B. When changing the pairs of supported types below, be sure to also
+    // change the `ConversionPairs` type pack in `DefineFrameworkPySystems`.
     using Expression = symbolic::Expression;
     // From double to all other types.
     AddIfSupported<S, AutoDiffXd, double>(subtype_preservation);
