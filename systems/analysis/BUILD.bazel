@@ -250,6 +250,7 @@ drake_cc_googletest(
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 
@@ -257,6 +258,8 @@ drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
         ":scalar_initial_value_problem",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 
@@ -264,6 +267,8 @@ drake_cc_googletest(
     name = "antiderivative_function_test",
     deps = [
         ":antiderivative_function",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 

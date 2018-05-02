@@ -72,9 +72,9 @@ class InitialValueProblem {
       const T& t, const VectorX<T>& x, const VectorX<T>& k)>;
 
   /// Approximation technique function type, to build an approximating function
-  /// 𝐳(t) to an 𝐱(t; 𝐤) solution based on a partition of the solution domain
-  /// for which value 𝐱 and first derivative d𝐱/dt are known and provided at
-  /// multiple argument values t.
+  /// 𝐳(t) to an 𝐱(t; 𝐤) solution based on a partition of its domain into
+  /// multiple contiguous intervals where value 𝐱 and first derivative d𝐱/dt
+  /// are known and provided at the boundaries.
   ///
   /// @param t_sequence The independent scalar variable sequence
   ///                   (t₁ ... tₚ) where tₚ ∈ ℝ sequence.

@@ -7,9 +7,11 @@
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/scalar_initial_value_problem-inl.h"
+#include "drake/systems/analysis/test_utilities/approximation_techniques.h"
 
 namespace drake {
 namespace systems {
+namespace analysis {
 namespace {
 
 // Checks scalar IVP solver usage with multiple integrators.
@@ -193,23 +195,7 @@ class ScalarInitialValueProblemAccuracyTest
 };
 
 using trajectories::PiecewisePolynomial;
-
-PiecewisePolynomial<double> CubicApproximationTechnique(
-    const std::vector<double>& t_sequence,
-    const std::vector<double>& x_sequence,
-    const std::vector<double>& dxdt_sequence) {
-  auto scalar_to_matrix = [](const double& v) {
-    return (MatrixX<double>(1, 1) << v).finished();
-  };
-  std::vector<MatrixX<double>> x_matrix_sequence(x_sequence.size());
-  std::transform(x_sequence.begin(), x_sequence.end(),
-                 x_matrix_sequence.begin(), scalar_to_matrix);
-  std::vector<MatrixX<double>> dxdt_matrix_sequence(dxdt_sequence.size());
-  std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
-                 dxdt_matrix_sequence.begin(), scalar_to_matrix);
-  return PiecewisePolynomial<double>::Cubic(
-      t_sequence, x_matrix_sequence, dxdt_matrix_sequence);
-}
+using test::CubicApproximationTechnique;
 
 // Accuracy test of the solution for the stored charge Q in an RC
 // series circuit excited by a sinusoidal voltage source E(t),
@@ -266,7 +252,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
 
       PiecewisePolynomial<double> stored_charge_approx =
           stored_charge_ivp.Approximate<PiecewisePolynomial<double>>(
-              CubicApproximationTechnique, tf, values);
+              CubicApproximationTechnique<double>, tf, values);
 
       const double tau = Rs * Cs;
       const double tau_sq = tau * tau;
@@ -345,7 +331,7 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
 
     PiecewisePolynomial<double> population_growth_approx =
         population_growth_ivp.Approximate<PiecewisePolynomial<double>>(
-            CubicApproximationTechnique, tf, values);
+            CubicApproximationTechnique<double>, tf, values);
 
     for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
       // Tests are performed against the closed form
@@ -375,5 +361,6 @@ INSTANTIATE_TEST_CASE_P(IncreasingAccuracyScalarInitialValueProblemTests,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace
+}  // namespace analysis
 }  // namespace systems
 }  // namespace drake

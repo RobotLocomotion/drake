@@ -62,9 +62,9 @@ class ScalarInitialValueProblem {
                                             const VectorX<T>& k)>;
 
   /// Approximation technique function type, to build an approximating function
-  /// z(t) to an x(t; 𝐤) solution based on a partition of its domain for which
-  /// value x and first derivative dx/dt are known and provided at multiple
-  /// values of t.
+  /// z(t) to an x(t; 𝐤) solution based on a partition of its domain into
+  /// multiple contiguous intervals where value x and first derivative dx/dt
+  /// are known and provided at the boundaries.
   ///
   /// @param t_sequence The independent scalar variable sequence
   ///                   (t₁ ... tₚ) where tₚ ∈ ℝ.
@@ -146,7 +146,7 @@ class ScalarInitialValueProblem {
   }
 
   /// Approximates the IVP solution x(t; 𝐤) with x(t₀; 𝐤) = x₀ using
-  /// another function z(t) defined for t₀ <= t <= @p tf using the
+  /// another function z(t) defined for t₀ <= t <= tf using the
   /// given @p approximation_technique.
   ///
   /// @param approximation_technique The technique to build the approximating
@@ -154,7 +154,7 @@ class ScalarInitialValueProblem {
   /// @param tf The time to solve the IVP for.
   /// @param values The specified values for the IVP.
   /// @return The approximating function z(t) to the IVP solution x(t; 𝐤)
-  ///         with x(t₀; 𝐤) = x₀ for t₀ <= t <= @p tf.
+  ///         with x(t₀; 𝐤) = x₀ for t₀ <= t <= tf.
   /// @tparam ApproximatingFn The approximating function type.
   /// @pre Given @p tf must be larger than or equal to the specified initial
   ///      time t₀ (either given or default).
@@ -171,6 +171,9 @@ class ScalarInitialValueProblem {
   ApproximatingFn Approximate(
       const ApproximationTechnique<ApproximatingFn>& approximation_technique,
       const T& tf, const SpecifiedValues& values = {}) const {
+    // Delegates request to the vector form of this IVP by putting
+    // both approximation technique and specified values in vector form
+    // as well.
     return this->vector_ivp_->Approximate(
         ToVectorApproximationTechnique(approximation_technique),
         tf, ToVectorIVPSpecifiedValues(values));
@@ -217,6 +220,8 @@ class ScalarInitialValueProblem {
     vector_ivp_values.k = values.k;
     vector_ivp_values.t0 = values.t0;
     if (values.x0.has_value()) {
+      // Scalar initial state x₀ as a vector initial state 𝐱₀
+      // of a single dimension.
       vector_ivp_values.x0 = VectorX<T>::Constant(
           1, values.x0.value()).eval();
     }
@@ -227,7 +232,11 @@ class ScalarInitialValueProblem {
   using VectorApproximationTechnique =
       typename InitialValueProblem<T>::template ApproximationTechnique<A>;
 
-  // Transforms given scalar @p approximation_technique into its vector form.
+  // Wraps given scalar @p approximation_technique in its equivalent vector
+  // form, where both values and first derivatives of the function to be
+  // approximated are vectors of a single dimension instead of scalars
+  // (compare the InitialValueProblem::ApproximationTechnique and
+  // ScalarInitialValueProblem::ApproximationTechnique definitions).
   template <typename ApproximatingFn>
   static VectorApproximationTechnique<ApproximatingFn>
   ToVectorApproximationTechnique(

@@ -9,11 +9,13 @@
 #include "drake/systems/analysis/initial_value_problem-inl.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/test_utilities/approximation_techniques.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/parameters.h"
 
 namespace drake {
 namespace systems {
+namespace analysis {
 namespace {
 
 // Checks IVP solver usage with multiple integrators.
@@ -229,23 +231,7 @@ class InitialValueProblemAccuracyTest
 };
 
 using trajectories::PiecewisePolynomial;
-
-PiecewisePolynomial<double> CubicApproximationTechnique(
-    const std::vector<double>& t_sequence,
-    const std::vector<VectorX<double>>& x_sequence,
-    const std::vector<VectorX<double>>& dxdt_sequence) {
-  auto vector_to_matrix = [](const VectorX<double>& v) {
-    return (MatrixX<double>(v.size(), 1) << v).finished();
-  };
-  std::vector<MatrixX<double>> x_matrix_sequence(x_sequence.size());
-  std::transform(x_sequence.begin(), x_sequence.end(),
-                 x_matrix_sequence.begin(), vector_to_matrix);
-  std::vector<MatrixX<double>> dxdt_matrix_sequence(dxdt_sequence.size());
-  std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
-                 dxdt_matrix_sequence.begin(), vector_to_matrix);
-  return PiecewisePolynomial<double>::Cubic(
-      t_sequence, x_matrix_sequence, dxdt_matrix_sequence);
-}
+using test::CubicVectorApproximationTechnique;
 
 // Accuracy test of the solution for the momentum 𝐩 of a particle
 // with mass m travelling through a gas with dynamic viscosity μ,
@@ -303,7 +289,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
 
       const PiecewisePolynomial<double> particle_momentum_approx =
           particle_momentum_ivp.Approximate<PiecewisePolynomial<double>>(
-              CubicApproximationTechnique, tf, values);
+              CubicVectorApproximationTechnique<double>, tf, values);
 
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
         // Tests are performed against the closed form
@@ -393,7 +379,7 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
 
       const PiecewisePolynomial<double> particle_velocity_approx =
           particle_velocity_ivp.Approximate<PiecewisePolynomial<double>>(
-              CubicApproximationTechnique, tf, values);
+              CubicVectorApproximationTechnique<double>, tf, values);
 
       for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
         // Tests are performed against the closed form
@@ -429,5 +415,6 @@ INSTANTIATE_TEST_CASE_P(IncreasingAccuracyInitialValueProblemTests,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace
+}  // namespace analysis
 }  // namespace systems
 }  // namespace drake

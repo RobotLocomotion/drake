@@ -59,8 +59,8 @@ class AntiderivativeFunction {
 
   /// Approximation technique function type, to build an approximating function
   /// G(u) to an F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx antiderivative function based on a
-  /// partition of its domain for which function value and first derivative are
-  /// known and provided at multiple values of u.
+  /// partition of its domain into multiple contiguous intervals where function
+  /// value and first derivative are known and provided at the boundaries.
   ///
   /// @param u_sequence The integration upper bound sequence
   ///                   (u₁ ... uₚ) where uₚ ∈ ℝ.
@@ -177,6 +177,8 @@ class AntiderivativeFunction {
   ApproximatingFn Approximate(
       const ApproximationTechnique<ApproximatingFn>& approximation_technique,
       const T& u, const SpecifiedValues& values = {}) const {
+    // Delegates request to the scalar IVP used for computations, by putting
+    // specified values in scalar IVP terms.
     typename ScalarInitialValueProblem<T>::SpecifiedValues
         scalar_ivp_values(values.v, {}, values.k);
     return this->scalar_ivp_->Approximate(
