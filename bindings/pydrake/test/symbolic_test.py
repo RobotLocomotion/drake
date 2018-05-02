@@ -163,6 +163,12 @@ class TestSymbolicVariable(SymbolicTestCase):
         self.assertEqual(str(sym.if_then_else(x > y, x, y)),
                          "(if (x > y) then x else y)")
 
+    def test_array_str(self):
+        # Addresses #8729.
+        value = str(np.array([x, y]))
+        self.assertIn("Variable('x')", value)
+        self.assertIn("Variable('y')", value)
+
 
 class TestSymbolicVariables(SymbolicTestCase):
     def test_default_constructor(self):
