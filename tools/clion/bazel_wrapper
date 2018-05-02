@@ -4,12 +4,40 @@ import os
 import re
 import subprocess
 import sys
+import warnings
 
 # Always use stderr for diagnostics; somehow, stdout is silenced in CLion.
 # We avoid sys.stderr.write because we don't want line buffering, since we are
 # (more or less) just forwarding the output of our bazel subprocess.
 def _write_stderr(bytes):
     os.write(2, bytes)
+
+def gdb_compatible_strings(args):
+    '''Examine the args and conditionally inject the compiler flag for clang
+    to compile gdb-friendly STL symbols. Modifies the args in place.'''
+    # Condition 1: must be clang
+    using_clang = True
+    compiler_args = filter(lambda x: x.startswith('--compiler'), args)
+    if compiler_args:
+        if len(compiler_args) > 1:
+            warnings.warn('Multiple compiler flags; no action taken')
+            return
+        if '=' in compiler_args[0]:
+            tokens = compiler_args[0].split('=')
+            compiler = tokens[1]
+        else:
+            compiler = args[args.index(compiler_args[0])]
+        if not compiler.startswith('clang'):
+            using_clang = False
+
+    # Condition 2: must be debug
+    is_debug = 'dbg' in args
+
+    if using_clang and is_debug:
+        # Place the compiler argument after the dbg command.
+        insert_point = args.index('dbg') + 1
+        args.insert(insert_point, '--copt=-D_GLIBCXX_DEBUG')
+
 
 def main(argv, execvp, write_stderr, popen):
     # Find the WORKSPACE file.  Bail out if its not Drake's workspace.  (Note
@@ -30,6 +58,8 @@ def main(argv, execvp, write_stderr, popen):
 
     # Copy args for modification.
     args = argv[1:]
+
+    gdb_compatible_strings(args)
 
     # If this magic argument is found and we're in Drake's workspace, then
     # replace it with Drake's hooks instead.
