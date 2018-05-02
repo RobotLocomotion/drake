@@ -399,34 +399,33 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<IntervalBinning>>(
             {IntervalBinning::kLinear,
              IntervalBinning::kLogarithmic})));  // column index
-/*
-// Make sure that no two row or column vectors in R, which satisfies the
-// McCormick relaxation, can lie in either the same or the opposite orthant.
-class TestMcCormickOrthant
-    : public ::testing::TestWithParam<
-          std::tuple<int, int, bool, std::pair<int, int>, bool, bool>> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickOrthant)
 
-  TestMcCormickOrthant() : prog_(), R_(NewRotationMatrixVars(&prog_)) {
+// Make sure that no two row or column vectors in R, which satisfies the
+// mixed-integer relaxation, can lie in either the same or the opposite orthant.
+class TestOrthant
+    : public ::testing::TestWithParam<
+          std::tuple<int, int, bool, std::pair<int, int>, bool,
+                     MixedIntegerRotationConstraintGenerator::ConstraintType>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestOrthant)
+
+  TestOrthant() : prog_(), R_(NewRotationMatrixVars(&prog_)) {
     const int num_bin = std::get<0>(GetParam());
     const int orthant = std::get<1>(GetParam());
     const bool is_row_vector = std::get<2>(GetParam());
     const int idx0 = std::get<3>(GetParam()).first;
     const int idx1 = std::get<3>(GetParam()).second;
     const bool is_same_orthant = std::get<4>(GetParam());
-    const bool replace_bilinear = std::get<5>(GetParam());
+    const auto constraint_type = std::get<5>(GetParam());
     DRAKE_DEMAND(idx0 != idx1);
     DRAKE_DEMAND(idx0 >= 0);
     DRAKE_DEMAND(idx1 >= 0);
     DRAKE_DEMAND(idx0 <= 2);
     DRAKE_DEMAND(idx1 <= 2);
 
-    if (replace_bilinear) {
-      AddRotationMatrixBilinearMcCormickMilpConstraints(&prog_, R_, num_bin);
-    } else {
-      AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, num_bin);
-    }
+    MixedIntegerRotationConstraintGenerator rotation_generator(
+        constraint_type, num_bin, IntervalBinning::kLinear);
+    rotation_generator.AddToProgram(&prog_, R_);
 
     MatrixDecisionVariable<3, 3> R_hat = R_;
     if (is_row_vector) {
@@ -468,14 +467,14 @@ class TestMcCormickOrthant
     prog_.AddBoundingBoxConstraint(vec1_lb, vec1_ub, R_hat.col(idx1));
   }
 
-  ~TestMcCormickOrthant() override {}
+  ~TestOrthant() override {}
 
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
 };
 
-TEST_P(TestMcCormickOrthant, test) {
+TEST_P(TestOrthant, test) {
   GurobiSolver gurobi_solver;
   if (gurobi_solver.available()) {
     SolutionResult sol_result = gurobi_solver.Solve(prog_);
@@ -492,19 +491,25 @@ std::array<std::pair<int, int>, 3> vector_indices() {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    RotationTest, TestMcCormickOrthant,
-    ::testing::Combine(::testing::ValuesIn<std::vector<int>>(
-                           {1}),  // # of intervals per half axis
-                       ::testing::ValuesIn<std::vector<int>>(
-                           {0, 1, 2, 3, 4, 5, 6, 7}),  // orthant index
-                       ::testing::ValuesIn<std::vector<bool>>(
-                           {false, true}),  // row vector or column vector
-                       ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
-                           vector_indices()),  // vector indices
-                       ::testing::ValuesIn<std::vector<bool>>(
-                           {false, true}),  // same of opposite orthant
-                       ::testing::ValuesIn<std::vector<bool>>(
-                           {false, true})));  // replace bilinear or not.*/
+    RotationTest, TestOrthant,
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<int>>(
+            {1}),  // # of intervals per half axis
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2, 3, 4, 5, 6,
+                                               7}),  // orthant index
+        ::testing::ValuesIn<std::vector<bool>>(
+            {false, true}),  // row vector or column vector
+        ::testing::ValuesIn<std::array<std::pair<int, int>, 3>>(
+            vector_indices()),  // vector indices
+        ::testing::ValuesIn<std::vector<bool>>(
+            {false, true}),  // same or opposite orthant
+        ::testing::ValuesIn<std::vector<
+            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
+            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBoxSphereIntersection,
+             MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBoxSphereIntersection})));  // box-sphere intersection or
+                                              // bilinear McCormick.
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
