@@ -74,6 +74,7 @@ drake_cc_googletest(
     #],
     deps = [
         ":scene_graph_parser_detail",
+        "//math:geometric_transform",
         #"//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
