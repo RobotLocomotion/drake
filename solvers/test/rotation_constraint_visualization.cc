@@ -2,7 +2,8 @@
 
 #include "drake/common/proto/call_matlab.h"
 #include "drake/solvers/rotation_constraint.h"
-#include "drake/solvers/rotation_constraint_internal.h"
+#include "drake/solvers/mixed_integer_rotation_constraint.h"
+#include "drake/solvers/mixed_integer_rotation_constraint_internal.h"
 
 namespace drake {
 namespace solvers {

@@ -308,13 +308,9 @@ drake_cc_library(
     ],
     hdrs = [
         "rotation_constraint.h",
-        "rotation_constraint_internal.h",
     ],
     deps = [
-        ":bilinear_product_util",
-        ":integer_optimization_util",
         ":mathematical_program",
-        ":mixed_integer_optimization_util",
         "//math:gradient",
     ],
 )
@@ -347,6 +343,7 @@ drake_cc_library(
         "test/rotation_constraint_visualization.h",
     ],
     deps = [
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/proto:call_matlab",
     ],
@@ -1147,17 +1144,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_internal_test",
-    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
-    deps = [
-        ":mathematical_program",
-        ":rotation_constraint",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
     name = "osqp_solver_test",
     deps = [
         ":mathematical_program",
@@ -1174,6 +1160,7 @@ drake_cc_binary(
     srcs = ["test/plot_feasible_rotation_matrices.cc"],
     deps = [
         ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/proto:call_matlab",
     ],
@@ -1288,7 +1275,7 @@ drake_cc_googletest(
     tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
     deps = [
         ":mathematical_program",
-        ":rotation_constraint",
+        ":mixed_integer_rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],

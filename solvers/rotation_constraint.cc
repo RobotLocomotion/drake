@@ -1,17 +1,11 @@
 /* clang-format off to disable clang-format-includes */
 #include "drake/solvers/rotation_constraint.h"
-#include "drake/solvers/rotation_constraint_internal.h"
 /* clang-format on */
 
 #include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
-
-#include "drake/math/cross_product.h"
-#include "drake/math/gray_code.h"
-#include "drake/solvers/bilinear_product_util.h"
-#include "drake/solvers/integer_optimization_util.h"
 
 using std::numeric_limits;
 using drake::symbolic::Expression;
