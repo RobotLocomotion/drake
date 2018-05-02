@@ -1,0 +1,49 @@
+<sdf version='1.6'>
+  <model name='acrobot'>
+    <!-- This sdf file produces a model with the default parameters documented
+         in AcrobotParameters in make_acrobot_plant.h.
+         They MUST be kept in sync. -->
+    <link name='Cart'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>10.0</mass>
+        <!-- This inertia is based on a solid cylinder with
+             radius=0.001 meters and height=1.0 meters. -->
+	<!-- For this model we could make ixx=iyy=izz = 0 however, sdformat will throw
+	     an exception and therefore we just use small values. -->
+        <inertia>
+          <ixx>1.0e-10</ixx><iyy>1.0e-10</iyy><izz>1.0e-10</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <link name='Pole'>
+      <pose>0 0 -0.25 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <!-- This inertia is based on a thin rod for which I = m * L^2/12.-->
+	<!-- This is the roatioanal inertia I_PPcm_P of the pole body P, about its
+	     center of mass Pcm, expressed in the pole body frame P.-->
+        <inertia>
+          <ixx>0.0208333333333333</ixx><iyy>0.0208333333333333</iyy><izz>1e-10</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <joint name='CartSlider' type='prismatic'>
+      <parent>world</parent>
+      <child>Cart</child>
+      <axis>
+        <xyz>1.0 0.0 0.0</xyz>
+      </axis>
+    </joint>
+    <joint name='PolePin' type='revolute'>
+      <pose>0 0 0 0 0 0</pose>
+      <parent>Cart</parent>
+      <child>Pole</child>
+      <axis>
+        <xyz>0.0 1.0 0.0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>
