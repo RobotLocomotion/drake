@@ -15,11 +15,14 @@ from pydrake.systems.test.test_util import (
 )
 from pydrake.systems.primitives import (
     Adder, Adder_,
+    AddRandomInputs,
     AffineSystem, AffineSystem_,
     ConstantValueSource_,
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
+    ExponentialRandomSource,
     FirstOrderTaylorApproximation,
+    GaussianRandomSource,
     Integrator, Integrator_,
     IsControllable,
     IsObservable,
@@ -30,6 +33,7 @@ from pydrake.systems.primitives import (
     PassThrough, PassThrough_,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
+    UniformRandomSource,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold_,
 )
@@ -226,3 +230,21 @@ class TestGeneral(unittest.TestCase):
                 # Check the type matches MyVector2.
                 value = output.get_vector_data(0)
                 self.assertTrue(isinstance(value, MyVector2))
+
+    def test_random_sources(self):
+        uniform_source = UniformRandomSource(num_outputs=2,
+                                             sampling_interval_sec=0.01)
+        self.assertEqual(uniform_source.get_output_port(0).size(), 2)
+
+        gaussian_source = GaussianRandomSource(num_outputs=3,
+                                               sampling_interval_sec=0.01)
+        self.assertEqual(gaussian_source.get_output_port(0).size(), 3)
+
+        exponential_source = ExponentialRandomSource(num_outputs=4,
+                                                     sampling_interval_sec=0.1)
+        self.assertEqual(exponential_source.get_output_port(0).size(), 4)
+
+        builder = DiagramBuilder()
+        # Note: There are no random inputs to add to the empty diagram, but it
+        # confirms the API works.
+        AddRandomInputs(sampling_interval_sec=0.01, builder=builder)
