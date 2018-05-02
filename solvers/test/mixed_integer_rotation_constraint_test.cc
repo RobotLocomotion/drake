@@ -41,11 +41,11 @@ class TestMixedIntegerRotationConstraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraint)
 
   TestMixedIntegerRotationConstraint(
-      MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type,
+      MixedIntegerRotationConstraintGenerator::Approach approach,
       int num_intervals_per_half_axis)
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
-        constraint_type_(constraint_type),
+        approach_(approach),
         num_intervals_per_half_axis_(num_intervals_per_half_axis),
         feasibility_constraint_{prog_
                                     .AddLinearEqualityConstraint(
@@ -114,8 +114,8 @@ class TestMixedIntegerRotationConstraint {
     R_test(1, 2) *= -1.0;
     // Requires 2 intervals per half axis to catch.
     if (num_intervals_per_half_axis_ == 1 &&
-        constraint_type_ == MixedIntegerRotationConstraintGenerator::
-                                ConstraintType::kBoxSphereIntersection)
+        approach_ == MixedIntegerRotationConstraintGenerator::Approach::
+                         kBoxSphereIntersection)
       EXPECT_TRUE(IsFeasible(R_test));
     else
       EXPECT_FALSE(IsFeasible(R_test));
@@ -144,8 +144,8 @@ class TestMixedIntegerRotationConstraint {
     EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
     EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
     if (num_intervals_per_half_axis_ == 1 &&
-        constraint_type_ == MixedIntegerRotationConstraintGenerator::
-                                ConstraintType::kBoxSphereIntersection)
+        approach_ == MixedIntegerRotationConstraintGenerator::Approach::
+                         kBoxSphereIntersection)
       EXPECT_TRUE(IsFeasible(R_test));
     else
       EXPECT_FALSE(IsFeasible(R_test));
@@ -155,7 +155,7 @@ class TestMixedIntegerRotationConstraint {
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type_;
+  MixedIntegerRotationConstraintGenerator::Approach approach_;
   int num_intervals_per_half_axis_;
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
 };
@@ -163,8 +163,8 @@ class TestMixedIntegerRotationConstraint {
 class TestMixedIntegerRotationConstraintGenerator
     : public TestMixedIntegerRotationConstraint,
       public ::testing::TestWithParam<
-          std::tuple<MixedIntegerRotationConstraintGenerator::ConstraintType,
-                     int, IntervalBinning>> {
+          std::tuple<MixedIntegerRotationConstraintGenerator::Approach, int,
+                     IntervalBinning>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraintGenerator)
 
@@ -172,7 +172,7 @@ class TestMixedIntegerRotationConstraintGenerator
       : TestMixedIntegerRotationConstraint(std::get<0>(GetParam()),
                                            std::get<1>(GetParam())),
         interval_binning_(std::get<2>(GetParam())),
-        rotation_generator_(constraint_type_, num_intervals_per_half_axis_,
+        rotation_generator_(approach_, num_intervals_per_half_axis_,
                             interval_binning_),
         ret(rotation_generator_.AddToProgram(&prog_, R_)) {}
 
@@ -259,13 +259,13 @@ TEST_P(TestMixedIntegerRotationConstraintGenerator, InexactRotationMatrix) {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMixedIntegerRotationConstraintGenerator,
     ::testing::Combine(
-        ::testing::ValuesIn<std::vector<
-            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
-            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+        ::testing::ValuesIn<
+            std::vector<MixedIntegerRotationConstraintGenerator::Approach>>(
+            {MixedIntegerRotationConstraintGenerator::Approach::
                  kBilinearMcCormick,
-             MixedIntegerRotationConstraintGenerator::ConstraintType::
+             MixedIntegerRotationConstraintGenerator::Approach::
                  kBoxSphereIntersection,
-             MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth}),
+             MixedIntegerRotationConstraintGenerator::Approach::kBoth}),
         ::testing::ValuesIn<std::vector<int>>({1, 2}),
         ::testing::ValuesIn<std::vector<IntervalBinning>>(
             {IntervalBinning::kLinear, IntervalBinning::kLogarithmic})));
@@ -278,7 +278,7 @@ class TestRotationMatrixBoxSphereIntersection
 
   TestRotationMatrixBoxSphereIntersection()
       : TestMixedIntegerRotationConstraint(
-            MixedIntegerRotationConstraintGenerator::ConstraintType::
+            MixedIntegerRotationConstraintGenerator::Approach::
                 kBoxSphereIntersection,
             GetParam()) {
     AddRotationMatrixBoxSphereIntersectionMilpConstraints(
@@ -305,7 +305,8 @@ enum RotationMatrixIntervalBinning {
   kLogarithmic,   ///< Same as IntervalBinning::kLogarithmic, used by
                   /// MixedIntegerRotationMatrixGenerator.
   kPosNegLinear,  ///< Used by AddRotationMatrixBoxSphereIntersection. It uses
-                  ///linear binning for positive and negative axis respectively.
+                  /// linear binning for positive and negative axis
+                  /// respectively.
 };
 
 // Test some corner cases of box-sphere intersection.
@@ -336,7 +337,7 @@ class TestBoxSphereCorner
               ? IntervalBinning::kLinear
               : IntervalBinning::kLogarithmic;
       const MixedIntegerRotationConstraintGenerator rotation_generator(
-          MixedIntegerRotationConstraintGenerator::ConstraintType::
+          MixedIntegerRotationConstraintGenerator::Approach::
               kBoxSphereIntersection,
           N, interval_binning);
       const auto ret = rotation_generator.AddToProgram(&prog_, R_);
@@ -472,7 +473,7 @@ INSTANTIATE_TEST_CASE_P(
 class TestOrthant
     : public ::testing::TestWithParam<
           std::tuple<int, int, bool, std::pair<int, int>, bool,
-                     MixedIntegerRotationConstraintGenerator::ConstraintType>> {
+                     MixedIntegerRotationConstraintGenerator::Approach>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestOrthant)
 
@@ -483,7 +484,7 @@ class TestOrthant
     const int idx0 = std::get<3>(GetParam()).first;
     const int idx1 = std::get<3>(GetParam()).second;
     const bool is_same_orthant = std::get<4>(GetParam());
-    const auto constraint_type = std::get<5>(GetParam());
+    const auto approach = std::get<5>(GetParam());
     DRAKE_DEMAND(idx0 != idx1);
     DRAKE_DEMAND(idx0 >= 0);
     DRAKE_DEMAND(idx1 >= 0);
@@ -491,7 +492,7 @@ class TestOrthant
     DRAKE_DEMAND(idx1 <= 2);
 
     MixedIntegerRotationConstraintGenerator rotation_generator(
-        constraint_type, num_bin, IntervalBinning::kLinear);
+        approach, num_bin, IntervalBinning::kLinear);
     rotation_generator.AddToProgram(&prog_, R_);
 
     MatrixDecisionVariable<3, 3> R_hat = R_;
@@ -570,11 +571,11 @@ INSTANTIATE_TEST_CASE_P(
             vector_indices()),  // vector indices
         ::testing::ValuesIn<std::vector<bool>>(
             {false, true}),  // same or opposite orthant
-        ::testing::ValuesIn<std::vector<
-            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
-            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+        ::testing::ValuesIn<
+            std::vector<MixedIntegerRotationConstraintGenerator::Approach>>(
+            {MixedIntegerRotationConstraintGenerator::Approach::
                  kBoxSphereIntersection,
-             MixedIntegerRotationConstraintGenerator::ConstraintType::
+             MixedIntegerRotationConstraintGenerator::Approach::
                  kBoxSphereIntersection})));  // box-sphere intersection or
                                               // bilinear McCormick.
 }  // namespace

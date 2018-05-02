@@ -1,5 +1,7 @@
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 
+#include <limits>
+
 #include "drake/math/gray_code.h"
 #include "drake/solvers/bilinear_product_util.h"
 #include "drake/solvers/integer_optimization_util.h"
@@ -356,10 +358,10 @@ void AddConstraintInferredFromTheSign(
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
           prog->AddLinearConstraint(Bpos(i, j) <=
-                                    B[i][j]
-                                        .tail(num_intervals_per_half_axis)
-                                        .cast<symbolic::Expression>()
-                                        .sum());
+                                    B[i]
+                                     [j].tail(num_intervals_per_half_axis)
+                                         .cast<symbolic::Expression>()
+                                         .sum());
           for (int k = 0; k < num_intervals_per_half_axis; ++k) {
             prog->AddLinearConstraint(Bpos(i, j) >=
                                       B[i][j](num_intervals_per_half_axis + k));
@@ -670,8 +672,8 @@ void AddBoxSphereIntersectionConstraints(
   }
 }
 
-// This function just calls AddBoxSphereIntersectionConstraints for each row/column
-// of R.
+// This function just calls AddBoxSphereIntersectionConstraints for each
+// row/column of R.
 void AddBoxSphereIntersectionConstraintsForR(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const std::vector<Matrix3<symbolic::Expression>>& CRpos,
@@ -828,18 +830,17 @@ void ComputeBoxSphereIntersectionAndHalfSpace(
 
 }  // namespace
 
-std::string to_string(
-    MixedIntegerRotationConstraintGenerator::ConstraintType type) {
+std::string to_string(MixedIntegerRotationConstraintGenerator::Approach type) {
   switch (type) {
-    case MixedIntegerRotationConstraintGenerator::ConstraintType::
+    case MixedIntegerRotationConstraintGenerator::Approach::
         kBoxSphereIntersection: {
       return "box_sphere_intersection";
     }
-    case MixedIntegerRotationConstraintGenerator::ConstraintType::
+    case MixedIntegerRotationConstraintGenerator::Approach::
         kBilinearMcCormick: {
       return "bilinear_mccormick";
     }
-    case MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth: {
+    case MixedIntegerRotationConstraintGenerator::Approach::kBoth: {
       return "both";
     }
   }
@@ -850,16 +851,16 @@ std::string to_string(
 
 std::ostream& operator<<(
     std::ostream& os,
-    const MixedIntegerRotationConstraintGenerator::ConstraintType& type) {
+    const MixedIntegerRotationConstraintGenerator::Approach& type) {
   os << to_string(type);
   return os;
 }
 
 MixedIntegerRotationConstraintGenerator::
     MixedIntegerRotationConstraintGenerator(
-        MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type,
+        MixedIntegerRotationConstraintGenerator::Approach approach,
         int num_intervals_per_half_axis, IntervalBinning interval_binning)
-    : constraint_type_{constraint_type},
+    : approach_{approach},
       num_intervals_per_half_axis_(num_intervals_per_half_axis),
       interval_binning_(interval_binning),
       phi_nonnegative_{
@@ -873,8 +874,8 @@ MixedIntegerRotationConstraintGenerator::
 
   // If we consider the box-sphere intersection, then we need to compute the
   // halfspace nᵀx≥ d, as the tightest halfspace for each intersection region.
-  if (constraint_type_ == ConstraintType::kBoxSphereIntersection ||
-      constraint_type_ == ConstraintType::kBoth) {
+  if (approach_ == Approach::kBoxSphereIntersection ||
+      approach_ == Approach::kBoth) {
     ComputeBoxSphereIntersectionAndHalfSpace(
         num_intervals_per_half_axis_, phi_nonnegative_,
         &box_sphere_intersection_vertices_,
@@ -923,16 +924,16 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
 
   // Add mixed-integer constraint by replacing the bilinear product with another
   // term in the McCormick envelope of w = x * y
-  if (constraint_type_ == ConstraintType::kBilinearMcCormick ||
-      constraint_type_ == ConstraintType::kBoth) {
+  if (approach_ == Approach::kBilinearMcCormick ||
+      approach_ == Approach::kBoth) {
     AddRotationMatrixBilinearMcCormickConstraints(prog, R, ret.B_, ret.lambda_,
                                                   phi_, interval_binning_);
   }
 
   // Add mixed-integer constraint by considering the intersection between the
   // sphere surface and boxes.
-  if (constraint_type_ == ConstraintType::kBoxSphereIntersection ||
-      constraint_type_ == ConstraintType::kBoth) {
+  if (approach_ == Approach::kBoxSphereIntersection ||
+      approach_ == Approach::kBoth) {
     // CRpos[k](i, j) = 1 => φ₊(k) ≤ R(i, j) ≤ φ₊(k+1)
     // CRneg[k](i, j) = 1 => -φ₊(k+1) ≤ R(i, j) ≤ -φ₊(k)
     std::vector<Matrix3<Expression>> CRpos(num_intervals_per_half_axis_);
@@ -954,10 +955,10 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
       GetCRposAndCRnegForLogarithmicBinning(
           ret.B_, num_intervals_per_half_axis_, prog, &CRpos, &CRneg);
     }
-    AddBoxSphereIntersectionConstraintsForR(R, CRpos, CRneg,
-                                      num_intervals_per_half_axis_,
-                                      box_sphere_intersection_vertices_,
-                                      box_sphere_intersection_halfspace_, prog);
+    AddBoxSphereIntersectionConstraintsForR(
+        R, CRpos, CRneg, num_intervals_per_half_axis_,
+        box_sphere_intersection_vertices_, box_sphere_intersection_halfspace_,
+        prog);
   }
   return ret;
 }
@@ -1060,10 +1061,10 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
   ComputeBoxSphereIntersectionAndHalfSpace(
       num_intervals_per_half_axis, phi_nonnegative,
       &box_sphere_intersection_vertices, &box_sphere_intersection_halfspace);
-  AddBoxSphereIntersectionConstraintsForR(R, CRpos, CRneg,
-                                    num_intervals_per_half_axis,
-                                    box_sphere_intersection_vertices,
-                                    box_sphere_intersection_halfspace, prog);
+  AddBoxSphereIntersectionConstraintsForR(
+      R, CRpos, CRneg, num_intervals_per_half_axis,
+      box_sphere_intersection_vertices, box_sphere_intersection_halfspace,
+      prog);
 
   AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
   AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());

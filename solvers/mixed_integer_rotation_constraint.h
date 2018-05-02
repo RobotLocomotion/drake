@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
@@ -13,16 +18,25 @@ namespace solvers {
  * Global Inverse Kinematics via Mixed-integer Convex Optimization
  * by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR, 2017
  *
- * This class is templated, based on the approach to relax SO(3) constraint.
- * The return type of adding the mixed-integer constraint to the program is
- * different, depending on the relaxation approach.
+ * To relax SO(3) constraint on rotation matrix R, we divide the range [-1, 1]
+ * (the range of each entry in R) into smaller intervals, and then relax the
+ * SO(3) constraint within each interval. We provide 3 approaches for relaxation
+ * 1. By replacing the bilinear product with a new variable, in the McCormick
+ * envelope of the bilinear product w = x * y.
+ * 2. By consider the intersection region between axis-aligned boxes, and the
+ * surface of a unit sphere in 3D.
+ * 3. By combining the two approaches above.
+ * These three approaches give different relaxation of SO(3) constraint (the
+ * feasible sets to each relaxation are different), and different computation
+ * speed. The user can switch between the approaches to find the best fit for
+ * the problem.
  */
 class MixedIntegerRotationConstraintGenerator {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       MixedIntegerRotationConstraintGenerator)
 
-  enum class ConstraintType {
+  enum class Approach {
     kBoxSphereIntersection,  ///< Relax SO(3) constraint by considering the
                              // intersection between boxes and the unit sphere
                              // surface.
@@ -35,11 +49,43 @@ class MixedIntegerRotationConstraintGenerator {
   };
 
   struct ReturnType {
+    /**
+     * B_[i][j] represents in which interval R(i, j) lies. If we use linear
+     * binning, then B_[i][j] is of length 2 * num_intervals_per_half_axis_.
+     * B_[i][j](k) = 1 => φ(k) ≤ R(i, j) ≤ φ(k + 1)
+     * B_[i][j](k) = 0 R(i, j) ≥ φ(k + 1) or R(i, j) ≤ φ(k)
+     * If we use logarithmic binning, then B_[i][j] is of length
+     * 1 + log₂(num_intervals_per_half_axis_). If B_[i][j] represents integer
+     * k in reflected Gray code, then R(i, j) is in the interval [φ(k), φ(k+1)].
+     */
     std::array<std::array<VectorXDecisionVariable, 3>, 3> B_;
+    /**
+     * λ_[i][j] is of length 2 * num_intervals_per_half_axis_ + 1, such that
+     * R(i, j) = φᵀ * λ_[i][j]. Notice that λ_[i][j] satisfies the special
+     * ordered set of type 2 (SOS2) constraint. Namely at most two entries in
+     * λ_[i][j] can be non-negative, and these two entries have to
+     * be consecutive. Mathematically
+     * ∑ₖ λ_[i][j](k) = 1
+     * λ_[i][j](k) ≥ 0 ∀ k
+     * ∃ m s.t λ_[i][j](n) = 0 if n ≠ m and n ≠ m+1
+     */
     std::array<std::array<VectorXDecisionVariable, 3>, 3> lambda_;
   };
 
-  MixedIntegerRotationConstraintGenerator(ConstraintType constraint_type,
+  /**
+   * Constructor
+   * @param approach Refer to Approach for the details.
+   * @param num_intervals_per_half_axis We will cut the range [-1, 1] evenly
+   * to 2 * num_intervals_per_half_axis small intervals. The number of binary
+   * variables will depend on the number of intervals.
+   * @param interval_binning The binning scheme we use to add SOS2 constraint
+   * with binary variables. If interval_binning = kLinear, then we will add
+   * 9 * 2 * num_intervals_per_half_axis binary variables; 
+   * if interval_binning = kLogarithmic, then we will add
+   * 9 * (1 + log₂(num_intervals_per_half_axis_)) binary variables. Refer to
+   * AddLogarithmicSos2Constraint and AddSos2Constraint for more details.
+   */
+  MixedIntegerRotationConstraintGenerator(Approach approach,
                                           int num_intervals_per_half_axis,
                                           IntervalBinning interval_binning);
 
@@ -54,11 +100,13 @@ class MixedIntegerRotationConstraintGenerator {
       MathematicalProgram* prog,
       const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const;
 
-  const Eigen::VectorXd& phi() const { return phi_; };
+  /** Getter for phi */
+  const Eigen::VectorXd& phi() const { return phi_; }
 
+  /** Getter for φ₊, the non-negative part of φ. */
   const Eigen::VectorXd phi_nonnegative() const { return phi_nonnegative_; }
 
-  ConstraintType constraint_type() const { return constraint_type_; }
+  Approach approach() const { return approach_; }
 
   int num_intervals_per_half_axis() const {
     return num_intervals_per_half_axis_;
@@ -67,7 +115,7 @@ class MixedIntegerRotationConstraintGenerator {
   IntervalBinning interval_binning() const { return interval_binning_; }
 
  private:
-  ConstraintType constraint_type_;
+  Approach approach_;
   int num_intervals_per_half_axis_;
   IntervalBinning interval_binning_;
   // φ(i) = -1 + 1 / num_intervals_per_half_axis_ * i
@@ -91,11 +139,11 @@ class MixedIntegerRotationConstraintGenerator {
 };
 
 std::string to_string(
-    MixedIntegerRotationConstraintGenerator::ConstraintType type);
+    MixedIntegerRotationConstraintGenerator::Approach type);
 
 std::ostream& operator<<(
     std::ostream& os,
-    const MixedIntegerRotationConstraintGenerator::ConstraintType& type);
+    const MixedIntegerRotationConstraintGenerator::Approach& type);
 
 using AddRotationMatrixBoxSphereIntersectionReturnType =
     std::tuple<std::vector<Matrix3<symbolic::Expression>>,
@@ -146,9 +194,10 @@ using AddRotationMatrixBoxSphereIntersectionReturnType =
  * </pre>
  * where `N` is `num_intervals_per_half_axis`.
  * @note This method uses the same approach as
- * MixedIntegerRotationConstraintGenerator with kBoxSphereIntersection. But the
- * return type is different. Internally they use different sets of binary
- * variables to cut the range [-1, 1] into small intervals.
+ * MixedIntegerRotationConstraintGenerator with kBoxSphereIntersection, namely
+ * the feasible sets to the relaxation are the same. But they use different sets
+ * of binary variables, and thus the computation speed can be different inside
+ * optimization solvers.
  */
 
 AddRotationMatrixBoxSphereIntersectionReturnType

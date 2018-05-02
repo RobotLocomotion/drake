@@ -21,8 +21,8 @@ namespace solvers {
 // If in the future we improved our relaxation and get a larger minimal
 // distance, please update this test.
 class TestMinimumDistance
-    : public testing::TestWithParam<std::tuple<
-          MixedIntegerRotationConstraintGenerator::ConstraintType, int>> {
+    : public testing::TestWithParam<
+          std::tuple<MixedIntegerRotationConstraintGenerator::Approach, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance)
 
@@ -30,12 +30,11 @@ class TestMinimumDistance
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
         d_(prog_.NewContinuousVariables<1>("d")),
-        constraint_type_(std::get<0>(GetParam())),
+        approach_(std::get<0>(GetParam())),
         num_intervals_per_half_axis_(std::get<1>(GetParam())),
         minimal_distance_expected_(0) {
     MixedIntegerRotationConstraintGenerator rotation_generator(
-        constraint_type_, num_intervals_per_half_axis_,
-        IntervalBinning::kLinear);
+        approach_, num_intervals_per_half_axis_, IntervalBinning::kLinear);
     rotation_generator.AddToProgram(&prog_, R_);
 
     // Add the constraint that d_ >= |R_.col(0) - R_.col(1)|
@@ -67,7 +66,7 @@ class TestMinimumDistance
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
   VectorDecisionVariable<1> d_;
-  MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type_;
+  MixedIntegerRotationConstraintGenerator::Approach approach_;
   int num_intervals_per_half_axis_;
   double minimal_distance_expected_;
 
@@ -78,18 +77,18 @@ class TestMinimumDistance
     std::array<double, 3> min_distance;  // Record the global minimal for
                                          // different number of intervals per
                                          // half axis {1, 2, 3}.
-    switch (constraint_type_) {
-      case MixedIntegerRotationConstraintGenerator::ConstraintType::
+    switch (approach_) {
+      case MixedIntegerRotationConstraintGenerator::Approach::
           kBoxSphereIntersection: {
         min_distance = {{0.069166, 0.974, 1.0823199}};
         break;
       }
-      case MixedIntegerRotationConstraintGenerator::ConstraintType::
+      case MixedIntegerRotationConstraintGenerator::Approach::
           kBilinearMcCormick: {
         min_distance = {{0.60229, 1.22474, 1.32667}};
         break;
       }
-      case MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth: {
+      case MixedIntegerRotationConstraintGenerator::Approach::kBoth: {
         min_distance = {{0.60302, 1.25649, 1.33283}};
         break;
       }
@@ -146,11 +145,11 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMinimumDistance,
     ::testing::Combine(
-        ::testing::ValuesIn<std::vector<
-            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
-            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+        ::testing::ValuesIn<
+            std::vector<MixedIntegerRotationConstraintGenerator::Approach>>(
+            {MixedIntegerRotationConstraintGenerator::Approach::
                  kBoxSphereIntersection,
-             MixedIntegerRotationConstraintGenerator::ConstraintType::
+             MixedIntegerRotationConstraintGenerator::Approach::
                  kBilinearMcCormick}),
         ::testing::ValuesIn<std::vector<int>>(
             {1, 2, 3})));  // number of binary variables per half axis
@@ -158,9 +157,9 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMinimumDistanceWOrthonormalSocp,
     ::testing::Combine(
-        ::testing::ValuesIn<std::vector<
-            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
-            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+        ::testing::ValuesIn<
+            std::vector<MixedIntegerRotationConstraintGenerator::Approach>>(
+            {MixedIntegerRotationConstraintGenerator::Approach::
                  kBoxSphereIntersection}),
         ::testing::ValuesIn<std::vector<int>>(
             {1, 2, 3})));  // number of binary variables per half axis

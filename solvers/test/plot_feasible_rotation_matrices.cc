@@ -2,8 +2,8 @@
 
 #include "drake/common/proto/call_matlab.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
+#include "drake/solvers/rotation_constraint.h"
 
 /// Provides a simple utility for developers to visualize (slices of) the
 /// rotation matrix relaxations.  Sets up the problem:

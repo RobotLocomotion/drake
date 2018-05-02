@@ -10,11 +10,11 @@ namespace drake {
 namespace multibody {
 /** Solves the inverse kinematics problem as a mixed integer convex optimization
  * problem.
- * We use a convex relaxation of the rotation matrix. So if this global inverse
- * kinematics problem says the solution is infeasible, then it is guaranteed
- * that the kinematics constraints are not satisfiable.
+ * We use a mixed-integer convex relaxation of the rotation matrix. So if this
+ * global inverse kinematics problem says the solution is infeasible, then it is
+ * guaranteed that the kinematics constraints are not satisfiable.
  * If the global inverse kinematics returns a solution, the posture should
- * satisfy the kinematics constraints, with some error.
+ * approximately satisfy the kinematics constraints, with some error.
  * The approach is described in Global Inverse Kinematics via Mixed-integer
  * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR,
  * 2017.
@@ -26,15 +26,15 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
 
   struct Options {
-    // This default constructor is needed for this nested class Options. If it
-    // were not nested, I do not need to define this constructor, but can
-    // instead use `int num_intervals_per_half_axis_ = 2`.
-    Options();
+    // This constructor is needed, otherwise the compiler complains.
+    Options() {}
 
-    int num_intervals_per_half_axis_;
-    solvers::MixedIntegerRotationConstraintGenerator::ConstraintType
-        constraint_type_;
-    solvers::IntervalBinning interval_binning_;
+    int num_intervals_per_half_axis_{2};
+    solvers::MixedIntegerRotationConstraintGenerator::Approach approach_{
+        solvers::MixedIntegerRotationConstraintGenerator::Approach::
+            kBilinearMcCormick};
+    solvers::IntervalBinning interval_binning_{
+        solvers::IntervalBinning::kLogarithmic};
   };
 
   /**
@@ -48,7 +48,8 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
    * more details on the parameters in options.
    */
-  GlobalInverseKinematics(const RigidBodyTreed& robot, const Options& options = Options());
+  explicit GlobalInverseKinematics(const RigidBodyTreed& robot,
+                                   const Options& options = Options());
 
   ~GlobalInverseKinematics() override {}
 

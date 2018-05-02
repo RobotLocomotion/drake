@@ -19,14 +19,9 @@ using drake::solvers::VectorDecisionVariable;
 
 namespace drake {
 namespace multibody {
-GlobalInverseKinematics::Options::Options()
-    : num_intervals_per_half_axis_{2},
-      constraint_type_{solvers::MixedIntegerRotationConstraintGenerator::
-                           ConstraintType::kBilinearMcCormick},
-      interval_binning_{solvers::IntervalBinning::kLogarithmic} {}
-
 GlobalInverseKinematics::GlobalInverseKinematics(
-    const RigidBodyTreed& robot, const GlobalInverseKinematics::Options& options)
+    const RigidBodyTreed& robot,
+    const GlobalInverseKinematics::Options& options)
     : robot_(&robot),
       joint_lower_bounds_{
           Eigen::VectorXd::Constant(robot_->get_num_positions(),
@@ -39,7 +34,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   p_WBo_.resize(num_bodies);
 
   solvers::MixedIntegerRotationConstraintGenerator rotation_generator(
-      options.constraint_type_, options.num_intervals_per_half_axis_,
+      options.approach_, options.num_intervals_per_half_axis_,
       options.interval_binning_);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.

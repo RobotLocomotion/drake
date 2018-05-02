@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include <Eigen/Core>
 
 // This file only exists to expose some internal methods for unit testing.  It

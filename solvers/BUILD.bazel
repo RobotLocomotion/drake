@@ -319,11 +319,11 @@ drake_cc_library(
     name = "mixed_integer_rotation_constraint",
     srcs = [
         "mixed_integer_rotation_constraint.cc",
-        "mixed_integer_rotation_constraint_internal.cc"
+        "mixed_integer_rotation_constraint_internal.cc",
     ],
     hdrs = [
         "mixed_integer_rotation_constraint.h",
-        "mixed_integer_rotation_constraint_internal.h"
+        "mixed_integer_rotation_constraint_internal.h",
     ],
     deps = [
         ":bilinear_product_util",
