@@ -27,8 +27,8 @@ test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 test:kcov_everything --local_test_jobs=1
 test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
 test:kcov_everything --nocache_test_results
-# See timeout note above.
-test:kcov_everything --test_timeout=210,1050,3150,12600
+# See timeout note above. Timeouts are 5x default values.
+test:kcov_everything --test_timeout=300,1500,4500,18000
 
 ### ASan build. ###
 build:asan --copt -g
