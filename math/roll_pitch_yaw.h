@@ -7,10 +7,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
 #include "drake/common/symbolic.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 
 namespace drake {
 namespace math {
@@ -287,7 +287,7 @@ class RollPitchYaw {
 // TODO(mitiguy) Delete this code that was deprecated on April 27, 2018.
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use constructor RollPitchYaw(quaternion).")
+                 "Use constructor RollPitchYaw(quaternion).")
 Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
   return RollPitchYaw<T>(quaternion).vector();
 }
@@ -296,13 +296,27 @@ Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
 template <typename Derived>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                     "Use RollPitchYaw::ToQuaternion().")
+                 "Use RollPitchYaw::ToQuaternion().")
 Quaternion<typename Derived::Scalar> RollPitchYawToQuaternion(
     const Eigen::MatrixBase<Derived>& rpy) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
   using Scalar = typename Derived::Scalar;
   const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
   const Eigen::Quaternion<Scalar> quaternion = roll_pitch_yaw.ToQuaternion();
+}
+
+/// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
+// TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.
+template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use RollPitchYaw::ToQuaternion().")
+Vector4<typename Derived::Scalar> rpy2quat(
+    const Eigen::MatrixBase<Derived>& rpy) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  using Scalar = typename Derived::Scalar;
+  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
+  const Eigen::Quaternion<Scalar> q = roll_pitch_yaw.ToQuaternion();
+  return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
 }  // namespace math
