@@ -6,9 +6,11 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/gray_code.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/integer_optimization_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/rotation_constraint.h"
@@ -244,30 +246,67 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<int>>({1, 2}),
         ::testing::ValuesIn<std::vector<IntervalBinning>>(
             {IntervalBinning::kLinear, IntervalBinning::kLogarithmic})));
-/*
-// Test some corner cases of McCormick envelope.
+
+// Test some corner cases of box-sphere intersection.
 // The corner cases happens when either the innermost or the outermost corner
 // of the box bmin <= x <= bmax lies on the surface of the unit sphere.
-class TestMcCormickCorner
-    : public ::testing::TestWithParam<std::tuple<int, bool, int>> {
+class TestBoxSphereCorner : public ::testing::TestWithParam<
+                                std::tuple<int, bool, int, IntervalBinning>> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormickCorner)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestBoxSphereCorner)
 
-  TestMcCormickCorner()
+  TestBoxSphereCorner()
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
         Cpos_(),
         Cneg_(),
         orthant_(std::get<0>(GetParam())),
         is_bmin_(std::get<1>(GetParam())),
-        col_idx_(std::get<2>(GetParam())) {
+        col_idx_(std::get<2>(GetParam())),
+        interval_binning_(std::get<3>(GetParam())) {
     DRAKE_DEMAND(orthant_ >= 0);
     DRAKE_DEMAND(orthant_ <= 7);
-    std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
-        AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
+    const int N = 3;  // num_interval_per_half_axis = 3
+    if (interval_binning_ == IntervalBinning::kLinear ||
+        interval_binning_ == IntervalBinning::kLogarithmic) {
+      const MixedIntegerRotationConstraintGenerator rotation_generator(
+          MixedIntegerRotationConstraintGenerator::ConstraintType::
+              kBoxSphereIntersection,
+          N, interval_binning_);
+      const auto ret = rotation_generator.AddToProgram(&prog_, R_);
+      Cpos_.resize(N);
+      Cneg_.resize(N);
+      const auto gray_codes = math::CalculateReflectedGrayCodes<3>();
+
+      for (int k = 0; k < N; ++k) {
+        if (interval_binning_ == IntervalBinning::kLogarithmic) {
+          Cpos_[k] = prog_.NewContinuousVariables<3, 3>().cast<Expression>();
+          Cneg_[k] = prog_.NewContinuousVariables<3, 3>().cast<Expression>();
+        }
+        for (int i = 0; i < 3; ++i) {
+          for (int j = 0; j < 3; ++j) {
+            if (interval_binning_ == IntervalBinning::kLinear) {
+              Cpos_[k](i, j) = ret.B_[i][j](N + k);
+              Cneg_[k](i, j) = ret.B_[i][j](N - k - 1);
+            } else {
+              // logarithmic binning.
+              prog_.AddConstraint(CreateBinaryCodeMatchConstraint(
+                  ret.B_[i][j].cast<Expression>(),
+                  gray_codes.row(N + k).transpose(), Cpos_[k](i, j)));
+              prog_.AddConstraint(CreateBinaryCodeMatchConstraint(
+                  ret.B_[i][j].cast<Expression>(),
+                  gray_codes.row(N - k - 1).transpose(), Cneg_[k](i, j)));
+            }
+          }
+        }
+      }
+    } else {
+      std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
+          AddRotationMatrixMcCormickEnvelopeMilpConstraints(&prog_, R_, 3);
+    }
   }
 
-  ~TestMcCormickCorner() override {}
+  ~TestBoxSphereCorner() override {}
 
  protected:
   MathematicalProgram prog_;
@@ -280,9 +319,10 @@ class TestMcCormickCorner
                   // otherwise it intersects at the unique point bmax;
   int col_idx_;   // R_.col(col_idx_) will be fixed to a vertex of the box, and
                   // also this point is on the surface of the unit sphere.
+  IntervalBinning interval_binning_;
 };
 
-TEST_P(TestMcCormickCorner, TestOrthogonal) {
+TEST_P(TestBoxSphereCorner, TestOrthogonal) {
   // box_pt is a vertex of the box, and also lies exactly on the surface of
   // the unit sphere.
   Eigen::Vector3d box_pt(1.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0);
@@ -350,13 +390,16 @@ TEST_P(TestMcCormickCorner, TestOrthogonal) {
 }
 
 INSTANTIATE_TEST_CASE_P(
-    RotationTest, TestMcCormickCorner,
+    RotationTest, TestBoxSphereCorner,
     ::testing::Combine(
         ::testing::ValuesIn<std::vector<int>>({0, 1, 2, 3, 4, 5, 6,
                                                7}),             // Orthant
         ::testing::ValuesIn<std::vector<bool>>({true, false}),  // bmin or bmax
-        ::testing::ValuesIn<std::vector<int>>({0, 1, 2})));     // column index
-
+        ::testing::ValuesIn<std::vector<int>>({0, 1, 2}),
+        ::testing::ValuesIn<std::vector<IntervalBinning>>(
+            {IntervalBinning::kLinear,
+             IntervalBinning::kLogarithmic})));  // column index
+/*
 // Make sure that no two row or column vectors in R, which satisfies the
 // McCormick relaxation, can lie in either the same or the opposite orthant.
 class TestMcCormickOrthant
