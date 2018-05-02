@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/mixed_integer_rotation_constraint.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/rotation_constraint.h"
 
 namespace drake {
 namespace solvers {
@@ -19,7 +20,9 @@ namespace solvers {
 // This test records how well we can approximate the rotation matrix on SO(3).
 // If in the future we improved our relaxation and get a larger minimal
 // distance, please update this test.
-class TestMinimumDistance : public testing::TestWithParam<int> {
+class TestMinimumDistance
+    : public testing::TestWithParam<std::tuple<
+          MixedIntegerRotationConstraintGenerator::ConstraintType, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMinimumDistance)
 
@@ -27,12 +30,13 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
         d_(prog_.NewContinuousVariables<1>("d")),
-        num_binary_vars_per_half_axis_(GetParam()),
+        constraint_type_(std::get<0>(GetParam())),
+        num_intervals_per_half_axis_(std::get<1>(GetParam())),
         minimal_distance_expected_(0) {
-    AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-        &prog_,
-        R_,
-        num_binary_vars_per_half_axis_);
+    MixedIntegerRotationConstraintGenerator rotation_generator(
+        constraint_type_, num_intervals_per_half_axis_,
+        IntervalBinning::kLinear);
+    rotation_generator.AddToProgram(&prog_, R_);
 
     // Add the constraint that d_ >= |R_.col(0) - R_.col(1)|
     Vector4<symbolic::Expression> s;
@@ -63,31 +67,34 @@ class TestMinimumDistance : public testing::TestWithParam<int> {
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
   VectorDecisionVariable<1> d_;
-  int num_binary_vars_per_half_axis_;
+  MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type_;
+  int num_intervals_per_half_axis_;
   double minimal_distance_expected_;
 
  private:
   virtual void DoSetMinimumDistanceExpected() {
     // Update the expected minimal distance, when we improve the relaxation on
     // SO(3).
-    switch (num_binary_vars_per_half_axis_) {
-      case 1 : {
-        minimal_distance_expected_ = 0.069166;
+    std::array<double, 3> min_distance;  // Record the global minimal for
+                                         // different number of intervals per
+                                         // half axis {1, 2, 3}.
+    switch (constraint_type_) {
+      case MixedIntegerRotationConstraintGenerator::ConstraintType::
+          kBoxSphereIntersection: {
+        min_distance = {{0.069166, 0.974, 1.0823199}};
         break;
       }
-      case 2 : {
-        minimal_distance_expected_ = 0.974;
+      case MixedIntegerRotationConstraintGenerator::ConstraintType::
+          kBilinearMcCormick: {
+        min_distance = {{0.60229, 1.22474, 1.32667}};
         break;
       }
-      case 3 : {
-        minimal_distance_expected_ = 1.0823199;
+      case MixedIntegerRotationConstraintGenerator::ConstraintType::kBoth: {
+        min_distance = {{0.60302, 1.25649, 1.33283}};
         break;
-      }
-      default : {
-        throw std::runtime_error(
-            "Have not attempted this number of binary variables yet.");
       }
     }
+    minimal_distance_expected_ = min_distance[num_intervals_per_half_axis_ - 1];
   }
 };
 
@@ -105,20 +112,20 @@ class TestMinimumDistanceWOrthonormalSocp : public TestMinimumDistance {
   void DoSetMinimumDistanceExpected() override {
     // Update the expected minimal distance, when we improve the relaxation on
     // SO(3).
-    switch (num_binary_vars_per_half_axis_) {
-      case 1 : {
+    switch (num_intervals_per_half_axis_) {
+      case 1: {
         minimal_distance_expected_ = 0.06916;
         break;
       }
-      case 2 : {
-        minimal_distance_expected_ = 1.1928;
+      case 2: {
+        minimal_distance_expected_ = 1.19452;
         break;
       }
-      case 3 : {
+      case 3: {
         minimal_distance_expected_ = 1.3056;
         break;
       }
-      default : {
+      default: {
         throw std::runtime_error(
             "Have not attempted this number of binary variables yet.");
       }
@@ -136,14 +143,26 @@ TEST_P(TestMinimumDistanceWOrthonormalSocp, Test) {
   SolveAndCheckSolution();
 }
 
-INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistance,
-                        ::testing::ValuesIn<std::vector<int>>(
-                            {1, 2,
-                             3}));  // number of binary variables per half axis
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMinimumDistance,
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<
+            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
+            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBoxSphereIntersection,
+             MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBilinearMcCormick}),
+        ::testing::ValuesIn<std::vector<int>>(
+            {1, 2, 3})));  // number of binary variables per half axis
 
-INSTANTIATE_TEST_CASE_P(RotationTest, TestMinimumDistanceWOrthonormalSocp,
-                        ::testing::ValuesIn<std::vector<int>>(
-                            {1, 2,
-                             3}));  // number of binary variables per half axis
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestMinimumDistanceWOrthonormalSocp,
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<
+            MixedIntegerRotationConstraintGenerator::ConstraintType>>(
+            {MixedIntegerRotationConstraintGenerator::ConstraintType::
+                 kBoxSphereIntersection}),
+        ::testing::ValuesIn<std::vector<int>>(
+            {1, 2, 3})));  // number of binary variables per half axis
 }  // namespace solvers
 }  // namespace drake

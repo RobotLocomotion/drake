@@ -1180,7 +1180,7 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_limit_test",
+    name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
     tags = gurobi_test_tags() + [
         # Times out with Valgrind
@@ -1191,6 +1191,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
     ],
