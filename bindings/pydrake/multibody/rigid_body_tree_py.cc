@@ -306,13 +306,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
-  py::class_<RigidBody<double> >(m, "RigidBody")
-    .def("get_name", &RigidBody<double>::get_name)
-    .def("get_body_index", &RigidBody<double>::get_body_index)
-    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
-    .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
-    .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
-
   py::class_<RigidBodyFrame<double>,
              shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
     .def(
