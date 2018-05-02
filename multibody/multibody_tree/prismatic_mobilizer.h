@@ -57,12 +57,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
                      const Frame<T>& outboard_frame_M,
                      const Vector3<double>& axis_F) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
-    if (!axis_F.isZero(1.0e-6)) {
-      throw std::runtime_error("The translation axis must be a unit vector");
-    }
-    // We allow a rather loose tolerance in the isZero check above so that we
-    // don't get spurious exceptions when, for instance, the provided axis comes
-    // from parsing a file. Therefore we re-normalize here.
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_THROW_UNLESS(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
   }
 
