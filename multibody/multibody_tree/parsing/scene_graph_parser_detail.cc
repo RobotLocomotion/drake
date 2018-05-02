@@ -30,15 +30,12 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       return make_unique<geometry::Sphere>(shape.Radius());
     }
     case sdf::GeometryType::PLANE: {
-      //const sdf::Plane& shape = *sdf_geometry.PlaneShape();
+      // While sdf::Plane contains the normal of the plane, geometry::HalfSpace
+      // only encodes a half space with normal along the z-axis direction of a
+      // canonical frame C. Therefore the normal information is used during
+      // the parsing of a GeometryInstance, which does contain the pose of the
+      // half space in the parent link frame.
       return make_unique<geometry::HalfSpace>();
-
-      // TODO(amcastro-tri): We assume the normal is in the model frame M. We
-      // need to verify this is an SDF specification invariant.
-      //const Vector3d normal_M = ToVector3(shape.Normal());
-          //make_unique<geometry::GeometryInstance>(
-          //geometry::HalfSpace::MakePose(normal_M, Vector3d::Zero(),
-            //                               make_unique<HalfSpace>()));
     }
     default: {
       throw std::logic_error("Geometry type not supported.");
@@ -54,7 +51,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
-  // - A half-sapace's normal is directed along the Cz axis,
+  // - A half-space's normal is directed along the Cz axis,
   // - A cylinder's length is parallel to the Cz axis,
   // - etc.
 

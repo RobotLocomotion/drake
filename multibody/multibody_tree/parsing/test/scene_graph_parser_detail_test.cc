@@ -5,16 +5,11 @@
 
 #include <gtest/gtest.h>
 
-//#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 namespace drake {
 
@@ -41,7 +36,12 @@ namespace multibody_plant {
 namespace {
 
 // Helper to create an sdf::Geometry object from its SDF specification given
-// as a string.
+// as a string. Example of what the string should contain:
+//   "<cylinder>"
+//   "  <radius>0.5</radius>"
+//   "  <length>1.2</length>"
+//   "</cylinder>"
+// and similarly for other SDF geometries.
 unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
     const std::string geometry_spec) {
   const std::string sdf_str =

@@ -12,12 +12,15 @@ namespace multibody {
 namespace parsing {
 namespace detail {
 
+/// Given an sdf::Geometry object representing a <geometry> element from an SDF
+// file, this method makes a new drake::geometry::Shape object from this
+// specification.
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry);
 
-/// This method helps in creating a GeometryInstance object from the shape
-/// defintion in a sdf::Geometry object and the pose X_PG of that geometry in
-/// a parent frame P.
+/// Given an sdf::Visual object representing a <visual> element from an SDF
+// file, this method makes a new drake::geometry::GeometryInstance object from
+// this specification.
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual);
 

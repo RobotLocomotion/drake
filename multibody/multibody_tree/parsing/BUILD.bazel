@@ -69,15 +69,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scene_graph_parser_detail_test",
-    #data = [
-    #    "//multibody/benchmarks/acrobot:models",
-    #],
     deps = [
         ":scene_graph_parser_detail",
-        "//math:geometric_transform",
-        #"//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
+        "//math:geometric_transform",
     ],
 )
 
