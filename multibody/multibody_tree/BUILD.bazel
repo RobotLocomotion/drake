@@ -364,4 +364,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "prismatic_joint_test",
+    srcs = ["joints/test/prismatic_joint_test.cc"],
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
 add_lint_tests()
