@@ -91,13 +91,16 @@ int do_main() {
 
   // Register geometry for visualization.
   cart_pole.RegisterAsSourceForSceneGraph(&scene_graph);
-  const math::Transform<double> X_CV(
-      math::RotationMatrix<double>(
-          AngleAxis<double>(M_PI_2, Vector3<double>::UnitY())),
-      Vector3<double>::Zero());
+  //const math::Transform<double> X_CV(
+//      math::RotationMatrix<double>(
+  //        AngleAxis<double>(M_PI_2, Vector3<double>::UnitY())),
+    //  Vector3<double>::Zero());
+  std::string box_mesh_path =
+      FindResourceOrThrow("drake/examples/multibody/cart_pole/box_2x1.obj");
   cart_pole.RegisterVisualGeometry(
-      cart, X_CV.GetAsIsometry3(),
-      geometry::Cylinder(0.05, 0.3), &scene_graph);
+      cart, Isometry3<double>::Identity(),
+      geometry::Mesh(box_mesh_path, 0.12), &scene_graph);
+      //geometry::Cylinder(0.05, 0.3), &scene_graph);
   cart_pole.RegisterVisualGeometry(
       pole, Isometry3<double>::Identity(),
       geometry::Cylinder(0.05, 0.5), &scene_graph);
