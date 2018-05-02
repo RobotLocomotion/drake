@@ -36,22 +36,17 @@ bool IsFeasibleCheck(
   return (prog->Solve() == kSolutionFound);
 }
 
-class TestMixedIntegerRotationConstraint
-    : public ::testing::TestWithParam<
-          std::tuple<MixedIntegerRotationConstraintGenerator::ConstraintType,
-                     int, IntervalBinning>> {
+class TestMixedIntegerRotationConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraint)
 
-  TestMixedIntegerRotationConstraint()
+  TestMixedIntegerRotationConstraint(
+      MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type,
+      int num_intervals_per_half_axis)
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
-        constraint_type_(std::get<0>(GetParam())),
-        num_intervals_per_half_axis_(std::get<1>(GetParam())),
-        interval_binning_(std::get<2>(GetParam())),
-        rotation_generator_(constraint_type_, num_intervals_per_half_axis_,
-                            interval_binning_),
-        ret(rotation_generator_.AddToProgram(&prog_, R_)),
+        constraint_type_(constraint_type),
+        num_intervals_per_half_axis_(num_intervals_per_half_axis),
         feasibility_constraint_{prog_
                                     .AddLinearEqualityConstraint(
                                         Eigen::Matrix<double, 9, 9>::Identity(),
@@ -63,20 +58,133 @@ class TestMixedIntegerRotationConstraint
     return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
   }
 
-  ~TestMixedIntegerRotationConstraint() = default;
+  void TestExactRotationMatrix() {
+    // If R is exactly on SO(3), test whether it also satisfies our relaxation.
+
+    // Test a few valid rotation matrices.
+    Matrix3d R_test = Matrix3d::Identity();
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::ZRotation(M_PI_4) * R_test;
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::YRotation(M_PI_4) * R_test;
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::ZRotation(M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::ZRotation(-M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::YRotation(M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    R_test = math::YRotation(-M_PI_2);
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    // This one caught a bug (in the loop finding the most conservative linear
+    // constraint for a given region) during random testing.
+    R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
+        -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
+        -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
+    EXPECT_TRUE(IsFeasible(R_test));
+
+    std::mt19937 generator(41);
+    for (int i = 0; i < 40; i++) {
+      R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
+      EXPECT_TRUE(IsFeasible(R_test));
+    }
+  }
+
+  void TestInexactRotationMatrix() {
+    // If R is not exactly on SO(3), test whether it is infeasible for our SO(3)
+    // relaxation.
+
+    // Checks the dot product constraints.
+    Eigen::Matrix3d R_test =
+        Matrix3d::Constant(1.0 / sqrt(3.0));  // All rows and columns are
+    // on the unit sphere.
+    EXPECT_FALSE(IsFeasible(R_test));
+    // All in different octants, all unit length, but not orthogonal.
+    // R.col(0).dot(R.col(1)) = 1/3;
+    R_test(0, 1) *= -1.0;
+    R_test(2, 1) *= -1.0;
+    R_test(0, 2) *= -1.0;
+    R_test(1, 2) *= -1.0;
+    // Requires 2 intervals per half axis to catch.
+    if (num_intervals_per_half_axis_ == 1 &&
+        constraint_type_ == MixedIntegerRotationConstraintGenerator::
+                                ConstraintType::kBoxSphereIntersection)
+      EXPECT_TRUE(IsFeasible(R_test));
+    else
+      EXPECT_FALSE(IsFeasible(R_test));
+
+    // Checks the det(R)=-1 case.
+    // (only ruled out by the cross-product constraint).
+    R_test = Matrix3d::Identity();
+    R_test(2, 2) = -1;
+    EXPECT_FALSE(IsFeasible(R_test));
+
+    R_test = math::ZRotation(M_PI_4) * R_test;
+    EXPECT_FALSE(IsFeasible(R_test));
+
+    R_test = math::YRotation(M_PI_4) * R_test;
+    EXPECT_FALSE(IsFeasible(R_test));
+
+    // Checks a few cases just outside the L1 ball. If we use the formulation
+    // that
+    // replaces the bilinear term with another variable in the McCormick
+    // envelope,
+    // then it should always be infeasible. Otherwise should be feasible for
+    // num_intervals_per_half_axis_=1, but infeasible for
+    // num_intervals_per_half_axis_>1.
+    R_test = math::YRotation(M_PI_4);
+    R_test(2, 0) -= 0.1;
+    EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
+    EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
+    if (num_intervals_per_half_axis_ == 1 &&
+        constraint_type_ == MixedIntegerRotationConstraintGenerator::
+                                ConstraintType::kBoxSphereIntersection)
+      EXPECT_TRUE(IsFeasible(R_test));
+    else
+      EXPECT_FALSE(IsFeasible(R_test));
+  }
+  virtual ~TestMixedIntegerRotationConstraint() = default;
 
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
   MixedIntegerRotationConstraintGenerator::ConstraintType constraint_type_;
   int num_intervals_per_half_axis_;
-  IntervalBinning interval_binning_;
-  MixedIntegerRotationConstraintGenerator rotation_generator_;
-  MixedIntegerRotationConstraintGenerator::ReturnType ret;
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
 };
 
-TEST_P(TestMixedIntegerRotationConstraint, TestConstructor) {
+class TestMixedIntegerRotationConstraintGenerator
+    : public TestMixedIntegerRotationConstraint,
+      public ::testing::TestWithParam<
+          std::tuple<MixedIntegerRotationConstraintGenerator::ConstraintType,
+                     int, IntervalBinning>> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMixedIntegerRotationConstraintGenerator)
+
+  TestMixedIntegerRotationConstraintGenerator()
+      : TestMixedIntegerRotationConstraint(std::get<0>(GetParam()),
+                                           std::get<1>(GetParam())),
+        interval_binning_(std::get<2>(GetParam())),
+        rotation_generator_(constraint_type_, num_intervals_per_half_axis_,
+                            interval_binning_),
+        ret(rotation_generator_.AddToProgram(&prog_, R_)) {}
+
+  ~TestMixedIntegerRotationConstraintGenerator() = default;
+
+ protected:
+  IntervalBinning interval_binning_;
+  MixedIntegerRotationConstraintGenerator rotation_generator_;
+  MixedIntegerRotationConstraintGenerator::ReturnType ret;
+};
+
+TEST_P(TestMixedIntegerRotationConstraintGenerator, TestConstructor) {
   EXPECT_TRUE(CompareMatrices(
       rotation_generator_.phi(),
       Eigen::VectorXd::LinSpaced(2 * num_intervals_per_half_axis_ + 1, -1, 1),
@@ -87,7 +195,7 @@ TEST_P(TestMixedIntegerRotationConstraint, TestConstructor) {
       1E-12));
 }
 
-TEST_P(TestMixedIntegerRotationConstraint, TestBinaryAssignment) {
+TEST_P(TestMixedIntegerRotationConstraintGenerator, TestBinaryAssignment) {
   const Eigen::Matrix3d R_test =
       Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()).toRotationMatrix();
   auto b_constraint = prog_.AddBoundingBoxConstraint(0, 0, ret.B_[0][0]);
@@ -140,101 +248,16 @@ TEST_P(TestMixedIntegerRotationConstraint, TestBinaryAssignment) {
   }
 }
 
-TEST_P(TestMixedIntegerRotationConstraint, TestExactRotationMatrix) {
-  // If R is exactly on SO(3), test whether it also satisfies our relaxation.
-
-  // Test a few valid rotation matrices.
-  Matrix3d R_test = Matrix3d::Identity();
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::ZRotation(M_PI_4) * R_test;
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::YRotation(M_PI_4) * R_test;
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::ZRotation(M_PI_2);
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::ZRotation(-M_PI_2);
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::YRotation(M_PI_2);
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  R_test = math::YRotation(-M_PI_2);
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  // This one caught a bug (in the loop finding the most conservative linear
-  // constraint for a given region) during random testing.
-  R_test << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
-      -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
-      -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
-  EXPECT_TRUE(IsFeasible(R_test));
-
-  std::mt19937 generator(41);
-  for (int i = 0; i < 40; i++) {
-    R_test = math::UniformlyRandomRotationMatrix(&generator).matrix();
-    EXPECT_TRUE(IsFeasible(R_test));
-  }
+TEST_P(TestMixedIntegerRotationConstraintGenerator, ExactRotationMatrix) {
+  TestExactRotationMatrix();
 }
 
-TEST_P(TestMixedIntegerRotationConstraint, InexactRotationMatrix) {
-  // If R is not exactly on SO(3), test whether it is infeasible for our SO(3)
-  // relaxation.
-
-  // Checks the dot product constraints.
-  Eigen::Matrix3d R_test =
-      Matrix3d::Constant(1.0 / sqrt(3.0));  // All rows and columns are
-  // on the unit sphere.
-  EXPECT_FALSE(IsFeasible(R_test));
-  // All in different octants, all unit length, but not orthogonal.
-  // R.col(0).dot(R.col(1)) = 1/3;
-  R_test(0, 1) *= -1.0;
-  R_test(2, 1) *= -1.0;
-  R_test(0, 2) *= -1.0;
-  R_test(1, 2) *= -1.0;
-  // Requires 2 intervals per half axis to catch.
-  if (num_intervals_per_half_axis_ == 1 &&
-      constraint_type_ == MixedIntegerRotationConstraintGenerator::
-                              ConstraintType::kBoxSphereIntersection)
-    EXPECT_TRUE(IsFeasible(R_test));
-  else
-    EXPECT_FALSE(IsFeasible(R_test));
-
-  // Checks the det(R)=-1 case.
-  // (only ruled out by the cross-product constraint).
-  R_test = Matrix3d::Identity();
-  R_test(2, 2) = -1;
-  EXPECT_FALSE(IsFeasible(R_test));
-
-  R_test = math::ZRotation(M_PI_4) * R_test;
-  EXPECT_FALSE(IsFeasible(R_test));
-
-  R_test = math::YRotation(M_PI_4) * R_test;
-  EXPECT_FALSE(IsFeasible(R_test));
-
-  // Checks a few cases just outside the L1 ball. If we use the formulation
-  // that
-  // replaces the bilinear term with another variable in the McCormick
-  // envelope,
-  // then it should always be infeasible. Otherwise should be feasible for
-  // num_intervals_per_half_axis_=1, but infeasible for
-  // num_intervals_per_half_axis_>1.
-  R_test = math::YRotation(M_PI_4);
-  R_test(2, 0) -= 0.1;
-  EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
-  EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
-  if (num_intervals_per_half_axis_ == 1 &&
-      constraint_type_ == MixedIntegerRotationConstraintGenerator::
-                              ConstraintType::kBoxSphereIntersection)
-    EXPECT_TRUE(IsFeasible(R_test));
-  else
-    EXPECT_FALSE(IsFeasible(R_test));
+TEST_P(TestMixedIntegerRotationConstraintGenerator, InexactRotationMatrix) {
+  TestInexactRotationMatrix();
 }
 
 INSTANTIATE_TEST_CASE_P(
-    RotationTest, TestMixedIntegerRotationConstraint,
+    RotationTest, TestMixedIntegerRotationConstraintGenerator,
     ::testing::Combine(
         ::testing::ValuesIn<std::vector<
             MixedIntegerRotationConstraintGenerator::ConstraintType>>(
@@ -246,6 +269,35 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<int>>({1, 2}),
         ::testing::ValuesIn<std::vector<IntervalBinning>>(
             {IntervalBinning::kLinear, IntervalBinning::kLogarithmic})));
+
+class TestRotationMatrixBoxSphereIntersection
+    : public TestMixedIntegerRotationConstraint,
+      public ::testing::TestWithParam<int> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestRotationMatrixBoxSphereIntersection)
+
+  TestRotationMatrixBoxSphereIntersection()
+      : TestMixedIntegerRotationConstraint(
+            MixedIntegerRotationConstraintGenerator::ConstraintType::
+                kBoxSphereIntersection,
+            GetParam()) {
+    AddRotationMatrixBoxSphereIntersectionMilpConstraints(
+        &prog_, R_, num_intervals_per_half_axis_);
+  }
+
+  ~TestRotationMatrixBoxSphereIntersection() override {}
+};
+
+TEST_P(TestRotationMatrixBoxSphereIntersection, ExactRotationMatrix) {
+  TestExactRotationMatrix();
+}
+
+TEST_P(TestRotationMatrixBoxSphereIntersection, InexactRotationMatrix) {
+  TestInexactRotationMatrix();
+}
+
+INSTANTIATE_TEST_CASE_P(RotationTest, TestRotationMatrixBoxSphereIntersection,
+                        ::testing::ValuesIn<std::vector<int>>({1, 2}));
 
 // Test some corner cases of box-sphere intersection.
 // The corner cases happens when either the innermost or the outermost corner
