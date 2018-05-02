@@ -151,8 +151,10 @@ namespace multibody_plant {
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
+// TODO(amcastro-tri): consider to allow the inheritance from MBP. This will
+// require proper handling of scalar conversion.
 template<typename T>
-class MultibodyPlant : public systems::LeafSystem<T> {
+class MultibodyPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
