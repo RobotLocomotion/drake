@@ -6,26 +6,27 @@
     <link name='Cart'>
       <pose>0 0 0 0 0 0</pose>
       <inertial>
-        <mass>2.0</mass>
-        <!-- This inertia is based on a solid cylinder with
-             radius=0.001 meters and height=1.0 meters. -->
-	<!-- For this model we could make ixx=iyy=izz = 0 however, sdformat will throw
-	     an exception and therefore we just use small values. -->
+        <mass>10.0</mass>
+	<!-- For this model case, with the cart not having any rotational
+	     degrees of freedom, the values of the inertia matrix do not
+	     participate in the model. Therefore we just set them to zero.
+	-->
         <inertia>
-          <ixx>1.0e-10</ixx><iyy>1.0e-10</iyy><izz>1.0e-10</izz>
+	  <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
     </link>
     <link name='Pole'>
-      <pose>0 0 -0.25 0 0 0</pose>
+      <!-- The pole is modeled as a point mass at the end of the pole. -->
+      <!-- The length of the pole is 0.5 meters. -->
+      <pose>0 0 -0.5 0 0 0</pose>
       <inertial>
         <mass>1.0</mass>
-        <!-- This inertia is based on a thin rod for which I = m * L^2/12.-->
-	<!-- This is the roatioanal inertia I_PPcm_P of the pole body P, about its
-	     center of mass Pcm, expressed in the pole body frame P.-->
+	<!-- A point mass has zero rotational inertia.
+	     We must specify small values since otherwise sdformat throws an exception. -->
         <inertia>
-          <ixx>0.0208333333333333</ixx><iyy>0.0208333333333333</iyy><izz>1e-10</izz>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
@@ -42,7 +43,7 @@
       <parent>Cart</parent>
       <child>Pole</child>
       <axis>
-        <xyz>0.0 1.0 0.0</xyz>
+        <xyz>0.0 -1.0 0.0</xyz>
       </axis>
     </joint>
   </model>

@@ -41,4 +41,15 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_googletest(
+    name = "cart_pole_test",
+    data = ["cart_pole.sdf"],
+    deps = [
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+    ],
+)
+
 add_lint_tests()
