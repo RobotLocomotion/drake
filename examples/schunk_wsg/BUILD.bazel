@@ -40,7 +40,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
 )

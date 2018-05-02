@@ -1,7 +1,12 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load(
     "@drake//tools/skylark:drake_proto.bzl",
     "drake_cc_proto_library",
@@ -16,6 +21,20 @@ exports_files(
 
 exports_files(
     ["test/iiwa.id_controller_config"],
+)
+
+drake_cc_package_library(
+    name = "qp_inverse_dynamics",
+    deps = [
+        ":control",
+        ":id_controller_config",
+        ":lcm_utils",
+        ":param_parser",
+        ":qp_inverse_dynamics_system",
+        ":qp_output_translator_system",
+        ":robot_kinematic_state",
+        ":robot_kinematic_state_translator_system",
+    ],
 )
 
 drake_cc_proto_library(

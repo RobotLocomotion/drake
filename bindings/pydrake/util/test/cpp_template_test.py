@@ -74,7 +74,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[[int, int]], 3)
 
         # List instantiation.
-        def instantiation_func(param):
+        def instantiation_func(template, param):
+            self.assertIsInstance(template, m.TemplateBase)
             return 100 + len(param)
         dummy_a = (str,) * 5
         dummy_b = (str,) * 10
@@ -96,6 +97,26 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[float], DummyB)
         self.assertEquals(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
             _TEST_MODULE))
+
+    def test_user_class(self):
+
+        @m.TemplateClass.define("MyTemplate", param_list=((int,), (float,)))
+        def MyTemplate(_, param):
+            T, = param
+
+            class MyTemplateInstantiation(object):
+                def __init__(self):
+                    self.T = T
+
+            return MyTemplateInstantiation
+
+        self.assertIsInstance(MyTemplate, m.TemplateClass)
+        MyDefault = MyTemplate[None]
+        MyInt = MyTemplate[int]
+        self.assertEqual(MyDefault, MyInt)
+        self.assertEqual(MyInt().T, int)
+        MyFloat = MyTemplate[float]
+        self.assertEqual(MyFloat().T, float)
 
     def test_function(self):
         template = m.TemplateFunction("func")

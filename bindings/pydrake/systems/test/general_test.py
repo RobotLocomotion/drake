@@ -7,59 +7,172 @@ import copy
 import unittest
 import numpy as np
 
+from pydrake.autodiffutils import (
+    AutoDiffXd,
+    )
+from pydrake.symbolic import (
+    Expression,
+    )
 from pydrake.systems.analysis import (
-    Simulator,
+    IntegratorBase_,
+    Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
-    BasicVector,
-    Diagram,
-    DiagramBuilder,
+    BasicVector, BasicVector_,
+    Context_,
+    ContinuousState_,
+    Diagram, Diagram_,
+    DiagramBuilder, DiagramBuilder_,
+    DiscreteUpdateEvent_,
+    DiscreteValues_,
+    Event_,
+    InputPortDescriptor_,
+    LeafContext_,
+    LeafSystem_,
+    OutputPort_,
+    Parameters_,
+    PublishEvent_,
+    State_,
+    Subvector_,
+    Supervector_,
+    System_,
+    SystemOutput_,
+    VectorBase_,
+    VectorSystem_,
     )
+from pydrake.systems import primitives
 from pydrake.systems.primitives import (
-    Adder,
+    Adder, Adder_,
     AffineSystem,
-    ConstantVectorSource,
+    ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
     SignalLogger,
     )
 
+# TODO(eric.cousineau): The scope of this test file and and `custom_test.py`
+# is poor. Move these tests into `framework_test` and `analysis_test`, and
+# ensure that the tests reflect this, even if there is some coupling.
+
 
 class TestGeneral(unittest.TestCase):
+    def _check_instantiations(self, template, supports_symbolic=True):
+        default_cls = template[None]
+        self.assertTrue(template[float] is default_cls)
+        self.assertTrue(template[AutoDiffXd] is not default_cls)
+        if supports_symbolic:
+            self.assertTrue(template[Expression] is not default_cls)
+
+    def _compare_system_instances(self, lhs, rhs):
+        # Compares two different scalar type instantiation instances of a
+        # system.
+        self.assertEqual(lhs.get_num_input_ports(), rhs.get_num_input_ports())
+        self.assertEqual(
+            lhs.get_num_output_ports(), rhs.get_num_output_ports())
+        for i in range(lhs.get_num_input_ports()):
+            lhs_port = lhs.get_input_port(i)
+            rhs_port = rhs.get_input_port(i)
+            self.assertEqual(lhs_port.size(), rhs_port.size())
+        for i in range(lhs.get_num_output_ports()):
+            lhs_port = lhs.get_output_port(i)
+            rhs_port = rhs.get_output_port(i)
+            self.assertEqual(lhs_port.size(), rhs_port.size())
+
+    def test_instantiations(self):
+        # Quick check of instantions for given types.
+        # N.B. These checks are ordered according to their binding definitions
+        # in the corresponding source file.
+        # `analysis_py.cc`
+        self._check_instantiations(IntegratorBase_, False)
+        self._check_instantiations(Simulator_, False)
+        # `analysis_py_semantics.cc`
+        self._check_instantiations(Context_)
+        self._check_instantiations(LeafContext_)
+        self._check_instantiations(Event_)
+        self._check_instantiations(PublishEvent_)
+        self._check_instantiations(DiscreteUpdateEvent_)
+        self._check_instantiations(DiagramBuilder_)
+        self._check_instantiations(OutputPort_)
+        self._check_instantiations(SystemOutput_)
+        self._check_instantiations(InputPortDescriptor_)
+        self._check_instantiations(Parameters_)
+        self._check_instantiations(State_)
+        self._check_instantiations(ContinuousState_)
+        self._check_instantiations(DiscreteValues_)
+        # `analysis_py_systems.cc`
+        self._check_instantiations(System_)
+        self._check_instantiations(LeafSystem_)
+        self._check_instantiations(Diagram_)
+        self._check_instantiations(VectorSystem_)
+        # `analysis_py_values.cc`
+        self._check_instantiations(VectorBase_)
+        self._check_instantiations(BasicVector_)
+        self._check_instantiations(Supervector_)
+        self._check_instantiations(Subvector_)
+
+    def test_scalar_type_conversion(self):
+        for T in [float, AutoDiffXd, Expression]:
+            system = Adder_[T](1, 1)
+            # N.B. Current scalar conversion does not permit conversion to and
+            # from the same type.
+            if T != AutoDiffXd:
+                methods = [Adder_[T].ToAutoDiffXd, Adder_[T].ToAutoDiffXdMaybe]
+                for method in methods:
+                    system_ad = method(system)
+                    self.assertIsInstance(system_ad, System_[AutoDiffXd])
+                    self._compare_system_instances(system, system_ad)
+            if T != Expression:
+                methods = [Adder_[T].ToSymbolic, Adder_[T].ToSymbolicMaybe]
+                for method in methods:
+                    system_sym = method(system)
+                    self.assertIsInstance(system_sym, System_[Expression])
+                    self._compare_system_instances(system, system_sym)
+
     def test_simulator_ctor(self):
-        # Create simple system.
-        system = ConstantVectorSource([1])
+        # Tests a simple simulation for supported scalar types.
+        for T in [float, AutoDiffXd]:
+            # Create simple system.
+            system = ConstantVectorSource_[T]([1.])
 
-        def check_output(context):
-            # Check number of output ports and value for a given context.
-            output = system.AllocateOutput(context)
-            self.assertEquals(output.get_num_ports(), 1)
-            system.CalcOutput(context, output)
-            value = output.get_vector_data(0).get_value()
-            self.assertTrue(np.allclose([1], value))
+            def check_output(context):
+                # Check number of output ports and value for a given context.
+                output = system.AllocateOutput(context)
+                self.assertEquals(output.get_num_ports(), 1)
+                system.CalcOutput(context, output)
+                if T == float:
+                    value = output.get_vector_data(0).get_value()
+                    self.assertTrue(np.allclose([1], value))
+                elif T == AutoDiffXd:
+                    value = output.get_vector_data(0)._get_value_copy()
+                    # TODO(eric.cousineau): Define `isfinite` ufunc, if
+                    # possible, to use for `np.allclose`.
+                    self.assertEqual(value.shape, (1,))
+                    self.assertEqual(value[0], AutoDiffXd(1.))
+                else:
+                    raise RuntimeError("Bad T: {}".format(T))
 
-        # Create simulator with basic constructor.
-        simulator = Simulator(system)
-        simulator.Initialize()
-        simulator.set_target_realtime_rate(0)
-        simulator.set_publish_every_time_step(True)
-        self.assertTrue(simulator.get_context() is
-                        simulator.get_mutable_context())
-        check_output(simulator.get_context())
-        simulator.StepTo(1)
+            # Create simulator with basic constructor.
+            simulator = Simulator_[T](system)
+            simulator.Initialize()
+            simulator.set_target_realtime_rate(0)
+            simulator.set_publish_every_time_step(True)
+            self.assertTrue(simulator.get_context() is
+                            simulator.get_mutable_context())
+            check_output(simulator.get_context())
+            simulator.StepTo(1)
 
-        # Create simulator specifying context.
-        context = system.CreateDefaultContext()
-        context.set_time(0.)
+            # Create simulator specifying context.
+            context = system.CreateDefaultContext()
+            context.set_time(0.)
 
-        context.set_accuracy(1e-4)
-        self.assertEquals(context.get_accuracy(), 1e-4)
+            context.set_accuracy(1e-4)
+            self.assertEquals(context.get_accuracy(), 1e-4)
 
-        # @note `simulator` now owns `context`.
-        simulator = Simulator(system, context)
-        self.assertTrue(simulator.get_context() is context)
-        check_output(context)
-        simulator.StepTo(1)
+            # @note `simulator` now owns `context`.
+            simulator = Simulator_[T](system, context)
+            self.assertTrue(simulator.get_context() is context)
+            check_output(context)
+            simulator.StepTo(1)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.

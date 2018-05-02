@@ -16,7 +16,6 @@ namespace {
 static constexpr double kTol = 1e-12;
 
 using math::IsQuaternionValid;
-using math::RollPitchYaw;
 using multibody::SpatialVelocity;
 using Eigen::Isometry3d;
 using Eigen::Quaternion;
@@ -43,20 +42,21 @@ GTEST_TEST(PoseVelocityTest, Accessors) {
   using std::sqrt;
 
   const Translation<double, 3> translation{1., 2., 3.};
-  const Vector3d rpy{0.4, 0.5, 0.6};
-  const Quaternion<double> rotation = RollPitchYaw<double>(rpy).ToQuaternion();
+  const math::RollPitchYaw<double> rpy(0.4, 0.5, 0.6);
+  const Quaternion<double> quaternion = rpy.ToQuaternion();
   const Vector3d w{8., 9., 10.};
   const Vector3d v{11., 12., 13.};
   const SpatialVelocity<double> velocity{w, v};
-  const PoseVelocity actual(rotation, translation, velocity);
+  const PoseVelocity actual(quaternion, translation, velocity);
 
   EXPECT_TRUE(
       CompareMatrices(actual.translation().vector(), translation.vector()));
   EXPECT_TRUE(
-      CompareMatrices(actual.rotation().matrix(), rotation.matrix(), kTol));
+      CompareMatrices(actual.rotation().matrix(), quaternion.matrix(), kTol));
   EXPECT_TRUE(CompareMatrices(actual.velocity().rotational(), w));
   EXPECT_TRUE(CompareMatrices(actual.velocity().translational(), v));
-  const Vector3d expected_pose3{translation.x(), translation.y(), rpy.z()};
+  const Vector3d expected_pose3{translation.x(), translation.y(),
+                                rpy.get_yaw_angle()};
   EXPECT_TRUE(CompareMatrices(actual.pose3(), expected_pose3));
   EXPECT_EQ(actual.speed(), sqrt(pow(v(0), 2) + pow(v(1), 2) + pow(v(2), 2)));
 }

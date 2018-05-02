@@ -1,15 +1,16 @@
 <sdf version='1.6'>
   <model name='acrobot'>
     <!-- This sdf file produces a model with the default parameters documented
-         in AcrobotParameters in make_acrobot_plant.h. -->
+         in AcrobotParameters in make_acrobot_plant.h.
+         They MUST be kept in sync. -->
     <link name='Link1'>
       <pose>0 0 -0.5 0 0 0</pose>
       <inertial>
         <mass>1.0</mass>
         <!-- This inertia is based on a solid cylinder with
              radius=0.001 meters and height=1.0 meters. -->
-	<!-- For this model we could make izz = 0 however, sdformat will throw
-	     an exception. -->
+	    <!-- For this model we could make izz = 0 however, sdformat will throw
+	         an exception. -->
         <inertia>
           <ixx>0.083</ixx><iyy>0.083</iyy><izz>5e-7</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>

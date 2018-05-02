@@ -6,22 +6,18 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 
 using Eigen::Vector3d;
-using geometry::SceneGraph;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::parsing::AddModelFromSdfFile;
 using systems::Context;
-using systems::LeafSystem;
 
 namespace multibody {
 namespace multibody_plant {
@@ -45,7 +41,7 @@ class AcrobotModelTests : public ::testing::Test {
     elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
     context_ = plant_->CreateDefaultContext();
 
-    // Create an benchmark model for verification of the parsed model.
+    // Create a benchmark model for verification of the parsed model.
     // The benchmark model is created programmatically through Drake's API.
     benchmark_plant_ = MakeAcrobotPlant(parameters_, true);
     benchmark_shoulder_ =
@@ -95,7 +91,7 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(benchmark_plant_->num_bodies(), plant_->num_bodies());
   EXPECT_EQ(benchmark_plant_->num_joints(), plant_->num_joints());
-  // Even though our benchmark model does, the parsed model has not actuators.
+  // Even though our benchmark model does, the parsed model has no actuators.
   EXPECT_EQ(0, plant_->num_actuators());
   EXPECT_EQ(0, plant_->num_actuated_dofs());
 
@@ -117,8 +113,6 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   const Joint<double>& elbow_joint = plant_->GetJointByName("ElbowJoint");
   EXPECT_EQ(elbow_joint.name(), "ElbowJoint");
 
-  // Drake uses a different convention for naming the world body and therefore
-  // we just check its index.
   EXPECT_EQ(shoulder_joint.parent_body().index(), world_index());
   EXPECT_EQ(shoulder_joint.child_body().name(), parameters_.link1_name());
   EXPECT_EQ(elbow_joint.parent_body().name(), parameters_.link1_name());
@@ -145,10 +139,6 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifySdfModelMassMatrix(-M_PI / 3, 3 * M_PI / 4);
   VerifySdfModelMassMatrix(-M_PI / 3, -M_PI / 3);
   VerifySdfModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
-}
-
-TEST_F(AcrobotModelTests, VerifyVisuals) {
-
 }
 
 }  // namespace

@@ -178,6 +178,38 @@ namespace test {
          << angular_tolerance;
 }
 
+Matcher<const api::HBounds&> Matches(const api::HBounds& elevation_bounds,
+                                     double tolerance) {
+  return MakeMatcher(new HBoundsMatcher(elevation_bounds, tolerance));
+}
+
+Matcher<const ArcOffset&> Matches(const ArcOffset& arc_offset,
+                                  double linear_tolerance,
+                                  double angular_tolerance) {
+  return MakeMatcher(
+      new ArcOffsetMatcher(arc_offset, linear_tolerance, angular_tolerance));
+}
+
+Matcher<const LineOffset&> Matches(const LineOffset& line_offset,
+                                   double tolerance) {
+  return MakeMatcher(new LineOffsetMatcher(line_offset, tolerance));
+}
+
+Matcher<const LaneLayout&> Matches(const LaneLayout& lane_layout,
+                                   double tolerance) {
+  return MakeMatcher(new LaneLayoutMatcher(lane_layout, tolerance));
+}
+
+Matcher<const StartReference::Spec&> Matches(
+    const StartReference::Spec& start_reference, double tolerance) {
+  return MakeMatcher(new StartReferenceSpecMatcher(start_reference, tolerance));
+}
+
+Matcher<const EndReference::Spec&> Matches(
+    const EndReference::Spec& end_reference, double tolerance) {
+  return MakeMatcher(new EndReferenceSpecMatcher(end_reference, tolerance));
+}
+
 }  // namespace test
 }  // namespace multilane
 }  // namespace maliput

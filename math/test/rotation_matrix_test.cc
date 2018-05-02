@@ -14,49 +14,6 @@ using Eigen::Vector3d;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// Helper function to create a rotation matrix associated with a BodyXYZ
-// rotation by angles q1 = 0.2 radians, q2 = 0.3 radians, q3 = 0.4 radians.
-// Note: These matrices must remain BodyXYZ matrices with the specified angles
-// q1, q2, q3, as these matrices are used in conjunction with MotionGenesis
-// pre-computed solutions based on these exact matrices.
-Matrix3d MakeRotationMatrixBodyXYZ() {
-  const double q1 = 0.2, q2 = 0.3, q3 = 0.4;
-  const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
-  const double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
-  Matrix3d m;
-  m << c2 * c3,
-      s3 * c1 + s1 * s2 * c3,
-      s1 * s3 - s2 * c1 * c3,
-      -s3 * c2,
-      c1 * c3 - s1 * s2 * s3,
-      s1 * c3 + s2 * s3 * c1,
-      s2,
-      -s1 * c2,
-      c1 * c2;
-  return m;
-}
-
-// Helper function to create a rotation matrix associated with a BodyXYX
-// rotation by angles r1 = 0.5 radians, r2 = 0.5 radians, r3 = 0.7 radians.
-// Note: These matrices must remain BodyXYX matrices with the specified angles
-// r1, r2, r3, as these matrices are used in conjunction with MotionGenesis
-// pre-computed solutions based on these exact matrices.
-Matrix3d MakeRotationMatrixBodyXYX() {
-  const double r1 = 0.5, r2 = 0.5, r3 = 0.7;
-  const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
-  const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
-  Matrix3d m;
-  m << c2,
-      s1 * s2,
-      -s2 * c1,
-      s2 * s3,
-      c1 * c3 - s1 * s3 * c2,
-      s1 * c3 + s3 * c1 * c2,
-      s2 * c3,
-      -s3 * c1 - s1 * c2 * c3,
-      c1 * c2 * c3 - s1 * s3;
-  return m;
-}
 
 // Test default constructor - should be identity matrix.
 GTEST_TEST(RotationMatrix, DefaultRotationMatrixIsIdentity) {
@@ -171,30 +128,24 @@ GTEST_TEST(RotationMatrix, RotationMatrixZ) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test making a rotation matrix associated with a Body-fixed Z-Y-X rotation.
-// or with a Space-fixed X-Y-Z rotation.  Also tests method IsExactlyEqualTo().
-GTEST_TEST(RotationMatrix, RotationMatrixBodyZYX) {
-  const Vector3d q(0.3, 0.4, 0.5);  // yaw-pitch-roll angles.
-  const Matrix3d m = (Eigen::AngleAxisd(q(0), Vector3d::UnitZ())
-                    * Eigen::AngleAxisd(q(1), Vector3d::UnitY())
-                    * Eigen::AngleAxisd(q(2), Vector3d::UnitX())).matrix();
+// Test making a rotation matrix from a RollPitchYaw rotation sequence (which is
+// equivalent to a Body-fixed Z-Y-X or a Space-fixed X-Y-Z rotation sequence).
+// Also tests method IsExactlyEqualTo().
+GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
+  const double r(0.5), p(0.4), y(0.3);
+  const RollPitchYaw<double> rpy(r, p, y);
+  const Matrix3d m = (Eigen::AngleAxisd(y, Vector3d::UnitZ())
+                    * Eigen::AngleAxisd(p, Vector3d::UnitY())
+                    * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m);
-  const RotationMatrix<double> R_bodyZYX =
-      RotationMatrix<double>::MakeBodyZYXRotation(q);
-  EXPECT_TRUE(R_bodyZYX.IsNearlyEqualTo(R_eigen, kEpsilon));
+  const RotationMatrix<double> R_rpy(rpy);
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
 
-  RotationMatrix<double> R1 = RotationMatrix<double>::MakeZRotation(q(0));
-  RotationMatrix<double> R2 = RotationMatrix<double>::MakeYRotation(q(1));
-  RotationMatrix<double> R3 = RotationMatrix<double>::MakeXRotation(q(2));
+  RotationMatrix<double> R1 = RotationMatrix<double>::MakeZRotation(y);
+  RotationMatrix<double> R2 = RotationMatrix<double>::MakeYRotation(p);
+  RotationMatrix<double> R3 = RotationMatrix<double>::MakeXRotation(r);
   RotationMatrix<double> R_expected = R1 * R2 * R3;
-  EXPECT_TRUE(R_bodyZYX.IsExactlyEqualTo(R_expected));
-
-  // Compare to SpaceXYZ rotation sequence.
-  const Vector3d roll_pitch_yaw(q(2), q(1), q(0));
-  const RotationMatrix<double> R_spaceXYZ =
-      RotationMatrix<double>::MakeSpaceXYZRotation(roll_pitch_yaw);
-  EXPECT_TRUE(R_spaceXYZ.IsNearlyEqualTo(R_eigen, kEpsilon));
-  EXPECT_TRUE(R_spaceXYZ.IsExactlyEqualTo(R_bodyZYX));
+  EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
 }
 
 // Test calculating the inverse of a RotationMatrix.
@@ -213,32 +164,32 @@ GTEST_TEST(RotationMatrix, Inverse) {
 
 // Test rotation matrix multiplication and IsNearlyEqualTo.
 GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
-  Matrix3d m_BA = MakeRotationMatrixBodyXYZ();
-  Matrix3d m_CB = MakeRotationMatrixBodyXYX();
+  const RollPitchYaw<double> rpy0(0.2, 0.3, 0.4);
+  const RollPitchYaw<double> rpy1(-0.5, -0.6, 0.9);
+  const RotationMatrix<double> R_BA(rpy0);
+  const RotationMatrix<double> R_CB(rpy1);
+  const RotationMatrix<double> R_CA = R_CB * R_BA;
+  const Matrix3d m_BA = R_BA.matrix();
+  const Matrix3d m_CB = R_CB.matrix();
+  const Matrix3d m_CA = m_CB * m_BA;
+  const RotationMatrix<double> R_CA_manual_multiply(m_CA);
 
-  RotationMatrix<double> R_BA(m_BA);
-  RotationMatrix<double> R_CB(m_CB);
-  RotationMatrix<double> R_CA = R_CB * R_BA;
-
-  // Expected results (from MotionGenesis).
-  Matrix3d m_CA;
-  m_CA << 0.5623597514496498, 0.6644746169581934, -0.4921635839512615,
-          0.3778794976730916, 0.3228981562377939, 0.8677233810014371,
-          0.7354988750418453, -0.6739512327435091, -0.06950640758724619;
-  RotationMatrix<double> R_CA_expected(m_CA);
+  // Test operator *().
+  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_manual_multiply, 10 * kEpsilon));
 
   // Also test IsNearlyEqualTo.
-  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 10 * kEpsilon));
+  EXPECT_FALSE(R_CA.IsNearlyEqualTo(R_CB, 10000 * kEpsilon));
 
   // Also test operator*=().
-  R_CB *= R_BA;
-  EXPECT_TRUE(R_CB.IsNearlyEqualTo(R_CA, 10 * kEpsilon));
-  EXPECT_FALSE(R_CB.IsNearlyEqualTo(R_BA, 10000 * kEpsilon));
+  RotationMatrix<double> R_CA_times_equal_test = R_CB;
+  R_CA_times_equal_test *= R_BA;
+  EXPECT_TRUE(R_CA_times_equal_test.IsNearlyEqualTo(R_CA, 10 * kEpsilon));
+  EXPECT_FALSE(R_CA_times_equal_test.IsNearlyEqualTo(R_CB, 10000 * kEpsilon));
 
   // Also test operator*() with vectors.
-  Vector3d vA(1, 2, 3);     // Vector v expressed in frame A.
-  Vector3d vC = R_CA * vA;  // Vector v expressed in frame C.
-  Vector3d vC_expected = m_CA * vA;
+  const Vector3d vA(1, 2, 3);     // Vector v expressed in frame A.
+  const Vector3d vC = R_CA * vA;  // Vector v expressed in frame C.
+  const Vector3d vC_expected = m_CA * vA;
   EXPECT_TRUE(vC.isApprox(vC_expected));
 }
 
@@ -298,8 +249,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40 * kEpsilon);
 
   // Test another valid rotation matrix.  Ensure near-perfect quality_factor.
-  const Vector3d angles(0.1, 0.2, 0.3);
-  m = RotationMatrix<double>::MakeSpaceXYZRotation(angles).matrix();
+  const RollPitchYaw<double> rpy(0.1, 0.2, 0.3);
+  m = RotationMatrix<double>(rpy).matrix();
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   EXPECT_TRUE(R.IsNearlyEqualTo(RotationMatrix<double>(m), 10*kEpsilon));
   EXPECT_TRUE(std::abs(quality_factor - 1.0) < 40*kEpsilon);
@@ -423,8 +374,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
 
 // Test RotationMatrix cast method from double to AutoDiffXd.
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
-  const Matrix3d m = MakeRotationMatrixBodyXYZ();
-  const RotationMatrix<double> R_double(m);
+  const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
+  const RotationMatrix<double> R_double(rpy);
   const RotationMatrix<AutoDiffXd> R_autodiff = R_double.cast<AutoDiffXd>();
 
   // To avoid a (perhaps) tautological test, do not just use an Eigen cast() to

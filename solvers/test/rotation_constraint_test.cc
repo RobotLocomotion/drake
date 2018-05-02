@@ -7,10 +7,10 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
-#include "drake/math/roll_pitch_yaw_not_using_quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mosek_solver.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -223,14 +223,43 @@ GTEST_TEST(RotationConstraint, TestAddStaticSizeNumIntervalsPerHalfAxis) {
       "Incorrect type.");
 }
 
-class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
+enum class ConstraintType {
+  kBoxSphereIntersection,
+  kReplaceBilinear,
+  kBoth,
+};
+
+std::string to_string(ConstraintType type) {
+  switch (type) {
+    case ConstraintType::kBoxSphereIntersection:
+      return "box_sphere_intersection";
+    case ConstraintType::kReplaceBilinear:
+      return "replace_bilinear";
+    case ConstraintType::kBoth:
+      return "both";
+  }
+  // This code should not be reached, we add the next line due to a compiler
+  // defect.
+  throw std::runtime_error("Should not reach this part of the code.");
+}
+
+// This operator overloading is useful, when GTEST prints out which parameter
+// causes the test failure.
+std::ostream& operator<<(std::ostream& os, const ConstraintType& type) {
+  os << to_string(type);
+  return os;
+}
+
+
+class TestMcCormick
+    : public ::testing::TestWithParam<std::tuple<ConstraintType, int>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestMcCormick)
 
   TestMcCormick()
       : prog_(),
         R_(NewRotationMatrixVars(&prog_)),
-        replace_bilinear_product_(std::get<0>(GetParam())),
+        constraint_type_(std::get<0>(GetParam())),
         num_intervals_per_half_axis_(std::get<1>(GetParam())),
         feasibility_constraint_{prog_
                                     .AddLinearEqualityConstraint(
@@ -238,12 +267,19 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
                                         Eigen::Matrix<double, 9, 1>::Zero(),
                                         {R_.col(0), R_.col(1), R_.col(2)})
                                     .evaluator()} {
-    if (replace_bilinear_product_) {
-      AddRotationMatrixBilinearMcCormickMilpConstraints(
-          &prog_, R_, num_intervals_per_half_axis_);
-    } else {
-      AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-          &prog_, R_, num_intervals_per_half_axis_);
+    switch (constraint_type_) {
+      case ConstraintType::kBoxSphereIntersection:
+        AddRotationMatrixMcCormickEnvelopeMilpConstraints(
+            &prog_, R_, num_intervals_per_half_axis_);
+        break;
+      case ConstraintType::kReplaceBilinear:
+        AddRotationMatrixBilinearMcCormickMilpConstraints(
+            &prog_, R_, num_intervals_per_half_axis_, false);
+        break;
+      case ConstraintType::kBoth:
+        AddRotationMatrixBilinearMcCormickMilpConstraints(
+            &prog_, R_, num_intervals_per_half_axis_, true);
+        break;
     }
   }
 
@@ -256,9 +292,7 @@ class TestMcCormick : public ::testing::TestWithParam<std::tuple<bool, int>> {
  protected:
   MathematicalProgram prog_;
   MatrixDecisionVariable<3, 3> R_;
-  bool replace_bilinear_product_{};  // If true, replace the bilinear product
-  // with another varaible in the McCormick envelope. Otherwise, relax the
-  // surface ofthe unit sphere to its convex hull.
+  ConstraintType constraint_type_;
   int num_intervals_per_half_axis_{};
   std::shared_ptr<LinearEqualityConstraint> feasibility_constraint_;
 };
@@ -318,7 +352,8 @@ TEST_P(TestMcCormick, TestInexactRotationMatrix) {
   R_test(0, 2) *= -1.0;
   R_test(1, 2) *= -1.0;
   // Requires 2 intervals per half axis to catch.
-  if (num_intervals_per_half_axis_ == 1 && !replace_bilinear_product_)
+  if (num_intervals_per_half_axis_ == 1 &&
+      constraint_type_ == ConstraintType::kBoxSphereIntersection)
     EXPECT_TRUE(IsFeasible(R_test));
   else
     EXPECT_FALSE(IsFeasible(R_test));
@@ -344,7 +379,8 @@ TEST_P(TestMcCormick, TestInexactRotationMatrix) {
   R_test(2, 0) -= 0.1;
   EXPECT_GT(R_test.col(0).lpNorm<1>(), 1.0);
   EXPECT_GT(R_test.row(2).lpNorm<1>(), 1.0);
-  if (num_intervals_per_half_axis_ == 1 && !replace_bilinear_product_)
+  if (num_intervals_per_half_axis_ == 1 &&
+      constraint_type_ == ConstraintType::kBoxSphereIntersection)
     EXPECT_TRUE(IsFeasible(R_test));
   else
     EXPECT_FALSE(IsFeasible(R_test));
@@ -352,7 +388,10 @@ TEST_P(TestMcCormick, TestInexactRotationMatrix) {
 
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestMcCormick,
-    ::testing::Combine(::testing::ValuesIn<std::vector<bool>>({false, true}),
+    ::testing::Combine(::testing::ValuesIn<std::vector<ConstraintType>>(
+                           {ConstraintType::kBoxSphereIntersection,
+                            ConstraintType::kReplaceBilinear,
+                            ConstraintType::kBoth}),
                        ::testing::ValuesIn<std::vector<int>>({1, 2})));
 
 // Test some corner cases of McCormick envelope.
@@ -575,3 +614,12 @@ INSTANTIATE_TEST_CASE_P(
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
+
+int main(int argc, char** argv) {
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

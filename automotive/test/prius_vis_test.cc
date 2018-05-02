@@ -8,7 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_viewer_link_data.hpp"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/pose_bundle.h"
 

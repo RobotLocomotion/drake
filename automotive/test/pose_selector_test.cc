@@ -10,7 +10,7 @@
 #include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace automotive {
@@ -836,7 +836,7 @@ void AddToTrafficPosesAt(int index,
 
   const Rotation traffic_rotation =
       traffic_lane->GetOrientation(srh);
-  Vector3<double> rpy = traffic_rotation.rpy();
+  Vector3<double> rpy = traffic_rotation.rpy().vector();
   rpy.x() = (traffic_polarity == LanePolarity::kWithS) ? rpy.x() : -rpy.x();
   rpy.y() = (traffic_polarity == LanePolarity::kWithS) ? rpy.y() : -rpy.y();
   rpy.z() -= (traffic_polarity == LanePolarity::kWithS) ? 0. : M_PI;
@@ -875,7 +875,7 @@ void SetDefaultOnrampPoses(const Lane* ego_lane,
   const double ego_yaw =
       ego_rotation.yaw() - ((ego_polarity == LanePolarity::kWithS) ? 0. : M_PI);
   const Rotation new_rotation = Rotation::FromRpy(ego_roll, ego_pitch, ego_yaw);
-  const Vector3<double> new_rpy = new_rotation.rpy();
+  const Vector3<double> new_rpy = new_rotation.rpy().vector();
   ego_pose->set_rotation(math::RollPitchYaw<double>(new_rpy).ToQuaternion());
 
   const Eigen::Matrix3d ego_rotmat = math::rpy2rotmat(new_rpy);
