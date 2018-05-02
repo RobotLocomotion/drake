@@ -172,6 +172,51 @@ GTEST_TEST(SceneGraphParserDetal, MakeGeometryInstanceFromSdfVisual) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+// Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
+// sdf::Visual with a <plane> geometry.
+// We test this case separately since, while geometry::HalfSpace is defined in a
+// canonical frame C whose pose needs to be specified at a GeometryInstance
+// level, the SDF specification does not define this pose at the <geometry>
+// level but at the <visual> (or <collision>) level.
+GTEST_TEST(SceneGraphParserDetal, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+      "<visual name = 'some_link_visual'>"
+          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+          "  <geometry>"
+          "    <plane>"
+          "      <normal>1.0 2.0 3.0</normal>"
+          "    </plane>"
+          "  </geometry>"
+          "</visual>");
+  unique_ptr<GeometryInstance> geometry_instance =
+      MakeGeometryInstanceFromSdfVisual(*sdf_visual);
+
+  // Verify we do have a plane geometry.
+  const HalfSpace* shape =
+      dynamic_cast<const HalfSpace*>(&geometry_instance->shape());
+  ASSERT_TRUE(shape != nullptr);
+
+  // The expected coordinates of the normal vector in the link frame L.
+  const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();
+
+  // The expected orientation of the canonical frame C (in which the plane's
+  // normal aligns with Cz) in the link frame L.
+  const Matrix3d R_LC_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+
+  // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
+  const Isometry3d& X_LC = geometry_instance->pose();
+  const Matrix3d& R_LC = X_LC.linear();
+  const Vector3d normal_L = R_LC.col(2);
+
+  // Verify results to precision given by kTolerance.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_LC.linear(), R_LC_expected,
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(normal_L, normal_L_expected,
+                              kTolerance, MatrixCompareType::relative));
+}
+
 
 }  // namespace
 }  // namespace multibody_plant
