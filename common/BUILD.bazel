@@ -215,6 +215,7 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         "//math:matrix_util",
+        "@fmt",
     ],
 )
 
