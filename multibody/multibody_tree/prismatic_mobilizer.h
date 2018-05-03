@@ -48,18 +48,17 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
   /// single translational degree of freedom along axis `axis_F`, expressed in
   /// the inboard frame F.
-  /// @pre axis_F must be a non-zero vector with norm at least 1.0e-6. That is
-  /// `axis_F` does not necessarily need to be a unit vector, though it does get
-  /// normalized to be a unit vector. In other words, 
-  /// PrismaticMobilizer::translation_axis() returns a unit vector in the
-  /// direction along `axis_F`.
-  /// @throws std::exception if the provided translational axis has an L2 norm
-  /// smaller than 1.0e-6.
+  /// @pre axis_F must be a non-zero vector with norm at least machine epsilon.
+  /// This vector can have any length, only the direction is used. This method
+  /// throws an exception if the L2 norm of `axis` is less than machine epsilon.
+  /// @throws std::exception if the L2 norm of `axis` is less than machine
+  /// epsilon.
   PrismaticMobilizer(const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M,
                      const Vector3<double>& axis_F) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
-    DRAKE_THROW_UNLESS(axis_F.norm() > 1.0e-6);
+    const double kEpsilon = std::numeric_limits<double>::epsilon();
+    DRAKE_THROW_UNLESS(!axis_F.isZero(kEpsilon));
     axis_F_.normalize();
   }
 

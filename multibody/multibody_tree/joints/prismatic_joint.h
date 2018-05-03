@@ -13,14 +13,13 @@
 namespace drake {
 namespace multibody {
 
-/// This Joint allows two bodies to rotate relatively to one another around a
+/// This Joint allows two bodies to translate relatively to one another along a
 /// common axis.
 /// That is, given a frame F attached to the parent body P and a frame M
 /// attached to the child body B (see the Joint class's documentation),
-/// this Joint allows frames F and M to rotate with respect to each other about
-/// an axis â. The rotation angle's sign is defined such that child body B
-/// rotates about axis â according to the right hand rule, with thumb aligned in
-/// the axis direction.
+/// this Joint allows frames F and M to translate with respect to each other
+/// along an axis â. The translation distance is defined positive when child
+/// body B translates along the direction of â.
 /// Axis â is constant and has the same measures in both frames F and M, that
 /// is, `â_F = â_M`.
 ///
@@ -40,23 +39,22 @@ class PrismaticJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
-  /// Constructor to create a revolute joint between two bodies so that
+  /// Constructor to create a prismatic joint between two bodies so that
   /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, rotate relatively to one another about a common axis. See this
+  /// body B, translate relatively to one another about a common axis. See this
   /// class's documentation for further details on the definition of these
-  /// frames and rotation angle.
+  /// frames and translation distance.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameter `axis` is:
   /// @param[in] axis
-  ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
-  ///   that frame M only rotates with respect to F and their origins are
-  ///   coincident at all times, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
-  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
-  ///   equal to one.
-  ///   This vector can have any length, only the direction is used. This method
-  ///   aborts if `axis` is the zero vector.
+  ///   A vector in ℝ³ specifying the translation axis for this joint. Given
+  ///   that frame M only translates with respect to F and there is no relative
+  ///   rotation, the measures of `axis` in either frame F or M
+  ///   are exactly the same, that is, `axis_F = axis_M`.
+  ///   This vector can have any length, only the direction is used.
+  /// @throws std::exception if the L2 norm of `axis` is less than machine
+  /// epsilon.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
                 const Vector3<double>& axis) :
@@ -66,7 +64,7 @@ class PrismaticJoint final : public Joint<T> {
     axis_ = axis.normalized();
   }
 
-  /// Returns the axis of revolution of `this` joint as a unit vector.
+  /// Returns the axis of translation for `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
   /// `axis = axis_F = axis_M`.
@@ -80,20 +78,21 @@ class PrismaticJoint final : public Joint<T> {
   /// MultibodyTreeContext. Failure to do so leads to a std::logic_error.
   /// @{
 
-  /// Gets the rotation angle of `this` mobilizer from `context`.
+  /// Gets the translation distance of `this` mobilizer from `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The angle coordinate of `this` joint stored in the `context`.
+  /// @returns The transaltion coordinate of `this` joint stored in the
+  /// `context`.
   const T& get_translation(const Context<T>& context) const {
     return get_mobilizer()->get_translation(context);
   }
 
-  /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` joint equals `angle`.
+  /// Sets `context` so that the generalized coordinate corresponding to the
+  /// translation distance of `this` joint equals `translation`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @param[in] angle
-  ///   The desired angle in radians to be stored in `context`.
+  /// @param[in] translation
+  ///   The desired translation in meters to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation(
       Context<T>* context, const T& translation) const {
@@ -101,47 +100,46 @@ class PrismaticJoint final : public Joint<T> {
     return *this;
   }
 
-  /// Gets the rate of change, in radians per second, of `this` joint's
-  /// angle (see get_angle()) from `context`.
+  /// Gets the rate of change, in meters per second, of `this` joint's
+  /// translation distance (see get_translation()) from `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The rate of change of `this` joint's angle as stored in the
+  /// @returns The rate of change of `this` joint's translation as stored in the
   /// `context`.
   const T& get_translation_rate(const Context<T>& context) const {
     return get_mobilizer()->get_translation_rate(context);
   }
 
-  /// Sets the rate of change, in radians per second, of this `this` joint's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
-  /// `context`.
+  /// Sets the rate of change, in meters per second, of this `this` joint's
+  /// translation distance to `translation_dot`. The new rate of change
+  /// `translation_dot` gets stored in `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @param[in] theta_dot
-  ///   The desired rate of change of `this` joints's angle in radians per
+  /// @param[in] translation_dot
+  ///   The desired rate of change of `this` joints's translation in meters per
   ///   second.
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation_rate(
-      Context<T>* context, const T& translation) const {
-    get_mobilizer()->set_translation_rate(context, translation);
+      Context<T>* context, const T& translation_dot) const {
+    get_mobilizer()->set_translation_rate(context, translation_dot);
     return *this;
   }
 
   /// @}
 
-  /// Adds into `forces` a given `torque` for `this` joint that is to be applied
-  /// about the joint's axis. The torque is defined to be positive according to
-  /// the right-hand-rule with the thumb aligned in the direction of `this`
-  /// joint's axis. That is, a positive torque causes a positive rotational
-  /// acceleration according to the right-hand-rule around the joint's axis.
-  ///
-  /// @note A torque is the moment of a set of forces whose resultant is zero.
+  /// Adds into `multibody_forces` a given `force`, in Newtons, for `this` joint
+  /// that is to be applied along the joint's axis. The force is defined to be
+  /// positive in the direction along this joint's axis.
+  /// That is, a positive force causes a positive translational acceleration
+  /// along the joint's axis.
   void AddInForce(
       const systems::Context<T>& context,
       const T& force,
-      MultibodyForces<T>* forces) const {
-    DRAKE_DEMAND(forces != nullptr);
-    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    this->AddInOneForce(context, 0, force, forces);
+      MultibodyForces<T>* multibody_forces) const {
+    DRAKE_DEMAND(multibody_forces != nullptr);
+    DRAKE_DEMAND(
+        multibody_forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    this->AddInOneForce(context, 0, force, multibody_forces);
   }
 
  protected:
@@ -149,14 +147,10 @@ class PrismaticJoint final : public Joint<T> {
   /// Therefore arguments were already checked to be valid.
   /// For a %PrismaticJoint, we must always have `joint_dof = 0` since there is
   /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
-  /// torque applied about the joint's axis, on the body declared as child
-  /// (according to the revolute joint's constructor) at the origin of the child
-  /// frame (which is coincident with the origin of the parent frame at all
-  /// times). The torque is defined to be positive according to
-  /// the right-hand-rule with the thumb aligned in the direction of `this`
-  /// joint's axis. That is, a positive torque causes a positive rotational
-  /// acceleration (of the child body frame) according to the right-hand-rule
-  /// around the joint's axis.
+  /// linear force applied along the joint's axis, on the body declared as child
+  /// (according to the prismatic joint's constructor) at the origin of the
+  /// child frame (which is coincident with the origin of the parent frame at
+  /// all times).
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
