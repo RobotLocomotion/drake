@@ -241,6 +241,8 @@ class TemplateClass(TemplateBase):
     def _on_add(self, param, cls):
         # Update class name for easier debugging.
         if self._override_meta:
+            cls._original_name = cls.__name__
+            cls._original_qualname = getattr(cls, "__qualname__", cls.__name__)
             cls.__name__ = self._instantiation_name(param)
             # Define `__qualname__` in Python2 because that's what `pybind11`
             # uses when showing function signatures when an overload cannot be

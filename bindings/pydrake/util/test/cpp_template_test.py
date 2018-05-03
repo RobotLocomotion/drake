@@ -114,6 +114,11 @@ class TestCppTemplate(unittest.TestCase):
             class Impl(object):
                 def __init__(self):
                     self.T = T
+                    self.mangled_result = self.__mangled_method()
+
+                def __mangled_method(self):
+                    # Ensure that that mangled methods are usable.
+                    return (T, 10)
 
             return Impl
 
@@ -134,6 +139,17 @@ class TestCppTemplate(unittest.TestCase):
         result = MyTemplate.is_subclass_of_instantiation(Subclass)
         self.assertTrue(result)
         self.assertEqual(result, MyTemplate[float])
+
+        # Test mangling behavior.
+        # TODO(eric.couisneau): If we use the name `Impl` for instantiations,
+        # then mangling among inherited templated classes will not work as
+        # intended. Consider an alternative, if it's ever necessary.
+        self.assertEqual(MyInt().mangled_result, (int, 10))
+        self.assertEqual(MyInt._original_name, "Impl")
+        self.assertTrue(hasattr(MyInt, "_Impl__mangled_method"))
+        self.assertEqual(MyFloat._original_name, "Impl")
+        self.assertEqual(MyFloat().mangled_result, (float, 10))
+        self.assertTrue(hasattr(MyFloat, "_Impl__mangled_method"))
 
     def test_function(self):
         template = m.TemplateFunction("func")
