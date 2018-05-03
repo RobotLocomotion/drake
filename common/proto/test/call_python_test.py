@@ -48,7 +48,10 @@ def wait_for_done_count(num_expected, attempt_max=1000):
     values_read = set()
     while done_count < num_expected:
         with open(done_file) as f:
-            done_count = int(f.read().strip())
+            try:
+                done_count = int(f.read().strip())
+            except ValueError:
+                pass
         if done_count >= 0:
             values_read.add(done_count)
         time.sleep(0.005)
