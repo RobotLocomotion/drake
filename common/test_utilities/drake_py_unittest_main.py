@@ -81,7 +81,7 @@ if __name__ == '__main__':
     # Custom flags.
     parser = argparse.ArgumentParser(description="Drake-specific arguments")
     parser.add_argument(
-        "--trace", type=str, choices=["none", "user", "sys"], default="none",
+        "--trace", type=str, choices=["none", "user", "sys"], default="user",
         help="Enable source tracing. `none` implies no tracing, `user` " +
              "implies tracing user code, and `sys` implies tracing all " +
              "code. Default is `none`.")
