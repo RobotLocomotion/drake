@@ -78,6 +78,7 @@ drake_pybind_library(
     name = "automotive_py",
     cc_deps = [
         "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "automotive",
     cc_srcs = ["automotive_py.cc"],
