@@ -12,7 +12,7 @@ namespace drake {
 namespace solvers {
 
 /**
- * We will relax the non-convex SO(3) constraint on rotation matrix R to
+ * We relax the non-convex SO(3) constraint on rotation matrix R to
  * mixed-integer linear constraints. The formulation of these constraints are
  * described in
  * Global Inverse Kinematics via Mixed-integer Convex Optimization
@@ -30,6 +30,12 @@ namespace solvers {
  * feasible sets to each relaxation are different), and different computation
  * speed. The user can switch between the approaches to find the best fit for
  * the problem.
+ *
+ * @note If you have several rotation matrices, all need to be relaxed through
+ * mixed-integer constraint, then you can create a single
+ * MixedIntegerRotationConstraintGenerator object, and add the mixed-integer
+ * constraint to each rotation matrix, by calling
+ * MixedIntegerRotationConstraintGenerator::AddToProgram function repeatedly.
  */
 class MixedIntegerRotationConstraintGenerator {
  public:
@@ -38,14 +44,14 @@ class MixedIntegerRotationConstraintGenerator {
 
   enum class Approach {
     kBoxSphereIntersection,  ///< Relax SO(3) constraint by considering the
-                             // intersection between boxes and the unit sphere
-                             // surface.
+                             ///< intersection between boxes and the unit sphere
+                             ///< surface.
     kBilinearMcCormick,      ///< Relax SO(3) constraint by considering the
-                             // McCormick envelope on the bilinear product.
+                             ///< McCormick envelope on the bilinear product.
     kBoth,                   ///< Relax SO(3) constraint by considering both the
-                             // intersection between boxes and the unit sphere
-                             // surface, and the McCormick envelope on the
-                             // bilinear product.
+                             ///< intersection between boxes and the unit sphere
+                             ///< surface, and the McCormick envelope on the
+                             ///< bilinear product.
   };
 
   struct ReturnType {
@@ -53,7 +59,7 @@ class MixedIntegerRotationConstraintGenerator {
      * B_[i][j] represents in which interval R(i, j) lies. If we use linear
      * binning, then B_[i][j] is of length 2 * num_intervals_per_half_axis_.
      * B_[i][j](k) = 1 => φ(k) ≤ R(i, j) ≤ φ(k + 1)
-     * B_[i][j](k) = 0 R(i, j) ≥ φ(k + 1) or R(i, j) ≤ φ(k)
+     * B_[i][j](k) = 0 => R(i, j) ≥ φ(k + 1) or R(i, j) ≤ φ(k)
      * If we use logarithmic binning, then B_[i][j] is of length
      * 1 + log₂(num_intervals_per_half_axis_). If B_[i][j] represents integer
      * k in reflected Gray code, then R(i, j) is in the interval [φ(k), φ(k+1)].
@@ -65,24 +71,27 @@ class MixedIntegerRotationConstraintGenerator {
      * ordered set of type 2 (SOS2) constraint. Namely at most two entries in
      * λ_[i][j] can be non-negative, and these two entries have to
      * be consecutive. Mathematically
+     * ```
      * ∑ₖ λ_[i][j](k) = 1
      * λ_[i][j](k) ≥ 0 ∀ k
      * ∃ m s.t λ_[i][j](n) = 0 if n ≠ m and n ≠ m+1
+     * ```
      */
     std::array<std::array<VectorXDecisionVariable, 3>, 3> lambda_;
   };
 
   /**
    * Constructor
-   * @param approach Refer to Approach for the details.
+   * @param approach Refer to MixedIntegerRotationConstraintGenerator::Approach
+   * for the details.
    * @param num_intervals_per_half_axis We will cut the range [-1, 1] evenly
-   * to 2 * num_intervals_per_half_axis small intervals. The number of binary
+   * to 2 * `num_intervals_per_half_axis` small intervals. The number of binary
    * variables will depend on the number of intervals.
    * @param interval_binning The binning scheme we use to add SOS2 constraint
    * with binary variables. If interval_binning = kLinear, then we will add
-   * 9 * 2 * num_intervals_per_half_axis binary variables; 
+   * 9 * 2 * `num_intervals_per_half_axis binary` variables;
    * if interval_binning = kLogarithmic, then we will add
-   * 9 * (1 + log₂(num_intervals_per_half_axis_)) binary variables. Refer to
+   * 9 * (1 + log₂(num_intervals_per_half_axis)) binary variables. Refer to
    * AddLogarithmicSos2Constraint and AddSos2Constraint for more details.
    */
   MixedIntegerRotationConstraintGenerator(Approach approach,
@@ -100,14 +109,16 @@ class MixedIntegerRotationConstraintGenerator {
       MathematicalProgram* prog,
       const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const;
 
-  /** Getter for phi */
+  /** Getter for φ. */
   const Eigen::VectorXd& phi() const { return phi_; }
 
   /** Getter for φ₊, the non-negative part of φ. */
   const Eigen::VectorXd phi_nonnegative() const { return phi_nonnegative_; }
 
+  /** Getter for approach. */
   Approach approach() const { return approach_; }
 
+  /** Getter for num_intervals_per_half_axis. */
   int num_intervals_per_half_axis() const {
     return num_intervals_per_half_axis_;
   }
