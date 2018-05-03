@@ -5,13 +5,37 @@ Drake, including specialized constraint types- namely point-based contact
 constraints- which allow Drake's constraint solver to readily incorporate the
 Coulomb friction model.
 
-Drake allows constraints to be imposed at both the acceleration-level- for when
-constraint forces are non-impulsive- and at the velocity-level, for admitting
-impulsive forces. The latter formulation is useful for both modeling impacts
-and implementing "time stepping" discretizations of the continuous time
-dynamics. We caution the reader that these distinctions are orthogonal to
-whether a constraint is holonomic or nonholonomic. This issue will be discussed
-further in @ref constraint_types.
+Drake's constraint system helps solve computational dynamics problems with
+algebraic constraints, like differential algebraic equations:<pre>
+\dot{x} = f(x, t, \lambda)
+0 = g(x, t, lambda)
+</pre>
+where `g()` corresponds to one or more constraint equations and \lambda
+is typically interpretable as "forces" that enforce the constraints. Drake's
+constraint system permits solving initial value problems subject to such
+constraints and does so in a manner very different from "smoothing methods"
+(also known as "penalty methods"). Smoothing methods have traditionally required
+significant computation to maintain `g = 0` to high accuracy (yielding what is
+known in ODE and DAE literature as a "computationally stiff system").   
+
+We also provide the core components of an efficient first-order integration
+scheme for a system with non-rigid (i.e., compliant)- yet still stiff-
+unilateral constraints. Such a system arises in many contact problems, where
+the correct modeling parameters would yield a computationally stiff system.
+The integration scheme is low-accuracy but very stable for mechanical systems,
+even when the algebraic variables (i.e., the constraint forces) are computed to
+low accuracy. 
+
+allows algebraic constraints to be imposed at both the acceleration-level
+(for systems exhibiting smooth dynamics over finite intervals) and at the
+velocity-level, both for solving impact problems and for solving computational
+dynamics problems using time discretization schemes.  
+
+- specialization for mechanical systems
+
+We caution the reader that these
+distinctions are orthogonal to whether a constraint is holonomic or
+nonholonomic. This issue will be discussed further in @ref constraint_types.
 
  This discussion will encompass:
  - @ref constraint_types
@@ -76,15 +100,23 @@ gₚ(t;q)
 at the velocity level:<pre>
 gᵥ(t,q;v)
 </pre>
-or at the force/acceleration level:<pre>
-gₐ(t,q,v;v̇,λ)
+or at the acceleration level:<pre>
+gₐ(t,q,v;v̇)
 </pre>
-where λ is a vector of *constraint-space forces*. Note the semicolon in these
-definitions separates general constraint dependencies (t,q,v in gₐ) from
-variables that must be determined using the constraints (v̇,λ in gₐ). *The three
-constraint equations listed above can then be categorized as having
-position-level unknowns, velocity-level unknowns, or force/acceleration-level
-unknowns*, respectively.
+Additionally, constraints posed at any level can impose constraints on the
+constraint forces, λ. For example, the position-level constraint:<pre>
+gₚ(t,q;λ)
+</pre>
+could be used to enforce q > 0, λ > 0, and qλ = 0, a triplet of conditions
+useful for, e.g., ensuring that a joint range-of-motion limit is respected
+(q >= 0), guaranteeing that no constraint force is applied if the constraint
+is not active (q > 0 implies λ = 0), and guaranteeing that the constraint force
+can only push the connected links apart at the joint rather than act to "glue"
+them together (λ > 0).
+
+Note the semicolon in all of the above definitions of g() separates general
+constraint dependencies (e.g., t,q,v in gₐ) from variables that must be
+determined using the constraints (e.g., v̇ in gₐ).
 
 <h4>Constraints with velocity-level unknowns</h4>
 This documentation distinguishes
@@ -104,9 +136,9 @@ allowing the constraint to be used in a velocity-level constraint formulation
 from zero over time*, due to truncation and discretization errors, unless
 corrected. See @ref constraint_stabilization for further information.
 
-<h4>Constraints with force/acceleration-level unknowns</h4>
-A bilateral constraint equation with force/acceleration-level unknowns will take
-the form:
+<h4>Constraints with force and acceleration-level unknowns</h4>
+A bilateral constraint equation with force and acceleration-level unknowns will
+take the form:
 <pre>
 g̈ₚ(t,q,v;v̇) = 0
 </pre>
@@ -115,17 +147,13 @@ reduction), or<pre>
 ġᵥ(t,q,v;v̇) = 0
 </pre>
 if gᵥ(.) is nonholonomic and has been differentiated once with respect to time
-(again, for DAE/DCP index reduction). Constraints with acceleration-level
-unknowns can be also incorporate terms dependent on constraint forces,
-like:<pre>
+(again, for DAE/DCP index reduction). As noted elsewhere, constraints can also
+incorporate terms dependent on constraint forces, like:<pre>
 g̈ₚ + λ = 0
 </pre>
 Making the constraint type above more general by permitting unknowns over λ
 allows constraints to readily express, e.g., sliding Coulomb friction
-constraints (of the form fₜ = μ⋅fₙ). It also admits more sophisticated
-constraints that are functions of both v̇ and λ (simultaneously), like the
-illustrative example above, which will be examined further in
-@ref constraint_regularization.
+constraints (of the form fₜ = μ⋅fₙ).
 
 <h4>Complementarity conditions</h4>
 Each unilateral constraint comprises a triplet of equations. For example:<pre>
@@ -168,10 +196,10 @@ for non-negative scalar α and real β (α and β can also represent diagonal
 matrices for greater generality). α and β, which both have units of 1/sec
 (i.e., the reciprocal of unit time) are described more fully in
 [Baumgarte 1972]. The use of α and β above make correcting position-level
-(gₚ) and velocity-level (gₚ̇) holonomic constraint errors analogous to the dynamic
-problem of stabilizing a damped harmonic oscillator. Given that analogy, 2α is
-the viscous damping coefficient and β² the stiffness coefficient. These two
-coefficients make predicting the motion of the oscillator challenging to
+(gₚ) and velocity-level (gₚ̇) holonomic constraint errors analogous to the
+dynamic problem of stabilizing a damped harmonic oscillator. Given that analogy,
+2α is the viscous damping coefficient and β² the stiffness coefficient. These
+two coefficients make predicting the motion of the oscillator challenging to
 interpret, so one typically converts them to undamped angular frequency (ω₀) 
 and damping ratio (ζ) via the following equations:<pre>
 ω₀² = β²
@@ -189,9 +217,12 @@ the equations above.
 /** @defgroup constraint_regularization Constraint regularization and softening
 @ingroup constraint_overview
 
+TODO: This section should focus on time discretized systems with constraints.
+
 It can be both numerically advantageous and a desirable modeling feature to
 regularize constraints. For example, consider modifying a unilateral
-complementarity constraint from:<pre>
+complementarity constraint imposed on velocity/impulsive force variables
+from:<pre>
 0 ≤ gᵥ(t,q;v,λ)  ⊥  λ ≥ 0
 </pre>
 to:<pre>
@@ -257,7 +288,7 @@ constraint function with respect to the quasi-coordinates (see
 derivative of the constraints, i.e., ġₚ) and M is the generalized inertia
 matrix. Considering gₚ(.) to be a scalar function for simplicity of presentation
 should make it clear that GM⁻¹Gᵀ would be a scalar as well. Thus m̂ = 1/m for
-this forced mass-spring-damper.
+this particular forced mass-spring-damper system.
 
 While Catto studied a mass-spring system, these results apply to general
 multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
@@ -340,6 +371,7 @@ with a non-adhesive contact model.
 @image html multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of non-interpenetration constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
 
 <h4>Constraint regularization and softening</h4>
+TODO: This section needs to be patched up
 As discussed in @ref constraint_regularization, the non-interpenetration 
 constraint can be regularized or softened by adding a term to, e.g., the
 second time derivative of the equation:
@@ -356,17 +388,31 @@ As discussed in @ref constraint_stabilization, the drift induced by solving an
 Index-0 DAE or DCP (that has been reduced from an Index-3 DAE or DCP) can be
 mitigated through one of several strategies, one of which is Baumgarte
 Stabilization. The typical application of Baumgarte Stabilization will use the
-second time derivative of the complementarity condition (the regularization
-term from above is incorporated as well for purposes of illustration):<pre>
-0 ≤ g̈ₚ + ελ  ⊥  λ ≥ 0
+second time derivative of the complementarity condition:<pre>
+0 ≤ g̈ₚ  ⊥  λ ≥ 0
 </pre>
 Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
-0 ≤ g̈ₚ + 2αġₚ + β²gₚ + ελ  ⊥  λ ≥ 0
+0 ≤ g̈ₚ + 2αġₚ + β²gₚ  ⊥  λ ≥ 0
 </pre>
 
 <h4>Effects of constraint regularization/softening and stabilization on
 constraint problem data</h4>
+
+TODO: This needs to be corrected.
+* gammaN will allow acceleration-level constraints to be regularized, which
+  just does not sound very useful. We should remove gammaN from the
+  acceleration level constraints.
+ 
+* we want one stiffness and one damping coefficient for each constraint.
+
+* that could be used to get Baumgarte stabilization: could just set stiffness
+  and damping and Baumgarte is set automatically!
+- except that stiffness and damping only acts one way (the constraint is
+  otherwise rigid). So this doesn't yield more accuracy. But people will
+  want to do it anyway: so, yes, let's make it apply to B.S. also. 
+
+* This also means that we'll need constraint evaluations at q(t), v(t). 
 
   - Constraint regularization/softening is effected through `gammaN`
   - Constraint stabilization is effected through `kN`
@@ -518,6 +564,8 @@ from these modifications to the constraints, still applies.
 <h4>Effects of constraint regularization/softening and stabilization on
 constraint problem data</h4>
 
+TODO: This needs to be corrected.
+
 It is expected both that users will not wish to soften the frictional
 constraints and that constraint drift will remain sufficiently small that
 constraint stabilization will not be required. Nevertheless, Drake provides
@@ -598,6 +646,7 @@ formulation and yields the complementarity condition:<pre>
 For this simple range of motion constraint example, it will generally be
 the case that q̇ᵢ = vᵢ.
 
+TODO: This needs to be corrected.
 <h4>Constraint regularization and softening</h4>
 As discussed in @ref constraint_regularization, generic unilateral
 constraints can be regularized or softened by adding a term to, e.g., the
@@ -625,6 +674,7 @@ Baumgarte Stabilization would be layered on top of this equation, resulting in:
 0 ≤ g̈ₚ + 2αġₚ + β²gₚ + ελᵢ  ⊥  λᵢ ≥ 0
 </pre>
 
+TODO: This needs to be corrected.
 <h4>Effects of constraint regularization/softening and stabilization on
 constraint problem data</h4>
 
