@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 namespace drake {
@@ -28,7 +29,8 @@ namespace parsing {
 ///   added.
 void AddModelFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant);
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 }  // namespace parsing
 }  // namespace multibody
 }  // namespace drake
