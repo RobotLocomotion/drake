@@ -662,7 +662,7 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   //   a) the output set should match the input set exactly and,
   //   b) the Jacobian should be exactly zero.
   EXPECT_EQ(p_WP_out, p_WP_set);
-  EXPECT_EQ(Jv_WP, Matrix3X<double>::Zero(3 * npoints, nv));
+  EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(3 * npoints, nv));
 }
 
 // Verify that even when the input set of points and/or the Jacobian might
@@ -689,7 +689,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
 
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
-  EXPECT_EQ(Jv_WP, Matrix3X<double>::Zero(6, nv));
+  EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
 }
 
 }  // namespace
