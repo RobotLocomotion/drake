@@ -12,6 +12,9 @@
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
+namespace multibody {
+namespace multibody_plant {
+namespace {
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
@@ -31,16 +34,12 @@ using std::unique_ptr;
 using systems::Context;
 using systems::LeafSystem;
 
-namespace multibody {
-namespace multibody_plant {
-namespace {
-
 // Helper to create an sdf::Geometry object from its SDF specification given
 // as a string. Example of what the string should contain:
-//   "<cylinder>"
-//   "  <radius>0.5</radius>"
-//   "  <length>1.2</length>"
-//   "</cylinder>"
+//   <cylinder>
+//     <radius>0.5</radius>
+//     <length>1.2</length>
+//   </cylinder>
 // and similarly for other SDF geometries.
 unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
     const std::string geometry_spec) {
@@ -70,15 +69,15 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
 
 // Helper to create an sdf::Visual object from its SDF specification given
 // as a string. Example of what the string should contain:
-//       "<visual name = 'some_link_visual'>"
-//       "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
-//       "  <geometry>"
-//       "    <cylinder>"
-//       "      <radius>0.5</radius>"
-//       "      <length>1.2</length>"
-//       "    </cylinder>"
-//       "  </geometry>"
-//       "</visual>");
+//       <visual name = 'some_link_visual'>
+//         <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>
+//         <geometry>
+//           <cylinder>
+//             <radius>0.5</radius>
+//             <length>1.2</length>
+//           </cylinder>
+//         </geometry>
+//       </visual>
 unique_ptr<sdf::Visual> MakeSdfVisualFromString(
     const std::string visual_spec) {
   const std::string sdf_str =

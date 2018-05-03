@@ -15,13 +15,14 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
-using geometry::HalfSpace;
 using std::make_unique;
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::CYLINDER: {
+      // TODO(amcastro-tri): Verify with @nkoenig that sdf::Cylinder's axis
+      // point in the positive z direction as Drake's cylinders do.
       const sdf::Cylinder& shape = *sdf_geometry.CylinderShape();
       return make_unique<geometry::Cylinder>(shape.Radius(), shape.Length());
     }
@@ -71,7 +72,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     // The normal expressed in the frame G defines the pose of the half space
     // in its canonical frame C in which the normal aligns with the z-axis
     // direction.
-    const Isometry3d X_GC = HalfSpace::MakePose(normal_G, Vector3d::Zero());
+    const Isometry3d X_GC =
+        geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
 
     // Correct X_LC to include the pose X_GC
     X_LC = X_LG * X_GC;
