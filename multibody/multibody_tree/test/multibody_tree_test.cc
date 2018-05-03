@@ -636,7 +636,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
 // return:
 //  a) p_WP_set = p_BP_set, since in this case B = W and,
 //  b) J_WP is exactly zero, since the world does not move.
-TEST_F(KukaIiwaModelTests, WorldJacobian) {
+TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   // Simply a non-zero set of points in the world body. The actual value does
   // not matter for this test. What matters is that we **always** get a zero
   // Jacobian for the world body.
@@ -649,19 +649,47 @@ TEST_F(KukaIiwaModelTests, WorldJacobian) {
   // CalcPointsGeometricJacobianExpressedInWorld() we can verify the were
   // properly set.
   Matrix3X<double> p_WP_out = Matrix3X<double>::Constant(3, npoints, M_PI);
-  MatrixX<double> J_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
+  MatrixX<double> Jv_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
 
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
   model_->CalcPointsGeometricJacobianExpressedInWorld(
-      *context_, model_->world_body().body_frame(), p_WP_set, &p_WP_out, &J_WP);
+      *context_, model_->world_body().body_frame(), p_WP_set,
+      &p_WP_out, &Jv_WP);
 
   // Since in this case we are querying for the world frame:
   //   a) the output set should match the input set exactly and,
   //   b) the Jacobian should be exactly zero.
   EXPECT_EQ(p_WP_out, p_WP_set);
-  EXPECT_EQ(J_WP, Matrix3X<double>::Zero(3 * npoints, nv));
+  EXPECT_EQ(Jv_WP, Matrix3X<double>::Zero(3 * npoints, nv));
+}
+
+// Verify that even when the input set of points and/or the Jacobian might
+// contain garbage on input, a query for the world body Jacobian will always
+// return a zero Jacobian since the world does not move.
+TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
+  // Simply a non-zero point in the world body. The actual value does
+  // not matter for this test. What matters is that we **always** get a zero
+  // Jacobian for the world body.
+  const Vector3<double> p_WP(1.0, 1.0, 1.0);
+
+  const int nv = model_->num_velocities();
+
+  // We set the output Jacobian to garbage so that on output from
+  // CalcFrameGeometricJacobianExpressedInWorld() we can verify it was
+  // properly set to zero.
+  MatrixX<double> Jv_WP = MatrixX<double>::Constant(6, nv, M_E);
+
+  // The state stored in the context should not affect the result of this test.
+  // Therefore we do not set it.
+
+  model_->CalcFrameGeometricJacobianExpressedInWorld(
+      *context_, model_->world_body().body_frame(), p_WP, &Jv_WP);
+
+  // Since in this case we are querying for the world frame the Jacobian should
+  // be exactly zero.
+  EXPECT_EQ(Jv_WP, Matrix3X<double>::Zero(6, nv));
 }
 
 }  // namespace
