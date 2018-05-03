@@ -153,7 +153,7 @@ TEST_F(PurePursuitTest, RotationalSymmetry) {
   double result_pi_by_two = PurePursuit<double>::Evaluate(
       pp_params_, car_params_, {lane, true /* with_s */}, ego_pose);
 
-  EXPECT_EQ(result_zero, result_pi_by_two);
+  EXPECT_NEAR(result_zero, result_pi_by_two, 1e-6);
 }
 
 TEST_F(PurePursuitTest, EvaluateAutoDiff) {
