@@ -35,8 +35,7 @@ class AutodiffTest : public ::testing::Test {
     vec_[0].derivatives().resize(2);
     vec_[1].derivatives().resize(2);
 
-    // The following shorthand notation will be used: v0 = vec_[0] and v1 =
-    // vec_[1].
+    // Herein, the shorthand notation is used: v0 = vec_[0] and v1 = vec_[1].
     // Set partial of v0 with respect to v0 (itself) to 1 (∂v0/∂v0 = 1).
     // Set partial of v0 with respect to v1 to 0(∂v0/∂v1 = 0).
     vec_[0].derivatives()(0) = 1.0;
