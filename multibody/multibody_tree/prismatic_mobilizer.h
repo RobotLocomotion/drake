@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 
 #include "drake/common/drake_assert.h"
@@ -96,8 +97,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   const T& get_translation_rate(const systems::Context<T> &context) const;
 
   /// Sets the rate of change, in meters per second, of this `this` mobilizer's
-  /// translation to `translation_dot`. The new rate of change `theta_dot` gets stored in
-  /// `context`.
+  /// translation to `translation_dot`. The new rate of change `theta_dot` gets
+  /// stored in `context`.
   /// See class documentation for the translation sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
