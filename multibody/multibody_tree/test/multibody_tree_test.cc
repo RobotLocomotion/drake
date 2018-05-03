@@ -633,20 +633,20 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
 
 // Verify that even when the input set of points and/or the Jacobian might
 // contain garbage on input, a query for the world body Jacobian will always
-// return:
+// yield the following results:
 //  a) p_WP_set = p_BP_set, since in this case B = W and,
 //  b) J_WP is exactly zero, since the world does not move.
 TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
-  // Simply a non-zero set of points in the world body. The actual value does
-  // not matter for this test. What matters is that we **always** get a zero
-  // Jacobian for the world body.
+  // We choose an arbitrary set of non-zero points in the world body. The actual
+  // value does not matter for this test. What matters is that we **always** get
+  // a zero Jacobian for the world body.
   const Matrix3X<double> p_WP_set = Matrix3X<double>::Identity(3, 10);
 
   const int nv = model_->num_velocities();
   const int npoints = p_WP_set.cols();
 
-  // We set the output arrays to garbage so that on output from
-  // CalcPointsGeometricJacobianExpressedInWorld() we can verify the were
+  // We set the output arrays to garbage so that upon returning from
+  // CalcPointsGeometricJacobianExpressedInWorld() we can verify they were
   // properly set.
   Matrix3X<double> p_WP_out = Matrix3X<double>::Constant(3, npoints, M_PI);
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
@@ -669,14 +669,14 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
 // contain garbage on input, a query for the world body Jacobian will always
 // return a zero Jacobian since the world does not move.
 TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
-  // Simply a non-zero point in the world body. The actual value does
-  // not matter for this test. What matters is that we **always** get a zero
-  // Jacobian for the world body.
+  // We choose an arbitrary non-zero point in the world body. The actual value
+  // does not matter for this test. What matters is that we **always** get a
+  // zero Jacobian for the world body.
   const Vector3<double> p_WP(1.0, 1.0, 1.0);
 
   const int nv = model_->num_velocities();
 
-  // We set the output Jacobian to garbage so that on output from
+  // We set the output Jacobian to garbage so that upon returning from
   // CalcFrameGeometricJacobianExpressedInWorld() we can verify it was
   // properly set to zero.
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(6, nv, M_E);
@@ -687,7 +687,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   model_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_, model_->world_body().body_frame(), p_WP, &Jv_WP);
 
-  // Since in this case we are querying for the world frame the Jacobian should
+  // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
   EXPECT_EQ(Jv_WP, Matrix3X<double>::Zero(6, nv));
 }

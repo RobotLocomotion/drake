@@ -736,7 +736,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
   const Body<T>& body_B = frame_B.body();
 
   // Do nothing for the world body and return a zero Jacobian.
-  // That is Jv_WQi * v = 0, always, for the world body.
+  // That is, Jv_WQi * v = 0, always, for the world body.
   if (body_B.index() == world_index()) {
     // Since B = W, we must set p_WQi_set = p_BQi_set.
     *p_WQi_set = p_BQi_set;
@@ -813,7 +813,7 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
   const Body<T>& body_B = frame_B.body();
 
   // Do nothing for the world body and return a zero Jacobian.
-  // That is Jv_WQi * v = 0, always, for the world body.
+  // That is, Jv_WQi * v = 0, always, for the world body.
   if (body_B.index() == world_index()) return;
 
   // Compute kinematic path from body B to the world:
