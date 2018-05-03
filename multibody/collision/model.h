@@ -40,7 +40,7 @@ class Model {
    @return A pointer to the added element.
 
    @throws A runtime_error if there was a problem (e.g., duplicate element id,
-   error configuring collision  model, etc.) **/
+   error configuring collision model, etc.) **/
   Element* AddElement(std::unique_ptr<Element> element);
 
   /** Removes a collision element from this model.
@@ -71,6 +71,14 @@ class Model {
   virtual Element* FindMutableElement(ElementId id);
 
   void GetTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd* terrain_points);
+
+  /** Informs the model that the collision filter criteria for the given `id`
+   has changed (or *may* have changed -- it can be called conservatively). The
+   model has the opportunity to perform whatever is necessary to respond.
+
+   * @param id  The id of the element whose filter criteria may have changed.
+   */
+  virtual void NotifyFilterCriteriaChanged(ElementId) {}
 
   /** Updates the collision model. This method is typically called after changes
    are made to its collision elements. **/

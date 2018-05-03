@@ -144,9 +144,9 @@ TEST_F(RigidBodyTreeCollisionCliqueTest, CantCollideClique) {
   // Confirms that collision elements on body 1 are *still* only self-collision
   // cliques, determined by a single clique.
   ExpectCliqueCount(body1_, 1);
-  // Confirms that collision element two has picked up a clique do to its body's
-  // relationship with body three.
-  ExpectCliqueCount(body2_, 1);
+  // Even though body 2 is adjacent to body 3, it does *not* get any cliques
+  // because body 3 has no geometry (i.e., a clique isn't necessary).
+  ExpectCliqueCount(body2_, 0);
 }
 
 }  // namespace
