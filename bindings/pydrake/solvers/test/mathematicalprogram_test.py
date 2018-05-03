@@ -343,7 +343,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         # Add LorentzConeConstraints
         prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
-        z = prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
+        prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
 
         # Test result
         result = prog.Solve()
