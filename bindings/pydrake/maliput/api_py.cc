@@ -24,7 +24,7 @@ PYBIND11_MODULE(api, m) {
       .def(py::init<std::string>())
       .def("string", &RoadGeometryId::string, py_reference_internal);
 
-  py::class_<GeoPosition> (m, "GeoPosition")
+  py::class_<GeoPosition>(m, "GeoPosition")
       .def(py::init<double, double, double>(), py::arg("x"), py::arg("y"),
            py::arg("z"))
       .def("xyz", &GeoPosition::xyz, py_reference_internal);
@@ -33,6 +33,15 @@ PYBIND11_MODULE(api, m) {
       .def(py::init<double, double, double>(), py::arg("s"), py::arg("r"),
            py::arg("h"))
       .def("srh", &LanePosition::srh, py_reference_internal);
+
+  py::class_<RoadPosition>(m, "RoadPosition")
+      .def(py::init<>())
+      .def(py::init<const Lane*, const LanePosition&>(), py::arg("lane"),
+           py::arg("pos"),
+           // Keep alive, reference: `self` keeps `Lane*` alive.
+           py::keep_alive<1, 2>())
+      .def_readwrite("lane", &RoadPosition::lane, py_reference_internal)
+      .def_readwrite("pos", &RoadPosition::pos);
 
   py::class_<RoadGeometry>(m, "RoadGeometry")
       .def("junction", &RoadGeometry::junction, py_reference_internal);
@@ -43,9 +52,14 @@ PYBIND11_MODULE(api, m) {
   py::class_<Segment>(m, "Segment")
       .def("lane", &Segment::lane, py_reference_internal);
 
+  py::class_<LaneId>(m, "LaneId")
+      .def(py::init<std::string>())
+      .def("string", &LaneId::string, py_reference_internal);
+
   py::class_<Lane>(m, "Lane")
       .def("ToLanePosition", &Lane::ToLanePosition)
-      .def("ToGeoPosition", &Lane::ToGeoPosition);
+      .def("ToGeoPosition", &Lane::ToGeoPosition)
+      .def("id", &Lane::id);
 }
 
 }  // namespace pydrake

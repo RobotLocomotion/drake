@@ -6,14 +6,31 @@ import numpy as np
 
 import pydrake.systems.framework as framework
 from pydrake.maliput.api import (
-    RoadGeometryId,
     LanePosition,
     GeoPosition,
     RoadGeometry,
+    RoadGeometryId,
+    RoadPosition,
     )
 from pydrake.maliput.dragway import (
     create_dragway,
     )
+
+
+# Instantiate and return a two-lane straight road.
+def make_test_dragway(kLaneWidth):
+    kNumLanes = 2
+    kLength = 100.
+    kShoulderWidth = 1.
+    kHeight = 5.
+    kTol = 1e-6
+
+    rg_id = RoadGeometryId("two_lane_road")
+    return create_dragway(
+        road_id=rg_id, num_lanes=kNumLanes, length=kLength,
+        lane_width=kLaneWidth, shoulder_width=kShoulderWidth,
+        maximum_height=kHeight, linear_tolerance=kTol,
+        angular_tolerance=kTol)
 
 
 # Tests the bindings for the API and backend implementations.
@@ -36,6 +53,19 @@ class TestMaliput(unittest.TestCase):
         geo_pos_alt = GeoPosition(x=1., y=2., z=3.)
         self.assertTrue(np.allclose(geo_pos_alt.xyz(), xyz))
 
+        RoadPosition()
+        rg = make_test_dragway(kLaneWidth=4.)
+        lane_0 = rg.junction(0).segment(0).lane(0)
+        lane_1 = rg.junction(0).segment(0).lane(1)
+        road_pos = RoadPosition(lane=lane_0, pos=lane_pos)
+        self.assertEqual(road_pos.lane.id().string(), lane_0.id().string())
+        self.assertTrue(np.allclose(road_pos.pos.srh(), lane_pos.srh()))
+        road_pos.lane = lane_1
+        self.assertEqual(road_pos.lane.id().string(), lane_1.id().string())
+        new_srh = [42., 43., 44.]
+        road_pos.pos = LanePosition(s=new_srh[0], r=new_srh[1], h=new_srh[2])
+        self.assertTrue(np.allclose(road_pos.pos.srh(), new_srh))
+
         # Check that the getters are read-only.
         with self.assertRaises(ValueError):
             lane_pos.srh()[0] = 0.
@@ -45,30 +75,14 @@ class TestMaliput(unittest.TestCase):
         # Test RoadGeometryId accessors.
         string = "foo"
         rg_id = RoadGeometryId(string)
-        self.assertTrue(rg_id.string() == string)
+        self.assertEqual(rg_id.string(), string)
 
     def test_dragway(self):
-        kNumLanes = 2
-        kLength = 100.
         kLaneWidth = 4.
-        kShoulderWidth = 1.
-        kHeight = 5.
-        kTol = 1e-6
-
-        # Instantiate a two-lane straight road.
-        rg_id = RoadGeometryId("two_lane_road")
-        rg = create_dragway(rg_id, kNumLanes, kLength, kLaneWidth,
-                            kShoulderWidth, kHeight, kTol, kTol)
+        rg = make_test_dragway(kLaneWidth=kLaneWidth)
         segment = rg.junction(0).segment(0)
         lane_0 = segment.lane(0)
         lane_1 = segment.lane(1)
-
-        # Alternate constructor.
-        create_dragway(
-            road_id=rg_id, num_lanes=kNumLanes, length=kLength,
-            lane_width=kLaneWidth, shoulder_width=kShoulderWidth,
-            maximum_height=kHeight, linear_tolerance=kTol,
-            angular_tolerance=kTol)
 
         # Test the Lane <-> Geo space coordinate conversion.
         lane_pos = LanePosition(0., 0., 0.)
