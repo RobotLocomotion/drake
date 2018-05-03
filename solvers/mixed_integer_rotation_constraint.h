@@ -32,7 +32,8 @@ namespace solvers {
  * new variable, in the McCormick envelope of the bilinear product w = x * y.
  * 2. By considering the intersection region between axis-aligned boxes, and the
  * surface of a unit sphere in 3D.
- * 3. By combining the two approaches above.
+ * 3. By combining the two approaches above. This will result in a tighter
+ * relaxation.
  * These three approaches give different relaxation of SO(3) constraint (the
  * feasible sets for each relaxation are different), and different computation
  * speed. The users can switch between the approaches to find the best fit for
