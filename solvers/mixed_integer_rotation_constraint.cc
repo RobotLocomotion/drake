@@ -131,11 +131,11 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       // TODO(hongkai.dai): I found the computation could be faster if we
       // comment out the following two constraints on lambda_bilinear, at least
       // for some cases. Should investigate why there is a speed difference.
-      //prog->AddLinearConstraint(
+      // prog->AddLinearConstraint(
       //    lambda_bilinear.template cast<symbolic::Expression>()
       //        .rowwise()
       //        .sum() == lambda[Ri_row][Ri_col]);
-      //prog->AddLinearConstraint(
+      // prog->AddLinearConstraint(
       //    lambda_bilinear.template cast<symbolic::Expression>()
       //        .colwise()
       //        .sum()

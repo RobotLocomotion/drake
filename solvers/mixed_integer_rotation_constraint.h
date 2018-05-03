@@ -159,8 +159,7 @@ class MixedIntegerRotationConstraintGenerator {
       box_sphere_intersection_halfspace_;
 };
 
-std::string to_string(
-    MixedIntegerRotationConstraintGenerator::Approach type);
+std::string to_string(MixedIntegerRotationConstraintGenerator::Approach type);
 
 std::ostream& operator<<(
     std::ostream& os,
