@@ -18,21 +18,28 @@ namespace solvers {
  * Global Inverse Kinematics via Mixed-integer Convex Optimization
  * by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR, 2017
  *
+ * The SO(3) constraint on a rotation matrix R = [r₁, r₂, r₃], rᵢ∈ℝ³ is
+ * ```
+ * rᵢᵀrᵢ = 1    (1)
+ * rᵢᵀrⱼ = 0    (2)
+ * r₁ x r₂ = r₃ (3)
+ * ```
  * To relax SO(3) constraint on rotation matrix R, we divide the range [-1, 1]
- * (the range of each entry in R) into smaller intervals, and then relax the
- * SO(3) constraint within each interval. We provide 3 approaches for relaxation
- * 1. By replacing the bilinear product with a new variable, in the McCormick
- * envelope of the bilinear product w = x * y.
- * 2. By consider the intersection region between axis-aligned boxes, and the
+ * (the range of each entry in R) into smaller intervals [φ(i), φ(i+1)], and
+ * then relax the SO(3) constraint within each interval. We provide 3 approaches
+ * for relaxation
+ * 1. By replacing each bilinear product in constraint (1), (2) and (3) with a
+ * new variable, in the McCormick envelope of the bilinear product w = x * y.
+ * 2. By considering the intersection region between axis-aligned boxes, and the
  * surface of a unit sphere in 3D.
  * 3. By combining the two approaches above.
  * These three approaches give different relaxation of SO(3) constraint (the
- * feasible sets to each relaxation are different), and different computation
- * speed. The user can switch between the approaches to find the best fit for
- * the problem.
+ * feasible sets for each relaxation are different), and different computation
+ * speed. The users can switch between the approaches to find the best fit for
+ * their problem.
  *
- * @note If you have several rotation matrices, all need to be relaxed through
- * mixed-integer constraint, then you can create a single
+ * @note If you have several rotation matrices that all need to be relaxed
+ * through mixed-integer constraint, then you can create a single
  * MixedIntegerRotationConstraintGenerator object, and add the mixed-integer
  * constraint to each rotation matrix, by calling
  * MixedIntegerRotationConstraintGenerator::AddToProgram function repeatedly.
@@ -56,6 +63,7 @@ class MixedIntegerRotationConstraintGenerator {
 
   struct ReturnType {
     /**
+     * B_ contains the new binary variables added to the program.
      * B_[i][j] represents in which interval R(i, j) lies. If we use linear
      * binning, then B_[i][j] is of length 2 * num_intervals_per_half_axis_.
      * B_[i][j](k) = 1 => φ(k) ≤ R(i, j) ≤ φ(k + 1)
@@ -66,10 +74,11 @@ class MixedIntegerRotationConstraintGenerator {
      */
     std::array<std::array<VectorXDecisionVariable, 3>, 3> B_;
     /**
+     * λ contains part of the new continuous variables added to the program.
      * λ_[i][j] is of length 2 * num_intervals_per_half_axis_ + 1, such that
      * R(i, j) = φᵀ * λ_[i][j]. Notice that λ_[i][j] satisfies the special
      * ordered set of type 2 (SOS2) constraint. Namely at most two entries in
-     * λ_[i][j] can be non-negative, and these two entries have to
+     * λ_[i][j] can be strictly positive, and these two entries have to
      * be consecutive. Mathematically
      * ```
      * ∑ₖ λ_[i][j](k) = 1
@@ -100,7 +109,7 @@ class MixedIntegerRotationConstraintGenerator {
 
   /**
    * Add the mixed-integer linear constraints to the optimization program, as
-   * an relaxation of SO(3) constraint on the rotation matrix `R`.
+   * a relaxation of SO(3) constraint on the rotation matrix `R`.
    * @param prog The optimization program to which the mixed-integer constraints
    * (and additional variables) are added.
    * @param R The rotation matrix on which the SO(3) constraint is imposed.

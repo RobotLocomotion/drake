@@ -131,15 +131,15 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       // TODO(hongkai.dai): I found the computation could be faster if we
       // comment out the following two constraints on lambda_bilinear, at least
       // for some cases. Should investigate why there is a speed difference.
-      prog->AddLinearConstraint(
-          lambda_bilinear.template cast<symbolic::Expression>()
-              .rowwise()
-              .sum() == lambda[Ri_row][Ri_col]);
-      prog->AddLinearConstraint(
-          lambda_bilinear.template cast<symbolic::Expression>()
-              .colwise()
-              .sum()
-              .transpose() == lambda[Rj_row][Rj_col]);
+      //prog->AddLinearConstraint(
+      //    lambda_bilinear.template cast<symbolic::Expression>()
+      //        .rowwise()
+      //        .sum() == lambda[Ri_row][Ri_col]);
+      //prog->AddLinearConstraint(
+      //    lambda_bilinear.template cast<symbolic::Expression>()
+      //        .colwise()
+      //        .sum()
+      //        .transpose() == lambda[Rj_row][Rj_col]);
       W(j, i) = W(i, j);
       W_expr(j, i) = W_expr(i, j);
     }
@@ -895,10 +895,9 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
       ret.lambda_[i][j] = prog->NewContinuousVariables(
           2 * num_intervals_per_half_axis_ + 1, lambda_name);
       // R(i, j) = φᵀ * λ[i][j]
-      prog->AddLinearConstraint(
+      prog->AddLinearEqualityConstraint(
           R(i, j) -
-              phi_.dot(
-                  ret.lambda_[i][j].template cast<symbolic::Expression>()) ==
+              phi_.dot(ret.lambda_[i][j].template cast<symbolic::Expression>()),
           0);
       switch (interval_binning_) {
         case IntervalBinning::kLogarithmic: {
