@@ -1,10 +1,6 @@
 #include "drake/examples/particle1d/MG/particle1dMG.h"
 
-#include <cmath>
-
 #include <gtest/gtest.h>
-
-#include "drake/common/autodiff.h"
 
 namespace drake {
 namespace examples {
@@ -12,27 +8,28 @@ namespace particle1d {
 namespace {
 
 // Helper function to test the expected value of the class parameter.
-void VerifyValueOnly(double test_parameter, double value) {
-  EXPECT_EQ(test_parameter, value);
+void VerifyValueOnly(double test_parameter, double value, double tolerance) {
+  EXPECT_NEAR(test_parameter, value, tolerance);
 }
 
 // Helper function to test the AutoDiff value and partial derivatives.
 void VerifyAutoDiffValueAndPartialDerivatives(
     const AutoDiffXd& y, double y_value,
     double y_partial_with_respect_to_variableA,
-    double y_partial_with_respect_to_variableB) {
+    double y_partial_with_respect_to_variableB,
+    double y_partial_with_respect_to_variableC, double tolerance) {
 
   // First test the value of the AutoDiff evaluated at the value set in the
   // AutoDiff declaration.
-  VerifyValueOnly(y.value(), y_value);
+  VerifyValueOnly(y.value(), y_value, tolerance);
 
-  // Test partials.
-  // Partial with respect to variable A.
-  EXPECT_EQ(y.derivatives()(0), y_partial_with_respect_to_variableA);
+  // Test ∂y/∂A (partial with respect to variable A).
+  EXPECT_NEAR(y.derivatives()(0), y_partial_with_respect_to_variableA,
+              tolerance);
 
-  // Partial with respect to variable B.
-  EXPECT_EQ(y.derivatives()(1), y_partial_with_respect_to_variableB);
-
+  // Test ∂y/∂B (partial with respect to variable B).
+  EXPECT_NEAR(y.derivatives()(1), y_partial_with_respect_to_variableB,
+              tolerance);
 }
 
 // Unit test for the Particle1dMG class with Double instantiation.
@@ -42,20 +39,20 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
   // Ensure the default initialization of mass is 1 kg.
   EXPECT_TRUE(test_particle.mass == 1);
 
-  // for loop to check the repeated statements
+  // For-loop to check three separate cases.
   for (int i = 0; i < 3; i++) {
   double time = 0.0;
   double state[2] = {0};
 
     if (i == 1) {
       // Test calculations for another value of time and another state.
-      test_particle.mass = 1; // mass to 1 kg
+      test_particle.mass = 1;
       time = 0.75;
       state[0] = 0.26831113112;
       state[1] = 0.68163876002;
     }else if(i== 2){
       // Test calculations for another value of time and another state.
-      test_particle.mass = 25; // mass to 25 kg
+      test_particle.mass = 25;
       time = 0.9;
       state[0] = 0.37839003172;
       state[1] = 0.78332690962;
@@ -63,18 +60,23 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
 
     // Ensure time-derivative of state is properly calculated.
     // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
-    //double tolerance = 1e-300;
-    double stateDt[2] = {0};
+    double stateDt[2];
 
     // Calculate state derivatives and test their values against expected,
     // analytical solutions.
     test_particle.CalcDerivativesToStateDt(time, state, stateDt);
-    VerifyValueOnly(stateDt[0], state[1]);  // ẋ = ẋ
-    VerifyValueOnly(stateDt[1], cos(time) / test_particle.mass);  // ẍ = cos(time)/m
+
+    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
+    VerifyValueOnly(stateDt[0], state[1], kEpsilon);  // ẋ = ẋ
+    VerifyValueOnly(stateDt[1], std::cos(time) / test_particle.mass,
+                    kEpsilon);  // ẍ = cos(time)/m
   }
 }
 
 // Unit test for the Particle1dMG class with AutoDiffXd instantiation.
+// Note: This unit test only checks AutoDiff values (not derivatives).
+// The next test is more complicated as it also checks partial derivatives.
 GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
   MotionGenesis::Particle1dMG<AutoDiffXd> test_particle;
 
@@ -95,45 +97,70 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
       state[1] = 0.68163876002;
     } else if (i == 2) {
       // Test calculations for another value of time and another state.
-      test_particle.mass = 25;  // mass to 25 kg
+      test_particle.mass = 25;
       time = 0.9;
       state[0] = 0.37839003172;
       state[1] = 0.78332690962;
     }
 
-    // Ensure time-derivative of state is properly calculated when state has
-    // initial values of zero.
+    // Ensure time-derivative of state is properly calculated for each of the
+    // three cases.
     // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
-    AutoDiffXd stateDt[2] = {0};
+    AutoDiffXd stateDt[2];
 
     // Calculate state derivatives and test their values against expected,
     // analytical solutions.
     test_particle.CalcDerivativesToStateDt(time, state, stateDt);
-    VerifyValueOnly(stateDt[0].value(), state[1].value());  // ẋ = ẋ
+
+    constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+
+    VerifyValueOnly(stateDt[0].value(), state[1].value(), kEpsilon);  // ẋ = ẋ
     VerifyValueOnly(stateDt[1].value(),
-        cos(time.value()) / test_particle.mass.value());  // ẍ = cos(time)/m
- }
+                    cos(time.value()) / test_particle.mass.value(),
+                    kEpsilon);  // ẍ = cos(time)/m
+  }
 }
 
 // Unit test for the Particle1dMG class with AutoDiffXd instantiation.
+// Note: This unit test is more complicated than the previous unit test as it
+// checks partial derivative calculations (whereas the previous test only checks
+// AutoDiff values).
 GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
   MotionGenesis::Particle1dMG<AutoDiffXd> test_particle;
   // Calculate partial derivatives with respect to 2 variables (time and x).
-  const int num_variables_differentiate_with_respect_to = 2;
-  const int index_for_partial_time = 0;
-  const int index_for_partial_x = 1;
+  const int num_variables_differentiate_with_respect_to = 3;
+  const int index_for_partial_mass = 0;
+  const int index_for_partial_time = 1;
+  const int index_for_partial_x = 2;
 
-  // Set up partial differentiation with respect to time.
-  AutoDiffXd test_time;
-  test_time.value() = 2.0;
-  test_time.derivatives().resize(num_variables_differentiate_with_respect_to);
-  test_time.derivatives()(index_for_partial_time) = 1.0;
-  test_time.derivatives()(index_for_partial_x) = 0.0;
+  // Set the value of time to the value at which the partial will be evaluated.
+  // Arbitrarily chose to time = 2 seconds.
+  AutoDiffXd time;
+  time.value() = 2.0;
 
-  // Set up partial differentiation with respect to time.
+  // Provide enough room for differentiation with respect to three variables:
+  // mass, time, and x
+  time.derivatives().resize(num_variables_differentiate_with_respect_to);
+
+  // Set the partial of time with respect to mass to 0 (∂t/∂m = 0).
+  // Set the partial of time with respect to time (itself) to 1 (∂t/∂t = 1).
+  // Set the partial of time with respect to x to 0 (∂t/∂x = 0).
+  time.derivatives()(index_for_partial_mass) = 0.0;
+  time.derivatives()(index_for_partial_time) = 1.0;
+  time.derivatives()(index_for_partial_x) = 0.0;
+
+  // Set the value of the particle's mass. Arbitrarily chosen to be 20 kg.
   AutoDiffXd& mass = test_particle.mass;
   mass.value() = 20.0;
+
+  // Provide enough room for differentiation with respect to three variables:
+  // mass, time, and x
   mass.derivatives().resize(num_variables_differentiate_with_respect_to);
+
+  // Set the partial of mass with respect to mass (itself) to 1 (∂m/∂m = 1).
+  // Set the partial of mass with respect to time to 0 (∂m/∂t = 0).
+  // Set the partial of mass with respect to x to 0 (∂m/∂x = 0).
+  mass.derivatives()(index_for_partial_mass) = 1.0;
   mass.derivatives()(index_for_partial_time) = 0.0;
   mass.derivatives()(index_for_partial_x) = 0.0;
 
@@ -146,54 +173,67 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
   state[1].value() = 0.7;
 
   // Provide enough room for differentiation with respect to three variables:
-  // partial of x, xDt, and t with respect to t.
+  // mass, time, and x
   state[0].derivatives().resize(num_variables_differentiate_with_respect_to);
   state[1].derivatives().resize(num_variables_differentiate_with_respect_to);
 
-  // Set the derivative of state[0] with respect to state[0] (itself) to 1.
-  // Set the derivative of state[0] with respect to state[1] to 0.
+  // Set the partial of state[0] with respect to mass to 0 (∂x/∂m = 0).
+  // Set the partial of state[0] with respect to time to 0 (∂x/∂t = 0).
+  // Set the partial of state[0] with respect to x (itself) to 1 (∂x/∂x = 1).
+  state[0].derivatives()(index_for_partial_mass) = 1.0;
   state[0].derivatives()(index_for_partial_time) = 0.0;
   state[0].derivatives()(index_for_partial_x) = 1.0;
 
-  // Set the derivative of state[1] with respect to state[0] to 0.
-  // Set the derivative of state[1] with respect to state[1] (itself) to 1.
+  // Set the partial of state[1] with respect to mass to 0 (∂ẋ/∂m = 0).
+  // Set the partial of state[1] with respect to time to 0 (∂ẋ/∂t = 0).
+  // Set the partial of state[1] with respect to x (itself) to 0 (∂ẋ/∂x = 0).
+  state[1].derivatives()(index_for_partial_mass) = 0.0;
   state[1].derivatives()(index_for_partial_time) = 0.0;
   state[1].derivatives()(index_for_partial_x) = 0.0;
 
   // stateDt is calculated, hence its value and derivatives will be assigned.
   AutoDiffXd stateDt[2];
-  test_particle.CalcDerivativesToStateDt(test_time, state, stateDt);
+  test_particle.CalcDerivativesToStateDt(time, state, stateDt);
+
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
   // Value: m = mass (assigned above).
+  // ∂m/∂m = 1
   // ∂m/∂t = 0.
   // ∂m/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(test_particle.mass, mass.value(), 0,
-                                           0);
+  VerifyAutoDiffValueAndPartialDerivatives(test_particle.mass, mass.value(), 1,
+                                           0, 0, kEpsilon);
 
   // Value: x = state[0] (assigned above).
+  // ∂x/∂m = 0.
   // ∂x/∂t = 0.
   // ∂x/∂x = 1.
-  VerifyAutoDiffValueAndPartialDerivatives(test_particle.x, state[0].value(), 0,
-                                           1);
+  VerifyAutoDiffValueAndPartialDerivatives(test_particle.x, state[0].value(), 1,
+                                           0, 1, kEpsilon);
 
   // Value: ẋ = state[1] (assigned above).
+  // ∂ẋ/∂m = 0.
   // ∂ẋ/∂t = 0.
   // ∂ẋ/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(test_particle.xDt, state[1].value(),
-                                           0, 0);
+                                           0, 0, 0, kEpsilon);
 
   // Value: ẍ = cos(t)/m.
+  // ∂ẍ/∂m = -cos(t)/m².
   // ∂ẍ/∂t = -sint(t)/m.
   // ∂ẍ/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(
-      test_particle.xDDt, cos(test_time.value()) / mass.value(),
-      -sin(test_time.value()) / mass.value(), 0);
+      test_particle.xDDt, cos(time.value()) / mass.value(),
+      -cos(time.value()) / (mass.value() * mass.value()),
+      -sin(time.value()) / mass.value(), 0, kEpsilon);
 
   // Value: f = cos(t).
+  // ∂f/∂m = 0.
   // ∂f/∂t = -sin(t).
   // ∂f/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(
-      test_particle.F, cos(test_time.value()), -sin(test_time.value()), 0);
+      test_particle.F, cos(time.value()), 0, -sin(time.value()), 0,
+      kEpsilon);
 }
 
 } // namespace

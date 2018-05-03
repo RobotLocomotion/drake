@@ -32,11 +32,11 @@ class Particle1dMG {
   // Model parameters (constants), only need to be set once (e.g., at t = 0).
   T mass;
 
-  // Model variables set privately via CalcDerivativesToStateDt. x is the
-  // particle's Nx measure from No. xDt and xDDt are the first and second
-  // time-derivatives of x, respectively. F is the Nx measure of the force on
-  // the particle.
+  // Model variables are set via CalcDerivativesToStateDt. x is the
+  // particle's Nx measure from No. xDt and xDDt are ẋ and ẍ (the 1ˢᵗ and 2ⁿᵈ
+  // time-derivatives of x). F is the Nx measure of the force on the particle.
   T x, xDt, xDDt, F;
+
  private:
   // Set local state variables x and xDt from their corresponding values in
   // state[].

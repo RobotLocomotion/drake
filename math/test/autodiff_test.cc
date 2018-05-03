@@ -35,17 +35,19 @@ class AutodiffTest : public ::testing::Test {
     vec_[0].derivatives().resize(2);
     vec_[1].derivatives().resize(2);
 
-    // Set partial derivative of vec_[0] with respect to vec_[0] (itself) to 1.
-    // Set partial  derivative of vec_[0] with respect to vec_[1] to 0.
+    // The following shorthand notation will be used: v0 = vec_[0] and v1 =
+    // vec_[1].
+    // Set partial of v0 with respect to v0 (itself) to 1 (∂v0/∂v0 = 1).
+    // Set partial of v0 with respect to v1 to 0(∂v0/∂v1 = 0).
     vec_[0].derivatives()(0) = 1.0;
     vec_[0].derivatives()(1) = 0.0;
 
-    // Set partial derivative of vec_[1] with respect to vec_[0] to 0.
-    // Set partial derivative of vec_[1] with respect to vec_[1] (itself) to 1.
+    // Set partial of v1 with respect to v0 to 0 (∂v1/∂v0 = 0).
+    // Set partial of v1 with respect to v1 (itself) to 1(∂v1/∂v1 = 1).
     vec_[1].derivatives()(0) = 0.0;
     vec_[1].derivatives()(1) = 1.0;
 
-    // Do a calculation that is a function of variables vec_[0], vec_[1].
+    // Do a calculation that is a function of variables v0 and v1.
     output_calculation_ = DoMath(vec_);
   }
 
@@ -89,17 +91,18 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
   // Function 1: y1 = sin(v0) + v1.
   // Function 2: y2 = v0^2 + v1^3.
   // Calculate the six partial derivatives below.
-  // ∂y₀ / ∂v₀  = -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
-  expected(0, 0) =  -sin(7) + (cos(7) * cos(7) - sin(7) * sin(7)) / 9;
-  // Partial y0 with respect to v1 = -sin(v0) * cos(v0) / v1^2
+  // Partial y0 with respect to v0 (∂y0/∂v0)  =
+  // -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
+  expected(0, 0) = -sin(7) + (cos(7) * cos(7) - sin(7) * sin(7)) / 9;
+  // Partial y0 with respect to v1 (∂y0/∂v1) = -sin(v0) * cos(v0) / v1^2
   expected(0, 1) = -sin(7) * cos(7) / (9 * 9);
-  // Partial y1 with respect to v0 = cos(v0).
+  // Partial y1 with respect to v0 (∂y1/∂v0) = cos(v0).
   expected(1, 0) = cos(7);
-  // Partial y1 with respect to v1 = 1.
+  // Partial y1 with respect to v1 (∂y1/∂v1) = 1.
   expected(1, 1) = 1.0;
-  // Partial y2 with respect to v0 = 2 * v0.
+  // Partial y2 with respect to v0 (∂y2/∂v0) = 2 * v0.
   expected(2, 0) = 2 * 7;
-  // Partial y2 with respect to v1 = 3 * v1^2.
+  // Partial y2 with respect to v1 (∂y2/∂v1) = 3 * v1^2.
   expected(2, 1) = 3 * 9 * 9;
 
   EXPECT_TRUE(
