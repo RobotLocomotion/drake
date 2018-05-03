@@ -28,6 +28,9 @@
 
 namespace drake {
 
+using Eigen::Isometry3d;
+using Eigen::Translation3d;
+using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
@@ -53,10 +56,6 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-DEFINE_string(integration_scheme, "runge_kutta3",
-              "Integration scheme to be used. Available options are:"
-              "'runge_kutta3','implicit_euler','semi_explicit_euler'");
-
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
@@ -65,15 +64,6 @@ int do_main() {
 
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
-
-  const double simulation_time = FLAGS_simulation_time;
-
-  // Make the desired maximum time step a fraction of the simulation time.
-  const double max_time_step = simulation_time / 1000.0;
-
-  // The target accuracy determines the size of the actual time steps taken
-  // whenever a variable time step integrator is used.
-  const double target_accuracy = 0.001;
 
   // Make and add the cart_pole model.
   const std::string full_name = FindResourceOrThrow(
@@ -101,22 +91,18 @@ int do_main() {
       cart, Isometry3<double>::Identity(),
       geometry::Mesh(box_mesh_path, 0.12), &scene_graph);
       //geometry::Cylinder(0.05, 0.3), &scene_graph);
+
+  // Geometry for the pole's massless rod.
   cart_pole.RegisterVisualGeometry(
-      pole, Isometry3<double>::Identity(),
-      geometry::Cylinder(0.05, 0.5), &scene_graph);
+      pole, Isometry3d(Translation3d(0, 0, 0.25)),
+      geometry::Cylinder(0.025, 0.5), &scene_graph);
+  // Geometry for the pole's point mass at the end of the rod.
+  cart_pole.RegisterVisualGeometry(
+      pole, Isometry3d::Identity(),
+      geometry::Sphere(0.05), &scene_graph);
 
   // Now the model is complete.
   cart_pole.Finalize();
-
-#if 0
-  // A constant source for a zero applied torque at the joints.
-  Vector2<double> applied_torque = Vector2<double>::Zero();
-  auto torque_source =
-      builder.AddSystem<systems::ConstantVectorSource>(applied_torque);
-  torque_source->set_name("Applied Torque");
-  builder.Connect(torque_source->get_output_port(),
-                  cart_pole.get_actuation_input_port());
-#endif
 
   // Boilerplate used to connect the plant to a SceneGraph for
   // visualization.
@@ -166,34 +152,10 @@ int do_main() {
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
-  systems::IntegratorBase<double>* integrator{nullptr};
-  if (FLAGS_integration_scheme == "implicit_euler") {
-    integrator =
-        simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
-            *diagram, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "runge_kutta3") {
-    integrator =
-        simulator.reset_integrator<RungeKutta3Integrator<double>>(
-            *diagram, &simulator.get_mutable_context());
-  } else if (FLAGS_integration_scheme == "semi_explicit_euler") {
-    integrator =
-        simulator.reset_integrator<SemiExplicitEulerIntegrator<double>>(
-            *diagram, max_time_step, &simulator.get_mutable_context());
-  } else {
-    throw std::runtime_error(
-        "Integration scheme '" + FLAGS_integration_scheme +
-        "' not supported for this example.");
-  }
-  integrator->set_maximum_step_size(max_time_step);
-
-  // Error control is only supported for variable time step integrators.
-  if (!integrator->get_fixed_step_mode())
-    integrator->set_target_accuracy(target_accuracy);
-
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.StepTo(FLAGS_simulation_time);
 
   return 0;
 }
@@ -206,7 +168,7 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyTree,"
+      "A simple cart pole demo using Drake's MultibodyPlant,"
       "with SceneGraph visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
