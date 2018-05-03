@@ -14,18 +14,20 @@
 namespace drake {
 namespace multibody {
 
-/// This Mobilizer allows two frames to rotate relatively to one another around
-/// an axis that is constant when measured in either this mobilizer's inboard or
-/// outboard frames, while the distance between the two frames does not vary.
+/// This Mobilizer allows two frames to translate relatively to one another
+/// in the direction of an axis that is constant when measured in either this
+/// mobilizer's inboard or outboard frames. There is no relative translation
+/// between the inboard and outboard frames, just translation.
 /// To fully specify this mobilizer a user must provide the inboard frame F,
 /// the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
-/// frame F) about which frame M rotates with respect to F.
+/// frame F) along which frame M translates with respect to F.
 /// The single generalized coordinate q introduced by this mobilizer
-/// corresponds to the rotation angle in radians of frame M with respect to
-/// frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
-/// coincident. The rotation angle is defined to be positive according to the
-/// right-hand-rule with the thumb aligned in the direction of the `axis_F`.
-/// Notice that the components of the rotation axis as expressed in
+/// corresponds to the translation distance (in meters) of frame M with respect
+/// to frame F along the translation axis `axis_F`. When `q = 0`, frames F and M
+/// are coincident. The translation distance is defined to be positive according
+/// in the direction of `axis_F` and it is defined negative in the direction
+/// opposite of `axis_F`.
+/// Notice that the components of the translation axis as expressed in
 /// either frame F or M are constant. That is, `axis_F` and `axis_M` remain
 /// unchanged w.r.t. both frames by this mobilizer's motion.
 ///
@@ -44,87 +46,86 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// Constructor for a %PrismaticMobilizer between the inboard frame F
   /// `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
-  /// single rotational degree of freedom about axis `axis_F` expressed in the
-  /// inboard frame F.
-  /// @pre axis_F must be a unit vector within at least 1.0e-6. This rather
-  /// loose tolerance (at least for simulation) allows users to provide "near
-  /// unity" axis vectors originated, for instance, during the parsing of a
-  /// file with limited precision. Internally, we re-normalize the axis to
-  /// within machine precision.
-  /// @throws std::runtime_error if the provided rotational axis is not a unit
-  /// vector.
+  /// single translational degree of freedom along axis `axis_F`, expressed in
+  /// the inboard frame F.
+  /// @pre axis_F must be a non-zero vector with norm at least 1.0e-6. That is
+  /// `axis_F` does not necessarily need to be a unit vector, though it does get
+  /// normalized to be a unit vector. In other words, 
+  /// PrismaticMobilizer::translation_axis() returns a unit vector in the
+  /// direction along `axis_F`.
+  /// @throws std::exception if the provided translational axis has an L2 norm
+  /// smaller than 1.0e-6.
   PrismaticMobilizer(const Frame<T>& inboard_frame_F,
                      const Frame<T>& outboard_frame_M,
                      const Vector3<double>& axis_F) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), axis_F_(axis_F) {
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_THROW_UNLESS(!axis_F.isZero(kEpsilon));
+    DRAKE_THROW_UNLESS(axis_F.norm() > 1.0e-6);
     axis_F_.normalize();
   }
 
-  /// @retval axis_F The rotation axis as a unit vector expressed in the inboard
-  ///                frame F.
+  /// @retval axis_F The translation axis as a unit vector expressed in the
+  /// inboard frame F.
   const Vector3<double>& translation_axis() const { return axis_F_; }
 
-  /// Gets the rotation angle of `this` mobilizer from `context`. See class
-  /// documentation for sign convention.
+  /// Gets the translational distance for `this` mobilizer from `context`. See
+  /// class documentation for sign convention details.
   /// @throws std::logic_error if `context` is not a valid
   /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @returns The angle coordinate of `this` mobilizer in the `context`.
+  /// @returns The translation coordinate of `this` mobilizer in the `context`.
   const T& get_translation(const systems::Context<T>& context) const;
 
-  /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` mobilizer equals `angle`.
+  /// Sets `context` so that the generalized coordinate corresponding to the
+  /// translation for `this` mobilizer equals `translation`.
   /// @throws std::logic_error if `context` is not a valid
   /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @param[in] angle The desired angle in radians.
+  /// @param[in] translation The desired translation in meters.
   /// @returns a constant reference to `this` mobilizer.
   const PrismaticMobilizer<T>& set_translation(
       systems::Context<T>* context, const T& translation) const;
 
-  /// Gets the rate of change, in radians per second, of `this` mobilizer's
-  /// angle (see get_angle()) from `context`. See class documentation for the
-  /// angle sign convention.
+  /// Gets the rate of change, in meters per second, of `this` mobilizer's
+  /// translation (see get_translation()) from `context`. See class
+  /// documentation for the translation sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
-  /// @returns The rate of change of `this` mobilizer's angle in the `context`.
+  /// @returns The rate of change of `this` mobilizer's translation in the
+  /// `context`.
   const T& get_translation_rate(const systems::Context<T> &context) const;
 
-  /// Sets the rate of change, in radians per second, of this `this` mobilizer's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// Sets the rate of change, in meters per second, of this `this` mobilizer's
+  /// translation to `translation_dot`. The new rate of change `theta_dot` gets stored in
   /// `context`.
-  /// See class documentation for the angle sign convention.
+  /// See class documentation for the translation sign convention.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @param[in] theta_dot The desired rate of change of `this` mobilizer's
-  /// angle in radians per second.
+  /// translation in meters per second.
   /// @returns a constant reference to `this` mobilizer.
   const PrismaticMobilizer<T>& set_translation_rate(
-      systems::Context<T> *context, const T& x_dot) const;
+      systems::Context<T> *context, const T& translation_dot) const;
 
-  /// Sets `state` to store a zero angle and angular rate.
+  /// Sets `state` to store a zero translation and translational rate.
   void set_zero_state(const systems::Context<T>& context,
                       systems::State<T>* state) const override;
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  /// frame F and the outboard frame M as a function of the rotation angle
-  /// about this mobilizer's axis (@see revolute_axis().)
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
-  /// This method aborts in Debug builds if `v.size()` is not one.
+  /// frame F and the outboard frame M as a function of the translation distance
+  /// along this mobilizer's axis (@see translation_axis().)
+  /// The generalized coordinate q for `this` mobilizer (the translation
+  /// distance) is stored in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
       const MultibodyTreeContext<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
-  /// M measured and expressed in frame F as a function of the rotation angle
-  /// and input angular velocity `v` about this mobilizer's axis
-  /// (@see revolute_axis()).
-  /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  /// stored in `context`.
+  /// M measured and expressed in frame F as a function of the translation and
+  /// input translational velocity `v` along this mobilizer's axis
+  /// (@see translation_axis()).
+  /// The generalized coordinate q for `this` mobilizer (the translation
+  /// distance) is stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const MultibodyTreeContext<T>& context,
@@ -133,22 +134,22 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
   /// outboard frame M in the inboard frame F.
   /// By definition `A_FM = d_F(V_FM)/dt = H_FM(q) * v̇ + Ḣ_FM * v`.
-  /// The acceleration `A_FM` will be a function of the rotation angle q, its
-  /// rate of change v for the current state in `context` and of the input
+  /// The acceleration `A_FM` will be a function of the translation distance q,
+  /// its rate of change v for the current state in `context` and of the input
   /// generalized acceleration `v̇ = dv/dt`, the rate of change of v.
-  /// See class documentation for the angle sign convention.
+  /// See class documentation for the translation sign convention.
   /// This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const MultibodyTreeContext<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-  /// frame M onto its rotation axis (@see revolute_axis().) Mathematically:
-  /// <pre>
-  ///    tau = F_Mo_F.rotational().dot(axis_F)
+  /// frame M onto its translation axis (@see translation_axis().)
+  /// Mathematically: <pre>
+  ///    tau = F_Mo_F.translational().dot(axis_F)
   /// </pre>
-  /// Therefore, the result of this method is the scalar value of the torque at
-  /// the axis of `this` mobilizer.
+  /// Therefore, the result of this method is the scalar value of the linear
+  /// force along the axis of `this` mobilizer.
   /// This method aborts in Debug builds if `tau.size()` is not one.
   void ProjectSpatialForce(
       const MultibodyTreeContext<T>& context,
@@ -188,7 +189,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 
-  // Default joint axis expressed in the inboard frame F.
+  // Default axis expressed in the inboard frame F.
   Vector3<double> axis_F_;
 };
 
