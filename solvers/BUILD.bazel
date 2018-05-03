@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":mathematical_program",
         ":mathematical_program_api",
         ":mixed_integer_optimization_util",
+        ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
