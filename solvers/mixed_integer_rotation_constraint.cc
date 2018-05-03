@@ -90,7 +90,6 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
     const Eigen::Ref<const Eigen::VectorXd>& phi,
     const std::array<std::array<VectorXDecisionVariable, 3>, 3>& B,
-    const std::array<std::array<VectorXDecisionVariable, 3>, 3>& lambda,
     IntervalBinning interval_binning) {
   VectorDecisionVariable<9> R_flat;
   R_flat << R.col(0), R.col(1), R.col(2);
@@ -126,20 +125,10 @@ void AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
       // lambda[Rj_row][Rj_col] satisfy the SOS2 constraint, and
       // R[Ri_row][Ri_col] = φᵀ * lambda[Ri_row][Ri_col]
       // R[Rj_row][Rj_col] = φᵀ * lambda[Rj_row][Rj_col]
-      // So sum_n lambda_bilinear(m, n) = lambda[Ri_row][Ri_col]
-      //    sum_m lambda_bilinear(m, n).transpose() = lambda[Rj_row][Rj_col]
-      // TODO(hongkai.dai): I found the computation could be faster if we
-      // comment out the following two constraints on lambda_bilinear, at least
-      // for some cases. Should investigate why there is a speed difference.
-      // prog->AddLinearConstraint(
-      //    lambda_bilinear.template cast<symbolic::Expression>()
-      //        .rowwise()
-      //        .sum() == lambda[Ri_row][Ri_col]);
-      // prog->AddLinearConstraint(
-      //    lambda_bilinear.template cast<symbolic::Expression>()
-      //        .colwise()
-      //        .sum()
-      //        .transpose() == lambda[Rj_row][Rj_col]);
+      // So sum_n lambda_bilinear(m, n) = lambda[Ri_row][Ri_col]             (1)
+      //    sum_m lambda_bilinear(m, n).transpose() = lambda[Rj_row][Rj_col] (2)
+      // TODO(hongkai.dai): I found the computation could be faster if we do not
+      // add constraint (1) and (2). Should investigate the reason.
       W(j, i) = W(i, j);
       W_expr(j, i) = W_expr(i, j);
     }
@@ -394,7 +383,7 @@ void AddRotationMatrixBilinearMcCormickConstraints(
                                           lambda[1][col], lambda[2][col]);
   }
   AddOrthogonalAndCrossProductConstraintRelaxationReplacingBilinearProduct(
-      prog, R, phi, B, lambda, interval_binning);
+      prog, R, phi, B, interval_binning);
 }
 
 // Given (an integer enumeration of) the orthant, takes a vector in the
