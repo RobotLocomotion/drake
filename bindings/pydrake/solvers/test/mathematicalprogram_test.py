@@ -338,10 +338,12 @@ class TestMathematicalProgram(unittest.TestCase):
         # Set Up Mathematical Program
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
-        prog.AddQuadraticCost(np.eye(2), np.zeros(2), x)
+        z = prog.NewContinuousVariables(1, "z")
+        prog.AddCost(z[0])
 
-        # Add LorentzConeConstraint
+        # Add LorentzConeConstraints
         prog.AddLorentzConeConstraint(np.array([0*x[0]+1, x[0]-1, x[1]-1]))
+        z = prog.AddLorentzConeConstraint(np.array([z[0], x[0], x[1]]))
 
         # Test result
         result = prog.Solve()
