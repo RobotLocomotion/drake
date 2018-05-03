@@ -33,7 +33,7 @@ void CollisionFilterGroupManager<T>::DefineCollisionFilterGroup(
     int id = acquire_next_group_id();
     collision_filter_groups_[name] = CollisionFilterGroup<T>(name, id);
   } else {
-    throw std::runtime_error(
+    throw std::logic_error(
         "Attempting to create duplicate collision filter group: " + name + ".");
   }
 }
@@ -84,7 +84,7 @@ void CollisionFilterGroupManager<T>::AddCollisionFilterIgnoreTarget(
     const std::string& group_name, const std::string& target_group_name) {
   auto itr = collision_filter_groups_.find(group_name);
   if (itr == collision_filter_groups_.end()) {
-    throw std::runtime_error(
+    throw std::logic_error(
         "Attempting to add an ignored collision filter group to an undefined "
         "collision filter group: Ignoring " +
         target_group_name + " by " + group_name + ".");
@@ -119,12 +119,6 @@ const bitmask& CollisionFilterGroupManager<T>::get_ignore_mask(
     return itr->second.second;
   }
   return kNoneMask;
-}
-
-template <typename T>
-void CollisionFilterGroupManager<T>::SetBodyCollisionFilters(
-    const RigidBody<T>& body, const bitmask& group, const bitmask& ignores) {
-  body_groups_[&body] = std::make_pair(group, ignores);
 }
 
 template <typename T>
