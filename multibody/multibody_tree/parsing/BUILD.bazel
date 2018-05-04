@@ -9,6 +9,17 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.sdf",
+        "test/**/*.urdf",
+        "test/**/*.xml",
+    ]),
+)
+
 drake_cc_library(
     name = "sdf_parser_common",
     srcs = [
@@ -57,6 +68,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "multibody_plant_sdf_parser_test",
     data = [
+        ":test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [

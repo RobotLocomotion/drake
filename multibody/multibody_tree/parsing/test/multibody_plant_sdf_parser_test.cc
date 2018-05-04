@@ -6,6 +6,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
@@ -14,8 +16,12 @@
 namespace drake {
 
 using Eigen::Vector3d;
+using geometry::GeometryId;
+using geometry::GeometryInstance;
+using geometry::SceneGraph;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
+using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
 using systems::Context;
 
@@ -139,6 +145,33 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifySdfModelMassMatrix(-M_PI / 3, 3 * M_PI / 4);
   VerifySdfModelMassMatrix(-M_PI / 3, -M_PI / 3);
   VerifySdfModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
+}
+
+GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 3);
+  EXPECT_EQ(plant.get_num_visual_geometries(), 5);
+
+  const std::vector<GeometryId>& link1_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1"));
+  EXPECT_EQ(link1_visual_geometry_ids.size(), 2);
+
+  const std::vector<GeometryId>& link2_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2"));
+  EXPECT_EQ(link2_visual_geometry_ids.size(), 3);
+
+  const std::vector<GeometryId>& link3_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3"));
+  EXPECT_EQ(link3_visual_geometry_ids.size(), 0);
+
+  // TODO(SeanCurtis-TRI): Once SG supports it, confirm `GeometryId` maps to the
+  // correct geometry.
 }
 
 }  // namespace

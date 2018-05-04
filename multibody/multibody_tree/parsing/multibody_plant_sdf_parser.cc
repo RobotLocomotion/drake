@@ -250,12 +250,16 @@ void AddModelFromSdfFile(
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual &sdf_visual = *link.VisualByIndex(visual_index);
+        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
         unique_ptr<GeometryInstance> geometry_instance =
             detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
-        plant->RegisterVisualGeometry(
-            body, geometry_instance->pose(), geometry_instance->shape(),
-            scene_graph);
+        // We check for nullptr in case someone decided to specify an SDF
+        // <empty/> geometry.
+        if (geometry_instance) {
+          plant->RegisterVisualGeometry(
+              body, geometry_instance->pose(), geometry_instance->shape(),
+              scene_graph);
+        }
       }
     }
   }

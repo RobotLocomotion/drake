@@ -239,7 +239,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    return model_->AddRigidBody(name, M_BBo_B);
+    const RigidBody<T>& body = model_->AddRigidBody(name, M_BBo_B);
+    visual_geometries_.emplace_back();
+    return body;
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -505,6 +507,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
                               const Isometry3<double>& X_BG,
                               const geometry::Shape& shape,
                               geometry::SceneGraph<T>* scene_graph);
+
+  const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
+      const Body<T>& body) const;
 
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
@@ -1038,6 +1043,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): verify insertions were correct once visual_index gets
   // used with the landing of visual properties in SceneGraph.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
+
+  // Per-body arrays of visual geometries indexed by BodyIndex.
+  // That is, visual_geometries_[body_index] corresponds to the array of visual
+  // geometries for body with index body_index.
+  std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
 
   // Maps a GeometryId with a collision index. This allows, for instance, to
   // find out collision properties (such as friction coefficient) for a given
