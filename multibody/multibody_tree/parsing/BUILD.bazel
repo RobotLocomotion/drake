@@ -10,6 +10,35 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "sdf_parser_common",
+    srcs = [
+        "sdf_parser_common.cc",
+    ],
+    hdrs = [
+        "sdf_parser_common.h",
+    ],
+    deps = [
+        "//common:essential",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
+    name = "scene_graph_parser_detail",
+    srcs = [
+        "scene_graph_parser_detail.cc",
+    ],
+    hdrs = [
+        "scene_graph_parser_detail.h",
+    ],
+    deps = [
+        ":sdf_parser_common",
+        "//geometry:scene_graph",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_sdf_parser",
     srcs = [
         "multibody_plant_sdf_parser.cc",
@@ -18,6 +47,7 @@ drake_cc_library(
         "multibody_plant_sdf_parser.h",
     ],
     deps = [
+        ":sdf_parser_common",
         "//multibody/multibody_tree/multibody_plant",
         "@sdformat",
     ],
@@ -34,6 +64,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scene_graph_parser_detail_test",
+    deps = [
+        ":scene_graph_parser_detail",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
