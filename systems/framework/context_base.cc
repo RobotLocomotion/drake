@@ -22,7 +22,7 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
   BuildTrackerPointerMap(clone, &tracker_map);
 
   // Then do a pointer fixup pass.
-  clone.FixTrackerPointers(source, tracker_map);
+  clone.FixContextPointers(source, tracker_map);
   return clone_ptr;
 }
 
@@ -44,8 +44,67 @@ void ContextBase::SetAllCacheEntriesOutOfDate() const {
 }
 
 std::string ContextBase::GetSystemPathname() const {
-  // TODO(sherm1) Replace with the real pathname.
-  return "/dummy/system/pathname";
+  // NOLINTNEXTLINE(build/namespaces): using operator""s issues a warning.
+  using namespace std::string_literals;
+
+  const std::string parent_path =
+      get_parent_base() ? get_parent_base()->GetSystemPathname()
+                        : ""s;
+  return parent_path + "::"s + GetSystemName();
+}
+
+FreestandingInputPortValue& ContextBase::FixInputPort(
+    int index, std::unique_ptr<AbstractValue> value) {
+  auto freestanding =
+      std::make_unique<FreestandingInputPortValue>(std::move(value));
+  FreestandingInputPortValue& freestanding_ref = *freestanding;
+  SetFixedInputPortValue(InputPortIndex(index), std::move(freestanding));
+  return freestanding_ref;
+}
+
+void ContextBase::AddInputPort(InputPortIndex expected_index,
+                               DependencyTicket ticket) {
+  DRAKE_DEMAND(expected_index.is_valid() && ticket.is_valid());
+  DRAKE_DEMAND(expected_index == get_num_input_ports());
+  DRAKE_DEMAND(input_port_tickets_.size() == input_port_values_.size());
+  auto& ui_tracker = graph_.CreateNewDependencyTracker(
+      ticket, "u_" + std::to_string(expected_index));
+  input_port_values_.emplace_back(nullptr);
+  input_port_tickets_.emplace_back(ticket);
+  auto& u_tracker = graph_.get_mutable_tracker(
+      DependencyTicket(internal::kAllInputPortsTicket));
+  u_tracker.SubscribeToPrerequisite(&ui_tracker);
+}
+
+void ContextBase::SetFixedInputPortValue(
+    InputPortIndex index,
+    std::unique_ptr<FreestandingInputPortValue> port_value) {
+  DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+  DRAKE_DEMAND(port_value != nullptr);
+
+  DependencyTracker& port_tracker =
+      get_mutable_tracker(input_port_tickets_[index]);
+  FreestandingInputPortValue* old_value =
+      input_port_values_[index].get_mutable();
+
+  if (old_value != nullptr) {
+    // All the dependency wiring is already in place.
+    port_value->set_ticket(old_value->ticket());
+  } else {
+    // Create a new tracker and subscribe to it.
+    DependencyTracker& value_tracker = graph_.CreateNewDependencyTracker(
+        "Value for fixed input port " + std::to_string(index));
+    port_value->set_ticket(value_tracker.ticket());
+    port_tracker.SubscribeToPrerequisite(&value_tracker);
+  }
+
+  // Fill in the FreestandingInputPortValue object and install it.
+  port_value->set_input_port_index(index);
+  port_value->set_owning_subcontext(this);
+  input_port_values_[index] = std::move(port_value);
+
+  // Invalidate anyone who cares about this input port.
+  port_tracker.NoteValueChange(start_new_change_event());
 }
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,
@@ -172,7 +231,7 @@ void ContextBase::BuildTrackerPointerMap(
   // TODO(sherm1) Recursive update of descendents goes here.
 }
 
-void ContextBase::FixTrackerPointers(
+void ContextBase::FixContextPointers(
     const ContextBase& source,
     const DependencyTracker::PointerMap& tracker_map) {
   // First repair pointers local to this context.
