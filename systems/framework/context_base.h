@@ -7,11 +7,22 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/reset_on_copy.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides SystemBase limited "friend" access to ContextBase.
+class SystemBaseContextBaseAttorney;
+}  // namespace detail
+#endif
 
 /** Provides non-templatized functionality shared by the templatized derived
 classes. That includes caching and dependency tracking, and management of
@@ -72,16 +83,18 @@ class ContextBase : public internal::ContextMessageInterface {
   suggestions. */
   void SetAllCacheEntriesOutOfDate() const;
 
-  /** (Debugging) Returns the local name of the subsystem for which this is the
-  Context. See GetSystemPathname() if you want the full name. */
-  // TODO(sherm1) Replace with the real name.
+  /** Returns the local name of the subsystem for which this is the Context.
+  This is intended primarily for error messages and logging.
+  @see SystemBase::GetSystemName() for details.
+  @see GetSystemPathname() if you want the full name. */
   const std::string& GetSystemName() const final {
-    static const never_destroyed<std::string> name("dummy");
-    return name.access();
+    return system_name_.empty() ? internal::SystemMessageInterface::no_name()
+                                : system_name_;
   }
 
-  /** (Debugging) Returns the full pathname of the subsystem for which this is
-  the Context. See get_system_pathname() if you want to the full name. */
+  /** Returns the full pathname of the subsystem for which this is the Context.
+  This is intended primarily for error messages and logging.
+  @see SystemBase::GetSystemPathname() for details. */
   std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */
@@ -126,6 +139,52 @@ class ContextBase : public internal::ContextMessageInterface {
     return graph_;
   }
 
+  /** Returns the number of input ports in this context. */
+  int get_num_input_ports() const {
+    DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
+    return static_cast<int>(input_port_tickets_.size());
+  }
+
+  /** Connects the input port at `index` to a FixedInputPortValue with
+  the given abstract `value`. Returns a reference to the allocated
+  FixedInputPortValue that will remain valid until this input port's value
+  source is replaced or the Context is destroyed. You may use that reference to
+  modify the input port's value using the appropriate FixedInputPortValue
+  method, which will ensure that invalidation notifications are delivered.
+
+  This is the most general way to provide a value (type-erased) for an
+  unconnected input port. See `Context<T>` for more-convenient overloads of
+  FixInputPort() for vector values with elements of type T.
+
+  @pre `index` selects an existing input port of this Context. */
+  FixedInputPortValue& FixInputPort(
+      int index, std::unique_ptr<AbstractValue> value);
+
+  /** For input port `index`, returns a const FixedInputPortValue if the port is
+  fixed, otherwise nullptr.
+  @pre `index` selects an existing input port of this Context. */
+  const FixedInputPortValue* MaybeGetFixedInputPortValue(int index) const {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_port_values_[index].get();
+  }
+
+  /** For input port `index`, returns a mutable FixedInputPortValue if the port
+  is fixed, otherwise nullptr.
+  @pre `index` selects an existing input port of this Context. */
+  FixedInputPortValue* MaybeGetMutableFixedInputPortValue(int index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_port_values_[index].get_mutable();
+  }
+
+  // For internal use only.
+#if !defined(DRAKE_DOXYGEN_CXX)
+
+  // Add the next input port. Expected index is supplied along with the
+  // assigned ticket. Subscribe the "all input ports" tracker to this one.
+  void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
+
+#endif
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
@@ -152,6 +211,16 @@ class ContextBase : public internal::ContextMessageInterface {
     return source.DoCloneWithoutPointers();
   }
 
+  /** Declares that `parent` is the context of the enclosing Diagram.
+  Aborts if the parent has already been set to something else. */
+  // Use static method so DiagramContext can invoke this on behalf of a child.
+  // Output argument is listed first because it is serving as the 'this'
+  // pointer here.
+  static void set_parent(ContextBase* child, const ContextBase* parent) {
+    DRAKE_DEMAND(child != nullptr);
+    child->set_parent(parent);
+  }
+
   /** Derived classes must implement this so that it performs the complete
   deep copy of the context, including all base class members but not fixing
   up base class pointers. To do that, implement a protected copy constructor
@@ -161,6 +230,30 @@ class ContextBase : public internal::ContextMessageInterface {
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
  private:
+  friend class detail::SystemBaseContextBaseAttorney;
+
+  void set_parent(const ContextBase* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+
+  // Returns the parent Context or `nullptr` if this is the root Context.
+  const ContextBase* get_parent_base() const { return parent_; }
+
+  // Records the name of the system whose context this is.
+  void set_system_name(const std::string& name) { system_name_ = name; }
+
+  // Fixes the input port at `index` to the internal value source `port_value`.
+  // If the port wasn't previously fixed, assigns a ticket and tracker for the
+  // `port_value`, then subscribes the input port to the source's tracker.
+  // If the port was already fixed, we just use the existing tracker and
+  // subscription but replace the value. Notifies the port's downstream
+  // subscribers that the value has changed. Aborts if `index` is out of range,
+  // or the given `port_value` is null or already belongs to a context.
+  void SetFixedInputPortValue(
+      InputPortIndex index,
+      std::unique_ptr<FixedInputPortValue> port_value);
+
   // Fills in the dependency graph with the built-in trackers that are common
   // to every Context (and every System).
   void CreateBuiltInTrackers();
@@ -173,18 +266,67 @@ class ContextBase : public internal::ContextMessageInterface {
       const ContextBase& clone,
       DependencyTracker::PointerMap* tracker_map) const;
 
-  // Assuming `this` is a recently-cloned Context containing stale references
-  // to the source Context's trackers, repair those pointers using the given
-  // map.
-  void FixTrackerPointers(const ContextBase& source,
+  // Assuming `this` is a recently-cloned Context that has yet to have its
+  // internal pointers updated, set those pointers now. The given map is used
+  // to update tracker pointers.
+  void FixContextPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map);
+
+  // TODO(sherm1) Use these tickets to reconstruct the dependency graph when
+  // cloning or transmogrifying a Context without a System present.
+
+  // Index by InputPortIndex.
+  std::vector<DependencyTicket> input_port_tickets_;
+
+  // TODO(sherm1) Output port, state, and parameter tickets go here.
+
+  // For each input port, the fixed value or null if the port is connected to
+  // something else (in which case we need System help to get the value).
+  // Semantically, these are identical to Parameters.
+  // Each non-null FixedInputPortValue has a ticket and associated
+  // tracker.
+  // Index with InputPortIndex.
+  std::vector<copyable_unique_ptr<FixedInputPortValue>>
+      input_port_values_;
 
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
 
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
+
+  // The Context of the enclosing Diagram. Null/invalid when this is the root
+  // context.
+  reset_on_copy<const ContextBase*> parent_;
+
+  // Name of the subsystem whose subcontext this is.
+  std::string system_name_;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+class SystemBase;
+namespace detail {
+
+// This is an attorney-client pattern class providing SystemBase with access to
+// certain specific ContextBase private methods, and nothing else.
+class SystemBaseContextBaseAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney);
+  SystemBaseContextBaseAttorney() = delete;
+
+ private:
+  friend class drake::systems::SystemBase;
+  static void set_system_name(ContextBase* context, const std::string& name) {
+    DRAKE_DEMAND(context != nullptr);
+    context->set_system_name(name);
+  }
+  static const ContextBase* get_parent_base(const ContextBase& context) {
+    return context.get_parent_base();
+  }
+};
+
+}  // namespace detail
+#endif
 
 }  // namespace systems
 }  // namespace drake

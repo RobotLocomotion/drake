@@ -6,21 +6,13 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
-
-#ifndef DRAKE_DOXYGEN_CXX
-namespace detail {
-// This provides System<T> access to a Context's parent.
-template<typename T>
-class SystemContextAttorney;
-}  // namespace detail
-#endif
 
 /// Contains information about the independent variable including time and
 /// step number.
@@ -75,7 +67,7 @@ class Context : public ContextBase {
 
   /// Set the current time in seconds.
   virtual void set_time(const T& time_sec) {
-    get_mutable_step_info()->time_sec = time_sec;
+    step_info_.time_sec = time_sec;
   }
 
   // =========================================================================
@@ -244,58 +236,29 @@ class Context : public ContextBase {
   // =========================================================================
   // Accessors and Mutators for Input.
 
-  /// Returns the number of input ports.
-  virtual int get_num_input_ports() const = 0;
+  // Allow access to the base class method (takes an AbstractValue).
+  using ContextBase::FixInputPort;
 
-  /// Connects the input port at @p index to a FreestandingInputPortValue with
-  /// the given abstract @p value. Aborts if @p index is out of range.
-  /// Returns a reference to the allocated FreestandingInputPortValue. The
+  /// Connects the input port at @p index to a FixedInputPortValue with
+  /// the given vector @p vec. Aborts if @p index is out of range.
+  /// Returns a reference to the allocated FixedInputPortValue. The
   /// reference will remain valid until this input port's value source is
   /// replaced or the %Context is destroyed. You may use that reference to
   /// modify the input port's value using the appropriate
-  /// FreestandingInputPortValue method, which will ensure that invalidation
+  /// FixedInputPortValue method, which will ensure that invalidation
   /// notifications are delivered.
-  FreestandingInputPortValue& FixInputPort(
-      int index, std::unique_ptr<AbstractValue> value) {
-    auto free_value_ptr =
-        std::make_unique<FreestandingInputPortValue>(std::move(value));
-    FreestandingInputPortValue& free_value = *free_value_ptr;
-    SetInputPortValue(index, std::move(free_value_ptr));
-    return free_value;
-  }
-
-  /// Connects the input port at @p index to a FreestandingInputPortValue with
-  /// the given vector @p vec. Otherwise same as above method.
-  FreestandingInputPortValue& FixInputPort(
+  FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<BasicVector<T>> vec) {
-    return FixInputPort(
-        index, std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
+    return ContextBase::FixInputPort(index,
+       std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
   }
 
   /// Same as above method but starts with an Eigen vector whose contents are
-  /// used to initialize a BasicVector in the FreestandingInputPortValue.
-  FreestandingInputPortValue& FixInputPort(
+  /// used to initialize a BasicVector in the FixedInputPortValue.
+  FixedInputPortValue& FixInputPort(
       int index, const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);
     return FixInputPort(index, std::move(vec));
-  }
-
-  /// Returns the FreestandingInputPortValue for the given input port if it
-  /// is a fixed (freestanding) input port, otherwise nullptr.
-  // TODO(sherm1) Move this T-independent method to ContextBase.
-  const FreestandingInputPortValue* MaybeGetFixedInputPortValue(
-      int index) const {
-    // TODO(sherm1) Get rid of this trickery and simply return the freestanding
-    // value or null. See caching branch near context_base.h:287.
-    const InputPortValue* port_value = GetInputPortValue(index);
-    if (port_value == nullptr) return nullptr;  // Unconnected port.
-
-    // TODO(sherm1) This inappropriate use of dynamic_cast as a runtime
-    // type-test violates the GSG. Eliminate with above fix.
-    auto const free_port_value =
-        dynamic_cast<const FreestandingInputPortValue*>(port_value);
-
-    return free_port_value;  // The value, or nullptr if not freestanding.
   }
 
   // =========================================================================
@@ -388,31 +351,14 @@ class Context : public ContextBase {
   /// Initializes this context's time, state, and parameters from the real
   /// values in @p source, regardless of this context's scalar type.
   /// Requires a constructor T(double).
+  // TODO(sherm1) Should treat fixed input port values same as parameters.
   void SetTimeStateAndParametersFrom(const Context<double>& source) {
     set_time(T(source.get_time()));
     set_accuracy(source.get_accuracy());
     get_mutable_state().SetFrom(source.get_state());
     get_mutable_parameters().SetFrom(source.get_parameters());
-  }
 
-  /// Throws an exception unless the given port information matches the inputs
-  /// actually connected to this context in shape.
-  void VerifyInputPort(InputPortIndex i, PortDataType data_type,
-                       int size) const {
-    const InputPortValue* port_value = GetInputPortValue(i);
-    // If the port isn't connected, we don't have anything else to check.
-    if (port_value == nullptr)
-      return;
-    // TODO(david-german-tri, sherm1): Consider checking sampling here.
-
-    // In the vector-valued case, check the size.
-    if (data_type == kVectorValued) {
-      const BasicVector<T>* input_vector =
-          port_value->template get_vector_data<T>();
-      DRAKE_THROW_UNLESS(input_vector != nullptr);
-      DRAKE_THROW_UNLESS(input_vector->size() == size);
-    }
-    // In the abstract-valued case, there is nothing else to check.
+    // TODO(sherm1) Fixed input copying goes here.
   }
 
  protected:
@@ -447,95 +393,13 @@ class Context : public ContextBase {
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }
 
-  /// Provides writable access to time and step information, with the side
-  /// effect of invaliding any computation that is dependent on them.
-  /// TODO(david-german-tri) Invalidate all cached time- and step-dependent
-  /// computations.
-  StepInfo<T>* get_mutable_step_info() { return &step_info_; }
-
-  /// Returns the InputPortValue at the given @p index, which may be nullptr if
-  /// it has never been set with SetInputPortValue().
-  /// Asserts if @p index is out of range.
-  virtual const InputPortValue* GetInputPortValue(int index) const = 0;
-
-  /// Allows DiagramContext to invoke the protected method on subcontexts.
-  static const InputPortValue* GetInputPortValue(const Context<T>& context,
-                                                 int index) {
-    return context.GetInputPortValue(index);
-  }
-
-  /// Connects the input port at @p index to the value source @p port_value.
-  /// Disconnects whatever value source was previously there, and de-registers
-  /// it from the output port on which it depends.  In some Context
-  /// implementations, may require a recursive search through a tree of
-  /// subcontexts. Implementations must abort if @p index is out of range.
-  virtual void SetInputPortValue(
-      int index, std::unique_ptr<InputPortValue> port_value) = 0;
-
-  /// Allows DiagramContext to invoke the protected method on subcontexts.
-  static void SetInputPortValue(Context<T>* context, int index,
-                                std::unique_ptr<InputPortValue> port_value) {
-    context->SetInputPortValue(index, std::move(port_value));
-  }
-
-  /// Declares that @p parent is the context of @p child's enclosing Diagram.
-  /// The enclosing Diagram context is needed to evaluate inputs recursively.
-  /// Aborts if the parent has already been set to something else.
-  // Use static method so DiagramContext can invoke this on behalf of a child.
-  // Output argument is listed first because it is serving as the 'this'
-  // pointer here.
-  static void set_parent(Context<T>* child, const Context<T>* parent) {
-    DRAKE_DEMAND(child != nullptr);
-    child->set_parent(parent);
-  }
-
  private:
-  friend class detail::SystemContextAttorney<T>;
-
-  void set_parent(const Context<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
-
-  // Returns the parent Context or `nullptr` if this is the root Context.
-  const Context<T>* get_parent() const {
-    return parent_;
-  }
-
   // Current time and step information.
   StepInfo<T> step_info_;
 
   // Accuracy setting.
   optional<double> accuracy_;
-
-  // The context of the enclosing Diagram, used in EvalInputPort.
-  // This pointer MUST be treated as a black box. If you call any substantive
-  // methods on it, you are probably making a mistake.
-  reset_on_copy<const Context<T>*> parent_;
 };
-
-#ifndef DRAKE_DOXYGEN_CXX
-template <typename T> class System;
-namespace detail {
-
-// This is an attorney-client pattern class providing System<T> with access to
-// certain specific Context<T> private methods, which are otherwise private,
-// and nothing else.
-template <typename T>
-class SystemContextAttorney {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemContextAttorney);
-  SystemContextAttorney() = delete;
-
- private:
-  friend class System<T>;
-  static const Context<T>* get_parent(const Context<T>& context) {
-    return context.get_parent();
-  }
-};
-#endif
-
-}  // namespace detail
 
 }  // namespace systems
 }  // namespace drake

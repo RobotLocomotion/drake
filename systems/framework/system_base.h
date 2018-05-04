@@ -9,6 +9,7 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/input_port_base.h"
 
 namespace drake {
 namespace systems {
@@ -50,18 +51,14 @@ class SystemBase : public internal::SystemMessageInterface {
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
   currently just "_" (a lone underscore). */
-  // TODO(sherm1) Revisit this "_" business. Maybe something like "(noname)",
-  // or a unique default like DiagramBuilder uses?
   const std::string& GetSystemName() const final {
-    static never_destroyed<std::string> dummy("_");
-    return name_.empty() ? dummy.access() : name_;
+    return name_.empty() ? internal::SystemMessageInterface::no_name() : name_;
   }
 
   /** Generates and returns a human-readable full path name of this subsystem,
   for use in messages and logging. The name starts from the root System, with
   "::" delimiters between parent and child subsystems, with the individual
   subsystems represented by their names as returned by GetSystemName(). */
-  // TODO(sherm1) Change to more conventional "/" delimiter.
   std::string GetSystemPathname() const final;
 
   /** Returns the most-derived type of this concrete System object as a
@@ -88,6 +85,97 @@ class SystemBase : public internal::SystemMessageInterface {
     // Validate that restrictions imposed by subsystems are satisfied.
     ValidateAllocatedContext(*context);
     return context;
+  }
+
+  //----------------------------------------------------------------------------
+  /** @name                  Input port evaluation
+  These methods provide scalar type-independent evaluation of a System input
+  port in a particular Context. If necessary, they first cause the port's value
+  to become up to date, then they return a reference to the now-up-to-date value
+  in the given Context.
+
+  Specified preconditions for these methods operate as follows: The
+  preconditions will be checked in Debug builds but some or all might not be
+  checked in Release builds for performance reasons. If we do check, and a
+  precondition is violated, an std::logic_error will be thrown with a helpful
+  message.
+
+  @see System::EvalVectorInput(), System::EvalEigenVectorInput() for
+  scalar type-specific input port access. */
+  //@{
+
+  /** Returns the value of the input port with the given `port_index` as an
+  AbstractValue, which is permitted for ports of any type. Causes the value to
+  become up to date first if necessary, delegating to our parent Diagram.
+  Returns a pointer to the port's value, or nullptr if the port is not
+  connected. If you know the actual type, use one of the more-specific
+  signatures.
+
+  @pre `port_index` selects an existing input port of this System.
+
+  @see EvalInputValue(), System::EvalVectorInput(),
+       System::EvalEigenVectorInput() */
+  const AbstractValue* EvalAbstractInput(const ContextBase& context,
+                                         int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex port(port_index);
+    return EvalAbstractInputImpl(__func__, context, port);
+  }
+
+  /** Returns the value of an abstract-valued input port with the given
+  `port_index` as a value of known type `V`. Causes the value to become
+  up to date first if necessary. See EvalAbstractInput() for
+  more information.
+
+  The result is returned as a pointer to the input port's value of type `V`,
+  or nullptr if the port is not connected.
+
+  @pre `port_index` selects an existing input port of this System.
+  @pre the port's value must be retrievable from the stored abstract value
+       using `AbstractValue::GetValue<V>`.
+
+  @tparam V The type of data expected. */
+  template <typename V>
+  const V* EvalInputValue(const ContextBase& context, int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(__func__, port_index);
+    const InputPortIndex port(port_index);
+
+    const AbstractValue* const abstract_value =
+        EvalAbstractInputImpl(__func__, context, port);
+    if (abstract_value == nullptr)
+      return nullptr;  // An unconnected port.
+
+    // We have a value, is it a V?
+    const V* const value = abstract_value->MaybeGetValue<V>();
+    if (value == nullptr) {
+      ThrowInputPortHasWrongType(__func__, port, NiceTypeName::Get<V>(),
+                                 abstract_value->GetNiceTypeName());
+    }
+
+    return value;
+  }
+  //@}
+
+  /** Returns the number of input ports currently allocated in this System.
+  These are indexed from 0 to %get_num_input_ports()-1. */
+  int get_num_input_ports() const {
+    return static_cast<int>(input_ports_.size());
+  }
+
+  /** Returns a reference to an InputPort given its `port_index`.
+  @pre `port_index` selects an existing input port of this System. */
+  const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
+    return GetInputPortBaseOrThrow(__func__, port_index);
+  }
+
+  /** Returns the total dimension of all of the vector-valued input ports (as if
+  they were muxed). */
+  int get_num_total_inputs() const {
+    int count = 0;
+    for (const auto& in : input_ports_) count += in->size();
+    return count;
   }
 
   /** Returns the number nc of cache entries currently allocated in this System.
@@ -441,7 +529,17 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kAllInputPortsTicket);
   }
 
-  /** Returns a ticket indicating dependence on a particular cache entry. */
+  /** Returns a ticket indicating dependence on the input port indicated
+  by `index`.
+  @pre `index` selects an existing input port of this System. */
+  DependencyTicket input_port_ticket(InputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_ports_[index]->ticket();
+  }
+
+  /** Returns a ticket indicating dependence on the cache entry indicated
+  by `index`.
+  @pre `index` selects an existing cache entry in this System. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
@@ -451,10 +549,29 @@ class SystemBase : public internal::SystemMessageInterface {
  protected:
   SystemBase() = default;
 
+  /** Adds an already-constructed input port to this System. Insists that the
+  port already contains a reference to this System, and that the port's index is
+  already set to the next available input port index for this System. */
+  // TODO(sherm1) Add check on suitability of `size` parameter for the port's
+  // data type.
+  void CreateInputPort(std::unique_ptr<InputPortBase> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(port->get_index() == this->get_num_input_ports());
+    input_ports_.push_back(std::move(port));
+  }
+
   /** Returns a pointer to the service interface of the immediately enclosing
   Diagram if one has been set, otherwise nullptr. */
   const internal::SystemParentServiceInterface* get_parent_service() const {
     return parent_service_;
+  }
+
+  /** Assigns the next unused dependency ticket number, unique only within a
+  particular subsystem. Each call to this method increments the ticket
+  number. */
+  DependencyTicket assign_next_dependency_ticket() {
+    return next_available_ticket_++;
   }
 
   /** Declares that `parent_service` is the service interface of the Diagram
@@ -483,7 +600,14 @@ class SystemBase : public internal::SystemMessageInterface {
     system.ValidateAllocatedContext(context);
   }
 
-  /** Throws std::out_of_range to report a negative `port_index` that was
+  /** Shared code for updating an input port and returning a pointer to its
+  abstract value, or nullptr if the port is not connected. `func` should
+  be the user-visible API function name obtained with __func__. */
+  const AbstractValue* EvalAbstractInputImpl(const char* func,
+                                             const ContextBase& context,
+                                             InputPortIndex port_index) const;
+
+  /** Throws std::out_of_range to report a negative input `port_index` that was
   passed to API method `func`. */
   // We're taking an int here for the index; InputPortIndex can't be negative.
   [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
@@ -509,9 +633,23 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Throws std::logic_error because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither
-  freestanding nor connected. */
+  fixed nor connected. */
   [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
                                                InputPortIndex port_index) const;
+
+  /** Returns the InputPortBase at index `port_index`, throwing
+  std::out_of_range we don't like the port index. The name of the public API
+  method that received the bad index is provided in `func` and is included
+  in the error message. */
+  const InputPortBase& GetInputPortBaseOrThrow(const char* func,
+                                               int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeInputPortIndex(func, port_index);
+    const InputPortIndex port(port_index);
+    if (port_index >= get_num_input_ports())
+      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
+    return *input_ports_[port];
+  }
 
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
@@ -547,29 +685,26 @@ class SystemBase : public internal::SystemMessageInterface {
     DoValidateAllocatedContext(context);
   }
 
-  // Assigns the next unused dependency ticket number, unique only within a
-  // particular subsystem. Each call to this method increments the
-  // ticket number.
-  DependencyTicket assign_next_dependency_ticket() {
-    return next_available_ticket_++;
-  }
-
   // Declares that `parent_service` is the service interface of the immediately
   // enclosing Diagram. Aborts if the parent service has already been set to
   // something else.
   void set_parent_service(
       const internal::SystemParentServiceInterface* parent_service) {
     DRAKE_DEMAND(parent_service_ == nullptr ||
-        parent_service_ == parent_service);
+                 parent_service_ == parent_service);
     parent_service_ = parent_service;
   }
+
+  void CreateSourceTrackers(ContextBase*) const;
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 
+  // Indexed by InputPortIndex.
+  std::vector<std::unique_ptr<InputPortBase>> input_ports_;
+  // TODO(sherm1) Output ports go here.
   // Indexed by CacheIndex.
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
-  // TODO(sherm1) Add input and output ports here.
 
   // States and parameters don't hold their own tickets so we track them here.
   // TODO(sherm1) Add state & parameter trackers here.

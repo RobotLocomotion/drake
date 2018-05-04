@@ -269,7 +269,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
 
 /* This Diagram contains a sub-Diagram with one of its input ports unconnected.
 This is a specialized test to cover a case that was otherwise missed -- a
-Diagram has an input port that is neither exported nor freestanding.
+Diagram has an input port that is neither exported nor fixed.
 
          +--------------------------+
          |                          |
@@ -698,7 +698,7 @@ TEST_F(DiagramTest, AllocateInputs) {
   const AbstractValue* value = diagram_->EvalAbstractInput(*context, 0);
   EXPECT_EQ(value, nullptr);
 
-  diagram_->AllocateFreestandingInputs(context.get());
+  diagram_->AllocateFixedInputs(context.get());
 
   for (int port = 0; port < 3; port++) {
     const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
