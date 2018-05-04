@@ -508,6 +508,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
                               const geometry::Shape& shape,
                               geometry::SceneGraph<T>* scene_graph);
 
+  /// Returns an array of GeometryId's identifying the different visual
+  /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can be called at any time during the lifetime of `this`
+  /// plant, either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  /// @see RegisterVisualGeometry()
   const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
       const Body<T>& body) const;
 

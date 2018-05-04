@@ -147,6 +147,7 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifySdfModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
 }
 
+// Verifies we can parse link visuals.
 GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
@@ -174,6 +175,8 @@ GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
   // correct geometry.
 }
 
+// Verifies we can still parse the model dynamics if a SceneGraph is not
+// supplied.
 GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
@@ -185,6 +188,8 @@ GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
   EXPECT_EQ(plant.get_num_visual_geometries(), 0);
 }
 
+// Verifies that the source registration with a SceneGraph can happen before a
+// call to AddModelFromSdfFile().
 GTEST_TEST(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
