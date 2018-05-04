@@ -22,6 +22,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 /// Given an sdf::Visual object representing a <visual> element from an SDF
 /// file, this method makes a new drake::geometry::GeometryInstance object from
 /// this specification.
+/// This method returns nullptr when the given SDF specification corresponds
+/// to a geometry of type `sdf::GeometryType::EMPTY` (<empty/> SDF tag.)
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual);
 

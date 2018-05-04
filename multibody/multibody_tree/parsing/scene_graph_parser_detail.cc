@@ -56,6 +56,11 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   const Isometry3d X_LG = ToIsometry3(sdf_visual.Pose());
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
 
+  // Nothing left to do, return nullptr signaling this is an empty visual.
+  if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
+    return std::unique_ptr<GeometryInstance>(nullptr);
+  }
+
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
   // - A cylinder's length is parallel to the Cz axis,

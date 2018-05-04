@@ -102,7 +102,7 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
 // sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetal, MakeEmptyFromSdfGeometry) {
+GTEST_TEST(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
@@ -110,7 +110,7 @@ GTEST_TEST(SceneGraphParserDetal, MakeEmptyFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetal, MakeCylinderFromSdfGeometry) {
+GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<cylinder>"
       "  <radius>0.5</radius>"
@@ -123,7 +123,7 @@ GTEST_TEST(SceneGraphParserDetal, MakeCylinderFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetal, MakeSphereFromSdfGeometry) {
+GTEST_TEST(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<sphere>"
       "  <radius>0.5</radius>"
@@ -134,7 +134,7 @@ GTEST_TEST(SceneGraphParserDetal, MakeSphereFromSdfGeometry) {
 }
 
 // Verify MakeShapeFromSdfGeometry can make a half space from an sdf::Geometry.
-GTEST_TEST(SceneGraphParserDetal, MakeHalfSpaceFromSdfGeometry) {
+GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<plane>"
       "  <normal>1.0 0.0 0.0</normal>"
@@ -150,7 +150,7 @@ GTEST_TEST(SceneGraphParserDetal, MakeHalfSpaceFromSdfGeometry) {
 // sdf::Visual.
 // Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
 // test every combination of a <visual> with a different <geometry>.
-GTEST_TEST(SceneGraphParserDetal, MakeGeometryInstanceFromSdfVisual) {
+GTEST_TEST(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
       "<visual name = 'some_link_visual'>"
       "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
@@ -186,16 +186,16 @@ GTEST_TEST(SceneGraphParserDetal, MakeGeometryInstanceFromSdfVisual) {
 // canonical frame C whose pose needs to be specified at a GeometryInstance
 // level, the SDF specification does not define this pose at the <geometry>
 // level but at the <visual> (or <collision>) level.
-GTEST_TEST(SceneGraphParserDetal, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
+GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
   unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
       "<visual name = 'some_link_visual'>"
-          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
-          "  <geometry>"
-          "    <plane>"
-          "      <normal>1.0 2.0 3.0</normal>"
-          "    </plane>"
-          "  </geometry>"
-          "</visual>");
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
 
@@ -225,6 +225,20 @@ GTEST_TEST(SceneGraphParserDetal, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+// Verify MakeSdfVisualFromString() returns nullptr when the visual specifies
+// an <empty/> geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
+  unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+      "<visual name = 'some_link_visual'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <empty/>"
+      "  </geometry>"
+      "</visual>");
+  unique_ptr<GeometryInstance> geometry_instance =
+      MakeGeometryInstanceFromSdfVisual(*sdf_visual);
+  EXPECT_EQ(geometry_instance, nullptr);
+}
 
 }  // namespace
 }  // namespace multibody_plant
