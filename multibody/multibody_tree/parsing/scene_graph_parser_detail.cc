@@ -20,6 +20,9 @@ using std::make_unique;
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
   switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
     case sdf::GeometryType::CYLINDER: {
       // TODO(amcastro-tri): Verify with @nkoenig that sdf::Cylinder's axis
       // point in the positive z direction as Drake's cylinders do.
@@ -38,6 +41,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // half space in the parent link frame.
       return make_unique<geometry::HalfSpace>();
     }
+    // TODO(amcastro-tri): When SceneGraph supports it add the BOX case.
+    // TODO(amcastro-tri): When sdformat supports it add the MESH case.
     default: {
       throw std::logic_error("Geometry type not supported.");
     }

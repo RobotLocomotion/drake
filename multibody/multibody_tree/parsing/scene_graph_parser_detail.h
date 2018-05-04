@@ -14,6 +14,8 @@ namespace detail {
 /// Given an sdf::Geometry object representing a <geometry> element from an SDF
 /// file, this method makes a new drake::geometry::Shape object from this
 /// specification.
+/// For `sdf_geometry.Type() == sdf::GeometryType::EMPTY`, corresponding to the
+/// <empty/> SDF tag, it returns `nullptr`.
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry);
 
