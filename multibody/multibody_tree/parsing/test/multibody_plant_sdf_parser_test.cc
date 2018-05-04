@@ -174,6 +174,45 @@ GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
   // correct geometry.
 }
 
+GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+  MultibodyPlant<double> plant;
+  AddModelFromSdfFile(full_name, &plant);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.get_num_visual_geometries(), 0);
+}
+
+GTEST_TEST(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.get_num_visual_geometries(), 5);
+
+  const std::vector<GeometryId>& link1_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1"));
+  EXPECT_EQ(link1_visual_geometry_ids.size(), 2);
+
+  const std::vector<GeometryId>& link2_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2"));
+  EXPECT_EQ(link2_visual_geometry_ids.size(), 3);
+
+  const std::vector<GeometryId>& link3_visual_geometry_ids =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3"));
+  EXPECT_EQ(link3_visual_geometry_ids.size(), 0);
+
+  // TODO(SeanCurtis-TRI): Once SG supports it, confirm `GeometryId` maps to the
+  // correct geometry.
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
