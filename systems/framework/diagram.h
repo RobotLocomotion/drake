@@ -963,9 +963,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
                        ConvertToContextPortIdentifier(dest));
     }
 
-    // Declare the Diagram-external inputs.
-    for (const InputPortLocator& id : input_port_ids_) {
-      context->ExportInput(ConvertToContextPortIdentifier(id));
+    // Connect exported child subsystem input ports to the Diagram-level input
+    // ports to which they have been exported. Declares dependency of each
+    // child-level input on its Diagram-level input.
+    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+      const InputPortLocator& id = input_port_ids_[i];
+      context->ExportInput(i, ConvertToContextPortIdentifier(id));
     }
 
     // TODO(sherm1) Move to final resource allocation phase.

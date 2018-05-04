@@ -74,16 +74,7 @@ constexpr int kAutoSize = -1;
 #ifndef DRAKE_DOXYGEN_CXX
 class AbstractValue;
 class ContextBase;
-
-// (Stub, please ignore) An empty type-agnostic base class for input ports.
-// TODO(sherm1) Replace with the real InputPortBase in its own header (see
-// caching branch).
-class InputPortBase {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortBase)
-  InputPortBase() = default;
-  virtual ~InputPortBase() = default;
-};
+class InputPortBase;
 
 namespace internal {
 

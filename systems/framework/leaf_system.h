@@ -128,8 +128,6 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
-    // Reserve inputs that have already been declared.
-    context->SetNumInputPorts(this->get_num_input_ports());
     // Reserve continuous state via delegation to subclass.
     context->set_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.

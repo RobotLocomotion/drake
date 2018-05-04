@@ -7,11 +7,22 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/reset_on_copy.h"
+#include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
+#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides SystemBase limited "friend" access to ContextBase.
+class SystemBaseContextAttorney;
+}  // namespace detail
+#endif
 
 /** Provides non-templatized functionality shared by the templatized derived
 classes. That includes caching and dependency tracking, and management of
@@ -74,14 +85,14 @@ class ContextBase : public internal::ContextMessageInterface {
 
   /** (Debugging) Returns the local name of the subsystem for which this is the
   Context. See GetSystemPathname() if you want the full name. */
-  // TODO(sherm1) Replace with the real name.
+  // Keep this the same as SystemBase::GetSystemPathname().
   const std::string& GetSystemName() const final {
-    static const never_destroyed<std::string> name("dummy");
-    return name.access();
+    static never_destroyed<std::string> dummy("_");
+    return system_name_.empty() ? dummy.access() : system_name_;
   }
 
   /** (Debugging) Returns the full pathname of the subsystem for which this is
-  the Context. See get_system_pathname() if you want to the full name. */
+  the Context. */
   std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */
@@ -126,6 +137,50 @@ class ContextBase : public internal::ContextMessageInterface {
     return graph_;
   }
 
+  /** Returns the number of input ports represented in this context. */
+  int get_num_input_ports() const {
+    return static_cast<int>(input_port_tickets_.size());
+  }
+
+  /** Starts a new change event and returns the event number which is unique
+  for this entire Context tree, not just this subcontext. */
+  int64_t start_new_change_event() {
+    return get_mutable_root_context_base()
+        .increment_local_change_event_counter();
+  }
+
+  /** Connects the input port at `index` to a FreestandingInputPortValue with
+  the given abstract `value`. Asserts if `index` is out of range. Returns a
+  reference to the allocated FreestandingInputPortValue that will remain valid
+  until this input port's value source is replaced or the Context is destroyed.
+  You may use that reference to modify the input port's value using the
+  appropriate FreestandingInputPortValue method, which will ensure that
+  invalidation notifications are delivered.
+
+  This is the most general way to provide a value (type-erased) for an
+  unconnected input port. See `Context<T>` for more-convenient overloads of
+  FixInputPort() for vector values with elements of type T. */
+  FreestandingInputPortValue& FixInputPort(
+      int index, std::unique_ptr<AbstractValue> value);
+
+  /** For input port `index`, returns the FreestandingInputPortValue if the
+  port is fixed (freestanding), otherwise nullptr. Asserts if `index` is out of
+  range. */
+  const FreestandingInputPortValue* MaybeGetFixedInputPortValue(
+      int index) const {
+    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    return input_port_values_[index].get();
+  }
+
+  // For internal use only.
+#if !defined(DRAKE_DOXYGEN_CXX)
+
+  // Add the next input port. Expected index is supplied along with the
+  // assigned ticket. Subscribe the "all input ports" tracker to this one.
+  void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
+
+#endif
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
@@ -152,6 +207,33 @@ class ContextBase : public internal::ContextMessageInterface {
     return source.DoCloneWithoutPointers();
   }
 
+  /** Declares that `parent` is the context of the enclosing Diagram, and
+  `index` is the SubsystemIndex of this child subsystem in its parent.
+  Aborts if the parent has already been set to something else. */
+  // Use static method so DiagramContext can invoke this on behalf of a child.
+  // Output argument is listed first because it is serving as the 'this'
+  // pointer here.
+  static void set_parent(ContextBase* child, const ContextBase* parent,
+                         SubsystemIndex index) {
+    DRAKE_DEMAND(child != nullptr);
+    child->set_parent(parent, index);
+  }
+
+  /** (Internal use only) */
+  // Gets the value of change event counter stored in this subcontext. This
+  // should only be used when this subcontext is serving as root.
+  int64_t get_local_change_event_counter() const {
+    return current_change_event_;
+  }
+
+  /** (Internal use only) */
+  // Increments the change event counter for this subcontext and returns the
+  // new value. This should only be used when this subcontext is serving
+  // as root.
+  int64_t increment_local_change_event_counter() {
+    return ++current_change_event_;
+  }
+
   /** Derived classes must implement this so that it performs the complete
   deep copy of the context, including all base class members but not fixing
   up base class pointers. To do that, implement a protected copy constructor
@@ -161,6 +243,46 @@ class ContextBase : public internal::ContextMessageInterface {
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
  private:
+  friend class detail::SystemBaseContextAttorney;
+
+  void set_parent(const ContextBase* parent, SubsystemIndex index) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+    index_in_parent_ = index;
+  }
+
+  // Returns the parent Context or `nullptr` if this is the root Context.
+  const ContextBase* get_parent_base() const { return parent_; }
+
+  // Records the name of the system whose context this is.
+  void set_system_name(const std::string& name) { system_name_ = name; }
+
+  // Returns a const reference to the %ContextBase of the root Context of the
+  // tree containing this subcontext.
+  // TODO(sherm1) Consider precalculating this for faster access.
+  const ContextBase& get_root_context_base() const {
+    const ContextBase* node = this;
+    while (node->get_parent_base()) node = node->get_parent_base();
+    return *node;
+  }
+
+  // Returns a mutable reference to the root Context of the tree containing
+  // this subcontext.
+  ContextBase& get_mutable_root_context_base() {
+    return const_cast<ContextBase&>(get_root_context_base());
+  }
+
+  // Fixes the input port at `index` to the internal value source `port_value`.
+  // If the port wasn't previously fixed, assigns a ticket and tracker for the
+  // `port_value`, then subscribes the input port to the source's tracker.
+  // If the port was already fixed, we just use the existing tracker and
+  // subscription but replace the value. Notifies the port's downstream
+  // subscribers that the value has changed. Aborts if `index` is out of range,
+  // or the given `port_value` is null or already belongs to a context.
+  void SetFixedInputPortValue(
+      InputPortIndex index,
+      std::unique_ptr<FreestandingInputPortValue> port_value);
+
   // Fills in the dependency graph with the built-in trackers that are common
   // to every Context (and every System).
   void CreateBuiltInTrackers();
@@ -173,18 +295,72 @@ class ContextBase : public internal::ContextMessageInterface {
       const ContextBase& clone,
       DependencyTracker::PointerMap* tracker_map) const;
 
-  // Assuming `this` is a recently-cloned Context containing stale references
-  // to the source Context's trackers, repair those pointers using the given
-  // map.
-  void FixTrackerPointers(const ContextBase& source,
+  // Assuming `this` is a recently-cloned Context that has yet to have its
+  // internal pointers updated, set those pointers now. The given map is used
+  // to update tracker pointers.
+  void FixContextPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map);
+
+  // We record tickets so we can reconstruct the dependency graph when cloning
+  // or transmogrifying a Context without a System present.
+
+  // Index by InputPortIndex.
+  std::vector<DependencyTicket> input_port_tickets_;
+
+  // TODO(sherm1) Output port, state, and parameter tickets go here.
+
+  // For each input port, the fixed value or null if the port is connected to
+  // something else (in which case we need System help to get the value).
+  // Semantically, these are identical to Parameters.
+  // Each non-null FreestandingInputPortValue has a ticket and associated
+  // tracker.
+  // Index with InputPortIndex.
+  std::vector<copyable_unique_ptr<FreestandingInputPortValue>>
+      input_port_values_;
 
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
 
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
+
+  // This is used only when this subcontext is serving as the root
+  // of a context tree.
+  int64_t current_change_event_{0};
+
+  // The Context of the enclosing Diagram, and the index of this subcontext
+  // within that Diagram. Null/invalid when this is the root context.
+  reset_on_copy<const ContextBase*> parent_;
+  SubsystemIndex index_in_parent_;
+
+  // Name of the subsystem whose subcontext this is.
+  std::string system_name_;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+class SystemBase;
+namespace detail {
+
+// This is an attorney-client pattern class providing SystemBase with access to
+// certain specific ContextBase private methods, and nothing else.
+class SystemBaseContextAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextAttorney);
+  SystemBaseContextAttorney() = delete;
+
+ private:
+  friend class drake::systems::SystemBase;
+  static void set_system_name(ContextBase* context, const std::string& name) {
+    DRAKE_DEMAND(context != nullptr);
+    context->set_system_name(name);
+  }
+  static const ContextBase* get_parent_base(const ContextBase& context) {
+    return context.get_parent_base();
+  }
+};
+
+}  // namespace detail
+#endif
 
 }  // namespace systems
 }  // namespace drake
