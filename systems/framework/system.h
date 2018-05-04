@@ -260,12 +260,13 @@ class System : public SystemBase {
   /// that this System requires, and binds it to the port, disconnecting any
   /// prior input. Does not assign any values to the freestanding inputs.
   void AllocateFreestandingInputs(Context<T>* context) const {
-    for (const auto& port : input_ports_) {
-      if (port->get_data_type() == kVectorValued) {
-        context->FixInputPort(port->get_index(), AllocateInputVector(*port));
+    for (InputPortIndex i(0); i < get_num_input_ports(); ++i) {
+      const InputPortDescriptor<T>& port = get_input_port(i);
+      if (port.get_data_type() == kVectorValued) {
+        context->FixInputPort(port.get_index(), AllocateInputVector(port));
       } else {
-        DRAKE_DEMAND(port->get_data_type() == kAbstractValued);
-        context->FixInputPort(port->get_index(), AllocateInputAbstract(*port));
+        DRAKE_DEMAND(port.get_data_type() == kAbstractValued);
+        context->FixInputPort(port.get_index(), AllocateInputAbstract(port));
       }
     }
   }
@@ -452,58 +453,6 @@ class System : public SystemBase {
       ThrowCantEvaluateInputPort(__func__, port);
 
     return basic_value->get_value();
-  }
-
-  /// Returns the value of the input port with the given `port_index` as an
-  /// AbstractValue, regardless of the port's type. Causes the value to become
-  /// up to date first if necessary, delegating to our parent Diagram. Returns
-  /// a pointer to the port's value, or nullptr if the port is not connected.
-  /// If you know the actual type, use one of the more-specific signatures.
-  ///
-  /// @pre `port_index` must be non-negative.
-  /// @pre `port_index` must designate an existing input port.
-  ///
-  /// @see EvalInputValue(), EvalVectorInput(), EvalEigenVectorInput()
-  const AbstractValue* EvalAbstractInput(const Context<T>& context,
-                                         int port_index) const {
-    if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
-    const InputPortIndex port(port_index);
-    return EvalAbstractInputImpl(__func__, context, port);
-  }
-
-  /// Returns the value of an abstract-valued input port with the given
-  /// `port_index` as a value of known type `V`. Causes the value to become
-  /// up to date first if necessary. See EvalAbstractInput() for
-  /// more information.
-  ///
-  /// The result is returned as a pointer to the input port's value of type `V`,
-  /// or nullptr if the port is not connected.
-  ///
-  /// @pre `port_index` must be non-negative.
-  /// @pre `port_index` must designate an existing input port.
-  /// @pre the port's value must be retrievable from the stored abstract value
-  ///      using `AbstractValue::GetValue<V>`.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(const Context<T>& context, int port_index) const {
-    if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
-    const InputPortIndex port(port_index);
-
-    const AbstractValue* const abstract_value =
-        EvalAbstractInputImpl(__func__, context, port);
-    if (abstract_value == nullptr) return nullptr;  // An unconnected port.
-
-    // We have a value, is it a V?
-    const V* const value = abstract_value->MaybeGetValue<V>();
-    if (value == nullptr) {
-      ThrowInputPortHasWrongType(__func__, port, NiceTypeName::Get<V>(),
-                                 abstract_value->GetNiceTypeName());
-    }
-
-    return value;
   }
   //@}
 
@@ -1011,23 +960,23 @@ class System : public SystemBase {
                                            GetGraphvizId());
   }
 
-  /// Returns the number of input ports of the system.
-  int get_num_input_ports() const {
-    return static_cast<int>(input_ports_.size());
-  }
+  // So we don't have to keep writing this->get_num_input_ports().
+  using SystemBase::get_num_input_ports;
 
   /// Returns the number of output ports of the system.
   int get_num_output_ports() const {
     return static_cast<int>(output_ports_.size());
   }
 
-  /// Returns the descriptor of the input port at index @p port_index.
-  /// Throws std::out_of_range if @p port_index doesn't select an existing port.
+  /// Returns the typed input port at index @p port_index.
+  // TODO(sherm1) Make this an InputPortIndex.
   const InputPortDescriptor<T>& get_input_port(int port_index) const {
-    return GetInputPortOrThrow(__func__, port_index);
+    return dynamic_cast<const InputPortDescriptor<T>&>(
+        this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
-  /// Returns the output port at index @p port_index.
+  /// Returns the typed output port at index @p port_index.
+  // TODO(sherm1) Make this an OutputPortIndex.
   const OutputPort<T>& get_output_port(int port_index) const {
     if (port_index < 0 || port_index >= get_num_output_ports()) {
       throw std::out_of_range(
@@ -1074,14 +1023,6 @@ class System : public SystemBase {
     return true;
   }
 
-  /// Returns the total dimension of all of the input ports (as if they were
-  /// muxed).
-  int get_num_total_inputs() const {
-    int count = 0;
-    for (const auto& in : input_ports_) count += in->size();
-    return count;
-  }
-
   /// Returns the total dimension of all of the output ports (as if they were
   /// muxed).
   int get_num_total_outputs() const {
@@ -1125,12 +1066,22 @@ class System : public SystemBase {
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
                        this->get_num_input_ports());
 
-    // Checks that the size of the input ports in the context matches the
-    // declarations made by the system.
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      const InputPortDescriptor<T>& port = this->get_input_port(i);
-      context.VerifyInputPort(port.get_index(), port.get_data_type(),
-                              port.size());
+    // Checks that the size of the freestanding vector input ports in the
+    // context matches the declarations made by the system.
+    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+      const FreestandingInputPortValue* port_value =
+          context.MaybeGetFixedInputPortValue(i);
+
+      // If the port isn't fixed, we don't have anything else to check.
+      if (port_value == nullptr) continue;
+      const auto& input_port = get_input_port_base(i);
+      // In the vector-valued case, check the size.
+      if (input_port.get_data_type() == kVectorValued) {
+        const BasicVector<T1>& input_vector =
+            port_value->template get_vector_value<T1>();
+        DRAKE_THROW_UNLESS(input_vector.size() == input_port.size());
+      }
+      // In the abstract-valued case, there is nothing else to check.
     }
   }
 
@@ -1470,8 +1421,9 @@ class System : public SystemBase {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object, possibly supporting
-  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+  /// Constructs an empty %System base class object and allocates base class
+  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
+  /// etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
@@ -1489,9 +1441,10 @@ class System : public SystemBase {
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
-    input_ports_.push_back(std::make_unique<InputPortDescriptor<T>>(
-        this, port_index, type, size, random_type));
-    return *input_ports_.back();
+    this->CreateInputPort(
+        std::make_unique<InputPortDescriptor<T>>(
+            port_index, type, size, random_type, this));
+    return get_input_port(port_index);
   }
 
   /// Adds an abstract-valued port to the input topology.
@@ -1888,31 +1841,6 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
-  // Shared code for updating an input port and returning a pointer to its
-  // abstract value, or nullptr if the port is not connected. `func` should
-  // be the user-visible API function name obtained with __func__.
-  const AbstractValue* EvalAbstractInputImpl(const char* func,
-                                             const Context<T>& context,
-                                             InputPortIndex port_index) const {
-    if (port_index >= get_num_input_ports())
-      ThrowInputPortIndexOutOfRange(func, port_index, get_num_input_ports());
-
-    const FreestandingInputPortValue* free_port_value =
-        context.MaybeGetFixedInputPortValue(port_index);
-    if (free_port_value != nullptr)
-      return free_port_value->get_abstract_data();  // A fixed input port.
-
-    // The only way to satisfy an input port of a root System is to make
-    // it freestanding. Since it wasn't freestanding, it is unconnected.
-    if (get_parent_service() == nullptr) return nullptr;
-
-    // This is not the root System, and the port isn't freestanding, so ask
-    // our parent to evaluate it.
-    return get_parent_service()->EvalConnectedSubsystemInputPort(
-        *detail::SystemContextAttorney<T>::get_parent(context),
-        get_input_port(port_index));
-  }
-
   // Shared code for updating a vector input port and returning a pointer to its
   // value as a BasicVector<T>, or nullptr if the port is not connected. Throws
   // a logic_error if the port_index is out of range or if the input port is not
@@ -1923,7 +1851,7 @@ class System : public SystemBase {
       InputPortIndex port_index) const {
     // Make sure this is the right kind of port before worrying about whether
     // it is connected up properly.
-    const InputPortDescriptor<T>& port = GetInputPortOrThrow(func, port_index);
+    const InputPortBase& port = GetInputPortBaseOrThrow(func, port_index);
     if (port.get_data_type() != kVectorValued)
       ThrowNotAVectorInputPort(func, port_index);
 
@@ -1931,7 +1859,8 @@ class System : public SystemBase {
     // a problem here.
     const AbstractValue* const abstract_value =
         EvalAbstractInputImpl(func, context, port_index);
-    if (abstract_value == nullptr) return nullptr;
+    if (abstract_value == nullptr)
+      return nullptr;
 
     // We have a vector port with a value, it better be a BasicVector!
     const BasicVector<T>* const basic_value =
@@ -1945,22 +1874,7 @@ class System : public SystemBase {
     return basic_value;
   }
 
-  // Returns the descriptor of the input port at index @p port_index, throwing
-  // std::out_of_range we don't like the port index. The message is reported
-  // as though issued by API method @p func.
-  const InputPortDescriptor<T>& GetInputPortOrThrow(const char* func,
-                                                    int port_index) const {
-    if (port_index < 0)
-      ThrowNegativeInputPortIndex(func, port_index);
-    const InputPortIndex port(port_index);
-    if (port_index >= get_num_input_ports())
-      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
-    return *input_ports_[port];
-  }
-
-  // input_ports_ and output_ports_ are vectors of unique_ptr so that references
-  // to the descriptors will remain valid even if the vector is resized.
-  std::vector<std::unique_ptr<InputPortDescriptor<T>>> input_ports_;
+  // TODO(sherm1) Move output ports up with input ports.
   std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
 
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
@@ -1985,6 +1899,12 @@ class System : public SystemBase {
   mutable T fake_cache_conservative_power_;
   mutable T fake_cache_nonconservative_power_;
 };
+
+// This definition had to wait until System<T>'s declaration.
+template <typename T>
+const System<T>* InputPortDescriptor<T>::get_system() const {
+  return dynamic_cast<const System<T>*>(&get_system_base());
+}
 
 }  // namespace systems
 }  // namespace drake
