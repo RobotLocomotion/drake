@@ -6,7 +6,6 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
@@ -14,6 +13,14 @@
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides System<T> access to a Context's parent.
+template<typename T>
+class SystemContextAttorney;
+}  // namespace detail
+#endif
 
 /// Contains information about the independent variable including time and
 /// step number.
@@ -273,86 +280,22 @@ class Context : public ContextBase {
     return FixInputPort(index, std::move(vec));
   }
 
-  /// Evaluates and returns the value of the input port identified by
-  /// @p descriptor, using the given @p evaluator, which should be the Diagram
-  /// containing the System that allocated this Context. The evaluation will be
-  /// performed in this Context's parent. It is a recursive operation that may
-  /// invoke long chains of evaluation through all the Systems that are
-  /// prerequisites to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected to a value source. Aborts if
-  /// the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it.
-  const InputPortValue* EvalInputPort(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value =
-        GetInputPortValue(descriptor.get_index());
-    if (port_value == nullptr) return nullptr;
-    if (port_value->requires_evaluation()) {
-      DRAKE_DEMAND(evaluator != nullptr);
-      evaluator->EvaluateSubsystemInputPort(parent_, descriptor);
-    }
-    return port_value;
-  }
+  /// Returns the FreestandingInputPortValue for the given input port if it
+  /// is a fixed (freestanding) input port, otherwise nullptr.
+  // TODO(sherm1) Move this T-independent method to ContextBase.
+  const FreestandingInputPortValue* MaybeGetFixedInputPortValue(
+      int index) const {
+    // TODO(sherm1) Get rid of this trickery and simply return the freestanding
+    // value or null. See caching branch near context_base.h:287.
+    const InputPortValue* port_value = GetInputPortValue(index);
+    if (port_value == nullptr) return nullptr;  // Unconnected port.
 
-  /// Evaluates and returns the vector value of the input port with the given
-  /// @p descriptor. This is a recursive operation that may invoke long chains
-  /// of evaluation through all the Systems that are prerequisite to the
-  /// specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port is not vector-valued.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalVectorInput instead.
-  const BasicVector<T>* EvalVectorInput(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value = EvalInputPort(evaluator, descriptor);
-    if (port_value == nullptr) return nullptr;
-    return port_value->template get_vector_data<T>();
-  }
+    // TODO(sherm1) This inappropriate use of dynamic_cast as a runtime
+    // type-test violates the GSG. Eliminate with above fix.
+    auto const free_port_value =
+        dynamic_cast<const FreestandingInputPortValue*>(port_value);
 
-  /// Evaluates and returns the abstract value of the input port with the given
-  /// @p descriptor. This is a recursive operation that may invoke long chains
-  /// of evaluation through all the Systems that are prerequisite to the
-  /// specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalAbstractInput instead.
-  const AbstractValue* EvalAbstractInput(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const InputPortValue* port_value = EvalInputPort(evaluator, descriptor);
-    if (port_value == nullptr) return nullptr;
-    return port_value->get_abstract_data();
-  }
-
-  /// Evaluates and returns the data of the input port at @p index.
-  /// This is a recursive operation that may invoke long chains of evaluation
-  /// through all the Systems that are prerequisite to the specified port.
-  ///
-  /// Returns nullptr if the port is not connected.
-  /// Throws std::bad_cast if the port does not have type V.
-  /// Aborts if the port does not exist.
-  ///
-  /// This is a framework implementation detail.  User code should not call it;
-  /// consider calling System::EvalInputValue instead.
-  ///
-  /// @tparam V The type of data expected.
-  template <typename V>
-  const V* EvalInputValue(
-      const detail::InputPortEvaluatorInterface<T>* evaluator,
-      const InputPortDescriptor<T>& descriptor) const {
-    const AbstractValue* value = EvalAbstractInput(evaluator, descriptor);
-    if (value == nullptr) return nullptr;
-    return &(value->GetValue<V>());
+    return free_port_value;  // The value, or nullptr if not freestanding.
   }
 
   // =========================================================================
@@ -452,38 +395,22 @@ class Context : public ContextBase {
     get_mutable_parameters().SetFrom(source.get_parameters());
   }
 
-  /// Declares that @p parent is the context of the enclosing Diagram. The
-  /// enclosing Diagram context is needed to evaluate inputs recursively.
-  /// Aborts if the parent has already been set to something else.
-  ///
-  /// This is a dangerous implementation detail. Conceptually, a Context
-  /// ought to be completely ignorant of its parent Context. However, we
-  /// need this pointer so that we can cause our inputs to be evaluated in
-  /// EvalInputPort.  See https://github.com/RobotLocomotion/drake/pull/3455.
-  void set_parent(const Context<T>* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
-
-  /// Throws an exception unless the given @p descriptor matches the inputs
+  /// Throws an exception unless the given port information matches the inputs
   /// actually connected to this context in shape.
-  /// Supports any scalar type of `descriptor`, but expects T by default.
-  ///
-  /// @tparam T1 the scalar type of the InputPortDescriptor to check.
-  template<typename T1 = T>
-  void VerifyInputPort(const InputPortDescriptor<T1>& descriptor) const {
-    const int i = descriptor.get_index();
+  void VerifyInputPort(InputPortIndex i, PortDataType data_type,
+                       int size) const {
     const InputPortValue* port_value = GetInputPortValue(i);
     // If the port isn't connected, we don't have anything else to check.
-    if (port_value == nullptr) { return; }
+    if (port_value == nullptr)
+      return;
     // TODO(david-german-tri, sherm1): Consider checking sampling here.
 
     // In the vector-valued case, check the size.
-    if (descriptor.get_data_type() == kVectorValued) {
+    if (data_type == kVectorValued) {
       const BasicVector<T>* input_vector =
           port_value->template get_vector_data<T>();
       DRAKE_THROW_UNLESS(input_vector != nullptr);
-      DRAKE_THROW_UNLESS(input_vector->size() == descriptor.size());
+      DRAKE_THROW_UNLESS(input_vector->size() == size);
     }
     // In the abstract-valued case, there is nothing else to check.
   }
@@ -531,7 +458,7 @@ class Context : public ContextBase {
   /// Asserts if @p index is out of range.
   virtual const InputPortValue* GetInputPortValue(int index) const = 0;
 
-  /// Allows derived classes to invoke the protected method on subcontexts.
+  /// Allows DiagramContext to invoke the protected method on subcontexts.
   static const InputPortValue* GetInputPortValue(const Context<T>& context,
                                                  int index) {
     return context.GetInputPortValue(index);
@@ -545,13 +472,36 @@ class Context : public ContextBase {
   virtual void SetInputPortValue(
       int index, std::unique_ptr<InputPortValue> port_value) = 0;
 
-  /// Allows derived classes to invoke the protected method on subcontexts.
+  /// Allows DiagramContext to invoke the protected method on subcontexts.
   static void SetInputPortValue(Context<T>* context, int index,
                                 std::unique_ptr<InputPortValue> port_value) {
     context->SetInputPortValue(index, std::move(port_value));
   }
 
+  /// Declares that @p parent is the context of @p child's enclosing Diagram.
+  /// The enclosing Diagram context is needed to evaluate inputs recursively.
+  /// Aborts if the parent has already been set to something else.
+  // Use static method so DiagramContext can invoke this on behalf of a child.
+  // Output argument is listed first because it is serving as the 'this'
+  // pointer here.
+  static void set_parent(Context<T>* child, const Context<T>* parent) {
+    DRAKE_DEMAND(child != nullptr);
+    child->set_parent(parent);
+  }
+
  private:
+  friend class detail::SystemContextAttorney<T>;
+
+  void set_parent(const Context<T>* parent) {
+    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
+    parent_ = parent;
+  }
+
+  // Returns the parent Context or `nullptr` if this is the root Context.
+  const Context<T>* get_parent() const {
+    return parent_;
+  }
+
   // Current time and step information.
   StepInfo<T> step_info_;
 
@@ -563,6 +513,29 @@ class Context : public ContextBase {
   // methods on it, you are probably making a mistake.
   reset_on_copy<const Context<T>*> parent_;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T> class System;
+namespace detail {
+
+// This is an attorney-client pattern class providing System<T> with access to
+// certain specific Context<T> private methods, which are otherwise private,
+// and nothing else.
+template <typename T>
+class SystemContextAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemContextAttorney);
+  SystemContextAttorney() = delete;
+
+ private:
+  friend class System<T>;
+  static const Context<T>* get_parent(const Context<T>& context) {
+    return context.get_parent();
+  }
+};
+#endif
+
+}  // namespace detail
 
 }  // namespace systems
 }  // namespace drake

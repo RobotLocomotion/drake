@@ -3,13 +3,25 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
+#include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace automotive {
 namespace {
 
+static constexpr double kArcRadius = 25.;
+
 using maliput::api::GeoPosition;
+using maliput::api::RoadGeometryId;
+using maliput::multilane::ArcOffset;
+using maliput::multilane::Builder;
+using maliput::multilane::Direction;
+using maliput::multilane::Endpoint;
+using maliput::multilane::EndpointZ;
+using maliput::multilane::EndReference;
+using maliput::multilane::LaneLayout;
+using maliput::multilane::StartReference;
 
 class PurePursuitTest : public ::testing::Test {
  protected:
@@ -23,11 +35,26 @@ class PurePursuitTest : public ::testing::Test {
         std::numeric_limits<double>::epsilon() /* angular_tolerance */));
   }
 
+  void MakeQuarterCircleRoad() {
+    const LaneLayout kLaneLayout(0. /* left shoulder */,
+                                 0. /* right shoulder */, 1. /* one lane */,
+                                 0 /* ref lane */, 0. /* ref r-value */);
+    const ArcOffset kCounterClockwiseArc(kArcRadius, M_PI /* arc angle */);
+    const EndpointZ kFlat(0., 0., 0., 0.);
+    const Endpoint kStartEndpoint{{0., 0., 0.}, kFlat};
+    Builder builder(4. /* lane width */, {0., 5.}, 0.01, 0.01 * M_PI);
+    builder.Connect("0", kLaneLayout,
+                    StartReference().at(kStartEndpoint, Direction::kForward),
+                    kCounterClockwiseArc,
+                    EndReference().z_at(kFlat, Direction::kForward));
+    road_ = builder.Build(RoadGeometryId{"Single-Lane Quarter Circle"});
+  }
+
   const PurePursuitParams<double> pp_params_{};
   const PurePursuitParams<AutoDiffXd> pp_params_ad_{};
   const SimpleCarParams<double> car_params_{};
   const SimpleCarParams<AutoDiffXd> car_params_ad_{};
-  std::unique_ptr<maliput::api::RoadGeometry> road_;
+  std::unique_ptr<const maliput::api::RoadGeometry> road_;
 };
 
 TEST_F(PurePursuitTest, Evaluate) {
@@ -39,8 +66,7 @@ TEST_F(PurePursuitTest, Evaluate) {
   systems::rendering::PoseVector<double> ego_pose;
   ego_pose.set_translation(
       Eigen::Translation3d(0. /* s */, 0. /* r */, 0. /* h */));
-  ego_pose.set_rotation(Eigen::Quaternion<double>(0. /* w */, 0. /* x */,
-                                                  0. /* y */, 0. /* z */));
+  ego_pose.set_rotation(Eigen::Quaternion<double>::Identity());
 
   double result = PurePursuit<double>::Evaluate(
       pp_params_, car_params_, {lane, true /* with_s */}, ego_pose);
@@ -99,6 +125,37 @@ TEST_F(PurePursuitTest, Evaluate) {
   EXPECT_LT(-M_PI_2, result);
 }
 
+// Tests that rotational symmetry is preserved.
+TEST_F(PurePursuitTest, RotationalSymmetry) {
+  MakeQuarterCircleRoad();
+  const maliput::api::Lane* const lane =
+      road_->junction(0)->segment(0)->lane(0);
+
+  // Situate the ego car at the START of the arc-shaped lane such that it is
+  // aligned with the lane, but offset by r = -1 from the center-line.
+  systems::rendering::PoseVector<double> ego_pose;
+  ego_pose.set_translation(
+      Eigen::Translation3d(0. /* x */, -1. /* y */, 0. /* z */));
+  ego_pose.set_rotation(Eigen::Quaternion<double>::Identity());
+
+  double result_zero = PurePursuit<double>::Evaluate(
+      pp_params_, car_params_, {lane, true /* with_s */}, ego_pose);
+
+  // Situate the ego car at the END of the arc-shaped lane such that it is
+  // aligned with the lane, but offset by r = -1 from the center-line.
+  ego_pose.set_translation(Eigen::Translation3d(
+      kArcRadius + 1. /* x */, kArcRadius /* y */, 0. /* z */));
+  const double yaw = M_PI_2;
+  ego_pose.set_rotation(Eigen::Quaternion<double>(std::cos(yaw * 0.5) /* w */,
+                                                  0. /* x */, 0. /* y */,
+                                                  std::sin(yaw * 0.5) /* z */));
+
+  double result_pi_by_two = PurePursuit<double>::Evaluate(
+      pp_params_, car_params_, {lane, true /* with_s */}, ego_pose);
+
+  EXPECT_NEAR(result_zero, result_pi_by_two, 1e-6);
+}
+
 TEST_F(PurePursuitTest, EvaluateAutoDiff) {
   const maliput::api::Lane* const lane =
       road_->junction(0)->segment(0)->lane(0);
@@ -109,11 +166,12 @@ TEST_F(PurePursuitTest, EvaluateAutoDiff) {
   AutoDiffXd s(0., Vector3<double>(1., 0., 0.));
   AutoDiffXd r(0., Vector3<double>(0., 1., 0.));
   AutoDiffXd h(0., Vector3<double>(0., 0., 1.));
+  AutoDiffXd ad_one(1., Vector3<double>(0., 0., 0.));
   AutoDiffXd ad_zero(0., Vector3<double>(0., 0., 0.));
   systems::rendering::PoseVector<AutoDiffXd> ego_pose;
   ego_pose.set_translation(Translation3<AutoDiffXd>(s, r, h));
   ego_pose.set_rotation(Eigen::Quaternion<AutoDiffXd>(
-      ad_zero /* w */, ad_zero /* x */, ad_zero /* y */, ad_zero /* z */));
+      ad_one /* w */, ad_zero /* x */, ad_zero /* y */, ad_zero /* z */));
 
   AutoDiffXd result = PurePursuit<AutoDiffXd>::Evaluate(
       pp_params_ad_, car_params_ad_, {lane, true /* with_s */}, ego_pose);
@@ -160,8 +218,7 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
   systems::rendering::PoseVector<double> pose{};
   pose.set_translation(
       Eigen::Translation3d(50. /* s */, 5. /* r */, 0. /* h */));
-  pose.set_rotation(Eigen::Quaternion<double>(0. /* w */, 0. /* x */,
-                                              0. /* y */, 0. /* z */));
+  pose.set_rotation(Eigen::Quaternion<double>::Identity());
   const maliput::api::Lane* const lane =
       road_->junction(0)->segment(0)->lane(0);
 

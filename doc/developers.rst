@@ -259,6 +259,7 @@ IDE and Text Editor Notes
     Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>
     sublime_text
     unicode_tips_tricks
+    vim
 
 Operating System Notes
 ======================

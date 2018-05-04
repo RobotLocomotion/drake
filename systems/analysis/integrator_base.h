@@ -51,14 +51,15 @@ solution, so must be avoided.
  * (method) should be applied to a particular problem? The answer is whichever
  * one most quickly computes the solution to the desired accuracy! Selecting
  * an integration scheme for a particular problem is presently an artform. As
- * examples of some selection criteria: multistep methods generally work poorly
- * when events (that require state reinitializations) are common, symplectic
- * methods generally work well at maintaining stability for large integration
- * steps, and stiff integrators are often best for computationally stiff
- * systems. If ignorant as to the characteristics of a particular problem, it
- * is often best to start with an explicit, Runge-Kutta type method. Statistics
- * collected by the integrator can help diagnose performance issues and possibly
- * point to the use of a different integration scheme.
+ * examples of some selection criteria: multistep methods (none of which are
+ * currently implemented in Drake) generally work poorly when events (that
+ * require state reinitializations) are common, symplectic methods generally
+ * work well at maintaining stability for large integration steps, and stiff
+ * integrators are often best for computationally stiff systems. If ignorant
+ * as to the characteristics of a particular problem, it is often best to start
+ * with an explicit, Runge-Kutta type method. Statistics collected by the
+ * integrator can help diagnose performance issues and possibly point to the
+ * use of a different integration scheme.
  *
  * Some systems are known to exhibit "computational stiffness", by which it is
  * meant that (excessively) small integration steps are necessary for purposes

@@ -113,6 +113,46 @@ class TestRigidBodyPlant(unittest.TestCase):
         param = cls(0.1, 0.2)
         param = cls(v_stiction_tolerance=0.1, characteristic_radius=0.2)
 
+    def test_contact_result_api(self):
+        # Test contact result bindings in isolation
+        # by constructing dummy contact results
+        results = mut.ContactResults()
+        self.assertEquals(results.get_num_contacts(), 0)
+        f = np.array([0., 1., 2.])
+        results.set_generalized_contact_force(f)
+        self.assertTrue(np.allclose(
+            results.get_generalized_contact_force(), f))
+
+        id_1 = 42
+        id_2 = 43
+        info = results.AddContact(element_a=id_1, element_b=id_2)
+        self.assertEquals(results.get_num_contacts(), 1)
+        info_dup = results.get_contact_info(0)
+        self.assertIsInstance(info_dup, mut.ContactInfo)
+        self.assertIs(info, info_dup)
+        self.assertEquals(info.get_element_id_1(), id_1)
+        self.assertEquals(info.get_element_id_2(), id_2)
+
+        pt = np.array([0.1, 0.2, 0.3])
+        normal = np.array([0.0, 1.0, 0.0])
+        force = np.array([0.9, 0.1, 0.9])
+        torque = np.array([0.6, 0.6, 0.6])
+        cf = mut.ContactForce(application_point=pt,
+                              normal=normal,
+                              force=force,
+                              torque=torque)
+        self.assertTrue(np.allclose(cf.get_application_point(), pt))
+        self.assertTrue(np.allclose(cf.get_force(), force))
+        self.assertTrue(np.allclose(cf.get_normal_force(),
+                                    normal*force.dot(normal)))
+        self.assertTrue(np.allclose(cf.get_tangent_force(),
+                                    force - normal*force.dot(normal)))
+        self.assertTrue(np.allclose(cf.get_torque(), torque))
+        self.assertTrue(np.allclose(cf.get_normal(), normal))
+
+        results.Clear()
+        self.assertEquals(results.get_num_contacts(), 0)
+
     def test_compliant_material_api(self):
 
         def flat_values(material):

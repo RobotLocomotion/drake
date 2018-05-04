@@ -50,6 +50,35 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sdf_parser_common",
+    srcs = [
+        "sdf_parser_common.cc",
+    ],
+    hdrs = [
+        "sdf_parser_common.h",
+    ],
+    deps = [
+        "//common:essential",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
+    name = "scene_graph_parser_detail",
+    srcs = [
+        "scene_graph_parser_detail.cc",
+    ],
+    hdrs = [
+        "scene_graph_parser_detail.h",
+    ],
+    deps = [
+        ":sdf_parser_common",
+        "//geometry:scene_graph",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
     name = "multibody_plant_sdf_parser",
     srcs = [
         "multibody_plant_sdf_parser.cc",
