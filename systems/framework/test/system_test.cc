@@ -470,9 +470,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
-    context->SetNumInputPorts(this->get_num_input_ports());
-    return std::move(context);
+    return std::make_unique<LeafContext<T>>();
   }
 
   void DoValidateAllocatedContext(const ContextBase& context) const final {}
