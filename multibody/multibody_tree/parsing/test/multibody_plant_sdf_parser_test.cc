@@ -155,7 +155,7 @@ GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
   plant.Finalize();
 
-  EXPECT_EQ(plant.num_bodies(), 3);
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
   EXPECT_EQ(plant.get_num_visual_geometries(), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
