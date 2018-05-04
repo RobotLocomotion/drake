@@ -42,7 +42,7 @@ using systems::LeafSystem;
 //   </cylinder>
 // and similarly for other SDF geometries.
 unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
-    const std::string geometry_spec) {
+    const std::string& geometry_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
       "<sdf version='1.6'>"
@@ -79,7 +79,7 @@ unique_ptr<sdf::Geometry> MakeSdfGeometryFromString(
 //         </geometry>
 //       </visual>
 unique_ptr<sdf::Visual> MakeSdfVisualFromString(
-    const std::string visual_spec) {
+    const std::string& visual_spec) {
   const std::string sdf_str =
       "<?xml version='1.0'?>"
       "<sdf version='1.6'>"
@@ -98,6 +98,15 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
   auto sdf_visual = make_unique<sdf::Visual>();
   sdf_visual->Load(visual_element);
   return sdf_visual;
+}
+
+// Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
+// sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetal, MakeEmptyFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry =
+      MakeSdfGeometryFromString("<empty/>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(shape, nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
