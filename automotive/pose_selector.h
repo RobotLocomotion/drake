@@ -12,7 +12,6 @@
 #include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/road_odometry.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_optional.h"
 #include "drake/systems/rendering/pose_bundle.h"
 #include "drake/systems/rendering/pose_vector.h"
 

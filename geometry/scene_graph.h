@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"

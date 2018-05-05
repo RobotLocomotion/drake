@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/examples/geometry_world/gen/bouncing_ball_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"

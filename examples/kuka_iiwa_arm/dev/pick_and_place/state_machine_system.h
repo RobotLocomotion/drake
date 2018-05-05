@@ -6,6 +6,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/common/drake_optional.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"

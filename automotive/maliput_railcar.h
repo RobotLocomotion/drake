@@ -8,6 +8,7 @@
 #include "drake/automotive/lane_direction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/rendering/frame_velocity.h"

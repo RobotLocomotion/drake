@@ -4,6 +4,7 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_optional.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/affine_system.h"

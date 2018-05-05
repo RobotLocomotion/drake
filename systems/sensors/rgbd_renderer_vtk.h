@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/drake_optional.h"
 #include "drake/systems/sensors/rgbd_renderer.h"
 
 namespace drake {

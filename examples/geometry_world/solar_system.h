@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
