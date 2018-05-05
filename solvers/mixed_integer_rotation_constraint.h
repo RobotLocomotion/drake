@@ -34,6 +34,7 @@ namespace solvers {
  * surface of a unit sphere in 3D.
  * 3. By combining the two approaches above. This will result in a tighter
  * relaxation.
+ *
  * These three approaches give different relaxation of SO(3) constraint (the
  * feasible sets for each relaxation are different), and different computation
  * speed. The users can switch between the approaches to find the best fit for
@@ -42,8 +43,8 @@ namespace solvers {
  * @note If you have several rotation matrices that all need to be relaxed
  * through mixed-integer constraint, then you can create a single
  * MixedIntegerRotationConstraintGenerator object, and add the mixed-integer
- * constraint to each rotation matrix, by calling
- * MixedIntegerRotationConstraintGenerator::AddToProgram function repeatedly.
+ * constraint to each rotation matrix, by calling AddToProgram() function
+ * repeatedly.
  */
 class MixedIntegerRotationConstraintGenerator {
  public:
@@ -111,13 +112,13 @@ class MixedIntegerRotationConstraintGenerator {
   /**
    * Add the mixed-integer linear constraints to the optimization program, as
    * a relaxation of SO(3) constraint on the rotation matrix `R`.
+   * @param R The rotation matrix on which the SO(3) constraint is imposed.
    * @param prog The optimization program to which the mixed-integer constraints
    * (and additional variables) are added.
-   * @param R The rotation matrix on which the SO(3) constraint is imposed.
    */
   ReturnType AddToProgram(
-      MathematicalProgram* prog,
-      const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const;
+      const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+      MathematicalProgram* prog) const;
 
   /** Getter for φ. */
   const Eigen::VectorXd& phi() const { return phi_; }
@@ -125,10 +126,8 @@ class MixedIntegerRotationConstraintGenerator {
   /** Getter for φ₊, the non-negative part of φ. */
   const Eigen::VectorXd phi_nonnegative() const { return phi_nonnegative_; }
 
-  /** Getter for approach. */
   Approach approach() const { return approach_; }
 
-  /** Getter for num_intervals_per_half_axis. */
   int num_intervals_per_half_axis() const {
     return num_intervals_per_half_axis_;
   }
@@ -165,11 +164,27 @@ std::ostream& operator<<(
     std::ostream& os,
     const MixedIntegerRotationConstraintGenerator::Approach& type);
 
-using AddRotationMatrixBoxSphereIntersectionReturnType =
-    std::tuple<std::vector<Matrix3<symbolic::Expression>>,
-               std::vector<Matrix3<symbolic::Expression>>,
-               std::vector<MatrixDecisionVariable<3, 3>>,
-               std::vector<MatrixDecisionVariable<3, 3>>>;
+/**
+ * Some of the newly added variables in function
+ * AddRotationMatrixBoxSphereIntersectionMilpConstraints.
+ * CRpos, CRneg, BRpos and BRneg can only take value 0 or 1. `CRpos` and `CRneg`
+ * are declared as continuous variables, while `BRpos` and `BRneg` are declared
+ * as binary variables. The definition for these variables are
+ * <pre>
+ *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
+ *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
+ *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
+ *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
+ * </pre>
+ * where `N` is `num_intervals_per_half_axis`, one of the input argument of
+ * AddRotationMatrixBoxSphereIntersectionMilpConstraints.
+ */
+struct AddRotationMatrixBoxSphereIntersectionReturn {
+  std::vector<Matrix3<symbolic::Expression>> CRpos;
+  std::vector<Matrix3<symbolic::Expression>> CRneg;
+  std::vector<Matrix3<symbolic::Variable>> BRpos;
+  std::vector<Matrix3<symbolic::Variable>> BRneg;
+};
 
 /**
  * Adds binary variables that constrain the value of the column *and* row
@@ -179,6 +194,7 @@ using AddRotationMatrixBoxSphereIntersectionReturnType =
  * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
  * - R2 = R0.cross(R1) ± envelope,
  *      and again for R0=R1.cross(R2), and R1=R2.cross(R0).
+ *
  * Then all of the same constraints are also added to R^T.  The size of the
  * envelope decreases quickly as num_binary_variables_per_half_axis is
  * is increased.
@@ -196,35 +212,20 @@ using AddRotationMatrixBoxSphereIntersectionReturnType =
  *    layered so that constraining one region establishes constraints
  *    on large portions of SO(3), and confers hopefully "useful" constraints
  *    the on other binary variables.
- * @param prog The mathematical program to which the constraints are added.
  * @param R The rotation matrix
  * @param num_intervals_per_half_axis number of intervals for a half axis.
- * @param limits The angle joints for space fixed z-y-x representation of the
- * rotation. @default is no constraint. @see RollPitchYawLimitOptions
- * @retval NewVars  Included the newly added variables
- * <CRpos, CRneg, BRpos, BRneg>. All new variables can only take values either
- * 0 or 1. `CRpos` and `CRneg` are declared as continuous variables, while
- * `BRpos` and `BRneg` are declared as binary variables.
- * The definition for these variables are
- * <pre>
- *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
- *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
- *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
- *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
- * </pre>
- * where `N` is `num_intervals_per_half_axis`.
+ * @param prog The mathematical program to which the constraints are added.
  * @note This method uses the same approach as
  * MixedIntegerRotationConstraintGenerator with kBoxSphereIntersection, namely
- * the feasible sets to the relaxation are the same. But they use different sets
- * of binary variables, and thus the computation speed can be different inside
- * optimization solvers.
+ * the feasible sets to both relaxation are the same. But they use different
+ * sets of binary variables, and thus the computation speed can be different
+ * inside optimization solvers.
  */
 
-AddRotationMatrixBoxSphereIntersectionReturnType
+AddRotationMatrixBoxSphereIntersectionReturn
 AddRotationMatrixBoxSphereIntersectionMilpConstraints(
-    MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_intervals_per_half_axis = 2);
+    int num_intervals_per_half_axis, MathematicalProgram* prog);
 
 }  // namespace solvers
 }  // namespace drake

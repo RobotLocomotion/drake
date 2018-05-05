@@ -35,7 +35,7 @@ class TestMinimumDistance
         minimal_distance_expected_(0) {
     MixedIntegerRotationConstraintGenerator rotation_generator(
         approach_, num_intervals_per_half_axis_, IntervalBinning::kLinear);
-    rotation_generator.AddToProgram(&prog_, R_);
+    rotation_generator.AddToProgram(R_, &prog_);
 
     // Add the constraint that d_ >= |R_.col(0) - R_.col(1)|
     Vector4<symbolic::Expression> s;

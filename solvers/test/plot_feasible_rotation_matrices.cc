@@ -25,7 +25,7 @@ namespace {
 void AddTestConstraints(MathematicalProgram* prog,
                         const MatrixDecisionVariable<3, 3>& R) {
   // Add your favorite constraints here.
-  AddRotationMatrixBoxSphereIntersectionMilpConstraints(prog, R, 1);
+  AddRotationMatrixBoxSphereIntersectionMilpConstraints(R, 1, prog);
 }
 
 bool IsFeasible(

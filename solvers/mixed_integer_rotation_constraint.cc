@@ -346,11 +346,11 @@ void AddConstraintInferredFromTheSign(
       prog->AddBoundingBoxConstraint(0, 1, Bpos);
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
+          // clang-format off
           prog->AddLinearConstraint(Bpos(i, j) <=
-                                    B[i]
-                                     [j].tail(num_intervals_per_half_axis)
-                                         .cast<symbolic::Expression>()
-                                         .sum());
+                                    B[i][j].tail(num_intervals_per_half_axis)
+                                         .cast<symbolic::Expression>().sum());
+          // clang-format on
           for (int k = 0; k < num_intervals_per_half_axis; ++k) {
             prog->AddLinearConstraint(Bpos(i, j) >=
                                       B[i][j](num_intervals_per_half_axis + k));
@@ -850,8 +850,8 @@ MixedIntegerRotationConstraintGenerator::
         MixedIntegerRotationConstraintGenerator::Approach approach,
         int num_intervals_per_half_axis, IntervalBinning interval_binning)
     : approach_{approach},
-      num_intervals_per_half_axis_(num_intervals_per_half_axis),
-      interval_binning_(interval_binning),
+      num_intervals_per_half_axis_{num_intervals_per_half_axis},
+      interval_binning_{interval_binning},
       phi_nonnegative_{
           Eigen::VectorXd::LinSpaced(num_intervals_per_half_axis_ + 1, 0, 1)} {
   phi_.resize(2 * num_intervals_per_half_axis_ + 1);
@@ -874,9 +874,10 @@ MixedIntegerRotationConstraintGenerator::
 
 MixedIntegerRotationConstraintGenerator::ReturnType
 MixedIntegerRotationConstraintGenerator::AddToProgram(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R) const {
+    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
+    MathematicalProgram* prog) const {
   ReturnType ret;
+  // Add new variable λ[i][j] and B[i][j] for R(i, j).
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       const std::string lambda_name =
@@ -907,6 +908,8 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
     }
   }
 
+  // Add some cutting planes on the binary variables, by inferring the sign
+  // of R(i, j) from binary variables B[i][j].
   AddConstraintInferredFromTheSign(prog, ret.B_, num_intervals_per_half_axis_,
                                    interval_binning_);
 
@@ -951,12 +954,13 @@ MixedIntegerRotationConstraintGenerator::AddToProgram(
   return ret;
 }
 
-AddRotationMatrixBoxSphereIntersectionReturnType
+AddRotationMatrixBoxSphereIntersectionReturn
 AddRotationMatrixBoxSphereIntersectionMilpConstraints(
-    MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_intervals_per_half_axis) {
+    int num_intervals_per_half_axis, MathematicalProgram* prog) {
   DRAKE_DEMAND(num_intervals_per_half_axis >= 1);
+
+  AddRotationMatrixBoxSphereIntersectionReturn ret;
 
   // Use a simple lambda to make the constraints more readable below.
   // Note that
@@ -968,11 +972,10 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
   // Creates binary decision variables which discretize each axis.
   //   BRpos[k](i,j) = 1 => R(i,j) >= phi(k)
   //   BRneg[k](i,j) = 1 => R(i,j) <= -phi(k)
-  std::vector<MatrixDecisionVariable<3, 3>> BRpos, BRneg;
   for (int k = 0; k < num_intervals_per_half_axis; k++) {
-    BRpos.push_back(
+    ret.BRpos.push_back(
         prog->NewBinaryVariables<3, 3>("BRpos" + std::to_string(k)));
-    BRneg.push_back(
+    ret.BRneg.push_back(
         prog->NewBinaryVariables<3, 3>("BRneg" + std::to_string(k)));
   }
 
@@ -984,17 +987,16 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
   // Similarly CRneg[k](i, j) = 1 => -phi(k + 1) <= R(i, j) <= -phi(k)
   //   CRneg[k](i, j) = CRneg[k](i, j) if k = N-1, otherwise
   //   CRneg[k](i, j) = CRneg[k](i, j) - CRneg[k+1](i, j)
-  std::vector<Matrix3<Expression>> CRpos, CRneg;
-  CRpos.reserve(num_intervals_per_half_axis);
-  CRneg.reserve(num_intervals_per_half_axis);
+  ret.CRpos.reserve(num_intervals_per_half_axis);
+  ret.CRneg.reserve(num_intervals_per_half_axis);
   for (int k = 0; k < num_intervals_per_half_axis - 1; k++) {
-    CRpos.push_back(BRpos[k] - BRpos[k + 1]);
-    CRneg.push_back(BRneg[k] - BRneg[k + 1]);
+    ret.CRpos.push_back(ret.BRpos[k] - ret.BRpos[k + 1]);
+    ret.CRneg.push_back(ret.BRneg[k] - ret.BRneg[k + 1]);
   }
-  CRpos.push_back(
-      BRpos[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
-  CRneg.push_back(
-      BRneg[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
+  ret.CRpos.push_back(
+      ret.BRpos[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
+  ret.CRneg.push_back(
+      ret.BRneg[num_intervals_per_half_axis - 1].cast<symbolic::Expression>());
 
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -1011,9 +1013,9 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
         double s1 = 1 + phi_nonnegative(k);
         double s2 = 1 - phi_nonnegative(k);
         prog->AddLinearConstraint(R(i, j) - phi_nonnegative(k) >=
-                                  -s1 + s1 * BRpos[k](i, j));
+                                  -s1 + s1 * ret.BRpos[k](i, j));
         prog->AddLinearConstraint(R(i, j) - phi_nonnegative(k) <=
-                                  s2 * BRpos[k](i, j));
+                                  s2 * ret.BRpos[k](i, j));
 
         // -R(i,j) > phi(k) => BRneg[k](i,j) = 1
         // -R(i,j) < phi(k) => BRneg[k](i,j) = 0
@@ -1025,12 +1027,12 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
         // the edges of the convex hull, we get
         // -s2 * BRneg[k](i,j) <= R(i,j)+phi(k) <= s1-s1*BRneg[k](i,j)
         prog->AddLinearConstraint(R(i, j) + phi_nonnegative(k) <=
-                                  s1 - s1 * BRneg[k](i, j));
+                                  s1 - s1 * ret.BRneg[k](i, j));
         prog->AddLinearConstraint(R(i, j) + phi_nonnegative(k) >=
-                                  -s2 * BRneg[k](i, j));
+                                  -s2 * ret.BRneg[k](i, j));
       }
       // R(i,j) has to pick a side, either non-positive or non-negative.
-      prog->AddLinearConstraint(BRpos[0](i, j) + BRneg[0](i, j) == 1);
+      prog->AddLinearConstraint(ret.BRpos[0](i, j) + ret.BRneg[0](i, j) == 1);
 
       // for debugging: constrain to positive orthant.
       //      prog->AddBoundingBoxConstraint(1,1,{BRpos[0].block<1,1>(i,j)});
@@ -1039,8 +1041,8 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
 
   // Add constraint that no two rows (or two columns) can lie in the same
   // orthant (or opposite orthant).
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0]);
-  AddNotInSameOrOppositeOrthantConstraint(prog, BRpos[0].transpose());
+  AddNotInSameOrOppositeOrthantConstraint(prog, ret.BRpos[0]);
+  AddNotInSameOrOppositeOrthantConstraint(prog, ret.BRpos[0].transpose());
 
   std::vector<std::vector<std::vector<std::vector<Eigen::Vector3d>>>>
       box_sphere_intersection_vertices;
@@ -1050,14 +1052,14 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
       num_intervals_per_half_axis, phi_nonnegative,
       &box_sphere_intersection_vertices, &box_sphere_intersection_halfspace);
   AddBoxSphereIntersectionConstraintsForR(
-      R, CRpos, CRneg, num_intervals_per_half_axis,
+      R, ret.CRpos, ret.CRneg, num_intervals_per_half_axis,
       box_sphere_intersection_vertices, box_sphere_intersection_halfspace,
       prog);
 
-  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0]);
-  AddCrossProductImpliedOrthantConstraint(prog, BRpos[0].transpose());
+  AddCrossProductImpliedOrthantConstraint(prog, ret.BRpos[0]);
+  AddCrossProductImpliedOrthantConstraint(prog, ret.BRpos[0].transpose());
 
-  return make_tuple(CRpos, CRneg, BRpos, BRneg);
+  return ret;
 }
 }  // namespace solvers
 }  // namespace drake

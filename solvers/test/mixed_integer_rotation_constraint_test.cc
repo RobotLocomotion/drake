@@ -33,7 +33,7 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return (prog->Solve() == kSolutionFound);
+  return prog->Solve() == kSolutionFound;
 }
 
 class TestMixedIntegerRotationConstraint {
@@ -133,11 +133,9 @@ class TestMixedIntegerRotationConstraint {
     EXPECT_FALSE(IsFeasible(R_test));
 
     // Checks a few cases just outside the L1 ball. If we use the formulation
-    // that
-    // replaces the bilinear term with another variable in the McCormick
-    // envelope,
-    // then it should always be infeasible. Otherwise should be feasible for
-    // num_intervals_per_half_axis_=1, but infeasible for
+    // that replaces the bilinear term with another variable in the McCormick
+    // envelope, then it should always be infeasible. Otherwise should be
+    // feasible for num_intervals_per_half_axis_=1, but infeasible for
     // num_intervals_per_half_axis_>1.
     R_test = math::YRotation(M_PI_4);
     R_test(2, 0) -= 0.1;
@@ -174,7 +172,7 @@ class TestMixedIntegerRotationConstraintGenerator
         interval_binning_(std::get<2>(GetParam())),
         rotation_generator_(approach_, num_intervals_per_half_axis_,
                             interval_binning_),
-        ret(rotation_generator_.AddToProgram(&prog_, R_)) {}
+        ret(rotation_generator_.AddToProgram(R_, &prog_)) {}
 
   ~TestMixedIntegerRotationConstraintGenerator() = default;
 
@@ -220,7 +218,7 @@ TEST_P(TestMixedIntegerRotationConstraintGenerator, TestBinaryAssignment) {
           EXPECT_FALSE(IsFeasible(R_test));
           break;
         default:
-          throw std::runtime_error("Unsuppored num_intervals_per_half_axis_.");
+          GTEST_FAIL() << "Unsuppored num_intervals_per_half_axis_.";
       }
       break;
     }
@@ -282,7 +280,7 @@ class TestRotationMatrixBoxSphereIntersection
                 kBoxSphereIntersection,
             GetParam()) {
     AddRotationMatrixBoxSphereIntersectionMilpConstraints(
-        &prog_, R_, num_intervals_per_half_axis_);
+        R_, num_intervals_per_half_axis_, &prog_);
   }
 
   ~TestRotationMatrixBoxSphereIntersection() override {}
@@ -340,7 +338,7 @@ class TestBoxSphereCorner
           MixedIntegerRotationConstraintGenerator::Approach::
               kBoxSphereIntersection,
           N, interval_binning);
-      const auto ret = rotation_generator.AddToProgram(&prog_, R_);
+      const auto ret = rotation_generator.AddToProgram(R_, &prog_);
       Cpos_.resize(N);
       Cneg_.resize(N);
       const auto gray_codes = math::CalculateReflectedGrayCodes<3>();
@@ -368,8 +366,10 @@ class TestBoxSphereCorner
         }
       }
     } else {
-      std::tie(Cpos_, Cneg_, std::ignore, std::ignore) =
-          AddRotationMatrixBoxSphereIntersectionMilpConstraints(&prog_, R_, N);
+      const auto ret =
+          AddRotationMatrixBoxSphereIntersectionMilpConstraints(R_, N, &prog_);
+      Cpos_ = ret.CRpos;
+      Cneg_ = ret.CRneg;
     }
   }
 
@@ -493,7 +493,7 @@ class TestOrthant
 
     MixedIntegerRotationConstraintGenerator rotation_generator(
         approach, num_bin, IntervalBinning::kLinear);
-    rotation_generator.AddToProgram(&prog_, R_);
+    rotation_generator.AddToProgram(R_, &prog_);
 
     MatrixDecisionVariable<3, 3> R_hat = R_;
     if (is_row_vector) {

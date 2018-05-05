@@ -101,7 +101,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
             if (dynamic_cast<const RevoluteJoint*>(joint) != nullptr) {
               // Adding mixed-integer constraint will add binary variables into
               // the program.
-              rotation_generator.AddToProgram(this, R_WB_[body_idx]);
+              rotation_generator.AddToProgram(R_WB_[body_idx], this);
 
               const RevoluteJoint* revolute_joint =
                   dynamic_cast<const RevoluteJoint*>(joint);
@@ -137,7 +137,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
           case 6: {
             // This is the floating base case, just add the rotation matrix
             // constraint.
-            rotation_generator.AddToProgram(this, R_WB_[body_idx]);
+            rotation_generator.AddToProgram(R_WB_[body_idx], this);
             break;
           }
           default:

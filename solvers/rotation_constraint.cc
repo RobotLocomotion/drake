@@ -1,6 +1,4 @@
-/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/rotation_constraint.h"
-/* clang-format on */
 
 #include <algorithm>
 #include <cmath>
