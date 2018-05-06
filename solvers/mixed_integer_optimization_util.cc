@@ -18,7 +18,7 @@ std::string to_string(IntervalBinning binning) {
   }
   // The following line should not be reached. We add it due to a compiler
   // defect.
-  DRAKE_ABORT_MSG("Should not reach this part of the code.\n");
+  DRAKE_ABORT_MSG("Should not reach this part of the code.");
 }
 
 std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning) {
