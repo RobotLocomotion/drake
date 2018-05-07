@@ -13,6 +13,7 @@ def add_lint_tests(
         python_lint_extra_srcs = None,
         bazel_lint_ignore = None,
         bazel_lint_extra_srcs = None,
+        bazel_lint_exclude = None,
         enable_library_lint = True):
     """For every rule in the BUILD file so far, and for all Bazel files in this
     directory, adds test rules that run Drake's standard lint suite over the
@@ -37,7 +38,8 @@ def add_lint_tests(
         extra_srcs = python_lint_extra_srcs)
     bazel_lint(
         ignore = bazel_lint_ignore,
-        extra_srcs = bazel_lint_extra_srcs)
+        extra_srcs = bazel_lint_extra_srcs,
+        exclude = bazel_lint_exclude)
     if enable_library_lint:
         library_lint(
             existing_rules = existing_rules)
