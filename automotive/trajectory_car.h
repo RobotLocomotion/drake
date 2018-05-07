@@ -61,9 +61,10 @@ namespace automotive {
 template <typename T>
 class TrajectoryCar final : public systems::LeafSystem<T> {
  public:
-  typedef typename Curve2<T>::Point2T Point2;
-
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
+
+  // ** Check the ordering
+  using Point2 = typename WaypointT<T>::Point2;
 
   /// Constructs a TrajectoryCar system that traces a given two-dimensional @p
   /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
@@ -249,15 +250,14 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
     PositionHeading result;
 
     // Compute the curve at the current longitudinal (along-curve) position.
-    const typename Curve2<T>::PositionResult pose =
-        curve_.GetPosition(state.position());
+    const PositionResult<T> pose = curve_.CalcPositionResult(state.position());
     // TODO(jadecastro): Now that the curve is a function of position rather
     // than time, we are not acting on a `trajectory` anymore.  Rename this
     // System to PathFollowingCar or something similar.
-    DRAKE_ASSERT(pose.position_dot.norm() > 0.0);
+    DRAKE_ASSERT(pose.position_deriv.norm() > 0.0);
 
-    result.position = pose.position;
-    result.heading = atan2(pose.position_dot[1], pose.position_dot[0]);
+    result.position = pose.waypoint.position;
+    result.heading = atan2(pose.position_deriv[1], pose.position_deriv[0]);
     return result;
   }
 

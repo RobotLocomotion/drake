@@ -172,6 +172,7 @@ drake_cc_library(
         ":generated_vectors",
         "//common:autodiff",
         "//common:autodiffxd_make_coherent",
+        "//common:extract_double",
     ],
 )
 
@@ -615,6 +616,7 @@ drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//automotive:curve2",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

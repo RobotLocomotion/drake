@@ -16,7 +16,7 @@ namespace automotive {
 namespace {
 
 typedef Curve2<double> Curve2d;
-typedef Curve2d::Point2 Point2d;
+using Point2d = typename WaypointT<double>::Point2d;
 
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
@@ -33,7 +33,7 @@ void SetAcceleration(const TrajectoryCar<T>& car_dut,
 
 // Empty curves are rejected.
 GTEST_TEST(TrajectoryCarTest, StationaryTest) {
-  const std::vector<Point2d> empty_waypoints{};
+  const std::vector<Waypoint> empty_waypoints{};
   const Curve2d empty_curve{empty_waypoints};
   EXPECT_THROW((TrajectoryCar<double>{empty_curve}), std::exception);
 }
@@ -85,9 +85,9 @@ TYPED_TEST(TrajectoryCarTest, ConstantSpeedTest) {
     // leaving the start point, based on the parameters in the test case.
     const Point2d start{20.0, 30.0};
     const Point2d heading_vector{std::cos(it.heading), std::sin(it.heading)};
-    const std::vector<Point2d> waypoints{
-        start,  // BR
-        start + (heading_vector * it.distance),
+    const std::vector<Waypoint> waypoints{
+        Waypoint{start},  // BR
+        Waypoint{start + (heading_vector * it.distance)},
     };
     const Curve2d curve{waypoints};
 
@@ -237,8 +237,8 @@ TYPED_TEST(TrajectoryCarTest, AccelerationInputTest) {
   T kInitialPathPosition = 0.;
   T kInitialSpeed = 20.;
 
-  const std::vector<Point2d> waypoints{{10., 20.},  // BR
-                                       {10., 30.}};
+  const std::vector<Waypoint> waypoints{Waypoint{{10., 20.}},  // BR
+                                        Waypoint{{10., 30.}}};
   const Curve2d curve{waypoints};
   const TrajectoryCar<T> dut{curve};  // The device under test.
 
@@ -285,8 +285,8 @@ TYPED_TEST(TrajectoryCarTest, SaturatingSpeedTest) {
 
   T kInitialPathPosition = 0.;
 
-  const std::vector<Point2d> waypoints{{10., 20.},  // BR
-                                       {10., 30.}};
+  const std::vector<Waypoint> waypoints{Waypoint{{10., 20.}},  // BR
+                                        Waypoint{{10., 30.}}};
   const Curve2d curve{waypoints};
   const TrajectoryCar<T> dut{curve};  // The device under test.
 
@@ -340,8 +340,8 @@ TYPED_TEST(TrajectoryCarTest, SaturatingSpeedTest) {
 }
 
 GTEST_TEST(TrajectoryCarTest, ToAutoDiff) {
-  const std::vector<Point2d> waypoints{{10., 20.},  // BR
-                                       {10., 30.}};
+  const std::vector<Waypoint> waypoints{Waypoint{{10., 20.}},  // BR
+                                        Waypoint{{10., 30.}}};
   const Curve2d curve{waypoints};
   const TrajectoryCar<double> dut{curve};
 
@@ -361,8 +361,8 @@ GTEST_TEST(TrajectoryCarTest, ToAutoDiff) {
 }
 
 GTEST_TEST(TrajectoryCarTest, ToSymbolic) {
-  const std::vector<Point2d> waypoints{{10., 20.},  // BR
-                                       {10., 30.}};
+  const std::vector<Waypoint> waypoints{Waypoint{{10., 20.}},  // BR
+                                        Waypoint{{10., 30.}}};
   const Curve2d curve{waypoints};
   const TrajectoryCar<double> dut{curve};
 
