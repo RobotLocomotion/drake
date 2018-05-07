@@ -50,6 +50,7 @@ MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()) {
   model_ = std::make_unique<MultibodyTree<T>>();
+  visual_geometries_.emplace_back();  // Entry for the "world" body.
 }
 
 template<typename T>
@@ -62,6 +63,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
   body_index_to_frame_id_ = other.body_index_to_frame_id_;
   geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
   geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+  visual_geometries_ = other.visual_geometries_;
   // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize() on
   // the new MultibodyTree on U. Therefore we only Finalize the plant's
   // internals (and not the MultibodyTree).
@@ -105,6 +107,14 @@ void MultibodyPlant<T>::RegisterVisualGeometry(const Body<T>& body,
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
+  DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
+  visual_geometries_[body.index()].push_back(id);
+}
+
+template <typename T>
+const std::vector<geometry::GeometryId>&
+MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
+  return visual_geometries_[body.index()];
 }
 
 template <typename T>
