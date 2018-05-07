@@ -239,23 +239,23 @@ class Context : public ContextBase {
   // Allow access to the base class method (takes an AbstractValue).
   using ContextBase::FixInputPort;
 
-  /// Connects the input port at @p index to a FreestandingInputPortValue with
+  /// Connects the input port at @p index to a FixedInputPortValue with
   /// the given vector @p vec. Aborts if @p index is out of range.
-  /// Returns a reference to the allocated FreestandingInputPortValue. The
+  /// Returns a reference to the allocated FixedInputPortValue. The
   /// reference will remain valid until this input port's value source is
   /// replaced or the %Context is destroyed. You may use that reference to
   /// modify the input port's value using the appropriate
-  /// FreestandingInputPortValue method, which will ensure that invalidation
+  /// FixedInputPortValue method, which will ensure that invalidation
   /// notifications are delivered.
-  FreestandingInputPortValue& FixInputPort(
+  FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<BasicVector<T>> vec) {
     return ContextBase::FixInputPort(index,
        std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
   }
 
   /// Same as above method but starts with an Eigen vector whose contents are
-  /// used to initialize a BasicVector in the FreestandingInputPortValue.
-  FreestandingInputPortValue& FixInputPort(
+  /// used to initialize a BasicVector in the FixedInputPortValue.
+  FixedInputPortValue& FixInputPort(
       int index, const Eigen::Ref<const VectorX<T>>& data) {
     auto vec = std::make_unique<BasicVector<T>>(data);
     return FixInputPort(index, std::move(vec));

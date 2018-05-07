@@ -149,24 +149,23 @@ class ContextBase : public internal::ContextMessageInterface {
         .increment_local_change_event_counter();
   }
 
-  /** Connects the input port at `index` to a FreestandingInputPortValue with
+  /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Asserts if `index` is out of range. Returns a
-  reference to the allocated FreestandingInputPortValue that will remain valid
+  reference to the allocated FixedInputPortValue that will remain valid
   until this input port's value source is replaced or the Context is destroyed.
   You may use that reference to modify the input port's value using the
-  appropriate FreestandingInputPortValue method, which will ensure that
+  appropriate FixedInputPortValue method, which will ensure that
   invalidation notifications are delivered.
 
   This is the most general way to provide a value (type-erased) for an
   unconnected input port. See `Context<T>` for more-convenient overloads of
   FixInputPort() for vector values with elements of type T. */
-  FreestandingInputPortValue& FixInputPort(
+  FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
-  /** For input port `index`, returns the FreestandingInputPortValue if the
-  port is fixed (freestanding), otherwise nullptr. Asserts if `index` is out of
-  range. */
-  const FreestandingInputPortValue* MaybeGetFixedInputPortValue(
+  /** For input port `index`, returns the FixedInputPortValue if the port is
+  fixed, otherwise nullptr. Asserts if `index` is out of range. */
+  const FixedInputPortValue* MaybeGetFixedInputPortValue(
       int index) const {
     DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
     return input_port_values_[index].get();
@@ -281,7 +280,7 @@ class ContextBase : public internal::ContextMessageInterface {
   // or the given `port_value` is null or already belongs to a context.
   void SetFixedInputPortValue(
       InputPortIndex index,
-      std::unique_ptr<FreestandingInputPortValue> port_value);
+      std::unique_ptr<FixedInputPortValue> port_value);
 
   // Fills in the dependency graph with the built-in trackers that are common
   // to every Context (and every System).
@@ -312,10 +311,10 @@ class ContextBase : public internal::ContextMessageInterface {
   // For each input port, the fixed value or null if the port is connected to
   // something else (in which case we need System help to get the value).
   // Semantically, these are identical to Parameters.
-  // Each non-null FreestandingInputPortValue has a ticket and associated
+  // Each non-null FixedInputPortValue has a ticket and associated
   // tracker.
   // Index with InputPortIndex.
-  std::vector<copyable_unique_ptr<FreestandingInputPortValue>>
+  std::vector<copyable_unique_ptr<FixedInputPortValue>>
       input_port_values_;
 
   // The cache of pre-computed values owned by this subcontext.

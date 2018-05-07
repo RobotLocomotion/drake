@@ -104,7 +104,7 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 }
 
 // The only way for a subsystem to evaluate its own input port is if that
-// port is freestanding. In that case the port's value is in the corresponding
+// port is fixed. In that case the port's value is in the corresponding
 // subcontext and we can just return it. Otherwise, the port obtains its value
 // from some other subsystem and we need our parent's help to get access to
 // that subsystem.
@@ -114,18 +114,18 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   if (port_index >= get_num_input_ports())
     ThrowInputPortIndexOutOfRange(func, port_index, get_num_input_ports());
 
-  const FreestandingInputPortValue* const free_port_value =
+  const FixedInputPortValue* const free_port_value =
       context.MaybeGetFixedInputPortValue(port_index);
 
   if (free_port_value != nullptr)
     return &free_port_value->get_value();  // A fixed input port.
 
-  // The only way to satisfy an input port of a root System is to make
-  // it freestanding. Since it wasn't freestanding, it is unconnected.
+  // The only way to satisfy an input port of a root System is to make it fixed.
+  // Since it wasn't fixed, it is unconnected.
   if (get_parent_service() == nullptr) return nullptr;
 
-  // This is not the root System, and the port isn't freestanding, so ask
-  // our parent to evaluate it.
+  // This is not the root System, and the port isn't fixed, so ask our parent to
+  // evaluate it.
   return get_parent_service()->EvalConnectedSubsystemInputPort(
       *detail::SystemBaseContextAttorney::get_parent_base(context),
       get_input_port_base(port_index));
@@ -171,7 +171,7 @@ void SystemBase::ThrowInputPortHasWrongType(
 void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                                            InputPortIndex port) const {
   throw std::logic_error(
-      fmt::format("{}: input port[{}] is neither connected nor freestanding so "
+      fmt::format("{}: input port[{}] is neither connected nor fixed so "
                       "cannot be evaluated. (Subsystem {})",
                   FmtFunc(func), port, GetSystemPathname()));
 }

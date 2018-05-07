@@ -213,7 +213,7 @@ Fixed input ports are treated identically to Parameters -- they may have
 numerical or abstract value types; they may be changed with downstream
 invalidation handled automatically; and their values do not change during a
 time-advancing simulation. The values for fixed input ports are represented by
-FreestandingInputPortValue objects, which have their own ticket and tracker to
+FixedInputPortValue objects, which have their own ticket and tracker to
 which the corresponding input port subscribes.
 
 Every input port has an associated dependency ticket and tracker. The tracker
@@ -365,7 +365,7 @@ for the Context half that stores the runtime values. Here are some examples:
 :------------------|:--------------------|:------------------
 System             | System              | Context
 Output port        | OutputPort          | (cache entry)
-Input port         | InputPortDescriptor | FreestandingInputPortValue
+Input port         | InputPortDescriptor | FixedInputPortValue
 Cache entry        | CacheEntry          | CacheEntryValue
 Dependency tracker | (ticket only)       | DependencyTracker
 

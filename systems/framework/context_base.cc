@@ -53,13 +53,13 @@ std::string ContextBase::GetSystemPathname() const {
   return parent_path + "::"s + GetSystemName();
 }
 
-FreestandingInputPortValue& ContextBase::FixInputPort(
+FixedInputPortValue& ContextBase::FixInputPort(
     int index, std::unique_ptr<AbstractValue> value) {
-  auto freestanding =
-      std::make_unique<FreestandingInputPortValue>(std::move(value));
-  FreestandingInputPortValue& freestanding_ref = *freestanding;
-  SetFixedInputPortValue(InputPortIndex(index), std::move(freestanding));
-  return freestanding_ref;
+  auto fixed =
+      std::make_unique<FixedInputPortValue>(std::move(value));
+  FixedInputPortValue& fixed_ref = *fixed;
+  SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
+  return fixed_ref;
 }
 
 void ContextBase::AddInputPort(InputPortIndex expected_index,
@@ -78,13 +78,13 @@ void ContextBase::AddInputPort(InputPortIndex expected_index,
 
 void ContextBase::SetFixedInputPortValue(
     InputPortIndex index,
-    std::unique_ptr<FreestandingInputPortValue> port_value) {
+    std::unique_ptr<FixedInputPortValue> port_value) {
   DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
   DRAKE_DEMAND(port_value != nullptr);
 
   DependencyTracker& port_tracker =
       get_mutable_tracker(input_port_tickets_[index]);
-  FreestandingInputPortValue* old_value =
+  FixedInputPortValue* old_value =
       input_port_values_[index].get_mutable();
 
   if (old_value != nullptr) {
@@ -98,7 +98,7 @@ void ContextBase::SetFixedInputPortValue(
     port_tracker.SubscribeToPrerequisite(&value_tracker);
   }
 
-  // Fill in the FreestandingInputPortValue object and install it.
+  // Fill in the FixedInputPortValue object and install it.
   port_value->set_input_port_index(index);
   port_value->set_owning_subcontext(this);
   input_port_values_[index] = std::move(port_value);

@@ -106,28 +106,28 @@ class LeafContextTest : public ::testing::Test {
         std::move(abstract_params)));
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   // Returns nullptr if the port is not connected.
   const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
                                                  int index) {
-    const FreestandingInputPortValue* free_value =
+    const FixedInputPortValue* free_value =
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
     return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   const std::string* ReadStringInputPort(const Context<double>& context,
                                          int index) {
-    const FreestandingInputPortValue* free_value =
+    const FixedInputPortValue* free_value =
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
     return free_value ? &free_value->get_value().GetValue<std::string>()
                       : nullptr;
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   const AbstractValue* ReadAbstractInputPort(const Context<double>& context,
                                              int index) {
-    const FreestandingInputPortValue* free_value =
+    const FixedInputPortValue* free_value =
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
     return free_value ? &free_value->get_value() : nullptr;
   }
