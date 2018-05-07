@@ -1,13 +1,29 @@
 #include "drake/systems/framework/system_base.h"
 
+#include <fmt/format.h>
+
+namespace {
+
+// Output a string like "System<T>::EvalInput()".
+std::string FmtFunc(const char* func) {
+  return fmt::format("System<T>::{}()", func);
+}
+
+}
+
 namespace drake {
 namespace systems {
 
 SystemBase::~SystemBase() {}
 
 std::string SystemBase::GetSystemPathname() const {
-  // TODO(sherm1) Replace with the real pathname.
-  return "/dummy/system/pathname/" + GetSystemName();
+  // NOLINTNEXTLINE(build/namespaces): using operator""s issues a warning.
+  using namespace std::string_literals;
+
+  const std::string parent_path =
+      get_parent_service() ? get_parent_service()->GetParentPathname()
+                           : ""s;
+  return parent_path + "::"s + GetSystemName();
 }
 
 const CacheEntry& SystemBase::DeclareCacheEntry(
@@ -66,6 +82,51 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   }
 
   return context_ptr;
+}
+
+void SystemBase::ThrowNegativeInputPortIndex(const char* func,
+                                             int port_index) const {
+  DRAKE_DEMAND(port_index < 0);
+  throw std::out_of_range(
+      fmt::format("{}: negative port index {} is illegal. (Subsystem {})",
+                  FmtFunc(func), port_index, GetSystemPathname()));
+}
+
+void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
+                                               InputPortIndex port,
+                                               int num_input_ports) const {
+  DRAKE_DEMAND(num_input_ports >= 0);
+  throw std::out_of_range(
+      fmt::format("{}: there is no input port with index {} because there "
+                      "are only {} input ports in subsystem {}.",
+                  FmtFunc(func), port, num_input_ports, GetSystemPathname()));
+}
+
+void SystemBase::ThrowNotAVectorInputPort(const char* func,
+                                          InputPortIndex port) const {
+  throw std::logic_error(fmt::format(
+      "{}: vector port required, but input port[{}] was declared abstract. "
+          "Even if the actual value is a vector, use EvalInputValue<V> "
+          "instead for an abstract port containing a vector of type V. "
+          "(Subsystem {})",
+      FmtFunc(func), port, GetSystemPathname()));
+}
+
+void SystemBase::ThrowInputPortHasWrongType(
+    const char* func, InputPortIndex port, const std::string& expected_type,
+    const std::string& actual_type) const {
+  throw std::logic_error(fmt::format(
+      "{}: expected value of type {} for input port[{}] "
+          "but the actual type was {}. (Subsystem {})",
+      FmtFunc(func), expected_type, port, actual_type, GetSystemPathname()));
+}
+
+void SystemBase::ThrowCantEvaluateInputPort(const char* func,
+                                           InputPortIndex port) const {
+  throw std::logic_error(
+      fmt::format("{}: input port[{}] is neither connected nor freestanding so "
+                      "cannot be evaluated. (Subsystem {})",
+                  FmtFunc(func), port, GetSystemPathname()));
 }
 
 }  // namespace systems

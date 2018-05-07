@@ -1,9 +1,13 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
+#include <memory>
+
 #include <sdf/sdf.hh>
 
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
+#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 
 namespace drake {
@@ -14,30 +18,19 @@ using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
-
+using drake::geometry::GeometryInstance;
+using drake::geometry::SceneGraph;
 using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::parsing::detail::ToIsometry3;
+using drake::multibody::parsing::detail::ToVector3;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
+using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
-// Helper function to express an ignition::math::Vector3d instance as
-// a Vector3d instance.
-Vector3d ToVector3(const ignition::math::Vector3d& vector) {
-  return Vector3d(vector.X(), vector.Y(), vector.Z());
-}
-
-// Helper function to express an ignition::math::Pose3d instance as
-// an Isometry3d instance.
-Isometry3d ToIsometry3(const ignition::math::Pose3d& pose) {
-  const Isometry3d::TranslationType translation(ToVector3(pose.Pos()));
-  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
-                                    pose.Rot().Y(), pose.Rot().Z());
-  return translation * rotation;
-}
-
 // Given an ignition::math::Inertial object, extract a RotationalInertia object
 // for the rotational inertia of body B, about its center of mass Bcm and,
 // expressed in the inertial frame Bi (as specified in <inertial> in the SDF
@@ -197,14 +190,6 @@ void AddJointFromSpecification(
           child_body, X_CJ, axis_J);
       break;
     }
-    case sdf::JointType::PRISMATIC: {
-      Vector3d axis_J = ExtractJointAxis(joint_spec);
-      plant->AddJoint<PrismaticJoint>(
-          joint_spec.Name(),
-          parent_body, X_PJ,
-          child_body, X_CJ, axis_J);
-      break;
-    }
     default: {
       throw std::logic_error(
           "Joint type not supported for joint '" + joint_spec.Name() + "'.");
@@ -216,7 +201,8 @@ void AddJointFromSpecification(
 
 void AddModelFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant) {
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
@@ -239,6 +225,10 @@ void AddModelFromSdfFile(
   // Get the only model in the file.
   const sdf::Model& model = *root.ModelByIndex(0);
 
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
@@ -255,7 +245,23 @@ void AddModelFromSdfFile(
         ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
-    plant->AddRigidBody(link.Name(), M_BBo_B);
+    const RigidBody<double>& body = plant->AddRigidBody(link.Name(), M_BBo_B);
+
+    if (scene_graph != nullptr) {
+      for (uint64_t visual_index = 0; visual_index < link.VisualCount();
+           ++visual_index) {
+        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        unique_ptr<GeometryInstance> geometry_instance =
+            detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
+        // We check for nullptr in case someone decided to specify an SDF
+        // <empty/> geometry.
+        if (geometry_instance) {
+          plant->RegisterVisualGeometry(
+              body, geometry_instance->pose(), geometry_instance->shape(),
+              scene_graph);
+        }
+      }
+    }
   }
 
   // Add all the joints

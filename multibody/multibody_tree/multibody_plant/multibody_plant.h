@@ -239,7 +239,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    return model_->AddRigidBody(name, M_BBo_B);
+    const RigidBody<T>& body = model_->AddRigidBody(name, M_BBo_B);
+    // Each entry of visual_geometries_, ordered by body index, contains a
+    // std::vector of geometry ids for that body. The emplace_back() below
+    // resizes visual_geometries_ to store the geometry ids for the body we
+    // just added.
+    // TODO(amcastro-tri): static_cast should not be needed. Update when
+    // TypeSafeIndex is fixed to support this comparison.
+    DRAKE_DEMAND(static_cast<int>(visual_geometries_.size()) == body.index());
+    visual_geometries_.emplace_back();
+    return body;
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -506,6 +515,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
                               const geometry::Shape& shape,
                               geometry::SceneGraph<T>* scene_graph);
 
+  /// Returns an array of GeometryId's identifying the different visual
+  /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can be called at any time during the lifetime of `this`
+  /// plant, either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  /// @see RegisterVisualGeometry(), Finalize()
+  const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
+      const Body<T>& body) const;
+
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
   /// More than one geometry can be registered with a body, in which case the
@@ -539,7 +557,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int get_num_visual_geometries() const {
+  int num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
 
@@ -1038,6 +1056,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): verify insertions were correct once visual_index gets
   // used with the landing of visual properties in SceneGraph.
   std::unordered_map<geometry::GeometryId, int> geometry_id_to_visual_index_;
+
+  // Per-body arrays of visual geometries indexed by BodyIndex.
+  // That is, visual_geometries_[body_index] corresponds to the array of visual
+  // geometries for body with index body_index.
+  std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
 
   // Maps a GeometryId with a collision index. This allows, for instance, to
   // find out collision properties (such as friction coefficient) for a given

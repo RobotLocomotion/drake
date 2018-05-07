@@ -114,13 +114,13 @@ class DiagramContextTest : public ::testing::Test {
     context_->FixInputPort(1, BasicVector<double>::Make({256}));
   }
 
-  // Mocks up a descriptor sufficient to read a FreestandingInputPortValue
-  // connected to @p context at @p index.
+  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Returns nullptr if the port is not connected.
   static const BasicVector<double>* ReadVectorInputPort(
       const Context<double>& context, int index) {
-    InputPortDescriptor<double> descriptor(nullptr, InputPortIndex(index),
-                                           kVectorValued, 0, nullopt);
-    return context.EvalVectorInput(nullptr, descriptor);
+    const FreestandingInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(index);
+    return free_value ? free_value->get_vector_data<double>() : nullptr;
   }
 
   std::unique_ptr<DiagramContext<double>> context_;

@@ -41,7 +41,7 @@ struct LogarithmicSos2NewBinaryVariables<Eigen::Dynamic> {
  * <pre>
  *   λ(0) + ... + λ(n) = 1
  *   ∀i. λ(i) ≥ 0
- *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(j) + λ(j + 1) = 1
+ *   ∃ j ∈ {0, 1, ..., n-1}, s.t λ(i) = 0 if i ≠ j and i ≠ j + 1 
  * </pre>
  * Namely at most two entries in λ can be strictly positive, and these two
  * entries have to be adjacent. All other λ should be zero. Moreover, the
@@ -147,6 +147,10 @@ enum class IntervalBinning {
   kLogarithmic,
   kLinear
 };
+
+std::string to_string(IntervalBinning interval_binning);
+
+std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
 
 /**
  * Add constraints to the optimization program, such that the bilinear product

@@ -493,6 +493,19 @@ bool BulletModel::UpdateElementWorldTransform(
   return element_exists;
 }
 
+void BulletModel::NotifyFilterCriteriaChanged(ElementId id) {
+  for (BulletCollisionWorldWrapper* world :
+      {&bullet_world_, &bullet_world_no_margin_}) {
+    const auto& itr = world->bt_collision_objects.find(id);
+    if (itr != world->bt_collision_objects.end()) {
+      world->bt_collision_world->getBroadphase()
+          ->getOverlappingPairCache()
+          ->cleanProxyFromPairs(itr->second->getBroadphaseHandle(),
+                                world->bt_collision_world->getDispatcher());
+    }
+  }
+}
+
 void BulletModel::UpdateModel() {
   bullet_world_.bt_collision_world->updateAabbs();
   bullet_world_no_margin_.bt_collision_world->updateAabbs();

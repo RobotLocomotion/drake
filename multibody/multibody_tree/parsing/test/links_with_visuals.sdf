@@ -1,0 +1,63 @@
+<sdf version='1.6'>
+  <model name='test_robot'>
+    <!-- This sdf file defines a simple test robot with multiple links
+         so that we can test visuals are properly added to each link.
+         Values in <inertial> are not important for this test model since
+         it's only to test the parsing of visuals into a MultibodyPlant.
+         This file is meant to be kept in sync with the corresponding unit
+         test file multibody_plant_sdf_parser_test.cc -->
+    <link name='link1'>
+      <visual name='link1_visual1'>
+        <geometry>
+          <sphere>
+            <radius>1.0</radius>
+          </sphere>
+        </geometry>
+      </visual>
+      <visual name='link1_visual2'>
+        <geometry>
+          <cylinder>
+            <radius>0.5</radius>
+            <length>2.0</length>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name='link2'>
+      <visual name='link2_visual1'>
+        <geometry>
+          <sphere>
+            <radius>1.0</radius>
+          </sphere>
+        </geometry>
+      </visual>
+      <visual name='link2_visual2'>
+        <geometry>
+          <cylinder>
+            <radius>0.5</radius>
+            <length>2.0</length>
+          </cylinder>
+        </geometry>
+      </visual>
+      <visual name='link2_visual3'>
+        <geometry>
+          <plane>
+            <normal>1 2 3</normal>
+          </plane>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Link 3 has no visuals. Even though it is not needed, we explicitly
+         state it with an <empty/> tag for testing purposes. -->
+    <link name='link3'>
+      <visual name='link3_visual1'>
+        <geometry>
+          <empty/>
+        </geometry>
+      </visual>
+    </link>
+
+  </model>
+</sdf>

@@ -11,7 +11,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
-#include "drake/systems/framework/input_port_evaluator_interface.h"
 #include "drake/systems/framework/input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/parameters.h"
@@ -148,7 +147,7 @@ class DiagramContext final : public Context<T> {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
-    context->set_parent(this);
+    Context<T>::set_parent(context.get(), this);
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }

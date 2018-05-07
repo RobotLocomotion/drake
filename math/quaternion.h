@@ -15,24 +15,24 @@
 namespace drake {
 namespace math {
 
-// The Eigen Quaterniond constructor when used with 4 arguments, uses the (w,
-// x, y, z) ordering, just as we do.
-// HOWEVER: when the constructor is called on a 4-element Vector, the elements
-// must be in (x, y, z, w) order.
+// Eigen's 4-argument Quaternion constructor uses (w, x, y, z) ordering.
+// HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
+// argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
 // So, the following two calls will give you the SAME quaternion:
 // Quaternion<double>(q(0), q(1), q(2), q(3));
 // Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-// which is gross and will cause you much pain.
-// see:
+// which is gross and will cause you much pain.  See:
 // http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
 //
 // This method takes a nice, normal (w, x, y, z) order vector and gives you
 // the Quaternion you expect.
+// (Deprecated), use @ref Eigen::Quaternion(w, x, y, z).
+// TODO(mitiguy) Delete this code that was deprecated on May 1, 2018.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated.  Use Eigen's Quaternion constructor"
+                 "Quaternion(w, x, y, z) -- not a home-brew 4-element vectors")
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
     const Eigen::MatrixBase<Derived>& q) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
   return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
 }
 
@@ -194,9 +194,8 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
 // TODO(mitiguy) change all calling sites to this function.
 template <typename Derived>
 Matrix3<typename Derived::Scalar> quat2rotmat(
-    const Eigen::MatrixBase<Derived>& quaternion) {
-  const Eigen::Quaternion<typename Derived::Scalar> q =
-      quat2eigenQuaternion(quaternion);
+    const Eigen::MatrixBase<Derived>& v) {
+  const Eigen::Quaternion<typename Derived::Scalar> q(v(0), v(1), v(2), v(3));
   const RotationMatrix<typename Derived::Scalar> R(q);
   return R.matrix();
 }

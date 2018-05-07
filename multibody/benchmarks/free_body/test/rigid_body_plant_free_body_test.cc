@@ -75,7 +75,8 @@ using Eigen::Quaterniond;
   const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(3);
   const Vector3d wDt_NB_B_drake  = stateDt_as_vector.segment<3>(7);
   const Vector3d vDt_NBo_B_drake = stateDt_as_vector.segment<3>(10);
-  const Quaterniond quat_NB_drake = math::quat2eigenQuaternion(quat4_NB_drake);
+  const Quaterniond quat_NB_drake(quat4_NB_drake(0), quat4_NB_drake(1),
+                                  quat4_NB_drake(2), quat4_NB_drake(3));
 
   // Calculate exact analytical rotational solution at time t.
   const double t = context.get_time();
