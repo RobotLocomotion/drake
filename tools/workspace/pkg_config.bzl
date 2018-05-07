@@ -118,9 +118,6 @@ def setup_pkg_config_repository(repository_ctx):
     if result.error != None:
         return result
     cflags = result.tokens
-    # Placate whiny compilers.
-    if "-pthread" in cflags and "-pthread" in linkopts:
-        cflags.remove("-pthread")
 
     # Split cflags into includes and defines.  The -I paths from pkg-config
     # will be absolute paths; we'll make them relative in a moment.
@@ -137,6 +134,11 @@ def setup_pkg_config_repository(repository_ctx):
             value = cflag[2:]
             if value not in defines:
                 defines.append(value)
+        elif cflag == "-pthread":
+            # We can't meaningfully pass this as a copts, and the -D_REENTRANT
+            # stuff implied by -pthread while compiling isn't really our job to
+            # fix anyway, so instead we'll only pass it into the linkopts.
+            linkopts.append("-pthread")
         elif cflag in [
                 "-frounding-math",
                 "-ffloat-store",
