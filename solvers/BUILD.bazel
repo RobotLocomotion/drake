@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":mathematical_program",
         ":mathematical_program_api",
         ":mixed_integer_optimization_util",
+        ":mixed_integer_rotation_constraint",
         ":moby_lcp_solver",
         ":mosek_solver",
         ":nlopt_solver",
@@ -308,14 +309,28 @@ drake_cc_library(
     ],
     hdrs = [
         "rotation_constraint.h",
-        "rotation_constraint_internal.h",
+    ],
+    deps = [
+        ":mathematical_program",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "mixed_integer_rotation_constraint",
+    srcs = [
+        "mixed_integer_rotation_constraint.cc",
+        "mixed_integer_rotation_constraint_internal.cc",
+    ],
+    hdrs = [
+        "mixed_integer_rotation_constraint.h",
+        "mixed_integer_rotation_constraint_internal.h",
     ],
     deps = [
         ":bilinear_product_util",
         ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
-        "//math:gradient",
     ],
 )
 
@@ -329,6 +344,7 @@ drake_cc_library(
         "test/rotation_constraint_visualization.h",
     ],
     deps = [
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/proto:call_matlab",
     ],
@@ -1086,7 +1102,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_test",
+    name = "mixed_integer_rotation_constraint_test",
     timeout = "long",
     tags = gurobi_test_tags() + mosek_test_tags() + [
         # Excluding asan because it is unreasonably slow (> 30 minutes).
@@ -1100,6 +1116,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
@@ -1107,9 +1124,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_internal_test",
-    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
+    name = "rotation_constraint_test",
+    timeout = "long",
+    tags = gurobi_test_tags() + mosek_test_tags() + [
+        # Excluding asan because it is unreasonably slow (> 30 minutes).
+        "no_asan",
+        # Times out with Valgrind
+        "no_memcheck",
+        # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
+    use_default_main = False,
     deps = [
+        ":gurobi_solver",
         ":mathematical_program",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1134,13 +1161,14 @@ drake_cc_binary(
     srcs = ["test/plot_feasible_rotation_matrices.cc"],
     deps = [
         ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/proto:call_matlab",
     ],
 )
 
 drake_cc_googletest(
-    name = "rotation_constraint_limit_test",
+    name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
     tags = gurobi_test_tags() + [
         # Times out with Valgrind
@@ -1151,6 +1179,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -1239,6 +1268,17 @@ drake_cc_googletest(
         ":gurobi_solver",
         ":mixed_integer_optimization_util",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mixed_integer_rotation_constraint_internal_test",
+    tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
+    deps = [
+        ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
