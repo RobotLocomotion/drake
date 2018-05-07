@@ -107,7 +107,7 @@ void MultibodyPlant<T>::RegisterVisualGeometry(const Body<T>& body,
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
-  DRAKE_ASSERT(static_cast<int>(visual_geometries_.size()) == num_bodies());
+  DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
   visual_geometries_[body.index()].push_back(id);
 }
 

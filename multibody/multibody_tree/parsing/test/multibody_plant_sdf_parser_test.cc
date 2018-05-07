@@ -157,7 +157,7 @@ GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant.get_num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
       plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1"));
@@ -185,7 +185,7 @@ GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant.get_num_visual_geometries(), 0);
+  EXPECT_EQ(plant.num_visual_geometries(), 0);
 }
 
 // Verifies that the source registration with a SceneGraph can happen before a
@@ -200,7 +200,7 @@ GTEST_TEST(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant.get_num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
 
   const std::vector<GeometryId>& link1_visual_geometry_ids =
       plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1"));

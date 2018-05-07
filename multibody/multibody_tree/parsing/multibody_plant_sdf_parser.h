@@ -29,7 +29,7 @@ namespace parsing {
 ///   added.
 /// @param scene_graph
 ///   A pointer to a mutable SceneGraph object used for geometry registration
-///   (either to model visual or contact geometry.)
+///   (either to model visual or contact geometry).
 void AddModelFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,

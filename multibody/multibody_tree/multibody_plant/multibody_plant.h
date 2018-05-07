@@ -240,6 +240,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
     const RigidBody<T>& body = model_->AddRigidBody(name, M_BBo_B);
+    // Each entry of visual_geometries_, ordered by body index, contains a
+    // std::vector of geometry ids for that body. The emplace_back() below
+    // resizes visual_geometries_ to store the geometry ids for the body we
+    // just added.
+    // TODO(amcastro-tri): static_cast should not be needed. Update when
+    // TypeSafeIndex is fixed to support this comparison.
+    DRAKE_DEMAND(static_cast<int>(visual_geometries_.size()) == body.index());
     visual_geometries_.emplace_back();
     return body;
   }
@@ -513,7 +520,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @note This method can be called at any time during the lifetime of `this`
   /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  /// @see RegisterVisualGeometry()
+  /// @see RegisterVisualGeometry(), Finalize()
   const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
       const Body<T>& body) const;
 
@@ -550,7 +557,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int get_num_visual_geometries() const {
+  int num_visual_geometries() const {
     return static_cast<int>(geometry_id_to_visual_index_.size());
   }
 
