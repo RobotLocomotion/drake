@@ -256,10 +256,10 @@ class System : public SystemBase {
     DRAKE_DEMAND(num_params == context->num_numeric_parameters());
   }
 
-  /// For each input port, allocates a freestanding input of the concrete type
+  /// For each input port, allocates a fixed input of the concrete type
   /// that this System requires, and binds it to the port, disconnecting any
-  /// prior input. Does not assign any values to the freestanding inputs.
-  void AllocateFreestandingInputs(Context<T>* context) const {
+  /// prior input. Does not assign any values to the fixed inputs.
+  void AllocateFixedInputs(Context<T>* context) const {
     for (InputPortIndex i(0); i < get_num_input_ports(); ++i) {
       const InputPortDescriptor<T>& port = get_input_port(i);
       if (port.get_data_type() == kVectorValued) {
@@ -438,7 +438,7 @@ class System : public SystemBase {
   /// @pre `port_index` must be non-negative.
   /// @pre `port_index` must designate an existing input port.
   /// @pre the port must have been declared to be vector-valued.
-  /// @pre the port must be evaluable (connected or freestanding).
+  /// @pre the port must be evaluable (connected or fixed).
   ///
   /// @see EvalVectorInput()
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
@@ -1066,10 +1066,10 @@ class System : public SystemBase {
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
                        this->get_num_input_ports());
 
-    // Checks that the size of the freestanding vector input ports in the
+    // Checks that the size of the fixed vector input ports in the
     // context matches the declarations made by the system.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
-      const FreestandingInputPortValue* port_value =
+      const FixedInputPortValue* port_value =
           context.MaybeGetFixedInputPortValue(i);
 
       // If the port isn't fixed, we don't have anything else to check.

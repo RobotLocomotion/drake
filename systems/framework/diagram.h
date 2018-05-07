@@ -993,7 +993,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // Evaluates the value of the specified subsystem input
   // port in the given context. The port has already been determined _not_ to
-  // be a freestanding port, so it must be connected either
+  // be a fixed port, so it must be connected either
   // - to the output port of a peer subsystem, or
   // - to an input port of this Diagram,
   // - or not connected at all in which case we return null.

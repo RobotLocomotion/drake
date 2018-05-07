@@ -9,7 +9,7 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/system_base.h"
 
-// Tests the functioning of the concrete FreestandingInputPortValue class and
+// Tests the functioning of the concrete FixedInputPortValue class and
 // verifies that it properly notifies dependent input ports when its value
 // changes. The latter requires some hand-crafting of a suitable Context since
 // we can only use framework base objects here.
@@ -34,7 +34,7 @@ class MyContextBase : public ContextBase {
 // dependency trackers assigned in the context.
 class MySystemBase : public SystemBase {
  public:
-  // Declare some input ports that we can make freestanding. Port 0 is a
+  // Declare some input ports that we can make fixed. Port 0 is a
   // 2-element vector-valued port, port 1 is abstract valued.
   MySystemBase() {
     CreateInputPort(std::make_unique<InputPortBase>(
@@ -52,9 +52,9 @@ class MySystemBase : public SystemBase {
   void DoCheckValidContext(const ContextBase&) const final {}
 };
 
-// Creates a MySystemBase and its context and wires up freestanding input values
+// Creates a MySystemBase and its context and wires up fixed input values
 // to each of the two ports.
-class FreestandingInputPortTest : public ::testing::Test {
+class FixedInputPortTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
@@ -98,8 +98,8 @@ class FreestandingInputPortTest : public ::testing::Test {
   std::unique_ptr<ContextBase> context_base_ = system_.AllocateContext();
   MyContextBase& context_ = dynamic_cast<MyContextBase&>(*context_base_);
 
-  FreestandingInputPortValue* port0_value_{};
-  FreestandingInputPortValue* port1_value_{};
+  FixedInputPortValue* port0_value_{};
+  FixedInputPortValue* port1_value_{};
 
   const DependencyTracker* tracker0_{};
   const DependencyTracker* tracker1_{};
@@ -113,7 +113,7 @@ class FreestandingInputPortTest : public ::testing::Test {
 
 // Tests that the System and Context wiring is set up as we assume for the
 // tests here, and that the free values are wired in.
-TEST_F(FreestandingInputPortTest, SystemAndContext) {
+TEST_F(FixedInputPortTest, SystemAndContext) {
   // The input port trackers should have declared the free values as
   // prerequisites, and the free values should know the input ports are
   // subscribers.
@@ -142,11 +142,11 @@ TEST_F(FreestandingInputPortTest, SystemAndContext) {
   EXPECT_EQ(port1_value_->serial_number(), 1);
 }
 
-// Freestanding values are cloned only as part of cloning a context, which
+// Fixed values are cloned only as part of cloning a context, which
 // requires changing the internal context pointer that is used for value
 // change notification. The ticket and input port index remain unchanged
 // in the new context. The values are copied and serial numbers unchanged.
-TEST_F(FreestandingInputPortTest, Clone) {
+TEST_F(FixedInputPortTest, Clone) {
   std::unique_ptr<ContextBase> new_context = system_.AllocateContext();
   auto free0 =
       port0_value_->CloneForNewContext(new_context.get(), InputPortIndex(0));
@@ -170,7 +170,7 @@ TEST_F(FreestandingInputPortTest, Clone) {
 
 // Test that we can access values and that doing so does not send value change
 // notifications.
-TEST_F(FreestandingInputPortTest, Access) {
+TEST_F(FixedInputPortTest, Access) {
   EXPECT_EQ(Vector2<double>(5, 6),
             port0_value_->template get_vector_value<double>().get_value());
   EXPECT_EQ(free_tracker0_->num_notifications_sent(), sent0_);
@@ -185,7 +185,7 @@ TEST_F(FreestandingInputPortTest, Access) {
 
 // Tests that changes to the vector data are propagated to the input port
 // that wraps it.
-TEST_F(FreestandingInputPortTest, Mutation) {
+TEST_F(FixedInputPortTest, Mutation) {
   // Change the vector port's value.
   port0_value_->template GetMutableVectorData<double>()->get_mutable_value()
       << 7, 8;

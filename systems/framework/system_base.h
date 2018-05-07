@@ -633,7 +633,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Throws std::logic_error because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither
-  freestanding nor connected. */
+  fixed nor connected. */
   [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
                                                InputPortIndex port_index) const;
 
