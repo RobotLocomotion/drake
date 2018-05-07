@@ -179,6 +179,8 @@ void MakePoses(const std::vector<double>& speeds,
     (*rotations)[i] = math::RollPitchYaw<double>(rpy).ToQuaternion();
     (*translations)[i] = Vector3d(1. + displacement, 2., 3.);
 
+    if (i == static_cast<int>(speeds.size()) - 1) break;
+
     double interval_speed{0.};
     interval_speed = 0.5 * (speeds[i] + speeds[i + 1]);
     displacement += kDeltaT * interval_speed;
