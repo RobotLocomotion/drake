@@ -8,6 +8,10 @@ load(
     "drake_cc_package_library",
 )
 load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load(
     "@drake//tools/skylark:drake_java.bzl",
     "drake_java_binary",
 )
@@ -793,6 +797,14 @@ drake_cc_googletest(
     name = "trivial_right_of_way_state_provider_test",
     deps = [
         ":trivial_right_of_way_state_provider",
+    ],
+)
+
+drake_py_unittest(
+    name = "steering_command_driver_test",
+    deps = [
+        ":steering_command_driver",
+        "@lcm//:lcm-python",
     ],
 )
 
