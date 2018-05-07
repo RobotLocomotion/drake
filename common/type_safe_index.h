@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 
@@ -71,6 +72,22 @@ namespace drake {
 /// This is sufficient to create a unique index type. It is certainly possible
 /// to use an existing class (e.g., `Foo`). But this provides no functional
 /// benefit.
+///
+/// __Construction from integral types__
+///
+/// C++ will do
+/// [implict integer conversions](https://en.cppreference.com/w/cpp/language/implicit_conversion#Integral_conversions).
+/// This allows construction of %TypeSafeIndex values with large integral types
+/// (e.g., int64_t, size_t, etc.) These larger types are implicitly converted
+/// to ints and the normal constructor is invoked. This is a quirk/flaw of the
+/// C++ language and no attempt is made in this class to *correct* this
+/// behavior.
+///
+/// Be warned, this means that one can accidentally pass in a *bad* value to
+/// the constructor (i.e., a value that can't be represented by the underlying
+/// 32-bit int). The *user* bears the responsibility for constructing instances
+/// with valid values -- confirm that the initial value lies in the range
+/// `[0, std::numeric_limits<int>::max()]`.
 ///
 /// __Examples of valid and invalid operations__
 ///
@@ -177,14 +194,6 @@ class TypeSafeIndex {
   TypeSafeIndex& operator=(TypeSafeIndex&& other) noexcept {
     index_ = other.index_;
     other.index_ = kDefaultInvalid;
-    return *this;
-  }
-
-  /// Assign the index a value from a non-negative int.
-  /// In Debug builds, this method asserts that the input index is non-negative.
-  TypeSafeIndex& operator=(int idx) {
-    index_ = idx;
-    DRAKE_ASSERT_VOID(AssertValid("Assigning an invalid int."));
     return *this;
   }
 
@@ -340,76 +349,136 @@ class TypeSafeIndex {
   ///@{
 
   /// Whitelist equality test with indices of this tag.
-  bool operator==(const TypeSafeIndex<Tag>& other) {
+  bool operator==(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing == with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing == with invalid RHS."));
     return index_ == other.index_;
   }
 
+  /// Whitelist inequality test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator==(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing == with invalid index."));
+    return value <= std::numeric_limits<int>::max() &&
+        index_ == static_cast<int>(value);
+  }
+
   /// Blacklist equality tests with indices of other tags.
   template <typename U>
-  bool operator==(const TypeSafeIndex<U>& u) = delete;
+  bool operator==(const TypeSafeIndex<U>& u) const = delete;
 
   /// Whitelist inequality test with indices of this tag.
-  bool operator!=(const TypeSafeIndex<Tag>& other) {
+  bool operator!=(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing != with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing != with invalid RHS."));
     return index_ != other.index_;
   }
 
+  /// Whitelist inequality test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator!=(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing != with invalid index."));
+    return value > std::numeric_limits<int>::max() ||
+        index_ != static_cast<int>(value);
+  }
+
   /// Blacklist inequality test with indices of other tags.
   template <typename U>
-  bool operator!=(const TypeSafeIndex<U>& u) = delete;
+  bool operator!=(const TypeSafeIndex<U>& u) const = delete;
 
   /// Whitelist less than test with indices of this tag.
-  bool operator<(const TypeSafeIndex<Tag>& other) {
+  bool operator<(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing < with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing < with invalid RHS."));
     return index_ < other.index_;
   }
 
+  /// Whitelist less than test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator<(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing < with invalid index."));
+    return value > std::numeric_limits<int>::max() ||
+        index_ < static_cast<int>(value);
+  }
+
   /// Blacklist less than test with indices of other tags.
   template <typename U>
-  bool operator<(const TypeSafeIndex<U>& u) = delete;
+  bool operator<(const TypeSafeIndex<U>& u) const = delete;
 
   /// Whitelist less than or equals test with indices of this tag.
-  bool operator<=(const TypeSafeIndex<Tag>& other) {
+  bool operator<=(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing <= with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing <= with invalid RHS."));
     return index_ <= other.index_;
   }
 
+  /// Whitelist less than or equals test test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator<=(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing <= with invalid index."));
+    return value > std::numeric_limits<int>::max() ||
+        index_ <= static_cast<int>(value);
+  }
+
   /// Blacklist less than or equals test with indices of other tags.
   template <typename U>
-  bool operator<=(const TypeSafeIndex<U>& u) = delete;
+  bool operator<=(const TypeSafeIndex<U>& u) const = delete;
 
   /// Whitelist greater than test with indices of this tag.
-  bool operator>(const TypeSafeIndex<Tag>& other) {
+  bool operator>(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing > with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing > with invalid RHS."));
     return index_ > other.index_;
   }
 
+  /// Whitelist greater than test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator>(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing > with invalid index."));
+    return value < std::numeric_limits<int>::max() &&
+        index_ > static_cast<int>(value);
+  }
+
   /// Blacklist greater than test with indices of other tags.
   template <typename U>
-  bool operator>(const TypeSafeIndex<U>& u) = delete;
+  bool operator>(const TypeSafeIndex<U>& u) const = delete;
 
   /// Whitelist greater than or equals test with indices of this tag.
-  bool operator>=(const TypeSafeIndex<Tag>& other) {
+  bool operator>=(const TypeSafeIndex<Tag>& other) const {
     DRAKE_ASSERT_VOID(AssertValid("Testing >= with invalid LHS."));
     DRAKE_ASSERT_VOID(
         other.AssertValid("Testing >= with invalid RHS."));
     return index_ >= other.index_;
   }
 
+  /// Whitelist greater than or equals test with unsigned integers.
+  template <typename U>
+  typename std::enable_if<
+      std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+  operator>=(const U& value) const {
+    DRAKE_ASSERT_VOID(AssertValid("Testing >= with invalid index."));
+    return value <= std::numeric_limits<int>::max() &&
+        index_ >= static_cast<int>(value);
+  }
+
   /// Blacklist greater than or equals test with indices of other tags.
   template <typename U>
-  bool operator>=(const TypeSafeIndex<U>& u) = delete;
+  bool operator>=(const TypeSafeIndex<U>& u) const = delete;
 
   ///@}
 
@@ -445,6 +514,48 @@ class TypeSafeIndex {
 
   int index_{kDefaultInvalid};
 };
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator==(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag.operator==(value);
+}
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator!=(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag.operator!=(value);
+}
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator<(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag >= value;
+}
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator<=(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag > value;
+}
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator>(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag <= value;
+}
+
+template <typename Tag, typename U>
+typename std::enable_if<
+    std::is_integral<U>::value && std::is_unsigned<U>::value, bool>::type
+operator>=(const U& value, const TypeSafeIndex<Tag>& tag) {
+  return tag < value;
+}
 
 }  // namespace drake
 
