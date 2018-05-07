@@ -15,8 +15,6 @@ namespace drake {
 namespace solvers {
 namespace {
 enum RotationMatrixIntervalBinning {
-  kLinear,        ///< Same as IntervalBining::kLinear, used by
-                  /// MixedIntegerRotationMatrixGenerator.
   kLogarithmic,   ///< Same as IntervalBinning::kLogarithmic, used by
                   /// MixedIntegerRotationMatrixGenerator.
   kPosNegLinear,  ///< Used by AddRotationMatrixBoxSphereIntersection. It uses
@@ -181,8 +179,7 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::ValuesIn<std::vector<bool>>({true, false}),  // bmin or bmax
         ::testing::ValuesIn<std::vector<int>>({0, 1, 2}),       // column index
         ::testing::ValuesIn<std::vector<RotationMatrixIntervalBinning>>(
-            {RotationMatrixIntervalBinning::kLinear,
-             RotationMatrixIntervalBinning::kLogarithmic,
+            {RotationMatrixIntervalBinning::kLogarithmic,
              RotationMatrixIntervalBinning::kPosNegLinear})));
 }  // namespace
 }  // namespace solvers
