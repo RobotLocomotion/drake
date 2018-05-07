@@ -35,10 +35,10 @@ class WorldSimTreeBuilder {
   /// any of the add model instance functions should compile the tree.
   ///
   /// Setting @p compile_tree to false will cause the parser to bypass tree
-  /// compilation such that modifications to the tree can be made at run time
-  /// (e.g., programmatically adding collision elements to the tree). The user
-  /// is responsible for calling compile() on the tree. Take the following
-  /// snippet as an example:
+  /// compilation such that modifications to the recently parsed tree can be
+  /// made at run time (e.g., accessing/modifying collision filters declared in
+  /// the corresponding urdf/sdf file). The user is responsible for calling
+  /// compile() on the tree. Take the following snippet as an example:
   /// ```
   /// auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>(false);
   /// tree_builder->StoreDrakeModel("mymodel", kModelUrdf);
@@ -158,11 +158,11 @@ class WorldSimTreeBuilder {
     return *rigid_body_tree_;
   }
 
-  /// Returns a pointer to the (not yet built) mutable tree. This is useful for
-  /// cases where one needs to programmatically modify the tree (e.g., when
-  /// programmatically adding collision elements to the un-compiled tree).
+  /// Returns a pointer to the (not yet built) mutable tree. This is useful when
+  /// one needs to programmatically modify a recently parsed, uncompiled tree
+  /// (e.g., accessing/modifying collision filters declared in the corresponding
+  /// urdf/sdf file).
   /// @pre Build() must not have been called yet.
-  /// @pre Constructor must have been called with compile_tree set to false.
   RigidBodyTree<T>* mutable_tree() {
     DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
 
