@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1464,24 +1465,25 @@ class RigidBodyTree {
 
   /**
    * Attempts to define a new collision filter group.  The given name *must*
-   * be unique in the current session (see CollisionFilterGroupManager for more
-   * detail).  Duplicate names or attempting to add more collision filter groups
-   * than the system can handle will lead to failure. In the event of failure,
-   * an exception is thrown.  kMaxNumCollisionFilterGroups defines the limit.
+   * be unique since the last invocation of compile() (or construction,
+   * whichever is more recent). Duplicate names or attempting to add more
+   * collision filter groups than the system can handle will lead to failure. In
+   * the event of failure, an exception is thrown. kMaxNumCollisionFilterGroups
+   * defines the limit of total collision filter groups that are supported.
    * @param name        The unique name of the new group.
+   * @trhows std::logic_error in response to failure conditions.
    */
   void DefineCollisionFilterGroup(const std::string& name);
 
   /**
-   * Adds a RigidBody to a collision filter group.  The RigidBody is referenced
+   * Adds a RigidBody to a collision filter group. The RigidBody is referenced
    * by name and model instance id. The process will fail if the body cannot be
-   * found, if the group cannot be found, or if the indicated body already has
-   * *registered* collision elements (see Model::AddElement() for more details).
-   * An exception is thrown in the event of failure.
+   * found or if the group cannot be found.
    * @param group_name      The collision filter group name to add the body to.
    * @param body_name       The name of the body to add.
    * @param model_id        The id of the model instance to which this body
    *                        belongs.
+   * @throws std::logic_error in response to failure conditions.
    */
   void AddCollisionFilterGroupMember(const std::string& group_name,
                                      const std::string& body_name,
@@ -1489,30 +1491,15 @@ class RigidBodyTree {
 
   /**
    * Adds a collision group to the set of groups ignored by the specified
-   * collision filter group.  Will fail if the specified group name
-   * does not refer to an existing collision filter group.  (The
-   * target group name need not exist at this time.)  An exception is thrown
-   * upon failure.
+   * collision filter group. Will fail if the specified group name does not
+   * refer to an existing collision filter group. (The target group name need
+   * not exist at this time.)
    * @param group_name
    * @param target_group_name
+   * @throws std::logic_error in response to failure conditions.
    */
   void AddCollisionFilterIgnoreTarget(const std::string& group_name,
                                       const std::string& target_group_name);
-
-  // TODO(SeanCurtis-TRI): Kill this method when matlab dependencies are
-  // removed.  There is a corresponding method on CollisionFilterGroupManager.
-  /**
-   Directly set the masks for a body.  The values will remain in the current
-   session (i.e., until CollisionFilterGroupManager::Clear() is called).
-   This is a convenience function for Matlab integration.  The Matlab parser
-   handles the mapping of collision filter group names to ids and passes the
-   mapped ids directly the manager for when the tree gets compiled.  It relies
-   on correct encoding of groups into bitmasks.
-   */
-  void SetBodyCollisionFilters(
-      const RigidBody<T>& body,
-      const drake::multibody::collision::bitmask& group,
-      const drake::multibody::collision::bitmask& ignores);
 
   /**
    * @brief Returns a mutable reference to the RigidBody associated with the
@@ -1648,21 +1635,13 @@ class RigidBodyTree {
   // Defines a number of collision cliques to be used by
   // drake::multibody::collision::Model.
   // Collision cliques are defined so that:
-  // - There is one clique per RigidBody: and so CollisionElement's attached to
-  // a RigidBody do not collide.
-  // - There is one clique per pair of RigidBodies that are not meant to
-  // collide. These are determined according to the policy provided by
-  // RigidBody::CanCollideWith.
-  //
-  // Collision cliques provide a simple mechanism to omit pairs of collision
-  // elements from collision tests. The collision element pair (A, B) will not
-  // be tested for collision if A and B belong to the same clique.
-  // This particular method implements a default heuristics to create cliques
-  // for a RigidBodyTree which are in accordance to the policy implemented by
-  // RigidBody::CanCollideWith().
+  // - Collision elements on a single body are *not* considered for collision.
+  // - Collision elements on *pairs* of RigidBody instances are configured not
+  //   to be considered for collision if RigidBody::CanCollideWith() returns
+  //   false.
   //
   // @see RigidBody::CanCollideWith.
-  void CreateCollisionCliques();
+  void CreateCollisionCliques(std::unordered_set<RigidBody<T>*>* recompile_set);
 
   // collision_model maintains a collection of the collision geometry in the
   // RBM for use in collision detection of different kinds. Small margins are
