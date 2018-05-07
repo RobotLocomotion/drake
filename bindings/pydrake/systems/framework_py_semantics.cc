@@ -44,7 +44,7 @@ void DefineFrameworkPySemantics(py::module m) {
   BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
   BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
 
-  py::class_<FreestandingInputPortValue>(m, "FreestandingInputPortValue");
+  py::class_<FixedInputPortValue>(m, "FixedInputPortValue");
 
   using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
   // N.B. `AbstractValues` provides the ability to reference non-owned values,

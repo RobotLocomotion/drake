@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 
 using Eigen::AutoDiffScalar;
 using Eigen::Vector2d;

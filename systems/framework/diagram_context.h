@@ -11,7 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
@@ -320,7 +320,7 @@ class DiagramContext final : public Context<T> {
       DRAKE_DEMAND(source.contexts_[i] != nullptr);
       DRAKE_DEMAND(source.outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
-      // appears on each of its input ports into a FreestandingInputPortValue.
+      // appears on each of its input ports into a FixedInputPortValue.
       AddSystem(i, Context<T>::CloneWithoutPointers(*source.contexts_[i]),
                 source.outputs_[i]->Clone());
     }

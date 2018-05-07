@@ -29,7 +29,7 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
   DiscreteTimeSystemConstraint(const System<AutoDiffXd>& system,
                                Context<AutoDiffXd>* context,
                                DiscreteValues<AutoDiffXd>* discrete_state,
-                               FreestandingInputPortValue* input_port_value,
+                               FixedInputPortValue* input_port_value,
                                int num_states, int num_inputs,
                                double evaluation_time)
       : Constraint(num_states, num_inputs + 2 * num_states,
@@ -89,7 +89,7 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
  private:
   const System<AutoDiffXd>& system_;
   Context<AutoDiffXd>* const context_;
-  FreestandingInputPortValue* const input_port_value_;
+  FixedInputPortValue* const input_port_value_;
   DiscreteValues<AutoDiffXd>* const discrete_state_;
 
   const int num_states_{0};

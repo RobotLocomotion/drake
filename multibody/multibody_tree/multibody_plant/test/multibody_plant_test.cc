@@ -245,7 +245,7 @@ class AcrobotPlantTests : public ::testing::Test {
   const RevoluteJoint<double>* shoulder_{nullptr};
   const RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
-  systems::FreestandingInputPortValue* input_port_{nullptr};
+  systems::FixedInputPortValue* input_port_{nullptr};
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
