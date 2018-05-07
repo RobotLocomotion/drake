@@ -70,7 +70,7 @@ SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * axis_F_);
+  return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
 }
 
 template <typename T>
@@ -79,7 +79,8 @@ PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const MultibodyTreeContext<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  return SpatialAcceleration<T>(Vector3<T>::Zero(), vdot[0] * axis_F_);
+  return SpatialAcceleration<T>(Vector3<T>::Zero(),
+                                vdot[0] * translation_axis());
 }
 
 template <typename T>

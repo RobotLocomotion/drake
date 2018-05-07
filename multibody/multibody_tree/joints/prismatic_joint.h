@@ -13,7 +13,7 @@
 namespace drake {
 namespace multibody {
 
-/// This Joint allows two bodies to translate relatively to one another along a
+/// This Joint allows two bodies to translate relative to one another along a
 /// common axis.
 /// That is, given a frame F attached to the parent body P and a frame M
 /// attached to the child body B (see the Joint class's documentation),
@@ -41,7 +41,7 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Constructor to create a prismatic joint between two bodies so that
   /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, translate relatively to one another about a common axis. See this
+  /// body B, translate relatively to one another along a common axis. See this
   /// class's documentation for further details on the definition of these
   /// frames and translation distance.
   /// The first three arguments to this constructor are those of the Joint class
@@ -53,13 +53,13 @@ class PrismaticJoint final : public Joint<T> {
   ///   rotation, the measures of `axis` in either frame F or M
   ///   are exactly the same, that is, `axis_F = axis_M`.
   ///   This vector can have any length, only the direction is used.
-  /// @throws std::exception if the L2 norm of `axis` is less than machine
-  /// epsilon.
+  /// @throws std::exception if the L2 norm of `axis` is less than the square
+  /// root of machine epsilon.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
                 const Vector3<double>& axis) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
+    const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();
   }
@@ -81,8 +81,7 @@ class PrismaticJoint final : public Joint<T> {
   /// Gets the translation distance of `this` mobilizer from `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The transaltion coordinate of `this` joint stored in the
-  /// `context`.
+  /// @returns The translation coordinate of `this` joint read from `context`.
   const T& get_translation(const Context<T>& context) const {
     return get_mobilizer()->get_translation(context);
   }
@@ -104,13 +103,13 @@ class PrismaticJoint final : public Joint<T> {
   /// translation distance (see get_translation()) from `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The rate of change of `this` joint's translation as stored in the
+  /// @returns The rate of change of `this` joint's translation read from
   /// `context`.
   const T& get_translation_rate(const Context<T>& context) const {
     return get_mobilizer()->get_translation_rate(context);
   }
 
-  /// Sets the rate of change, in meters per second, of this `this` joint's
+  /// Sets the rate of change, in meters per second, of `this` joint's
   /// translation distance to `translation_dot`. The new rate of change
   /// `translation_dot` gets stored in `context`.
   /// @param[in] context
@@ -143,7 +142,7 @@ class PrismaticJoint final : public Joint<T> {
   }
 
  protected:
-  /// Joint<T> override called through public NVI, Joint::AddInForce().
+  /// Joint<T> final called through public NVI, Joint::AddInForce().
   /// Therefore arguments were already checked to be valid.
   /// For a %PrismaticJoint, we must always have `joint_dof = 0` since there is
   /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
@@ -155,10 +154,9 @@ class PrismaticJoint final : public Joint<T> {
       const systems::Context<T>&,
       int joint_dof,
       const T& joint_tau,
-      MultibodyForces<T>* forces) const override {
+      MultibodyForces<T>* forces) const final {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
-    DRAKE_DEMAND(joint_dof == 0);
     Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
@@ -166,13 +164,13 @@ class PrismaticJoint final : public Joint<T> {
   }
 
  private:
-  int do_get_num_dofs() const override {
+  int do_get_num_dofs() const final {
     return 1;
   }
 
-  // Joint<T> overrides:
+  // Joint<T> finals:
   std::unique_ptr<typename Joint<T>::BluePrint>
-  MakeImplementationBlueprint() const override {
+  MakeImplementationBlueprint() const final {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
         std::make_unique<PrismaticMobilizer<T>>(
@@ -181,10 +179,10 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
+      const MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   // Make PrismaticJoint templated on every other scalar type a friend of
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -213,6 +211,7 @@ class PrismaticJoint final : public Joint<T> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
+  // It is a unit vector.
   Vector3<double> axis_;
 };
 
