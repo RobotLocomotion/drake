@@ -1,7 +1,7 @@
 <sdf version='1.6'>
   <model name='test_robot'>
-    <!-- This sdf file defines a simple test robot with a single link
-         so that we can test visuals are properly added to the link.
+    <!-- This sdf file defines a simple test robot with multiple links
+         so that we can test visuals are properly added to each link.
          Values in <inertial> are not important for this test model since
          it's only to test the parsing of visuals into a MultibodyPlant.
          This file is meant to be kept in sync with the corresponding unit
