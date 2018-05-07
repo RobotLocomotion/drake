@@ -10,12 +10,12 @@ load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "particle1dMG",
+    name = "particle1dManual",
     srcs = [
-        "particle1dMG.cc",
+        "particle1d_manual.cc",
     ],
     hdrs = [
-        "particle1dMG.h",
+        "particle1d_manual.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -25,8 +25,8 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "particle1dMG_test",
+    name = "particle1d_manual_test",
     deps = [
-        ":particle1dMG",
+        ":particle1dManual",
     ],
 )

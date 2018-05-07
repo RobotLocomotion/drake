@@ -1,11 +1,6 @@
-
 // -----------------------------------------------------------------------------
-// File: SimpleBlock.h created Apr 17 2018 by MotionGenesis 5.9.
-// Portions copyright (c) 2009-2017 Motion Genesis LLC. are licensed under
-// the 3-clause BSD license.  https://opensource.org/licenses/BSD-3-Clause.
-// This copyright notice must appear in all copies and distributions.
-// MotionGenesis Professional Licensee: Toyota Research Institute
-// -----------------------------------------------------------------------------
+// Equation of motion for a simple particle that only has one degree of freedom.
+//
 // Instantiated templates for the following kinds of T's are provided:
 // - double
 // - AutoDiffXd
@@ -13,35 +8,50 @@
 #include "drake/common/autodiff.h"
 
 // -----------------------------------------------------------------------------
-namespace MotionGenesis {
+namespace Manual {
 // This is a model of a particle that is only allowed to move horizontally on
 // Earth (a Newtonian reference frame N). The particle has mass, No is a point
 // fixed on Earth, and Nx is a horizontal unit vector fixed on Earth.
 // -----------------------------------------------------------------------------
 template <typename T>
-class Particle1dMG {
+class Particle1dManual {
  public:
   // Constructs a particle and assigns the default value of 1 kg for its sole
   // constant parameter (mass).
-  Particle1dMG();
+  Particle1dManual();
 
   // Calculates the time-derivative of the state and assigns these values to the
   // stateDt array.
   void CalcDerivativesToStateDt(const T t, const T state[], T stateDt[]);
 
   // Model parameters (constants), only need to be set once (e.g., at t = 0).
-  T mass;
+  T mass_;
 
-  // Model variables are set via CalcDerivativesToStateDt. x is the
-  // particle's Nx measure from No. xDt and xDDt are ẋ and ẍ (the 1ˢᵗ and 2ⁿᵈ
-  // time-derivatives of x). F is the Nx measure of the force on the particle.
-  T x, xDt, xDDt, F;
+  // Struct to hold the particle data
+  struct ParticleData {
+    T x;
+    T xDt;
+    T xDDt;
+    T F;
+  };
+
+  // Method to output the ParticleData struct.
+  ParticleData OutputData();
 
  private:
-  // Set local state variables x and xDt from their corresponding values in
+  // Friend declaration so that the internals of the state can be confirmed in
+  // unit tests.
+  friend class ParticleTester;
+
+  // Model variables are set via CalcDerivativesToStateDt. x_ is the
+  // particle's Nx measure from No. xDt_ and xDDt_ are ẋ and ẍ (the 1ˢᵗ and 2ⁿᵈ
+  // time-derivatives of x_). F_ is the Nx measure of the force on the particle.
+  T x_, xDt_, xDDt_, F_;
+
+  // Set local state variables x_ and xDt_ from their corresponding values in
   // state[].
   void SetVariablesFromState(const T state[]);
 };
 
 // -----------------------------------------------------------------------------
-}  // namespace MotionGenesis
+}  // namespace Manual
