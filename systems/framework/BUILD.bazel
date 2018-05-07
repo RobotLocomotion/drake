@@ -218,11 +218,11 @@ drake_cc_library(
     name = "context_base",
     srcs = [
         "context_base.cc",
-        "input_port_value.cc",
+        "fixed_input_port_value.cc",
     ],
     hdrs = [
         "context_base.h",
-        "input_port_value.h",
+        "fixed_input_port_value.h",
     ],
     deps = [
         ":cache_and_dependency_tracker",
@@ -700,7 +700,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "input_port_value_test",
+    name = "fixed_input_port_value_test",
     deps = [
         ":framework_base",
         "//common:essential",

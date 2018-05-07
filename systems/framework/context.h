@@ -6,7 +6,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/context_base.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/value.h"

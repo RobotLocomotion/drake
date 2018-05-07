@@ -11,7 +11,7 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -83,16 +83,20 @@ class ContextBase : public internal::ContextMessageInterface {
   suggestions. */
   void SetAllCacheEntriesOutOfDate() const;
 
-  /** (Debugging) Returns the local name of the subsystem for which this is the
-  Context. See GetSystemPathname() if you want the full name. */
-  // Keep this the same as SystemBase::GetSystemPathname().
+  /** Returns the local name of the subsystem for which this is the Context.
+  This is intended primarily for error messages and logging.
+  @see SystemBase::GetSystemName() for details.
+  @see GetSystemPathname() if you want the full name. */
+  // Keep this the same as SystemBase::GetSystemName().
   const std::string& GetSystemName() const final {
     static never_destroyed<std::string> dummy("_");
     return system_name_.empty() ? dummy.access() : system_name_;
   }
 
-  /** (Debugging) Returns the full pathname of the subsystem for which this is
-  the Context. */
+  /** Returns the full pathname of the subsystem for which this is the Context.
+  This is intended primarily for error messages and logging.
+  @see SystemBase::GetSystemPathname() for details. */
+  // Keep this the same as SystemBase::GetSystemPathname().
   std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */

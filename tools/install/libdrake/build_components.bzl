@@ -315,6 +315,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/framework:framework",
     "//systems/framework:framework_base",
     "//systems/framework:framework_common",
+    "//systems/framework:input_port_descriptor",
     "//systems/framework:leaf_context",
     "//systems/framework:leaf_output_port",
     "//systems/framework:leaf_system",
