@@ -1900,5 +1900,11 @@ class System : public SystemBase {
   mutable T fake_cache_nonconservative_power_;
 };
 
+// This definition had to wait until System<T>'s declaration.
+template <typename T>
+const System<T>* InputPortDescriptor<T>::get_system() const {
+  return dynamic_cast<const System<T>*>(&get_system_base());
+}
+
 }  // namespace systems
 }  // namespace drake
