@@ -108,7 +108,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the translation distance
-  /// along this mobilizer's axis (@see translation_axis().)
+  /// along this mobilizer's axis (see translation_axis().)
   /// The generalized coordinate q for `this` mobilizer (the translation
   /// distance) is read from in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
@@ -117,7 +117,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the translation taken
   /// from `context` and input translational velocity `v` along this mobilizer's
-  /// axis (@see translation_axis()).
+  /// axis (see translation_axis()).
   /// The generalized coordinate q for `this` mobilizer (the translation
   /// distance) is read from in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
