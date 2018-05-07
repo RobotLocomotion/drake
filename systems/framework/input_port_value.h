@@ -18,9 +18,6 @@ namespace systems {
 
 class ContextBase;
 
-//==============================================================================
-//                     FREESTANDING INPUT PORT VALUE
-//==============================================================================
 /** A %FreestandingInputPortValue encapsulates a vector or abstract value for
 use as an internal value source for one of a System's input ports. The semantics
 are identical to a Parameter. We assign a DependencyTracker to this object

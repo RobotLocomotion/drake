@@ -41,6 +41,8 @@ class InputPortDescriptor final: public InputPortBase {
   /// for a diagram input port this will be the diagram, not the leaf system
   /// whose input port was exported. */
   // TODO(sherm1) Switch to an actual reference.
+  // Definition deferred to system.h to allow for unlimited types T without
+  // creating a circular reference.
   const System<T>* get_system() const;
 };
 
