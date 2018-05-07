@@ -1,12 +1,10 @@
-// clang-format: off
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-// clang-format: on
+#include "drake/multibody/multibody_tree/prismatic_mobilizer.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/prismatic_mobilizer.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -51,6 +49,7 @@ class PrismaticMobilizerTest : public ::testing::Test {
     // Performance critical queries take a MultibodyTreeContext to avoid dynamic
     // casting.
     mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
+    ASSERT_NE(mbt_context_, nullptr);
   }
 
  protected:
@@ -72,10 +71,10 @@ TEST_F(PrismaticMobilizerTest, AxisIsNormalizedAtConstruction) {
       kTolerance, MatrixCompareType::relative));
 }
 
-// Verifies method to mute and access the context.
+// Verifies method to mutate and access the context.
 TEST_F(PrismaticMobilizerTest, StateAccess) {
   const double some_value1 = 1.5;
-  const double some_value2 = M_PI;
+  const double some_value2 = std::sqrt(2);
   // Verify we can set a prismatic mobilizer position given the model's context.
   slider_->set_translation(context_.get(), some_value1);
   EXPECT_EQ(slider_->get_translation(*context_), some_value1);
@@ -92,7 +91,7 @@ TEST_F(PrismaticMobilizerTest, StateAccess) {
 
 TEST_F(PrismaticMobilizerTest, ZeroState) {
   const double some_value1 = 1.5;
-  const double some_value2 = M_PI;
+  const double some_value2 = std::sqrt(2);
   // Set the state to some arbitrary non-zero value.
   slider_->set_translation(context_.get(), some_value1);
   EXPECT_EQ(slider_->get_translation(*context_), some_value1);
@@ -169,7 +168,7 @@ TEST_F(PrismaticMobilizerTest, MapVelocityToQDotAndBack) {
   slider_->MapVelocityToQDot(*mbt_context_, v, &qdot);
   EXPECT_NEAR(qdot(0), v(0), kTolerance);
 
-  qdot(0) = -M_PI;
+  qdot(0) = -std::sqrt(2);
   slider_->MapQDotToVelocity(*mbt_context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
 }
