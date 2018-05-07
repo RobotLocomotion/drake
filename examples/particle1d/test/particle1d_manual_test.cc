@@ -1,4 +1,4 @@
-#include "drake/examples/particle1d/manual/particle1d_manual.h"
+#include "drake/examples/particle1d/particle1d_manual.h"
 
 #include <gtest/gtest.h>
 
