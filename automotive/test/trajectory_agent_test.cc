@@ -15,15 +15,18 @@ namespace {
 static constexpr double kTol = 1e-12;
 static constexpr double kSpeed = 10.;
 
+using Eigen::Quaternion;
+using Eigen::Vector3d;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 GTEST_TEST(TrajectoryAgentTest, Topology) {
   const std::vector<double> times{0., 1.};
-  const std::vector<Eigen::Isometry3d> poses{Eigen::Isometry3d::Identity(),
-                                             Eigen::Isometry3d::Identity()};
-  const TrajectoryAgent<double> car(CarAgent(),
-                                    AgentTrajectory::Make(times, poses));
+  std::vector<Quaternion<double>> rotations{Quaternion<double>::Identity(),
+                                            Quaternion<double>::Identity()};
+  std::vector<Vector3d> translations{Vector3d::Zero(), Vector3d::Zero()};
+  const TrajectoryAgent<double> car(
+      CarAgent(), AgentTrajectory::Make(times, rotations, translations));
 
   ASSERT_EQ(0, car.get_num_input_ports());
   ASSERT_EQ(3, car.get_num_output_ports());
@@ -62,18 +65,22 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
   };
 
   for (const auto& it : test_cases) {
-    Eigen::Isometry3d start_pose({5., 10., 0.});
-    start_pose.rotate(
-        math::RollPitchYaw<double>(0., 0., it.heading).ToQuaternion());
-    Eigen::Isometry3d end_pose = start_pose;
-    end_pose.translation() =
-        end_pose.translation() +
-        math::RotationMatrix<double>(start_pose.rotation()).matrix() *
-            Eigen::Vector3d{it.distance, 0., 0.};
+    const Quaternion<double> start_rotation{
+        math::RollPitchYaw<double>(0., 0., it.heading).ToQuaternion()};
+    const Vector3d start_translation({5., 10., 0.});
+    const Quaternion<double> end_rotation = start_rotation;
+    const Vector3d end_translation{
+        start_translation +
+        math::RotationMatrix<double>(start_rotation).matrix() *
+            Vector3d{it.distance, 0., 0.}};
 
-    const std::vector<Eigen::Isometry3d> poses{start_pose, end_pose};
+    const std::vector<Quaternion<double>> rotations{start_rotation,
+                                                    end_rotation};
+    const std::vector<Vector3d> translations{start_translation,
+                                             end_translation};
     const std::vector<double> times{0., it.distance / kSpeed};
-    const AgentTrajectory trajectory = AgentTrajectory::Make(times, poses);
+    const AgentTrajectory trajectory =
+        AgentTrajectory::Make(times, rotations, translations);
 
     const TrajectoryAgent<double> agent(CarAgent(), trajectory);
 
@@ -92,9 +99,8 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
           std::min(std::max(0.0, (time * kSpeed) / it.distance), 1.);
       const double position = scalar * it.distance;
       Eigen::Translation<double, 3> expected_translation(
-          start_pose.translation() + Eigen::Vector3d{cos(it.heading) * position,
-                                                     sin(it.heading) * position,
-                                                     0.});
+          start_translation +
+          Vector3d{cos(it.heading) * position, sin(it.heading) * position, 0.});
       agent.CalcOutput(context, outputs.get());
 
       // Tests the raw pose output.
@@ -137,10 +143,11 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
 
 GTEST_TEST(TrajectoryAgentTest, ToAutoDiff) {
   const std::vector<double> times{0., 1.};
-  const std::vector<Eigen::Isometry3d> poses{Eigen::Isometry3d::Identity(),
-                                             Eigen::Isometry3d::Identity()};
-  const TrajectoryAgent<double> agent(CarAgent(),
-                                      AgentTrajectory::Make(times, poses));
+  std::vector<Quaternion<double>> rotations{Quaternion<double>::Identity(),
+                                            Quaternion<double>::Identity()};
+  std::vector<Vector3d> translations{Vector3d::Zero(), Vector3d::Zero()};
+  const TrajectoryAgent<double> agent(
+      CarAgent(), AgentTrajectory::Make(times, rotations, translations));
 
   EXPECT_TRUE(is_autodiffxd_convertible(agent, [&](const auto& autodiff_dut) {
     auto context = autodiff_dut.CreateDefaultContext();
