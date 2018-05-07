@@ -8,6 +8,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
@@ -164,10 +165,9 @@ class FixedInputPortValue {
   DependencyTicket ticket_;
 };
 
-
-/** (Deprecated name) Please use FixedInputPortValue instead. */
-// TODO(sherm1) Deprecate this for real.
-using FreestandingInputPortValue = FixedInputPortValue;
+// TODO(sherm1) Get rid of this after 8/7/2018 (three months).
+DRAKE_DEPRECATED("Please use FixedInputPortValue instead.")
+typedef FixedInputPortValue FreestandingInputPortValue;
 
 }  // namespace systems
 }  // namespace drake

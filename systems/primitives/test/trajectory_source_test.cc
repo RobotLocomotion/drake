@@ -8,7 +8,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 
 using Eigen::Matrix;
 using Eigen::MatrixXd;
