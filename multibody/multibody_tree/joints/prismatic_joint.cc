@@ -24,7 +24,7 @@ PrismaticJoint<T>::TemplatedDoCloneToScalar(
       frame_on_parent_body_clone, frame_on_child_body_clone,
       this->translation_axis());
 
-  return std::move(joint_clone);
+  return joint_clone;
 }
 
 template <typename T>

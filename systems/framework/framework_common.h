@@ -72,38 +72,56 @@ rather depends on what it is connected to (not yet implemented). */
 constexpr int kAutoSize = -1;
 
 #ifndef DRAKE_DOXYGEN_CXX
+class AbstractValue;
 class ContextBase;
+
+// (Stub, please ignore) An empty type-agnostic base class for input ports.
+// TODO(sherm1) Replace with the real InputPortBase in its own header (see
+// caching branch).
+class InputPortBase {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortBase)
+  InputPortBase() = default;
+  virtual ~InputPortBase() = default;
+};
+
 namespace internal {
 
-/** SystemBase should implement this interface so that its contained objects
-can provide helpful error messages and log diagnostics that identify the
-offending object within a diagram. Providing this as a separate interface allows
-us to avoid mutual dependencies between the containers and their contained
-objects, which allows us to put the contained objects in their own Bazel
-libraries. */
+// TODO(sherm1) These interface classes shouldn't be here -- split into their
+// own headers. As written they obscure the limited use of these interfaces
+// in the framework, and require forward declarations that would not be
+// required if moved.
+
+// SystemBase should implement this interface so that its contained objects
+// can provide helpful error messages and log diagnostics that identify the
+// offending object within a diagram. Providing this as a separate interface
+// allows us to avoid mutual dependencies between the containers and their
+// contained objects, which allows us to put the contained objects in their
+// own Bazel libraries.
 class SystemMessageInterface {
  public:
   virtual ~SystemMessageInterface() = default;
 
-  /** Returns the simple name of this subsystem, with no path separators. */
+  // Returns a human-readable simple name of this subsystem, suitable for use
+  // in constructing a system pathname. If there is no name this should still
+  // return some non-empty placeholder name.
   virtual const std::string& GetSystemName() const = 0;
 
-  /** Generates and returns the full path name of this subsystem, starting at
-  the root of the containing Diagram, with path name separators between
-  segments. */
+  // Generates and returns the full path name of this subsystem, starting at
+  // the root of the containing Diagram, with path name separators between
+  // segments. The individual segment names should come from GetSystemName().
   virtual std::string GetSystemPathname() const = 0;
 
-  /** Returns the concrete type of this subsystem. This should be the
-  namespace-decorated human-readable name as returned by NiceTypeName. */
+  // Returns the concrete type of this subsystem. This should be the
+  // namespace-decorated human-readable name as returned by NiceTypeName.
   virtual std::string GetSystemType() const = 0;
 
-  /** Throws an std::logic_error if the given Context is incompatible with
-  this System; does nothing if `this` object is not a System. This is
-  likely to be _very_ expensive and should generally be done only in Debug
-  builds, like this:
-  @code
-     DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
-  @endcode */
+  // Throws an std::logic_error if the given Context is incompatible with
+  // this System. This is likely to be _very_ expensive and should generally be
+  // done only in Debug builds, like this:
+  // @code
+  //    DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
+  // @endcode
   virtual void ThrowIfContextNotCompatible(const ContextBase&) const = 0;
 
  protected:
@@ -111,20 +129,24 @@ class SystemMessageInterface {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemMessageInterface);
 };
 
-/** ContextBase should implement this interface so that its contained objects
-can provide helpful error messages and log diagnostics that identify the
-offending object within a diagram. (Diagram Systems and their Contexts have
-identical substructure.) See SystemMessageInterface for motivation. */
+// ContextBase should implement this interface so that its contained objects
+// can provide helpful error messages and log diagnostics that identify the
+// offending object within a Diagram, in code where only the Context (no System)
+// is available. (Diagram Systems and their Contexts have identical
+// substructure.) See SystemMessageInterface for motivation.
 class ContextMessageInterface {
  public:
   virtual ~ContextMessageInterface() = default;
 
-  /** Returns the simple name of this subsystem, with no path separators. */
+  // Returns a human-readable simple name of this subcontext's corresponding
+  // subsystem, suitable for use in constructing a system pathname. If there is
+  // no name this should still return some non-empty placeholder name, using
+  // the same method as SystemMessageInterface does.
   virtual const std::string& GetSystemName() const = 0;
 
-  /** Generates and returns the full path name of this subsystem, starting at
-  the root of the containing Diagram, with path name separators between
-  segments. */
+  // Generates and returns the full path name of this subsystem, starting at
+  // the root of the containing Diagram, with path name separators between
+  // segments. The individual segment names should come from GetSystemName().
   virtual std::string GetSystemPathname() const = 0;
 
  protected:
@@ -132,10 +154,40 @@ class ContextMessageInterface {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContextMessageInterface);
 };
 
-/** These dependency ticket numbers are common to all systems and contexts so
-are defined here. Actual ticket objects are created from these integers.
-Ticket numbers for conditionally-allocated objects like ports and cache
-entries are allocated beginning with kNextAvailableTicket defined below. */
+// A System that contains child subsystems should implement this to provide
+// services that the children can request. In current practice, this is
+// only implemented by Diagram<T>. This allows us to expose just necessary
+// Diagram functionality to Leaf subsystems.
+class SystemParentServiceInterface {
+ public:
+  virtual ~SystemParentServiceInterface() = default;
+
+  // This method is invoked when we need to evaluate a connected input port of
+  // a child subsystem of this System. This need arises only if this System
+  // contains subsystems, and the framework promises only to invoke this method
+  // under that circumstance. Hence Diagram must implement this to evaluate the
+  // connected-to output port (likely belonging to a different child subsystem)
+  // and returning its value as the value for the given input port.
+  virtual const AbstractValue* EvalConnectedSubsystemInputPort(
+      const ContextBase& context,
+      const InputPortBase& input_port) const = 0;
+
+  // Generates and returns the full path name of the parent subsystem, starting
+  // at the root of the containing Diagram, with path name separators between
+  // segments. The returned string must be what would be returned by invoking
+  // GetSystemPathname() on the parent subsystem. (See SystemMessageInterface
+  // above.)
+  virtual std::string GetParentPathname() const = 0;
+
+ protected:
+  SystemParentServiceInterface() = default;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemParentServiceInterface);
+};
+
+// These dependency ticket numbers are common to all systems and contexts so
+// are defined here. Actual ticket objects are created from these integers.
+// Ticket numbers for conditionally-allocated objects like ports and cache
+// entries are allocated beginning with kNextAvailableTicket defined below.
 enum BuiltInTicketNumbers {
   kNothingTicket        =  0,
   kTimeTicket           =  1,

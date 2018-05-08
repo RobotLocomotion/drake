@@ -29,6 +29,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
   py::module::import("pydrake.util.deprecation")
       .attr("install_numpy_warning_filters")();
 
+  // Install NumPy formatters patch.
+  py::module::import("pydrake.util.compatibility")
+      .attr("maybe_patch_numpy_formatters")();
+
   m.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";

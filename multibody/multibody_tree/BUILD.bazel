@@ -328,6 +328,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "prismatic_mobilizer_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":multibody_tree",

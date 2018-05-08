@@ -1,11 +1,9 @@
-// clang-format: off
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-// clang-format: on
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -62,11 +60,11 @@ TEST_F(PrismaticJointTest, GetAxis) {
 // Context-dependent value access.
 TEST_F(PrismaticJointTest, ContextDependentAccess) {
   const double some_value = 1.5;
-  // Angle access:
+  // Translation access:
   joint1_->set_translation(context_.get(), some_value);
   EXPECT_EQ(joint1_->get_translation(*context_), some_value);
 
-  // Angular rate access:
+  // Translation rate access:
   joint1_->set_translation_rate(context_.get(), some_value);
   EXPECT_EQ(joint1_->get_translation_rate(*context_), some_value);
 }

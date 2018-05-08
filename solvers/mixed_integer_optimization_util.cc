@@ -7,6 +7,25 @@ using drake::symbolic::Expression;
 
 namespace drake {
 namespace solvers {
+std::string to_string(IntervalBinning binning) {
+  switch (binning) {
+    case IntervalBinning::kLinear: {
+      return "linear_binning";
+    }
+    case IntervalBinning::kLogarithmic: {
+      return "logarithmic_binning";
+    }
+  }
+  // The following line should not be reached. We add it due to a compiler
+  // defect.
+  DRAKE_ABORT_MSG("Should not reach this part of the code.");
+}
+
+std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning) {
+  os << to_string(binning);
+  return os;
+}
+
 void AddLogarithmicSos2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,

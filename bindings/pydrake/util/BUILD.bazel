@@ -164,11 +164,20 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "compatibility_py",
+    srcs = ["compatibility.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
 
 PY_LIBRARIES = [
+    ":compatibility_py",
     ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
@@ -303,6 +312,13 @@ drake_py_unittest(
     name = "containers_test",
     deps = [
         ":containers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "compatibility_test",
+    deps = [
+        ":compatibility_py",
     ],
 )
 

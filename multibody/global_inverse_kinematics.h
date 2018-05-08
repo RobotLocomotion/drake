@@ -4,22 +4,38 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {
 namespace multibody {
 /** Solves the inverse kinematics problem as a mixed integer convex optimization
  * problem.
- * We use a convex relaxation of the rotation matrix. So if this global inverse
- * kinematics problem says the solution is infeasible, then it is guaranteed
- * that the kinematics constraints are not satisfiable.
+ * We use a mixed-integer convex relaxation of the rotation matrix. So if this
+ * global inverse kinematics problem says the solution is infeasible, then it is
+ * guaranteed that the kinematics constraints are not satisfiable.
  * If the global inverse kinematics returns a solution, the posture should
- * satisfy the kinematics constraints, with some error.
+ * approximately satisfy the kinematics constraints, with some error.
+ * The approach is described in Global Inverse Kinematics via Mixed-integer
+ * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR,
+ * 2017.
  */
 class GlobalInverseKinematics : public solvers::MathematicalProgram {
 // TODO(hongkai.dai): create a function globalIK, with interface similar to
 // inverseKin(), that accepts RigidBodyConstraint objects and cost function.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
+
+  struct Options {
+    // This constructor is needed, otherwise the compiler complains.
+    Options() {}
+
+    int num_intervals_per_half_axis_{2};
+    solvers::MixedIntegerRotationConstraintGenerator::Approach approach_{
+        solvers::MixedIntegerRotationConstraintGenerator::Approach::
+            kBilinearMcCormick};
+    solvers::IntervalBinning interval_binning_{
+        solvers::IntervalBinning::kLogarithmic};
+  };
 
   /**
    * Parses the robot kinematics tree. The decision variables include the
@@ -28,13 +44,12 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * body pose, so that the adjacent bodies are connected correctly by the joint
    * in between the bodies.
    * @param robot The robot on which the inverse kinematics problem is solved.
-   * @param num_binary_vars_per_half_axis The number of binary variables for
-   * each half axis, to segment the unit circle.
-   * @see AddRotationMatrixMcCormickEnvelopeMilpConstraints() for more details
-   * on num_binary_vars_per_half_axis.
+   * @param options The options to relax SO(3) constraint as mixed-integer
+   * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
+   * more details on the parameters in options.
    */
-  GlobalInverseKinematics(const RigidBodyTreed& robot,
-                          int num_binary_vars_per_half_axis = 2);
+  explicit GlobalInverseKinematics(const RigidBodyTreed& robot,
+                                   const Options& options = Options());
 
   ~GlobalInverseKinematics() override {}
 

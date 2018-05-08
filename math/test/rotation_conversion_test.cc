@@ -347,17 +347,6 @@ TEST_F(RotationConversionTest, QuatRPY) {
   }
 }
 
-TEST_F(RotationConversionTest, QuatEigenQuaternion) {
-  for (const Quaterniond& qi_eigen : quaternion_test_cases_) {
-    const Vector4d qi(qi_eigen.w(), qi_eigen.x(), qi_eigen.y(), qi_eigen.z());
-    Quaterniond eigenQuat = quat2eigenQuaternion(qi);
-    Matrix3d R_expected = quat2rotmat(qi);
-    Matrix3d R_eigen = eigenQuat.matrix();
-    EXPECT_TRUE(CompareMatrices(R_expected, R_eigen, 1e-6,
-                                MatrixCompareType::absolute));
-  }
-}
-
 TEST_F(RotationConversionTest, RotmatQuat) {
   // Compare Eigen's rotation matrix to quaternion result with the result from
   // RotationMatrix::ToQuaternion().

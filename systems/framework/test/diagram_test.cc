@@ -267,6 +267,90 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   }
 }
 
+/* This Diagram contains a sub-Diagram with one of its input ports unconnected.
+This is a specialized test to cover a case that was otherwise missed -- a
+Diagram has an input port that is neither exported nor freestanding.
+
+         +--------------------------+
+         |                          |
+         |   +------------------+   |
+         |   |                  |   |
+         |   |  +-----------+   |   |
+      ----------> u0        |   |   |
+         |   |  |           |   |   |
+         |   |  | Adder1    |   |   |
+         |   |  |           +----------> y0
+         |   |  |           |   |   |
+         | X----> u1        |   |   |
+         |   |  +-----------+   |   |   X = forgot to export
+         |   |                  |   |
+         |   +------------------+   |
+         |     InsideBadDiagram     |
+         |                          |
+         +--------------------------+
+                  BadDiagram
+
+*/
+class InsideBadDiagram : public Diagram<double> {
+ public:
+  InsideBadDiagram() {
+    const int kSize = 1;
+    DiagramBuilder<double> builder;
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, kSize);
+    adder0_->set_name("adder0");
+    builder.ExportInput(adder0().get_input_port(0));
+    builder.ExportInput(adder0().get_input_port(1));
+    builder.ExportOutput(adder0().get_output_port());
+    builder.BuildInto(this);
+  }
+
+  const Adder<double>& adder0() { return *adder0_; }
+
+ private:
+  Adder<double>* adder0_{};
+};
+
+class BadDiagram : public Diagram<double> {
+ public:
+  BadDiagram() {
+    DiagramBuilder<double> builder;
+    inside_ = builder.AddSystem<InsideBadDiagram>();
+    inside_->set_name("inside");
+    builder.ExportInput(inside().get_input_port(0));
+    // Oops -- "forgot" to export this.
+    // builder.ExportInput(inside().get_input_port(1));
+    builder.ExportOutput(inside().get_output_port(0));
+    builder.BuildInto(this);
+  }
+
+  const InsideBadDiagram& inside() { return *inside_; }
+
+ private:
+  InsideBadDiagram* inside_{};
+};
+
+GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
+  BadDiagram diagram;
+  auto context = diagram.AllocateContext();
+
+  context->FixInputPort(0, BasicVector<double>::Make({1}));
+
+  const Context<double>& inside_context =
+      diagram.GetSubsystemContext(diagram.inside(), *context);
+
+  // This should get the value we just fixed above.
+  const AbstractValue* value0 =
+      diagram.inside().EvalAbstractInput(inside_context, 0);
+
+  // This is neither exported, connected, nor fixed so should be null.
+  const AbstractValue* value1 =
+      diagram.inside().EvalAbstractInput(inside_context, 1);
+
+  ASSERT_NE(value0, nullptr);
+  EXPECT_EQ(value0->GetValue<BasicVector<double>>()[0], 1);
+  EXPECT_EQ(value1, nullptr);
+}
+
 /* ExampleDiagram has the following structure:
 adder0_: (input0_ + input1_) -> A
 adder1_: (A + input2_)       -> B, output 0
@@ -509,8 +593,12 @@ TEST_F(DiagramTest, Topology) {
 }
 
 TEST_F(DiagramTest, Path) {
-  const std::string path = adder0()->GetPath();
+  const std::string path = adder0()->GetSystemPathname();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+
+  // Just the root.
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!",
+            diagram_->GetSystemPathname());
 }
 
 TEST_F(DiagramTest, Graphviz) {
@@ -606,6 +694,10 @@ TEST_F(DiagramTest, AllocateInputs) {
     EXPECT_EQ(vec, nullptr);
   }
 
+  // Also check that abstract evaluation returns nullptr.
+  const AbstractValue* value = diagram_->EvalAbstractInput(*context, 0);
+  EXPECT_EQ(value, nullptr);
+
   diagram_->AllocateFreestandingInputs(context.get());
 
   for (int port = 0; port < 3; port++) {
@@ -615,7 +707,7 @@ TEST_F(DiagramTest, AllocateInputs) {
   }
 }
 
-/// Tests that a diagram can be transmogrified to AutoDiffXd.
+// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
       diagram_->ToAutoDiffXd();

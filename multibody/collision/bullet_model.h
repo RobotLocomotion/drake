@@ -56,6 +56,8 @@ class BulletModel : public Model {
 
   virtual ~BulletModel() {}
 
+  void NotifyFilterCriteriaChanged(ElementId id) override;
+
   void UpdateModel() override;
 
   void DoAddElement(const Element& element) override;
