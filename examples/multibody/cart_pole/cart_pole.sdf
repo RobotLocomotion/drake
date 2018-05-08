@@ -7,14 +7,13 @@
       <pose>0 0 0 0 0 0</pose>
       <inertial>
         <mass>10.0</mass>
-	<!-- For this model case, with the cart not having any rotational
-	     degrees of freedom, the values of the inertia matrix do not
-	     participate in the model. Therefore we just set them to zero
+        <!-- For this model case, with the cart not having any rotational
+             degrees of freedom, the values of the inertia matrix do not
+             participate in the model. Therefore we just set them to zero
              (or near to zero since sdformat does not allow exact zeroes
-             for inertia values).
-	-->
+             for inertia values). -->
         <inertia>
-	  <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
           <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
         </inertia>
       </inertial>
@@ -28,8 +27,8 @@
       <pose>0 0 -0.5 0 0 0</pose>
       <inertial>
         <mass>1.0</mass>
-	<!-- A point mass has zero rotational inertia.
-	     We must specify small values since otherwise sdformat throws an
+        <!-- A point mass has zero rotational inertia.
+             We must specify small values since otherwise sdformat throws an
              exception. -->
         <inertia>
           <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
