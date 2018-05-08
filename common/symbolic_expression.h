@@ -581,6 +581,10 @@ bool is_tanh(const Expression& e);
 bool is_min(const Expression& e);
 /** Checks if @p e is a max expression. */
 bool is_max(const Expression& e);
+/** Checks if @p e is a ceil expression. */
+bool is_ceil(const Expression& e);
+/** Checks if @p e is a floor expression. */
+bool is_floor(const Expression& e);
 /** Checks if @p e is an if-then-else expression. */
 bool is_if_then_else(const Expression& e);
 /** Checks if @p e is an uninterpreted-function expression. */
