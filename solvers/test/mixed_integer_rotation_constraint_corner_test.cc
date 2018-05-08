@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/gray_code.h"
 #include "drake/solvers/integer_optimization_util.h"
@@ -173,6 +174,17 @@ TEST_P(TestBoxSphereCorner, TestOrthogonal) {
                               MatrixCompareType::absolute));
 }
 
+// It takes too long time to run the test under debug mode.
+#ifdef DRAKE_ASSERT_IS_ARMED
+INSTANTIATE_TEST_CASE_P(
+    RotationTest, TestBoxSphereCorner,
+    ::testing::Combine(
+        ::testing::ValuesIn<std::vector<int>>({0}),      // Orthant
+        ::testing::ValuesIn<std::vector<bool>>({true}),  // bmin or bmax
+        ::testing::ValuesIn<std::vector<int>>({0}),      // column index
+        ::testing::ValuesIn<std::vector<RotationMatrixIntervalBinning>>(
+            {RotationMatrixIntervalBinning::kPosNegLinear})));
+#else
 INSTANTIATE_TEST_CASE_P(
     RotationTest, TestBoxSphereCorner,
     ::testing::Combine(
@@ -184,7 +196,16 @@ INSTANTIATE_TEST_CASE_P(
             {RotationMatrixIntervalBinning::kLinear,
              RotationMatrixIntervalBinning::kLogarithmic,
              RotationMatrixIntervalBinning::kPosNegLinear})));
+#endif
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
 
+int main(int argc, char** argv) {
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

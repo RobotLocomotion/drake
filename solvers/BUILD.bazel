@@ -1126,8 +1126,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_corner_test",
     timeout = "long",
-    # This test is slow with --compilation_mode=dbg.
-    disable_in_compilation_mode_dbg = True,
     tags = gurobi_test_tags() + mosek_test_tags() + [
         # Excluding asan because it is unreasonably slow (> 30 minutes).
         "no_asan",
@@ -1136,6 +1134,7 @@ drake_cc_googletest(
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],
+    use_default_main = False,
     deps = [
         ":mathematical_program",
         ":mixed_integer_rotation_constraint",
