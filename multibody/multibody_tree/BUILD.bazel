@@ -91,10 +91,12 @@ drake_cc_library(
         "body_node_impl.cc",
         "fixed_offset_frame.cc",
         "joint_actuator.cc",
+        "joints/prismatic_joint.cc",
         "joints/revolute_joint.cc",
         "mobilizer_impl.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
+        "prismatic_mobilizer.cc",
         "quaternion_floating_mobilizer.cc",
         "revolute_mobilizer.cc",
         "rigid_body.cc",
@@ -112,11 +114,13 @@ drake_cc_library(
         "frame_base.h",
         "joint_actuator.h",
         "joints/joint.h",
+        "joints/prismatic_joint.h",
         "joints/revolute_joint.h",
         "mobilizer.h",
         "mobilizer_impl.h",
         "multibody_forces.h",
         "multibody_tree.h",
+        "prismatic_mobilizer.h",
         "quaternion_floating_mobilizer.h",
         "revolute_mobilizer.h",
         "rigid_body.h",
@@ -324,6 +328,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "prismatic_mobilizer_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":multibody_tree",
@@ -355,6 +367,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "revolute_joint_test",
     srcs = ["joints/test/revolute_joint_test.cc"],
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "prismatic_joint_test",
+    srcs = ["joints/test/prismatic_joint_test.cc"],
     deps = [
         ":multibody_tree",
     ],
