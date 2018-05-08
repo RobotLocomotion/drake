@@ -415,6 +415,8 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
 // -c ≤ xᵢ ≤ c
 // ± xᵢ ± xⱼ ≤ √2 * c
 // ± x₀ ± x₁ ± x₂ ≤ √3 * c
+// These linear approximation are obtained as the tangential planes at some
+// points on the surface of the sphere xᵀx ≤ c².
 void ApproximateBoundedNormByLinearConstraints(
     const Eigen::Ref<const Vector3<symbolic::Expression>>& x, double c,
     solvers::MathematicalProgram* prog) {
