@@ -1124,6 +1124,26 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mixed_integer_rotation_constraint_corner_test",
+    timeout = "long",
+    tags = gurobi_test_tags() + mosek_test_tags() + [
+        # Excluding asan because it is unreasonably slow (> 30 minutes).
+        "no_asan",
+        # Times out with Valgrind
+        "no_memcheck",
+        # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
+        "no_tsan",
+    ],
+    use_default_main = False,
+    deps = [
+        ":mathematical_program",
+        ":mixed_integer_rotation_constraint",
+        ":rotation_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rotation_constraint_test",
     timeout = "long",
     tags = gurobi_test_tags() + mosek_test_tags() + [
