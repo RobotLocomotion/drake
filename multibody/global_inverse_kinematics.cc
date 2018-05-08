@@ -129,7 +129,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               // Now we process the joint limits constraint.
               const double joint_lb = joint->getJointLimitMin()(0);
               const double joint_ub = joint->getJointLimitMax()(0);
-              AddJointLimitConstraint(body_idx, joint_lb, joint_ub);
+              AddJointLimitConstraint(body_idx, joint_lb, joint_ub,
+                                      options.linear_constraint_only_);
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
               throw std::runtime_error("Unsupported joint type.");
