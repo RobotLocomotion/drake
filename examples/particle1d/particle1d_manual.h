@@ -24,23 +24,29 @@ class Particle1dManual {
   // stateDt array.
   void CalcDerivativesToStateDt(const T t, const T state[], T stateDt[]);
 
-  // Model parameters (constants), only need to be set once (e.g., at t = 0).
-  T mass_;
-
   // Struct to hold the particle data
   struct ParticleData {
-    T x;
-    T F;
+    T x_;
+    T xDt_;
+    T xDDt_;
+    T F_;
+    T mass_;
   };
 
-  // Method to output the ParticleData as a struct.
-  ParticleData OutputData();
+  ParticleData& get_particle_data() { return particle_data_; };
+
 
  private:
   // Model variables are set via CalcDerivativesToStateDt. x_ is the
   // particle's Nx measure from No. xDt_ and xDDt_ are ẋ and ẍ (the 1ˢᵗ and 2ⁿᵈ
   // time-derivatives of x_). F_ is the Nx measure of the force on the particle.
-  T x_, xDt_, xDDt_, F_;
+  // T x_, xDt_, xDDt_, F_;
+
+  // Model parameters (constants), only need to be set once (e.g., at t = 0).
+  // T mass_;
+
+  // Method to output the ParticleData as a struct.
+  ParticleData particle_data_;
 
   // Set local state variables x_ and xDt_ from their corresponding values in
   // state[].
