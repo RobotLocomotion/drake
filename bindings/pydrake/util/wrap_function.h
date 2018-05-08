@@ -90,13 +90,19 @@ auto infer_function_info(Func&& func) {
 
 // Implementation for wrapping a function by scanning and replacing arguments
 // based on their types.
-template <template <typename...> class wrap_arg_policy>
+template <
+    template <typename...> class wrap_arg_policy, bool use_functions = true>
 struct wrap_function_impl {
-  // By default `wrap_arg` is the same as `wrap_arg_policy`. However, below we
-  // specialize it for the case when `T` is of the form `std::function<F>`.
+  // By default `wrap_arg_functions` is the same as `wrap_arg_policy`. However,
+  // below we specialize it for the case when `T` is of the form
+  // `std::function<F>`.
   // N.B. This must precede `wrap_type`.
   template <typename T>
-  struct wrap_arg : public wrap_arg_policy<T> {};
+  struct wrap_arg_functions : public wrap_arg_policy<T> {};
+
+  template <typename T>
+  using wrap_arg = std::conditional_t<
+      use_functions, wrap_arg_functions<T>, wrap_arg_policy<T>>;
 
   // Provides wrapped argument type.
   // Uses `Extra` to specialize within class scope to intercept `void`.
@@ -125,7 +131,7 @@ struct wrap_function_impl {
   // @note We could generalize this using SFINAE for functors of any form, but
   // that complicates the details for a relatively low ROI.
   template <typename Return, typename ... Args>
-  struct wrap_arg<const std::function<Return(Args...)>&> {
+  struct wrap_arg_functions<const std::function<Return(Args...)>&> {
     // Define types explicit, since `auto` is not easily usable as a return type
     // (compilers struggle with inference).
     using Func = std::function<Return(Args...)>;
@@ -143,8 +149,9 @@ struct wrap_function_impl {
         const WrappedFunc& func_wrapped,
         std::enable_if_t<enable_wrap_output<Defer>, void*> = {}) {
       return [func_wrapped](Args... args) -> Return {
-        return wrap_arg<Return>::unwrap(
-            func_wrapped(wrap_arg<Args>::wrap(std::forward<Args>(args))...));
+        return wrap_arg_functions<Return>::unwrap(
+            func_wrapped(wrap_arg_functions<Args>::wrap(
+                std::forward<Args>(args))...));
       };
     }
 
@@ -154,15 +161,16 @@ struct wrap_function_impl {
         const WrappedFunc& func_wrapped,
         std::enable_if_t<!enable_wrap_output<Defer>, void*> = {}) {
       return [func_wrapped](Args... args) {
-        func_wrapped(wrap_arg<Args>::wrap(std::forward<Args>(args))...);
+        func_wrapped(wrap_arg_functions<Args>::wrap(
+            std::forward<Args>(args))...);
       };
     }
   };
 
   // Ensure that we also wrap `std::function<>` returned by value.
   template <typename Signature>
-  struct wrap_arg<std::function<Signature>>
-      : public wrap_arg<const std::function<Signature>&> {};
+  struct wrap_arg_functions<std::function<Signature>>
+      : public wrap_arg_functions<const std::function<Signature>&> {};
 
   // Wraps function arguments and the return value.
   // Generally used when `Return` is non-void.
@@ -214,6 +222,9 @@ struct wrap_function_impl {
 ///   for SFINAE. If passing a `using` template alias, ensure that the alias
 ///   template template parameter uses a parameter pack of the *exact* same
 ///   form.
+/// @tparam use_functions
+///   If true (default), will recursively wrap callbacks. If your policy
+///   provides handling for functions, then you should set this to false.
 /// @param func
 ///   Functor to be wrapped. Returns a function with wrapped arugments and
 ///   return type. If functor is a method pointer, it will return a function of
@@ -221,11 +232,13 @@ struct wrap_function_impl {
 /// @return Wrapped function lambda.
 ///   N.B. Construct a `std::function<>` from this if you encounter inference
 ///   issues downstream of this method.
-template <template <typename...> class wrap_arg_policy, typename Func>
+template <
+    template <typename...> class wrap_arg_policy, bool use_functions = true,
+    typename Func = void>
 auto WrapFunction(Func&& func) {
   // TODO(eric.cousineau): Create an overload with `type_pack<Args...>` to
   // handle overloads, to disambiguate when necessary.
-  return detail::wrap_function_impl<wrap_arg_policy>::run(
+  return detail::wrap_function_impl<wrap_arg_policy, use_functions>::run(
       detail::infer_function_info(std::forward<Func>(func)));
 }
 
@@ -242,6 +255,12 @@ struct wrap_arg_default {
   // N.B. `T` rather than `T&&` is used as arguments here as it behaves well
   // with primitve types, such as `int`.
 };
+
+/// Policy for explicitly wrapping functions for a given policy.
+template <template <typename...> class wrap_arg_policy, typename Signature>
+using wrap_arg_function =
+    typename detail::wrap_function_impl<wrap_arg_policy>::
+        template wrap_arg<std::function<Signature>>;
 
 }  // namespace pydrake
 }  // namespace drake

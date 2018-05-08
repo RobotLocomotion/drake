@@ -47,8 +47,8 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[int], 1)
         self.assertEquals(template.get_instantiation(int), (1, (int,)))
         self.assertEquals(template.get_param_set(1), {(int,)})
-        self.assertTrue(m.is_instantiation_of(1, template))
-        self.assertFalse(m.is_instantiation_of(10, template))
+        self.assertTrue(template.is_instantiation(1))
+        self.assertFalse(template.is_instantiation(10))
         # Duplicate parameters.
         self.assertRaises(
             RuntimeError, lambda: template.add_instantiation(int, 4))
@@ -74,14 +74,18 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEquals(template[[int, int]], 3)
 
         # List instantiation.
-        def instantiation_func(template, param):
-            self.assertIsInstance(template, m.TemplateBase)
+        def instantiation_func(param):
             return 100 + len(param)
         dummy_a = (str,) * 5
         dummy_b = (str,) * 10
         template.add_instantiations(instantiation_func, [dummy_a, dummy_b])
         self.assertEquals(template[dummy_a], 105)
         self.assertEquals(template[dummy_b], 110)
+
+        # Ensure that we can only call this once.
+        dummy_c = (str,) * 7
+        with self.assertRaises(RuntimeError):
+            template.add_instantiations(instantiation_func, [dummy_c])
 
     def test_class(self):
         template = m.TemplateClass("ClassTpl")
@@ -99,16 +103,24 @@ class TestCppTemplate(unittest.TestCase):
             _TEST_MODULE))
 
     def test_user_class(self):
+        test = self
 
         @m.TemplateClass.define("MyTemplate", param_list=((int,), (float,)))
-        def MyTemplate(_, param):
+        def MyTemplate(param):
             T, = param
+            # Ensure that we have deferred evaluation.
+            test.assertEqual(MyTemplate.param_list, [(int,), (float,)])
 
-            class MyTemplateInstantiation(object):
+            class Impl(object):
                 def __init__(self):
                     self.T = T
+                    self.mangled_result = self.__mangled_method()
 
-            return MyTemplateInstantiation
+                def __mangled_method(self):
+                    # Ensure that that mangled methods are usable.
+                    return (T, 10)
+
+            return Impl
 
         self.assertIsInstance(MyTemplate, m.TemplateClass)
         MyDefault = MyTemplate[None]
@@ -117,6 +129,27 @@ class TestCppTemplate(unittest.TestCase):
         self.assertEqual(MyInt().T, int)
         MyFloat = MyTemplate[float]
         self.assertEqual(MyFloat().T, float)
+
+        # Test subclass checks.
+        class Subclass(MyTemplate[float]):
+            pass
+
+        self.assertFalse(MyTemplate.is_instantiation(Subclass))
+        self.assertFalse(MyTemplate.is_subclass_of_instantiation(object))
+        result = MyTemplate.is_subclass_of_instantiation(Subclass)
+        self.assertTrue(result)
+        self.assertEqual(result, MyTemplate[float])
+
+        # Test mangling behavior.
+        # TODO(eric.couisneau): If we use the name `Impl` for instantiations,
+        # then mangling among inherited templated classes will not work as
+        # intended. Consider an alternative, if it's ever necessary.
+        self.assertEqual(MyInt().mangled_result, (int, 10))
+        self.assertEqual(MyInt._original_name, "Impl")
+        self.assertTrue(hasattr(MyInt, "_Impl__mangled_method"))
+        self.assertEqual(MyFloat._original_name, "Impl")
+        self.assertEqual(MyFloat().mangled_result, (float, 10))
+        self.assertTrue(hasattr(MyFloat, "_Impl__mangled_method"))
 
     def test_function(self):
         template = m.TemplateFunction("func")

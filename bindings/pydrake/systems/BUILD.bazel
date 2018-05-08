@@ -58,6 +58,7 @@ drake_pybind_library(
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
         "//bindings/pydrake/util:type_safe_index_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "framework",
     cc_srcs = [
@@ -75,6 +76,14 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/util:cpp_template_py",
+    ],
+)
+
+drake_py_library(
+    name = "scalar_conversion_py",
+    srcs = ["scalar_conversion.py"],
+    deps = [
+        ":framework_py",
     ],
 )
 
@@ -111,7 +120,7 @@ drake_pybind_library(
     name = "controllers_py",
     cc_deps = [
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/util:wrap_function",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "controllers",
     cc_srcs = ["controllers_py.cc"],
@@ -308,6 +317,14 @@ drake_py_unittest(
     deps = [
         ":rendering_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "scalar_conversion_test",
+    deps = [
+        ":framework_py",
+        ":scalar_conversion_py",
     ],
 )
 
