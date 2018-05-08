@@ -30,18 +30,17 @@ class InputPortBase {
   @param size
     If the port described is vector-valued, the number of elements, or kAutoSize
     if determined by connections.
-  @param random_type Input ports may optionally be labeled as random, if the
-                     port is intended to model a random-source "noise" or
-                     "disturbance" input.
-  @param system
-    The System that will own this new input port. This port will be assigned the
-    next available input port index in this system, and the next available
-    dependency ticket. */
+  @param random_type
+    Input ports may optionally be labeled as random, if the port is intended to
+    model a random-source "noise" or "disturbance" input.
+  @param system_base
+    The System that will own this new input port. The port will be assigned
+    this system's next available dependency ticket. */
   InputPortBase(InputPortIndex index, PortDataType data_type, int size,
                 const optional<RandomDistribution>& random_type,
                 SystemBase* system);
 
-  virtual ~InputPortBase() {}
+  virtual ~InputPortBase();
 
   /** Returns the index of this input port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
@@ -59,7 +58,7 @@ class InputPortBase {
   input port was exported. */
   const SystemBase& get_system_base() const { return system_; }
 
-  /** Returns the port data type specified at port construction. */
+  /** Returns the port data type. */
   PortDataType get_data_type() const { return data_type_; }
 
   /** Returns the fixed size expected for a vector-valued input port. Not

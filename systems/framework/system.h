@@ -1421,9 +1421,8 @@ class System : public SystemBase {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object and allocates base class
-  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
-  /// etc.) using @p converter.
+  /// Constructs an empty %System base class object, possibly supporting
+  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.

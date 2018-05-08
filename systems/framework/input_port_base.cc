@@ -17,12 +17,15 @@ InputPortBase::InputPortBase(InputPortIndex index, PortDataType data_type,
       size_(size),
       random_type_(random_type) {
   DRAKE_DEMAND(system != nullptr);
-  if (size_ == kAutoSize)
+  if (size_ == kAutoSize) {
     DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+  }
   if (is_random() && data_type_ != kVectorValued) {
     DRAKE_ABORT_MSG("Random input ports must be vector valued.");
   }
 }
+
+InputPortBase::~InputPortBase() = default;
 
 }  // namespace systems
 }  // namespace drake
