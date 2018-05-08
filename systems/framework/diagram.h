@@ -963,9 +963,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
                        ConvertToContextPortIdentifier(dest));
     }
 
-    // Connect exported child subsystem input ports to the Diagram-level input
-    // ports to which they have been exported. Declares dependency of each
-    // child-level input on its Diagram-level input.
+    // Diagram-external input ports are exported from child subsystems. Inform
+    // the new context so that it it can set up dependency tracking for the
+    // child subsystem's input port on its parent Diagram's input port.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
       context->ExportInput(i, ConvertToContextPortIdentifier(id));

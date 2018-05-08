@@ -1421,9 +1421,8 @@ class System : public SystemBase {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object and allocates base class
-  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
-  /// etc.) using @p converter.
+  /// Constructs an empty %System base class object, possibly supporting
+  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
@@ -1443,7 +1442,7 @@ class System : public SystemBase {
     const InputPortIndex port_index(get_num_input_ports());
     this->CreateInputPort(
         std::make_unique<InputPortDescriptor<T>>(
-            port_index, type, size, random_type, this));
+            port_index, type, size, random_type, this, this));
     return get_input_port(port_index);
   }
 
@@ -1899,12 +1898,6 @@ class System : public SystemBase {
   mutable T fake_cache_conservative_power_;
   mutable T fake_cache_nonconservative_power_;
 };
-
-// This definition had to wait until System<T>'s declaration.
-template <typename T>
-const System<T>* InputPortDescriptor<T>::get_system() const {
-  return dynamic_cast<const System<T>*>(&get_system_base());
-}
 
 }  // namespace systems
 }  // namespace drake

@@ -19,6 +19,13 @@ namespace systems {
 
 class ContextBase;
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides ContextBase limited "friend" access to FixedInputPortValue.
+class ContextBaseFixedInputAttorney;
+}  // namespace detail
+#endif
+
 /** A %FixedInputPortValue encapsulates a vector or abstract value for
 use as an internal value source for one of a System's input ports. The semantics
 are identical to a Parameter. We assign a DependencyTracker to this object
@@ -109,13 +116,23 @@ class FixedInputPortValue {
     return *owning_subcontext_;
   }
 
-  /** (Internal use only) */
+ private:
+  friend class detail::ContextBaseFixedInputAttorney;
+
+  // Allow this adapter access to our private copy constructor. This is intended
+  // only for use by ContextBase.
+  friend class copyable_unique_ptr<FixedInputPortValue>;
+
+  // Copy constructor is only used for cloning and is not a complete copy --
+  // owning_subcontext_ is left unassigned.
+  FixedInputPortValue(const FixedInputPortValue& source) =
+      default;
+
   // Informs this FixedInputPortValue of its assigned DependencyTracker
   // so it knows who to notify when its value changes.
   void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
 
-  /** (Internal use only) */
-  // Informs this %FixedInputPortValue of the  the input port within
+  // Informs this FixedInputPortValue of the  the input port within
   // its owning subcontext for which it is the value. Aborts if
   // this has already been done or given bad args.
   void set_input_port_index(InputPortIndex index) {
@@ -123,35 +140,13 @@ class FixedInputPortValue {
     index_ = index;
   }
 
-  /** (Internal use only) */
-  // Informs this %FixedInputPortValue of the subcontext that owns it.
+  // Informs this FixedInputPortValue of the subcontext that owns it.
   // Aborts if this has already been done or given bad args.
   void set_owning_subcontext(ContextBase* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr && owning_subcontext_ == nullptr);
     owning_subcontext_ = owning_subcontext;
   }
 
-  /** (Internal use only) */
-  // Makes a copy of this %FixedInputPortValue to be used in a new
-  // context. The copy must have the same index as the source; we pass it here
-  // just to validate that. The value, ticket, and serial number are preserved.
-  std::unique_ptr<FixedInputPortValue> CloneForNewContext(
-      ContextBase* new_owner, InputPortIndex new_index) const {
-    DRAKE_DEMAND(new_owner != nullptr && new_index.is_valid());
-    DRAKE_DEMAND(new_owner != owning_subcontext_ && new_index == index_);
-    auto clone = std::unique_ptr<FixedInputPortValue>(
-        new FixedInputPortValue(*this));
-    clone->set_owning_subcontext(new_owner);
-    return clone;
-  }
-
-  /** (Internal use only) */
-  // Copy constructor is only used for cloning and is not a complete copy --
-  // owning_subcontext_ is left unassigned.
-  FixedInputPortValue(const FixedInputPortValue& source) =
-      default;
-
- private:
   // Needed for invalidation.
   reset_on_copy<ContextBase*> owning_subcontext_;
   InputPortIndex index_;
@@ -168,6 +163,38 @@ class FixedInputPortValue {
 // TODO(sherm1) Get rid of this after 8/7/2018 (three months).
 DRAKE_DEPRECATED("Please use FixedInputPortValue instead.")
 typedef FixedInputPortValue FreestandingInputPortValue;
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+
+class ContextBaseFixedInputAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContextBaseFixedInputAttorney);
+  ContextBaseFixedInputAttorney() = delete;
+
+ private:
+  friend class drake::systems::ContextBase;
+
+  static void set_ticket(DependencyTicket ticket, FixedInputPortValue* fixed) {
+    DRAKE_DEMAND(fixed != nullptr);
+    fixed->set_ticket(ticket);
+  }
+
+  static void set_input_port_index(InputPortIndex index,
+                                   FixedInputPortValue* fixed) {
+    DRAKE_DEMAND(fixed != nullptr);
+    fixed->set_input_port_index(index);
+  }
+
+  static void set_owning_subcontext(ContextBase* owning_subcontext,
+                                    FixedInputPortValue* fixed) {
+    DRAKE_DEMAND(owning_subcontext != nullptr && fixed != nullptr);
+    fixed->set_owning_subcontext(owning_subcontext);
+  }
+};
+
+}  // namespace detail
+#endif
 
 }  // namespace systems
 }  // namespace drake

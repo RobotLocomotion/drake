@@ -22,28 +22,29 @@ class InputPortDescriptor final: public InputPortBase {
 
   ~InputPortDescriptor() final {}
 
-  /// @param index The index of the input port described, starting from zero and
-  ///              incrementing by one per port.
-  /// @param data_type Whether the port described is vector or abstract valued.
-  /// @param size If the port described is vector-valued, the number of
-  ///             elements, or kAutoSize if determined by connections.
-  /// @param random_type Input ports may optionally be labeled as random, if the
-  ///                    port is intended to model a random-source "noise" or
-  ///                    "disturbance" input.
-  /// @param system The system to which this descriptor belongs. Retained
-  ///               internally so must outlive this port.
+  /// (Internal use only)
+  /// Constructs a type-specific input port. See InputPortBase::InputPortBase()
+  /// for the meaning of these parameters. The additional `system` parameter
+  /// here must be the same object as the `system_base` parameter.
+  // The System and SystemBase are provided separately since we don't have
+  // access to System's declaration here so can't cast but the caller can.
   InputPortDescriptor(InputPortIndex index, PortDataType data_type, int size,
                       const optional<RandomDistribution>& random_type,
-                      SystemBase* system)
-      : InputPortBase(index, data_type, size, random_type, system) {}
+                      const System<T>* system, SystemBase* system_base)
+      : InputPortBase(index, data_type, size, random_type, system_base),
+        system_(*system) {
+    DRAKE_DEMAND(system != nullptr);
+    DRAKE_DEMAND(static_cast<const void*>(system) == system_base);
+  }
 
   /// Returns a reference to the System that owns this input port. Note that
-  /// for a diagram input port this will be the diagram, not the leaf system
-  /// whose input port was exported. */
+  /// for a Diagram input port this will be the Diagram, not the LeafSystem
+  /// whose input port was exported.
   // TODO(sherm1) Switch to an actual reference.
-  // Definition deferred to system.h to allow for unlimited types T without
-  // creating a circular reference.
-  const System<T>* get_system() const;
+  const System<T>* get_system() const { return &system_; }
+
+ private:
+  const System<T>& system_;
 };
 
 }  // namespace systems

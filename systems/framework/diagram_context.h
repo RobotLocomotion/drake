@@ -159,17 +159,17 @@ class DiagramContext final : public Context<T> {
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
-  void ExportInput(InputPortIndex iport_index,
-                   const InputPortIdentifier& subsystem_iport) {
+  void ExportInput(InputPortIndex input_port_index,
+                   const InputPortIdentifier& subsystem_input_port) {
     // Identify and validate the destination input port.
-    SubsystemIndex subsystem_index = subsystem_iport.first;
-    InputPortIndex subsystem_iport_index = subsystem_iport.second;
+    SubsystemIndex subsystem_index = subsystem_input_port.first;
+    InputPortIndex subsystem_iport_index = subsystem_input_port.second;
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem_index);
     DRAKE_DEMAND(0 <= subsystem_iport_index &&
         subsystem_iport_index < subcontext.get_num_input_ports());
 
     // TODO(sherm1) Set up dependency of subsystem input on diagram input.
-    unused(iport_index);  // For now.
+    unused(input_port_index);  // For now.
   }
 
   /// Declares that the output port specified by @p src is connected to the

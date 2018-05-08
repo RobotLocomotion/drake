@@ -165,8 +165,8 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
-  /** Returns the number nu of input ports currently allocated in this System.
-  These are indexed from 0 to nu-1. */
+  /** Returns the number of input ports currently allocated in this System.
+  These are indexed from 0 to %get_num_input_ports()-1. */
   int get_num_input_ports() const {
     return static_cast<int>(input_ports_.size());
   }
@@ -545,13 +545,15 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kAllInputPortsTicket);
   }
 
-  /** Returns a ticket indicating dependence on a particular input port. */
+  /** Returns a ticket indicating dependence on a particular input port.
+  @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) {
     DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
     return input_ports_[index]->ticket();
   }
 
-  /** Returns a ticket indicating dependence on a particular cache entry. */
+  /** Returns a ticket indicating dependence on a particular cache entry.
+  @pre `index` selects an existing cache entry in this System. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
@@ -638,8 +640,9 @@ class SystemBase : public internal::SystemMessageInterface {
                                                InputPortIndex port_index) const;
 
   /** Returns the InputPortBase at index `port_index`, throwing
-  std::out_of_range we don't like the port index. The message is reported
-  as though issued by API method `func`. */
+  std::out_of_range we don't like the port index. The name of the public API
+  method that received the bad index is provided in `func` and is included
+  in the error message. */
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
                                                int port_index) const {
     if (port_index < 0)
