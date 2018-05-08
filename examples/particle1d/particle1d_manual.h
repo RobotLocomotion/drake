@@ -30,19 +30,13 @@ class Particle1dManual {
   // Struct to hold the particle data
   struct ParticleData {
     T x;
-    T xDt;
-    T xDDt;
     T F;
   };
 
-  // Method to output the ParticleData struct.
+  // Method to output the ParticleData as a struct.
   ParticleData OutputData();
 
  private:
-  // Friend declaration so that the internals of the state can be confirmed in
-  // unit tests.
-  friend class ParticleTester;
-
   // Model variables are set via CalcDerivativesToStateDt. x_ is the
   // particle's Nx measure from No. xDt_ and xDDt_ are ẋ and ẍ (the 1ˢᵗ and 2ⁿᵈ
   // time-derivatives of x_). F_ is the Nx measure of the force on the particle.

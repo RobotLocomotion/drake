@@ -15,8 +15,6 @@ template <typename T>
 typename Particle1dManual<T>::ParticleData Particle1dManual<T>::OutputData() {
   ParticleData output_particle_data;
   output_particle_data.x = x_;
-  output_particle_data.xDt = xDt_;
-  output_particle_data.xDDt = xDDt_;
   output_particle_data.F = F_;
   return output_particle_data;
 }

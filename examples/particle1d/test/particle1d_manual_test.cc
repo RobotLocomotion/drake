@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <vector>
-#include "drake/systems/framework/basic_vector.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace examples {
@@ -36,7 +36,7 @@ void VerifyAutoDiffValueAndPartialDerivatives(
   EXPECT_NEAR(y.derivatives()(1), y_partial_with_respect_to_variableB,
               kEpsilon);
 
-  // Test ∂y/∂C (partial with respect to variable B).
+  // Test ∂y/∂C (partial with respect to variable C).
   EXPECT_NEAR(y.derivatives()(2), y_partial_with_respect_to_variableC,
               kEpsilon);
 }
@@ -44,7 +44,6 @@ void VerifyAutoDiffValueAndPartialDerivatives(
 // Unit test for the Particle1dMG class with Double instantiation.
 GTEST_TEST(PlantTest, MGClassTestDouble) {
   Manual::Particle1dManual<double> test_particle;
-  // Particle1dManual<double> test_particle;
 
   // Ensure the default initialization of mass is 1 kg.
   EXPECT_TRUE(test_particle.mass_ == 1);
@@ -71,8 +70,6 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
 
   // For-loop to check three separate cases.
   for (int i = 0; i < 3; i++) {
-    // Ensure time-derivative of state is properly calculated.
-    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     double stateDt[2];
 
     // Calculate state derivatives and test their values against expected,
@@ -80,7 +77,9 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
     test_particle.CalcDerivativesToStateDt(test_data[i].test_time,
                                            test_data[i].test_state, stateDt);
 
-    VerifyValueOnly(stateDt[0], test_data[i].test_state[1]);  // ẋ = state[1]
+    // Ensure time-derivative of state is properly calculated.
+    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
+    VerifyValueOnly(stateDt[0], test_data[i].test_state[1]); // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1],
                     std::cos(test_data[i].test_time) /
                         test_particle.mass_);  // ẍ = cos(time)/m
@@ -118,9 +117,6 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
 
   // for loop to check the repeated statements
   for (int i = 0; i < 3; i++) {
-    // Ensure time-derivative of state is properly calculated for each of the
-    // three cases.
-    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     AutoDiffXd stateDt[2];
 
     // Calculate state derivatives and test their values against expected,
@@ -128,8 +124,11 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
     test_particle.CalcDerivativesToStateDt(test_data[i].test_time,
                                            test_data[i].test_state, stateDt);
 
+    // Ensure time-derivative of state is properly calculated for each of the
+    // three cases.
+    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     VerifyValueOnly(stateDt[0].value(),
-                    test_data[i].test_state[1].value());  // ẋ = state[1]
+                    test_data[i].test_state[1].value());  // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1].value(),
                     cos(test_data[i].test_time.value()) /
                         test_particle.mass_.value());  // ẍ = cos(time)/m
@@ -141,12 +140,55 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
 // checks partial derivative calculations (whereas the previous test only checks
 // AutoDiff values).
 GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
+  // Note: This test sets up the AutoDiff values and derivative vectors
+  // explicitly as a way to pedagogically show what Autodiff is doing, and how
+  // to take the partial derivatives. The explicit declaration of values and
+  // derivatives will not scale in this fashio to anything larger than this
+  // example (three partials) due to the large amount of coding overhead. A more
+  // scalable method would be to implement an AutoDiff using
+  // initializeAutoDiffGivenGradientMatrix() as shown in the following commented
+  // section (tests given to verify initialization and partial differentiation).
+  // ---------------------------------------------------------------------------
+
+  //  Eigen::Vector3d ad_states;
+  //  ad_states[0] = 20;
+  //  ad_states[1] = 2;
+  //  ad_states[2] = 0.5;
+  //  Eigen::Matrix<double, 3, 3> gradient;
+  //  gradient.setIdentity();
+  //
+  //  auto outauto =
+  //    drake::math::initializeAutoDiffGivenGradientMatrix(ad_states, gradient);
+  //  EXPECT_EQ(outauto.rows(), 3);
+  //  EXPECT_EQ(outauto[0].derivatives().size(), 3);
+  //  EXPECT_EQ(outauto[0].derivatives()(0), 1);
+  //  EXPECT_EQ(outauto[0].derivatives()(1), 0);
+  //  EXPECT_EQ(outauto[0].derivatives()(2), 0);
+
+  // ---------------------------------------------------------------------------
+
   Manual::Particle1dManual<AutoDiffXd> test_particle;
+
   // Calculate partial derivatives with respect to 2 variables (time and x).
   const int num_variables_differentiate_with_respect_to = 3;
   const int index_for_partial_mass = 0;
   const int index_for_partial_time = 1;
   const int index_for_partial_x = 2;
+
+  // Set the value of the particle's mass. Arbitrarily chosen to be 20 kg.
+  AutoDiffXd& mass = test_particle.mass_;
+  mass.value() = 20.0;
+
+  // Provide enough room to store partials with respect to 3 variables:
+  // mass, time, and x
+  mass.derivatives().resize(num_variables_differentiate_with_respect_to);
+
+  // Set the partial of mass with respect to mass to 1 (∂m/∂m = 1).
+  // Set the partial of mass with respect to time to 0 (∂m/∂t = 0).
+  // Set the partial of mass with respect to x to 0 (∂m/∂x = 0).
+  mass.derivatives()(index_for_partial_mass) = 1.0;
+  mass.derivatives()(index_for_partial_time) = 0.0;
+  mass.derivatives()(index_for_partial_x) = 0.0;
 
   // Set the value of time at which the partials will be evaluated.
   // Arbitrarily chose time = 2 seconds.
@@ -163,21 +205,6 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
   time.derivatives()(index_for_partial_mass) = 0.0;
   time.derivatives()(index_for_partial_time) = 1.0;
   time.derivatives()(index_for_partial_x) = 0.0;
-
-  // Set the value of the particle's mass. Arbitrarily chosen to be 20 kg.
-  AutoDiffXd& mass = test_particle.mass_;
-  mass.value() = 20.0;
-
-  // Provide enough room to store partials with respect to 3 variables:
-  // mass, time, and x
-  mass.derivatives().resize(num_variables_differentiate_with_respect_to);
-
-  // Set the partial of mass with respect to mass to 1 (∂m/∂m = 1).
-  // Set the partial of mass with respect to time to 0 (∂m/∂t = 0).
-  // Set the partial of mass with respect to x to 0 (∂m/∂x = 0).
-  mass.derivatives()(index_for_partial_mass) = 1.0;
-  mass.derivatives()(index_for_partial_time) = 0.0;
-  mass.derivatives()(index_for_partial_x) = 0.0;
 
   // The state vector has the following assignments:
   // state[0] = x and state[1] = xDt.
@@ -198,13 +225,6 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
   state[0].derivatives()(index_for_partial_mass) = 0.0;
   state[0].derivatives()(index_for_partial_time) = 0.0;
   state[0].derivatives()(index_for_partial_x) = 1.0;
-
-  // Set the partial of state[1] with respect to mass to 0 (∂ẋ/∂m = 0).
-  // Set the partial of state[1] with respect to time to 0 (∂ẋ/∂t = 0).
-  // Set the partial of state[1] with respect to x (itself) to 0 (∂ẋ/∂x = 0).
-  state[1].derivatives()(index_for_partial_mass) = 0.0;
-  state[1].derivatives()(index_for_partial_time) = 0.0;
-  state[1].derivatives()(index_for_partial_x) = 0.0;
 
   // stateDt is calculated, hence its value and derivatives will be assigned.
   AutoDiffXd stateDt[2];
