@@ -142,7 +142,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     // We added actuators and joints in the same order. Assert this before
     // making that assumption in the test that follows.
     const Joint<T>& joint = actuator.joint();
-    ASSERT_EQ(actuator.index(), joint.index());
+    ASSERT_EQ(static_cast<int>(actuator.index()),
+              static_cast<int>(joint.index()));
     const std::string& joint_name = kJointNames[names_index];
     EXPECT_EQ(joint.name(), joint_name);
     ++names_index;
