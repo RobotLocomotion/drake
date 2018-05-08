@@ -69,7 +69,7 @@ class CartPoleTest : public ::testing::Test {
       const Vector2<double>& q, const Vector2<double>& v) {
     const double mp = default_parameters_.mp();  // Pole's point mass in kg.
     const double l = default_parameters_.l();    // length of the pole in m
-    const double g = default_parameters_.gravity();  // Acc. of gravity in m/s^2.
+    const double g = default_parameters_.gravity();  // Gravity in m/s^2.
 
     // Mass matrix.
     const double theta = q(1);
