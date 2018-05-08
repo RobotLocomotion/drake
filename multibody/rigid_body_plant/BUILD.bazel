@@ -197,15 +197,12 @@ drake_cc_googletest(
     data = ["test/ThreeLeggedStool.sdf"],
     deps = [
         ":contact_result_test_common",
-        ":drake_visualizer",
         ":rigid_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//lcm",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
         "//multibody/parsers",
         "//systems/analysis:simulator",
-        "//systems/primitives",
     ],
 )
 
