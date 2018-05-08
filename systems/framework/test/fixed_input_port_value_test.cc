@@ -147,11 +147,12 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
 // change notification. The ticket and input port index remain unchanged
 // in the new context. The values are copied and serial numbers unchanged.
 TEST_F(FixedInputPortTest, Clone) {
-  std::unique_ptr<ContextBase> new_context = system_.AllocateContext();
-  auto free0 =
-      port0_value_->CloneForNewContext(new_context.get(), InputPortIndex(0));
-  auto free1 =
-      port1_value_->CloneForNewContext(new_context.get(), InputPortIndex(1));
+  std::unique_ptr<ContextBase> new_context = context_.Clone();
+
+  auto free0 = new_context->MaybeGetFixedInputPortValue(0);
+  auto free1 = new_context->MaybeGetFixedInputPortValue(1);
+  ASSERT_NE(free0, nullptr);
+  ASSERT_NE(free1, nullptr);
 
   EXPECT_EQ(free0->ticket(), port0_value_->ticket());
   EXPECT_EQ(free1->ticket(), port1_value_->ticket());

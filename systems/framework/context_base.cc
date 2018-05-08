@@ -89,18 +89,22 @@ void ContextBase::SetFixedInputPortValue(
 
   if (old_value != nullptr) {
     // All the dependency wiring is already in place.
-    port_value->set_ticket(old_value->ticket());
+    detail::ContextBaseFixedInputAttorney::set_ticket(old_value->ticket(),
+                                                      port_value.get());
   } else {
     // Create a new tracker and subscribe to it.
     DependencyTracker& value_tracker = graph_.CreateNewDependencyTracker(
         "Value for fixed input port " + std::to_string(index));
-    port_value->set_ticket(value_tracker.ticket());
+    detail::ContextBaseFixedInputAttorney::set_ticket(value_tracker.ticket(),
+                                                      port_value.get());
     port_tracker.SubscribeToPrerequisite(&value_tracker);
   }
 
   // Fill in the FixedInputPortValue object and install it.
-  port_value->set_input_port_index(index);
-  port_value->set_owning_subcontext(this);
+  detail::ContextBaseFixedInputAttorney::set_input_port_index(
+      index, port_value.get());
+  detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+      this, port_value.get());
   input_port_values_[index] = std::move(port_value);
 
   // Invalidate anyone who cares about this input port.
@@ -237,8 +241,15 @@ void ContextBase::FixContextPointers(
   // First repair pointers local to this context.
   graph_.RepairTrackerPointers(source.get_dependency_graph(), tracker_map, this,
                                &cache_);
-  // Cache and only needs its back pointers set to this.
+  // Cache and FixedInputs only need their back pointers set to `this`.
   cache_.RepairCachePointers(this);
+  for (auto& fixed_input : input_port_values_) {
+    if (fixed_input != nullptr) {
+      detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
+          this, fixed_input.get_mutable());
+    }
+  }
+
   // TODO(sherm1) Recursive update of descendents goes here.
 }
 

@@ -23,18 +23,9 @@ class InputPortDescriptor final: public InputPortBase {
   ~InputPortDescriptor() final {}
 
   /// (Internal use only)
-  /// @param index The index of the input port described, starting from zero and
-  ///              incrementing by one per port.
-  /// @param data_type Whether the port described is vector or abstract valued.
-  /// @param size If the port described is vector-valued, the number of
-  ///             elements, or kAutoSize if determined by connections.
-  /// @param random_type Input ports may optionally be labeled as random, if the
-  ///                    port is intended to model a random-source "noise" or
-  ///                    "disturbance" input.
-  /// @param system The System<T> to which this descriptor belongs. Retained
-  ///               internally so must outlive this port.
-  /// @param system_base The SystemBase that owns this input port. Must be
-  ///                    the same object as referred to by `system`.
+  /// Constructs a type-specific input port. See InputPortBase::InputPortBase()
+  /// for the meaning of these parameters. The additional `system` parameter
+  /// here must be the same object as the `system_base` parameter.
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
   InputPortDescriptor(InputPortIndex index, PortDataType data_type, int size,
