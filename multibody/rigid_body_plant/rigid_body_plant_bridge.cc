@@ -13,6 +13,7 @@
 namespace drake {
 namespace systems {
 
+using geometry::Box;
 using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FramePoseVector;
@@ -89,6 +90,11 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         Isometry3<double> X_FG = visual_element.getLocalTransform();
         const DrakeShapes::Geometry& geometry = visual_element.getGeometry();
         switch (visual_element.getShape()) {
+          case DrakeShapes::BOX: {
+            const auto& box = dynamic_cast<const DrakeShapes::Box&>(geometry);
+            shape = std::make_unique<Box>(box.size(0), box.size(1), box.size(2));
+            break;
+          }
           case DrakeShapes::SPHERE: {
             const auto& sphere =
                 dynamic_cast<const DrakeShapes::Sphere&>(geometry);
