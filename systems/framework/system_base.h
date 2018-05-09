@@ -51,20 +51,14 @@ class SystemBase : public internal::SystemMessageInterface {
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
   currently just "_" (a lone underscore). */
-  // TODO(sherm1) Revisit this "_" business. Maybe something like "(noname)",
-  // or a unique default like DiagramBuilder uses?
-  // Make ContextBase::GetSystemName() match this method if you change it.
   const std::string& GetSystemName() const final {
-    static never_destroyed<std::string> dummy("_");
-    return name_.empty() ? dummy.access() : name_;
+    return name_.empty() ? internal::SystemMessageInterface::no_name() : name_;
   }
 
   /** Generates and returns a human-readable full path name of this subsystem,
   for use in messages and logging. The name starts from the root System, with
   "::" delimiters between parent and child subsystems, with the individual
   subsystems represented by their names as returned by GetSystemName(). */
-  // TODO(sherm1) Change to more conventional "/" delimiter.
-  // Make ContextBase::GetSystemPathname() match this method if you change it.
   std::string GetSystemPathname() const final;
 
   /** Returns the most-derived type of this concrete System object as a

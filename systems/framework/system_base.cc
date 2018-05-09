@@ -19,13 +19,11 @@ namespace systems {
 SystemBase::~SystemBase() {}
 
 std::string SystemBase::GetSystemPathname() const {
-  // NOLINTNEXTLINE(build/namespaces): using operator""s issues a warning.
-  using namespace std::string_literals;
-
   const std::string parent_path =
       get_parent_service() ? get_parent_service()->GetParentPathname()
-                           : ""s;
-  return parent_path + "::"s + GetSystemName();
+                           : std::string();
+  return parent_path + internal::SystemMessageInterface::path_separator() +
+         GetSystemName();
 }
 
 const CacheEntry& SystemBase::DeclareCacheEntry(

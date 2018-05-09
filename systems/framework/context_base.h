@@ -87,16 +87,14 @@ class ContextBase : public internal::ContextMessageInterface {
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemName() for details.
   @see GetSystemPathname() if you want the full name. */
-  // Keep this the same as SystemBase::GetSystemName().
   const std::string& GetSystemName() const final {
-    static never_destroyed<std::string> dummy("_");
-    return system_name_.empty() ? dummy.access() : system_name_;
+    return system_name_.empty() ? internal::SystemMessageInterface::no_name()
+                                : system_name_;
   }
 
   /** Returns the full pathname of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
   @see SystemBase::GetSystemPathname() for details. */
-  // Keep this the same as SystemBase::GetSystemPathname().
   std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */

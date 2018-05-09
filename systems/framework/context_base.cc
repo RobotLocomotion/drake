@@ -44,13 +44,11 @@ void ContextBase::SetAllCacheEntriesOutOfDate() const {
 }
 
 std::string ContextBase::GetSystemPathname() const {
-  // NOLINTNEXTLINE(build/namespaces): using operator""s issues a warning.
-  using namespace std::string_literals;
-
-  const std::string parent_path =
-      get_parent_base() ? get_parent_base()->GetSystemPathname()
-                        : ""s;
-  return parent_path + "::"s + GetSystemName();
+  const std::string parent_path = get_parent_base()
+                                      ? get_parent_base()->GetSystemPathname()
+                                      : std::string();
+  return parent_path + internal::SystemMessageInterface::path_separator() +
+         GetSystemName();
 }
 
 FixedInputPortValue& ContextBase::FixInputPort(
