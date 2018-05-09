@@ -161,6 +161,7 @@ LIBDRAKE_COMPONENTS = [
     "//math:wrap_to",
     "//multibody/benchmarks/acrobot:acrobot",
     "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    "//multibody/benchmarks/acrobot:oracle",
     "//multibody/benchmarks/free_body:free_body",
     "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
     "//multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
