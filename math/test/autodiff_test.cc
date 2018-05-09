@@ -93,15 +93,15 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
   // Calculate partial derivatives of y0, y1, y2 with respect to v0, v1, v2.
   // ∂y0/∂v0 = -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
   expected(0, 0) = -sin(7) + (cos(7) * cos(7) - sin(7) * sin(7)) / 9;
-  // Partial y0 with respect to v1 (∂y0/∂v1) = -sin(v0) * cos(v0) / v1^2
+  // ∂y0/∂v1 = -sin(v0) * cos(v0) / v1^2
   expected(0, 1) = -sin(7) * cos(7) / (9 * 9);
-  // Partial y1 with respect to v0 (∂y1/∂v0) = cos(v0).
+  // ∂y1/∂v0 = cos(v0).
   expected(1, 0) = cos(7);
-  // Partial y1 with respect to v1 (∂y1/∂v1) = 1.
+  // ∂y1/∂v1 = 1.
   expected(1, 1) = 1.0;
-  // Partial y2 with respect to v0 (∂y2/∂v0) = 2 * v0.
+  // ∂y2/∂v0 = 2 * v0.
   expected(2, 0) = 2 * 7;
-  // Partial y2 with respect to v1 (∂y2/∂v1) = 3 * v1^2.
+  // ∂y2/∂v1 = 3 * v1^2.
   expected(2, 1) = 3 * 9 * 9;
 
   EXPECT_TRUE(
