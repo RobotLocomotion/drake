@@ -13,7 +13,7 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-apt install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
 wget
 EOF
 )
@@ -21,8 +21,8 @@ EOF
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
 echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu xenial main' > /etc/apt/sources.list.d/drake.list
 
-apt update
-apt install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
+apt-get update
+apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
 
 dpkg_install_from_wget() {
   package="$1"
