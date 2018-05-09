@@ -85,7 +85,7 @@ dreal_repository = repository_rule(
         # documented in the new_deb_archive rule.
         "mirrors": attr.string_list(
             default = [
-                "https://drake-apt.csail.mit.edu/pool/main",
+                "https://drake-apt.csail.mit.edu/xenial/pool/main",
             ],
         ),
         "filenames": attr.string_list(
