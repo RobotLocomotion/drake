@@ -37,8 +37,9 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
         solvers::IntervalBinning::kLogarithmic};
     /** If true, add only mixed-integer linear constraints in the
      * constructor of GlobalInverseKinematics. The mixed-integer relaxation
-     * is tighter with nonlinear constraints (such as Lorentz cone constraint),
-     * but the optimization takes more time.
+     * is tighter with nonlinear constraints (such as Lorentz cone constraint)
+     * than with linear constraints, but the optimization takes more time with
+     * nonlinear constraints.
      */
     bool linear_constraint_only{false};
   };
