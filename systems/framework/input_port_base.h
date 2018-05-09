@@ -11,36 +11,15 @@ namespace systems {
 class SystemBase;
 
 /** An InputPort is a System resource that describes the kind of input a
-System accepts, on a given port. It is not a mechanism for handling any
-actual input data; that is handled by a corresponding runtime object in
-the Context for that System.
+System accepts, on a given port. It does not directly contain any runtime
+input port data; that is always contained in a Context. The actual value will
+be either the value of an OutputPort to which this is connected, or a fixed
+value set in a Context.
 
 %InputPortBase is the scalar type-independent part of an InputPort. */
 class InputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortBase)
-
-  /** (Internal use only) Provides derived classes the ability to set the base
-  class members at construction.
-
-  @param index
-    The index to be assigned to this InputPort.
-  @param ticket
-    The DependencyTicket to be assigned to this InputPort.
-  @param data_type
-    Whether the port described is vector or abstract valued.
-  @param size
-    If the port described is vector-valued, the number of elements, or kAutoSize
-    if determined by connections.
-  @param random_type
-    Input ports may optionally be labeled as random, if the port is intended to
-    model a random-source "noise" or "disturbance" input.
-  @param system_base
-    The System that will own this new input port. */
-  InputPortBase(InputPortIndex index, DependencyTicket ticket,
-                PortDataType data_type, int size,
-                const optional<RandomDistribution>& random_type,
-                SystemBase* system_base);
 
   virtual ~InputPortBase();
 
@@ -64,7 +43,7 @@ class InputPortBase {
   PortDataType get_data_type() const { return data_type_; }
 
   /** Returns the fixed size expected for a vector-valued input port. Not
-  meaningful for abstract input ports. */
+  meaningful for abstract-valued input ports. */
   int size() const { return size_; }
 
   /** Returns true if this is a random port. */
@@ -72,6 +51,29 @@ class InputPortBase {
 
   /** Returns the RandomDistribution if this is a random port. */
   optional<RandomDistribution> get_random_type() const { return random_type_; }
+
+ protected:
+  /** Provides derived classes the ability to set the base
+  class members at construction.
+
+  @param index
+    The index to be assigned to this InputPort.
+  @param ticket
+    The DependencyTicket to be assigned to this InputPort.
+  @param data_type
+    Whether the port described is vector- or abstract-valued.
+  @param size
+    If the port described is vector-valued, the number of elements, or kAutoSize
+    if determined by connections. Ignored for abstract-valued ports.
+  @param random_type
+    Input ports may optionally be labeled as random, if the port is intended to
+    model a random-source "noise" or "disturbance" input.
+  @param system_base
+    The System that will own this new input port. */
+  InputPortBase(InputPortIndex index, DependencyTicket ticket,
+                PortDataType data_type, int size,
+                const optional<RandomDistribution>& random_type,
+                SystemBase* system_base);
 
  private:
   // Associated System and System resources.

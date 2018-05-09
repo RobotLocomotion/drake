@@ -16,7 +16,7 @@ class System;
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class InputPortDescriptor final: public InputPortBase {
+class InputPortDescriptor final : public InputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortDescriptor)
 

@@ -397,8 +397,7 @@ class System : public SystemBase {
   /// The result is returned as a pointer to the input port's value of type
   /// `Vec<T>` or nullptr if the port is not connected.
   ///
-  /// @pre `port_index` must be non-negative.
-  /// @pre `port_index` must designate an existing input port.
+  /// @pre `port_index` selects an existing input port of this System.
   /// @pre the port must have been declared to be vector-valued.
   /// @pre the port's value must be of type Vec<T>.
   ///
@@ -435,8 +434,7 @@ class System : public SystemBase {
   /// `port_index` as an %Eigen vector. Causes the value to become up to date
   /// first if necessary. See EvalAbstractInput() for more information.
   ///
-  /// @pre `port_index` must be non-negative.
-  /// @pre `port_index` must designate an existing input port.
+  /// @pre `port_index` selects an existing input port of this System.
   /// @pre the port must have been declared to be vector-valued.
   /// @pre the port must be evaluable (connected or fixed).
   ///
@@ -1859,8 +1857,9 @@ class System : public SystemBase {
     // a problem here.
     const AbstractValue* const abstract_value =
         EvalAbstractInputImpl(func, context, port_index);
-    if (abstract_value == nullptr)
+    if (abstract_value == nullptr) {
       return nullptr;
+    }
 
     // We have a vector port with a value, it better be a BasicVector!
     const BasicVector<T>* const basic_value =

@@ -53,8 +53,7 @@ std::string ContextBase::GetSystemPathname() const {
 
 FixedInputPortValue& ContextBase::FixInputPort(
     int index, std::unique_ptr<AbstractValue> value) {
-  auto fixed =
-      std::make_unique<FixedInputPortValue>(std::move(value));
+  auto fixed = std::make_unique<FixedInputPortValue>(std::move(value));
   FixedInputPortValue& fixed_ref = *fixed;
   SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
   return fixed_ref;
@@ -81,10 +80,8 @@ void ContextBase::SetFixedInputPortValue(
   DRAKE_DEMAND(port_value != nullptr);
 
   // Fill in the FixedInputPortValue object and install it.
-  detail::ContextBaseFixedInputAttorney::set_input_port_index(
-      index, port_value.get());
   detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
-      this, port_value.get());
+      port_value.get(), this);
   input_port_values_[index] = std::move(port_value);
 }
 
@@ -223,7 +220,7 @@ void ContextBase::FixContextPointers(
   for (auto& fixed_input : input_port_values_) {
     if (fixed_input != nullptr) {
       detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
-          this, fixed_input.get_mutable());
+          fixed_input.get_mutable(), this);
     }
   }
 

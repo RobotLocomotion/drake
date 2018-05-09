@@ -105,13 +105,13 @@ class SystemBase : public internal::SystemMessageInterface {
   //@{
 
   /** Returns the value of the input port with the given `port_index` as an
-  AbstractValue, regardless of the port's type. Causes the value to become
-  up to date first if necessary, delegating to our parent Diagram. Returns
-  a pointer to the port's value, or nullptr if the port is not connected.
-  If you know the actual type, use one of the more-specific signatures.
+  AbstractValue, which is permitted for ports of any type. Causes the value to
+  become up to date first if necessary, delegating to our parent Diagram.
+  Returns a pointer to the port's value, or nullptr if the port is not
+  connected. If you know the actual type, use one of the more-specific
+  signatures.
 
-  @pre `port_index` must be non-negative.
-  @pre `port_index` must designate an existing input port.
+  @pre `port_index` selects an existing input port of this System.
 
   @see EvalInputValue(), System::EvalVectorInput(),
        System::EvalEigenVectorInput() */
@@ -131,8 +131,7 @@ class SystemBase : public internal::SystemMessageInterface {
   The result is returned as a pointer to the input port's value of type `V`,
   or nullptr if the port is not connected.
 
-  @pre `port_index` must be non-negative.
-  @pre `port_index` must designate an existing input port.
+  @pre `port_index` selects an existing input port of this System.
   @pre the port's value must be retrievable from the stored abstract value
        using `AbstractValue::GetValue<V>`.
 
@@ -165,7 +164,8 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(input_ports_.size());
   }
 
-  /** Returns a reference to an InputPort given its `index`. */
+  /** Returns a reference to an InputPort given its `port_index`.
+  @pre `port_index` selects an existing input port of this System. */
   const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
     return GetInputPortBaseOrThrow(__func__, port_index);
   }
@@ -539,14 +539,16 @@ class SystemBase : public internal::SystemMessageInterface {
     return DependencyTicket(internal::kAllInputPortsTicket);
   }
 
-  /** Returns a ticket indicating dependence on a particular input port.
+  /** Returns a ticket indicating dependence on the input port indicated
+  by `index`.
   @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) {
     DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
     return input_ports_[index]->ticket();
   }
 
-  /** Returns a ticket indicating dependence on a particular cache entry.
+  /** Returns a ticket indicating dependence on the cache entry indicated
+  by `index`.
   @pre `index` selects an existing cache entry in this System. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());

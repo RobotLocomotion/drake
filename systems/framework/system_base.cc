@@ -48,7 +48,7 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;
 
-  detail::SystemBaseContextAttorney::set_system_name(&context, get_name());
+  detail::SystemBaseContextBaseAttorney::set_system_name(&context, get_name());
 
   // Add the independent-source trackers and wire them up appropriately. That
   // includes input ports since their dependencies are external.
@@ -94,8 +94,8 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
 
   // TODO(sherm1) Add state and parameter trackers here.
 
-  // Allocate trackers for each input port uᵢ, and subscribe the "all input
-  // ports" tracker u to them.
+  // Allocate trackers for each input port uᵢ. Note that this also takes care of
+  // subscribing the "all input ports" tracker u to them.
   for (const auto& iport : input_ports_) {
     context.AddInputPort(iport->get_index(), iport->ticket());
   }
@@ -125,7 +125,7 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
   // This is not the root System, and the port isn't fixed, so ask our parent to
   // evaluate it.
   return get_parent_service()->EvalConnectedSubsystemInputPort(
-      *detail::SystemBaseContextAttorney::get_parent_base(context),
+      *detail::SystemBaseContextBaseAttorney::get_parent_base(context),
       get_input_port_base(port_index));
 }
 

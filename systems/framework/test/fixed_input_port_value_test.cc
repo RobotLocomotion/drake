@@ -18,40 +18,19 @@ namespace drake {
 namespace systems {
 namespace {
 
-// This is so we can use the contained dependency graph for notifications.
+// Create a ContextBase with a few input ports for us to play with.
 class MyContextBase : public ContextBase {
  public:
-  MyContextBase() {}
+  MyContextBase() {
+    AddInputPort(InputPortIndex(0), DependencyTicket(100));
+    AddInputPort(InputPortIndex(1), DependencyTicket(101));
+  }
   MyContextBase(const MyContextBase&) = default;
-  using ContextBase::get_mutable_dependency_graph;
+
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::make_unique<MyContextBase>(*this);
   }
-};
-
-// This is so we can declare a couple of input ports that will have
-// dependency trackers assigned in the context.
-class MySystemBase : public SystemBase {
- public:
-  // Declare some input ports that we can make fixed. Port 0 is a
-  // 2-element vector-valued port, port 1 is abstract valued.
-  MySystemBase() {
-    CreateInputPort(std::make_unique<InputPortBase>(
-        InputPortIndex(0), DependencyTicket(100),
-        kVectorValued, 2, nullopt, this));
-    CreateInputPort(std::make_unique<InputPortBase>(
-        InputPortIndex(1), DependencyTicket(101),
-        kAbstractValued, 0, nullopt, this));
-  }
-
- private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<MyContextBase>();
-  }
-
-  void DoValidateAllocatedContext(const ContextBase&) const final {}
-  void DoCheckValidContext(const ContextBase&) const final {}
 };
 
 // Creates a MySystemBase and its context and wires up fixed input values
@@ -74,10 +53,7 @@ class FixedInputPortTest : public ::testing::Test {
     serial1_ = port1_value_->serial_number();
   }
 
-  // Create a System and a Context to match.
-  MySystemBase system_;
-  std::unique_ptr<ContextBase> context_base_ = system_.AllocateContext();
-  MyContextBase& context_ = dynamic_cast<MyContextBase&>(*context_base_);
+  MyContextBase context_;
 
   FixedInputPortValue* port0_value_{};
   FixedInputPortValue* port1_value_{};
@@ -85,7 +61,7 @@ class FixedInputPortTest : public ::testing::Test {
   int64_t serial0_{-1}, serial1_{-1};
 };
 
-// Tests that the System and Context wiring is set up as we assume for the
+// Tests that the Context wiring is set up as we assume for the
 // tests here, and that the free values are wired in.
 TEST_F(FixedInputPortTest, SystemAndContext) {
   // The input port trackers should have declared the free values as
@@ -93,11 +69,8 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
   // subscribers.
   // TODO(sherm1) Tracker wiring tests go here.
 
-  EXPECT_EQ(port0_value_->input_port_index(), InputPortIndex(0));
-  EXPECT_EQ(port1_value_->input_port_index(), InputPortIndex(1));
-
-  EXPECT_EQ(&port0_value_->get_owning_context(), context_base_.get());
-  EXPECT_EQ(&port1_value_->get_owning_context(), context_base_.get());
+  EXPECT_EQ(&port0_value_->get_owning_context(), &context_);
+  EXPECT_EQ(&port1_value_->get_owning_context(), &context_);
 
   EXPECT_EQ(port0_value_->serial_number(), 1);
   EXPECT_EQ(port1_value_->serial_number(), 1);

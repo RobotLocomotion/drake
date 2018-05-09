@@ -159,6 +159,8 @@ class DiagramContext final : public Context<T> {
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
+  // TODO(sherm1) Consider a better name for this when it is fully implemented,
+  // like SubscribeExportedPortToDiagramPort().
   void ExportInput(InputPortIndex input_port_index,
                    const InputPortIdentifier& subsystem_input_port) {
     // Identify and validate the destination input port.
@@ -172,8 +174,8 @@ class DiagramContext final : public Context<T> {
     unused(input_port_index);  // For now.
   }
 
-  /// Declares that the output port specified by @p src is connected to the
-  /// input port specified by @p dest.
+  /// (Internal use only) Declares that the output port specified by @p src is
+  /// connected to the input port specified by @p dest.
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.

@@ -1,7 +1,5 @@
 #include "drake/systems/framework/fixed_input_port_value.h"
 
-#include "drake/systems/framework/context_base.h"
-
 namespace drake {
 namespace systems {
 

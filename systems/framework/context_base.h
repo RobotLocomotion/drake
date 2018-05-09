@@ -20,7 +20,7 @@ namespace systems {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace detail {
 // This provides SystemBase limited "friend" access to ContextBase.
-class SystemBaseContextAttorney;
+class SystemBaseContextBaseAttorney;
 }  // namespace detail
 #endif
 
@@ -139,22 +139,24 @@ class ContextBase : public internal::ContextMessageInterface {
     return graph_;
   }
 
-  /** Returns the number of input ports represented in this context. */
+  /** Returns the number of input ports in this context. */
   int get_num_input_ports() const {
+    DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
     return static_cast<int>(input_port_tickets_.size());
   }
 
   /** Connects the input port at `index` to a FixedInputPortValue with
-  the given abstract `value`. Asserts if `index` is out of range. Returns a
-  reference to the allocated FixedInputPortValue that will remain valid
-  until this input port's value source is replaced or the Context is destroyed.
-  You may use that reference to modify the input port's value using the
-  appropriate FixedInputPortValue method, which will ensure that
-  invalidation notifications are delivered.
+  the given abstract `value`. Returns a reference to the allocated
+  FixedInputPortValue that will remain valid until this input port's value
+  source is replaced or the Context is destroyed. You may use that reference to
+  modify the input port's value using the appropriate FixedInputPortValue
+  method, which will ensure that invalidation notifications are delivered.
 
   This is the most general way to provide a value (type-erased) for an
   unconnected input port. See `Context<T>` for more-convenient overloads of
-  FixInputPort() for vector values with elements of type T. */
+  FixInputPort() for vector values with elements of type T.
+
+  @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
@@ -201,8 +203,7 @@ class ContextBase : public internal::ContextMessageInterface {
     return source.DoCloneWithoutPointers();
   }
 
-  /** Declares that `parent` is the context of the enclosing Diagram, and
-  `index` is the SubsystemIndex of this child subsystem in its parent.
+  /** Declares that `parent` is the context of the enclosing Diagram.
   Aborts if the parent has already been set to something else. */
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
@@ -221,7 +222,7 @@ class ContextBase : public internal::ContextMessageInterface {
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
  private:
-  friend class detail::SystemBaseContextAttorney;
+  friend class detail::SystemBaseContextBaseAttorney;
 
   void set_parent(const ContextBase* parent) {
     DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
@@ -263,8 +264,8 @@ class ContextBase : public internal::ContextMessageInterface {
   void FixContextPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map);
 
-  // We record tickets so we can reconstruct the dependency graph when cloning
-  // or transmogrifying a Context without a System present.
+  // TODO(sherm1) Use these tickets to reconstruct the dependency graph when
+  // cloning or transmogrifying a Context without a System present.
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
@@ -286,8 +287,8 @@ class ContextBase : public internal::ContextMessageInterface {
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
 
-  // The Context of the enclosing Diagram, and the index of this subcontext
-  // within that Diagram. Null/invalid when this is the root context.
+  // The Context of the enclosing Diagram. Null/invalid when this is the root
+  // context.
   reset_on_copy<const ContextBase*> parent_;
 
   // Name of the subsystem whose subcontext this is.
@@ -300,10 +301,10 @@ namespace detail {
 
 // This is an attorney-client pattern class providing SystemBase with access to
 // certain specific ContextBase private methods, and nothing else.
-class SystemBaseContextAttorney {
+class SystemBaseContextBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextAttorney);
-  SystemBaseContextAttorney() = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney);
+  SystemBaseContextBaseAttorney() = delete;
 
  private:
   friend class drake::systems::SystemBase;
