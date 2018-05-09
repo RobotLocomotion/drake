@@ -66,53 +66,52 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     systems::ContinuousState<T> *derivatives) const {
   VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
 
-  VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
+  const VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
 
   // Extract orientation and angular velocities.
-  Vector3<T> rpy = state.segment(3, 3);
-  Vector3<T> rpy_dot = state.segment(9, 3);
+  const drake::math::RollPitchYaw<T> rpy(state.segment(3, 3));
+  const Vector3<T> rpyDt = state.segment(9, 3);
 
   // Convert orientation to a rotation matrix.
-  Matrix3<T> R = drake::math::rpy2rotmat(rpy);
+  const drake::math::RotationMatrix<T> R(rpy);
 
   // Compute the net input forces and moments.
-  VectorX<T> uF = kF_ * u;
-  VectorX<T> uM = kM_ * u;
+  const VectorX<T> uF = kF_ * u;
+  const VectorX<T> uM = kM_ * u;
 
-  Vector3<T> Fg(0, 0, -m_ * g_);
-  Vector3<T> F(0, 0, uF.sum());
-  Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
-               uM(0) - uM(1) + uM(2) - uM(3));
+  const Vector3<T> Fg(0, 0, -m_ * g_);
+  const Vector3<T> F(0, 0, uF.sum());
+  const Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
+                     uM(0) - uM(1) + uM(2) - uM(3));
 
   // Computing the resultant linear acceleration due to the forces.
-  Vector3<T> xyz_ddot = (1.0 / m_) * (Fg + R * F);
+  const Vector3<T> xyzDDt = (Fg + R * F) / m_;
 
   Vector3<T> pqr;
-  rpydot2angularvel(rpy, rpy_dot, pqr);
-  pqr = R.adjoint() * pqr;
+  rpydot2angularvel(rpy.vector(), rpyDt, pqr);
+  pqr = R.matrix().adjoint() * pqr;
 
   // Computing the resultant angular acceleration due to the moments.
-  Vector3<T> pqr_dot = I_.ldlt().solve(M - pqr.cross(I_ * pqr));
+  const Vector3<T> pqrDt = I_.ldlt().solve(M - pqr.cross(I_ * pqr));
   Matrix3<T> Phi;
   typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
   typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
-  angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
+  angularvel2rpydotMatrix(rpy.vector(), Phi, &dPhi, ddPhi);
 
-  MatrixX<T> drpy2drotmat = drake::math::drpy2rotmat(rpy);
-  VectorX<T> Rdot_vec(9);
-  Rdot_vec = drpy2drotmat * rpy_dot;
-  Matrix3<T> Rdot = Eigen::Map<Matrix3<T>>(Rdot_vec.data());
-  VectorX<T> dPhi_x_rpydot_vec;
-  dPhi_x_rpydot_vec = dPhi * rpy_dot;
-  Matrix3<T> dPhi_x_rpydot = Eigen::Map<Matrix3<T>>(dPhi_x_rpydot_vec.data());
-  Vector3<T> rpy_ddot =
-      Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
+  const Matrix3<T> RDt =
+      drake::math::RotationMatrix<T>::OrdinaryDerivativeRotationMatrix(rpy,
+                                                                       rpyDt);
+  VectorX<T> dPhi_x_rpyDt_vec = dPhi * rpyDt;
+  const Matrix3<T> dPhi_x_rpyDt =
+      Eigen::Map<Matrix3<T>>(dPhi_x_rpyDt_vec.data());
+  const Vector3<T> rpyDDt = Phi * R.matrix() * pqrDt
+                          + dPhi_x_rpyDt * R.matrix() * pqr + Phi * RDt * pqr;
 
   // Recomposing the derivatives vector.
-  VectorX<T> xdot(12);
-  xdot << state.tail(6), xyz_ddot, rpy_ddot;
+  VectorX<T> xDt(12);
+  xDt << state.tail(6), xyzDDt, rpyDDt;
 
-  derivatives->SetFromVector(xdot);
+  derivatives->SetFromVector(xDt);
 }
 
 // Declare storage for our constants.
