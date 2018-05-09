@@ -12,10 +12,11 @@ namespace {
 
 // Helper class to hold test data.
 class PlantTest : public ::testing::Test {
-  PlantTest() {
-    test_data[0] = {0.0, {0.0, 0.0}};
-    test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
-    test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
+ protected:
+  void SetUp override () {
+    output_test_data[0] = {0.0, {0.0, 0.0}};
+    output_test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
+    output_test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
   }
 
   // Struct for the test data.
@@ -24,7 +25,7 @@ class PlantTest : public ::testing::Test {
     double test_state[2];
   };
 
-  std::vector<TestData> test_data;
+  std::vector<TestData> output_test_data;
 };
 
 // Helper function to test the expected value of the class parameter.
@@ -97,7 +98,7 @@ GTEST_TEST(PlantTest, ManualClassTestDouble) {
 // Unit test for the Particle1dManual class with AutoDiffXd instantiation.
 // Note: This unit test only checks AutoDiff values (not derivatives).
 // The next test is more complicated as it also checks partial derivatives.
-GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
+TEST_F(PlantTest, ManualClassTestAutoDiffValuesOnly) {
   Particle1dManual<AutoDiffXd> test_particle;
 
   Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
@@ -118,7 +119,6 @@ GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
   //test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
   //test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
 
-
   // for loop to check the repeated statements
   for (int i = 0; i < 3; i++) {
     AutoDiffXd stateDt[2];
@@ -126,8 +126,8 @@ GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
     // Calculate state derivatives and test their values against expected,
     // analytical solutions.
     // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
-    test_particle.CalcDerivativesToStateDt(test_data[i].test_time,
-                                           test_data[i].test_state, stateDt);
+    test_particle.CalcDerivativesToStateDt(output_test_data[i].test_time,
+                                           output_test_data[i].test_state, stateDt);
 
     VerifyValueOnly(stateDt[0].value(),
                     test_data[i].test_state[1].value());  // ẋ = v = state[1]
