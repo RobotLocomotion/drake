@@ -26,6 +26,7 @@ using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::LinearConstraint;
+using solvers::LorentzConeConstraint;
 using solvers::LinearCost;
 using solvers::LinearComplementarityConstraint;
 using solvers::LinearEqualityConstraint;
@@ -287,6 +288,10 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Formula&)>(&MathematicalProgram::AddLinearConstraint))
+      .def("AddLorentzConeConstraint",
+           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
+               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
+               &MathematicalProgram::AddLorentzConeConstraint))
       .def("AddPositiveSemidefiniteConstraint",
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
@@ -460,6 +465,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       m, "LinearConstraint")
       .def("A", &LinearConstraint::A);
 
+  py::class_<LorentzConeConstraint, Constraint,
+             std::shared_ptr<LorentzConeConstraint>>(
+    m, "LorentzConeConstraint")
+    .def("A", &LorentzConeConstraint::A);
+
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint");
@@ -478,6 +488,8 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
+  RegisterBinding<LorentzConeConstraint>(&m, &prog_cls,
+                                         "LorentzConeConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,

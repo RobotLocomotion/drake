@@ -31,7 +31,26 @@ struct ModelInstanceInfo {
 template <typename T>
 class WorldSimTreeBuilder {
  public:
-  WorldSimTreeBuilder();
+  /// Constructs a WorldSimTreeBuilder object and specifies whether a call to
+  /// any of the add model instance functions should compile the tree.
+  ///
+  /// Setting @p compile_tree to false will cause the parser to bypass tree
+  /// compilation such that modifications to the recently parsed tree can be
+  /// made at run time (e.g., accessing/modifying collision filters declared in
+  /// the corresponding urdf/sdf file). The user is responsible for calling
+  /// compile() on the tree. Take the following snippet as an example:
+  /// ```
+  /// auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>(false);
+  /// tree_builder->StoreDrakeModel("mymodel", kModelUrdf);
+  /// tree_builder->AddFixedModelInstance("mymodel", Eigen::Vector3d::Zero());
+  /// auto mtree = tree_builder->mutable_tree();
+  /// //  modify the tree here
+  /// mtree->compile();
+  /// ```
+  ///
+  /// @param compile_tree Specifies whether the tree should be automatically
+  /// compiled. Defaults to true.
+  explicit WorldSimTreeBuilder(bool compile_tree = true);
 
   ~WorldSimTreeBuilder();
 
@@ -139,6 +158,23 @@ class WorldSimTreeBuilder {
     return *rigid_body_tree_;
   }
 
+  /// Returns a pointer to the (not yet built) mutable tree. This is useful when
+  /// one needs to programmatically modify a recently parsed, uncompiled tree
+  /// (e.g., accessing/modifying collision filters declared in the corresponding
+  /// urdf/sdf file).
+  /// @pre Build() must not have been called yet.
+  RigidBodyTree<T>* mutable_tree() {
+    DRAKE_DEMAND(built_ == false && rigid_body_tree_ != nullptr);
+
+    if (compile_tree_) {
+      throw std::runtime_error(
+          "WorldSimTreeBuilder::mutable_tree(): "
+              "Attempting to return a mutable tree on an already "
+              "compiled tree.");
+    }
+    return rigid_body_tree_.get();
+  }
+
   ModelInstanceInfo<T> get_model_info_for_instance(int id) {
     return instance_id_to_model_info_.at(id);
   }
@@ -158,6 +194,7 @@ class WorldSimTreeBuilder {
       std::make_unique<RigidBodyTree<T>>()};
 
   bool built_{false};
+  bool compile_tree_{true};
 
   // Maps between models (stored as filename strings in the map) and their
   // user-supplied names (keys in the map). Instances of these models can be
