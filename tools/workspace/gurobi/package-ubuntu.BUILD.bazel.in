@@ -12,7 +12,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: The value of environment variable GUROBI_PATH=\"{gurobi_path}\" is invalid; export GUROBI_PATH to the correct value.' && false",  # noqa
+    cmd = "echo 'error: Gurobi 8.0.0 is not installed at {gurobi_path}, export GUROBI_PATH to the correct value' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
