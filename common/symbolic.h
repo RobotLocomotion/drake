@@ -39,6 +39,5 @@
 #include "drake/common/symbolic_polynomial.h"
 #include "drake/common/symbolic_formula.h"
 #include "drake/common/symbolic_formula_visitor.h"
-#include "drake/common/symbolic_simplification.h"
 // clang-format on
 #undef DRAKE_COMMON_SYMBOLIC_HEADER
