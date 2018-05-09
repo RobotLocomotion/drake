@@ -98,12 +98,10 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
   angularvel2rpydotMatrix(rpy.vector(), Phi, &dPhi, ddPhi);
 
-  const Matrix3<T> RDt =
-      drake::math::RotationMatrix<T>::OrdinaryDerivativeRotationMatrix(rpy,
-                                                                       rpyDt);
   VectorX<T> dPhi_x_rpyDt_vec = dPhi * rpyDt;
   const Matrix3<T> dPhi_x_rpyDt =
       Eigen::Map<Matrix3<T>>(dPhi_x_rpyDt_vec.data());
+  const Matrix3<T> RDt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
   const Vector3<T> rpyDDt = Phi * R.matrix() * pqrDt
                           + dPhi_x_rpyDt * R.matrix() * pqr + Phi * RDt * pqr;
 
