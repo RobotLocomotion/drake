@@ -3,6 +3,15 @@ from os.path import abspath
 from platform import python_version_tuple
 from sys import stderr
 
+# As a workaround to bazelbuild/bazel#4594, we can use this spelling to load
+# a properly-linked version of `libdrake.so`. Once this is loaded, all of the
+# Python C-extension libraries that depend on it (and its dependencies) will
+# load properly.
+try:
+    import external.drake.bindings.pydrake
+except ImportError:
+    pass
+
 # We specifically load `common` prior to loading any other pydrake modules,
 # in order to get assertion configuration done as early as possible.
 from . import common
