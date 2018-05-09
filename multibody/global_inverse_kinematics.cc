@@ -34,8 +34,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   p_WBo_.resize(num_bodies);
 
   solvers::MixedIntegerRotationConstraintGenerator rotation_generator(
-      options.approach_, options.num_intervals_per_half_axis_,
-      options.interval_binning_);
+      options.approach, options.num_intervals_per_half_axis,
+      options.interval_binning);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int body_idx = 1; body_idx < num_bodies; ++body_idx) {
@@ -59,7 +59,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     } else {
       R_WB_[body_idx] = solvers::NewRotationMatrixVars(this, body_R_name);
 
-      if (!options.linear_constraint_only_) {
+      if (!options.linear_constraint_only) {
         solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
                                                             R_WB_[body_idx]);
       }
@@ -130,7 +130,7 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               const double joint_lb = joint->getJointLimitMin()(0);
               const double joint_ub = joint->getJointLimitMax()(0);
               AddJointLimitConstraint(body_idx, joint_lb, joint_ub,
-                                      options.linear_constraint_only_);
+                                      options.linear_constraint_only);
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
               throw std::runtime_error("Unsupported joint type.");
@@ -411,7 +411,8 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
   return z;
 }
 
-// Approximate a Lorentz cone constraint xᵀx ≤ c² by
+// Approximate a quadratic constraint (which could be formulated as a Lorentz
+// cone constraint) xᵀx ≤ c² by
 // -c ≤ xᵢ ≤ c
 // ± xᵢ ± xⱼ ≤ √2 * c
 // ± x₀ ± x₁ ± x₂ ≤ √3 * c

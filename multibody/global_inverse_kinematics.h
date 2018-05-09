@@ -29,17 +29,18 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
     // This constructor is needed, otherwise the compiler complains.
     Options() {}
 
-    int num_intervals_per_half_axis_{2};
-    solvers::MixedIntegerRotationConstraintGenerator::Approach approach_{
+    int num_intervals_per_half_axis{2};
+    solvers::MixedIntegerRotationConstraintGenerator::Approach approach{
         solvers::MixedIntegerRotationConstraintGenerator::Approach::
             kBilinearMcCormick};
-    solvers::IntervalBinning interval_binning_{
+    solvers::IntervalBinning interval_binning{
         solvers::IntervalBinning::kLogarithmic};
-    /** Set to true if we add only mixed-integer linear constraints in the
+    /** If true, add only mixed-integer linear constraints in the
      * constructor of GlobalInverseKinematics. The mixed-integer relaxation
-     * is tighter if we allow nonlinear constraints (such as Lorentz cone
-     * constraint), but the optimization takes longer time. */
-    bool linear_constraint_only_{false};
+     * is tighter with nonlinear constraints (such as Lorentz cone constraint),
+     * but the optimization takes more time.
+     */
+    bool linear_constraint_only{false};
   };
 
   /**
@@ -260,14 +261,14 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * constrained.
    * @param joint_lower_bound The lower bound for the joint.
    * @param joint_upper_bound The upper bound for the joint.
-   * @param linear_constraint_approximation Set to true if we approximate the
-   * joint limit as linear constraints on parent and child link orientations,
-   * otherwise we use a Lorentz cone constraint to impose the joint limits.
+   * @param linear_constraint_approximation If true, joint limits are
+   * approximated as linear constraints on parent and child link orientations,
+   * otherwise they are imposed as Lorentz cone constraints.
    * With the Lorentz cone formulation, the joint limit constraint would be
-   * tight if our mixed-integer constraint on SO(3) were tight. By imposing the
-   * joint limits as linear constraint, we further relaxed the original inverse
-   * kinematics problem, on top of SO(3) relaxation, but potentially with faster
-   * computation speed. @default is false.
+   * tight if our mixed-integer constraint on SO(3) were tight. By enforcing the
+   * joint limits as linear constraint, the original inverse kinematics problem
+   * is further relaxed, on top of SO(3) relaxation, but potentially with faster
+   * computation. @default is false.
    */
   void AddJointLimitConstraint(int body_index, double joint_lower_bound,
                                double joint_upper_bound,
