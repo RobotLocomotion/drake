@@ -221,6 +221,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody:rigid_body_tree_alias_groups",
     "//multibody:rigid_body_tree_alias_groups_proto",
     "//multibody:rigid_body_tree_construction",
+    "//perception:perception",
     "//perception:point_cloud",
     "//perception:point_cloud_flags",
     "//solvers:bilinear_product_util",
