@@ -28,10 +28,11 @@ class InputPortDescriptor final: public InputPortBase {
   /// here must be the same object as the `system_base` parameter.
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  InputPortDescriptor(InputPortIndex index, PortDataType data_type, int size,
+  InputPortDescriptor(InputPortIndex index, DependencyTicket ticket,
+                      PortDataType data_type, int size,
                       const optional<RandomDistribution>& random_type,
                       const System<T>* system, SystemBase* system_base)
-      : InputPortBase(index, data_type, size, random_type, system_base),
+      : InputPortBase(index, ticket, data_type, size, random_type, system_base),
         system_(*system) {
     DRAKE_DEMAND(system != nullptr);
     DRAKE_DEMAND(static_cast<const void*>(system) == system_base);

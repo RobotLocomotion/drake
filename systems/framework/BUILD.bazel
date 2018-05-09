@@ -26,8 +26,8 @@ drake_cc_package_library(
         ":diagram_discrete_values",
         ":discrete_values",
         ":event_collection",
-        ":framework_base",
         ":framework_common",
+        ":input_port_base",
         ":input_port_descriptor",
         ":leaf_context",
         ":leaf_output_port",
@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":single_output_vector_source",
         ":state",
         ":system",
+        ":system_base",
         ":system_constraint",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
@@ -245,18 +246,30 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "framework_base",
+    name = "input_port_base",
     srcs = [
         "input_port_base.cc",
-        "system_base.cc",
     ],
     hdrs = [
         "input_port_base.h",
+    ],
+    deps = [
+        ":framework_common",
+    ],
+)
+
+drake_cc_library(
+    name = "system_base",
+    srcs = [
+        "system_base.cc",
+    ],
+    hdrs = [
         "system_base.h",
     ],
     deps = [
         ":cache_entry",
         ":context_base",
+        ":input_port_base",
     ],
 )
 
@@ -310,7 +323,7 @@ drake_cc_library(
         "input_port_descriptor.h",
     ],
     deps = [
-        ":framework_base",
+        ":input_port_base",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -331,8 +344,8 @@ drake_cc_library(
     deps = [
         ":context",
         ":event_collection",
-        ":framework_base",
         ":input_port_descriptor",
+        ":system_base",
         ":system_constraint",
         ":system_scalar_converter",
         ":value",
@@ -542,7 +555,7 @@ drake_cc_googletest(
     name = "cache_entry_test",
     deps = [
         ":cache_entry",
-        ":framework_base",
+        ":system_base",
         "//common:essential",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
@@ -701,7 +714,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "fixed_input_port_value_test",
     deps = [
-        ":framework_base",
+        ":system_base",
         "//common:essential",
     ],
 )
@@ -728,7 +741,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "system_base_test",
     deps = [
-        ":framework_base",
+        ":system_base",
         "//common:essential",
         "//common/test_utilities:expect_throws_message",
     ],

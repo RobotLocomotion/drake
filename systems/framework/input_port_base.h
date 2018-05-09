@@ -21,10 +21,12 @@ class InputPortBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortBase)
 
   /** (Internal use only) Provides derived classes the ability to set the base
-  class members at construction. Assigns a DependencyTicket.
+  class members at construction.
 
   @param index
     The index to be assigned to this InputPort.
+  @param ticket
+    The DependencyTicket to be assigned to this InputPort.
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
@@ -34,9 +36,9 @@ class InputPortBase {
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input.
   @param system_base
-    The System that will own this new input port. The port will be assigned
-    this system's next available dependency ticket. */
-  InputPortBase(InputPortIndex index, PortDataType data_type, int size,
+    The System that will own this new input port. */
+  InputPortBase(InputPortIndex index, DependencyTicket ticket,
+                PortDataType data_type, int size,
                 const optional<RandomDistribution>& random_type,
                 SystemBase* system_base);
 

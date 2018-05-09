@@ -1440,9 +1440,10 @@ class System : public SystemBase {
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
+    const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     this->CreateInputPort(
         std::make_unique<InputPortDescriptor<T>>(
-            port_index, type, size, random_type, this, this));
+            port_index, port_ticket, type, size, random_type, this, this));
     return get_input_port(port_index);
   }
 

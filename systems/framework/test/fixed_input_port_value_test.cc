@@ -26,7 +26,7 @@ class MyContextBase : public ContextBase {
   using ContextBase::get_mutable_dependency_graph;
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 };
 
@@ -38,9 +38,11 @@ class MySystemBase : public SystemBase {
   // 2-element vector-valued port, port 1 is abstract valued.
   MySystemBase() {
     CreateInputPort(std::make_unique<InputPortBase>(
-        InputPortIndex(0), kVectorValued, 2, nullopt, this));
+        InputPortIndex(0), DependencyTicket(100),
+        kVectorValued, 2, nullopt, this));
     CreateInputPort(std::make_unique<InputPortBase>(
-        InputPortIndex(1), kAbstractValued, 0, nullopt, this));
+        InputPortIndex(1), DependencyTicket(101),
+        kAbstractValued, 0, nullopt, this));
   }
 
  private:
