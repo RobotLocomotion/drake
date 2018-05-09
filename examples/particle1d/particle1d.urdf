@@ -1,0 +1,50 @@
+<robot
+  name="particle1d">
+  <link
+    name="base_link">
+  </link>
+  <link
+    name="RigidBox">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="3" />
+      <inertia
+        ixx="4.166667e-003"
+        ixy="0"
+        ixz="0"
+        iyy="1.416667e-002"
+        iyz="0"
+        izz="1.666667e-002" />
+    </inertial>
+    <visual>
+         <origin xyz="0 0 0" rpy="0 0 0" />
+         <geometry>
+           <box size="1 1 1" />
+         </geometry>
+         <material name="Cyan">
+           <color rgba="0 1.0 1.0 1.0"/>
+         </material>
+    </visual>
+  </link>
+  <joint
+    name="prismatic_joint"
+    type="prismatic">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="RigidBox" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.79769e+308"
+      upper="1.79769e+308"
+      effort="0"
+      velocity="0" />
+  </joint>
+</robot>
