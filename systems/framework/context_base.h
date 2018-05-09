@@ -146,13 +146,6 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(input_port_tickets_.size());
   }
 
-  /** Starts a new change event and returns the event number which is unique
-  for this entire Context tree, not just this subcontext. */
-  int64_t start_new_change_event() {
-    return get_mutable_root_context_base()
-        .increment_local_change_event_counter();
-  }
-
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Asserts if `index` is out of range. Returns a
   reference to the allocated FixedInputPortValue that will remain valid
@@ -216,25 +209,9 @@ class ContextBase : public internal::ContextMessageInterface {
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
-  static void set_parent(ContextBase* child, const ContextBase* parent,
-                         SubsystemIndex index) {
+  static void set_parent(ContextBase* child, const ContextBase* parent) {
     DRAKE_DEMAND(child != nullptr);
-    child->set_parent(parent, index);
-  }
-
-  /** (Internal use only) */
-  // Gets the value of change event counter stored in this subcontext. This
-  // should only be used when this subcontext is serving as root.
-  int64_t get_local_change_event_counter() const {
-    return current_change_event_;
-  }
-
-  /** (Internal use only) */
-  // Increments the change event counter for this subcontext and returns the
-  // new value. This should only be used when this subcontext is serving
-  // as root.
-  int64_t increment_local_change_event_counter() {
-    return ++current_change_event_;
+    child->set_parent(parent);
   }
 
   /** Derived classes must implement this so that it performs the complete
@@ -248,10 +225,9 @@ class ContextBase : public internal::ContextMessageInterface {
  private:
   friend class detail::SystemBaseContextAttorney;
 
-  void set_parent(const ContextBase* parent, SubsystemIndex index) {
+  void set_parent(const ContextBase* parent) {
     DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
     parent_ = parent;
-    index_in_parent_ = index;
   }
 
   // Returns the parent Context or `nullptr` if this is the root Context.
@@ -259,21 +235,6 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Records the name of the system whose context this is.
   void set_system_name(const std::string& name) { system_name_ = name; }
-
-  // Returns a const reference to the %ContextBase of the root Context of the
-  // tree containing this subcontext.
-  // TODO(sherm1) Consider precalculating this for faster access.
-  const ContextBase& get_root_context_base() const {
-    const ContextBase* node = this;
-    while (node->get_parent_base()) node = node->get_parent_base();
-    return *node;
-  }
-
-  // Returns a mutable reference to the root Context of the tree containing
-  // this subcontext.
-  ContextBase& get_mutable_root_context_base() {
-    return const_cast<ContextBase&>(get_root_context_base());
-  }
 
   // Fixes the input port at `index` to the internal value source `port_value`.
   // If the port wasn't previously fixed, assigns a ticket and tracker for the
@@ -327,14 +288,9 @@ class ContextBase : public internal::ContextMessageInterface {
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
 
-  // This is used only when this subcontext is serving as the root
-  // of a context tree.
-  int64_t current_change_event_{0};
-
   // The Context of the enclosing Diagram, and the index of this subcontext
   // within that Diagram. Null/invalid when this is the root context.
   reset_on_copy<const ContextBase*> parent_;
-  SubsystemIndex index_in_parent_;
 
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;

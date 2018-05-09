@@ -82,33 +82,12 @@ void ContextBase::SetFixedInputPortValue(
   DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
   DRAKE_DEMAND(port_value != nullptr);
 
-  DependencyTracker& port_tracker =
-      get_mutable_tracker(input_port_tickets_[index]);
-  FixedInputPortValue* old_value =
-      input_port_values_[index].get_mutable();
-
-  if (old_value != nullptr) {
-    // All the dependency wiring is already in place.
-    detail::ContextBaseFixedInputAttorney::set_ticket(old_value->ticket(),
-                                                      port_value.get());
-  } else {
-    // Create a new tracker and subscribe to it.
-    DependencyTracker& value_tracker = graph_.CreateNewDependencyTracker(
-        "Value for fixed input port " + std::to_string(index));
-    detail::ContextBaseFixedInputAttorney::set_ticket(value_tracker.ticket(),
-                                                      port_value.get());
-    port_tracker.SubscribeToPrerequisite(&value_tracker);
-  }
-
   // Fill in the FixedInputPortValue object and install it.
   detail::ContextBaseFixedInputAttorney::set_input_port_index(
       index, port_value.get());
   detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
       this, port_value.get());
   input_port_values_[index] = std::move(port_value);
-
-  // Invalidate anyone who cares about this input port.
-  port_tracker.NoteValueChange(start_new_change_event());
 }
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,

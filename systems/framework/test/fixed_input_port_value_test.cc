@@ -66,29 +66,8 @@ class FixedInputPortTest : public ::testing::Test {
     auto value = std::make_unique<Value<std::string>>("foo");
     port1_value_ = &context_.FixInputPort(InputPortIndex(1), std::move(value));
 
-    // The input ports and free values should have distinct tickets.
-    DependencyTicket ticket0 =
-        system_.get_input_port_base(InputPortIndex(0)).ticket();
-    DependencyTicket ticket1 =
-        system_.get_input_port_base(InputPortIndex(1)).ticket();
-    DependencyTicket free_ticket0 = port0_value_->ticket();
-    DependencyTicket free_ticket1 = port1_value_->ticket();
-    EXPECT_TRUE(ticket0.is_valid() && ticket1.is_valid());
-    EXPECT_TRUE(free_ticket0.is_valid() && free_ticket1.is_valid());
-    EXPECT_NE(ticket0, free_ticket0);
-    EXPECT_NE(ticket1, free_ticket1);
+    // TODO(sherm1) Tracker & ticket setup here.
 
-    tracker0_ = &context_.get_tracker(ticket0);
-    tracker1_ = &context_.get_tracker(ticket1);
-    free_tracker0_ = &context_.get_tracker(free_ticket0);
-    free_tracker1_ = &context_.get_tracker(free_ticket1);
-
-    // Record the initial notification statistics so we can see if they
-    // change properly.
-    sent0_ = free_tracker0_->num_notifications_sent();
-    sent1_ = free_tracker1_->num_notifications_sent();
-    rcvd0_ = tracker0_->num_notifications_received();
-    rcvd1_ = tracker1_->num_notifications_received();
     serial0_ = port0_value_->serial_number();
     serial1_ = port1_value_->serial_number();
   }
@@ -101,13 +80,6 @@ class FixedInputPortTest : public ::testing::Test {
   FixedInputPortValue* port0_value_{};
   FixedInputPortValue* port1_value_{};
 
-  const DependencyTracker* tracker0_{};
-  const DependencyTracker* tracker1_{};
-  const DependencyTracker* free_tracker0_{};
-  const DependencyTracker* free_tracker1_{};
-
-  int64_t sent0_{-1}, sent1_{-1};
-  int64_t rcvd0_{-1}, rcvd1_{-1};
   int64_t serial0_{-1}, serial1_{-1};
 };
 
@@ -117,26 +89,13 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
   // The input port trackers should have declared the free values as
   // prerequisites, and the free values should know the input ports are
   // subscribers.
-  EXPECT_EQ(tracker0_->num_prerequisites(), 1);
-  EXPECT_EQ(free_tracker0_->num_subscribers(), 1);
-  EXPECT_EQ(free_tracker0_->num_prerequisites(), 0);
-  EXPECT_EQ(tracker1_->num_prerequisites(), 1);
-  EXPECT_EQ(free_tracker1_->num_subscribers(), 1);
-  EXPECT_EQ(free_tracker1_->num_prerequisites(), 0);
-
-  EXPECT_EQ(tracker0_->prerequisites()[0], free_tracker0_);
-  EXPECT_EQ(tracker1_->prerequisites()[0], free_tracker1_);
-  EXPECT_EQ(free_tracker0_->subscribers()[0], tracker0_);
-  EXPECT_EQ(free_tracker1_->subscribers()[0], tracker1_);
+  // TODO(sherm1) Tracker wiring tests go here.
 
   EXPECT_EQ(port0_value_->input_port_index(), InputPortIndex(0));
   EXPECT_EQ(port1_value_->input_port_index(), InputPortIndex(1));
 
   EXPECT_EQ(&port0_value_->get_owning_context(), context_base_.get());
   EXPECT_EQ(&port1_value_->get_owning_context(), context_base_.get());
-
-  EXPECT_EQ(port0_value_->ticket(), free_tracker0_->ticket());
-  EXPECT_EQ(port1_value_->ticket(), free_tracker1_->ticket());
 
   EXPECT_EQ(port0_value_->serial_number(), 1);
   EXPECT_EQ(port1_value_->serial_number(), 1);
@@ -153,9 +112,6 @@ TEST_F(FixedInputPortTest, Clone) {
   auto free1 = new_context->MaybeGetFixedInputPortValue(1);
   ASSERT_NE(free0, nullptr);
   ASSERT_NE(free1, nullptr);
-
-  EXPECT_EQ(free0->ticket(), port0_value_->ticket());
-  EXPECT_EQ(free1->ticket(), port1_value_->ticket());
 
   EXPECT_EQ(&free0->get_owning_context(), new_context.get());
   EXPECT_EQ(&free1->get_owning_context(), new_context.get());
@@ -174,13 +130,9 @@ TEST_F(FixedInputPortTest, Clone) {
 TEST_F(FixedInputPortTest, Access) {
   EXPECT_EQ(Vector2<double>(5, 6),
             port0_value_->template get_vector_value<double>().get_value());
-  EXPECT_EQ(free_tracker0_->num_notifications_sent(), sent0_);
-  EXPECT_EQ(tracker0_->num_notifications_received(), rcvd0_);
   EXPECT_EQ(port0_value_->serial_number(), serial0_);
 
   EXPECT_EQ("foo", port1_value_->get_value().GetValue<std::string>());
-  EXPECT_EQ(free_tracker1_->num_notifications_sent(), sent1_);
-  EXPECT_EQ(tracker1_->num_notifications_received(), rcvd1_);
   EXPECT_EQ(port1_value_->serial_number(), serial1_);
 }
 
@@ -194,8 +146,7 @@ TEST_F(FixedInputPortTest, Mutation) {
   EXPECT_EQ(Vector2<double>(7, 8),
             port0_value_->template get_vector_value<double>().get_value());
   // Check that notifications were sent and serial number bumped.
-  EXPECT_EQ(free_tracker0_->num_notifications_sent(), sent0_ + 1);
-  EXPECT_EQ(tracker0_->num_notifications_received(), rcvd0_ + 1);
+  // TODO(sherm1) Check notifications.
   EXPECT_EQ(port0_value_->serial_number(), serial0_ + 1);
 
   // Change the abstract port's value.
@@ -203,8 +154,7 @@ TEST_F(FixedInputPortTest, Mutation) {
   // Check that the contents changed.
   EXPECT_EQ("bar", port1_value_->get_value().GetValue<std::string>());
   // Check that notifications were sent and serial number bumped.
-  EXPECT_EQ(free_tracker1_->num_notifications_sent(), sent1_ + 1);
-  EXPECT_EQ(tracker1_->num_notifications_received(), rcvd1_ + 1);
+  // TODO(sherm1) Check notifications.
   EXPECT_EQ(port1_value_->serial_number(), serial1_ + 1);
 }
 

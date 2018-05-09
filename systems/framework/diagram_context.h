@@ -147,7 +147,7 @@ class DiagramContext final : public Context<T> {
     DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
     DRAKE_DEMAND(contexts_[index] == nullptr);
     DRAKE_DEMAND(outputs_[index] == nullptr);
-    Context<T>::set_parent(context.get(), this, index);
+    Context<T>::set_parent(context.get(), this);
     contexts_[index] = std::move(context);
     outputs_[index] = std::move(output);
   }

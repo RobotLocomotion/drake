@@ -95,9 +95,6 @@ class FixedInputPortValue {
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 
-  /** Returns the ticket used to find the associated DependencyTracker. */
-  DependencyTicket ticket() const { return ticket_; }
-
   /** Returns the index of the input port for which this is the value. */
   InputPortIndex input_port_index() const {
     DRAKE_ASSERT(index_.is_valid());
@@ -128,10 +125,6 @@ class FixedInputPortValue {
   FixedInputPortValue(const FixedInputPortValue& source) =
       default;
 
-  // Informs this FixedInputPortValue of its assigned DependencyTracker
-  // so it knows who to notify when its value changes.
-  void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
-
   // Informs this FixedInputPortValue of the  the input port within
   // its owning subcontext for which it is the value. Aborts if
   // this has already been done or given bad args.
@@ -154,10 +147,6 @@ class FixedInputPortValue {
   // The value and its serial number.
   copyable_unique_ptr<AbstractValue> value_;
   int64_t serial_number_{-1};  // Currently just for debugging use.
-
-  // Index of the dependency tracker for this fixed value. The input
-  // port should have registered with this tracker.
-  DependencyTicket ticket_;
 };
 
 // TODO(sherm1) Get rid of this after 8/7/2018 (three months).
@@ -174,11 +163,6 @@ class ContextBaseFixedInputAttorney {
 
  private:
   friend class drake::systems::ContextBase;
-
-  static void set_ticket(DependencyTicket ticket, FixedInputPortValue* fixed) {
-    DRAKE_DEMAND(fixed != nullptr);
-    fixed->set_ticket(ticket);
-  }
 
   static void set_input_port_index(InputPortIndex index,
                                    FixedInputPortValue* fixed) {
