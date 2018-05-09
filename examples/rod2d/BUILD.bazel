@@ -44,8 +44,16 @@ drake_cc_library(
     name = "rod2d",
     srcs = ["rod2d.cc"],
     hdrs = [
+        "normal_accel_witness.h",
+        "normal_force_witness.h",
+        "normal_vel_witness.h",
         "rod2d.h",
         "rod2d-inl.h",
+        "rod2d_endpoint.h",
+        "rod2d_witness_function.h",
+        "signed_distance_witness.h",
+        "sliding_witness.h",
+        "sticking_friction_forces_slack_witness.h",
     ],
     deps = [
         ":rod2d_state_vector",

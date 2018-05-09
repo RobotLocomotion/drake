@@ -5,6 +5,13 @@
 #include <vector>
 
 #include "drake/examples/rod2d/gen/rod2d_state_vector.h"
+#include "drake/examples/rod2d/normal_accel_witness.h"
+#include "drake/examples/rod2d/normal_force_witness.h"
+#include "drake/examples/rod2d/normal_vel_witness.h"
+#include "drake/examples/rod2d/rod2d_endpoint.h"
+#include "drake/examples/rod2d/signed_distance_witness.h"
+#include "drake/examples/rod2d/sliding_witness.h"
+#include "drake/examples/rod2d/sticking_friction_forces_slack_witness.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/multibody/constraint/constraint_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
@@ -153,6 +160,13 @@ Outputs: Output Port 0 corresponds to the state vector; Output Port 1
 // TODO(edrumwri): Track energy and add a test to check it.
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
+  friend class SlidingWitness<T>;
+  friend class StickingFrictionForcesSlackWitness<T>;
+  friend class NormalAccelWitness<T>;
+  friend class NormalVelWitness<T>;
+  friend class NormalForceWitness<T>;
+  friend class SignedDistanceWitness<T>;
+
  public:
   ~Rod2D() override {}
 
@@ -580,6 +594,18 @@ class Rod2D : public systems::LeafSystem<T> {
   // Output ports.
   const systems::OutputPort<T>* pose_output_port_{nullptr};
   const systems::OutputPort<T>* state_output_port_{nullptr};
+
+  // Witness functions: one for each endpoint.
+  std::unique_ptr<const NormalAccelWitness<T>> normal_accel_witnesses_[2];
+  std::unique_ptr<const NormalForceWitness<T>> normal_force_witnesses_[2];
+  std::unique_ptr<const NormalVelWitness<T>> normal_vel_witnesses_[2];
+  std::unique_ptr<const SignedDistanceWitness<T>> signed_distance_witnesses_[2];
+  std::unique_ptr<const StickingFrictionForcesSlackWitness<T>>
+      sticking_friction_forces_slack_witnesses_[2];
+
+  // Witnesses for detecting sliding along +/- x-axis, respectively.
+  std::unique_ptr<const SlidingWitness<T>> pos_sliding_witnesses_[2];
+  std::unique_ptr<const SlidingWitness<T>> neg_sliding_witnesses_[2];
 };
 
 }  // namespace rod2d

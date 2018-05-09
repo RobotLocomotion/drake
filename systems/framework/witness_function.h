@@ -87,6 +87,9 @@ enum class WitnessFunctionDirection {
 /// ε will be log₂(ℓ / ε). Bisection is just one of several possible algorithms
 /// for isolating the time interval, though it's a reliable choice and always
 /// converges linearly.
+///
+/// @warning Like all other System components, witness functions should not
+/// live (be stored in) the Context.
 template <class T>
 class WitnessFunction final {
  public:

@@ -56,6 +56,40 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
   state_output_port_ = &this->DeclareVectorOutputPort(
       systems::BasicVector<T>(6), &Rod2D::CopyStateOut);
   pose_output_port_ = &this->DeclareVectorOutputPort(&Rod2D::CopyPoseOut);
+
+  // Create the witness functions even though only the piecewise DAE approach
+  // will use them.
+  // Left endpoint witnesses first:
+  normal_accel_witnesses_[kLeft] = std::make_unique<NormalAccelWitness<T>>(
+      this, kLeft);
+  normal_force_witnesses_[kLeft] = std::make_unique<NormalForceWitness<T>>(
+      this, kLeft);
+  normal_vel_witnesses_[kLeft] = std::make_unique<NormalVelWitness<T>>(
+      this, kLeft);
+  signed_distance_witnesses_[kLeft] =
+      std::make_unique<SignedDistanceWitness<T>>(this, kLeft);
+  pos_sliding_witnesses_[kLeft] =
+      std::make_unique<SlidingWitness<T>>(this, kLeft, true /* +x-axis */);
+  neg_sliding_witnesses_[kLeft] =
+      std::make_unique<SlidingWitness<T>>(this, kLeft, false /* -x-axis */);
+  sticking_friction_forces_slack_witnesses_[kLeft] =
+      std::make_unique<StickingFrictionForcesSlackWitness<T>>(this, kLeft);
+
+  // Now right endpoint witnesses:
+  normal_accel_witnesses_[kRight] = std::make_unique<NormalAccelWitness<T>>(
+      this, kRight);
+  normal_force_witnesses_[kRight] = std::make_unique<NormalForceWitness<T>>(
+      this, kRight);
+  normal_vel_witnesses_[kRight] = std::make_unique<NormalVelWitness<T>>(
+      this, kRight);
+  signed_distance_witnesses_[kRight] =
+      std::make_unique<SignedDistanceWitness<T>>(this, kRight);
+  pos_sliding_witnesses_[kRight] =
+      std::make_unique<SlidingWitness<T>>(this, kRight, true /* +x-axis */);
+  neg_sliding_witnesses_[kRight] =
+      std::make_unique<SlidingWitness<T>>(this, kRight, false /* -x-axis */);
+  sticking_friction_forces_slack_witnesses_[kRight] =
+      std::make_unique<StickingFrictionForcesSlackWitness<T>>(this, kRight);
 }
 
 // Computes the external forces on the rod.
