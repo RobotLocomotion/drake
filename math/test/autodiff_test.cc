@@ -27,7 +27,7 @@ class AutodiffTest : public ::testing::Test {
     vec_.resize(2);
 
     // Set the value of the variables (vec_[0] and vec_[1]) to the value at
-    // which the derivative is to be evaluated.  Arbitrarily chose [7.0, 9.0].
+    // which the derivative is to be evaluated.  Arbitrarily choose [7.0, 9.0].
     vec_[0].value() = 7.0;
     vec_[1].value() = 9.0;
 
@@ -47,11 +47,12 @@ class AutodiffTest : public ::testing::Test {
     vec_[1].derivatives()(1) = 1.0;
 
     // Do a calculation that is a function of variables v0 and v1.
+    // Store the result (output_calculation_) for subsequent use below.
     output_calculation_ = DoMath(vec_);
   }
 
-  // Do a calculation that is a real function of two real variables.  This
-  // function was chosen because of its analytically easy partial derivatives.
+  // Do a calculation involving real functions of two real variables. These
+  // functions were chosen due to ease of differentiation.
   static VectorX<Scalar> DoMath(const VectorX<Scalar>& v) {
     VectorX<Scalar> output(3);
     // Shorthand notation: Denote v0 = v[0], v1 = v[1].
@@ -89,9 +90,8 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
   // Function 0: y0 = cos(v0) + sin(v0) * cos(v0) / v1
   // Function 1: y1 = sin(v0) + v1.
   // Function 2: y2 = v0^2 + v1^3.
-  // Calculate the six partial derivatives below.
-  // Partial y0 with respect to v0 (∂y0/∂v0)  =
-  // -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
+  // Calculate partial derivatives of y0, y1, y2 with respect to v0, v1, v2.
+  // ∂y0/∂v0 = -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
   expected(0, 0) = -sin(7) + (cos(7) * cos(7) - sin(7) * sin(7)) / 9;
   // Partial y0 with respect to v1 (∂y0/∂v1) = -sin(v0) * cos(v0) / v1^2
   expected(0, 1) = -sin(7) * cos(7) / (9 * 9);
