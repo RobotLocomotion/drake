@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/common/autodiff.h"
-#include "drake/examples/particle1d/particle1dMG.h"
+#include "drake/examples/particle1d/particle1d_manual.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -65,7 +65,7 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   }
 
   /// Returns the mass of the particle in kg.
-  T get_mass() const { return particle1D_MG_.m; }
+  T get_mass() const { return particle1d_.get_particle_data().mass_; }
 
  private:
   // Casts the continuous state vector from a VectorBase to a BasicVector
@@ -88,7 +88,7 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   }
 
   // Class that holds MotionGenesis-generated code.
-  mutable MotionGenesis::Particle1dMG<T> particle1D_MG_;
+  mutable Particle1dManual<T> particle1d_;
 
   // This is the calculator method that assigns values to the state output port.
   void CopyStateOut(const systems::Context<T>& context,

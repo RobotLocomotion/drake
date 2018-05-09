@@ -8,12 +8,15 @@
 #include "drake/common/autodiff.h"
 
 // -----------------------------------------------------------------------------
-namespace Manual {
+namespace drake {
+namespace examples {
+namespace particle1d {
+
 // This is a model of a particle that is only allowed to move horizontally on
 // Earth (a Newtonian reference frame N). The particle has mass, No is a point
 // fixed on Earth, and Nx is a horizontal unit vector fixed on Earth.
 // -----------------------------------------------------------------------------
-template <typename T>
+template<typename T>
 class Particle1dManual {
  public:
   // Constructs a particle and assigns the default value of 1 kg for its sole
@@ -35,6 +38,7 @@ class Particle1dManual {
 
   ParticleData& get_particle_data() { return particle_data_; };
 
+  void set_mass(T mass) { particle_data_.mass_ = mass; }
 
  private:
   // Model variables are set via CalcDerivativesToStateDt. x_ is the
@@ -54,4 +58,7 @@ class Particle1dManual {
 };
 
 // -----------------------------------------------------------------------------
-}  // namespace Manual
+
+} // namespace particle1d
+} // namespace examples
+} // drake

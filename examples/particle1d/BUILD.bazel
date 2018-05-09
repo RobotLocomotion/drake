@@ -10,12 +10,14 @@ load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "particle1dManual",
+    name = "particle1d",
     srcs = [
         "particle1d_manual.cc",
+        "particle1d_plant.cc",
     ],
     hdrs = [
         "particle1d_manual.h",
+        "particle1d_plant.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -24,9 +26,42 @@ drake_cc_library(
     ],
 )
 
+drake_cc_binary(
+    name = "particle1d_simulation",
+    srcs = ["particle1d_simulation.cc"],
+    data = ["particle1d.urdf"],
+    deps = [
+        ":particle1d",
+        "//common:find_resource",
+        "//lcm",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant:drake_visualizer",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:constant_vector_source",
+        "@gflags",
+    ],
+)
+
+# === test/ ===
+
 drake_cc_googletest(
     name = "particle1d_manual_test",
     deps = [
-        ":particle1dManual",
+        ":particle1d",
     ],
 )
+
+#drake_cc_googletest(
+#    name = "particle1d_test",
+#    data = ["particle1d.urdf"],
+#    deps = [
+#        ":particle1d",
+#        "//common:find_resource",
+#        "//multibody:rigid_body_tree",
+#        "//multibody/parsers",
+#        "//multibody/rigid_body_plant",
+#    ],
+#)

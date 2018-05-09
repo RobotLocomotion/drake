@@ -10,6 +10,23 @@ namespace examples {
 namespace particle1d {
 namespace {
 
+// Helper class to hold test data.
+class PlantTest : public ::testing::Test {
+  PlantTest() {
+    test_data[0] = {0.0, {0.0, 0.0}};
+    test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
+    test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
+  }
+
+  // Struct for the test data.
+  struct TestData {
+    double test_time;
+    double test_state[2];
+  };
+
+  std::vector<TestData> test_data;
+};
+
 // Helper function to test the expected value of the class parameter.
 void VerifyValueOnly(double test_parameter, double value) {
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -17,35 +34,31 @@ void VerifyValueOnly(double test_parameter, double value) {
 }
 
 // Helper function to test the AutoDiff value and partial derivatives.
+// Note: partial with respect to variable A (∂y/∂A) will be denoted as dy_dA.
 void VerifyAutoDiffValueAndPartialDerivatives(
     const AutoDiffXd& y, double y_value,
-    double partial_y_with_respect_to_variableA,
-    double partial_y_with_respect_to_variableB,
-    double partial_y_with_respect_to_variableC) {
+    double dy_dA, double dy_dB, double dy_dC) {
   // First test the value of the AutoDiff evaluated at the value set in the
   // AutoDiff declaration.
   VerifyValueOnly(y.value(), y_value);
 
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-  // Test ∂y/∂A (partial with respect to variable A).
-  EXPECT_NEAR(y.derivatives()(0), partial_y_with_respect_to_variableA,
-              kEpsilon);
+  // Test ∂y/∂A.
+  EXPECT_NEAR(y.derivatives()(0), dy_dA, kEpsilon);
 
-  // Test ∂y/∂B (partial with respect to variable B).
-  EXPECT_NEAR(y.derivatives()(1), partial_y_with_respect_to_variableB,
-              kEpsilon);
+  // Test ∂y/∂B.
+  EXPECT_NEAR(y.derivatives()(1), dy_dB, kEpsilon);
 
-  // Test ∂y/∂C (partial with respect to variable C).
-  EXPECT_NEAR(y.derivatives()(2), partial_y_with_respect_to_variableC,
-              kEpsilon);
+  // Test ∂y/∂C.
+  EXPECT_NEAR(y.derivatives()(2), dy_dC, kEpsilon);
 }
 
-// Unit test for the Particle1dMG class with Double instantiation.
-GTEST_TEST(PlantTest, MGClassTestDouble) {
-  Manual::Particle1dManual<double> test_particle;
+// Unit test for the Particle1dManual class with double instantiation.
+GTEST_TEST(PlantTest, ManualClassTestDouble) {
+  Particle1dManual<double> test_particle;
 
-  Manual::Particle1dManual<double>::ParticleData& particle_data =
+  Particle1dManual<double>::ParticleData& particle_data =
                                               test_particle.get_particle_data();
 
   // Ensure the default initialization of mass is 1 kg.
@@ -59,17 +72,9 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
 
   // Test data for three separate test cases.
   std::vector<TestData> test_data(3);
-  test_data[0].test_time = 0.75;
-  test_data[0].test_state[0] = 0.26831113112;
-  test_data[0].test_state[1] = 0.68163876002;
-
-  test_data[1].test_time = 0.9;
-  test_data[1].test_state[0] = 0.37839003172;
-  test_data[1].test_state[1] = 0.78332690962;
-
-  test_data[2].test_time = 0.0;
-  test_data[2].test_state[0] = 0.0;
-  test_data[2].test_state[1] = 0.0;
+  test_data[0] = {0.0, {0.0, 0.0}};
+  test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
+  test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
 
   // For-loop to check three separate cases.
   for (int i = 0; i < 3; i++) {
@@ -77,26 +82,26 @@ GTEST_TEST(PlantTest, MGClassTestDouble) {
 
     // Calculate state derivatives and test their values against expected,
     // analytical solutions.
+    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     test_particle.CalcDerivativesToStateDt(test_data[i].test_time,
                                            test_data[i].test_state, stateDt);
 
-    // Ensure time-derivative of state is properly calculated.
-    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
-    VerifyValueOnly(stateDt[0], test_data[i].test_state[1]); // ẋ = v = state[1]
+    VerifyValueOnly(stateDt[0],
+                    test_data[i].test_state[1]);  // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1],
                     std::cos(test_data[i].test_time) /
                         particle_data.mass_);  // ẍ = cos(time)/m
   }
 }
 
-// Unit test for the Particle1dMG class with AutoDiffXd instantiation.
+// Unit test for the Particle1dManual class with AutoDiffXd instantiation.
 // Note: This unit test only checks AutoDiff values (not derivatives).
 // The next test is more complicated as it also checks partial derivatives.
-GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
-  Manual::Particle1dManual<AutoDiffXd> test_particle;
+GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
+  Particle1dManual<AutoDiffXd> test_particle;
 
-  Manual::Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
-                                              test_particle.get_particle_data();
+  Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
+      test_particle.get_particle_data();
 
   // Ensure the default initialization of mass is 1 kg.
   EXPECT_TRUE(particle_data.mass_ == 1);
@@ -108,18 +113,11 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
   };
 
   // Test data for three separate test cases.
-  std::vector<TestData> test_data(3);
-  test_data[0].test_time = 0.75;
-  test_data[0].test_state[0] = 0.26831113112;
-  test_data[0].test_state[1] = 0.68163876002;
+  //std::vector<TestData> test_data(3);
+  //test_data[0] = {0.0, {0.0, 0.0}};
+  //test_data[1] = {0.75, {0.26831113112, 0.68163876002}};
+  //test_data[2] = {0.9, {0.37839003172, 0.78332690962}};
 
-  test_data[1].test_time = 0.9;
-  test_data[1].test_state[0] = 0.37839003172;
-  test_data[1].test_state[1] = 0.78332690962;
-
-  test_data[2].test_time = 0.0;
-  test_data[2].test_state[0] = 0.0;
-  test_data[2].test_state[1] = 0.0;
 
   // for loop to check the repeated statements
   for (int i = 0; i < 3; i++) {
@@ -127,11 +125,10 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
 
     // Calculate state derivatives and test their values against expected,
     // analytical solutions.
+    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     test_particle.CalcDerivativesToStateDt(test_data[i].test_time,
                                            test_data[i].test_state, stateDt);
 
-    // Ensure time-derivative of state is properly calculated.
-    // Note:  From f = mẍ ,  ẍ  = f/m  = cos(time)/m.
     VerifyValueOnly(stateDt[0].value(),
                     test_data[i].test_state[1].value());  // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1].value(),
@@ -140,11 +137,11 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffValuesOnly) {
   }
 }
 
-// Unit test for the Particle1dMG class with AutoDiffXd instantiation.
+// Unit test for the Particle1dManual class with AutoDiffXd instantiation.
 // Note: This unit test is more complicated than the previous unit test as it
 // checks partial derivative calculations (whereas the previous test only checks
 // AutoDiff values).
-GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
+GTEST_TEST(PlantTest, ManualClassTestAutoDiffDerivativeTest) {
   // Note: This test sets up the AutoDiff values and derivative vectors
   // explicitly as a way to pedagogically show what Autodiff is doing, and how
   // to take the partial derivatives. The explicit declaration of values and
@@ -170,9 +167,9 @@ GTEST_TEST(PlantTest, MGClassTestAutoDiffDerivativeTest) {
   //  EXPECT_EQ(outauto[0].derivatives()(2), 0);
   // ---------------------------------------------------------------------------
 
-  Manual::Particle1dManual<AutoDiffXd> test_particle;
+  Particle1dManual<AutoDiffXd> test_particle;
 
-  Manual::Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
+  Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
                                               test_particle.get_particle_data();
 
   // Calculate partial derivatives with respect to 2 variables (time and x).
