@@ -14,6 +14,9 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
+apt-transport-https
+ca-certificates
+gnupg
 wget
 EOF
 )

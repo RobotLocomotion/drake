@@ -11,12 +11,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt-get update
-apt-get install --no-install-recommends $(tr '\n' ' ' <<EOF
-apt-transport-https
-ca-certificates
-lsb-release
-EOF
-)
+apt-get install --no-install-recommends lsb-release
 
 if [[ "$(lsb_release -sc)" != 'xenial' ]]; then
   echo 'This script requires Ubuntu 16.04 (Xenial)' >&2

@@ -5,6 +5,7 @@ coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
+file
 gdb
 git
 graphviz
