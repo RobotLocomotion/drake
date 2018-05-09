@@ -172,8 +172,8 @@ class DiagramContext final : public Context<T> {
     unused(input_port_index);  // For now.
   }
 
-  /// Declares that the output port specified by @p src is connected to the
-  /// input port specified by @p dest.
+  /// (Internal use only) Declares that the output port specified by @p src is
+  /// connected to the input port specified by @p dest.
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.

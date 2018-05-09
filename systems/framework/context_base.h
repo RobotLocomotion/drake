@@ -20,7 +20,7 @@ namespace systems {
 #ifndef DRAKE_DOXYGEN_CXX
 namespace detail {
 // This provides SystemBase limited "friend" access to ContextBase.
-class SystemBaseContextAttorney;
+class SystemBaseContextBaseAttorney;
 }  // namespace detail
 #endif
 
@@ -141,6 +141,7 @@ class ContextBase : public internal::ContextMessageInterface {
 
   /** Returns the number of input ports represented in this context. */
   int get_num_input_ports() const {
+    DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
     return static_cast<int>(input_port_tickets_.size());
   }
 
@@ -221,7 +222,7 @@ class ContextBase : public internal::ContextMessageInterface {
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
  private:
-  friend class detail::SystemBaseContextAttorney;
+  friend class detail::SystemBaseContextBaseAttorney;
 
   void set_parent(const ContextBase* parent) {
     DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
@@ -263,8 +264,8 @@ class ContextBase : public internal::ContextMessageInterface {
   void FixContextPointers(const ContextBase& source,
                           const DependencyTracker::PointerMap& tracker_map);
 
-  // We record tickets so we can reconstruct the dependency graph when cloning
-  // or transmogrifying a Context without a System present.
+  // TODO(sherm1) Use these tickets to reconstruct the dependency graph when
+  // cloning or transmogrifying a Context without a System present.
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
@@ -300,10 +301,10 @@ namespace detail {
 
 // This is an attorney-client pattern class providing SystemBase with access to
 // certain specific ContextBase private methods, and nothing else.
-class SystemBaseContextAttorney {
+class SystemBaseContextBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextAttorney);
-  SystemBaseContextAttorney() = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney);
+  SystemBaseContextBaseAttorney() = delete;
 
  private:
   friend class drake::systems::SystemBase;

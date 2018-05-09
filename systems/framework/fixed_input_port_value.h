@@ -43,16 +43,17 @@ class FixedInputPortValue {
 
   /** Constructs an abstract-valued %FixedInputPortValue from a value
   of arbitrary type. Takes ownership of the given value and sets the serial
-  number to 1. */
+  number to 1. The value must not be null. */
   explicit FixedInputPortValue(std::unique_ptr<AbstractValue> value)
-      : value_(std::move(value)), serial_number_{1} {}
+      : value_(std::move(value)), serial_number_{1} {
+    DRAKE_DEMAND(value_ != nullptr);
+  }
 
   ~FixedInputPortValue() = default;
 
-  /** Returns a reference to the contained abstract value; throws if there
-  isn't one. */
+  /** Returns a reference to the contained abstract value. */
   const AbstractValue& get_value() const {
-    DRAKE_DEMAND(value_ != nullptr);
+    DRAKE_DEMAND(value_ != nullptr);  // Should always be a value.
     return *value_;
   }
 
@@ -60,7 +61,7 @@ class FixedInputPortValue {
   exception if this doesn't contain an object of that type. */
   template <typename T>
   const BasicVector<T>& get_vector_value() const {
-    return get_value().GetValue<BasicVector<T>>();
+    return get_value().GetValueOrThrow<BasicVector<T>>();
   }
 
   /** Returns a pointer to the data inside this %FixedInputPortValue, and
@@ -95,20 +96,8 @@ class FixedInputPortValue {
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 
-  /** Returns the index of the input port for which this is the value. */
-  InputPortIndex input_port_index() const {
-    DRAKE_ASSERT(index_.is_valid());
-    return index_;
-  }
-
   /** Returns a const reference to the context that owns this object. */
   const ContextBase& get_owning_context() const {
-    DRAKE_ASSERT(owning_subcontext_ != nullptr);
-    return *owning_subcontext_;
-  }
-
-  /** Returns a mutable reference to the context that owns this object. */
-  ContextBase& get_mutable_owning_context() {
     DRAKE_ASSERT(owning_subcontext_ != nullptr);
     return *owning_subcontext_;
   }
@@ -125,14 +114,6 @@ class FixedInputPortValue {
   FixedInputPortValue(const FixedInputPortValue& source) =
       default;
 
-  // Informs this FixedInputPortValue of the  the input port within
-  // its owning subcontext for which it is the value. Aborts if
-  // this has already been done or given bad args.
-  void set_input_port_index(InputPortIndex index) {
-    DRAKE_DEMAND(index.is_valid() && !index_.is_valid());
-    index_ = index;
-  }
-
   // Informs this FixedInputPortValue of the subcontext that owns it.
   // Aborts if this has already been done or given bad args.
   void set_owning_subcontext(ContextBase* owning_subcontext) {
@@ -142,11 +123,17 @@ class FixedInputPortValue {
 
   // Needed for invalidation.
   reset_on_copy<ContextBase*> owning_subcontext_;
-  InputPortIndex index_;
 
   // The value and its serial number.
   copyable_unique_ptr<AbstractValue> value_;
-  int64_t serial_number_{-1};  // Currently just for debugging use.
+
+  // The serial number is useful for debugging and counting changes but has
+  // no role in cache invalidation. Note that after a Context is cloned, both
+  // the value and serial number are copied -- the clone serial number does
+  // not reset. That avoids accidental serial number matches if someone has
+  // recorded the number somewhere. If the serial number matches, the value
+  // is either unchanged since you last saw it, or an identical copy.
+  int64_t serial_number_{-1};
 };
 
 // TODO(sherm1) Get rid of this after 8/7/2018 (three months).
@@ -164,14 +151,8 @@ class ContextBaseFixedInputAttorney {
  private:
   friend class drake::systems::ContextBase;
 
-  static void set_input_port_index(InputPortIndex index,
-                                   FixedInputPortValue* fixed) {
-    DRAKE_DEMAND(fixed != nullptr);
-    fixed->set_input_port_index(index);
-  }
-
-  static void set_owning_subcontext(ContextBase* owning_subcontext,
-                                    FixedInputPortValue* fixed) {
+  static void set_owning_subcontext(FixedInputPortValue* fixed,
+                                    ContextBase* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr && fixed != nullptr);
     fixed->set_owning_subcontext(owning_subcontext);
   }

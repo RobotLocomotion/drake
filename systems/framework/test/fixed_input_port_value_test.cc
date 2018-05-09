@@ -93,9 +93,6 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
   // subscribers.
   // TODO(sherm1) Tracker wiring tests go here.
 
-  EXPECT_EQ(port0_value_->input_port_index(), InputPortIndex(0));
-  EXPECT_EQ(port1_value_->input_port_index(), InputPortIndex(1));
-
   EXPECT_EQ(&port0_value_->get_owning_context(), context_base_.get());
   EXPECT_EQ(&port1_value_->get_owning_context(), context_base_.get());
 
