@@ -13,7 +13,6 @@
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
@@ -36,33 +35,21 @@ class TestAbstractType {
   TestAbstractType() = default;
 };
 
-// Defines a minimal System we can use to define input ports and cache entries.
-class MySystemBase : public SystemBase {
- public:
- private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<double>>();
-  }
-
-  void DoValidateAllocatedContext(const ContextBase&) const final {}
-  void DoCheckValidContext(const ContextBase&) const final {}
-};
-
 class LeafContextTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_.set_time(kTime);
 
     // Input
-    SetNumInputPorts(kNumInputPorts, &system_, &context_);
+    SetNumInputPorts(kNumInputPorts, &context_);
 
-    // Fixed input values get new tickets -- manually update the System
-    // ticket counter here so this test can add more System things later.
+    // Fixed input values get new tickets -- manually update the ticket
+    // counter here so this test can add more ticketed things later.
     // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
       context_.FixInputPort(
           i, std::make_unique<BasicVector<double>>(kInputSize[i]));
-      system_.assign_next_dependency_ticket();
+      ++next_ticket_;
     }
 
     // Reserve a continuous state with five elements.
@@ -135,16 +122,14 @@ class LeafContextTest : public ::testing::Test {
   // Mocks up some input ports sufficient to allow us to give them fixed values.
   // This code mimics SystemBase::CreateSourceTrackers.
   template <typename T>
-  static void SetNumInputPorts(int n, SystemBase* system, Context<T>* context) {
+  void SetNumInputPorts(int n, Context<T>* context) {
     for (InputPortIndex i(0); i < n; ++i) {
-      context->AddInputPort(i, system->assign_next_dependency_ticket());
+      context->AddInputPort(i, next_ticket_++);
     }
   }
 
-  MySystemBase system_;
-  std::unique_ptr<ContextBase> context_ptr_ = system_.AllocateContext();
-  LeafContext<double>& context_ =
-      dynamic_cast<LeafContext<double>&>(*context_ptr_);
+  DependencyTicket next_ticket_{internal::kNextAvailableTicket};
+  LeafContext<double> context_;
   std::unique_ptr<AbstractValue> abstract_state_;
 };
 
@@ -263,9 +248,8 @@ TEST_F(LeafContextTest, GetNumStates) {
 }
 
 TEST_F(LeafContextTest, GetVectorInput) {
-  MySystemBase system;
   LeafContext<double> context;
-  SetNumInputPorts(2, &system, &context);
+  SetNumInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, BasicVector<double>::Make({5, 6}));
@@ -280,9 +264,8 @@ TEST_F(LeafContextTest, GetVectorInput) {
 }
 
 TEST_F(LeafContextTest, GetAbstractInput) {
-  MySystemBase system;
   LeafContext<double> context;
-  SetNumInputPorts(2, &system, &context);
+  SetNumInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));

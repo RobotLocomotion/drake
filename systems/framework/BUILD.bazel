@@ -634,7 +634,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
-        ":framework_base",
         ":leaf_context",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
