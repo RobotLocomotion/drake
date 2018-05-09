@@ -89,7 +89,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//manipulation/util:world_sim_tree_builder",
-        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
+        "//multibody/benchmarks/kuka_iiwa_robot",
     ],
 )
 
