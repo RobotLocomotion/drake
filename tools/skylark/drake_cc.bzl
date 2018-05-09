@@ -355,15 +355,18 @@ def drake_cc_package_library(
         testonly = 0,
         visibility = ["//visibility:public"]):
     """Creates a rule to declare a C++ "package" library -- a library whose
-    target name matches the current package and whose dependencies are
-    (usually) all of the other drake_cc_library targets in the current package.
-    In short, a library named //foo/bar (short for //foo/bar:bar) that
-    conveniently provides all of the C++ code from the //foo/bar package in one
-    place.
+    name matches the current Bazel package name (i.e., directory name) and
+    whose dependencies are (usually) all of the other drake_cc_library targets
+    in the current package.  In short, e.g., creates a library named
+    //foo/bar:bar that conveniently provides all of the C++ code from the
+    //foo/bar package in one place.
 
     Using this macro documents the intent that the library is a summation of
     everything in the current package and enables Drake's linter rules to
     confirm that all of the drake_cc_library targets have been listed as deps.
+
+    Within Drake, by convention, every package (i.e., directory) that has any
+    C++ code should call this macro to create a library for its package.
 
     The name must be the same as the final element of the current package.
     This rule does not accept srcs, hdrs, etc. -- only deps.
