@@ -193,6 +193,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree:unit_inertia",
     "//multibody/parsers:parsers",
     "//multibody/parsing:frame_cache",
+    "//multibody/parsing:parsing",
     "//multibody/parsing:sdf_parser",
     "//multibody/parsing:sdf_spec",
     "//multibody/rigid_body_plant:compliant_contact_model",
