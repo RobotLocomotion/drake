@@ -127,7 +127,7 @@ drake_cc_library(
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
     ],
-    # Hide this library outside of this package; users shoud depend on
+    # Hide this library outside of this package; users should depend on
     # ":multibody_tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
