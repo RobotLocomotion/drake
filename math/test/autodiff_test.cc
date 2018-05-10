@@ -25,10 +25,9 @@ class AutodiffTest : public ::testing::Test {
   void SetUp() override {
     vec_.resize(2);
 
-    // Arbitrarily choose the values at which the derivative is to be evaluated
-    // for vec_[0] and vec_[1] to be 7.0 and 9.0, respectively.
-    vec_[0].value() = 7.0;
-    vec_[1].value() = 9.0;
+    // Set up to evaluate the derivatives at the values v0 and v1.
+    vec_[0].value() = v0_;
+    vec_[1].value() = v1_;
 
     // Provide enough room for differentiation with respect to both variables.
     vec_[0].derivatives().resize(2);
@@ -65,15 +64,19 @@ class AutodiffTest : public ::testing::Test {
 
   VectorX<Scalar> vec_;                 // Array of variables.
   VectorX<Scalar> output_calculation_;  // Functions that depend on variables.
+
+  // Arbitrary values 7 and 9 will be used as test data.
+  const double v0_ = 7.0;
+  const double v1_ = 9.0;
 };
 
 // Tests that ToValueMatrix extracts the values from the autodiff.
 TEST_F(AutodiffTest, ToValueMatrix) {
   const VectorXd values = autoDiffToValueMatrix(output_calculation_);
   VectorXd expected(3);
-  expected[0] = cos(7) + sin(7) * cos(7) / 9;
-  expected[1] = sin(7) + 9;
-  expected[2] = 7 * 7 + 9 * 9 * 9;
+  expected[0] = cos(v0_) + sin(v0_) * cos(v0_) / v1_;
+  expected[1] = sin(v0_) + v1_;
+  expected[2] = v0_ * v0_ + v1_ * v1_ * v1_;
   EXPECT_TRUE(
       CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute))
       << values;
@@ -88,19 +91,20 @@ TEST_F(AutodiffTest, ToGradientMatrix) {
   // Function 0: y0 = cos(v0) + sin(v0) * cos(v0) / v1
   // Function 1: y1 = sin(v0) + v1.
   // Function 2: y2 = v0^2 + v1^3.
-  // Calculate partial derivatives of y0, y1, y2 with respect to v0, v1, v2.
+  // Calculate partial derivatives of y0, y1, y2 with respect to v0, v1.
   // ∂y0/∂v0 = -sin(v0) + (cos(v0)^2 - sin(v0)^2) / v1
-  expected(0, 0) = -sin(7) + (cos(7) * cos(7) - sin(7) * sin(7)) / 9;
+  expected(0, 0) =
+      -sin(v0_) + (cos(v0_) * cos(v0_) - sin(v0_) * sin(v0_)) / v1_;
   // ∂y0/∂v1 = -sin(v0) * cos(v0) / v1^2
-  expected(0, 1) = -sin(7) * cos(7) / (9 * 9);
+  expected(0, 1) = -sin(v0_) * cos(v0_) / (v1_ * v1_);
   // ∂y1/∂v0 = cos(v0).
-  expected(1, 0) = cos(7);
+  expected(1, 0) = cos(v0_);
   // ∂y1/∂v1 = 1.
   expected(1, 1) = 1.0;
   // ∂y2/∂v0 = 2 * v0.
-  expected(2, 0) = 2 * 7;
+  expected(2, 0) = 2 * v0_;
   // ∂y2/∂v1 = 3 * v1^2.
-  expected(2, 1) = 3 * 9 * 9;
+  expected(2, 1) = 3 * v1_ * v1_;
 
   EXPECT_TRUE(
       CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute))
@@ -125,8 +129,7 @@ GTEST_TEST(AdditionalAutodiffTest, DiscardGradient) {
   EXPECT_TRUE(CompareMatrices(test3out, test2));
 
   Eigen::Isometry3d test5 = Eigen::Isometry3d::Identity();
-  EXPECT_TRUE(
-      CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
+  EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).linear(), test5.linear()));
   EXPECT_TRUE(CompareMatrices(DiscardGradient(test5).translation(),
                               test5.translation()));
 
