@@ -163,6 +163,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/acrobot:analytical_acrobot",
     "//multibody/benchmarks/acrobot:make_acrobot_plant",
     "//multibody/benchmarks/free_body:free_body",
+    "//multibody/benchmarks/inclined_plane:inclined_plane",
     "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
     "//multibody/benchmarks/mass_damper_spring:mass_damper_spring_analytical_solution",  # noqa
     "//multibody/benchmarks/pendulum:pendulum",
