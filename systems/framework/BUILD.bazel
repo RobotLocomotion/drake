@@ -842,4 +842,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "userscalar_acceptance_test",
+    deps = [
+        ":framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
 add_lint_tests()
