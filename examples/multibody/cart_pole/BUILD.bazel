@@ -1,0 +1,60 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load(
+    "@drake//tools/vector_gen:vector_gen.bzl",
+    "drake_cc_vector_gen_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_vector_gen_library(
+    name = "cart_pole_params",
+    srcs = ["cart_pole_params.named_vector"],
+)
+
+drake_cc_binary(
+    name = "cart_pole_passive_simulation",
+    srcs = ["cart_pole_passive_simulation.cc"],
+    add_test_rule = 1,
+    data = [
+        "box_2x1.obj",
+        "cart_pole.sdf",
+    ],
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cart_pole_test",
+    data = ["cart_pole.sdf"],
+    deps = [
+        ":cart_pole_params",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+    ],
+)
+
+add_lint_tests()
