@@ -16,7 +16,7 @@ drake_cc_binary(
     test_rule_args = ["--target_realtime_rate=0.0"],
     deps = [
         "//geometry:geometry_visualization",
-        "//multibody/benchmarks/pendulum:make_pendulum_plant",
+        "//multibody/benchmarks/pendulum",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:semi_explicit_euler_integrator",
