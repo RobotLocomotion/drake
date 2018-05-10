@@ -287,7 +287,7 @@ drake_cc_googletest(
         ":multibody_tree",
         "//common/test_utilities",
         "//math:gradient",
-        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
+        "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
