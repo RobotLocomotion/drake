@@ -7,7 +7,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
@@ -27,7 +26,7 @@ template <typename T>
 void OutputPort<T>::Calc(const Context<T>& context,
                          AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
-  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+  DRAKE_ASSERT_VOID(system_base_.ThrowIfContextNotCompatible(context));
   DRAKE_ASSERT_VOID(CheckValidOutputType(*value));
 
   DoCalc(context, value);
@@ -35,17 +34,21 @@ void OutputPort<T>::Calc(const Context<T>& context,
 
 template <typename T>
 const AbstractValue& OutputPort<T>::Eval(const Context<T>& context) const {
-  DRAKE_ASSERT_VOID(get_system().CheckValidContext(context));
+  DRAKE_ASSERT_VOID(system_base_.ThrowIfContextNotCompatible(context));
   return DoEval(context);
 }
 
 template <typename T>
-OutputPort<T>::OutputPort(const System<T>& system, PortDataType data_type,
-                          int size)
+OutputPort<T>::OutputPort(
+    const System<T>& system,
+    const internal::SystemMessageInterface& system_base,
+    OutputPortIndex index, PortDataType data_type, int size)
     : system_(system),
-      index_(system.get_num_output_ports()),
+      system_base_(system_base),
+      index_(index),
       data_type_(data_type),
       size_(size) {
+  DRAKE_DEMAND(static_cast<const void*>(&system) == &system_base);
   if (size_ == kAutoSize) {
     DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
   }
@@ -55,8 +58,8 @@ template <typename T>
 std::string OutputPort<T>::GetPortIdString() const {
   std::ostringstream oss;
   oss << "output port " << this->get_index() << " of "
-      << NiceTypeName::Get(this->get_system()) + " System " +
-             this->get_system().GetSystemPathname();
+      << NiceTypeName::Get(system_base_) + " System " +
+         system_base_.GetSystemPathname();
   return oss.str();
 }
 
