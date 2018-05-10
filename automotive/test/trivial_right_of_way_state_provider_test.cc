@@ -4,33 +4,39 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/test_utilities/rules_right_of_way_compare.h"
+
 namespace drake {
 namespace automotive {
 namespace {
 
 using maliput::api::rules::RightOfWayRule;
+using maliput::api::rules::RightOfWayStateProvider;
 
 GTEST_TEST(TrivialRightOfWayStateProviderTest, BasicTest) {
   TrivialRightOfWayStateProvider dut;
-  RightOfWayRule::Id id("foo");
+  const RightOfWayRule::Id kRuleId("foo");
+  const RightOfWayRule::State::Id kStateId("bar");
 
   // No rule with specified ID exists.
-  EXPECT_THROW(dut.GetState(id), std::out_of_range);
-  EXPECT_THROW(dut.SetState(id, RightOfWayRule::DynamicState::kUncontrolled),
-               std::out_of_range);
+  EXPECT_FALSE(dut.GetState(kRuleId).has_value());
+  EXPECT_THROW(dut.SetState(kRuleId, kStateId), std::out_of_range);
 
-  dut.AddState(id, RightOfWayRule::DynamicState::kGo);
-  EXPECT_EQ(dut.GetState(id), RightOfWayRule::DynamicState::kGo);
+  dut.AddState(kRuleId, kStateId);
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(
+      dut.GetState(kRuleId).value(),
+      (RightOfWayStateProvider::Result{kStateId, nullopt})));
 
   // Attempting to add duplicate state.
-  EXPECT_THROW(dut.AddState(id, RightOfWayRule::DynamicState::kStop),
-               std::logic_error);
+  EXPECT_THROW(dut.AddState(kRuleId, kStateId), std::logic_error);
 
-  dut.SetState(id, RightOfWayRule::DynamicState::kPrepareToStop);
-  EXPECT_EQ(dut.GetState(id), RightOfWayRule::DynamicState::kPrepareToStop);
+  const RightOfWayRule::State::Id kOtherStateId("baz");
+  dut.SetState(kRuleId, kOtherStateId);
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(
+      dut.GetState(kRuleId).value(),
+      (RightOfWayStateProvider::Result{kOtherStateId, nullopt})));
 }
 
 }  // namespace
 }  // namespace automotive
 }  // namespace drake
-
