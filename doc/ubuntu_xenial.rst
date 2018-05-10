@@ -9,5 +9,5 @@ Prerequisite setup is automated. Simply run::
     sudo ./setup/ubuntu/16.04/install_prereqs.sh
 
 You may need to respond to interactive prompts to confirm that you agree to add
-the Drake `apt` repository (``https://drake-apt.csail.mit.edu/``) to your
-system, for packages such as ``dreal``, ``libibex-dev``, and others.
+the Drake `apt` repository (``https://drake-apt.csail.mit.edu/xenial/``) to your
+system for certain development packages.

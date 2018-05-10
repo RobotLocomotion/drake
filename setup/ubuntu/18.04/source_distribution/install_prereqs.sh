@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Install development prerequisites for source distributions of Drake on
-# Ubuntu 16.04.
+# Ubuntu 18.04 (Bionic). Note that this is currently an UNSUPPORTED platform.
 #
 # The development and runtime prerequisites for binary distributions should be
 # installed before running this script.
@@ -22,7 +22,7 @@ EOF
 )
 
 wget -O - https://drake-apt.csail.mit.edu/drake.pub.gpg | apt-key add
-echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/xenial xenial main' > /etc/apt/sources.list.d/drake.list
+echo 'deb [arch=amd64] https://drake-apt.csail.mit.edu/bionic bionic main' > /etc/apt/sources.list.d/drake.list
 
 apt-get update
 apt-get install --no-install-recommends $(cat "${BASH_SOURCE%/*}/packages.txt" | tr '\n' ' ')
