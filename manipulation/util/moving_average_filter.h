@@ -49,6 +49,18 @@ class MovingAverageFilter {
    */
   T Update(const T& new_data);
 
+  /**
+   * Returns a non-mutable reference to the data window.
+   *
+   */
+  const std::queue<T>& window() const { return window_; }
+
+  /**
+   * Returns the most recent result of the averaging filter.
+   *
+   */
+  T Result();
+
  private:
   std::queue<T> window_;
   int window_size_{0};
