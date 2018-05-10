@@ -160,6 +160,7 @@ LIBDRAKE_COMPONENTS = [
     "//math:vector3_util",
     "//math:wrap_to",
     "//multibody/benchmarks/acrobot:acrobot",
+    "//multibody/benchmarks/acrobot:analytical_acrobot",
     "//multibody/benchmarks/acrobot:make_acrobot_plant",
     "//multibody/benchmarks/free_body:free_body",
     "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",

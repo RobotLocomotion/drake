@@ -255,7 +255,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
     ],
 )
 
@@ -264,7 +264,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
     ],
 )
 
