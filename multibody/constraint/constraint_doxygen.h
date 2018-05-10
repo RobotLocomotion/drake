@@ -2,50 +2,41 @@
 
 This documentation describes the types of multibody constraints supported in
 Drake, including specialized constraint types- namely point-based contact
-constraints- which allow Drake's constraint solver to readily incorporate the
+constraints that allow Drake's constraint solver to readily incorporate the
 Coulomb friction model.
 
 Drake's constraint system helps solve computational dynamics problems with
 algebraic constraints, like differential algebraic equations:<pre>
-\dot{x} = f(x, t, \lambda)
-0 = g(x, t, lambda)
+ẋ = f(x, t, λ)
+0 = g(x, t, λ)
 </pre>
-where `g()` corresponds to one or more constraint equations and \lambda
+where `g()` corresponds to one or more constraint equations and λ
 is typically interpretable as "forces" that enforce the constraints. Drake's
 constraint system permits solving initial value problems subject to such
 constraints and does so in a manner very different from "smoothing methods"
 (also known as "penalty methods"). Smoothing methods have traditionally required
-significant computation to maintain `g = 0` to high accuracy (yielding what is
-known in ODE and DAE literature as a "computationally stiff system").   
+significant computation to maintain `g = 0` to high accuracy (and typically
+yielding what is known in ODE and DAE literature as a "computationally stiff
+system").   
 
 We also provide the core components of an efficient first-order integration
-scheme for a system with non-rigid (i.e., compliant)- yet still stiff-
-unilateral constraints. Such a system arises in many contact problems, where
-the correct modeling parameters would yield a computationally stiff system.
-The integration scheme is low-accuracy but very stable for mechanical systems,
-even when the algebraic variables (i.e., the constraint forces) are computed to
-low accuracy. 
+scheme for a system with both compliant and rigid unilateral constraints. Such
+a system arises in many contact problems, where the correct modeling parameters
+would yield a computationally stiff system. The integration scheme is
+low-accuracy but very stable for mechanical systems, even when the algebraic
+variables (i.e., the constraint forces) are computed to low accuracy. 
 
-allows algebraic constraints to be imposed at both the acceleration-level
-(for systems exhibiting smooth dynamics over finite intervals) and at the
-velocity-level, both for solving impact problems and for solving computational
-dynamics problems using time discretization schemes.  
-
-- specialization for mechanical systems
-
-We caution the reader that these
-distinctions are orthogonal to whether a constraint is holonomic or
-nonholonomic. This issue will be discussed further in @ref constraint_types.
-
- This discussion will encompass:
+This discussion will provide necessary background material in:
  - @ref constraint_types
  - @ref constraint_stabilization
- - @ref constraint_regularization
  - @ref constraint_Jacobians
  - @ref contact_surface_constraints
  - @ref frictional_constraints
  - @ref generic_bilateral
  - @ref generic_unilateral
+
+and will delve into the constraint solver functionality in:
+ - @ref discretization
 
  A prodigious number of variables will be referenced throughout the discussion
  on constraints. Variables common to both acceleration-level constraints and
@@ -80,7 +71,7 @@ nonholonomic. This issue will be discussed further in @ref constraint_types.
 - β       A non-negative, real valued scalar used to correct position constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
-- γ,ε     Non-negative, real valued scalars used to regularize constraints.
+- γ,γ     Non-negative, real valued scalars used to regularize constraints.
 */
 
 /** @defgroup constraint_types Constraint types
@@ -109,9 +100,9 @@ Additionally, constraints posed at any level can impose constraints on the
 constraint forces, λ. For example, the position-level constraint:<pre>
 gₚ(t,q;λ)
 </pre>
-could be used to enforce q > 0, λ > 0, and qλ = 0, a triplet of conditions
+could be used to enforce q ≥ 0, λ ≥ 0, and qλ = 0, a triplet of conditions
 useful for, e.g., ensuring that a joint range-of-motion limit is respected
-(q >= 0), guaranteeing that no constraint force is applied if the constraint
+(q ≥ 0), guaranteeing that no constraint force is applied if the constraint
 is not active (q > 0 implies λ = 0), and guaranteeing that the constraint force
 can only push the connected links apart at the joint rather than act to "glue"
 them together (λ > 0).
@@ -216,98 +207,6 @@ than science (see [Ascher 1995]). Given desired ω₀ and ζ, α and β are set 
 the equations above.
 */
 
-/** @defgroup constraint_regularization Constraint regularization and softening
-@ingroup constraint_overview
-
-TODO: This section should focus on time discretized systems with constraints.
-
-It can be both numerically advantageous and a desirable modeling feature to
-regularize constraints. For example, consider modifying a unilateral
-complementarity constraint imposed on velocity/impulsive force variables
-from:<pre>
-0 ≤ gᵥ(t,q;v,λ)  ⊥  λ ≥ 0
-</pre>
-to:<pre>
-0 ≤ gᵥ(t,q;v,λ) + ελ  ⊥  λ ≥ 0
-</pre>
-where q(k) and v(k) are discrete time variables (a series of variables defined
-only at integer values of k), λ is an impulsive force, and ε is a non-negative
-scalar; alternatively, ε can represent a diagonal matrix with the same number
-of rows/columns as the dimension of gᵥ and λ, permitting different coefficients
-for each constraint equation. With ελ > 0, it becomes easier to satisfy the
-constraint gᵥ(t,q;v,λ) + ελ ≥ 0, though the resulting v and λ may not quite
-satisfy gᵥ ≥ 0: gᵥ can become slightly negative. As hinted above,
-regularization can confer two benefits. First, the resulting complementarity
-problems become easier to solve; more importantly, any complementarity problem
-becomes solvable given sufficient regularization [Cottle 1992].
-
-Finally, this section applies particularly to constraints upon discretized
-systems. The combination of discretization, regularization, and stabilization
-yields an approach for solving otherwise computationally stiff systems using
-atypically large integration step sizes. The compliant effects that 
-regularization introduces at joint stops and between contacting bodies) are
-often desirable. Not all constraints can be intuitively softened.
- 
-[Catto 2011] showed how the combination of constraint softening, constraint
-stabilization, and a particular integration scheme results in numerically
-stable spring-like constraints. For a one-dimensional particle with dynamics
-defined by: 
-<pre>
-mẍ = f
-</pre>
-The "hard constraint" x = 0 can be added, which Catto differentiates once with
-respect to time, resulting in the equations:
-<pre>
-mẍ = f + λ
-ẋ = 0
-</pre>
-This hard constraint can be regularized and stabilized using γ, which takes the
-place of ε but provides identical functionality (albeit not identical units),
-resulting in:
-<pre>
-mẍ = f + λ
-ẋ + xϱ/h + γλ = 0
-</pre>
-where `h` will be used for discretization (see immediately below) and ϱ ∈ [0,1].
-[Catto 2011] showed that a particular discretization of this system yields the
-dynamics of a harmonic oscillator by solving the following system of equations
-for ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
-<pre>
-ẋ(t+h) = ẋ(t) + hf/m + hλ/m
-ẋ(t+h) + x(t)ϱ/h + γλ = 0
-x(t+h) = x(t) + hẋ(t+h)
-</pre>
-γ and ϱ can be selected to effect the desired undamping angular frequency and
-damping ratio (a process also described in @ref constraint_stabilization) using
-the formula:<pre>
-γ = 1 / (2m̂ζω + hm̂ω²)
-ϱ = hm̂ω²γ
-</pre>
-where m̂ is the *effective inertia* of the constraint and is determined
-by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅  (and 1 = G ∈ ℝ¹ˣⁿ in this example) is the partial
-derivative of the constraint function with respect to the quasi-coordinates (see
-@ref quasi_coordinates; equivalently, G maps generalized velocities to the time
-derivative of the constraints, i.e., ġₚ) and M is the generalized inertia
-matrix. Considering gₚ(.) to be a scalar function for simplicity of presentation
-should make it clear that GM⁻¹Gᵀ would be a scalar as well. Thus m̂ = 1/m for
-this particular forced mass-spring-damper system.
-
-While Catto studied a mass-spring system, these results apply to general
-multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing a
-time stepping scheme in Drake using
-@ref drake::multibody::constraint::ConstraintSolver "ConstraintSolver", one
-would use ω and ζ to correspondingly set
-@ref drake::multibody::constraint::ConstraintVelProblemData::gammaN "gammaN" (or
-@ref drake::multibody::constraint::ConstraintVelProblemData::gammaL "gammaL")
-to γ and
-@ref drake::multibody::constraint::ConstraintVelProblemData::kN "kN"
-(@ref drake::multibody::constraint::ConstraintVelProblemData::kL "kL") to
-ϱ/h times the signed constraint distance (using, e.g., signed distance for the
-point contact non-interpenetration constraint).
-
-Finally, note that Drake does not regularize bilateral constraints.
-*/
-
 /** @defgroup constraint_Jacobians Constraint Jacobian matrices
 @ingroup constraint_overview
 
@@ -372,18 +271,17 @@ with a non-adhesive contact model.
 
 @image html multibody/constraint/images/colliding-boxes.png "Figure 1: Illustration of the interpretation of non-interpenetration constraints when two boxes are interpenetrating (right). The boxes prior to contact are shown at left, and are shown in the middle figure at the initial time of contact; the surface normal n̂ is shown in this figure as well. The bodies interpenetrate over time as the constraint becomes violated (e.g., by constraint drift). Nevertheless, n̂ is tracked over time from its initial direction (and definition relative to the blue body). σ represents the signed distance the bodies must be translated along n̂ so that they are osculating (kissing)."
 
-<h4>Constraint regularization and softening</h4>
-TODO: This section needs to be patched up
-As discussed in @ref constraint_regularization, the non-interpenetration 
-constraint can be regularized or softened by adding a term to, e.g., the
-second time derivative of the equation:
+<h4>Constraint softening</h4>
+As discussed in @ref discretization, the non-interpenetration
+constraint can be softened by adding a term to the time derivative of the
+equation:
 <pre>
-0 ≤ g̈ₚ  ⊥  λ ≥ 0
+0 ≤ ġₚ  ⊥  λ ≥ 0
 </pre>
 resulting in:<pre>
-0 ≤ g̈ₚ + ελ  ⊥  λ ≥ 0
+0 ≤ ġₚ + γλ  ⊥  λ ≥ 0
 </pre>
-for ε ≥ 0.
+for γ ≥ 0.
 
 <h4>Constraint stabilization</h4>
 As discussed in @ref constraint_stabilization, the drift induced by solving an
@@ -398,23 +296,8 @@ Baumgarte Stabilization would be layered on top of this equation, resulting in:
 0 ≤ g̈ₚ + 2αġₚ + β²gₚ  ⊥  λ ≥ 0
 </pre>
 
-<h4>Effects of constraint regularization/softening and stabilization on
+<h4>Effects of constraint softening and stabilization on
 constraint problem data</h4>
-
-TODO: This needs to be corrected.
-* gammaN will allow acceleration-level constraints to be regularized, which
-  just does not sound very useful. We should remove gammaN from the
-  acceleration level constraints.
- 
-* we want one stiffness and one damping coefficient for each constraint.
-
-* that could be used to get Baumgarte stabilization: could just set stiffness
-  and damping and Baumgarte is set automatically!
-- except that stiffness and damping only acts one way (the constraint is
-  otherwise rigid). So this doesn't yield more accuracy. But people will
-  want to do it anyway: so, yes, let's make it apply to B.S. also. 
-
-* This also means that we'll need constraint evaluations at q(t), v(t). 
 
   - Constraint regularization/softening is effected through `gammaN`
   - Constraint stabilization is effected through `kN`
@@ -434,48 +317,6 @@ are modeled by the Coulomb friction model, which requires setting few
 parameters (sticking and sliding friction coefficients) and captures important
 stick-slip transition phenomena.
 
-<h4>The Coulomb friction model (for sliding)</h4>
-Incorporating the Coulomb friction model for sliding contact between dry
-surfaces introduces the constraint equation:<pre>
-μλᴺ = λᶜ
-</pre>
-where λᶜ is the force due to Coulomb friction, μ is the (dimensionless)
-Coulomb coefficient of friction, and λᴺ corresponds to the constraint force
-applied along the surface normal. The frictional force λᶜ is applied against the
-direction of sliding between two bodies. When there is no sliding, this equation
-does not apply; those cases can be treated using special equations for stiction
-(see the next section), by applying no force at all, or by using a
-"regularized" Coulomb friction model (using e.g., the hyperbolic tangent
-function).
-
-Drake's constraint solver solves for λᶜ by substituting it with μλᴺ (i.e., the
-coefficient of friction times the force applied along the surface normal) in the
-multi-body dynamics equations. As a concrete example, consider
-a system consisting for two bodies sliding at a single point of contact with
-surface normal (n̂) and sliding direction q̂. If all other (non-contact related)
-forces are captured by the generalized force f, the dynamics of that system
-could be written
-as:<pre>
-Mv̇ = f + Nᵀλᴺ - (Qᵀ)λᶜ
-</pre>
-where M is the generalized inertia matrix, Nᵀ is the generalized wrench on the
-bodies that results from applying a unit force along n̂ to the bodies at the
-point of contact (i.e., the geometric Jacobian matrix that transforms the
-generalized velocity to the relative velocity between the two bodies at the
-point of contact and projected along n̂), and Qᵀ is the generalized wrench on
-the bodies that results from applying a unit force along q̂. Instead, Drake uses
-the equivalent equation:
-<pre>
-Mv̇ = f + (Nᵀ - μQᵀ)λᴺ
-</pre>
-which allows the constraint solver to avoid explicitly solving for λᶜ.
-This optimization explains the provenance of `N_minus_muQ_transpose_mult` (see
-@ref drake::multibody::constraint::ConstraintAccelProblemData
-"ConstraintAccelProblemData").
-
-Note that *this aspect of the Coulomb friction model does not apply in
-velocity-level constraint equations*, in which contacts can transition from
-sliding to sticking (and vice versa) instantaneously.
 <h4>Non-sliding constraints</h4>
 Non-sliding constraints for bodies can correspond to constraints introduced
 for bodies in stiction or rolling at a point of contact. These
@@ -491,6 +332,7 @@ by the following pair of constraints:<pre>
 where bₛ and bₜ are basis vectors in ℝ³ that span the contact tangent
 plane and pᵢ, pⱼ ∈ ℝ³ represent a point of contact between bodies i and j.
 
+<h4>Non-sliding friction constraints at the acceleration-level</h4>
 The non-sliding constraints can be categorized into kinematic constraints on
 tangential motion and frictional force constraints. Such a grouping for a 3D
 contact is provided below:<pre>
@@ -541,7 +383,7 @@ where Λ is roughly interpretable as the residual tangential acceleration
 at the contact.  From this construction, the frictional force to be applied
 along direction i will be equal to λᵇᵢ - λᵇₙᵣ₊ᵢ.
 
-<h4>Friction constraints at the velocity-level</h4>
+<h4>Sticking and sliding friction constraints at the velocity-level</h4>
 Since modifying velocity variables can cause constraints to change from sticking
 and sliding and vice versa, Drake's velocity-level formulation treats both
 sliding and non-sliding contact constraints indistinguishably using a
@@ -563,10 +405,51 @@ residual tangential velocity post-impact (i.e., after those impulsive forces
 are applied). The remainder of the discussion in the previous section, apart
 from these modifications to the constraints, still applies.
 
-<h4>Effects of constraint regularization/softening and stabilization on
-constraint problem data</h4>
+<h4>Sliding friction constraints at the acceleration level</h4>
+Incorporating the Coulomb friction model for sliding contact between dry
+surfaces introduces the constraint equation:<pre>
+μλᴺ = λᶜ
+</pre>
+where λᶜ is the force due to Coulomb friction, μ is the (dimensionless)
+Coulomb coefficient of friction, and λᴺ corresponds to the constraint force
+applied along the surface normal. The frictional force λᶜ is applied against the
+direction of sliding between two bodies. When there is no sliding, this equation
+does not apply; those cases can be treated using special equations for stiction
+(see the next section), by applying no force at all, or by using a
+"regularized" Coulomb friction model (using e.g., the hyperbolic tangent
+function).
 
-TODO: This needs to be corrected.
+Drake's constraint solver solves for λᶜ by substituting it with μλᴺ (i.e., the
+coefficient of friction times the force applied along the surface normal) in the
+multi-body dynamics equations. As a concrete example, consider
+a system consisting for two bodies sliding at a single point of contact with
+surface normal (n̂) and sliding direction q̂. If all other (non-contact related)
+forces are captured by the generalized force f, the dynamics of that system
+could be written
+as:<pre>
+Mv̇ = f + Nᵀλᴺ - (Qᵀ)λᶜ
+</pre>
+where M is the generalized inertia matrix, Nᵀ is the generalized wrench on the
+bodies that results from applying a unit force along n̂ to the bodies at the
+point of contact (i.e., the geometric Jacobian matrix that transforms the
+generalized velocity to the relative velocity between the two bodies at the
+point of contact and projected along n̂), and Qᵀ is the generalized wrench on
+the bodies that results from applying a unit force along q̂. Instead, Drake uses
+the equivalent equation:
+<pre>
+Mv̇ = f + (Nᵀ - μQᵀ)λᴺ
+</pre>
+which allows the constraint solver to avoid explicitly solving for λᶜ.
+This optimization explains the provenance of `N_minus_muQ_transpose_mult` (see
+@ref drake::multibody::constraint::ConstraintAccelProblemData
+"ConstraintAccelProblemData").
+
+Note that *this aspect of the Coulomb friction model does not apply in
+velocity-level constraint equations*, in which contacts can transition from
+sliding to sticking (and vice versa) instantaneously.
+
+<h4>Effects of constraint softening and stabilization on
+constraint problem data</h4>
 
 It is expected both that users will not wish to soften the frictional
 constraints and that constraint drift will remain sufficiently small that
@@ -648,19 +531,16 @@ formulation and yields the complementarity condition:<pre>
 For this simple range of motion constraint example, it will generally be
 the case that q̇ᵢ = vᵢ.
 
-TODO: This needs to be corrected.
-<h4>Constraint regularization and softening</h4>
-As discussed in @ref constraint_regularization, generic unilateral
-constraints can be regularized or softened by adding a term to, e.g., the
-second time derivative of the equation:
+<h4>Constraint softening</h4>
+As discussed in @ref discretization, generic unilateral constraints can be
+softened by adding a term to, e.g., the time derivative of the equation:
 <pre>
-0 ≤ g̈ₚ  ⊥  λᵢ ≥ 0
+0 ≤ ġₚ  ⊥  λᵢ ≥ 0
 </pre>
 resulting in:<pre>
-0 ≤ g̈ₚ + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ ġₚ + γλᵢ  ⊥  λᵢ ≥ 0
 </pre>
-for ε ≥ 0. This same concept applies equally well to the first time derivative
-of gₚ(.), as also discussed in @ref constraint_regularization.
+for γ ≥ 0.
 
 <h4>Constraint stabilization</h4>
 As discussed in @ref constraint_stabilization, the drift induced by solving an
@@ -669,15 +549,14 @@ mitigated through one of several strategies, one of which is Baumgarte
 Stabilization. The typical application of Baumgarte Stabilization will use the
 second time derivative of the complementarity condition (the regularization
 term from above is incorporated as well for purposes of illustration):<pre>
-0 ≤ g̈ₚ + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ + γλᵢ  ⊥  λᵢ ≥ 0
 </pre>
 Baumgarte Stabilization would be layered on top of this equation, resulting in:
 <pre>
-0 ≤ g̈ₚ + 2αġₚ + β²gₚ + ελᵢ  ⊥  λᵢ ≥ 0
+0 ≤ g̈ₚ + 2αġₚ + β²gₚ + γλᵢ  ⊥  λᵢ ≥ 0
 </pre>
 
-TODO: This needs to be corrected.
-<h4>Effects of constraint regularization/softening and stabilization on
+<h4>Effects of constraint softening and stabilization on
 constraint problem data</h4>
 
   - Constraint regularization/softening is effected through `gammaL`
@@ -685,6 +564,84 @@ constraint problem data</h4>
   - Note that *neither Baumgarte Stabilization nor constraint regularization/
     softening affects the definition of gₚ(.)'s Jacobian* operators, `L_mult`
     and `L_transpose_mult`.
+*/
+
+/** @defgroup discretization A stable discretization strategy 
+@ingroup constraint_overview
+
+Consider modifying a unilateral complementarity constraint imposed on
+velocity/impulsive force variables from:<pre>
+0 ≤ gᵥ(t,q;v,λ)  ⊥  λ ≥ 0
+</pre>
+to:<pre>
+0 ≤ gᵥ(t,q;v,λ) + γλ  ⊥  λ ≥ 0
+</pre>
+where q(k) and v(k) are discrete time variables (a series of variables defined
+only at integer values of k), λ is an impulsive force, and γ is a non-negative
+scalar; alternatively, γ can represent a diagonal matrix with the same number
+of rows/columns as the dimension of gᵥ and λ, permitting different coefficients
+for each constraint equation. With γλ > 0, it becomes easier to satisfy the
+constraint gᵥ(t,q;v,λ) + γλ ≥ 0, though the resulting v and λ may not quite
+satisfy gᵥ ≥ 0: gᵥ can become slightly negative. Any complementarity problem
+becomes solvable given sufficient such *regularization* [Cottle 1992].
+
+[Catto 2011] showed how this combination of regularization, constraint
+stabilization, and discretization (namely, a particular first-order integration
+scheme) results in numerically stable compliant constraints for any amount of
+stiffness, *even fully rigid constraints*. For a one-dimensional particle with
+dynamics defined by:
+<pre>
+mẍ = f
+</pre>
+The "hard constraint" x = 0 can be added, which Catto differentiates once with
+respect to time, resulting in the equations:
+<pre>
+mẍ = f + λ
+ẋ = 0
+</pre>
+This hard constraint can be regularized and stabilized using γ resulting in:
+<pre>
+mẍ = f + λ
+ẋ + xϱ/h + γλ = 0
+</pre>
+where `h` will be used for discretization (see immediately below) and ϱ ∈ [0,1].
+[Catto 2011] showed that this particular discretization of this system yields
+the dynamics of a harmonic oscillator by solving the following system of
+equations for ẋ(t+h), x(t+h), and λ (thereby yielding an integration scheme).
+<pre>
+ẋ(t+h) = ẋ(t) + hf/m + hλ/m
+ẋ(t+h) + x(t)ϱ/h + γλ = 0
+x(t+h) = x(t) + hẋ(t+h)
+</pre>
+γ and ϱ can be selected to effect the desired undamping angular frequency and
+damping ratio (a process also described in @ref constraint_stabilization) using
+the formula:<pre>
+γ = 1 / (2m̂ζω + hm̂ω²)
+ϱ = hm̂ω²γ
+</pre>
+where m̂ is the *effective inertia* of the constraint and is determined
+by 1/(GM⁻¹Gᵀ), where G = ∂c/∂q̅  (and 1 = G ∈ ℝ¹ˣⁿ in this example) is the
+partial derivative of the constraint function with respect to the
+quasi-coordinates (see @ref quasi_coordinates; equivalently, G maps generalized
+velocities to the time derivative of the constraints, i.e., ġₚ) and M is the
+generalized inertia matrix. Considering gₚ(.) to be a scalar function for
+simplicity of presentation should make it clear that GM⁻¹Gᵀ would be a scalar as
+well. Thus m̂ = 1/m for this particular forced mass-spring-damper system.
+
+While Catto studied a mass-spring system, these results apply to general
+multibody systems as well, as discussed in [Lacoursiere 2007]. Implementing such
+a discretization scheme in Drake using
+@ref drake::multibody::constraint::ConstraintSolver "ConstraintSolver", one
+would use ω and ζ to correspondingly set
+@ref drake::multibody::constraint::ConstraintVelProblemData::gammaN "gammaN" (or
+@ref drake::multibody::constraint::ConstraintVelProblemData::gammaL "gammaL")
+to γ and
+@ref drake::multibody::constraint::ConstraintVelProblemData::kN "kN"
+(@ref drake::multibody::constraint::ConstraintVelProblemData::kL "kL") to
+ϱ/h times the signed constraint distance (using, e.g., signed distance for the
+point contact non-interpenetration constraint).
+
+Finally, note that Drake does not regularize bilateral constraints.
 */
 
 /** @defgroup constraint_references References
