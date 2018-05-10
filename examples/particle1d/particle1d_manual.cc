@@ -15,16 +15,6 @@ Particle1dManual<T>::Particle1dManual() {
 }
 
 // -----------------------------------------------------------------------------
-/*
-template <typename T>
-typename Particle1dManual<T>::ParticleData Particle1dManual<T>::OutputData() {
-  ParticleData output_particle_data;
-  output_particle_data.x = x_;
-  output_particle_data.F = F_;
-  return output_particle_data;
-}*/
-
-// -----------------------------------------------------------------------------
 template<typename T>
 void Particle1dManual<T>::CalcDerivativesToStateDt(const T t, const T state[],
                                                    T stateDt[]) {
@@ -52,7 +42,7 @@ void Particle1dManual<T>::SetVariablesFromState(const T state[]) {
 template
 class Particle1dManual<double>;
 template
-class Particle1dManual<drake::AutoDiffXd>;
+class Particle1dManual<AutoDiffXd>;
 
 } // namespace particle1d
 } // namespace examples

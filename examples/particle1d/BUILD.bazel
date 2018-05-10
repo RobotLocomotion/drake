@@ -54,14 +54,14 @@ drake_cc_googletest(
     ],
 )
 
-#drake_cc_googletest(
-#    name = "particle1d_test",
-#    data = ["particle1d.urdf"],
-#    deps = [
-#        ":particle1d",
-#        "//common:find_resource",
-#        "//multibody:rigid_body_tree",
-#        "//multibody/parsers",
-#        "//multibody/rigid_body_plant",
-#    ],
-#)
+drake_cc_googletest(
+    name = "particle1d_test",
+    data = ["particle1d.urdf"],
+    deps = [
+        ":particle1d",
+        "//common:find_resource",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+    ],
+)

@@ -51,23 +51,20 @@ int DoMain() {
   // Build the diagram described by previous call to connect input/export port.
   auto diagram = builder.Build();
 
-  // Constructs a Simulator that advances this diagram through time.  Since no
-  // context is passed to the Simulator constructor, the Simulator will create
-  // and own a single Context that is compatible with this particle plant.
-  // Note: Below, we modify the Context with initial values for simulation.
-  // Note: The lifetime of diagram must exceed lifetime of simulator.
+  // Constructs a Simulator that advances this diagram through time.
   systems::Simulator<double> simulator(*diagram);
 
   // To set initial values for the simulation:
   // * Get the Simulator's context.
   // * Get the part of the Simulator's context associated with particle_plant.
   // * Get the part of the particle_plant's context associated with state.
-  // * Fill the state with initial values and call state.SetAtIndex(...).
+  // * Fill the state with initial values.
   systems::Context<double>& simulator_context = simulator.get_mutable_context();
   systems::Context<double>& particle_plant_context =
       diagram->GetMutableSubsystemContext(*particle_plant, &simulator_context);
   systems::BasicVector<double>& state =
       particle_plant->get_mutable_state(&particle_plant_context);
+
   const double x_init = 0.0;
   const double xDt_init = 0.0;
   state.SetAtIndex(0, x_init);

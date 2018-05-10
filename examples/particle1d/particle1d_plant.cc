@@ -35,9 +35,8 @@ void Particle1dPlant<T>::SetConstantParameters(
   // Finds the mass of a body based on the body's name and the model's name.
   // These names are used in the .urdf file (currently named particle1d.urdf).
   const auto body = tree.FindBody(body_name, model_name);
-  // Need to pass in the mass from the urdf
+  // Pass in the mass from the urdf.
   particle1d_.set_mass(body->get_mass());
-  //particle1d_.m = body->get_mass();
 }
 
 template <typename T>
@@ -56,14 +55,13 @@ void Particle1dPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T> *derivatives) const {
 
-  // Initialize basic arrays with the current state values from the context.
   const systems::BasicVector<T>& state = get_state(context);
   systems::BasicVector<T>& derivative = get_mutable_state(derivatives);
 
   int x_index = 0;
   int xDt_index = 1;
-  T state_array[2] = {0};
-  T stateDt_array[2] = {0};
+  T state_array[2];
+  T stateDt_array[2];
   state_array[x_index] = state.GetAtIndex(x_index);
   state_array[xDt_index] = state.GetAtIndex(xDt_index);
 

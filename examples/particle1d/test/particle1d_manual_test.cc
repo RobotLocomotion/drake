@@ -123,209 +123,75 @@ GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
 // Note: This unit test is more complicated than the previous unit test as it
 // checks partial derivative calculations (whereas the previous test only checks
 // AutoDiff values).
-GTEST_TEST(PlantTest, ManualClassTestAutoDiffDerivativeTest) {
-  // Note: This test sets up the AutoDiff values and derivative vectors
-  // explicitly as a way to pedagogically show what Autodiff is doing, and how
-  // to take the partial derivatives. The explicit declaration of values and
-  // derivatives will not scale in this fashion to anything larger than this
-  // example (three partials) due to the large amount of coding overhead. A more
-  // scalable method would be to implement an AutoDiff using
-  // initializeAutoDiffGivenGradientMatrix() as shown in the following commented
-  // section (tests given to verify initialization and partial differentiation).
-  // ---------------------------------------------------------------------------
-  //  Eigen::Vector3d partial_variables;
-  //  partial_variables[0] = 20;  // Variable mass
-  //  partial_variables[1] = 2;   // Variable time
-  //  partial_variables[2] = 0.5; // Variable x
-  //  Eigen::Matrix<double, 3, 3> gradient;
-  //  gradient.setIdentity();
-  //
-  //  auto outauto =
-  //    drake::math::initializeAutoDiffGivenGradientMatrix(ad_states, gradient);
-  //  EXPECT_EQ(outauto.rows(), 3);
-  //  EXPECT_EQ(outauto[0].derivatives().size(), 3);
-  //  EXPECT_EQ(outauto[0].derivatives()(0), 1);
-  //  EXPECT_EQ(outauto[0].derivatives()(1), 0);
-  //  EXPECT_EQ(outauto[0].derivatives()(2), 0);
-  // ---------------------------------------------------------------------------
-
-  Particle1dManual<AutoDiffXd> test_particle;
-
-  Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
-                                              test_particle.get_particle_data();
-
-  // Calculate partial derivatives with respect to 2 variables (time and x).
-  const int num_variables_differentiate_with_respect_to = 3;
-  const int index_for_partial_mass = 0;
-  const int index_for_partial_time = 1;
-  const int index_for_partial_x = 2;
-
-  // Set the value of the particle's mass. Arbitrarily chosen to be 20 kg.
-  AutoDiffXd& mass = particle_data.mass_;
-  mass.value() = 20.0;
-
-  // Provide enough room to store partials with respect to 3 variables:
-  // mass, time, and x
-  mass.derivatives().resize(num_variables_differentiate_with_respect_to);
-
-  // Set the partial of mass with respect to mass to 1 (∂m/∂m = 1).
-  // Set the partial of mass with respect to time to 0 (∂m/∂t = 0).
-  // Set the partial of mass with respect to x to 0 (∂m/∂x = 0).
-  mass.derivatives()(index_for_partial_mass) = 1.0;
-  mass.derivatives()(index_for_partial_time) = 0.0;
-  mass.derivatives()(index_for_partial_x) = 0.0;
-
-  // Set the value of time at which the partials will be evaluated.
-  // Arbitrarily chose time = 2 seconds.
-  AutoDiffXd time;
-  time.value() = 2.0;
-
-  // Provide enough room to store partials with respect to 3 variables:
-  // mass, time, and x
-  time.derivatives().resize(num_variables_differentiate_with_respect_to);
-
-  // Set the partial of time with respect to mass to 0 (∂t/∂m = 0).
-  // Set the partial of time with respect to time to 1 (∂t/∂t = 1).
-  // Set the partial of time with respect to x to 0 (∂t/∂x = 0).
-  time.derivatives()(index_for_partial_mass) = 0.0;
-  time.derivatives()(index_for_partial_time) = 1.0;
-  time.derivatives()(index_for_partial_x) = 0.0;
-
-  // The state vector has the following assignments:
-  // state[0] = x and state[1] = xDt.
-  // Set the value of the variables (state[0] and state[1]) to the value at
-  // which the derivative is to be evaluated.  Arbitrarily chose [0.5, 0.7].
-  AutoDiffXd state[2];
-  state[0].value() = 0.5;
-  state[1].value() = 0.7;
-
-  // Provide enough room to store partials with respect to 3 variables:
-  // mass, time, and x
-  state[0].derivatives().resize(num_variables_differentiate_with_respect_to);
-  state[1].derivatives().resize(num_variables_differentiate_with_respect_to);
-
-  // Set the partial of state[0] with respect to mass to 0 (∂x/∂m = 0).
-  // Set the partial of state[0] with respect to time to 0 (∂x/∂t = 0).
-  // Set the partial of state[0] with respect to x (itself) to 1 (∂x/∂x = 1).
-  state[0].derivatives()(index_for_partial_mass) = 0.0;
-  state[0].derivatives()(index_for_partial_time) = 0.0;
-  state[0].derivatives()(index_for_partial_x) = 1.0;
-
-  // stateDt is calculated, hence its value and derivatives will be assigned.
-  AutoDiffXd stateDt[2];
-  test_particle.CalcDerivativesToStateDt(time, state, stateDt);
-
-  // Value: m = mass (assigned above).
-  // The expected values are: ∂m/∂m = 1, ∂m/∂t = 0, ∂m/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.mass_, mass.value(), 1,
-                                           0, 0);
-
-  // Value: x = state[0] (assigned above).
-  // The expected values are: ∂x/∂m = 0, ∂x/∂t = 0, ∂x/∂x = 1.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.x_, state[0].value(),
-                                           0, 0, 1);
-
-  // Value: ẋ = state[1] (assigned above).
-  // The expected values are: ∂ẋ/∂m = 0, ∂ẋ/∂t = 0, ∂ẋ/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(stateDt[0], state[1].value(), 0, 0,
-                                           0);
-
-  // Value: ẍ = cos(t)/m.
-  // The expected values are: ∂ẍ/∂m = -cos(t)/m², ∂ẍ/∂t = -sint(t)/m, ∂ẍ/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(
-      stateDt[1], cos(time.value()) / mass.value(),
-      -cos(time.value()) / (mass.value() * mass.value()),
-      -sin(time.value()) / mass.value(), 0);
-
-  // Value: f = cos(t).
-  // The expected values are: ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.F_, cos(time.value()),
-                                           0, -sin(time.value()), 0);
-}
-
-// Unit test for the Particle1dManual class with AutoDiffXd instantiation.
-// Note: This unit test is more complicated than the previous unit test as it
-// checks partial derivative calculations (whereas the previous test only checks
-// AutoDiff values).
 GTEST_TEST(PlantTest, ShortAutoDiff) {
-  // Note: This test sets up the AutoDiff values and derivative vectors
-  // explicitly as a way to pedagogically show what Autodiff is doing, and how
-  // to take the partial derivatives. The explicit declaration of values and
-  // derivatives will not scale in this fashion to anything larger than this
-  // example (three partials) due to the large amount of coding overhead. A more
-  // scalable method would be to implement an AutoDiff using
-  // initializeAutoDiffGivenGradientMatrix() as shown in the following commented
-  // section (tests given to verify initialization and partial differentiation).
-  // ---------------------------------------------------------------------------
-  //  Eigen::Vector3d partial_variables;
-  //  partial_variables[0] = 20;  // Variable mass
-  //  partial_variables[1] = 2;   // Variable time
-  //  partial_variables[2] = 0.5; // Variable x
-  //  Eigen::Matrix<double, 3, 3> gradient;
-  //  gradient.setIdentity();
-  //
-  //  auto outauto =
-  //    drake::math::initializeAutoDiffGivenGradientMatrix(ad_states, gradient);
-  //  EXPECT_EQ(outauto.rows(), 3);
-  //  EXPECT_EQ(outauto[0].derivatives().size(), 3);
-  //  EXPECT_EQ(outauto[0].derivatives()(0), 1);
-  //  EXPECT_EQ(outauto[0].derivatives()(1), 0);
-  //  EXPECT_EQ(outauto[0].derivatives()(2), 0);
-  // ---------------------------------------------------------------------------
-
   Particle1dManual<AutoDiffXd> test_particle;
+
+  const double mass_value = 3.0;
+  const double time_value = 2.0;
+  const double x_value = 0.5;
+  const double xDt_value = 0.7;
+
+  // Initialize the AutoDiff with arbitrary values at which the derivative will
+  // be evaluated. Note: A more explicit, pedagogical example for how to set up
+  // an AutoDiff can be found in autodiff_test.cc.
+  Eigen::Vector3d auto_values;
+  auto_values[0] = mass_value; // Variable mass
+  auto_values[1] = time_value; // Variable time
+  auto_values[2] = x_value;    // Variable x
+
+  // Use an identity matrix to initialize the partials to:
+  // ∂m/∂m = 1, ∂t/∂t = 1, ∂x/∂x = 1.
+  Eigen::Matrix3d gradient_matrix;
+  gradient_matrix.setIdentity();
+
+  // Create and initialize an AutoDiff matrix given the values and
+  // gradient matrix.
+  auto autodiff_variables = drake::math::initializeAutoDiffGivenGradientMatrix(
+    auto_values, gradient_matrix);
 
   Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
       test_particle.get_particle_data();
 
-  AutoDiffXd state[2] = {0.5, 0.7};
+  particle_data.mass_ = autodiff_variables[0];
+  AutoDiffXd time = autodiff_variables[1];
+  AutoDiffXd state[2];
   AutoDiffXd stateDt[2];
 
-  // Set up the AutoDiff scalar with the gradient matrix.
-  Eigen::Vector3d partial_variables;
-  partial_variables[0] = 3; // Variable mass
-  partial_variables[1] = 2;  // Variable time
-  partial_variables[2] = state[0].value(); // Variable x
-  Eigen::Matrix<double, 3, 3> gradient_matrix;
-  gradient_matrix.setIdentity();
-/*
-  auto outauto =
-    drake::math::initializeAutoDiffGivenGradientMatrix(ad_states, gradient_matrix);
-  EXPECT_EQ(outauto.rows(), 4);
-  EXPECT_EQ(outauto[0].derivatives().size(), 4);
-  EXPECT_EQ(outauto[0].derivatives()(0), 1);
-  EXPECT_EQ(outauto[0].derivatives()(1), 0);
-  EXPECT_EQ(outauto[0].derivatives()(2), 0);
-  EXPECT_EQ(outauto[0].derivatives()(3), 0);
+  // Arbitrarily set state[1] (ẋ) to 0.7 and resize the derivative vector to
+  // hold the partials.
+  state[0] = autodiff_variables[2];
+  state[1].value() = xDt_value;
+  state[1].derivatives().resize(3);
 
   test_particle.CalcDerivativesToStateDt(time, state, stateDt);
 
   // Value: m = mass (assigned above).
-  // The expected values are: ∂m/∂m = 1, ∂m/∂t = 0, ∂m/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.mass_, mass.value(), 1,
-                                           0, 0);
+  // The expected values are: m = 3, ∂m/∂m = 1, ∂m/∂t = 0, ∂m/∂x = 0.
+  VerifyAutoDiffValueAndPartialDerivatives(
+      particle_data.mass_, mass_value, 1, 0, 0);
 
   // Value: x = state[0] (assigned above).
-  // The expected values are: ∂x/∂m = 0, ∂x/∂t = 0, ∂x/∂x = 1.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.x_, state[0].value(),
-                                           0, 0, 1);
+  // The expected values are: x = 0.5, ∂x/∂m = 0, ∂x/∂t = 0, ∂x/∂x = 1.
+  VerifyAutoDiffValueAndPartialDerivatives(particle_data.x_, x_value, 0, 0, 1);
 
   // Value: ẋ = state[1] (assigned above).
-  // The expected values are: ∂ẋ/∂m = 0, ∂ẋ/∂t = 0, ∂ẋ/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(stateDt[0], state[1].value(), 0, 0,
-                                           0);
+  // The expected values are: ẋ = 0.7, ∂ẋ/∂m = 0, ∂ẋ/∂t = 0, ∂ẋ/∂x = 0.
+  VerifyAutoDiffValueAndPartialDerivatives(stateDt[0], xDt_value, 0, 0, 0);
 
   // Value: ẍ = cos(t)/m.
-  // The expected values are: ∂ẍ/∂m = -cos(t)/m², ∂ẍ/∂t = -sint(t)/m, ∂ẍ/∂x = 0.
+  // The expected values are: ẍ = cos(t)/m, ∂ẍ/∂m = -cos(t)/m²,
+  // ∂ẍ/∂t = -sint(t)/m, ∂ẍ/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(
-      stateDt[1], cos(time.value()) / mass.value(),
-      -cos(time.value()) / (mass.value() * mass.value()),
-      -sin(time.value()) / mass.value(), 0);
+      stateDt[1], cos(time.value()) / particle_data.mass_.value(),
+      -cos(time.value()) /
+          (particle_data.mass_.value() * particle_data.mass_.value()),
+      -sin(time.value()) / particle_data.mass_.value(), 0);
 
   // Value: f = cos(t).
-  // The expected values are: ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x = 0.
+  // The expected values are: f = cos(t), ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x
+  // = 0.
   VerifyAutoDiffValueAndPartialDerivatives(particle_data.F_, cos(time.value()),
-                                           0, -sin(time.value()), 0);*/
+                                           0, -sin(time.value()), 0);
 }
 
 }  // namespace
