@@ -15,19 +15,18 @@
 #include "drake/systems/framework/context.h"
 
 namespace drake {
-
-using multibody::Body;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::UniformGravityFieldElement;
-using multibody::parsing::AddModelFromSdfFile;
-using multibody::PrismaticJoint;
-using multibody::RevoluteJoint;
-using systems::Context;
-
 namespace examples {
 namespace multibody {
 namespace cart_pole {
 namespace {
+
+using drake::multibody::Body;
+using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::PrismaticJoint;
+using drake::multibody::RevoluteJoint;
+using drake::multibody::UniformGravityFieldElement;
+using drake::systems::Context;
 
 class CartPoleTest : public ::testing::Test {
  public:

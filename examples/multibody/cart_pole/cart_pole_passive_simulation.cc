@@ -21,23 +21,22 @@
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
-
-using geometry::SceneGraph;
-using lcm::DrakeLcm;
-using multibody::Body;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::UniformGravityFieldElement;
-using multibody::parsing::AddModelFromSdfFile;
-using multibody::PrismaticJoint;
-using multibody::RevoluteJoint;
-using systems::lcm::LcmPublisherSystem;
-using systems::lcm::Serializer;
-using systems::rendering::PoseBundleToDrawMessage;
-
 namespace examples {
 namespace multibody {
 namespace cart_pole {
 namespace {
+
+using drake::geometry::SceneGraph;
+using drake::lcm::DrakeLcm;
+using drake::multibody::Body;
+using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::PrismaticJoint;
+using drake::multibody::RevoluteJoint;
+using drake::multibody::UniformGravityFieldElement;
+using drake::systems::lcm::LcmPublisherSystem;
+using drake::systems::lcm::Serializer;
+using drake::systems::rendering::PoseBundleToDrawMessage;
 
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
@@ -108,7 +107,7 @@ int do_main() {
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-  systems::Context<double>& acrobot_context =
+  systems::Context<double>& cart_pole_context =
       diagram->GetMutableSubsystemContext(cart_pole, diagram_context.get());
 
   // Get joints so that we can set initial conditions.
@@ -118,8 +117,8 @@ int do_main() {
       cart_pole.GetJointByName<RevoluteJoint>("PolePin");
 
   // Set initial state.
-  cart_slider.set_translation(&acrobot_context, 0.0);
-  pole_pin.set_angle(&acrobot_context, 2.0);
+  cart_slider.set_translation(&cart_pole_context, 0.0);
+  pole_pin.set_angle(&cart_pole_context, 2.0);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
