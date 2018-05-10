@@ -23,11 +23,10 @@ class AutodiffTest : public ::testing::Test {
   typedef Eigen::AutoDiffScalar<VectorXd> Scalar;
 
   void SetUp() override {
-    // The size of vec_ is dynamic.  It is sized to have 2 elements (variables).
     vec_.resize(2);
 
-    // Set the value of the variables (vec_[0] and vec_[1]) to the value at
-    // which the derivative is to be evaluated.  Arbitrarily choose [7.0, 9.0].
+    // Arbitrarily choose the values at which the derivative is to be evaluated
+    // for vec_[0] and vec_[1] to be 7.0 and 9.0, respectively.
     vec_[0].value() = 7.0;
     vec_[1].value() = 9.0;
 
@@ -47,7 +46,6 @@ class AutodiffTest : public ::testing::Test {
     vec_[1].derivatives()(1) = 1.0;
 
     // Do a calculation that is a function of variables v0 and v1.
-    // Store the result (output_calculation_) for subsequent use below.
     output_calculation_ = DoMath(vec_);
   }
 
