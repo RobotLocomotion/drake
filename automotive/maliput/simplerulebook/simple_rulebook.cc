@@ -63,13 +63,13 @@ class SimpleRulebook::RangeIndex {
   }
 
   void AddRule(const RightOfWayRule& rule) {
-    for (const LaneSRange& range : rule.controlled_zone().ranges()) {
+    for (const LaneSRange& range : rule.zone().ranges()) {
       AddRange(rule.id(), range);
     }
   }
 
   void RemoveRule(const RightOfWayRule& rule) {
-    for (const LaneSRange& range : rule.controlled_zone().ranges()) {
+    for (const LaneSRange& range : rule.zone().ranges()) {
       RemoveRanges(rule.id(), range.lane_id());
     }
   }
