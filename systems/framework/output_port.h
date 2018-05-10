@@ -10,17 +10,18 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
 
+// Break the System <=> OutputPort physical dependency cycle.  OutputPorts are
+// decorated with a back-pointer to their owning System<T>, but that pointer is
+// forward-declared here and never dereferenced within this file.
 template <typename T>
 class System;
-
-template <typename T>
-class Context;
 
 using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
 
@@ -118,14 +119,24 @@ class OutputPort {
   /** Provides derived classes the ability to set the base class members at
   construction.
   @param system
-    The System that will own this new output port. This port will
-    be assigned the next available output port index in this system.
+    The System that will own this new output port (as forward-declared class).
+  @param system_base
+    The System that will own this new output port (as pure virtual interface).
+  @param index
+    The index of this port within its owning System.
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
     If the port described is vector-valued, the number of elements expected,
-    otherwise ignored. */
-  OutputPort(const System<T>& system, PortDataType data_type, int size);
+    otherwise ignored.
+  @pre The `system` parameter must be the same object as the `system_base`
+    parameter. */
+  // The System and SystemBase are provided separately since we don't have
+  // access to System's declaration here so can't cast but the caller can.
+  OutputPort(
+      const System<T>& system,
+      const internal::SystemMessageInterface& system_base,
+      OutputPortIndex index, PortDataType data_type, int size);
 
   /** A concrete %OutputPort must provide a way to allocate a suitable object
   for holding the runtime value of this output port. The particulars may depend
@@ -175,6 +186,7 @@ class OutputPort {
                              const BasicVector<T>& proposed) const;
 
   const System<T>& system_;
+  const internal::SystemMessageInterface& system_base_;
   const OutputPortIndex index_;
   const PortDataType data_type_;
   const int size_;

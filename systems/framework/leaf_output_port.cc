@@ -6,6 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
@@ -73,7 +74,8 @@ const AbstractValue& LeafOutputPort<T>::DoEval(
   // TODO(sherm1) Provide proper default behavior for an output port with
   // its own cache entry.
   DRAKE_ABORT_MSG("LeafOutputPort::DoEval(): NOT IMPLEMENTED YET");
-  return *reinterpret_cast<const AbstractValue*>(0);
+  static never_destroyed<Value<int>> dummy{0};
+  return dummy.access();
 }
 
 // The Vector2/3 instantiations here are for the benefit of some

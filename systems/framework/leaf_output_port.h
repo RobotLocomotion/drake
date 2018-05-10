@@ -71,11 +71,15 @@ class LeafOutputPort : public OutputPort<T> {
   concrete type as is returned by the allocator. The allocator function is not
   invoked here during construction of the port so it may depend on data that
   becomes available only after completion of the containing System or
-  Diagram. */
+  Diagram. The `system` parameter must be the same object as the `system_base`
+  parameter. */
   LeafOutputPort(const System<T>& system,
+                 const internal::SystemMessageInterface& system_base,
+                 OutputPortIndex index,
                  AllocCallback alloc_function,
                  CalcCallback calc_function)
-      : OutputPort<T>(system, kAbstractValued, 0 /* size */) {
+      : OutputPort<T>(system, system_base, index, kAbstractValued,
+                      0 /* size */) {
     set_allocation_function(alloc_function);
     set_calculation_function(calc_function);
   }
@@ -86,16 +90,19 @@ class LeafOutputPort : public OutputPort<T> {
   same underlying concrete type as is returned by the allocator. Requires the
   fixed size to be given explicitly here. The allocator function is not invoked
   here during construction of the port so it may depend on data that becomes
-  available only after completion of the containing System or Diagram. */
+  available only after completion of the containing System or Diagram. The
+  `system` parameter must be the same object as the `system_base` parameter. */
   // Note: there is no guarantee that the allocator can be invoked successfully
   // here since construction of the containing System is likely incomplete when
   // this method is invoked. Do not attempt to extract the size from
   // the allocator by calling it here.
   LeafOutputPort(const System<T>& system,
+                 const internal::SystemMessageInterface& system_base,
+                 OutputPortIndex index,
                  int fixed_size,
                  AllocCallback vector_alloc_function,
                  CalcVectorCallback vector_calc_function)
-      : OutputPort<T>(system, kVectorValued, fixed_size) {
+      : OutputPort<T>(system, system_base, index, kVectorValued, fixed_size) {
     set_allocation_function(vector_alloc_function);
     set_calculation_function(vector_calc_function);
   }
