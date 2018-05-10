@@ -7,7 +7,10 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
@@ -131,19 +134,70 @@ class LeafOutputPort : public OutputPort<T> {
 
   // Sets or replaces the calculation function for this vector-valued output
   // port, using a function that writes into a `BasicVector<T>`.
-  void set_calculation_function(CalcVectorCallback vector_calc_function);
+  void set_calculation_function(CalcVectorCallback vector_calc_function) {
+    if (!vector_calc_function) {
+      calc_function_ = nullptr;
+    } else {
+      // Wrap the vector-writing function with an AbstractValue-writing
+      // function.
+      calc_function_ = [this, vector_calc_function](const Context<T>& context,
+                                                    AbstractValue* abstract) {
+        // The abstract value must be a Value<BasicVector<T>>.
+        auto value = dynamic_cast<Value<BasicVector<T>>*>(abstract);
+        if (value == nullptr) {
+          std::ostringstream oss;
+          oss << "LeafOutputPort::Calc(): Expected a vector output type for "
+              << this->GetPortIdString() << " but got a "
+              << NiceTypeName::Get(*abstract) << " instead.";
+          throw std::logic_error(oss.str());
+        }
+        vector_calc_function(context, &value->get_mutable_value());
+      };
+    }
+  }
 
   // Invokes the supplied allocation function if there is one, otherwise
   // complains.
-  std::unique_ptr<AbstractValue> DoAllocate() const final;
+  std::unique_ptr<AbstractValue> DoAllocate() const final {
+    std::unique_ptr<AbstractValue> result;
+
+    if (alloc_function_) {
+      result = alloc_function_();
+    } else {
+      throw std::logic_error(
+          "LeafOutputPort::DoAllocate(): " + this->GetPortIdString() +
+          " has no allocation function so cannot be allocated.");
+    }
+    if (result.get() == nullptr) {
+      throw std::logic_error(
+          "LeafOutputPort::DoAllocate(): allocator returned a nullptr for " +
+          this->GetPortIdString());
+    }
+    return result;
+  }
 
   // Invokes the supplied calculation function if present, otherwise complains.
-  void DoCalc(const Context<T>& context, AbstractValue* value) const final;
+  void DoCalc(const Context<T>& context, AbstractValue* value) const final {
+    if (calc_function_) {
+      calc_function_(context, value);
+    } else {
+      throw std::logic_error("LeafOutputPort::DoCalcWitnessValue(): " +
+                             this->GetPortIdString() +
+                             " had no calculation function available.");
+    }
+  }
 
   // Currently just invokes the supplied evaluation function if present,
   // otherwise complains.
   // TODO(sherm1) Generate this automatically using the cache & DoEvaluate().
-  const AbstractValue& DoEval(const Context<T>& context) const final;
+  const AbstractValue& DoEval(const Context<T>& context) const final {
+    if (eval_function_) return eval_function_(context);
+    // TODO(sherm1) Provide proper default behavior for an output port with
+    // its own cache entry.
+    DRAKE_ABORT_MSG("LeafOutputPort::DoEval(): NOT IMPLEMENTED YET");
+    static never_destroyed<Value<int>> dummy{0};
+    return dummy.access();
+  }
 
   AllocCallback alloc_function_;
   CalcCallback  calc_function_;
