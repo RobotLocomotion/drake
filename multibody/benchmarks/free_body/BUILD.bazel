@@ -8,7 +8,9 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+# Because there are no meaninfully distinct components in this package, the
+# only public target we will offer is our drake_cc_package_library.
+package(default_visibility = ["//visibility:private"])
 
 filegroup(
     name = "models",
@@ -36,7 +38,6 @@ drake_cc_library(
     hdrs = [
         "free_body.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//common",
         "//math:geometric_transform",
