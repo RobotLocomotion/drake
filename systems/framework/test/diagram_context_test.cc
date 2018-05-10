@@ -8,7 +8,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
@@ -74,7 +74,6 @@ class DiagramContextTest : public ::testing::Test {
         std::make_unique<SystemWithAbstractParameters>();
 
     context_ = std::make_unique<DiagramContext<double>>(kNumSystems);
-    context_->set_time(kTime);
 
     AddSystem(*adder0_, SubsystemIndex(0));
     AddSystem(*adder1_, SubsystemIndex(1));
@@ -85,13 +84,14 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_numeric_parameters_, SubsystemIndex(6));
     AddSystem(*system_with_abstract_parameters_, SubsystemIndex(7));
 
-    context_->ExportInput(
-        {SubsystemIndex(0) /* adder0_ */, InputPortIndex(1) /* port 1 */});
-    context_->ExportInput(
-        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(0) /* port 0 */});
+    // Fake up some input ports for this diagram.
+    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
+    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
 
     context_->MakeState();
     context_->MakeParameters();
+
+    context_->set_time(kTime);
     ContinuousState<double>& xc = context_->get_mutable_continuous_state();
     xc.get_mutable_vector().SetAtIndex(0, 42.0);
     xc.get_mutable_vector().SetAtIndex(1, 43.0);
@@ -114,13 +114,13 @@ class DiagramContextTest : public ::testing::Test {
     context_->FixInputPort(1, BasicVector<double>::Make({256}));
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   // Returns nullptr if the port is not connected.
-  static const BasicVector<double>* ReadVectorInputPort(
-      const Context<double>& context, int index) {
-    const FreestandingInputPortValue* free_value =
-        context.MaybeGetFixedInputPortValue(index);
-    return free_value ? free_value->get_vector_data<double>() : nullptr;
+  const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
+                                                 int index) {
+    const FixedInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
