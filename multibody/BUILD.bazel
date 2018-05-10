@@ -466,7 +466,7 @@ drake_cc_googletest(
         ":rigid_body_tree",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
         "//multibody/parsers",
     ],
 )
