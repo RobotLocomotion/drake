@@ -1,14 +1,32 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+# Because there are no meaninfully distinct components in this package, the
+# only public target we will offer is our drake_cc_package_library.
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library(
+    name = "mass_damper_spring",
+    deps = [
+        ":mass_damper_spring_analytical_solution",
+    ],
+)
 
 drake_cc_library(
     name = "mass_damper_spring_analytical_solution",
-    srcs = ["mass_damper_spring_analytical_solution.cc"],
-    hdrs = ["mass_damper_spring_analytical_solution.h"],
+    srcs = [
+        "mass_damper_spring_analytical_solution.cc",
+    ],
+    hdrs = [
+        "mass_damper_spring_analytical_solution.h",
+    ],
     deps = [
         "//common:essential",
         "//math:autodiff",

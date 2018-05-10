@@ -1,12 +1,26 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = [":__subpackages__"])
+# Because there are no meaninfully distinct components in this package, the
+# only public target we will offer is our drake_cc_package_library.
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_package_library(
+    name = "kuka_iiwa_robot",
+    deps = [
+        ":make_kuka_iiwa_model",
+    ],
+)
 
 drake_cc_library(
-    name = "kuka_iiwa_robot_library",
+    name = "drake_kuka_iiwa_robot",
     testonly = 1,
     srcs = [
         "drake_kuka_iiwa_robot.cc",
@@ -30,7 +44,6 @@ drake_cc_library(
     hdrs = [
         "make_kuka_iiwa_model.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//common:default_scalars",
         "//math:geometric_transform",
@@ -43,7 +56,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "kuka_iiwa_robot_kinematics_test",
     deps = [
-        ":kuka_iiwa_robot_library",
+        ":drake_kuka_iiwa_robot",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
@@ -51,7 +64,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "kuka_iiwa_robot_inverse_dynamics_test",
     deps = [
-        ":kuka_iiwa_robot_library",
+        ":drake_kuka_iiwa_robot",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )

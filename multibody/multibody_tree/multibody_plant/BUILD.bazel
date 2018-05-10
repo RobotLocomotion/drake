@@ -61,8 +61,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
-        "//multibody/benchmarks/pendulum:make_pendulum_plant",
+        "//multibody/benchmarks/pendulum",
         "//systems/primitives:linear_system",
     ],
 )
@@ -80,7 +79,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":multibody_plant",
-        "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",
+        "//multibody/benchmarks/inclined_plane",
         "//systems/analysis:simulator",
     ],
 )
