@@ -79,7 +79,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":multibody_plant",
-        "//multibody/benchmarks/inclined_plane:make_inclined_plane_plant",
+        "//multibody/benchmarks/inclined_plane",
         "//systems/analysis:simulator",
     ],
 )
