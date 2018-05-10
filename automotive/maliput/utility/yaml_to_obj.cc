@@ -27,6 +27,9 @@ DEFINE_double(min_grid_resolution,
               drake::maliput::utility::ObjFeatures().min_grid_resolution,
               "Minimum number of grid-units in either lateral or longitudinal "
               "direction in the rendered mesh covering the road surface");
+DEFINE_bool(draw_elevation_bounds,
+            drake::maliput::utility::ObjFeatures().draw_elevation_bounds,
+            "Whether to draw the elevation bounds");
 
 namespace drake {
 namespace maliput {
@@ -95,6 +98,7 @@ int main(int argc, char* argv[]) {
   utility::ObjFeatures features;
   features.max_grid_unit = FLAGS_max_grid_unit;
   features.min_grid_resolution = FLAGS_min_grid_resolution;
+  features.draw_elevation_bounds = FLAGS_draw_elevation_bounds;
 
   drake::log()->info("Generating OBJ.");
   GenerateObjFile(rg.get(), FLAGS_obj_dir, FLAGS_obj_file, features);
