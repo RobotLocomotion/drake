@@ -33,7 +33,8 @@ std::unique_ptr<LinearSystem<double>> MakeSimpleLinearSystem() {
 
 GTEST_TEST(DirectCollocationTest, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
-  const auto context = system->CreateDefaultContext();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
 
   const int kNumSampleTimes = 4;
   const double kTimeStep = .1;
