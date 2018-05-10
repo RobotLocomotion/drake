@@ -53,8 +53,9 @@ class DiagramOutputPort : public OutputPort<T> {
   /// diagram.
   DiagramOutputPort(const Diagram<T>& diagram,
                     const OutputPort<T>* source_output_port)
-      : OutputPort<T>(diagram, source_output_port->get_data_type(),
-                      source_output_port->size()),
+      : OutputPort<T>(
+          diagram, diagram, OutputPortIndex(diagram.get_num_output_ports()),
+          source_output_port->get_data_type(), source_output_port->size()),
         source_output_port_(source_output_port),
         subsystem_index_(
             diagram.GetSystemIndexOrAbort(&source_output_port->get_system())) {}

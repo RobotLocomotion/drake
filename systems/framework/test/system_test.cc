@@ -67,7 +67,8 @@ class TestSystem : public System<double> {
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto port = std::make_unique<LeafOutputPort<double>>(*this,
+    auto port = std::make_unique<LeafOutputPort<double>>(
+        *this, *this, OutputPortIndex(get_num_output_ports()),
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -412,7 +413,8 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
         []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
@@ -424,7 +426,7 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1,
                            RandomDistribution::kGaussian);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this,
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
         1,  // Vector size.
         []() {
           return std::make_unique<Value<BasicVector<T>>>(1);

@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":leaf_output_port",
         ":leaf_system",
         ":model_values",
+        ":output_port",
         ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
@@ -330,14 +331,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "output_port",
+    srcs = ["output_port.cc"],
+    hdrs = ["output_port.h"],
+    deps = [
+        ":context",
+        ":framework_common",
+        ":system_base",
+        ":value",
+        ":vector",
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:type_safe_index",
+    ],
+)
+
+drake_cc_library(
     name = "system",
     srcs = [
-        "output_port.cc",
         "system.cc",
         "witness_function.cc",
     ],
     hdrs = [
-        "output_port.h",
         "system.h",
         "witness_function.h",
     ],
@@ -345,6 +360,7 @@ drake_cc_library(
         ":context",
         ":event_collection",
         ":input_port_descriptor",
+        ":output_port",
         ":system_base",
         ":system_constraint",
         ":system_scalar_converter",
@@ -364,11 +380,13 @@ drake_cc_library(
     srcs = ["leaf_output_port.cc"],
     hdrs = ["leaf_output_port.h"],
     deps = [
-        ":system",
+        ":framework_common",
+        ":output_port",
         ":value",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
+        "//common:nice_type_name",
     ],
 )
 
