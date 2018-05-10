@@ -68,12 +68,12 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
   const VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
 
-  // Extract orientation and angular velocities.
+  // Extract roll-pitch-yaw orientation and its time-derivative.
   const drake::math::RollPitchYaw<T> rpy(state.segment(3, 3));
   const Vector3<T> rpyDt = state.segment(9, 3);
 
-  // Convert orientation to a rotation matrix.
-  const drake::math::RotationMatrix<T> R(rpy);
+  // Convert orientation to the R_NB rotation matrix (N is world and B is body).
+  const drake::math::RotationMatrix<T> R_NB(rpy);
 
   // Compute the net input forces and moments.
   const VectorX<T> uF = kF_ * u;
@@ -85,14 +85,22 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
                      uM(0) - uM(1) + uM(2) - uM(3));
 
   // Computing the resultant linear acceleration due to the forces.
-  const Vector3<T> xyzDDt = (Fg + R * F) / m_;
+  const Vector3<T> xyzDDt = (Fg + R_NB * F) / m_;
 
-  Vector3<T> pqr;
-  rpydot2angularvel(rpy.vector(), rpyDt, pqr);
-  pqr = R.matrix().adjoint() * pqr;
+  // Calculate rigid body B's angular velocity in world (N), expressed in N.
+  // Then calculate B's angular velocity in N, expressed in B.
+  Vector3<T> w_BN_N;
+  rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
+  const Vector3<T> w_BN_B = R_NB.inverse().matrix() * w_BN_N;
 
-  // Computing the resultant angular acceleration due to the moments.
-  const Vector3<T> pqrDt = I_.ldlt().solve(M - pqr.cross(I_ * pqr));
+  // Calculate B's angular acceleration in world (N), expressed in B due to the
+  // resultant moment on B.  To that end, rearrange Euler rigid body equation
+  // M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)) to solve for alpha_BN_B.
+  // Then calculate B's angular acceleration in N, expressed in N.
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);
+  const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);
+  const Vector3<T> alf_BN_N = R_NB.matrix() * alf_BN_B;
+
   Matrix3<T> Phi;
   typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
   typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
@@ -101,14 +109,14 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   VectorX<T> dPhi_x_rpyDt_vec = dPhi * rpyDt;
   const Matrix3<T> dPhi_x_rpyDt =
       Eigen::Map<Matrix3<T>>(dPhi_x_rpyDt_vec.data());
-  const Matrix3<T> RDt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
-  const Vector3<T> rpyDDt = Phi * R.matrix() * pqrDt
-                          + dPhi_x_rpyDt * R.matrix() * pqr + Phi * RDt * pqr;
+  const Matrix3<T> R_NB_Dt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
+  const Vector3<T> rpyDDt = Phi * alf_BN_N
+                          + dPhi_x_rpyDt * w_BN_N
+                          + Phi * R_NB_Dt * w_BN_B;
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);
   xDt << state.tail(6), xyzDDt, rpyDDt;
-
   derivatives->SetFromVector(xDt);
 }
 

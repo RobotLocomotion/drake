@@ -307,20 +307,20 @@ class RollPitchYaw {
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
     const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
-    const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
-    const T c2_c1 = c2 * c1, s2_c1 = s2 * c1;
+    const T c2_s1 = c2 * s1, s2_s1 = s2 * s1, s2_s0 = s2 * s0, s2_c0 = s2 * c0;
+    const T c2_c1 = c2 * c1, s2_c1 = s2 * c1, c2_s0 = c2 * s0, c2_c0 = c2 * c0;
     // clang-format on
-    *R_r <<        0,   c2_s1 * c0 + s2 * s0,  -c2_s1 * s0 + s2 * c0,
-                   0,   s2_s1 * c0 - c2 * s0,  -s2_s1 * s0 - c2 * c0,
-                   0,                c1 * c0,               -c1 * s0;
+    *R_r <<     0,   c2_s1 * c0 + s2_s0,   -c2_s1 * s0 + s2_c0,
+                0,   s2_s1 * c0 - c2_s0,   -s2_s1 * s0 - c2_c0,
+                0,              c1 * c0,              -c1 * s0;
 
-    *R_p << -c2 * s1,             c2_c1 * s0,             c2_c1 * c0,
-            -s2 * s1,             s2_c1 * s0,             s2_c1 * c0,
-                 -c1,               -s1 * s0,               -s1 * c0;
+    *R_p << -c2_s1,          c2_c1 * s0,            c2_c1 * c0,
+            -s2_s1,          s2_c1 * s0,            s2_c1 * c0,
+               -c1,            -s1 * s0,              -s1 * c0;
 
-    *R_y << -s2 * c1,  -s2_s1 * s0 - c2 * c0,  -s2_s1 * c0 + c2 * s0,
-             c2 * c1,   c2_s1 * s0 - s2 * c0,   c2_s1 * c0 + s2 * s0,
-                   0,                      0,                      0;
+    *R_y << -s2_c1,  -s2_s1 * s0 - c2_c0,  -s2_s1 * c0 + c2_s0,
+             c2_c1,   c2_s1 * s0 - s2_c0,   c2_s1 * c0 + s2_s0,
+                 0,                    0,                    0;
     // clang-format off
   }
 
