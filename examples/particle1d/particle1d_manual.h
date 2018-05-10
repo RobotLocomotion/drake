@@ -34,10 +34,19 @@ class Particle1dManual {
 
   /// Struct to hold the particle member data.
   struct ParticleData {
+    /// The particles Nx measure from a point fixed in N [m].
     T x_;
+
+    /// The 1ˢᵗ time derivative of the particles position (velocity) [m/s].
     T xDt_;
+
+    /// The 2ⁿᵈ time derivative of the particles position (acceleration) [m/s²].
     T xDDt_;
+
+    /// The force applied to the particle [N].
     T F_;
+
+    /// The mass of the particle [kg].
     T mass_;
   };
 
