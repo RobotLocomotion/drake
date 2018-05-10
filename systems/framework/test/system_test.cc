@@ -470,9 +470,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
-    context->SetNumInputPorts(this->get_num_input_ports());
-    return std::move(context);
+    return std::make_unique<LeafContext<T>>();
   }
 
   void DoValidateAllocatedContext(const ContextBase& context) const final {}
@@ -637,10 +635,10 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
       ".*EvalEigenVectorInput.*input port\\[1\\].*neither connected nor "
-          "freestanding.*");
+          "fixed.*");
 
   // Assign values to all ports. All but port 0 are BasicVector ports.
-  system_.AllocateFreestandingInputs(context_.get());
+  system_.AllocateFixedInputs(context_.get());
 
   EXPECT_NO_THROW(system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -724,7 +722,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
-  test_sys_.AllocateFreestandingInputs(context_.get());
+  test_sys_.AllocateFixedInputs(context_.get());
   // First input should have been re-allocated to the empty string.
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
             "");

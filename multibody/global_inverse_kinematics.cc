@@ -34,8 +34,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
   p_WBo_.resize(num_bodies);
 
   solvers::MixedIntegerRotationConstraintGenerator rotation_generator(
-      options.approach_, options.num_intervals_per_half_axis_,
-      options.interval_binning_);
+      options.approach, options.num_intervals_per_half_axis,
+      options.interval_binning);
   // Loop through each body in the robot, to add the constraint that the bodies
   // are welded by joints.
   for (int body_idx = 1; body_idx < num_bodies; ++body_idx) {
@@ -59,8 +59,10 @@ GlobalInverseKinematics::GlobalInverseKinematics(
     } else {
       R_WB_[body_idx] = solvers::NewRotationMatrixVars(this, body_R_name);
 
-      solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
-                                                          R_WB_[body_idx]);
+      if (!options.linear_constraint_only) {
+        solvers::AddRotationMatrixOrthonormalSocpConstraint(this,
+                                                            R_WB_[body_idx]);
+      }
 
       // If the body has a parent, then add the constraint to connect the
       // parent body with this body through a joint.
@@ -127,7 +129,8 @@ GlobalInverseKinematics::GlobalInverseKinematics(
               // Now we process the joint limits constraint.
               const double joint_lb = joint->getJointLimitMin()(0);
               const double joint_ub = joint->getJointLimitMax()(0);
-              AddJointLimitConstraint(body_idx, joint_lb, joint_ub);
+              AddJointLimitConstraint(body_idx, joint_lb, joint_ub,
+                                      options.linear_constraint_only);
             } else {
               // TODO(hongkai.dai): Add prismatic and helical joint.
               throw std::runtime_error("Unsupported joint type.");
@@ -408,8 +411,39 @@ GlobalInverseKinematics::BodyPointInOneOfRegions(
   return z;
 }
 
+// Approximate a quadratic constraint (which could be formulated as a Lorentz
+// cone constraint) xᵀx ≤ c² by
+// -c ≤ xᵢ ≤ c
+// ± xᵢ ± xⱼ ≤ √2 * c
+// ± x₀ ± x₁ ± x₂ ≤ √3 * c
+// These linear approximation are obtained as the tangential planes at some
+// points on the surface of the sphere xᵀx ≤ c².
+void ApproximateBoundedNormByLinearConstraints(
+    const Eigen::Ref<const Vector3<symbolic::Expression>>& x, double c,
+    solvers::MathematicalProgram* prog) {
+  DRAKE_DEMAND(c >= 0);
+  // -c ≤ xᵢ ≤ c
+  prog->AddLinearConstraint(x, Eigen::Vector3d::Constant(-c),
+                            Eigen::Vector3d::Constant(c));
+  const double sqrt2_c = std::sqrt(2) * c;
+  const double sqrt3_c = std::sqrt(3) * c;
+  // ± xᵢ ± xⱼ ≤ √2 * c
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 3; ++j) {
+      prog->AddLinearConstraint(x(i) + x(j), -sqrt2_c, sqrt2_c);
+      prog->AddLinearConstraint(x(i) - x(j), -sqrt2_c, sqrt2_c);
+    }
+  }
+  // ± x₀ ± x₁ ± x₂ ≤ √3 * c
+  prog->AddLinearConstraint(x(0) + x(1) + x(2), -sqrt3_c, sqrt3_c);
+  prog->AddLinearConstraint(x(0) + x(1) - x(2), -sqrt3_c, sqrt3_c);
+  prog->AddLinearConstraint(x(0) - x(1) + x(2), -sqrt3_c, sqrt3_c);
+  prog->AddLinearConstraint(x(0) - x(1) - x(2), -sqrt3_c, sqrt3_c);
+}
+
 void GlobalInverseKinematics::AddJointLimitConstraint(
-    int body_index, double joint_lower_bound, double joint_upper_bound) {
+    int body_index, double joint_lower_bound, double joint_upper_bound,
+    bool linear_constraint_approximation) {
   if (joint_lower_bound > joint_upper_bound) {
     throw std::runtime_error(
         "The joint lower bound should be no larger than the upper bound.");
@@ -451,9 +485,9 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
             const Vector3d axis_F = revolute_joint->joint_axis().head<3>();
 
             // Now we process the joint limits constraint.
-            double joint_bound = (joint_upper_bounds_[joint_idx] -
-                                  joint_lower_bounds_[joint_idx]) /
-                                 2;
+            const double joint_bound = (joint_upper_bounds_[joint_idx] -
+                                        joint_lower_bounds_[joint_idx]) /
+                                       2;
 
             if (joint_bound < M_PI) {
               // We use the fact that if the angle between two unit length
@@ -530,14 +564,22 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
 
               // joint_limit_expr is going to be within the Lorentz cone.
               Eigen::Matrix<Expression, 4, 1> joint_limit_expr;
-              joint_limit_expr(0) = 2 * sin(joint_bound / 2);
+              const double joint_limit_lorentz_rhs = 2 * sin(joint_bound / 2);
+              joint_limit_expr(0) = joint_limit_lorentz_rhs;
               for (const auto& v : v_samples) {
                 // joint_limit_expr.tail<3> is
                 // R_WC * v - R_WP * R_PF * R(k,(a+b)/2) * v mentioned above.
                 joint_limit_expr.tail<3>() =
                     R_WB_[body_index] * v -
                     R_WB_[parent_idx] * X_PF.linear() * rotmat_joint_offset * v;
-                AddLorentzConeConstraint(joint_limit_expr);
+                if (linear_constraint_approximation) {
+                  ApproximateBoundedNormByLinearConstraints(
+                      joint_limit_expr.tail<3>(), joint_limit_lorentz_rhs,
+                      this);
+
+                } else {
+                  AddLorentzConeConstraint(joint_limit_expr);
+                }
               }
               if (robot_->get_body(parent_idx).IsRigidlyFixedToWorld()) {
                 // If the parent body is rigidly fixed to the world. Then we
@@ -573,15 +615,17 @@ void GlobalInverseKinematics::AddJointLimitConstraint(
                     (X_WP.linear() * X_PF.linear() * rotmat_joint_offset)
                         .transpose() *
                     R_WB_[body_index];
-                Eigen::Matrix<double, 3, 2> V;
-                V << v_basis[0], v_basis[1];
                 const double joint_bound_cos{std::cos(joint_bound)};
-                const Eigen::Matrix<symbolic::Expression, 2, 2> M =
-                    V.transpose() * (R_joint_beta + R_joint_beta.transpose()) /
-                        2 * V -
-                    joint_bound_cos * Eigen::Matrix2d::Identity();
-                AddRotatedLorentzConeConstraint(
-                    Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
+                if (!linear_constraint_approximation) {
+                  Eigen::Matrix<double, 3, 2> V;
+                  V << v_basis[0], v_basis[1];
+                  const Eigen::Matrix<symbolic::Expression, 2, 2> M =
+                      V.transpose() *
+                          (R_joint_beta + R_joint_beta.transpose()) / 2 * V -
+                      joint_bound_cos * Eigen::Matrix2d::Identity();
+                  AddRotatedLorentzConeConstraint(
+                      Vector3<symbolic::Expression>(M(0, 0), M(1, 1), M(1, 0)));
+                }
 
                 // From Rodriguez formula, we know that -α <= β <= α implies
                 // trace(R(k, β)) = 1 + 2 * cos(β) >= 1 + 2*cos(α)

@@ -5,6 +5,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
@@ -185,6 +186,14 @@ void AddJointFromSpecification(
     case sdf::JointType::REVOLUTE: {
       Vector3d axis_J = ExtractJointAxis(joint_spec);
       plant->AddJoint<RevoluteJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ, axis_J);
+      break;
+    }
+    case sdf::JointType::PRISMATIC: {
+      Vector3d axis_J = ExtractJointAxis(joint_spec);
+      plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);

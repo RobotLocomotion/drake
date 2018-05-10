@@ -12,7 +12,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
@@ -41,10 +41,15 @@ class LeafContextTest : public ::testing::Test {
     context_.set_time(kTime);
 
     // Input
-    context_.SetNumInputPorts(kNumInputPorts);
+    SetNumInputPorts(kNumInputPorts, &context_);
+
+    // Fixed input values get new tickets -- manually update the ticket
+    // counter here so this test can add more ticketed things later.
+    // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
       context_.FixInputPort(
           i, std::make_unique<BasicVector<double>>(kInputSize[i]));
+      ++next_ticket_;
     }
 
     // Reserve a continuous state with five elements.
@@ -88,30 +93,42 @@ class LeafContextTest : public ::testing::Test {
         std::move(abstract_params)));
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   // Returns nullptr if the port is not connected.
   const BasicVector<double>* ReadVectorInputPort(const Context<double>& context,
                                                  int index) {
-    auto const free_value = context.MaybeGetFixedInputPortValue(index);
-    return free_value ? free_value->get_vector_data<double>() : nullptr;
+    const FixedInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   const std::string* ReadStringInputPort(const Context<double>& context,
                                          int index) {
-    auto const free_value = context.MaybeGetFixedInputPortValue(index);
-    return free_value
-               ? &free_value->get_abstract_data()->GetValue<std::string>()
-               : nullptr;
+    const FixedInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_value().GetValue<std::string>()
+                      : nullptr;
   }
 
-  // Reads a FreestandingInputPortValue connected to @p context at @p index.
+  // Reads a FixedInputPortValue connected to @p context at @p index.
   const AbstractValue* ReadAbstractInputPort(const Context<double>& context,
                                              int index) {
-    auto const free_value = context.MaybeGetFixedInputPortValue(index);
-    return free_value ? free_value->get_abstract_data() : nullptr;
+    const FixedInputPortValue* free_value =
+        context.MaybeGetFixedInputPortValue(InputPortIndex(index));
+    return free_value ? &free_value->get_value() : nullptr;
   }
 
+  // Mocks up some input ports sufficient to allow us to give them fixed values.
+  // This code mimics SystemBase::CreateSourceTrackers.
+  template <typename T>
+  void SetNumInputPorts(int n, Context<T>* context) {
+    for (InputPortIndex i(0); i < n; ++i) {
+      context->AddInputPort(i, next_ticket_++);
+    }
+  }
+
+  DependencyTicket next_ticket_{internal::kNextAvailableTicket};
   LeafContext<double> context_;
   std::unique_ptr<AbstractValue> abstract_state_;
 };
@@ -177,11 +194,6 @@ TEST_F(LeafContextTest, GetNumInputPorts) {
   ASSERT_EQ(kNumInputPorts, context_.get_num_input_ports());
 }
 
-TEST_F(LeafContextTest, ClearInputPorts) {
-  context_.ClearInputPorts();
-  EXPECT_EQ(0, context_.get_num_input_ports());
-}
-
 TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
   EXPECT_EQ(2, context_.get_num_discrete_state_groups());
 }
@@ -237,7 +249,7 @@ TEST_F(LeafContextTest, GetNumStates) {
 
 TEST_F(LeafContextTest, GetVectorInput) {
   LeafContext<double> context;
-  context.SetNumInputPorts(2);
+  SetNumInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, BasicVector<double>::Make({5, 6}));
@@ -253,7 +265,7 @@ TEST_F(LeafContextTest, GetVectorInput) {
 
 TEST_F(LeafContextTest, GetAbstractInput) {
   LeafContext<double> context;
-  context.SetNumInputPorts(2);
+  SetNumInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));

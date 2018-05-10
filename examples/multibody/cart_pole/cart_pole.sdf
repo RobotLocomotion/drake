@@ -1,0 +1,75 @@
+<sdf version='1.6'>
+  <model name='CartPole'>
+    <!-- This sdf file produces a model with the default parameters as
+         documented in cart_pole_params.named_vector.
+         They MUST be kept in sync. -->
+    <link name='Cart'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>10.0</mass>
+        <!-- For this model case, with the cart not having any rotational
+             degrees of freedom, the values of the inertia matrix do not
+             participate in the model. Therefore we just set them to zero
+             (or near to zero since sdformat does not allow exact zeroes
+             for inertia values). -->
+        <inertia>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <!-- TODO(amcastro-tri): Add cart's visual once SG supports boxes. -->
+    </link>
+
+    <link name='Pole'>
+      <!-- The pole is modeled as a point mass at the end of a pole. -->
+      <!-- The length of the pole is 0.5 meters. -->
+      <pose>0 0 -0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <!-- A point mass has zero rotational inertia.
+             We must specify small values since otherwise sdformat throws an
+             exception. -->
+        <inertia>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <visual name='pole_point_mass'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.05</radius>
+          </sphere>
+        </geometry>
+      </visual>
+      <visual name='pole_rod'>
+        <pose>0 0 0.25 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.025</radius>
+            <length>0.5</length>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <joint name='CartSlider' type='prismatic'>
+      <parent>world</parent>
+      <child>Cart</child>
+      <axis>
+        <xyz>1.0 0.0 0.0</xyz>
+      </axis>
+    </joint>
+
+    <joint name='PolePin' type='revolute'>
+      <pose>0 0 0 0 0 0</pose>
+      <parent>Cart</parent>
+      <child>Pole</child>
+      <axis>
+        <xyz>0.0 -1.0 0.0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

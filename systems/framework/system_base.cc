@@ -2,11 +2,13 @@
 
 #include <fmt/format.h>
 
+#include "drake/systems/framework/fixed_input_port_value.h"
+
 namespace {
 
-// Output a string like "System<T>::EvalInput()".
+// Output a string like "System::EvalInput()".
 std::string FmtFunc(const char* func) {
-  return fmt::format("System<T>::{}()", func);
+  return fmt::format("System::{}()", func);
 }
 
 }
@@ -17,13 +19,11 @@ namespace systems {
 SystemBase::~SystemBase() {}
 
 std::string SystemBase::GetSystemPathname() const {
-  // NOLINTNEXTLINE(build/namespaces): using operator""s issues a warning.
-  using namespace std::string_literals;
-
   const std::string parent_path =
       get_parent_service() ? get_parent_service()->GetParentPathname()
-                           : ""s;
-  return parent_path + "::"s + GetSystemName();
+                           : std::string();
+  return parent_path + internal::SystemMessageInterface::path_separator() +
+         GetSystemName();
 }
 
 const CacheEntry& SystemBase::DeclareCacheEntry(
@@ -48,11 +48,11 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;
 
-  // TODO(sherm1) Set context system name from GetSystemName().
+  detail::SystemBaseContextBaseAttorney::set_system_name(&context, get_name());
 
-  // TODO(sherm1) Add the independent-source trackers and wire them up
-  // appropriately. That includes input ports since their dependencies are
-  // external.
+  // Add the independent-source trackers and wire them up appropriately. That
+  // includes input ports since their dependencies are external.
+  CreateSourceTrackers(&context);
 
   DependencyGraph& graph = context.get_mutable_dependency_graph();
 
@@ -82,6 +82,51 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   }
 
   return context_ptr;
+}
+
+// Set up trackers for variable-numbered independent sources: discrete and
+// abstract state, numerical and abstract parameters, and input ports.
+// The generic trackers like "all parameters" are already present in the
+// supplied Context, but we have to subscribe them to the individual
+// elements now.
+void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
+  ContextBase& context = *context_ptr;
+
+  // TODO(sherm1) Add state and parameter trackers here.
+
+  // Allocate trackers for each input port uᵢ. Note that this also takes care of
+  // subscribing the "all input ports" tracker u to them.
+  for (const auto& iport : input_ports_) {
+    context.AddInputPort(iport->get_index(), iport->ticket());
+  }
+}
+
+// The only way for a subsystem to evaluate its own input port is if that
+// port is fixed. In that case the port's value is in the corresponding
+// subcontext and we can just return it. Otherwise, the port obtains its value
+// from some other subsystem and we need our parent's help to get access to
+// that subsystem.
+const AbstractValue* SystemBase::EvalAbstractInputImpl(
+    const char* func, const ContextBase& context,
+    InputPortIndex port_index) const {
+  if (port_index >= get_num_input_ports())
+    ThrowInputPortIndexOutOfRange(func, port_index, get_num_input_ports());
+
+  const FixedInputPortValue* const free_port_value =
+      context.MaybeGetFixedInputPortValue(port_index);
+
+  if (free_port_value != nullptr)
+    return &free_port_value->get_value();  // A fixed input port.
+
+  // The only way to satisfy an input port of a root System is to make it fixed.
+  // Since it wasn't fixed, it is unconnected.
+  if (get_parent_service() == nullptr) return nullptr;
+
+  // This is not the root System, and the port isn't fixed, so ask our parent to
+  // evaluate it.
+  return get_parent_service()->EvalConnectedSubsystemInputPort(
+      *detail::SystemBaseContextBaseAttorney::get_parent_base(context),
+      get_input_port_base(port_index));
 }
 
 void SystemBase::ThrowNegativeInputPortIndex(const char* func,
@@ -124,7 +169,7 @@ void SystemBase::ThrowInputPortHasWrongType(
 void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                                            InputPortIndex port) const {
   throw std::logic_error(
-      fmt::format("{}: input port[{}] is neither connected nor freestanding so "
+      fmt::format("{}: input port[{}] is neither connected nor fixed so "
                       "cannot be evaluated. (Subsystem {})",
                   FmtFunc(func), port, GetSystemPathname()));
 }

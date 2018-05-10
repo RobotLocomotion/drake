@@ -127,7 +127,7 @@ drake_cc_library(
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
     ],
-    # Hide this library outside of this package; users shoud depend on
+    # Hide this library outside of this package; users should depend on
     # ":multibody_tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
@@ -255,7 +255,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
         "//math:gradient",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
     ],
 )
 
@@ -264,7 +264,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
     ],
 )
 
@@ -287,7 +287,7 @@ drake_cc_googletest(
         ":multibody_tree",
         "//common/test_utilities",
         "//math:gradient",
-        "//multibody/benchmarks/kuka_iiwa_robot:make_kuka_iiwa_model",
+        "//multibody/benchmarks/kuka_iiwa_robot",
         "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
     ],
 )
