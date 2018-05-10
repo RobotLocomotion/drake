@@ -174,6 +174,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/constraint:constraint_problem_data",
     "//multibody/constraint:constraint_solver",
     "//multibody/joints:joints",
+    "//multibody/multibody_tree/math:math",
     "//multibody/multibody_tree/math:spatial_acceleration",
     "//multibody/multibody_tree/math:spatial_algebra",
     "//multibody/multibody_tree/math:spatial_force",
