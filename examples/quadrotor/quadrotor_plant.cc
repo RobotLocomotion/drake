@@ -68,11 +68,12 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
   const VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
 
-  // Extract roll-pitch-yaw orientation and its time-derivative.
-  const drake::math::RollPitchYaw<T> rpy(state.segment(3, 3));
-  const Vector3<T> rpyDt = state.segment(9, 3);
+  // Extract roll-pitch-yaw angles and their time-derivatives.
+  const drake::math::RollPitchYaw<T> rpy(state.template segment<3>(3));
+  const Vector3<T> rpyDt = state.template segment<3>(9);
 
-  // Convert orientation to the R_NB rotation matrix (N is world and B is body).
+  // Convert orientation to the R_NB rotation matrix where N is the Newtonian
+  // frame (a.k.a. the inertial or World frame) and B is the quadrotor body.
   const drake::math::RotationMatrix<T> R_NB(rpy);
 
   // Compute the net input forces and moments.
@@ -84,22 +85,24 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   const Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
                      uM(0) - uM(1) + uM(2) - uM(3));
 
-  // Computing the resultant linear acceleration due to the forces.
-  const Vector3<T> xyzDDt = (Fg + R_NB * F) / m_;
+  // Calculate the net force on body B, expressed in N.  Next,
+  // calculate the resultant linear acceleration due to the forces.
+  const Vector3<T> net_force = Fg + R_NB * F;
+  const Vector3<T> xyzDDt = net_force / m_;
 
-  // Calculate rigid body B's angular velocity in world (N), expressed in N.
+  // Calculate rigid body B's angular velocity in N, expressed in N.
   // Then calculate B's angular velocity in N, expressed in B.
   Vector3<T> w_BN_N;
   rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
-  const Vector3<T> w_BN_B = R_NB.inverse().matrix() * w_BN_N;
+  const Vector3<T> w_BN_B = R_NB.inverse() * w_BN_N;
 
-  // Calculate B's angular acceleration in world (N), expressed in B due to the
-  // resultant moment on B.  To that end, rearrange Euler rigid body equation
-  // M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)) to solve for alpha_BN_B.
-  // Then calculate B's angular acceleration in N, expressed in N.
+  // To calculate B's angular acceleration in N, expressed in B due to the net
+  // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
+  // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
+  // Next, calculate B's angular acceleration in N, expressed in N.
   const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);
   const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);
-  const Vector3<T> alf_BN_N = R_NB.matrix() * alf_BN_B;
+  const Vector3<T> alf_BN_N = R_NB * alf_BN_B;
 
   Matrix3<T> Phi;
   typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
@@ -116,7 +119,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);
-  xDt << state.tail(6), xyzDDt, rpyDDt;
+  xDt << state.template tail<6>(), xyzDDt, rpyDDt;
   derivatives->SetFromVector(xDt);
 }
 

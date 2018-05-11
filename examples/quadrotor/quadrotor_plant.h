@@ -83,4 +83,13 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
 }  // namespace quadrotor
 }  // namespace examples
+
+namespace systems {
+namespace scalar_conversion {
+template <>
+struct Traits<examples::quadrotor::QuadrotorPlant> : public NonSymbolicTraits {
+};
+}  // namespace scalar_conversion
+}  // namespace systems
+
 }  // namespace drake
