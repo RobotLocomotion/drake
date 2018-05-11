@@ -27,6 +27,7 @@
 #include "drake/multibody/pose_map.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_actuator.h"
+#include "drake/multibody/rigid_body_distance_constraint.h"
 #include "drake/multibody/rigid_body_frame.h"
 #include "drake/multibody/rigid_body_loop.h"
 #include "drake/multibody/shapes/drake_shapes.h"
@@ -1401,6 +1402,11 @@ class RigidBodyTree {
       Eigen::Transform<Scalar, 3, Eigen::Isometry>* Tframe) const;
   int parseBodyOrFrameID(const int body_or_frame_id) const;
 
+  void addDistanceConstraint(
+      int from_body_or_frame_ind, const Eigen::Vector3d& from_point,
+      int to_body_or_frame_ind, const Eigen::Vector3d& to_point,
+      double distance);
+
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(
       const KinematicsCache<Scalar>& cache) const;
@@ -1586,6 +1592,10 @@ class RigidBodyTree {
   // Rigid body loops
   std::vector<RigidBodyLoop<T>,
               Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
+
+  // Rigid body distance constraints
+  std::vector<RigidBodyDistCon, Eigen::aligned_allocator<RigidBodyDistCon>>
+      distCons;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
