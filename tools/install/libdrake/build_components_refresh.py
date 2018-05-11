@@ -19,8 +19,27 @@ def _remove_dev(components):
     return [x for x in components if not _is_dev(x)]
 
 
+def _label_sort_key(label):
+    # How to compare labels (lexicographically by subpackage names).
+    return label.split("/")
+
+
+def _is_full_package_library(one_label, component_labels):
+    package, short_name = one_label.split(":")
+    if package.endswith("/" + short_name):
+        return package
+    else:
+        return None
+
+
+def _bazel_query(args):
+    output = subprocess.check_output(["bazel", "query"] + args)
+    return [x for x in output.split('\n') if x]
+
+
 def _find_libdrake_components():
-    query_string = """
+    # This forms the set of cc_library targets that will be installed.
+    components_query = """
 kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     except(attr("testonly", "1", "//..."))
     except("//:*")
@@ -30,12 +49,19 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
     except("//lcmtypes/...")
     except("//tools/install/libdrake:*")
 """
-    command = ["bazel", "query", query_string]
-    components = [x for x in subprocess.check_output(command).split('\n') if x]
-    components = _remove_dev(components)
-    def _key(x):
-        return x.split('/')
-    return sorted(components, key=_key)
+    # First, find the drake_cc_package_library targets within that query.
+    package_libs = _bazel_query([
+        'attr(tags, "drake_cc_package_library", {})'.format(components_query)])
+    # Then, find any remaining cc_library targets that are not part of a
+    # drake_cc_package_library.
+    misc_libs = _bazel_query([
+        components_query + " ".join([
+            "except deps({}, 1)".format(x)
+            for x in package_libs
+        ])])
+    misc_libs = _remove_dev(misc_libs)
+    # Sort the result for consistency.
+    return sorted(package_libs + misc_libs, key=_label_sort_key)
 
 
 def main():
@@ -91,7 +117,12 @@ def main():
         for one_line in header_lines:
             new.write(one_line)
         for one_label in component_labels:
-            line = '    "{}",'.format(one_label)
+            sans_colon_label = _is_full_package_library(
+                one_label, component_labels)
+            if sans_colon_label:
+                line = '    "{}",'.format(sans_colon_label)
+            else:
+                line = '    "{}",  # unpackaged'.format(one_label)
             new.write(line)
             if len(line) > 79:
                 new.write('  # noqa')
