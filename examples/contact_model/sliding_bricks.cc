@@ -6,15 +6,20 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_plant/rigid_body_plant_bridge.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace systems {
@@ -23,6 +28,9 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::joints::kFixed;
 using Eigen::VectorXd;
 using std::make_unique;
+using systems::lcm::LcmPublisherSystem;
+using systems::lcm::Serializer;
+using systems::rendering::PoseBundleToDrawMessage;
 
 // Simple example of the "stiction" properties of the contact model.
 // Based on the default values (50 kg brick) and the friction coefficients,
@@ -48,8 +56,6 @@ DEFINE_double(dissipation, 1.0, "The contact model's dissipation (s/m)");
 DEFINE_double(contact_radius, 1e-3,
               "The characteristic scale of radius (m) of the contact area");
 DEFINE_double(sim_duration, 3, "The simulation duration (s)");
-DEFINE_bool(playback, true,
-            "If true, enters looping playback after sim finished");
 DEFINE_string(system_type, "continuous", "The type of system to use: "
               "'continuous' or 'discretized'");
 DEFINE_double(dt, 1e-3, "The step size to use for "
@@ -111,6 +117,20 @@ int main() {
   // RigidBodyActuators.
   DRAKE_DEMAND(tree.actuators.size() == 2u);
 
+  // TODO(SeanCurtis-TRI): This should be wrapped up into sugar so that
+  // visualization can be added without all this boilerplate. See Drake issue
+  // #8473.
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
+  scene_graph->set_name("scene_graph");
+
+  auto rbt_gs_bridge = builder.AddSystem<systems::RigidBodyPlantBridge<double>>(
+      &tree, scene_graph);
+  builder.Connect(plant.state_output_port(),
+                  rbt_gs_bridge->rigid_body_plant_state_input_port());
+  builder.Connect(
+      rbt_gs_bridge->geometry_pose_output_port(),
+      scene_graph->get_source_pose_port(rbt_gs_bridge->source_id()));
+
   // LCM communication.
   DrakeLcm lcm;
 
@@ -128,13 +148,21 @@ int main() {
   builder.Connect(push_source.get_output_port(), plant.get_input_port(1));
 
   // Visualizer.
-  const auto visualizer_publisher =
-      builder.template AddSystem<DrakeVisualizer>(tree, &lcm, true);
-  visualizer_publisher->set_name("visualizer_publisher");
+  PoseBundleToDrawMessage* converter =
+      builder.template AddSystem<PoseBundleToDrawMessage>();
+  LcmPublisherSystem* publisher =
+      builder.template AddSystem<LcmPublisherSystem>(
+          "DRAKE_VIEWER_DRAW",
+  std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
+  publisher->set_publish_period(1 / 60.0);
 
-  // Raw state vector to visualizer.
-  builder.Connect(plant.state_output_port(),
-                  visualizer_publisher->get_input_port(0));
+  builder.Connect(scene_graph->get_pose_bundle_output_port(),
+                  converter->get_input_port(0));
+  builder.Connect(*converter, *publisher);
+
+  // Last thing before building the diagram; dispatch the message to load
+  // geometry.
+  geometry::DispatchLoadMessage(*scene_graph);
 
   auto diagram = builder.Build();
 
@@ -157,8 +185,6 @@ int main() {
   plant.set_state_vector(&plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
-
-  while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
 
   return 0;
 }

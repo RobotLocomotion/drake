@@ -5,6 +5,8 @@
 #include <utility>
 
 #include <fcl/fcl.h>
+#include <fcl/geometry/shape/box.h>
+#include <fcl/narrowphase/collision_request.h>
 
 #include "drake/common/default_scalars.h"
 
@@ -162,14 +164,15 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       // Signed distance is negative when penetration depth is positive.
       double depth = contact.penetration_depth;
 
-      // FCL returns a single contact point, but PenetrationAsPointPair expects
+      // FCL returns a single contact point centered between the two penetrating
+      // surfaces. PenetrationAsPointPair expects
       // two, one on the surface of body A (Ac) and one on the surface of body B
       // (Bc). Choose points along the line defined by the contact point and
       // normal, equidistant to the contact point. Recall that signed_distance
       // is strictly non-positive, so signed_distance * drake_normal points out
       // of A and into B.
-      const Vector3d p_WAc{contact.pos - 0.5 * depth * drake_normal};
-      const Vector3d p_WBc{contact.pos + 0.5 * depth * drake_normal};
+      Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
+      Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
 
       PenetrationAsPointPair<double> penetration;
       penetration.depth = depth;
@@ -212,7 +215,10 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
     case fcl::GEOM_HALFSPACE:
       // All half spaces are defined exactly the same.
       return make_shared<fcl::Halfspaced>(0, 0, 1, 0);
-    case fcl::GEOM_BOX:
+    case fcl::GEOM_BOX: {
+      const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
+      return make_shared<fcl::Boxd>(box.side);
+    }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CONE:
@@ -402,6 +408,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_half_space, user_data);
   }
 
+  void ImplementGeometry(const Box& box, void* user_data) override {
+    auto fcl_box = make_shared<fcl::Boxd>(box.size());
+    TakeShapeOwnership(fcl_box, user_data);
+  }
+
   void ImplementGeometry(const Mesh&, void* user_data) override {
     // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
     // assumes that a zero-radius sphere has no interesting interactions with
@@ -418,7 +429,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     collision_data.contacts = &contacts;
     collision_data.request.num_max_contacts = 1;
     collision_data.request.enable_contact = true;
+    // NOTE: As of 5/1/2018 the GJK implementation of Libccd appears to be
+    // superior to FCL's "independent" implementation. Furthermore, libccd
+    // appears to behave badly if its gjk tolerance is much tighter than
+    // 2e-12. Until this changes, we explicitly specify these parameters rather
+    // than relying on FCL's defaults.
+    collision_data.request.gjk_tolerance = 2e-12;
+    collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+
     dynamic_tree_.collide(&collision_data, SingleCollisionCallback);
+
     // NOTE: The interface to DynamicAABBTreeCollisionManager::collide
     // requires the input collision manager pointer to be *non* const.
     // As of 02/06/2018, it appears the only opportunity for modification

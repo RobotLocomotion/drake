@@ -13,6 +13,7 @@
 namespace drake {
 namespace systems {
 
+using geometry::Box;
 using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::FramePoseVector;
@@ -68,6 +69,8 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
   // collision. However, if both are included as dynamic bodies, penetrations
   // will be reported.
 
+  using std::make_unique;
+
   // Load *dynamic* geometry
   const int body_count = static_cast<int>(tree_->get_bodies().size());
   if (body_count > 1) {  // more than just the world.
@@ -89,25 +92,29 @@ void RigidBodyPlantBridge<T>::RegisterTree(SceneGraph<T>* scene_graph) {
         Isometry3<double> X_FG = visual_element.getLocalTransform();
         const DrakeShapes::Geometry& geometry = visual_element.getGeometry();
         switch (visual_element.getShape()) {
+          case DrakeShapes::BOX: {
+            const auto& box = dynamic_cast<const DrakeShapes::Box&>(geometry);
+            shape = make_unique<Box>(box.size(0), box.size(1), box.size(2));
+            break;
+          }
           case DrakeShapes::SPHERE: {
             const auto& sphere =
                 dynamic_cast<const DrakeShapes::Sphere&>(geometry);
-            shape = std::make_unique<Sphere>(sphere.radius);
+            shape = make_unique<Sphere>(sphere.radius);
             break;
           }
           case DrakeShapes::CYLINDER: {
             const auto& cylinder =
                 dynamic_cast<const DrakeShapes::Cylinder&>(geometry);
-            shape =
-                std::make_unique<Cylinder>(cylinder.radius, cylinder.length);
+            shape = make_unique<Cylinder>(cylinder.radius, cylinder.length);
             break;
           }
           case DrakeShapes::MESH: {
             const auto& mesh = dynamic_cast<const DrakeShapes::Mesh&>(geometry);
             if (mesh.uri_.find("package://") == 0) {
-              shape = std::make_unique<Mesh>(mesh.uri_);
+              shape = make_unique<Mesh>(mesh.uri_);
             } else {
-              shape = std::make_unique<Mesh>(mesh.resolved_filename_);
+              shape = make_unique<Mesh>(mesh.resolved_filename_);
             }
             break;
           }
