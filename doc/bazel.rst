@@ -142,6 +142,9 @@ The Drake Bazel build currently supports the following proprietary solvers:
  * MOSEK 8.1
  * SNOPT 7.6
 
+.. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
+   solvers/test/snopt_solver_test.cc.
+
 .. _gurobi:
 
 Gurobi 8.0.0
