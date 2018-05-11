@@ -152,8 +152,8 @@ void AddJointActuatorFromSpecification(
   // as a way to specify un-actuated joints. Thus, the user would say
   // <effort>0</effort> for un-actuated joints.
   if (max_effort != 0) {
-    // TODO(amcastro-tri): For positive max_effort values, store it and use it to
-    // limit input torques.
+    // TODO(amcastro-tri): For positive max_effort values, store it and use it
+    // to limit input actuation.
     plant->AddJointActuator(joint_spec.Name(), joint);
   }
 }

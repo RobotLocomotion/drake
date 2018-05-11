@@ -118,9 +118,6 @@ int do_main() {
   DRAKE_DEMAND(acrobot.num_actuators() == 1);
   DRAKE_DEMAND(acrobot.num_actuated_dofs() == 1);
 
-  //const AcrobotParameters acrobot_parameters;
-  //const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
-  //    acrobot_parameters, true /* Finalize the plant */, &scene_graph));
   const RevoluteJoint<double>& shoulder =
       acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
