@@ -3,9 +3,6 @@
 # Should include everything any consumer of Drake would ever need.
 #
 # Do not update this list by hand; instead, run build_components_refresh.py.
-#
-# When adding new components to the package, please also add the licenses for
-# any new external dependencies to :external_licenses.
 LIBDRAKE_COMPONENTS = [
     "//automotive/maliput/api:api",
     "//automotive/maliput/dragway:dragway",
