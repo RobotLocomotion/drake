@@ -19,6 +19,7 @@ namespace {
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using geometry::Box;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
@@ -107,6 +108,17 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
       MakeSdfGeometryFromString("<empty/>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
+}
+
+// Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<box>"
+      "  <size>1.0 2.0 3.0</size>"
+      "</box>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Box& box = dynamic_cast<const Box&>(*shape);
+  EXPECT_EQ(box.size(), Vector3d(1.0, 2.0, 3.0));
 }
 
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.

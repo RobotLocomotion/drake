@@ -18,7 +18,14 @@
         </inertia>
       </inertial>
 
-      <!-- TODO(amcastro-tri): Add cart's visual once SG supports boxes. -->
+      <visual name='cart_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.24 0.12 0.12</size>
+          </box>
+        </geometry>
+      </visual>
     </link>
 
     <link name='Pole'>
