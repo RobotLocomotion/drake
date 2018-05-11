@@ -364,42 +364,24 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     CalcConstraintAccelProblemData(dt, data, 0, 0, v);
   }
 
-    void SolveDiscretizationProblem(
+  // Computes generalized acceleration for discretized problems using the
+  // given problem data, prior velocity `v`, constraint forces `cf`, and `dt`.
+  void ComputeGeneralizedAcceleration(
+      const ConstraintVelProblemData<double>& data, const VectorX<double>& v,
+      const VectorX<double>& cf, double dt, VectorX<double>* vdot) {
+    unused(data);
+    unused(v);
+    unused(cf);
+    unused(dt);
+    DRAKE_DEMAND(vdot);
+  }
+
+  void SolveDiscretizationProblem(
       const ConstraintVelProblemData<double>& problem_data, double dt,
       VectorX<double>* cf) {
+    unused(problem_data);
+    unused(dt);
     DRAKE_DEMAND(cf);
-
-    VectorX<double> qq, a;
-    MatrixX<double> MM;
-    ConstraintSolver<double>::MlcpToLcpData mlcp_to_lcp_data;
-    solver_.ConstructBaseDiscretizedTimeLCP(
-        problem_data, &mlcp_to_lcp_data, &MM, &qq);
-    solver_.UpdateDiscretizedTimeLCP(
-        problem_data, dt, &mlcp_to_lcp_data, &a, &MM, &qq);
-
-    // Determine the zero tolerance.
-    solvers::UnrevisedLemkeSolver<double> lcp;
-    const double zero_tol = lcp.ComputeZeroTolerance(MM, qq);
-
-    // Attempt to solve the linear complementarity problem.
-    int num_pivots;
-    VectorX<double> zz;
-    bool success = lcp.SolveLcpLemke(MM, qq, &zz, &num_pivots);
-    VectorX<double> ww = MM*zz + qq;
-    double max_dot = (zz.size() > 0) ?
-                     (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
-
-    // Check for success.
-    const int num_vars = qq.size();
-    ASSERT_TRUE(success);
-    ASSERT_TRUE(zz.size() == 0 || zz.minCoeff() > -num_vars * zero_tol);
-    ASSERT_TRUE(ww.size() == 0 || ww.minCoeff() > -num_vars * zero_tol);
-    ASSERT_TRUE(zz.size() == 0 || max_dot < std::max(1.0, zz.maxCoeff()) *
-                           std::max(1.0, ww.maxCoeff()) * num_vars * zero_tol);
-
-    // Compute the packed constraint forces.
-    solver_.PopulatePackedConstraintForcesFromLCPSolution(
-        problem_data, mlcp_to_lcp_data, zz, a, dt, cf);
   }
 
   // Computes rigid contact data without any duplication of contact points or
@@ -779,7 +761,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to zero.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_LT(ga.norm(), lcp_eps_ * cf.size());
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -813,7 +795,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to the
         // gravitational acceleration.
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_NEAR(ga.norm(), std::fabs(grav_accel), lcp_eps_ * cf.size());
       }
     }
@@ -1039,7 +1021,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to zero.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_LT(ga.norm(), lcp_eps_ * cf.size());
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -1073,7 +1055,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to the
         // gravitational acceleration.
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_NEAR(ga.norm(), std::fabs(grav_accel), lcp_eps_ * cf.size());
       }
     }
@@ -1289,7 +1271,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the horizontal acceleration is in the appropriate
         // direction.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -1327,7 +1309,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the vertical acceleration of the rod is equal to the
         // gravitational acceleration and that the horizontal acceleration is
         // in the appropriate direction.
-        solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_NEAR(ga[1], std::fabs(grav_accel), lcp_eps_ * cf.size());
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
       }
@@ -1728,7 +1710,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Verify that the normal component of the generalized acceleration is now
     // equal to the negated gravitational acceleration.
     VectorX<double> ga;
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_NEAR(ga[1], -grav_accel, lcp_eps_);
   }
 
@@ -2004,7 +1986,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Get the generalized acceleration from the constraint forces and verify 
     // that the moment is zero.
     VectorX<double> ga;
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
@@ -2014,7 +1996,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     SolveDiscretizationProblem(*vel_data_, dt, &cf);
 
     // Compute the generalized acceleration.
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_NEAR(ga[2] * dt, -vel_data_->kG[0], lcp_eps_ * cf.size());
   }
 
@@ -2226,7 +2208,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // term LM⁻¹Nᵀ is not computed properly, this acceleration might not
     // be zero.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 
     // Set kN and kL terms to effectively double gravity, which should cause the
@@ -2234,7 +2216,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     vel_data_->kN.setOnes() *= grav_accel * dt;
     vel_data_->kL.setOnes() *= grav_accel * dt;
     SolveDiscretizationProblem(*vel_data_, dt, &cf);
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
   }
 
@@ -2536,7 +2518,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Verify that the vertical acceleration is zero.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
   }
 };
@@ -2546,8 +2528,6 @@ TEST_P(Constraint2DSolverTest, SinglePointStickingBothSigns) {
   // Test sticking with applied force to the right (true) and the left (false).
   SinglePointSticking(kForceAppliedToRight);
   SinglePointSticking(kForceAppliedToLeft);
-  SinglePointStickingDiscretized(kForceAppliedToRight);
-  SinglePointStickingDiscretized(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point sticking configurations.
@@ -2558,8 +2538,6 @@ TEST_P(Constraint2DSolverTest, TwoPointStickingSign) {
   TwoPointSticking(kForceAppliedToLeft, kLCPSolver);
   TwoPointSticking(kForceAppliedToRight, kLinearSystemSolver);
   TwoPointSticking(kForceAppliedToLeft, kLinearSystemSolver);
-  TwoPointStickingDiscretized(kForceAppliedToRight);
-  TwoPointStickingDiscretized(kForceAppliedToLeft);
 }
 
 // Tests the rod in two-point non-sliding configurations that will transition
@@ -2568,8 +2546,6 @@ TEST_P(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
   // Test sticking with applied force to the right (true) and the left (false).
   TwoPointNonSlidingToSliding(kForceAppliedToRight);
   TwoPointNonSlidingToSliding(kForceAppliedToLeft);
-  TwoPointNonSlidingToSlidingDiscretized(kForceAppliedToRight);
-  TwoPointNonSlidingToSlidingDiscretized(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point impact which is insufficient to put the rod
@@ -2594,8 +2570,6 @@ TEST_P(Constraint2DSolverTest, TwoPointSlidingTest) {
   Sliding(kSlideLeft, false /* not upright */, kLCPSolver);
   Sliding(kSlideRight, false /* not upright */, kLinearSystemSolver);
   Sliding(kSlideLeft, false /* not upright */, kLinearSystemSolver);
-  SlidingDiscretized(kSlideRight, false /* not upright */);
-  SlidingDiscretized(kSlideLeft, false /* not upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
@@ -2606,8 +2580,6 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingTest) {
   Sliding(kSlideLeft, true /* upright */, kLCPSolver);
   Sliding(kSlideRight, true /* upright */, kLinearSystemSolver);
   Sliding(kSlideLeft, true /* upright */, kLinearSystemSolver);
-  SlidingDiscretized(kSlideRight, true /* upright */);
-  SlidingDiscretized(kSlideLeft, true /* upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
@@ -2618,8 +2590,6 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
   SlidingPlusBilateral(kSlideLeft, kLCPSolver);
   SlidingPlusBilateral(kSlideRight, kLinearSystemSolver);
   SlidingPlusBilateral(kSlideLeft, kLinearSystemSolver);
-  SlidingPlusBilateralDiscretized(kSlideRight);
-  SlidingPlusBilateralDiscretized(kSlideLeft);
 }
 
 // Tests the rod in a single point impacting configuration, with sliding both
@@ -2636,7 +2606,6 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
 TEST_P(Constraint2DSolverTest, OnePointPlusLimitTest) {
   OnePointPlusLimit(kLCPSolver);
   OnePointPlusLimit(kLinearSystemSolver);
-  OnePointPlusLimitDiscretized();
 }
 
 // Tests the rod in a two-point contact configuration with both sticking and
@@ -2663,7 +2632,6 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccelTest) {
 TEST_P(Constraint2DSolverTest, TwoPointAsLimitTest) {
   TwoPointAsLimit(kLCPSolver);
   TwoPointAsLimit(kLinearSystemSolver);
-  TwoPointAsLimitDiscretized();
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force

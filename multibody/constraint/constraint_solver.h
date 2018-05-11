@@ -235,7 +235,7 @@ class ConstraintSolver {
   ///         orthonormal.
   /// @note On return, the contact impulse at the iᵗʰ contact point expressed
   ///       in the world frame is `contact_frames[i]` * `contact_impulses[i]`.
-  static void CalcImpactForcesInContactFrames(
+  static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
       const ConstraintVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
@@ -1934,21 +1934,21 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 }
 
 template <class T>
-void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
+void ConstraintSolver<T>::CalcContactForcesInContactFrames(
     const VectorX<T>& cf,
     const ConstraintVelProblemData<T>& problem_data,
     const std::vector<Matrix2<T>>& contact_frames,
-    std::vector<Vector2<T>>* contact_impulses) {
+    std::vector<Vector2<T>>* contact_forces) {
   using std::abs;
 
   // Loose tolerance for unit vectors and orthogonality.
   const double loose_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
-  // Verify that contact_impulses is non-null and is empty.
-  if (!contact_impulses)
-    throw std::logic_error("Vector of contact impulses is null.");
-  if (!contact_impulses->empty())
-    throw std::logic_error("Vector of contact impulses is not empty.");
+  // Verify that contact_forces is non-null and is empty.
+  if (!contact_forces)
+    throw std::logic_error("Vector of contact forces is null.");
+  if (!contact_forces->empty())
+    throw std::logic_error("Vector of contact forces is not empty.");
 
   // Verify that cf is the correct size.
   const int num_contacts = problem_data.mu.size();
@@ -1975,13 +1975,13 @@ void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
                                "contacts.");
   }
 
-  // Resize the impulse vector.
-  contact_impulses->resize(contact_frames.size());
+  // Resize the force vector.
+  contact_forces->resize(contact_frames.size());
 
-  // Set the impulses.
+  // Set the forces.
   for (int i = 0, tangent_index = 0; i < num_contacts; ++i) {
-    // Alias the impulse.
-    Vector2<T>& contact_impulse_i = (*contact_impulses)[i];
+    // Alias the force.
+    Vector2<T>& contact_force_i = (*contact_forces)[i];
 
     // Get the contact normal and tangent.
     const Vector2<T> contact_normal = contact_frames[i].col(0);
@@ -2002,12 +2002,12 @@ void ConstraintSolver<T>::CalcImpactForcesInContactFrames(
       throw std::logic_error(oss.str());
     }
 
-    // Compute the contact impulse expressed in the global frame.
+    // Compute the contact force expressed in the global frame.
     Vector2<T> j0 = contact_normal * cf[i] + contact_tangent *
         cf[num_contacts + tangent_index++];
 
-    // Compute the contact impulse in the contact frame.
-    contact_impulse_i = contact_frames[i].transpose() * j0;
+    // Compute the contact force in the contact frame.
+    contact_force_i = contact_frames[i].transpose() * j0;
   }
 }
 
