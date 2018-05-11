@@ -25,10 +25,12 @@ drake_cc_package_library(
 drake_cc_library(
     name = "everything",
     srcs = [
+        "derive_lane_s_route.cc",
         "generate_obj.cc",
         "generate_urdf.cc",
     ],
     hdrs = [
+        "derive_lane_s_route.h",
         "generate_obj.h",
         "generate_urdf.h",
     ],
@@ -83,6 +85,18 @@ filegroup(
     name = "test_data",
     testonly = 1,
     srcs = glob(["test/data/*"]),
+)
+
+drake_cc_googletest(
+    name = "derive_lane_s_route_test",
+    data = [
+        "//automotive/maliput/multilane:yamls",
+    ],
+    deps = [
+        ":utility",
+        "//automotive/maliput/dragway",
+        "//automotive/maliput/multilane",
+    ],
 )
 
 drake_cc_googletest(
