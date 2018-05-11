@@ -42,6 +42,7 @@ class AcrobotModelTests : public ::testing::Test {
 
     ASSERT_TRUE(plant_->HasJointNamed("ShoulderJoint"));
     ASSERT_TRUE(plant_->HasJointNamed("ElbowJoint"));
+    ASSERT_TRUE(plant_->HasJointActuatorNamed("ElbowJoint"));
 
     shoulder_ = &plant_->GetJointByName<RevoluteJoint>("ShoulderJoint");
     elbow_ = &plant_->GetJointByName<RevoluteJoint>("ElbowJoint");
@@ -97,9 +98,12 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(benchmark_plant_->num_bodies(), plant_->num_bodies());
   EXPECT_EQ(benchmark_plant_->num_joints(), plant_->num_joints());
-  // Even though our benchmark model does, the parsed model has no actuators.
-  EXPECT_EQ(0, plant_->num_actuators());
-  EXPECT_EQ(0, plant_->num_actuated_dofs());
+
+  // Verify we parsed the actuated joint correctly.
+  EXPECT_EQ(1, plant_->num_actuators());
+  EXPECT_EQ(1, plant_->num_actuated_dofs());
+  EXPECT_EQ(plant_->GetJointActuatorByName("ElbowJoint").joint().index(),
+            elbow_->index());
 
   // State size.
   EXPECT_EQ(plant_->num_positions(), benchmark_plant_->num_positions());
