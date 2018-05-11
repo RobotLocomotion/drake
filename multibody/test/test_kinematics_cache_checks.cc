@@ -63,6 +63,7 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
   drake::TwistVector<double> spatial_acceleration;
   spatial_acceleration.setRandom();
   const RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
+  drake::Matrix6X<double> jacobian(6, cache.get_num_positions());
 
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::centerOfMass<double>, cache,
@@ -88,10 +89,27 @@ void performChecks(RigidBodyTree<double>& model, KinematicsCache<double>& cache,
                  &RigidBodyTree<double>::centerOfMassJacobian<double>, cache,
                  RigidBodyTreeConstants::default_model_instance_id_set,
                  in_terms_of_qdot);
+
+  typedef drake::TwistMatrix<double> (
+      RigidBodyTree<double>::*geometryJacobian_ptr)(
+      const KinematicsCache<double>&, int, int, int, bool,
+      std::vector<int, std::allocator<int>>*) const;
+  geometryJacobian_ptr function_ptr =
+      &RigidBodyTree<double>::geometricJacobian<double>;
   checkForErrors(settings.expect_error_on_configuration_methods, model,
-                 &RigidBodyTree<double>::geometricJacobian<double>, cache,
-                 base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
-                 in_terms_of_qdot, &v_or_qdot_indices);
+                 function_ptr, cache, base_or_frame_ind, body_or_frame_ind,
+                 expressed_in_frame_ind, in_terms_of_qdot, &v_or_qdot_indices);
+
+  typedef void (RigidBodyTree<double>::*void_geometryJacobian_ptr)(
+      const KinematicsCache<double>&, int, int, int, bool,
+      std::vector<int, std::allocator<int>>*, drake::Matrix6X<double>*) const;
+  void_geometryJacobian_ptr void_function_ptr =
+      &RigidBodyTree<double>::geometricJacobian<double>;
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 void_function_ptr, cache, base_or_frame_ind, body_or_frame_ind,
+                 expressed_in_frame_ind, in_terms_of_qdot, &v_or_qdot_indices,
+                 &jacobian);
+
   checkForErrors(settings.expect_error_on_configuration_methods, model,
                  &RigidBodyTree<double>::relativeTransform<double>, cache,
                  base_or_frame_ind, body_or_frame_ind);

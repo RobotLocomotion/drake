@@ -366,8 +366,9 @@ class RBTDifferentialKinematicsHelperTest : public ::testing::Test {
 
     Isometry3<double> X_WF =
         robot_->CalcFramePoseInWorldFrame(*cache_, *frame_ptr_);
-    KinematicPath kinematic_path = robot_->findKinematicPath(
-        robot_->world().get_body_index(), frame_ptr_->get_frame_index());
+    KinematicPath kinematic_path;
+    robot_->findKinematicPath(robot_->world().get_body_index(),
+                              frame_ptr_->get_frame_index(), &kinematic_path);
     // geometricJacobian returns the Jacobian w.r.t a plucker vector.
     // So J_plucker_WF_F == J_WF_F, and we can compute J_WF by rotating it
     // with R_WF.

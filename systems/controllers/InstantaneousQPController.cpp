@@ -758,8 +758,9 @@ int InstantaneousQPController::setupAndSolveQP(
         qp_input.body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),
            qp_input.body_motion_data[i].weight_multiplier, sizeof(double) * 6);
-    desired_body_accelerations[i].body_path = robot->findKinematicPath(
-        0, desired_body_accelerations[i].body_or_frame_id0);
+    robot->findKinematicPath(0,
+                             desired_body_accelerations[i].body_or_frame_id0,
+                             &desired_body_accelerations[i].body_path);
 
     auto spline =
         decodePiecewisePolynomial(qp_input.body_motion_data[i].spline);
