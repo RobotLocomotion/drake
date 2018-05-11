@@ -1,5 +1,7 @@
 #include "drake/solvers/snopt_solver.h"
 
+#include <iostream>
+
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
@@ -87,13 +89,35 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
   result = solver.Solve(prog);
   EXPECT_EQ(result, SolutionResult::kIterationLimit);
+}
+
+GTEST_TEST(SnoptTest, TestPrintFile) {
+  // SNOPT 7.6 has a known bug where it mis-handles the NIL terminator byte
+  // when setting an debug log filename.  This is fixed in newer releases.
+  // Ideally we would add this function to the asan blacklist, but SNOPT
+  // doesn't have symbols so we'll just disable this test case instead.
+#if __has_feature(address_sanitizer) or defined(__SANITIZE_ADDRESS__)
+  constexpr bool using_asan = true;
+#else
+  constexpr bool using_asan = false;
+#endif
+  if (using_asan) {
+    std::cerr << "Skipping TestPrintFile under ASAN\n";
+    return;
+  }
+
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) == 1);
 
   // This is to verify we can set the print out file.
-  std::string print_file = temp_directory() + "/snopt.out";
+  const std::string print_file = temp_directory() + "/snopt.out";
   std::cout << print_file << std::endl;
   EXPECT_FALSE(spruce::path(print_file).exists());
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
-  result = solver.Solve(prog);
+  const SnoptSolver solver;
+  const SolutionResult result = solver.Solve(prog);
+  EXPECT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_TRUE(spruce::path(print_file).exists());
 }
 
