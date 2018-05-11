@@ -34,7 +34,7 @@ namespace math {
 /// - double
 /// - AutoDiffXd
 ///
-// TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
+// TODO(Mitiguy) Ensure class handles RotationMatrix<symbolic::Expression>.
 template <typename T>
 class RotationMatrix {
  public:
@@ -47,7 +47,13 @@ class RotationMatrix {
   /// Constructs a %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  explicit RotationMatrix(const Matrix3<T>& R);
+  explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
+#ifdef DRAKE_ASSERT_IS_ARMED
+    SetOrThrowIfNotValid(R);
+#else
+    SetUnchecked(R);
+#endif
+  }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
@@ -60,7 +66,16 @@ class RotationMatrix {
   // TODO(mitiguy) Although this method is fairly efficient, consider adding an
   // optional second argument if `quaternion` is known to be normalized apriori
   // or for some reason the calling site does not want `quaternion` normalized.
-  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion);
+  explicit RotationMatrix(const Eigen::Quaternion<T>& quaternion) {
+    // Cost for various way to create a rotation matrix from a quaternion.
+    // Eigen quaternion.toRotationMatrix() = 12 multiplies, 12 adds.
+    // Drake  QuaternionToRotationMatrix() = 12 multiplies, 12 adds.
+    // Extra cost for two_over_norm_squared =  4 multiplies,  3 adds, 1 divide.
+    // Extra cost if normalized = 4 multiplies, 3 adds, 1 sqrt, 1 divide.
+    const T two_over_norm_squared = T(2) / quaternion.squaredNorm();
+    R_AB_ = QuaternionToRotationMatrix(quaternion, two_over_norm_squared);
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
 
   /// Constructs a %RotationMatrix from an Eigen::AngleAxis.
   /// @param[in] theta_lambda an Eigen::AngleAxis whose associated axis (vector
@@ -75,7 +90,13 @@ class RotationMatrix {
   // %RotationMatrix constructor (above) with that un-normalized quaternion.
   // TODO(mitiguy) Consider adding an optional second argument if `lambda` is
   // known to be normalized apriori or calling site does not want normalization.
-  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda);
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
+    const Vector3<T>& lambda = theta_lambda.axis();
+    const T norm = lambda.norm();
+    const T& theta = theta_lambda.angle();
+    R_AB_ = Eigen::AngleAxis<T>(theta, lambda / norm).toRotationMatrix();
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R_AB_));
+  }
 
   /// Constructs a %RotationMatrix from an %RollPitchYaw.  In other words,
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
@@ -107,7 +128,28 @@ class RotationMatrix {
   /// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-  explicit RotationMatrix(const RollPitchYaw<T>& rpy);
+  explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
+    const T &r = rpy.get_roll_angle();
+    const T &p = rpy.get_pitch_angle();
+    const T &y = rpy.get_yaw_angle();
+    using std::sin;
+    using std::cos;
+    const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
+    const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
+    const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
+    const T Rxx = c2 * c1;
+    const T Rxy = c2_s1 * s0 - s2 * c0;
+    const T Rxz = c2_s1 * c0 + s2 * s0;
+    const T Ryx = s2 * c1;
+    const T Ryy = s2_s1 * s0 + c2 * c0;
+    const T Ryz = s2_s1 * c0 - c2 * s0;
+    const T Rzx = -s1;
+    const T Rzy = c1 * s0;
+    const T Rzz = c1 * c0;
+    R_AB_.row(0) << Rxx, Rxy, Rxz;
+    R_AB_.row(1) << Ryx, Ryy, Ryz;
+    R_AB_.row(2) << Rzx, Rzy, Rzz;
+  }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
@@ -120,7 +162,18 @@ class RotationMatrix {
   /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeXRotation(const T& theta);
+  static RotationMatrix<T> MakeXRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << 1,  0,  0,
+         0,  c, -s,
+         0,  s,  c;
+    // clang-format on
+    return RotationMatrix(R);
+  }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
@@ -133,7 +186,18 @@ class RotationMatrix {
   /// R_AB = ⎢          0    1           0  ⎥
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeYRotation(const T& theta);
+  static RotationMatrix<T> MakeYRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R <<  c,  0,  s,
+          0,  1,  0,
+         -s,  0,  c;
+    // clang-format on
+    return RotationMatrix(R);
+  }
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
@@ -146,7 +210,18 @@ class RotationMatrix {
   /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
   ///        ⎣         0            0    1 ⎦
   /// ```
-  static RotationMatrix<T> MakeZRotation(const T& theta);
+  static RotationMatrix<T> MakeZRotation(const T& theta) {
+    Matrix3<T> R;
+    using std::sin;
+    using std::cos;
+    const T c = cos(theta), s = sin(theta);
+    // clang-format off
+    R << c, -s,  0,
+         s,  c,  0,
+         0,  0,  1;
+    // clang-format on
+    return RotationMatrix(R);
+  }
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
@@ -170,19 +245,27 @@ class RotationMatrix {
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  void SetOrThrowIfNotValid(const Matrix3<T>& R);
+  void SetOrThrowIfNotValid(const Matrix3<T>& R) {
+    ThrowIfNotValid(R);
+    SetUnchecked(R);
+  }
 
   /// Returns the 3x3 identity %RotationMatrix.
   // @internal This method's name was chosen to mimic Eigen's Identity().
-  static const RotationMatrix<T>& Identity();
+  static const RotationMatrix<T>& Identity() {
+    static const never_destroyed<RotationMatrix<T>> kIdentity;
+    return kIdentity.access();
+  }
 
   /// Returns `R_BA = R_AB⁻¹`, the inverse (transpose) of this %RotationMatrix.
   /// @note For a valid rotation matrix `R_BA = R_AB⁻¹ = R_ABᵀ`.
   // @internal This method's name was chosen to mimic Eigen's inverse().
-  RotationMatrix<T> inverse() const;
+  RotationMatrix<T> inverse() const {
+    return RotationMatrix<T>(R_AB_.transpose());
+  }
 
   /// Returns the Matrix3 underlying a %RotationMatrix.
-  const Matrix3<T>& matrix() const;
+  const Matrix3<T>& matrix() const { return R_AB_; }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
   /// matrix `R_BC`.  On return, `this` is set to equal `R_AB * R_BC`.
@@ -190,7 +273,10 @@ class RotationMatrix {
   /// @returns `this` rotation matrix which has been multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
-  RotationMatrix<T>& operator*=(const RotationMatrix<T>& other);
+  RotationMatrix<T>& operator*=(const RotationMatrix<T>& other) {
+    SetUnchecked(matrix() * other.matrix());
+    return *this;
+  }
 
   /// Calculates `this` rotation matrix `R_AB` multiplied by `other` rotation
   /// matrix `R_BC`, returning the composition `R_AB * R_BC`.
@@ -198,19 +284,26 @@ class RotationMatrix {
   /// @returns rotation matrix that results from `this` multiplied by `other`.
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
-  RotationMatrix<T> operator*(const RotationMatrix<T>& other) const;
+  RotationMatrix<T> operator*(const RotationMatrix<T>& other) const {
+    return RotationMatrix<T>(matrix() * other.matrix(), true);
+  }
 
   /// Calculates `this` rotation matrix R multiplied by an arbitrary Vector3.
   /// @param[in] v 3x1 vector that post-multiplies `this`.
   /// @returns 3x1 vector that results from `R * v`.
-  Vector3<T> operator*(const Vector3<T>& v) const;
+  Vector3<T> operator*(const Vector3<T>& v) const {
+    return Vector3<T>(matrix() * v);
+  }
 
   /// Returns how close the matrix R is to to being a 3x3 orthonormal matrix by
   /// computing `‖R ⋅ Rᵀ - I‖∞` (i.e., the maximum absolute value of the
   /// difference between the elements of R ⋅ Rᵀ and the 3x3 identity matrix).
   /// @param[in] R matrix being checked for orthonormality.
   /// @returns `‖R ⋅ Rᵀ - I‖∞`
-  static T GetMeasureOfOrthonormality(const Matrix3<T>& R);
+  static T GetMeasureOfOrthonormality(const Matrix3<T>& R) {
+    const Matrix3<T> m = R * R.transpose();
+    return GetMaximumAbsoluteDifference(m, Matrix3<T>::Identity());
+  }
 
   /// Tests if a generic Matrix3 has orthonormal vectors to within the threshold
   /// specified by `tolerance`.
@@ -218,7 +311,9 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between R * Rᵀ
   /// and the identity matrix I, i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`.
   /// @returns `true` if R is an orthonormal matrix.
-  static bool IsOrthonormal(const Matrix3<T>& R, double tolerance);
+  static bool IsOrthonormal(const Matrix3<T>& R, double tolerance) {
+    return GetMeasureOfOrthonormality(R) <= tolerance;
+  }
 
   /// Tests if a generic Matrix3 seems to be a proper orthonormal rotation
   /// matrix to within the threshold specified by `tolerance`.
@@ -226,25 +321,32 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference of `R * Rᵀ`
   /// and the identity matrix I (i.e., checks if `‖R ⋅ Rᵀ - I‖∞ <= tolerance`).
   /// @returns `true` if R is a valid rotation matrix.
-  static bool IsValid(const Matrix3<T>& R, double tolerance);
+  static bool IsValid(const Matrix3<T>& R, double tolerance) {
+    return IsOrthonormal(R, tolerance) && R.determinant() > 0;
+  }
 
   /// Tests if a generic Matrix3 is a proper orthonormal rotation matrix to
   /// within the threshold of get_internal_tolerance_for_orthonormality().
   /// @param[in] R an allegedly valid rotation matrix.
   /// @returns `true` if R is a valid rotation matrix.
-  static bool IsValid(const Matrix3<T>& R);
+  static bool IsValid(const Matrix3<T>& R) {
+    return IsValid(R, get_internal_tolerance_for_orthonormality());
+  }
 
   /// Tests if `this` rotation matrix R is a proper orthonormal rotation matrix
   /// to within the threshold of get_internal_tolerance_for_orthonormality().
   /// @returns `true` if `this` is a valid rotation matrix.
-  bool IsValid() const;
+  bool IsValid() const { return IsValid(matrix()); }
 
   /// Returns `true` if `this` is exactly equal to the identity matrix.
-  bool IsExactlyIdentity() const;
+  bool IsExactlyIdentity() const { return matrix() == Matrix3<T>::Identity(); }
 
   /// Returns true if `this` is equal to the identity matrix to within the
   /// threshold of get_internal_tolerance_for_orthonormality().
-  bool IsIdentityToInternalTolerance() const;
+  bool IsIdentityToInternalTolerance() const {
+    return IsNearlyEqualTo(matrix(), Matrix3<T>::Identity(),
+                           get_internal_tolerance_for_orthonormality());
+  }
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
@@ -252,20 +354,26 @@ class RotationMatrix {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const;
+  bool IsNearlyEqualTo(const RotationMatrix<T>& other, double tolerance) const {
+    return IsNearlyEqualTo(matrix(), other.matrix(), tolerance);
+  }
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are exactly the same.
   /// @param[in] other %RotationMatrix to compare to `this`.
   /// @returns true if each element of `this` is exactly equal to the
   /// corresponding element in `other`.
-  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const;
+  bool IsExactlyEqualTo(const RotationMatrix<T>& other) const {
+    return matrix() == other.matrix();
+  }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RotationMatrix to subtract from `this`.
   /// @returns `‖this - other‖∞`
-  T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const;
+  T GetMaximumAbsoluteDifference(const RotationMatrix<T>& other) const {
+    return GetMaximumAbsoluteDifference(matrix(), other.matrix());
+  }
 
   /// Given an approximate rotation matrix M, finds the %RotationMatrix R
   /// closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
@@ -325,7 +433,7 @@ class RotationMatrix {
   /// returned by this method chooses the quaternion with q(0) >= 0.
   // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
-  Eigen::Quaternion<T> ToQuaternion() const;
+  Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, the quaternion
@@ -338,16 +446,69 @@ class RotationMatrix {
   // @internal This implementation is adapted from simbody at
   // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
   static Eigen::Quaternion<T> ToQuaternion(
-      const Eigen::Ref<const Matrix3<T>>& M);
+      const Eigen::Ref<const Matrix3<T>>& M) {
+    T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
+
+    const T trace = M.trace();
+    if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
+      // This branch occurs if the trace is larger than any diagonal element.
+      w = T(1) + trace;
+      x = M(2, 1) - M(1, 2);
+      y = M(0, 2) - M(2, 0);
+      z = M(1, 0) - M(0, 1);
+    } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
+      // This branch occurs if M(0,0) is largest among the diagonal elements.
+      w = M(2, 1) - M(1, 2);
+      x = T(1) - (trace - 2 * M(0, 0));
+      y = M(0, 1) + M(1, 0);
+      z = M(0, 2) + M(2, 0);
+    } else if (M(1, 1) >= M(2, 2)) {
+      // This branch occurs if M(1,1) is largest among the diagonal elements.
+      w = M(0, 2) - M(2, 0);
+      x = M(0, 1) + M(1, 0);
+      y = T(1) - (trace - 2 * M(1, 1));
+      z = M(1, 2) + M(2, 1);
+    } else {
+      // This branch occurs if M(2,2) is largest among the diagonal elements.
+      w = M(1, 0) - M(0, 1);
+      x = M(0, 2) + M(2, 0);
+      y = M(1, 2) + M(2, 1);
+      z = T(1) - (trace - 2 * M(2, 2));
+    }
+
+    // Create a quantity q (which is not yet a quaternion).
+    // Note: Eigen's Quaternion constructor does not normalize.
+    Eigen::Quaternion<T> q(w, x, y, z);
+
+    // Since the quaternions q and -q correspond to the same rotation matrix,
+    // choose a "canonical" quaternion with q(0) > 0.
+    const T canonical_factor = (w < 0) ? T(-1) : T(1);
+
+    // The quantity q calculated thus far in this algorithm is not a quaternion
+    // with magnitude 1.  It differs from a quaternion in that all elements of q
+    // are scaled by the same factor (the value of this factor depends on which
+    // branch of the if/else-statements was used). To return a valid quaternion,
+    // q must be normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
+    const T scale = canonical_factor / q.norm();
+    q.coeffs() *= scale;
+
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
+    return q;
+  }
 
   /// Utility method to return the Vector4 associated with ToQuaterion().
   /// @see ToQuaternion().
-  Vector4<T> ToQuaternionAsVector4() const;
+  Vector4<T> ToQuaternionAsVector4() const {
+    return ToQuaternionAsVector4(R_AB_);
+  }
 
   /// Utility method to return the Vector4 associated with ToQuaterion(M).
   /// @param[in] M 3x3 matrix to be made into a quaternion.
   /// @see ToQuaternion().
-  static Vector4<T> ToQuaternionAsVector4(const Matrix3<T>& M);
+  static Vector4<T> ToQuaternionAsVector4(const Matrix3<T>& M)  {
+    const Eigen::Quaternion<T> q = ToQuaternion(M);
+    return Vector4<T>(q.w(), q.x(), q.y(), q.z());
+  }
 
   /// Returns an AngleAxis `theta_lambda` containing an angle `theta` and unit
   /// vector (axis direction) `lambda` that represents `this` %RotationMatrix.
@@ -355,7 +516,10 @@ class RotationMatrix {
   /// is identical to that of `(-theta) * (-lambda)`.  The AngleAxis returned by
   /// this method chooses to have `0 <= theta <= pi`.
   /// @returns an AngleAxis with `0 <= theta <= pi` and a unit vector `lambda`.
-  Eigen::AngleAxis<T> ToAngleAxis() const;
+  Eigen::AngleAxis<T> ToAngleAxis() const {
+    const Eigen::AngleAxis<T> theta_lambda(this->matrix());
+    return theta_lambda;
+  }
 
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
@@ -375,12 +539,12 @@ class RotationMatrix {
   // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
   // from one of the public constructors.
-  RotationMatrix(const Matrix3<T>& R, bool);
+  RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
   // test whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
-  void SetUnchecked(const Matrix3<T>& R);
+  void SetUnchecked(const Matrix3<T>& R) { R_AB_ = R; }
 
   // Computes the infinity norm of R - `other` (i.e., the maximum absolute
   // value of the difference between the elements of R and `other`).
@@ -388,7 +552,10 @@ class RotationMatrix {
   // @param[in] other matrix to subtract from R.
   // @returns `‖R - other‖∞`
   static T GetMaximumAbsoluteDifference(const Matrix3<T>& R,
-                                        const Matrix3<T>& other);
+                                        const Matrix3<T>& other) {
+    const Matrix3<T> R_difference = R - other;
+    return R_difference.template lpNorm<Eigen::Infinity>();
+  }
 
   // Compares corresponding elements in two matrices to check if they are the
   // same to within a specified `tolerance`.
@@ -398,7 +565,10 @@ class RotationMatrix {
   // matrix elements in R and `other`.
   // @returns `true` if `‖R - `other`‖∞ <= tolerance`.
   static bool IsNearlyEqualTo(const Matrix3<T>& R, const Matrix3<T>& other,
-                              double tolerance);
+                              double tolerance) {
+    const T R_max_difference = GetMaximumAbsoluteDifference(R, other);
+    return R_max_difference <= tolerance;
+  }
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
@@ -470,7 +640,38 @@ class RotationMatrix {
   // has a provision for an efficient algorithm for always calculating an
   // orthogonal rotation matrix (whereas Eigen's algorithm does not).
   static Matrix3<T> QuaternionToRotationMatrix(
-      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
+      const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
+    Matrix3<T> m;
+
+    const T w = quaternion.w();
+    const T x = quaternion.x();
+    const T y = quaternion.y();
+    const T z = quaternion.z();
+    const T sx  = two_over_norm_squared * x;  // scaled x-value.
+    const T sy  = two_over_norm_squared * y;  // scaled y-value.
+    const T sz  = two_over_norm_squared * z;  // scaled z-value.
+    const T swx = sx * w;
+    const T swy = sy * w;
+    const T swz = sz * w;
+    const T sxx = sx * x;
+    const T sxy = sy * x;
+    const T sxz = sz * x;
+    const T syy = sy * y;
+    const T syz = sz * y;
+    const T szz = sz * z;
+
+    m.coeffRef(0, 0) = T(1) - syy - szz;
+    m.coeffRef(0, 1) = sxy - swz;
+    m.coeffRef(0, 2) = sxz + swy;
+    m.coeffRef(1, 0) = sxy + swz;
+    m.coeffRef(1, 1) = T(1) - sxx - szz;
+    m.coeffRef(1, 2) = syz - swx;
+    m.coeffRef(2, 0) = sxz - swy;
+    m.coeffRef(2, 1) = syz + swx;
+    m.coeffRef(2, 2) = T(1) - sxx - syy;
+
+    return m;
+  }
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // The default initialization is the identity matrix.
