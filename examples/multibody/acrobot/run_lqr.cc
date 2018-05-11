@@ -68,9 +68,9 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   acrobot.Finalize();
 
   const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>("shoulder");
+      acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>("elbow");
+      acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
   std::unique_ptr<Context<double>> context = acrobot.CreateDefaultContext();
 
   // Set nominal actuation torque to zero.
@@ -103,7 +103,7 @@ int do_main() {
 
   // Make and add the acrobot model.
   const std::string relative_name =
-      "drake/examples/multibody/acrobot/acrobot.sdf";
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf";
   const std::string full_name = FindResourceOrThrow(relative_name);
   MultibodyPlant<double>& acrobot = *builder.AddSystem<MultibodyPlant>();
   AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
@@ -122,15 +122,15 @@ int do_main() {
   //const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
   //    acrobot_parameters, true /* Finalize the plant */, &scene_graph));
   const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>("shoulder");
+      acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>("elbow");
+      acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
 
   // Drake's parser will default the name of the actuator to match the name of
   // the joint it actuates.
   const JointActuator<double>& actuator =
-      acrobot.GetJointActuatorByName("elbow");
-  DRAKE_DEMAND(actuator.joint().name() == "elbow");
+      acrobot.GetJointActuatorByName("ElbowJoint");
+  DRAKE_DEMAND(actuator.joint().name() == "ElbowJoint");
 
   // For this example the controller's model of the plant exactly matches the
   // plant to be controlled (in reality there would always be a mismatch).

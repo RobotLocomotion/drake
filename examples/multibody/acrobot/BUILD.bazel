@@ -37,7 +37,7 @@ drake_cc_binary(
     name = "run_lqr",
     srcs = ["run_lqr.cc"],
     add_test_rule = 1,
-    data = ["acrobot.sdf"],
+    data = ["//multibody/benchmarks/acrobot:models"],
     test_rule_args = [
         "--simulation_time=0.1",
         "--target_realtime_rate=0.0",
