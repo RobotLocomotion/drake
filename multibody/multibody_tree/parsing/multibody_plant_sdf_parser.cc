@@ -149,9 +149,9 @@ void AddJointActuatorFromSpecification(
 
   // The SDF specification defines this max_effort = -1 when no limit is
   // provided (a non-zero value). In Drake we interpret a value of exactly zero
-  // as a way to specify un-actuated joints. The user would say
-  // <effort>0</effort>.
-  if (max_effort == 0) {
+  // as a way to specify un-actuated joints. Thus, the user would say
+  // <effort>0</effort> for un-actuated joints.
+  if (max_effort != 0) {
     // TODO(amcastro-tri): For positive max_effort values, store it and use it to
     // limit input torques.
     plant->AddJointActuator(joint_spec.Name(), joint);

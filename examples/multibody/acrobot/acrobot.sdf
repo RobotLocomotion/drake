@@ -1,7 +1,7 @@
 <sdf version='1.6'>
   <model name='Acrobot'>
     <link name='upper_link'>
-      <pose frame=''>0 0.15 0 0 0 0</pose>
+      <pose>0 0.15 0 0 0 0</pose>
       <inertial>
         <pose>0 0 -0.5 0 0 0</pose>
         <mass>1</mass>
@@ -30,6 +30,7 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
+          <!-- Drake parses a zero effort joint as an un-actuated joint. -->
           <effort>0</effort>
         </limit>
         <dynamics>
@@ -70,7 +71,7 @@
         <xyz>0 1 0</xyz>
         <limit>
           <!-- No limit provided. sdformat defaults to -1, which we parse as
-               an un-actuated joint. -->
+               an actuated joint. -->
         </limit>
         <dynamics>
           <damping>0.1</damping>
