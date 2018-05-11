@@ -9,6 +9,7 @@
 #include "drake/multibody/kinematics_cache.h"
 /* clang-format on */
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -44,6 +45,19 @@ KinematicsCache<T>::KinematicsCache(
     elements_.emplace_back(num_joint_positions[body_id],
                            num_joint_velocities[body_id]);
   }
+
+
+  geometric_jacobian_temp.kinematic_path.joint_path.reserve(num_positions_);
+  geometric_jacobian_temp.
+    kinematic_path.joint_direction_signs.reserve(num_positions_);
+  geometric_jacobian_temp.kinematic_path.body_path.reserve(num_positions_);
+  geometric_jacobian_temp.start_body_ancestors.reserve(num_positions_);
+  geometric_jacobian_temp.end_body_ancestors.reserve(num_positions_);
+  spatial_velocity_jacobian_temp.J_positions.setZero(6, num_positions_);
+  spatial_velocity_jacobian_temp.J_velocities.setZero(6, num_velocities_);
+  spatial_velocity_jacobian_temp.
+    v_or_q_indices.reserve(std::max(num_positions_, num_velocities_));
+
   invalidate();
 }
 
@@ -87,20 +101,20 @@ void KinematicsCache<T>::initialize(const Eigen::MatrixBase<DerivedQ>& q_in,
 template <typename T>
 void KinematicsCache<T>::checkCachedKinematicsSettings(
     bool velocity_kinematics_required, bool jdot_times_v_required,
-    const std::string& method_name) const {
+    const char* method_name) const {
   if (!position_kinematics_cached) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires position kinematics, which have not "
             "been cached. Please call doKinematics.");
   }
   if (velocity_kinematics_required && !hasV()) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires velocity kinematics, which have not "
             "been cached. Please call doKinematics with a "
             "velocity vector.");
   }
   if (jdot_times_v_required && !jdotV_cached) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires Jdot times v, which has not been cached. Please call "
         "doKinematics with a velocity vector and compute_JdotV set to true.");
   }

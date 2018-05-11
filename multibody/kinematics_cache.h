@@ -17,6 +17,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/joints/drake_joint.h"
+#include "drake/multibody/kinematic_path.h"
 
 template <typename T>
 class KinematicsCacheElement {
@@ -85,6 +86,32 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
+  /// Preallocated scratch pad variables. These variables are used to prevent
+  /// dynamic memory allocation during runtime.
+
+  /// Preallocated variables used in GeometricJacobian. Preallocated as the size
+  /// of the path is dependent on the base body/frame and end effector
+  /// body/frame.
+  struct DataInGeometricJacobian {
+    KinematicPath kinematic_path;
+    std::vector<int> start_body_ancestors;
+    std::vector<int> end_body_ancestors;
+  };
+  mutable DataInGeometricJacobian geometric_jacobian_temp;
+
+  /// Preallocated variables used in
+  /// CalcFrameSpatialVelocityJacobianInWorldFrame.
+  struct DataInCalcFrameSpatialVelocityJacobianInWorldFrame {
+    /// Jacobians used as an intermediate representation since the Jacobian can
+    /// not be transformed in place.
+    drake::Matrix6X<T> J_positions;
+    drake::Matrix6X<T> J_velocities;
+    /// Vector of indices used to transform to the world frame.
+    std::vector<int> v_or_q_indices;
+  };
+  mutable DataInCalcFrameSpatialVelocityJacobianInWorldFrame
+    spatial_velocity_jacobian_temp;
+
   /// Constructor for a KinematicsCache given the number of positions and
   /// velocities per body in the vectors @p num_joint_positions and
   /// @p num_joint_velocities, respectively.
@@ -133,7 +160,7 @@ class KinematicsCache {
 
   void checkCachedKinematicsSettings(bool velocity_kinematics_required,
                                      bool jdot_times_v_required,
-                                     const std::string& method_name) const;
+                                     const char* method_name) const;
 
   /// Returns `q`, the generalized position vector of the RigidBodyTree that was
   /// used to compute this KinematicsCache.
