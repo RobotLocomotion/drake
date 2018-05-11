@@ -12,7 +12,7 @@ class TestNumpyInstall(unittest.TestCase):
     def test_installed_numpy(self):
         # Check the NumPy version.
         # N.B. This should be updated each time the version is bumped.
-        expected_version = "1.15.0.dev0+7d247f4"
+        expected_version = "1.15.0.dev0+8b517bd"
         self.assertEqual(np.version.version, expected_version)
 
 
