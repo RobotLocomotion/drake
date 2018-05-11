@@ -182,7 +182,10 @@ void rpydot2angularvel(
 template <typename Derived>
 struct TransformSpatial {
   typedef typename Eigen::Matrix<typename Derived::Scalar, drake::kTwistSize,
-                                 Derived::ColsAtCompileTime>
+                                 Derived::ColsAtCompileTime, 0,
+                                 drake::kTwistSize,
+                                 Derived::ColsAtCompileTime == Eigen::Dynamic
+                                  ? 6 : Derived::ColsAtCompileTime>
       type;
 };
 
@@ -190,8 +193,11 @@ template <typename DerivedM>
 typename TransformSpatial<DerivedM>::type transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M) {
+  DRAKE_ASSERT(M.cols() <= 6);
   Eigen::Matrix<typename DerivedM::Scalar, drake::kTwistSize,
-                DerivedM::ColsAtCompileTime>
+                DerivedM::ColsAtCompileTime, 0, drake::kTwistSize,
+                DerivedM::ColsAtCompileTime == Eigen::Dynamic
+                  ? 6 : DerivedM::ColsAtCompileTime>
       ret(drake::kTwistSize, M.cols());
   ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
   ret.template bottomRows<3>().noalias() =

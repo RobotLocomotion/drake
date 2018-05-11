@@ -87,20 +87,20 @@ void KinematicsCache<T>::initialize(const Eigen::MatrixBase<DerivedQ>& q_in,
 template <typename T>
 void KinematicsCache<T>::checkCachedKinematicsSettings(
     bool velocity_kinematics_required, bool jdot_times_v_required,
-    const std::string& method_name) const {
+    const char* method_name) const {
   if (!position_kinematics_cached) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires position kinematics, which have not "
             "been cached. Please call doKinematics.");
   }
   if (velocity_kinematics_required && !hasV()) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires velocity kinematics, which have not "
             "been cached. Please call doKinematics with a "
             "velocity vector.");
   }
   if (jdot_times_v_required && !jdotV_cached) {
-    throw std::runtime_error(method_name +
+    throw std::runtime_error(std::string(method_name) +
         " requires Jdot times v, which has not been cached. Please call "
         "doKinematics with a velocity vector and compute_JdotV set to true.");
   }

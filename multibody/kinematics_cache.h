@@ -133,7 +133,7 @@ class KinematicsCache {
 
   void checkCachedKinematicsSettings(bool velocity_kinematics_required,
                                      bool jdot_times_v_required,
-                                     const std::string& method_name) const;
+                                     const char* method_name) const;
 
   /// Returns `q`, the generalized position vector of the RigidBodyTree that was
   /// used to compute this KinematicsCache.
