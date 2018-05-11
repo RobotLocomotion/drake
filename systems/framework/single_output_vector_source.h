@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -41,11 +42,29 @@ class SingleOutputVectorSource : public LeafSystem<T> {
 
  protected:
   /// Creates a source with the given sole output port configuration.
+  /// Does NOT support system scalar conversion.
   explicit SingleOutputVectorSource(int size)
-      : SingleOutputVectorSource(BasicVector<T>(size)) {}
+      : SingleOutputVectorSource({}, size) {}
 
   /// Creates a source with output type and dimension of the @p model_vector.
-  explicit SingleOutputVectorSource(const BasicVector<T>& model_vector) {
+  /// Does NOT support system scalar conversion.
+  explicit SingleOutputVectorSource(const BasicVector<T>& model_vector)
+      : SingleOutputVectorSource({}, model_vector) {}
+
+  /// Creates a source with the given sole output port configuration.
+  /// DOES support system scalar conversion. See @ref system_scalar_conversion.
+  /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  /// etc.); pass a default-constructed object if such support is not desired.
+  SingleOutputVectorSource(SystemScalarConverter converter, int size)
+      : SingleOutputVectorSource(std::move(converter), BasicVector<T>(size)) {}
+
+  /// Creates a source with output type and dimension of the @p model_vector.
+  /// DOES support system scalar conversion. See @ref system_scalar_conversion.
+  /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
+  /// etc.); pass a default-constructed object if such support is not desired.
+  SingleOutputVectorSource(
+      SystemScalarConverter converter, const BasicVector<T>& model_vector)
+      : LeafSystem<T>(std::move(converter)) {
     this->DeclareVectorOutputPort(
         model_vector,
         &SingleOutputVectorSource<T>::CalcVectorOutput);
