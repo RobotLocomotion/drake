@@ -123,7 +123,7 @@ GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
 // Note: This unit test is more complicated than the previous unit test as it
 // checks partial derivative calculations (whereas the previous test only checks
 // AutoDiff values).
-GTEST_TEST(PlantTest, ShortAutoDiff) {
+GTEST_TEST(PlantTest, AutoDiffPartials) {
   Particle1dManual<AutoDiffXd> test_particle;
 
   const double mass_value = 3.0;
@@ -188,8 +188,7 @@ GTEST_TEST(PlantTest, ShortAutoDiff) {
       -sin(time.value()) / particle_data.mass_.value(), 0);
 
   // Value: f = cos(t).
-  // The expected values are: f = cos(t), ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x
-  // = 0.
+  // The expected values are: f = cos(t), ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(particle_data.F_, cos(time.value()),
                                            0, -sin(time.value()), 0);
 }
