@@ -31,6 +31,45 @@ std::unique_ptr<LinearSystem<double>> MakeSimpleLinearSystem() {
   return std::make_unique<LinearSystem<double>>(A, B, C, D);
 }
 
+GTEST_TEST(DirectCollocationTest, TestAddRunningCost) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+
+  const int kNumSampleTimes = 4;
+  const double kTimeStep = .1;
+  DirectCollocation prog(system.get(), *context, kNumSampleTimes, kTimeStep,
+                         kTimeStep);
+
+  prog.AddRunningCost(
+      prog.state().cast<symbolic::Expression>().dot(prog.state()) +
+      prog.input().cast<symbolic::Expression>().dot(prog.input()));
+
+  Eigen::Matrix<double, 2, kNumSampleTimes> u;
+  Eigen::Matrix<double, 2, kNumSampleTimes> x;
+  for (int i = 0; i < kNumSampleTimes - 1; ++i) {
+    prog.SetInitialGuess(prog.timestep(i), Vector1d(kTimeStep));
+  }
+  for (int i = 0; i < kNumSampleTimes; ++i) {
+    x.col(i) << 0.2 * i - 1, 0.1 + i;
+    u.col(i) << 0.1 * i, 0.2 * i + 0.1;
+    prog.SetInitialGuess(prog.state(i), x.col(i));
+    prog.SetInitialGuess(prog.input(i), u.col(i));
+  }
+  double total_cost = 0;
+  for (const auto& cost : prog.GetAllCosts()) {
+    total_cost += prog.EvalBindingAtInitialGuess(cost)(0);
+  }
+  const Eigen::Matrix<double, 1, kNumSampleTimes> g_val =
+      (x.array() * x.array()).matrix().colwise().sum() +
+      (u.array() * u.array()).matrix().colwise().sum();
+  const double total_cost_expected =
+      ((g_val.head<kNumSampleTimes - 1>() + g_val.tail<kNumSampleTimes - 1>()) /
+       2 * kTimeStep)
+          .sum();
+  EXPECT_NEAR(total_cost, total_cost_expected, 1E-12);
+}
+
 // Reconstructs the collocation constraint value (called the "defect") from a
 // completely separate code path (using the PiecewisePolynomial methods).
 GTEST_TEST(DirectCollocationTest, TestCollocationConstraint) {
