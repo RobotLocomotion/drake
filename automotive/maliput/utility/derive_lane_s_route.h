@@ -3,6 +3,9 @@
 #include <vector>
 
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/rules/regions.h"
 
 namespace drake {
 namespace maliput {
@@ -19,6 +22,11 @@ namespace utility {
 /// if no sequences are found.
 std::vector<std::vector<const api::Lane*>> FindLaneSequences(
     const api::Lane& start, const api::Lane& end);
+
+/// Derives and returns a set of LaneSRoute objects that go from @p start to
+/// @p end. If no routes are found, a vector of length zero is returned.
+std::vector<api::rules::LaneSRoute> DeriveLaneSRoutes(
+    const api::RoadPosition& start, const api::RoadPosition& end);
 
 }  // namespace utility
 }  // namespace maliput

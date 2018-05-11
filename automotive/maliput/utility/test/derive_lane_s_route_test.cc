@@ -3,7 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/loader.h"
@@ -13,6 +15,11 @@ namespace maliput {
 namespace utility {
 
 using api::GeoPosition;
+using api::LanePosition;
+using api::RoadPosition;
+using api::rules::LaneSRange;
+using api::rules::LaneSRoute;
+using api::rules::SRange;
 
 class DragwayBasedTest : public ::testing::Test {
  protected:
@@ -235,6 +242,166 @@ GTEST_TEST(DeriveLaneSRouteTest, NoRouteToEndLane) {
   const api::Lane& end_lane = *road->junction(1)->segment(0)->lane(0);
   ASSERT_EQ(FindLaneSequences(start_lane, end_lane).size(), 0);
 }
+
+class DragwayBasedRouteTest : public DragwayBasedTest {
+ protected:
+  void CheckRoutes(const std::vector<LaneSRoute>& routes,
+                   const LaneSRange& expected_range) {
+    ASSERT_EQ(routes.size(), 1);
+    ASSERT_EQ(routes.at(0).ranges().size(), 1);
+    const LaneSRange& range = routes.at(0).ranges().at(0);
+    ASSERT_EQ(range.lane_id(), expected_range.lane_id());
+    ASSERT_EQ(range.s_range().s0(), expected_range.s_range().s0());
+    ASSERT_EQ(range.s_range().s1(), expected_range.s_range().s1());
+  }
+};
+
+TEST_F(DragwayBasedRouteTest, SingleLaneTests) {
+  struct TestCase {
+    double s_start;
+    double s_end;
+  };
+  const std::vector<const api::Lane*> lanes =
+      {&left_lane_, &center_lane_, &right_lane_};
+  const std::vector<TestCase> test_cases = {{0, 0},
+                                            {0, kLength},
+                                            {kLength, kLength},
+                                            {0.25 * kLength, 0.75 * kLength}};
+  for (const auto& lane : lanes) {
+    for (const auto& test_case : test_cases) {
+      const RoadPosition start(lane, LanePosition(test_case.s_start, 0, 0));
+      const RoadPosition end(lane, LanePosition(test_case.s_end, 0, 0));
+      CheckRoutes(DeriveLaneSRoutes(start, end),
+                  LaneSRange(lane->id(), SRange(test_case.s_start,
+                                                test_case.s_end)));
+    }
+  }
+}
+
+TEST_F(DragwayBasedRouteTest, CrossLaneTests) {
+  struct TestCase {
+    const api::Lane* start_lane;
+    const api::Lane* end_lane;
+  };
+  const std::vector<TestCase> test_cases = {{&left_lane_, &center_lane_},
+                                            {&left_lane_, &right_lane_},
+                                            {&center_lane_, &left_lane_},
+                                            {&center_lane_, &right_lane_},
+                                            {&right_lane_, &center_lane_},
+                                            {&right_lane_, &left_lane_}};
+  for (const auto& test_case : test_cases) {
+    const RoadPosition start(test_case.start_lane, LanePosition(0, 0, 0));
+    const RoadPosition end(test_case.end_lane, LanePosition(kLength, 0, 0));
+    ASSERT_EQ(DeriveLaneSRoutes(start, end).size(), 0);
+  }
+}
+
+class MultilaneBasedRouteTest : public MultilaneBasedTest {
+ protected:
+  // Holds the information needed to check a LaneSRange.
+  struct RouteElement {
+    std::string id;
+    double s0;
+    double s1;
+  };
+
+  void CheckRoutes(const std::vector<LaneSRoute>& routes,
+                   const std::vector<RouteElement>& expected_route) {
+    ASSERT_EQ(routes.size(), 1);
+    const std::vector<LaneSRange>& ranges = routes.at(0).ranges();
+    ASSERT_EQ(ranges.size(), expected_route.size());
+    for (int i = 0; i < static_cast<int>(ranges.size()); ++i) {
+      const LaneSRange& range = ranges.at(i);
+      const RouteElement& expected = expected_route.at(i);
+      ASSERT_EQ(range.lane_id().string(), expected.id);
+      const SRange s_range = range.s_range();
+      ASSERT_EQ(s_range.s0(), expected.s0);
+      ASSERT_EQ(s_range.s1(), expected.s1);
+    }
+  }
+};
+
+TEST_F(MultilaneBasedRouteTest, StartLeftLaneToEndLeftLane) {
+  const api::Lane& start_lane = *lanes_["l:0_1"];
+  const api::Lane& end_lane = *lanes_["l:3_1"];
+  const double start_s = 0;
+  const double end_s = end_lane.length();
+  const RoadPosition start(&start_lane, LanePosition(start_s, 0, 0));
+  const RoadPosition end(&end_lane, LanePosition(end_s, 0, 0));
+  CheckRoutes(DeriveLaneSRoutes(start, end),
+              {{"l:0_1", start_s, start_lane.length()},
+               {"l:1.1_0", 0, lanes_["l:1.1_0"]->length()},
+               {"l:1.2_0", 0, lanes_["l:1.2_0"]->length()},
+               {"l:1.3_0", 0, lanes_["l:1.3_0"]->length()},
+               {"l:1.4_0", 0, lanes_["l:1.4_0"]->length()},
+               {"l:1.5_0", 0, lanes_["l:1.5_0"]->length()},
+               {"l:3_1", 0, end_s}});
+}
+
+TEST_F(MultilaneBasedRouteTest, EndLeftLaneToStartLeftLane) {
+  const api::Lane& start_lane = *lanes_["l:3_1"];
+  const api::Lane& end_lane = *lanes_["l:0_1"];
+  const double start_s = start_lane.length();
+  const double end_s = 0;
+  const RoadPosition start(&start_lane, LanePosition(start_s, 0, 0));
+  const RoadPosition end(&end_lane, LanePosition(end_s, 0, 0));
+  CheckRoutes(DeriveLaneSRoutes(start, end),
+              {{"l:3_1", start_s, 0},
+               {"l:1.5_0", lanes_["l:1.5_0"]->length(), 0},
+               {"l:1.4_0", lanes_["l:1.4_0"]->length(), 0},
+               {"l:1.3_0", lanes_["l:1.3_0"]->length(), 0},
+               {"l:1.2_0", lanes_["l:1.2_0"]->length(), 0},
+               {"l:1.1_0", lanes_["l:1.1_0"]->length(), 0},
+               {"l:0_1", end_lane.length(), end_s}});
+}
+
+TEST_F(MultilaneBasedRouteTest, StartRightLaneToEndRightLane) {
+  const api::Lane& start_lane = *lanes_["l:0_0"];
+  const api::Lane& end_lane = *lanes_["l:3_0"];
+  const double start_s = 0;
+  const double end_s = end_lane.length();
+  const RoadPosition start(&start_lane, LanePosition(start_s, 0, 0));
+  const RoadPosition end(&end_lane, LanePosition(end_s, 0, 0));
+  CheckRoutes(DeriveLaneSRoutes(start, end),
+              {{"l:0_0", start_s, start_lane.length()},
+               {"l:2.1_0", 0, lanes_["l:2.1_0"]->length()},
+               {"l:2.2_0", 0, lanes_["l:2.2_0"]->length()},
+               {"l:2.3_0", 0, lanes_["l:2.3_0"]->length()},
+               {"l:2.4_0", 0, lanes_["l:2.4_0"]->length()},
+               {"l:2.5_0", 0, lanes_["l:2.5_0"]->length()},
+               {"l:3_0", 0, end_s}});
+}
+
+TEST_F(MultilaneBasedRouteTest, EndRightLaneToStartRightLane) {
+  const api::Lane& start_lane = *lanes_["l:3_0"];
+  const api::Lane& end_lane = *lanes_["l:0_0"];
+  const double start_s = start_lane.length();
+  const double end_s = 0;
+  const RoadPosition start(&start_lane, LanePosition(start_s, 0, 0));
+  const RoadPosition end(&end_lane, LanePosition(end_s, 0, 0));
+  CheckRoutes(DeriveLaneSRoutes(start, end),
+              {{"l:3_0", start_s, 0},
+               {"l:2.5_0", lanes_["l:2.5_0"]->length(), 0},
+               {"l:2.4_0", lanes_["l:2.4_0"]->length(), 0},
+               {"l:2.3_0", lanes_["l:2.3_0"]->length(), 0},
+               {"l:2.2_0", lanes_["l:2.2_0"]->length(), 0},
+               {"l:2.1_0", lanes_["l:2.1_0"]->length(), 0},
+               {"l:0_0", end_lane.length(), end_s}});
+}
+
+// Tests what happens when the starting and ending road positions result in no
+// continuous S curve. This happens when the path must jump to a lane to the
+// left or right.
+TEST_F(MultilaneBasedRouteTest, NoContinuousSPath) {
+  const api::Lane& start_lane = *lanes_["l:0_0"];
+  const api::Lane& end_lane = *lanes_["l:3_1"];
+  const double start_s = 0;
+  const double end_s = end_lane.length();
+  const RoadPosition start(&start_lane, LanePosition(start_s, 0, 0));
+  const RoadPosition end(&end_lane, LanePosition(end_s, 0, 0));
+  ASSERT_EQ(DeriveLaneSRoutes(start, end).size(), 0);
+}
+
 
 }  // namespace utility
 }  // namespace maliput

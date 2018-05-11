@@ -1,7 +1,10 @@
 #include "drake/automotive/maliput/utility/derive_lane_s_route.h"
 
+#include <sstream>
+
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -11,6 +14,10 @@ namespace {
 using api::Lane;
 using api::LaneEnd;
 using api::LaneEndSet;
+using api::LanePosition;
+using api::rules::LaneSRange;
+using api::rules::LaneSRoute;
+using api::rules::SRange;
 
 // Defines the maximum sequence length. This prevents memory overflows when
 // dealing with giant road networks.
@@ -61,6 +68,31 @@ std::vector<std::vector<const Lane*>> FindLaneSequencesHelper(const Lane& start,
   return result;
 }
 
+// Returns true if @p lane is in @p set and false otherwise.
+bool LaneExistsInSet(const LaneEndSet* set, const Lane* lane) {
+  DRAKE_ASSERT(set != nullptr);
+  for (int i = 0; i < set->size(); ++i) {
+    if (set->get(i).lane == lane) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Returns the S coordinate in @p lane that is on the border with
+// @p next_lane.
+optional<double> DetermineEdgeS(const Lane* lane, const Lane* next_lane) {
+  DRAKE_ASSERT(lane != nullptr);
+  DRAKE_ASSERT(next_lane != nullptr);
+  if (LaneExistsInSet(lane->GetOngoingBranches(LaneEnd::kFinish), next_lane)) {
+    return lane->length();
+  }
+  if (LaneExistsInSet(lane->GetOngoingBranches(LaneEnd::kStart), next_lane)) {
+    return 0;
+  }
+  return nullopt;
+}
+
 }  // namespace
 
 std::vector<std::vector<const Lane*>> FindLaneSequences(const Lane& start,
@@ -69,6 +101,76 @@ std::vector<std::vector<const Lane*>> FindLaneSequences(const Lane& start,
     return {{&start}};
   }
   return FindLaneSequencesHelper(start, end, {&start}, 0);
+}
+
+std::vector<LaneSRoute> DeriveLaneSRoutes(const api::RoadPosition& start,
+                                          const api::RoadPosition& end) {
+  DRAKE_ASSERT(start.lane != nullptr);
+  DRAKE_ASSERT(end.lane != nullptr);
+  const double start_s = start.pos.s();
+  const double end_s = end.pos.s();
+  std::vector<LaneSRoute> result;
+
+  for (const auto& lane_sequence : FindLaneSequences(*start.lane, *end.lane)) {
+    DRAKE_ASSERT(lane_sequence.size() > 0);
+    std::vector<LaneSRange> ranges;
+
+    // Handles the case when lane_sequence has a length of 1. This occurs when
+    // start and end are in the same lane.
+    if (lane_sequence.size() == 1) {
+      DRAKE_ASSERT(start.lane == end.lane);
+      const std::vector<LaneSRange> lane_s_ranges =
+          {LaneSRange(start.lane->id(), SRange(start_s, end_s))};
+      result.emplace_back(lane_s_ranges);
+      continue;
+    }
+
+    // Handles the case when lane_sequence has a length greater than 1.
+    bool is_s_continuous{true};
+    for (size_t i = 0; is_s_continuous && i < lane_sequence.size(); ++i) {
+      const Lane* lane = lane_sequence.at(i);
+      DRAKE_ASSERT(lane != nullptr);
+      if (lane->id() == start.lane->id()) {
+        DRAKE_ASSERT(i == 0);
+        DRAKE_ASSERT(lane_sequence.size() > 1);
+        const optional<double> first_end_s =
+            DetermineEdgeS(lane, lane_sequence.at(1));
+        if (!first_end_s) {
+          is_s_continuous = false;
+          continue;
+        }
+        ranges.push_back(
+            LaneSRange(lane->id(), SRange(start_s, first_end_s.value())));
+      } else if (lane->id() == end.lane->id()) {
+        DRAKE_ASSERT(i == lane_sequence.size() - 1);
+        DRAKE_ASSERT(i > 0);
+        const optional<double> last_start_s =
+            DetermineEdgeS(lane, lane_sequence.at(i - 1));
+        if (!last_start_s) {
+          is_s_continuous = false;
+          continue;
+        }
+        ranges.push_back(
+            LaneSRange(lane->id(), SRange(last_start_s.value(), end_s)));
+      } else {
+        const optional<double> middle_start_s =
+            DetermineEdgeS(lane, lane_sequence.at(i - 1));
+        const optional<double> middle_end_s =
+            DetermineEdgeS(lane, lane_sequence.at(i + 1));
+        if (!middle_start_s || !middle_end_s) {
+          is_s_continuous = false;
+          continue;
+        }
+        ranges.push_back(
+            LaneSRange(lane->id(), SRange(middle_start_s.value(),
+                                          middle_end_s.value())));
+      }
+    }
+    if (is_s_continuous) {
+      result.emplace_back(ranges);
+    }
+  }
+  return result;
 }
 
 }  // namespace utility
