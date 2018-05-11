@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
@@ -10,6 +11,8 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -25,7 +28,9 @@ using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::multibody_plant::MultibodyPlant;
+using multibody::parsing::AddModelFromSdfFile;
 using multibody::RevoluteJoint;
+using multibody::UniformGravityFieldElement;
 using systems::Context;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
@@ -84,20 +89,30 @@ int do_main() {
   const double simulation_time = FLAGS_simulation_time;
 
   // Make and add the acrobot model.
-  const AcrobotParameters acrobot_parameters;
-  const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
-      acrobot_parameters, true /* Finalize the plant */, &scene_graph));
+  const std::string full_name = FindResourceOrThrow(
+      "drake/examples/multibody/acrobot/acrobot.sdf");
+  MultibodyPlant<double>& acrobot = *builder.AddSystem<MultibodyPlant>();
+  AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+
+  // Add gravity to the model.
+  acrobot.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
+
+  // We are done defining the model.
+  acrobot.Finalize();
+
+  //const AcrobotParameters acrobot_parameters;
+  //const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
+  //    acrobot_parameters, true /* Finalize the plant */, &scene_graph));
   const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
+      acrobot.GetJointByName<RevoluteJoint>("elbow");
   const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
+      acrobot.GetJointByName<RevoluteJoint>("shoulder");
 
   // For this example the controller's model of the plant exactly matches the
   // plant to be controlled (in reality there would always be a mismatch).
   auto controller = builder.AddSystem(
-      BalancingLQRController(acrobot_parameters));
+      BalancingLQRController(AcrobotParameters()));
   controller->set_name("controller");
   builder.Connect(acrobot.get_continuous_state_output_port(),
                   controller->get_input_port());

@@ -129,6 +129,35 @@ Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
   return axis_J;
 }
 
+// Extracts the effort limit from a joint specification. Only available for
+// "revolute" and "prismatic" joints.
+void AddJointActuatorFromSpecification(
+    const sdf::Joint &joint_spec, const Joint<double>& joint,
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+
+  double max_effort = axis->Effort();
+
+  // The SDF specification defines this max_effort = -1 when no limit is
+  // provided (a non-zero value). In Drake we interpret a value of exactly zero
+  // as a way to specify un-actuated joints. The user would say
+  // <effort>0</effort>.
+  if (max_effort == 0) {
+    // TODO(amcastro-tri): For positive max_effort values, store it and use it to
+    // limit input torques.
+    plant->AddJointActuator(joint_spec.Name(), joint);
+  }
+}
+
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
 // specification object.
 void AddJointFromSpecification(
@@ -185,18 +214,20 @@ void AddJointFromSpecification(
   switch (joint_spec.Type()) {
     case sdf::JointType::REVOLUTE: {
       Vector3d axis_J = ExtractJointAxis(joint_spec);
-      plant->AddJoint<RevoluteJoint>(
+      const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::PRISMATIC: {
       Vector3d axis_J = ExtractJointAxis(joint_spec);
-      plant->AddJoint<PrismaticJoint>(
+      const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     default: {
