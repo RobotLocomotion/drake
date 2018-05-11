@@ -239,7 +239,8 @@ void DefineFrameworkPySemantics(py::module m) {
            // `AddValueInstantiation` for more information.
            // Keep alive, ownership: `value` keeps `self` alive.
            py::keep_alive<2, 1>(), py::arg("abstract_params"))
-      .def("SetFrom", &Parameters<T>::SetFrom);
+      .def("SetFrom", &Parameters<T>::SetFrom)
+      .def("CopyFrom", &Parameters<T>::CopyFrom);
 
     // State.
     DefineTemplateClassWithDefault<State<T>>(m, "State", GetPyParam<T>())

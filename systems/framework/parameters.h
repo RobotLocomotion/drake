@@ -137,6 +137,13 @@ class Parameters {
     return clone;
   }
 
+  /// Initializes the values from another Parameters of the same scalar type
+  /// into this instance.
+  void CopyFrom(const Parameters<T>& other) {
+    numeric_parameters_->CopyFrom(other.get_numeric_parameters());
+    abstract_parameters_->CopyFrom(other.get_abstract_parameters());
+  }
+
   /// Initializes this state (regardless of scalar type) from a
   /// Parameters<double>. All scalar types in Drake must support
   /// initialization from doubles.

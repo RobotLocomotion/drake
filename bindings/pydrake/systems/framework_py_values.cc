@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
+#include "drake/bindings/pydrake/util/wrap_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -43,18 +44,17 @@ void DefineFrameworkPyValues(py::module m) {
       // N.B. Place `init<VectorX<T>>` `init<int>` so that we do not implicitly
       // convert scalar-size `np.array` objects to `int` (since this is normally
       // permitted).
-      .def(py::init<VectorX<T>>())
+      // N.B. Also ensure that we use `greedy_arg` to prevent ambiguous
+      // overloads when using scalars vs. lists vs. numpy arrays. See
+      // `greedy_arg` for more information.
+      .def(py::init([](greedy_arg<VectorX<T>> in) {
+        return new BasicVector<T>(*in);
+      }))
       .def(py::init<int>())
       .def("get_value",
           [](const BasicVector<T>* self) -> Eigen::Ref<const VectorX<T>> {
             return self->get_value();
           }, py_reference_internal)
-      // TODO(eric.cousineau): Remove this once `get_value` is changed, or
-      // reference semantics are changed for custom dtypes.
-      .def("_get_value_copy",
-          [](const BasicVector<T>* self) -> VectorX<T> {
-            return self->get_value();
-          })
       .def("get_mutable_value",
           [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
             return self->get_mutable_value();

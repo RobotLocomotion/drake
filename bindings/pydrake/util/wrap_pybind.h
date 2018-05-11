@@ -65,6 +65,10 @@ template <typename Signature>
 struct wrap_callback<std::function<Signature>>
     : public wrap_callback<const std::function<Signature>&> {};
 
+struct greedy_arg_no_check {
+    static bool run(py::handle) { return true; }
+};
+
 }  // namespace detail
 
 /// Ensures that any `std::function<>` arguments are wrapped such that any `T&`
@@ -107,5 +111,44 @@ class UfuncMirrorDef {
   py::module math_;
 };
 
+/// Provides a mechanism to have an argument immediately attempt conversion,
+/// even during the "no converion" pass during function dispatch, with an
+/// additional check to prevent it from being *too* greedy.
+/// This should be used if you are overloading a function with both an array
+/// *and* scalar, as NumPy arrays can sometimes be interperted as scalars, and
+/// due to possible conversions, the wrong overload may be selected.
+/// For more information, see https://github.com/pybind/pybind11/issues/1392
+/// This solution comes from the posted workaround.
+template <typename T, typename Check = detail::greedy_arg_no_check>
+class greedy_arg {
+ public:
+  // NOLINTNEXTLINE[runtime/explicit]: This is desirable.
+  greedy_arg(T&& value) : value_(std::move(value)) {}
+  // TODO(eric.cousineau): Figure out how to handle referencing properly.
+  T&& operator*() {
+    return std::move(value_);
+  }
+ private:
+  T value_;
+};
+
 }  // namespace pydrake
 }  // namespace drake
+
+namespace pybind11 {
+namespace detail {
+
+template <typename T, typename Check>
+struct type_caster<drake::pydrake::greedy_arg<T, Check>> : type_caster<T> {
+  using base = type_caster<T>;
+  bool load(handle src, bool /*convert*/) {
+    if (!Check::run(src))
+      return false;
+    return base::load(src, true);
+  }
+  template <typename>
+  using cast_op_type = T&&;
+};
+
+}  // namespace detail
+}  // namespace pybind11

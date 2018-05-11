@@ -46,6 +46,7 @@ void Abort(const char* condition, const char* func, const char* file,
   std::cerr << "abort: ";
   PrintFailureDetailTo(std::cerr, condition, func, file, line);
   std::cerr << std::endl;
+  // TODO(eric.cousineau): Consider Throw'ing here for Python.
   std::abort();
 }
 
