@@ -27,6 +27,9 @@ class RandomState {
 
   explicit RandomState(Seed seed) : generator_(seed) {}
 
+  /// Set the random seed of the generator.
+  void set_random_seed(Seed seed) { generator_.seed(seed); }
+
   /// Generate the next random value with the given distribution.
   double GetNextValue() { return distribution_(generator_); }
 
@@ -81,10 +84,6 @@ class RandomSource : public LeafSystem<double> {
     this->DeclareAbstractState(AbstractValue::Make(RandomState(seed_)));
   }
 
-  /// Initializes the random number generator.  This must be set before
-  /// the (abstract) state is allocated to take effect.
-  void set_random_seed(Seed seed) { seed_ = seed; }
-
  private:
   // Computes a random number and stores it in the discrete state.
   void DoCalcUnrestrictedUpdate(
@@ -94,8 +93,7 @@ class RandomSource : public LeafSystem<double> {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto& updates = state->get_mutable_discrete_state();
-    const int N = updates.size();
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < updates.size(); i++) {
       updates[i] = random_state.GetNextValue();
     }
   }
@@ -103,6 +101,30 @@ class RandomSource : public LeafSystem<double> {
   std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
     return std::make_unique<AbstractValues>(
         AbstractValue::Make(RandomState(seed_)));
+  }
+
+  void SetDefaultState(const Context<double>& context, State<double>* state)
+    const override {
+    unused(context);
+    auto& random_state =
+        state->template get_mutable_abstract_state<RandomState>(0);
+    random_state.set_random_seed(seed_);
+    auto& values = state->get_mutable_discrete_state();
+    for (int i = 0; i < values.size(); i++) {
+      values[i] = random_state.GetNextValue();
+    }
+  }
+
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                              RandomGenerator* generator) const override {
+    unused(context);
+    auto& random_state =
+        state->template get_mutable_abstract_state<RandomState>(0);
+    random_state.set_random_seed((*generator)());
+    auto& values = state->get_mutable_discrete_state();
+    for (int i = 0; i < values.size(); i++) {
+      values[i] = random_state.GetNextValue();
+    }
   }
 
   // Output is the zero-order hold of the discrete state.
