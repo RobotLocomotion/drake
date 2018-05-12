@@ -13,6 +13,7 @@
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
+#include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/wrap_to_system.h"
@@ -124,6 +125,23 @@ PYBIND11_MODULE(primitives, m) {
       .def("get_mesh", &BarycentricMeshSystem<double>::get_mesh)
       .def("get_output_values",
            &BarycentricMeshSystem<double>::get_output_values);
+
+  py::class_<UniformRandomSource, LeafSystem<double>>(m, "UniformRandomSource")
+      .def(py::init<int, double>(), py::arg("num_outputs"),
+           py::arg("sampling_interval_sec"));
+
+  py::class_<GaussianRandomSource, LeafSystem<double>>(m,
+                                                       "GaussianRandomSource")
+      .def(py::init<int, double>(), py::arg("num_outputs"),
+           py::arg("sampling_interval_sec"));
+
+  py::class_<ExponentialRandomSource, LeafSystem<double>>(
+      m, "ExponentialRandomSource")
+      .def(py::init<int, double>(), py::arg("num_outputs"),
+           py::arg("sampling_interval_sec"));
+
+  m.def("AddRandomInputs", &AddRandomInputs, py::arg("sampling_interval_sec"),
+        py::arg("builder"));
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
         py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
