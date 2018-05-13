@@ -134,6 +134,12 @@ PYBIND11_MODULE(test_util, m) {
       results["has_direct_feedthrough"] = system.HasDirectFeedthrough(0, 0);
     }
     {
+      // Call `CalcTimeDerivatives` to test `DoCalcTimeDerivatives`
+      auto& state = context->get_mutable_continuous_state();
+      ContinuousState<T> state_copy(clone_vector(state.get_vector()));
+      system.CalcTimeDerivatives(*context, &state_copy);
+    }
+    {
       // Call `CalcDiscreteVariableUpdates` to test
       // `DoCalcDiscreteVariableUpdates`.
       auto& state = context->get_mutable_discrete_state();
