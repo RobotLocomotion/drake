@@ -22,7 +22,7 @@ load(
 )
 
 package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
+    "//bindings:__subpackages__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
@@ -43,6 +43,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/util:deprecation_py",
+        "//bindings:bazel_workaround_4594_libdrake_py",
     ],
     py_srcs = [
         "__init__.py",

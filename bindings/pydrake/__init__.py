@@ -6,15 +6,17 @@ from sys import stderr
 # When importing `pydrake` as an external under Bazel, Bazel will use a shared
 # library whose relative RPATHs are incorrect for `libdrake.so`, and thus will
 # fail to load; this issue is captured in bazelbuild/bazel#4594. As a
-# workaround, we can use this spelling to load a properly-linked version of
-# `libdrake.so`. Once this is loaded, all of the Python C-extension libraries
+# workaround, we can use a library that properly links to `libdrake.so`, but in
+# `{runfiles}/{workspace}/external/drake` rather than `{runfiles}/drake`.
+# Once this is loaded, all of the Python C-extension libraries
 # that depend on it (and its dependencies) will load properly.
 # Please note that this workaround is only important when running under the
 # Bazel runfiles tree. Installed `pydrake` should not have this issue.
-# N.B. This will actually import a second copy of `pydrake` in the path below;
-# however, we should be able to ignore this as users should not be using it.
+# N.B. We do not import `external.drake.bindings.pydrake` as this may cause
+# duplicate classes to be loaded (#8810). This will not be a problem once #7912
+# is resolved.
 try:
-    import external.drake.bindings.pydrake
+    import external.drake.bindings.bazel_workaround_4594_libdrake
 except ImportError:
     pass
 
