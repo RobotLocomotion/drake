@@ -173,6 +173,10 @@ def get_pybind_package_info(base_package, sub_package = None):
         py_dest = "lib/python{}/site-packages/{}".format(
             _PY_VERSION, package_info.sub_path_rel))
 
+def get_bazel_workaround_4549_libdrake_package_info():
+    """Only to be used by //bindings:bazel_workaround_4594_libdrake_py."""
+    return struct(py_imports = ["../.."])
+
 def _get_package_info(base_package, sub_package = None):
     # TODO(eric.cousineau): Move this to `python.bzl` or somewhere more
     # general?
