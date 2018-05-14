@@ -86,6 +86,6 @@ int DoMain() {
 } // namespace examples
 } // drake
 
-int main(int argc, char* argv[]) {
+int main(int, char* []) {
   return drake::examples::particle1d::DoMain();
 }

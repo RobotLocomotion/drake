@@ -12,7 +12,7 @@ namespace {
 
 // Helper function to test the expected value of the class parameter.
 void VerifyValueOnly(double test_parameter, double value) {
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(test_parameter, value, kEpsilon);
 }
 
@@ -25,7 +25,7 @@ void VerifyAutoDiffValueAndPartialDerivatives(
   // AutoDiff declaration.
   VerifyValueOnly(y.value(), y_value);
 
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  constexpr double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
 
   // Test ∂y/∂A.
   EXPECT_NEAR(y.derivatives()(0), dy_dA, kEpsilon);
