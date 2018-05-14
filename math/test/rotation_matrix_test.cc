@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/quaternion.h"
 
@@ -419,9 +420,8 @@ GTEST_TEST(RotationMatrix, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
           c1*c0*rDt - s1*s0*pDt,
          -s1*c0*pDt - s0*c1*rDt;
 
-  const Matrix3d R_difference = RDt - MDt;
-  const double max_difference = R_difference.template lpNorm<Eigen::Infinity>();
-  EXPECT_LT(max_difference, 32 * kEpsilon);
+  EXPECT_TRUE(CompareMatrices(RDt, MDt, 32 * kEpsilon,
+                              MatrixCompareType::absolute));
 }
 
 class RotationMatrixConversionTests : public ::testing::Test {

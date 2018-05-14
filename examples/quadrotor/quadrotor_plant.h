@@ -84,6 +84,9 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 }  // namespace quadrotor
 }  // namespace examples
 
+// The following code was added to prevent transmogrification to and from
+// symbolic scalar types. This NonSymbolicTraits is explained in
+// drake/systems/framework/system_scalar_converter.h.
 namespace systems {
 namespace scalar_conversion {
 template <>

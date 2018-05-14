@@ -76,19 +76,26 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // frame (a.k.a. the inertial or World frame) and B is the quadrotor body.
   const drake::math::RotationMatrix<T> R_NB(rpy);
 
-  // Compute the net input forces and moments.
-  const VectorX<T> uF = kF_ * u;
-  const VectorX<T> uM = kM_ * u;
+  // Compute Bz measure of the net aerodynamic/rotor (input) force on B.
+  const VectorX<T> uF_Bz = kF_ * u;
+  const Vector3<T> uF(0, 0, uF_Bz.sum());
 
+  // Compute Bz measure of the net aerodynamic/rotor (input) torque on B.
+  const VectorX<T> uM_Bz = kM_ * u;
+
+  // Compute the net aerodynamic/rotor torque on B from forces and torques,
+  // expressed in B.
+  const Vector3<T> M(L_ * (uF_Bz(1) - uF_Bz(3)),
+                     L_ * (uF_Bz(2) - uF_Bz(0)),
+                     uM_Bz(0) - uM_Bz(1) + uM_Bz(2) - uM_Bz(3));
+
+  // Calculate celestial body's local gravity force on B, expressed in N.
   const Vector3<T> Fg(0, 0, -m_ * g_);
-  const Vector3<T> F(0, 0, uF.sum());
-  const Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
-                     uM(0) - uM(1) + uM(2) - uM(3));
 
-  // Calculate the net force on body B, expressed in N.  Next,
-  // calculate the resultant linear acceleration due to the forces.
-  const Vector3<T> net_force = Fg + R_NB * F;
-  const Vector3<T> xyzDDt = net_force / m_;
+  // Calculate the net force on body B, expressed in N.  Next, calculate
+  // the resultant linear acceleration due to the forces, expressed in N.
+  const Vector3<T> F = Fg + R_NB * uF;
+  const Vector3<T> xyzDDt = F / m_;
 
   // Calculate rigid body B's angular velocity in N, expressed in N.
   // Then calculate B's angular velocity in N, expressed in B.

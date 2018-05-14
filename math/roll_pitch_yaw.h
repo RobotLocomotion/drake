@@ -300,9 +300,9 @@ class RollPitchYaw {
   void PartialDerivativeRotationMatrix(Matrix3<T>* R_r, Matrix3<T>* R_p,
                                        Matrix3<T>* R_y) const {
     DRAKE_ASSERT(R_r != nullptr && R_r != nullptr && R_r != nullptr);
-    const T &r = get_roll_angle();
-    const T &p = get_pitch_angle();
-    const T &y = get_yaw_angle();
+    const T& r = get_roll_angle();
+    const T& p = get_pitch_angle();
+    const T& y = get_yaw_angle();
     using std::sin;
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
