@@ -86,7 +86,8 @@ def _lcmgen_impl(ctx):
     outpath = ctx.outputs.outs[0].dirname[:-striplen]
 
     if ctx.attr.language == "cc":
-        arguments = ["--cpp", "--cpp-std=c++11", "--cpp-hpath=" + outpath]
+        arguments = ["--cpp", "--use-quotes-for-includes", "--cpp-std=c++11",
+                     "--cpp-hpath=" + outpath]
     elif ctx.attr.language == "py":
         arguments = ["--python", "--ppath=" + outpath]
     elif ctx.attr.language == "java":

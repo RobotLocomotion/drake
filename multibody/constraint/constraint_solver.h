@@ -1274,9 +1274,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
   const VectorX<T>& kN = problem_data.kN;
   const VectorX<T>& kF = problem_data.kF;
   const VectorX<T>& kL = problem_data.kL;
-  const VectorX<T>& gammaN = problem_data.gammaN;
-  const VectorX<T>& gammaF = problem_data.gammaF;
-  const VectorX<T>& gammaL = problem_data.gammaL;
 
   // Alias these variables for more readable construction of MM and qq.
   const int ngv = problem_data.tau.size();  // generalized velocity dimension.
@@ -1320,17 +1317,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
       L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
   ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
   L_iM_FT = F_iM_LT.transpose().eval();
-
-  // Verify that the gamma vectors are either empty or non-negative.
-  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
-  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
-  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
-
-  // Regularize the matrix.
-  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
-  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
-  MM->block(nc + nr, nc + nr, nl, nl) +=
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
 
   // Construct the vector:
   // N⋅A⁻¹⋅a + kN
@@ -1377,10 +1363,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
   const VectorX<T>& kF = problem_data.kF;
   const VectorX<T>& kL = problem_data.kL;
   const VectorX<T>& mu_non_sliding = problem_data.mu_non_sliding;
-  const VectorX<T>& gammaN = problem_data.gammaN;
-  const VectorX<T>& gammaF = problem_data.gammaF;
-  const VectorX<T>& gammaE = problem_data.gammaE;
-  const VectorX<T>& gammaL = problem_data.gammaL;
 
   // Construct a matrix similar to E in [Anitescu 1997]. This matrix will be
   // used to specify the constraints (adapted from [Anitescu 1997] Eqn 2.7):
@@ -1482,22 +1464,6 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
 
   // Check the transposed blocks of the LCP matrix.
   DRAKE_ASSERT_VOID(CheckAccelConstraintMatrix(problem_data, *MM));
-
-  // Verify that all gamma vectors are either empty or non-negative.
-  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
-  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
-  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
-  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
-
-  // Regularize the LCP matrix.
-  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
-  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
-  MM->block(nc + nr, nc + nr, nr, nr) +=
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
-  MM->block(nc + nk, nc + nk, num_non_sliding, num_non_sliding) +=
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaE);
-  MM->block(nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl) +=
-      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
 
   // Construct the LCP vector:
   // N⋅A⁻¹⋅a + kN
