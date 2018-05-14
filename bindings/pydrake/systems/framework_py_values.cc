@@ -30,6 +30,7 @@ void DefineFrameworkPyValues(py::module m) {
     DefineTemplateClassWithDefault<VectorBase<T>>(
       m, "VectorBase", GetPyParam<T>())
       .def("CopyToVector", &VectorBase<T>::CopyToVector)
+      .def("SetAtIndex", &VectorBase<T>::SetAtIndex)
       .def("SetFromVector", &VectorBase<T>::SetFromVector)
       .def("size", &VectorBase<T>::size);
 
@@ -58,7 +59,10 @@ void DefineFrameworkPyValues(py::module m) {
       .def("get_mutable_value",
           [](BasicVector<T>* self) -> Eigen::Ref<VectorX<T>> {
             return self->get_mutable_value();
-          }, py_reference_internal);
+          }, py_reference_internal)
+       .def("GetAtIndex", [](BasicVector<T>* self, int index) -> T& {
+         return self->GetAtIndex(index);
+       }, py_reference_internal);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>());
