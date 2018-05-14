@@ -109,6 +109,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
         out.translation() = translation;
         return out;
       }), py::arg("quaternion"), py::arg("translation"))
+      .def(py::init([](const Class& other) {
+        CheckIsometry(other);
+        return other;
+      }), py::arg("other"))
       .def("matrix", [](const Class* self) -> Matrix4<T> {
         return self->matrix();
       })
@@ -139,6 +143,14 @@ PYBIND11_MODULE(eigen_geometry, m) {
       })
       .def("__str__", [](py::object self) {
         return py::str(self.attr("matrix")());
+      })
+      // Do not define an operator until we have the Python3 `@` operator so
+      // that operations are similar to those of arrays.
+      .def("multiply", [](const Class& self, const Class& other) {
+        return self * other;
+      })
+      .def("inverse", [](const Class* self) {
+        return self->inverse();
       });
   }
 
@@ -174,6 +186,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
         CheckQuaternion(out);
         return out;
       }), py::arg("rotation"))
+      .def(py::init([](const Class& other) {
+        CheckQuaternion(other);
+        return other;
+      }), py::arg("other"))
       .def("w", [](const Class* self) { return self->w(); })
       .def("x", [](const Class* self) { return self->x(); })
       .def("y", [](const Class* self) { return self->y(); })
@@ -208,6 +224,14 @@ PYBIND11_MODULE(eigen_geometry, m) {
         return py::str("{}(w={}, x={}, y={}, z={})").format(
             py_class_obj.attr("__name__"),
             self->w(), self->x(), self->y(), self->z());
+      })
+      // Do not define an operator until we have the Python3 `@` operator so
+      // that operations are similar to those of arrays.
+      .def("multiply", [](const Class& self, const Class& other) {
+        return self * other;
+      })
+      .def("inverse", [](const Class* self) {
+        return self->inverse();
       });
   }
 }
