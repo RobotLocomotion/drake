@@ -11,7 +11,6 @@ Particle1dManual<T>::Particle1dManual() {
   // Assign default value for this class's constant parameters (for this class,
   // only mass).
   particle_data_.mass_ = 1;
-  //mass_ = 1;
 }
 
 // -----------------------------------------------------------------------------
@@ -21,8 +20,6 @@ void Particle1dManual<T>::CalcDerivativesToStateDt(const T t, const T state[],
   SetVariablesFromState(state);
 
   using std::cos;
-  //F_ = cos(t);
-  //xDDt_ = F_ / mass_;
 
   particle_data_.F_ = cos(t);
   particle_data_.xDDt_ = particle_data_.F_ / particle_data_.mass_;

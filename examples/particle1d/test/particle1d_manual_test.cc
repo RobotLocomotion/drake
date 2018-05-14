@@ -36,7 +36,6 @@ void VerifyAutoDiffValueAndPartialDerivatives(const AutoDiffXd& y,
   EXPECT_NEAR(y.derivatives()(1), dy_dB, kEpsilon);
 
   // Test ∂y/∂C.
-  std::cout << "Testing variable: " << test_var << std::endl;
   EXPECT_NEAR(y.derivatives()(2), dy_dC, kEpsilon);
 }
 
@@ -137,14 +136,15 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
   // Initialize the AutoDiff with arbitrary values at which the derivative will
   // be evaluated. Note: A more explicit, pedagogical example for how to set up
   // an AutoDiff can be found in autodiff_test.cc.
-  Eigen::Vector3d auto_values;
-  auto_values[0] = mass_value;  // Variable mass
-  auto_values[1] = time_value;  // Variable time
-  auto_values[2] = x_value;     // Variable x
+  Eigen::Vector4d auto_values;
+  auto_values[0] = mass_value; // Variable mass
+  auto_values[1] = time_value; // Variable time
+  auto_values[2] = x_value;    // Variable x
+  auto_values[3] = xDt_value;  // variable ẋ
 
   // Use an identity matrix to initialize the partials to:
   // ∂m/∂m = 1, ∂t/∂t = 1, ∂x/∂x = 1.
-  Eigen::Matrix3d gradient_matrix;
+  Eigen::Matrix4d gradient_matrix;
   gradient_matrix.setIdentity();
 
   // Create and initialize an AutoDiff matrix given the values and
@@ -163,8 +163,7 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
   // Arbitrarily set state[1] (ẋ) to 0.7 and resize the derivative vector to
   // hold the partials.
   state[0] = autodiff_variables[2];
-  state[1].value() = xDt_value;
-  state[1].derivatives().resize(3);
+  state[1] = autodiff_variables[3];
 
   test_particle.CalcDerivativesToStateDt(time, state, stateDt);
 
@@ -173,20 +172,13 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
   VerifyAutoDiffValueAndPartialDerivatives(particle_data.mass_, mass_value, 1,
                                            0, 0, "mass");
 
-  // Test ∂y/∂C.
-  // EXPECT_NEAR(particle_data.mass_.derivatives()(2), 0, kEpsilon);
-
   // Value: x = state[0] (assigned above).
   // The expected values are: x = 0.5, ∂x/∂m = 0, ∂x/∂t = 0, ∂x/∂x = 1.
   VerifyAutoDiffValueAndPartialDerivatives(particle_data.x_, x_value, 0, 0, 1, "x");
 
-  //  EXPECT_NEAR(particle_data.x_.derivatives()(2), 1, kEpsilon);
-
   // Value: ẋ = state[1] (assigned above).
   // The expected values are: ẋ = 0.7, ∂ẋ/∂m = 0, ∂ẋ/∂t = 0, ∂ẋ/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(stateDt[0], xDt_value, 0, 0, 0, "xdt");
-
-  //  EXPECT_NEAR(stateDt[0].derivatives()(2), 0, kEpsilon);
 
   // Value: ẍ = cos(t)/m.
   // The expected values are: ẍ = cos(t)/m, ∂ẍ/∂m = -cos(t)/m²,
@@ -197,13 +189,10 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
           (particle_data.mass_.value() * particle_data.mass_.value()),
       -sin(time.value()) / particle_data.mass_.value(), 0, "xddt");
 
-  //  EXPECT_NEAR(stateDt[1].derivatives()(2), 0, kEpsilon);
-
   // Value: f = cos(t).
   // The expected values are: f = cos(t), ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(particle_data.F_, cos(time.value()),
                                            0, -sin(time.value()), 0, "F");
-  //  EXPECT_NEAR(particle_data.F_.derivatives()(2), 0, kEpsilon);
 }
 
 }  // namespace
