@@ -37,9 +37,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree",
     "//multibody/multibody_tree/math",
     "//multibody/multibody_tree/multibody_plant",
-    "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",  # unpackaged  # noqa
-    "//multibody/multibody_tree/parsing:scene_graph_parser_detail",  # unpackaged  # noqa
-    "//multibody/multibody_tree/parsing:sdf_parser_common",  # unpackaged
+    "//multibody/multibody_tree/parsing",
     "//multibody/parsers",
     "//multibody/parsing",
     "//multibody/rigid_body_plant:compliant_contact_model",  # unpackaged
