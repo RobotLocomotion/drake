@@ -109,7 +109,7 @@ cc_library(
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = [
-        "//bindings/pydrake:__subpackages__",
+        "//bindings:__subpackages__",
         "//examples:__subpackages__",
     ],
     deps = [
