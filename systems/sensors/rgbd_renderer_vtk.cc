@@ -31,7 +31,6 @@
 #include <vtkSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
-#include <vtkVersion.h>
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
@@ -125,19 +124,11 @@ class ShaderCallback : public vtkCommand {
 
   // NOLINTNEXTLINE(runtime/int): To match pre-existing APIs.
   void Execute(vtkObject*, unsigned long, void* callback_object) VTK_OVERRIDE {
-#if VTK_MAJOR_VERSION == 8 && VTK_MINOR_VERSION == 0
-    vtkOpenGLHelper* cell_bo =
-        reinterpret_cast<vtkOpenGLHelper*>(callback_object);
-    cell_bo->Program->SetUniformf("z_near", z_near_);
-    cell_bo->Program->SetUniformf("z_far", z_far_);
-    cell_bo = nullptr;
-#else
     vtkShaderProgram* program =
         reinterpret_cast<vtkShaderProgram*>(callback_object);
     program->SetUniformf("z_near", z_near_);
     program->SetUniformf("z_far", z_far_);
     program = nullptr;
-#endif
   }
 
   void set_renderer(vtkRenderer* renderer) { renderer_ = renderer; }
@@ -397,11 +388,7 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
                               parent_->config().height);
     pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
     pipeline->filter->SetInput(pipeline->window.GetPointer());
-#if VTK_MAJOR_VERSION == 8 && VTK_MINOR_VERSION == 0
-    pipeline->filter->SetMagnification(1);
-#else
     pipeline->filter->SetScale(1);
-#endif
     pipeline->filter->ReadFrontBufferOff();
     pipeline->filter->SetInputBufferTypeToRGBA();
     pipeline->filter->Update();

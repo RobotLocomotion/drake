@@ -21,7 +21,7 @@ brew 'python@2'
 brew 'scipy'
 brew 'tinyxml'
 brew 'tinyxml2'
-brew 'vtk@8.0'
+brew 'vtk@8.1'
 brew 'yaml-cpp'
 
 cask 'java8' unless system '/usr/libexec/java_home --version 1.8 --failfast &> /dev/null'
