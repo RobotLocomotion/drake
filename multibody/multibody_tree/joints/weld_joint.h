@@ -8,7 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/multibody_tree/joints/joint.h"
 #include "drake/multibody/multibody_tree/multibody_forces.h"
-#include "drake/multibody/multibody_tree/revolute_mobilizer.h"
+#include "drake/multibody/multibody_tree/weld_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -33,9 +33,9 @@ namespace multibody {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template <typename T>
-class RevoluteJoint final : public Joint<T> {
+class WeldJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldJoint)
 
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
@@ -57,123 +57,33 @@ class RevoluteJoint final : public Joint<T> {
   ///   equal to one.
   ///   This vector can have any length, only the direction is used. This method
   ///   aborts if `axis` is the zero vector.
-  RevoluteJoint(const std::string& name,
-                const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis) :
-      Joint<T>(name, frame_on_parent, frame_on_child) {
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-    DRAKE_DEMAND(!axis.isZero(kEpsilon));
-    axis_ = axis.normalized();
-  }
+  WeldJoint(const std::string& name,
+            const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+            const Isometry3<double>& X_PC) :
+      Joint<T>(name, frame_on_parent, frame_on_child), X_PC_(X_PC) {}
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frames's definitions) then,
   /// `axis = axis_F = axis_M`.
-  const Vector3<double>& revolute_axis() const {
-    return axis_;
-  }
-
-  /// @name Context-dependent value access
-  ///
-  /// These methods require the provided context to be an instance of
-  /// MultibodyTreeContext. Failure to do so leads to a std::logic_error.
-  /// @{
-
-  /// Gets the rotation angle of `this` mobilizer from `context`.
-  /// @param[in] context
-  ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The angle coordinate of `this` joint stored in the `context`.
-  const T& get_angle(const Context<T>& context) const {
-    return get_mobilizer()->get_angle(context);
-  }
-
-  /// Sets the `context` so that the generalized coordinate corresponding to the
-  /// rotation angle of `this` joint equals `angle`.
-  /// @param[in] context
-  ///   The context of the MultibodyTree this joint belongs to.
-  /// @param[in] angle
-  ///   The desired angle in radians to be stored in `context`.
-  /// @returns a constant reference to `this` joint.
-  const RevoluteJoint<T>& set_angle(
-      Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angle(context, angle);
-    return *this;
-  }
-
-  /// Gets the rate of change, in radians per second, of `this` joint's
-  /// angle (see get_angle()) from `context`.
-  /// @param[in] context
-  ///   The context of the MultibodyTree this joint belongs to.
-  /// @returns The rate of change of `this` joint's angle as stored in the
-  /// `context`.
-  const T& get_angular_rate(const Context<T>& context) const {
-    return get_mobilizer()->get_angular_rate(context);
-  }
-
-  /// Sets the rate of change, in radians per second, of this `this` joint's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
-  /// `context`.
-  /// @param[in] context
-  ///   The context of the MultibodyTree this joint belongs to.
-  /// @param[in] theta_dot
-  ///   The desired rate of change of `this` joints's angle in radians per
-  ///   second.
-  /// @returns a constant reference to `this` joint.
-  const RevoluteJoint<T>& set_angular_rate(
-      Context<T>* context, const T& angle) const {
-    get_mobilizer()->set_angular_rate(context, angle);
-    return *this;
-  }
-
-  /// @}
-
-  /// Adds into `forces` a given `torque` for `this` joint that is to be applied
-  /// about the joint's axis. The torque is defined to be positive according to
-  /// the right-hand-rule with the thumb aligned in the direction of `this`
-  /// joint's axis. That is, a positive torque causes a positive rotational
-  /// acceleration according to the right-hand-rule around the joint's axis.
-  ///
-  /// @note A torque is the moment of a set of forces whose resultant is zero.
-  void AddInTorque(
-      const systems::Context<T>& context,
-      const T& torque,
-      MultibodyForces<T>* forces) const {
-    DRAKE_DEMAND(forces != nullptr);
-    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    this->AddInOneForce(context, 0, torque, forces);
+  const Isometry3<double>& X_PC() const {
+    return X_PC_;
   }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().
   /// Therefore arguments were already checked to be valid.
-  /// For a %RevoluteJoint, we must always have `joint_dof = 0` since there is
-  /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the
-  /// torque applied about the joint's axis, on the body declared as child
-  /// (according to the revolute joint's constructor) at the origin of the child
-  /// frame (which is coincident with the origin of the parent frame at all
-  /// times). The torque is defined to be positive according to
-  /// the right-hand-rule with the thumb aligned in the direction of `this`
-  /// joint's axis. That is, a positive torque causes a positive rotational
-  /// acceleration (of the child body frame) according to the right-hand-rule
-  /// around the joint's axis.
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
       const T& joint_tau,
       MultibodyForces<T>* forces) const override {
-    // Right now we assume all the forces in joint_tau go into a single
-    // mobilizer.
-    DRAKE_DEMAND(joint_dof == 0);
-    Eigen::VectorBlock<Eigen::Ref<VectorX<T>>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
-            &forces->mutable_generalized_forces());
-    tau_mob(joint_dof) += joint_tau;
+    throw std::logic_error("Weld joints do not allow applying forces.");
   }
 
  private:
   int do_get_num_dofs() const override {
-    return 1;
+    return 0;
   }
 
   // Joint<T> overrides:
@@ -181,8 +91,8 @@ class RevoluteJoint final : public Joint<T> {
   MakeImplementationBlueprint() const override {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
-        std::make_unique<RevoluteMobilizer<T>>(
-            this->frame_on_parent(), this->frame_on_child(), axis_));
+        std::make_unique<WeldMobilizer<T>>(
+            this->frame_on_parent(), this->frame_on_child(), X_PC_));
     return std::move(blue_print);
   }
 
@@ -192,26 +102,13 @@ class RevoluteJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
-  // Make RevoluteJoint templated on every other scalar type a friend of
-  // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
-  // private members of RevoluteJoint<T>.
-  template <typename> friend class RevoluteJoint;
+  // Make WeldJoint templated on every other scalar type a friend of
+  // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
+  // private members of WeldJoint<T>.
+  template <typename> friend class WeldJoint;
 
   // Friend class to facilitate testing.
   friend class JointTester;
-
-  // Returns the mobilizer implementing this joint.
-  // The internal implementation of this joint could change in a future version.
-  // However its public API should remain intact.
-  const RevoluteMobilizer<T>* get_mobilizer() const {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
-    const RevoluteMobilizer<T>* mobilizer =
-        dynamic_cast<const RevoluteMobilizer<T>*>(
-            this->get_implementation().mobilizers_[0]);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
-  }
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
@@ -219,7 +116,7 @@ class RevoluteJoint final : public Joint<T> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
-  Vector3<double> axis_;
+  Isometry3<double> X_PC_;
 };
 
 }  // namespace multibody

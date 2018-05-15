@@ -56,12 +56,17 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_test",
+    data = [
+        "test/split_pendulum.sdf",
+    ],
     deps = [
         ":multibody_plant",
+        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/primitives:linear_system",
     ],
 )

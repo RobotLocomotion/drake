@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
@@ -13,11 +14,16 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
+
+#include <iostream>
+#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
+
 
 namespace drake {
 
@@ -37,6 +43,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::parsing::AddModelFromSdfFile;
 using systems::AbstractValue;
 using systems::BasicVector;
 using systems::Context;
@@ -538,6 +545,57 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
+}
+
+class SplitPendulum : public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Make the cart_pole model.
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/multibody_tree/"
+        "multibody_plant/test/split_pendulum.sdf");
+    AddModelFromSdfFile(full_name, &plant_);
+    plant_.Finalize();
+
+    // Get pin joint so that we can set the state.
+    pin_ = &plant_.GetJointByName<RevoluteJoint>("pin");
+
+    // Create a context to store the state for this model:
+    context_ = plant_.CreateDefaultContext();
+  }
+
+ protected:
+  MultibodyPlant<double> plant_;
+  const RevoluteJoint<double>* pin_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Tests that the hand-derived mass matrix matches the mass matrix computed with
+// a MultibodyPlant built from an SDF file.
+TEST_F(SplitPendulum, MassMatrix) {
+  EXPECT_EQ(plant_.num_bodies(), 3);
+  EXPECT_EQ(plant_.num_joints(), 2);
+  EXPECT_EQ(plant_.num_positions(), 1);
+  EXPECT_EQ(plant_.num_velocities(), 1);
+
+  // Problem parameters
+  const double mass = 1.0;
+  const double length = 12.0;  // rod's length.
+
+  // Inertia of the entire rod of length 1.0 about the pivot point.
+  const double Io = mass * length * length / 3.0;
+
+
+  // The mass matrix of the system does not depend on the x location of the
+  // cart. Therefore we only need the angle of the pole.
+  const double theta = M_PI / 3;
+
+  MatrixX<double> M(1, 1);
+  pin_->set_angle(context_.get(), theta);
+  plant_.model().CalcMassMatrixViaInverseDynamics(*context_, &M);
+
+  // We can only expect values within the precision specified in the sdf file.
+  EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
 }
 
 }  // namespace

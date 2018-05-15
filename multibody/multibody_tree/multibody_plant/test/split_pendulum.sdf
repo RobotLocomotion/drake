@@ -1,0 +1,46 @@
+<sdf version='1.6'>
+  <model name='SplitPendulum'>
+    <!-- This sdf file produces a model with the default parameters as
+         documented in cart_pole_params.named_vector.
+         They MUST be kept in sync. -->
+    <link name='upper_section'>
+      <pose>0 -3.0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+        <!-- Thin rod -->
+        <inertia>
+          <ixx>1.5</ixx><iyy>1.0e-15</iyy><izz>1.5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <link name='lower_section'>
+      <pose>0 -9.0 0 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+        <!-- Thin rod -->
+        <inertia>
+          <ixx>1.5</ixx><iyy>1.0e-15</iyy><izz>1.5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <joint name='pin' type='revolute'>
+      <pose>0 0 0 0 0 0</pose>
+      <parent>world</parent>
+      <child>upper_section</child>
+      <axis>
+        <xyz>0.0 0.0 1.0</xyz>
+      </axis>
+    </joint>
+
+    <!-- Weld the upper and lower sections to form a single rod of length 1 -->
+    <joint name='weld' type='fixed'>
+      <pose>0 -6.0 0 0 0 0</pose>
+      <parent>upper_section</parent>
+      <child>lower_section</child>
+    </joint>
+  </model>
+</sdf>
