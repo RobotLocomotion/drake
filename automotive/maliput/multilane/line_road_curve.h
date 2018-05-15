@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -89,17 +90,15 @@ class LineRoadCurve : public RoadCurve {
     return true;
   }
 
- protected:
+ private:
   double fast_p_from_s(double s, double r) const override;
 
   double fast_s_from_p(double p, double r) const override;
 
- private:
-  // Checks whether available analytical expressions for the s(p) and p(s)
-  // mappings are accurate for curve as defined.
-  // @param r Lateral offset of the reference curve over the z=0 plane.
-  // @return True if analytical results would be accurate, False otherwise.
-  bool is_analytical_parameterization_accurate(double r) const;
+  double minimum_radius_at_offset(double r) const override {
+    unused(r);
+    return std::numeric_limits<double>::infinity();
+  }
 
   // The first point in world coordinates over the z=0 plane of the reference
   // curve.

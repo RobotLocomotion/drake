@@ -31,7 +31,7 @@ namespace test {
 double BruteForcePathLengthIntegral(const RoadCurve& road_curve,
                                     double p_0, double p_1, double r,
                                     double h, int k_order,
-                                    double* maximum_step = nullptr);
+                                    double* maximum_step);
 
 // Approximates the path length of a given @p road_curve from @p p_0 to @p p_1,
 // for constant @p r and @p h offsets, to within specified @p tolerance.
@@ -71,7 +71,7 @@ double BruteForcePathLengthIntegral(const RoadCurve& road_curve,
 double AdaptiveBruteForcePathLengthIntegral(
     const RoadCurve& rc, double p_0, double p_1,
     double r, double h, double tolerance,
-    int* k_order_hint = nullptr);
+    int* k_order_hint);
 
 }  // namespace test
 }  // namespace multilane

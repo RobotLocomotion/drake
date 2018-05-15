@@ -123,12 +123,14 @@ RoadCurve::RoadCurve(double scale_length, double linear_tolerance,
   // Sets `s_from_p`'s integration accuracy and step size.
   systems::IntegratorBase<double>* s_from_p_integrator =
       s_from_p_func_->get_mutable_integrator();
+  s_from_p_integrator->request_initial_step_size_target(scale_length_);
   s_from_p_integrator->set_maximum_step_size(10. * scale_length_);
   s_from_p_integrator->set_target_accuracy(relative_tolerance);
 
   // Sets `p_from_s`'s integration accuracy and step size.
   systems::IntegratorBase<double>* p_from_s_integrator =
       p_from_s_ivp_->get_mutable_integrator();
+  p_from_s_integrator->request_initial_step_size_target(0.01 / scale_length_);
   p_from_s_integrator->set_maximum_step_size(0.1 / scale_length_);
   p_from_s_integrator->set_target_accuracy(relative_tolerance);
 }
@@ -142,6 +144,7 @@ bool RoadCurve::are_fast_computations_accurate(double r) const {
 }
 
 double RoadCurve::s_from_p(double p, double r) const {
+  DRAKE_THROW_UNLESS(minimum_radius_at_offset(r) > 0.0);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !are_fast_computations_accurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
@@ -153,6 +156,7 @@ double RoadCurve::s_from_p(double p, double r) const {
 }
 
 double RoadCurve::p_from_s(double s, double r) const {
+  DRAKE_THROW_UNLESS(minimum_radius_at_offset(r) > 0.0);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !are_fast_computations_accurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
@@ -161,6 +165,13 @@ double RoadCurve::p_from_s(double s, double r) const {
     return p_from_s_ivp_->Solve(s, values);
   }
   return fast_p_from_s(s, r);
+}
+
+double RoadCurve::elevation_scale(double p) const {
+  if (computation_policy() == ComputationPolicy::kPreferSpeed) {
+    return elevation().fake_gprime(p) / elevation().f_dot_p(p);
+  }
+  return 1.0;
 }
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {

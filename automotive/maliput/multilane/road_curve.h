@@ -125,14 +125,18 @@ class RoadCurve {
   /// to longitudinal position (in path-length) `s` along a parallel curve
   /// laterally offset by `r` from the reference curve.
   /// @return The parametric position p along an offset of the reference curve.
-  virtual double p_from_s(double s, double r) const;
+  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
+  ///                           positive number.
+  double p_from_s(double s, double r) const;
 
   /// Computes the path length integral in the interval of the parameter [0; p]
   /// and along a parallel curve laterally offset by `r` the planar reference
   /// curve.
   /// @return The path length integral of the curve composed with the elevation
   /// polynomial.
-  virtual double s_from_p(double p, double r) const;
+  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
+  ///                           positive number.
+  double s_from_p(double p, double r) const;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -165,6 +169,13 @@ class RoadCurve {
   //                   documentation as well as other variable names along the
   //                   implementation.
   virtual double p_scale() const = 0;
+
+  /// Scales elevation to account for the limitations of the arc length
+  /// parameterization computation.
+  /// @param p The reference curve parameter.
+  /// @return A scale factor for elevation values (and its derivatives).
+  /// @sa W_prime_of_prh()
+  double elevation_scale(double p) const;
 
   /// Converts a @p geo_coordinate in the world frame to the composed curve
   /// frame, i.e., the superposition of the reference curve, elevation and
@@ -289,6 +300,15 @@ class RoadCurve {
             const CubicPolynomial& superelevation,
             const ComputationPolicy& computation_policy);
 
+ private:
+  // Computes the minimum radius of curvature at a distance @p r along
+  // the curve length. Useful to identify potentially ill-conditioned
+  // evaluations e.g. `r` offsets passing through and past the instantaneous
+  // center of rotation.
+  // @param r Lateral offset of the reference curve over the z = 0 plane.
+  // @return The minimum radius of curvature.
+  virtual double minimum_radius_at_offset(double r) const = 0;
+
   // TODO(hidmic): Fast, analytical methods and the conditions in which these
   // are expected to hold were tailored for the currently available
   // implementations. This limitation could be overcome by e.g. providing a
@@ -321,7 +341,6 @@ class RoadCurve {
   /// otherwise.
   bool are_fast_computations_accurate(double r) const;
 
- private:
   // The minimum length of variations that the curve expresses.
   double scale_length_;
   // The tolerance for all computations, in the absolute error sense, for scale

@@ -23,7 +23,6 @@ namespace {
 
 const double kLinearTolerance = 1e-6;
 const double kAngularTolerance = 1e-6;
-const double kQuiteExact = 1e-10;
 const double kVeryExact = 1e-12;
 
 GTEST_TEST(MultilaneLanesTest, Rot3) {
@@ -251,17 +250,20 @@ class CorkScrew {
   CorkScrew(const T& radius, const T& axial_length, const T& number_of_turns);
 
   // Returns the (x, y, z) position in the global frame at the
-  // provided (@p s, @p r, @p h) location on the corkscrew.
-  Vector3<T> position_at_srh(const T& s, const T& r, const T& h) const;
+  // provided @p srh location on the corkscrew.
+  Vector3<T> position_at_srh(const Vector3<T>& srh) const;
 
-  // Returns the (ẋ, ẏ, ż) velocity in the global frame at the
-  // provided (@p s, @p r, @p h) location on the corkscrew (that
-  // varies with path length scaling as @p r and/or @p h differ from 0.).
-  Vector3<T> velocity_at_srh(const T& s, const T& r, const T& h) const;
+  // Returns the (r, p, y) orientation triplet in the global frame
+  // at the provided @p srh location on the corkscrew.
+  Vector3<T> orientation_at_srh(const Vector3<T>& srh) const;
 
-  // Returns the RPY orientation triplet at the provided
-  // (@p s, @p r, @p h) location on the corkscrew.
-  Vector3<T> orientation_at_srh(const T& s, const T& r, const T& h) const;
+  // Returns the (ṡ, ṙ, ḣ) velocity at the provided @p srh location
+  // on the corkscrew, scaled by the @p iso_v velocity in the
+  // (σ, ρ, η) frame i.e. a frame attached to the corkscrew frame
+  // but isotropic with the global frame (such that said velocity
+  // represents a real velocity).
+  Vector3<T> motion_derivative_at_srh(const Vector3<T>& srh,
+                                      const Vector3<T>& iso_v) const;
 
   // Returns the path length of the corkscrew.
   inline T length() const { return length_; }
@@ -270,11 +272,11 @@ class CorkScrew {
   // The radius of the corkscrew.
   const double radius_;
   // The axial length of the corkscrew, as seen
-  // if projected over the z = 0 plane, in meters.
+  // if projected onto the x-axis, in meters.
   const double axial_length_;
   // The total angular rotation undergone by the
   // corkscrew, as seen if projected over the x = 0
-  // plane, in radians.
+  // plane, in rads.
   const double angular_length_;
   // The path length of the corkscrew, in meters.
   const double length_;
@@ -290,46 +292,64 @@ CorkScrew<T>::CorkScrew(const T& radius, const T& axial_length,
                         std::pow(angular_length_ * radius_, 2))) {}
 
 template <typename T>
-Vector3<T> CorkScrew<T>::position_at_srh(const T& s, const T& r,
-                                         const T& h) const {
-  const T p = s / length();
-  const T eff_r_offset = r + radius_;
+Vector3<T> CorkScrew<T>::position_at_srh(const Vector3<T>& srh) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
+  const T effective_r_offset = srh(1) + radius_;
   const T sgamma = std::sin(angular_length_ * p);
   const T cgamma = std::cos(angular_length_ * p);
-  return Vector3<T>(axial_length_ * p, eff_r_offset * cgamma - h * sgamma,
-                    eff_r_offset * sgamma + h * cgamma);
+  return Vector3<T>(axial_length_ * p,
+                    effective_r_offset * cgamma - srh(2) * sgamma,
+                    effective_r_offset * sgamma + srh(2) * cgamma);
 }
 
 template <typename T>
-Vector3<T> CorkScrew<T>::velocity_at_srh(const T& s, const T& r,
-                                         const T& h) const {
-  const T p = s / length();
+Vector3<T> CorkScrew<T>::motion_derivative_at_srh(
+    const Vector3<T>& srh, const Vector3<T>& iso_v) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
   const T sgamma = std::sin(angular_length_ * p);
   const T cgamma = std::cos(angular_length_ * p);
-  const T alpha = angular_length_ * (r + radius_);
-  const T beta = angular_length_ * h;
-  return Vector3<T>(axial_length_, -alpha * sgamma - beta * cgamma,
-                    alpha * cgamma - beta * sgamma);
+  const T alpha = angular_length_ * (srh(1) + radius_);
+  const T alpha0 = angular_length_ * radius_;
+  const T beta = angular_length_ * srh(2);
+  const Vector3<T> position_derivative_at_p00(
+      axial_length_, -alpha0 * sgamma, alpha0 * cgamma);
+  const Vector3<T> position_derivative_at_prh(
+      axial_length_, -alpha * sgamma - beta * cgamma,
+      alpha * cgamma - beta * sgamma);
+  return iso_v.cwiseProduct(
+      Vector3<T>(position_derivative_at_p00.norm() /
+                 position_derivative_at_prh.norm(), 1., 1.));
 }
 
 template <typename T>
-Vector3<T> CorkScrew<T>::orientation_at_srh(const T& s, const T& r,
-                                            const T& h) const {
-  const T p = s / length();
-  const T eff_r_offset = r + radius_;
+Vector3<T> CorkScrew<T>::orientation_at_srh(const Vector3<T>& srh) const {
+  // TODO(hidmic): Assuming the LANE frame s-axis is always aligned
+  //               with the GLOBAL frame x-axis is incorrect. However,
+  //               this same bug is present in Multilane. Fix this
+  //               computation when the implementation gets fixed.
+  const T p = srh(0) / length();
+  const T effective_r_offset = srh(1) + radius_;
   const T sgamma = std::sin(angular_length_ * p);
   const T cgamma = std::cos(angular_length_ * p);
-  const Vector3<T> s_hat =
-      Vector3<T>(axial_length_,
-                 -angular_length_ * (eff_r_offset * sgamma + h * cgamma),
-                 angular_length_ * (eff_r_offset * cgamma - h * sgamma))
-          .normalized();
+  const Vector3<T> s_vec(
+      axial_length_,
+      -angular_length_ * (effective_r_offset * sgamma + srh(2) * cgamma),
+      angular_length_ * (effective_r_offset * cgamma - srh(2) * sgamma));
+  const Vector3<T> s_hat = s_vec.normalized();
   const Vector3<T> r_hat(0., cgamma, sgamma);
   // TODO(hidmic): Make use of math::rotmat2rpy():
   //
   // Matrix3<T> rotmat;
   // rotmat << s_hat, r_hat, s_hat.cross(r_hat);
-  // return rotmat;
+  // return math::rotmat2rpy(rotmat);
   //
   // Code below is a verbatim partial transcription of the
   // RoadCurve::Orientation() method implementation that, somehow, gives a
@@ -346,17 +366,28 @@ Vector3<T> CorkScrew<T>::orientation_at_srh(const T& s, const T& r,
 }  // namespace
 
 TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
-  RoadGeometry rg(api::RoadGeometryId{"corkscrew"}, kLinearTolerance,
-                  kAngularTolerance);
   const int kTurns = 10;
   const double kLength = 20.;
-  const CorkScrew<double> corkscrew(r0, kLength, kTurns);
-  const CubicPolynomial kCorkScrewPolynomial(0., 2. * M_PI * kTurns / kLength,
-                                             0., 0.);
-  std::unique_ptr<RoadCurve> road_curve = std::make_unique<LineRoadCurve>(
-      Vector2<double>(0., 0.), Vector2<double>(kLength, 0.), zp,
-      kCorkScrewPolynomial);
+  const CorkScrew<double> corkscrew_curve(r0, kLength, kTurns);
+  // Reproduce the same superelevation profile as that of the corkscrew.
+  const CubicPolynomial corkscrew_polynomial(
+      0., 2. * M_PI * kTurns / kLength, 0., 0.);
 
+  // Road curve's scale length is computed as
+  // half the path length of a single corkscrew
+  // turn.
+  const double kScaleLength =
+      corkscrew_curve.length() / (2 * kTurns);
+  std::unique_ptr<RoadCurve> road_curve =
+      std::make_unique<LineRoadCurve>(
+          Vector2<double>(0., 0.),
+          Vector2<double>(kLength, 0.),
+          zp, corkscrew_polynomial,
+          kScaleLength, kLinearTolerance);
+
+  RoadGeometry rg(api::RoadGeometryId{"corkscrew"},
+                  kLinearTolerance,
+                  kAngularTolerance);
   Segment* s1 =
       rg.NewJunction(api::JunctionId{"j1"})
           ->NewSegment(api::SegmentId{"s1"}, std::move(road_curve),
@@ -373,171 +404,75 @@ TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
   EXPECT_EQ(l1->to_right(), nullptr);
   EXPECT_EQ(l1->r0(), r0);
 
-  EXPECT_NEAR(l1->length(), corkscrew.length(), kVeryExact);
+  EXPECT_NEAR(l1->length(), corkscrew_curve.length(), kLinearTolerance);
 
   EXPECT_TRUE(api::test::IsRBoundsClose(
-      l1->lane_bounds(0.), api::RBounds(-kHalfLaneWidth, kHalfLaneWidth),
-      kVeryExact));
-  EXPECT_TRUE(api::test::IsRBoundsClose(l1->driveable_bounds(0.),
-                                        api::RBounds(-kHalfWidth, kHalfWidth),
-                                        kVeryExact));
+      l1->lane_bounds(0.),
+      api::RBounds(-kHalfLaneWidth, kHalfLaneWidth), kVeryExact));
+  EXPECT_TRUE(api::test::IsRBoundsClose(
+      l1->driveable_bounds(0.),
+      api::RBounds(-kHalfWidth, kHalfWidth), kVeryExact));
   EXPECT_TRUE(api::test::IsHBoundsClose(
-      l1->elevation_bounds(0., 0.), api::HBounds(0., kMaxHeight), kVeryExact));
+      l1->elevation_bounds(0., 0.),
+      api::HBounds(0., kMaxHeight), kVeryExact));
 
-  // At the beginning of the lane.
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({0., 0., 0.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(0., 0., 0.)),
-      kLinearTolerance));
+  const api::IsoLaneVelocity lane_velocity(1., 10., 100.);
+  const Vector3<double> lane_velocity_as_vector(
+      lane_velocity.sigma_v, lane_velocity.rho_v, lane_velocity.eta_v);
 
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({0., 1., 0.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(0., 1., 0.)),
-      kLinearTolerance));
+  const std::vector<double> lane_position_s_offsets = {
+    0., 1., l1->length() / 2., l1->length() - 1., l1->length()
+  };
+  const std::vector<double> lane_position_r_offsets = {
+    -kHalfWidth, -kHalfWidth + 1., -1., 0., 1., kHalfWidth - 1., kHalfWidth
+  };
+  const std::vector<double> lane_position_h_offsets = {
+    0., 1., kMaxHeight / 2., kMaxHeight - 1., kMaxHeight
+  };
 
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({0., 0., 1.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(0., 0., 1.)),
-      kLinearTolerance));
+  for (double s_offset : lane_position_s_offsets) {
+    for (double r_offset : lane_position_r_offsets) {
+      for (double h_offset : lane_position_h_offsets) {
+        // Instantiates lane position with current offsets.
+        const api::LanePosition lane_position(
+            s_offset, r_offset, h_offset);
 
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({0., 1., 1.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(0., 1., 1.)),
-      kLinearTolerance));
+        // Checks position in the (x, y, z) frame i.e. world
+        // down to kLinearTolerance accuracy (as that's the
+        // tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsGeoPositionClose(
+            l1->ToGeoPosition(lane_position),
+            api::GeoPosition::FromXyz(
+                corkscrew_curve.position_at_srh(
+                    lane_position.srh())),
+            kLinearTolerance));
 
-  // A bit after the beginning of the lane.
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({1., 0., 0.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(1., 0., 0.)),
-      kLinearTolerance));
+        // Checks orientation in the (x, y, z) frame i.e. world
+        // down to kAngularTolerance accuracy (as that's the
+        // tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsRotationClose(
+            l1->GetOrientation(lane_position),
+            api::Rotation::FromRpy(
+                corkscrew_curve.orientation_at_srh(
+                    lane_position.srh())),
+            kAngularTolerance));
 
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({1., 1., 0.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(1., 1., 0.)),
-      kLinearTolerance));
+        // Checks motion derivatives in the (s, r, h) frame i.e.
+        // lane down to kLinearTolerance accuracy (as that's
+        // the tolerance the RoadGeometry was constructed with).
+        EXPECT_TRUE(api::test::IsLanePositionClose(
+            l1->EvalMotionDerivatives(
+                lane_position, lane_velocity),
+            api::LanePosition::FromSrh(
+                corkscrew_curve.motion_derivative_at_srh(
+                    lane_position.srh(), lane_velocity_as_vector)),
+            kLinearTolerance));
 
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({1., 0., 1.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(1., 0., 1.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({1., 1., 1.}),
-      api::GeoPosition::FromXyz(corkscrew.position_at_srh(1., 1., 1.)),
-      kLinearTolerance));
-
-  // A bit before the end of the lane.
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length() - 1.0, 0., 0.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length() - 1.0, 0., 0.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length() - 1.0, 1., 0.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length() - 1.0, 1., 0.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length() - 1.0, 0., 1.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length() - 1.0, 0., 1.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length() - 1.0, 1., 1.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length() - 1.0, 1., 1.)),
-      kLinearTolerance));
-
-  // At the end of the lane.
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length(), 0., 0.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length(), 0., 0.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length(), 1., 0.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length(), 1., 0.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length(), 0., 1.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length(), 0., 1.)),
-      kLinearTolerance));
-
-  EXPECT_TRUE(api::test::IsGeoPositionClose(
-      l1->ToGeoPosition({l1->length(), 1., 1.}),
-      api::GeoPosition::FromXyz(
-          corkscrew.position_at_srh(l1->length(), 1., 1.)),
-      kLinearTolerance));
-
-  // TODO(hidmic): Add test cases for the LineLane::ToLanePosition() method
-  // when the zero superelevation restriction is lifted.
-
-  // Verifies the output of LineLane::GetOrientation().
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({0., 0., 0.}),
-      api::Rotation::FromRpy(corkscrew.orientation_at_srh(0., 0., 0.)),
-      kQuiteExact));
-
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({0., 1., 1.}),
-      api::Rotation::FromRpy(corkscrew.orientation_at_srh(0., 1., 1.)),
-      kQuiteExact));
-
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({1., 0., 0.}),
-      api::Rotation::FromRpy(corkscrew.orientation_at_srh(1., 0., 0.)),
-      kQuiteExact));
-
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({1., -1, -1.}),
-      api::Rotation::FromRpy(corkscrew.orientation_at_srh(1., -1., -1.)),
-      kQuiteExact));
-
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({l1->length() / 2, 0., 1.}),
-      api::Rotation::FromRpy(
-          corkscrew.orientation_at_srh(l1->length() / 2, 0., 1.)),
-      kQuiteExact));
-
-  EXPECT_TRUE(api::test::IsRotationClose(
-      l1->GetOrientation({l1->length(), 1., 0.}),
-      api::Rotation::FromRpy(
-          corkscrew.orientation_at_srh(l1->length(), 1., 0.)),
-      kQuiteExact));
-
-  // Derivative map should be identity (for a flat, straight road).
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 0.}),
-      api::LanePosition(0., 0., 0.), kVeryExact));
-
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({0., 0., 0.}, {1., 0., 0.}),
-      api::LanePosition(1., 0., 0.), kVeryExact));
-
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({0., 0., 0.}, {0., 1., 0.}),
-      api::LanePosition(0., 1., 0.), kVeryExact));
-
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({0., 0., 0.}, {0., 0., 1.}),
-      api::LanePosition(0., 0., 1.), kVeryExact));
-
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({0., 0., 0.}, {1., 1., 1.}),
-      api::LanePosition(1., 1., 1.), kVeryExact));
-
-  const double s_scale = corkscrew.velocity_at_srh(10., 0., 0.).norm() /
-                         corkscrew.velocity_at_srh(10., 5., 3.).norm();
-  EXPECT_TRUE(api::test::IsLanePositionClose(
-      l1->EvalMotionDerivatives({10., 5., 3.}, {1., 2., 3.}),
-      api::LanePosition(1. * s_scale, 2., 3.), kVeryExact));
+        // TODO(hidmic): Add Lane::ToLanePosition() tests when the zero
+        //               superelevation restriction in Multilane is lifted.
+      }
+    }
+  }
 }
 
 TEST_P(MultilaneLanesParamTest, FlatArcLane) {

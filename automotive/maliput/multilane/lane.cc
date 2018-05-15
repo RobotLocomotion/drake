@@ -60,20 +60,20 @@ api::Rotation Lane::DoGetOrientation(const api::LanePosition& lane_pos) const {
 api::LanePosition Lane::DoEvalMotionDerivatives(
     const api::LanePosition& position,
     const api::IsoLaneVelocity& velocity) const {
-
   const double p = road_curve_->p_from_s(position.s(), r0_);
   const double r = position.r() + r0_;
   const double h = position.h();
   const Rot3 R = road_curve_->Rabg_of_p(p);
   const double g_prime = road_curve_->elevation().f_dot_p(p);
-
+  const double scaled_g_prime = g_prime * road_curve_->elevation_scale(p);
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp
   // evaluated at (p, r, h).
   // Similarly, path-length s along the segment surface at r = r0 (which is
   // along the Lane's centerline) is related to p by ds = |∂W/∂p| dp evaluated
   // at (p, r0, 0).  Chaining yields ds/dσ:
+  // Also, note the elevation derivative scaling when computing ds/dp.
   const double ds_dsigma =
-      road_curve_->W_prime_of_prh(p, r0_, 0, R, g_prime).norm() /
+      road_curve_->W_prime_of_prh(p, r0_, 0, R, scaled_g_prime).norm() /
       road_curve_->W_prime_of_prh(p, r, h, R, g_prime).norm();
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,

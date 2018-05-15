@@ -43,17 +43,22 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   const double kH{0.};
 
   const ArcRoadCurve rc(kCenter, kRadius, kTheta0, kDTheta, zp, zp);
-  // A k = 0 order approximation uses two segments, as n = 2^k, where
-  // n is the segment count.
-  const double path_length_zero_order_approx =
-      test::BruteForcePathLengthIntegral(rc, kP0, kP1, kR, kH, 0);
-  EXPECT_NEAR(path_length_zero_order_approx,
-              std::sin(M_PI / 4.) * kRadius * 2., kAccuracy);
 
+  // A k = 0 order approximation uses a single segment, as n = 2^k,
+  // where n is the segment count.
+  double maximum_step = 0;
+  const double path_length_zero_order_approx =
+      test::BruteForcePathLengthIntegral(
+          rc, kP0, kP1, kR, kH, 0, &maximum_step);
+  const double path_length_zero_order = std::sin(M_PI / 4.) * kRadius * 2.;
+  EXPECT_NEAR(path_length_zero_order_approx, path_length_zero_order, kAccuracy);
+  EXPECT_NEAR(maximum_step, path_length_zero_order, kAccuracy);
+
+  int k_order_hint = 0;
   const double tolerance = .01 * rc.s_from_p(1., 0.);
   const double path_length_adaptive_approx =
       test::AdaptiveBruteForcePathLengthIntegral(
-          rc, kP0, kP1, kR, kH, tolerance);
+          rc, kP0, kP1, kR, kH, tolerance, &k_order_hint);
   EXPECT_NEAR(path_length_adaptive_approx, kRadius * M_PI / 2., tolerance);
 }
 
