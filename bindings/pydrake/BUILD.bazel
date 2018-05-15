@@ -114,6 +114,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 

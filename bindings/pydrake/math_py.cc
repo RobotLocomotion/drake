@@ -7,6 +7,8 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
 
 namespace drake {
@@ -17,6 +19,8 @@ PYBIND11_MODULE(math, m) {
   using namespace drake::math;
 
   m.doc() = "Bindings for //math.";
+
+  py::module::import("pydrake.util.eigen_geometry");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -49,6 +53,34 @@ PYBIND11_MODULE(math, m) {
                                           const Eigen::Ref<const VectorX<T>>&>(
                        &BarycentricMesh<T>::Eval))
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom);
+
+  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
+      .def(py::init<const Vector3<T>>(), py::arg("rpy"))
+      .def(py::init<const T&, const T&, const T&>(),
+           py::arg("roll"), py::arg("pitch"), py::arg("yaw"))
+      .def(py::init<const RotationMatrix<T>&>(), py::arg("R"))
+      .def("vector", &RollPitchYaw<T>::vector)
+      .def("get_roll_angle", &RollPitchYaw<T>::get_roll_angle)
+      .def("get_pitch_angle", &RollPitchYaw<T>::get_pitch_angle)
+      .def("get_yaw_angle", &RollPitchYaw<T>::get_yaw_angle)
+      .def("ToQuaternion", &RollPitchYaw<T>::ToQuaternion);
+
+  py::class_<RotationMatrix<T>>(m, "RotationMatrix")
+      .def(py::init())
+      .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"))
+      .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"))
+      .def("matrix", &RotationMatrix<T>::matrix)
+      // Do not define an operator until we have the Python3 `@` operator so
+      // that operations are similar to those of arrays.
+      .def("multiply",
+           [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
+             return self * other;
+           })
+      .def("inverse", &RotationMatrix<T>::inverse)
+      .def("ToQuaternion",
+           overload_cast_explicit<Eigen::Quaternion<T>>(
+              &RotationMatrix<T>::ToQuaternion))
+      .def_static("Identity", &RotationMatrix<T>::Identity);
 
   // General math overloads.
   // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
