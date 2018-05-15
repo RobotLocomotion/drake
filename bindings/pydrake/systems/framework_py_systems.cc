@@ -31,6 +31,7 @@ using symbolic::Expression;
 using systems::System;
 using systems::LeafSystem;
 using systems::Context;
+using systems::ContinuousState;
 using systems::VectorSystem;
 using systems::PublishEvent;
 using systems::DiscreteUpdateEvent;
@@ -80,6 +81,7 @@ struct Impl {
     // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
     using Base::DoPublish;
     using Base::DoHasDirectFeedthrough;
+    using Base::DoCalcTimeDerivatives;
     using Base::DoCalcDiscreteVariableUpdates;
   };
 
@@ -115,6 +117,17 @@ struct Impl {
           input_port, output_port);
       // If the macro did not return, use default functionality.
       return Base::DoHasDirectFeedthrough(input_port, output_port);
+    }
+
+    void DoCalcTimeDerivatives(
+        const Context<T>& context,
+        ContinuousState<T>* derivatives) const override {
+      // See `DoPublish` for explanation.
+      PYBIND11_OVERLOAD_INT(
+          void, LeafSystem<T>, "_DoCalcTimeDerivatives",
+          &context, derivatives);
+      // If the macro did not return, use default functionality.
+      Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
     void DoCalcDiscreteVariableUpdates(
@@ -350,6 +363,7 @@ struct Impl {
       .def("_DeclarePeriodicDiscreteUpdate",
            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
            py::arg("period_sec"), py::arg("offset_sec") = 0.)
+      .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
       .def("_DoCalcDiscreteVariableUpdates",
            &LeafSystemPublic::DoCalcDiscreteVariableUpdates)
       // Abstract state.

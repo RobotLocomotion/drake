@@ -50,6 +50,9 @@ class TestEigenGeometry(unittest.TestCase):
         R_I = np.eye(3, 3)
         q_other.set_rotation(R_I)
         self.assertTrue(np.allclose(q_other.wxyz(), q_identity.wxyz()))
+        # - Copy constructor.
+        cp = mut.Quaternion(other=q)
+        self.assertTrue(np.allclose(q.wxyz(), cp.wxyz()))
         # Bad values.
         q = mut.Quaternion.Identity()
         # - wxyz
@@ -63,6 +66,11 @@ class TestEigenGeometry(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             q_other.set_rotation(R_bad)
         self.assertTrue(np.allclose(q_other.rotation(), R_I))
+
+        # Operations.
+        q = mut.Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
+        q_I = q.inverse().multiply(q)
+        self.assertTrue(np.allclose(q_I.wxyz(), [1, 0, 0, 0]))
 
         # Test `type_caster`s.
         value = test_util.create_quaternion()
@@ -78,6 +86,9 @@ class TestEigenGeometry(unittest.TestCase):
         # - Constructor with (X)
         transform = mut.Isometry3(matrix=X)
         self.assertTrue(np.allclose(transform.matrix(), X))
+        # - Copy constructor.
+        cp = mut.Isometry3(other=transform)
+        self.assertTrue(np.allclose(transform.matrix(), cp.matrix()))
         # - Identity
         transform = mut.Isometry3.Identity()
         self.assertTrue(np.allclose(transform.matrix(), X))
@@ -112,6 +123,10 @@ class TestEigenGeometry(unittest.TestCase):
         value = test_util.create_isometry()
         self.assertTrue(isinstance(value, mut.Isometry3))
         test_util.check_isometry(value)
+        # Operations.
+        transform = mut.Isometry3(rotation=R, translation=p)
+        transform_I = transform.inverse().multiply(transform)
+        self.assertTrue(np.allclose(transform_I.matrix(), np.eye(4)))
 
     def test_translation(self):
         # Test `type_caster`s.
