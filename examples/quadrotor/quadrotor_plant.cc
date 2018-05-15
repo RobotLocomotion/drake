@@ -74,9 +74,10 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // Compute the net aerodynamic force on B (from the 4 rotors), expressed in B.
   const Vector3<T> Faero_B(0, 0, uF_Bz.sum());
 
-  // Compute the Bx and By measures of the moment on B from the 4 rotor forces.
-  // These moments arise from the cross product of a position vector with the
-  // aerodynamic force at each rotor.  For example, this moment for rotor 0
+  // Compute the Bx and By measures of the moment on B about Bcm (B's center of
+  // mass) from the 4 rotor forces.  These moments arise from the cross product
+  // of a position vector with an aerodynamic force at the center of each rotor.
+  // For example, the moment of the aerodynamic forces on rotor 0 about Bcm
   // results from Cross( L_* Bx, uF_Bz(0) * Bz ) = -L_ * uF_Bz(0) * By.
   const T Mx = L_ * (uF_Bz(1) - uF_Bz(3));
   const T My = L_ * (uF_Bz(2) - uF_Bz(0));
@@ -88,8 +89,9 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   const Vector4<T> uM_Bz = kM_ * u;
   const T Mz = uM_Bz(0) - uM_Bz(1) + uM_Bz(2) - uM_Bz(3);
 
-  // Calculate the net moment on B, expressed in B, which is the sum of moments
-  // from all forces (aerodynamic and gravity) and aerodynamic torques.
+  // Form the net moment on B about Bcm, expressed in B. The net moment accounts
+  // for all contact and distance forces (aerodynamic and gravity forces) on B.
+  // Note: Since the net moment on B is about Bcm, gravity does not contribute.
   const Vector3<T> M(Mx, My, Mz);
 
   // Calculate local celestial body's (Earth's) gravity force on B, expressed in
@@ -116,7 +118,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
   const Vector3<T> w_BN_B = R_NB.inverse() * w_BN_N;
 
-  // To calculate B's angular acceleration in N, expressed in B due to the net
+  // To compute B's angular acceleration in N, expressed in B, due to the net
   // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
   // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
   // Next, calculate B's angular acceleration in N, expressed in N.
