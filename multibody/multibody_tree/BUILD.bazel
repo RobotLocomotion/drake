@@ -392,4 +392,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "weld_joint_test",
+    srcs = ["joints/test/weld_joint_test.cc"],
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
 add_lint_tests()
