@@ -15,9 +15,7 @@ void WeldMobilizer<T>::set_zero_state(const systems::Context<T>& context,
 
 template <typename T>
 Isometry3<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>& context) const {
-  return X_FM_.cast<T>();
-}
+    const MultibodyTreeContext<T>&) const { return X_FM_.cast<T>(); }
 
 template <typename T>
 SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
