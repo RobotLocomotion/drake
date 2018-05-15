@@ -383,7 +383,7 @@ TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
           Vector2<double>(0., 0.),
           Vector2<double>(kLength, 0.),
           zp, corkscrew_polynomial,
-          kScaleLength, kLinearTolerance);
+          kLinearTolerance, kScaleLength);
 
   RoadGeometry rg(api::RoadGeometryId{"corkscrew"},
                   kLinearTolerance,

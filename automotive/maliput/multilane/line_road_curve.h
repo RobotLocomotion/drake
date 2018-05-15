@@ -42,7 +42,7 @@ class LineRoadCurve : public RoadCurve {
       const Vector2<double>& xy0, const Vector2<double>& dxy,
       const CubicPolynomial& elevation,
       const CubicPolynomial& superelevation,
-      double scale_length = 1.0, double linear_tolerance = 0.01,
+      double linear_tolerance = 0.01, double scale_length = 1.0,
       const ComputationPolicy& computation_policy =
          ComputationPolicy::kPreferAccuracy)
       : RoadCurve(linear_tolerance, scale_length,
