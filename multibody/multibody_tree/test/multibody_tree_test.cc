@@ -12,8 +12,12 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+
+#include <iostream>
+#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -22,8 +26,10 @@ namespace {
 
 using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
 using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
+using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::MatrixXd;
+using Eigen::Translation3d;
 using Eigen::Vector3d;
 using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::Context;
@@ -691,6 +697,97 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
+}
+
+// Fixture to setup a simple MBT model containing a prismatic mobilizer.
+class WeldMobilizerTest : public ::testing::Test {
+ public:
+  // Creates a simple model consisting of a single body with a prismatic joint
+  // connecting it to the world, with the sole purpose of verifying the
+  // PrismaticJoint methods.
+  void SetUp() override {
+    // Spatial inertia for adding a body. The actual value is not important for
+    // these tests since they are all kinematic.
+    const SpatialInertia<double> M_B;
+
+    // Add a body so we can add a mobilizer to it.
+    body1_ = &model_.AddBody<RigidBody>(M_B);
+    body2_ = &model_.AddBody<RigidBody>(M_B);
+
+    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+
+    X_WB1_ =
+        AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0);
+
+    X_FM_ = AngleAxisd(-M_PI_2, Vector3d::UnitZ());
+
+
+    weld_body1_to_world_ = &model_.AddMobilizer<WeldMobilizer>(
+        model_.world_body().body_frame(), body1_->body_frame(), X_WB1_);
+
+    weld_body2_to_body1_ = &model_.AddMobilizer<WeldMobilizer>(
+        frame_F, frame_M, X_FM_);
+
+    // We are done adding modeling elements. Finalize the model:
+    model_.Finalize();
+
+    // Create a context to store the state for this model:
+    context_ = model_.CreateDefaultContext();
+    // Performance critical queries take a MultibodyTreeContext to avoid dynamic
+    // casting.
+    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
+    ASSERT_NE(mbt_context_, nullptr);
+
+    // Expected pose of body 2 in the world.
+    X_WB2_.translation() =
+        Vector3d(M_SQRT2 / 4, -M_SQRT2 / 4, 0.0) - Vector3d::UnitY() / M_SQRT2;
+    X_WB2_.linear() =
+        AngleAxisd(-3 * M_PI_4, Vector3d::UnitZ()).toRotationMatrix();
+    X_WB2_.makeAffine();
+  }
+
+ protected:
+  MultibodyTree<double> model_;
+  const RigidBody<double>* body1_{nullptr};
+  const RigidBody<double>* body2_{nullptr};
+  const WeldMobilizer<double>* weld_body1_to_world_{nullptr};
+  const WeldMobilizer<double>* weld_body2_to_body1_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+  MultibodyTreeContext<double>* mbt_context_{nullptr};
+  // Prismatic mobilizer axis, expressed in the inboard frame F.
+  // It's intentionally left non-normalized to verify the mobilizer properly
+  // normalizes it at construction.
+  Isometry3d X_WB1_;
+  Isometry3d X_FM_;
+  Isometry3d X_B1F_{Translation3d(0.5, 0.0, 0.0)};
+  Isometry3d X_B2M_{Translation3d(-0.5, 0.0, 0.0)};
+  Isometry3d X_WB2_;
+};
+
+TEST_F(WeldMobilizerTest, StateHasZeroSize) {
+  EXPECT_EQ(model_.num_positions(), 0);
+  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(context_->get_continuous_state().size(), 0);
+}
+
+TEST_F(WeldMobilizerTest, PositionKinematics) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  std::vector<Isometry3d> body_poses;
+  model_.CalcAllBodyPosesInWorld(*context_, &body_poses);
+
+  EXPECT_TRUE(CompareMatrices(
+      body_poses[body1_->index()].matrix(), X_WB1_.matrix(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      body_poses[body2_->index()].matrix(), X_WB2_.matrix(),
+      kTolerance, MatrixCompareType::relative));
+
+  PRINT_VARn(body_poses[body1_->index()].matrix());
+
+  PRINT_VARn(body_poses[body2_->index()].matrix());
 }
 
 }  // namespace
