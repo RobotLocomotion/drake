@@ -547,6 +547,11 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
 }
 
+// Test to verify we can still do dynamics even when there are weld joints
+// within the model. This test builds a model from split_pendulum.sdf and
+// therefore it must be kept in sync with that file. The model consists of a
+// simple pendulum but built with two bodies and a WeldJoint joining them
+// together into a single body. For details, refer to split_pendulum.sdf.
 class SplitPendulum : public ::testing::Test {
  public:
   void SetUp() override {
@@ -570,24 +575,22 @@ class SplitPendulum : public ::testing::Test {
   std::unique_ptr<Context<double>> context_;
 };
 
-// Tests that the hand-derived mass matrix matches the mass matrix computed with
-// a MultibodyPlant built from an SDF file.
+// Verify the computation of the mass matrix against the analytical solution.
 TEST_F(SplitPendulum, MassMatrix) {
   EXPECT_EQ(plant_.num_bodies(), 3);
   EXPECT_EQ(plant_.num_joints(), 2);
   EXPECT_EQ(plant_.num_positions(), 1);
   EXPECT_EQ(plant_.num_velocities(), 1);
 
-  // Problem parameters
-  const double mass = 1.0;
+  // Problem parameters. These must be kept in sync with split_pendulum.sdf.
+  const double mass = 1.0;     // rod's mass.
   const double length = 12.0;  // rod's length.
 
-  // Inertia of the entire rod of length 1.0 about the pivot point.
+  // Inertia of the entire rod of length 12.0 about the pivot point.
   const double Io = mass * length * length / 3.0;
 
-
-  // The mass matrix of the system does not depend on the x location of the
-  // cart. Therefore we only need the angle of the pole.
+  // We choose an arbitrary angle since the mass matrix is independent of the
+  // state.
   const double theta = M_PI / 3;
 
   MatrixX<double> M(1, 1);
