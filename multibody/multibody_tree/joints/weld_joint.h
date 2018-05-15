@@ -13,16 +13,8 @@
 namespace drake {
 namespace multibody {
 
-/// This Joint allows two bodies to rotate relatively to one another around a
-/// common axis.
-/// That is, given a frame F attached to the parent body P and a frame M
-/// attached to the child body B (see the Joint class's documentation),
-/// this Joint allows frames F and M to rotate with respect to each other about
-/// an axis â. The rotation angle's sign is defined such that child body B
-/// rotates about axis â according to the right hand rule, with thumb aligned in
-/// the axis direction.
-/// Axis â is constant and has the same measures in both frames F and M, that
-/// is, `â_F = â_M`.
+/// This Joint fixes the relative pose between two frames as if "welding" them
+/// together.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -40,39 +32,24 @@ class WeldJoint final : public Joint<T> {
   template<typename Scalar>
   using Context = systems::Context<Scalar>;
 
-  /// Constructor to create a revolute joint between two bodies so that
-  /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, rotate relatively to one another about a common axis. See this
-  /// class's documentation for further details on the definition of these
-  /// frames and rotation angle.
-  /// The first three arguments to this constructor are those of the Joint class
-  /// constructor. See the Joint class's documentation for details.
-  /// The additional parameter `axis` is:
-  /// @param[in] axis
-  ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
-  ///   that frame M only rotates with respect to F and their origins are
-  ///   coincident at all times, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
-  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
-  ///   equal to one.
-  ///   This vector can have any length, only the direction is used. This method
-  ///   aborts if `axis` is the zero vector.
+  /// Constructor for a %WeldJoint between a `parent_frame_P` and a
+  /// `child_frame_C` so that their relative pose `X_PC` is fixed as if they
+  /// were "welded" together.
   WeldJoint(const std::string& name,
-            const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+            const Frame<T>& parent_frame_P, const Frame<T>& child_frame_C,
             const Isometry3<double>& X_PC) :
-      Joint<T>(name, frame_on_parent, frame_on_child), X_PC_(X_PC) {}
+      Joint<T>(name, parent_frame_P, child_frame_C), X_PC_(X_PC) {}
 
-  /// Returns the axis of revolution of `this` joint as a unit vector.
-  /// Since the measures of this axis in either frame F or M are the same (see
-  /// this class's documentation for frames's definitions) then,
-  /// `axis = axis_F = axis_M`.
+  /// Returns the pose X_PC of frame C in P.
   const Isometry3<double>& X_PC() const {
     return X_PC_;
   }
 
  protected:
   /// Joint<T> override called through public NVI, Joint::AddInForce().
-  /// Therefore arguments were already checked to be valid.
+  /// Since frame P and C are welded together, it is physically not possible to
+  /// apply forces between them. Therefore this method throws an exception if
+  /// invoked.
   void DoAddInOneForce(
       const systems::Context<T>&,
       int joint_dof,
@@ -115,7 +92,7 @@ class WeldJoint final : public Joint<T> {
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 
-  // This is the joint's axis expressed in either M or F since axis_M = axis_F.
+  // The pose of frame C in P.
   Isometry3<double> X_PC_;
 };
 
