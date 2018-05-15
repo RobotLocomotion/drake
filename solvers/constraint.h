@@ -86,14 +86,19 @@ class Constraint : public EvaluatorBase {
    * @param x A `num_vars` x 1 vector.
    * @param tol A tolerance for bound checking.
    */
-  bool CheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      double tol = 1E-6) const {
+  template <typename Derived>
+  typename std::enable_if<is_eigen_vector_of<Derived, double>::value,
+                          bool>::type
+  CheckSatisfied(const Eigen::MatrixBase<Derived>& x,
+                 double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
 
-  bool CheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
-                      double tol = 1E-6) const {
+  template <typename Derived>
+  typename std::enable_if<is_eigen_vector_of<Derived, AutoDiffXd>::value,
+                          bool>::type
+  CheckSatisfied(const Eigen::MatrixBase<Derived>& x, double tol = 1E-6) const {
     DRAKE_ASSERT(x.rows() == num_vars() || num_vars() == Eigen::Dynamic);
     return DoCheckSatisfied(x, tol);
   }
@@ -109,7 +114,9 @@ class Constraint : public EvaluatorBase {
    * @note if the users want to expose this method in a sub-class, do
    * using Constraint::UpdateLowerBound, as in LinearConstraint.
    */
-  void UpdateLowerBound(const Eigen::Ref<const Eigen::VectorXd>& new_lb) {
+  template <typename Derived>
+  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
+  UpdateLowerBound(const Eigen::MatrixBase<Derived>& new_lb) {
     if (new_lb.rows() != num_constraints()) {
       throw std::logic_error("Lower bound has invalid dimension.");
     }
@@ -120,7 +127,9 @@ class Constraint : public EvaluatorBase {
    * @note if the users want to expose this method in a sub-class, do
    * using Constraint::UpdateUpperBound, as in LinearConstraint.
    */
-  void UpdateUpperBound(const Eigen::Ref<const Eigen::VectorXd>& new_ub) {
+  template <typename Derived>
+  typename std::enable_if<is_eigen_vector_of<Derived, double>::value>::type
+  UpdateUpperBound(const Eigen::MatrixBase<Derived>& new_ub) {
     if (new_ub.rows() != num_constraints()) {
       throw std::logic_error("Upper bound has invalid dimension.");
     }
@@ -134,8 +143,11 @@ class Constraint : public EvaluatorBase {
    * @note If the users want to expose this method in a sub-class, do
    * using Constraint::set_bounds, as in LinearConstraint.
    */
-  void set_bounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-                  const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
+  template <typename DerivedLB, typename DerivedUB>
+  typename std::enable_if<is_eigen_vector_of<DerivedUB, double>::value &&
+                          is_eigen_vector_of<DerivedLB, double>::value>::type
+  set_bounds(const Eigen::MatrixBase<DerivedLB>& lower_bound,
+             const Eigen::MatrixBase<DerivedUB>& upper_bound) {
     UpdateLowerBound(lower_bound);
     UpdateUpperBound(upper_bound);
   }
@@ -219,10 +231,10 @@ class QuadraticConstraint : public Constraint {
    * @param new_b new linear term
    */
   template <typename DerivedQ, typename DerivedB>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
-                          const Eigen::MatrixBase<DerivedB>& new_b) {
-    if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows() ||
-        new_b.cols() != 1) {
+  typename std::enable_if<is_eigen_vector_of<DerivedB, double>::value>::type
+  UpdateCoefficients(const Eigen::MatrixBase<DerivedQ>& new_Q,
+                     const Eigen::MatrixBase<DerivedB>& new_b) {
+    if (new_Q.rows() != new_Q.cols() || new_Q.rows() != new_b.rows()) {
       throw std::runtime_error("New constraints have invalid dimensions");
     }
 
@@ -480,11 +492,12 @@ class LinearConstraint : public Constraint {
    * @param new_up new upper bound
    */
   template <typename DerivedA, typename DerivedL, typename DerivedU>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
-                          const Eigen::MatrixBase<DerivedL>& new_lb,
-                          const Eigen::MatrixBase<DerivedU>& new_ub) {
-    if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows() ||
-        new_lb.cols() != 1 || new_ub.cols() != 1) {
+  typename std::enable_if<is_eigen_vector_of<DerivedL, double>::value &&
+                          is_eigen_vector_of<DerivedU, double>::value>::type
+  UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& new_A,
+                     const Eigen::MatrixBase<DerivedL>& new_lb,
+                     const Eigen::MatrixBase<DerivedU>& new_ub) {
+    if (new_A.rows() != new_lb.rows() || new_lb.rows() != new_ub.rows()) {
       throw std::runtime_error("New constraints have invalid dimensions");
     }
 
@@ -537,8 +550,9 @@ class LinearEqualityConstraint : public LinearConstraint {
    *different number of linear constraints, but on the same decision variables)
    */
   template <typename DerivedA, typename DerivedB>
-  void UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
-                          const Eigen::MatrixBase<DerivedB>& beq) {
+  typename std::enable_if<is_eigen_vector_of<DerivedB, double>::value>::type
+  UpdateCoefficients(const Eigen::MatrixBase<DerivedA>& Aeq,
+                     const Eigen::MatrixBase<DerivedB>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 
