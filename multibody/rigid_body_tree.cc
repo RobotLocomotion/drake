@@ -3162,14 +3162,10 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
     auto measured_dist
           = transformPoints(cache,
                             distCons[i].from_point.template cast<Scalar>(),
-                            distCons[i].from_body, 0)
-            - transformPoints(cache,
-                              distCons[i].to_point.template cast<Scalar>(),
-                              distCons[i].to_body, 0);
-    std::cout << measured_dist.norm() - distCons[i].distance << " , ";
+                            distCons[i].from_body, distCons[i].to_body)
+            - distCons[i].to_point.template cast<Scalar>();
     ret(6 * loops.size() + i) = measured_dist.norm() - distCons[i].distance;
   }
-  std::cout << std::endl << std::endl;
   return ret;
 }
 
@@ -3202,18 +3198,13 @@ RigidBodyTree<T>::positionConstraintsJacobian(
     auto measured_dist
           = transformPoints(cache,
                             distCons[i].from_point.template cast<Scalar>(),
-                            distCons[i].from_body, 0)
-            - transformPoints(cache,
-                              distCons[i].to_point.template cast<Scalar>(),
-                              distCons[i].to_body, 0);
+                            distCons[i].from_body, distCons[i].to_body)
+            - distCons[i].to_point.template cast<Scalar>();
     auto J = transformPointsJacobian(cache, distCons[i].from_point
                                           .template cast<Scalar>(),
-                                      distCons[i].from_body, 0,
-                                      in_terms_of_qdot)
-              - transformPointsJacobian(cache, distCons[i].to_point
-                                            .template cast<Scalar>(),
-                                        distCons[i].to_body, 0,
-                                        in_terms_of_qdot);
+                                      distCons[i].from_body,
+                                      distCons[i].to_body,
+                                      in_terms_of_qdot);
     ret.template middleRows<1>(6 * loops.size() + i)
           = (measured_dist.transpose() / measured_dist.norm()) * J;
   }
@@ -3243,14 +3234,11 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     auto measured_dist
           = transformPoints(cache,
                             distCons[i].from_point.template cast<Scalar>(),
-                            distCons[i].from_body, 0)
-            - transformPoints(cache,
-                              distCons[i].to_point.template cast<Scalar>(),
-                              distCons[i].to_body, 0);
+                            distCons[i].from_body, distCons[i].to_body)
+            - distCons[i].to_point.template cast<Scalar>();
     auto J = transformPointsJacobianDotTimesV(cache, distCons[i].from_point,
-                                              distCons[i].from_body, 0)
-            - transformPointsJacobianDotTimesV(cache, distCons[i].to_point,
-                                                  distCons[i].to_body, 0);
+                                              distCons[i].from_body,
+                                              distCons[i].to_body);
     ret.template middleRows<1>(6 * loops.size() + i)
           = (measured_dist.transpose() / measured_dist.norm()) * J;
   }
