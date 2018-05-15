@@ -102,6 +102,7 @@ drake_cc_library(
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
+        "weld_mobilizer.cc",
     ],
     hdrs = [
         "body.h",
@@ -126,6 +127,7 @@ drake_cc_library(
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
+        "weld_mobilizer.h",
     ],
     # Hide this library outside of this package; users should depend on
     # ":multibody_tree" broadly, not just ":multibody_tree_core".
@@ -329,6 +331,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "prismatic_mobilizer_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "weld_mobilizer_test",
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",

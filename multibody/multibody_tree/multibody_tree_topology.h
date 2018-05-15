@@ -792,10 +792,19 @@ class MultibodyTreeTopology {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
-      mobilizer.positions_start = position_index;
-      mobilizer.velocities_start = velocity_index;
-      mobilizer.velocities_start_in_v = velocity_index - num_positions_;
-      DRAKE_DEMAND(0 <= mobilizer.velocities_start_in_v);
+      if (mobilizer.num_velocities == 0) {  // A weld mobilizer.
+        // For weld mobilizers these values should not even be accessed.
+        // Therefore we initialize them to invalid index values to ease
+        // debugging.
+        mobilizer.positions_start = -1;
+        mobilizer.velocities_start = -1;
+        mobilizer.velocities_start_in_v = -1;
+      } else {
+        mobilizer.positions_start = position_index;
+        mobilizer.velocities_start = velocity_index;
+        mobilizer.velocities_start_in_v = velocity_index - num_positions_;
+        DRAKE_DEMAND(0 <= mobilizer.velocities_start_in_v);
+      }
 
       position_index += mobilizer.num_positions;
       velocity_index += mobilizer.num_velocities;
@@ -807,7 +816,10 @@ class MultibodyTreeTopology {
 
       // Start index in a vector containing only generalized velocities.
       node.mobilizer_velocities_start_in_v = mobilizer.velocities_start_in_v;
-      DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v);
+      // Demand indexes to be positive only for mobilizers with a non-zer number
+      // of dofs.
+      DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v ||
+          node.num_mobilizer_velocities == 0);
       DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_);
     }
     DRAKE_DEMAND(position_index == num_positions_);

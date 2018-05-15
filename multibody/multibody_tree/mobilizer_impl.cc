@@ -18,6 +18,7 @@ std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
 
 // Macro used to explicitly instantiate implementations on all sizes needed.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T) \
+template class MobilizerImpl<T, 0, 0>; \
 template class MobilizerImpl<T, 1, 1>; \
 template class MobilizerImpl<T, 2, 2>; \
 template class MobilizerImpl<T, 3, 3>; \
