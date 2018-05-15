@@ -13,10 +13,10 @@ namespace kuka_iiwa_arm {
 namespace {
 
 constexpr int kNumIiwaPositions = 7;
-constexpr int kNumWsgPositions = 5;
+constexpr int kNumWsgPositions = 2;
 constexpr int kNumObjectPositions = 7;
 constexpr int kNumIiwaVelocities = 7;
-constexpr int kNumWsgVelocities = 5;
+constexpr int kNumWsgVelocities = 2;
 constexpr int kNumObjectVelocities = 6;
 
 class IiwaAndWsgPlantWithStateEstimatorTest : public ::testing::Test {

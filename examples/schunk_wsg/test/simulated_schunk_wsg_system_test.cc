@@ -8,11 +8,15 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+
+using drake::manipulation::schunk_wsg::ControlMode;
+using drake::manipulation::schunk_wsg::SchunkWsgPlainController;
 
 namespace drake {
 namespace examples {
@@ -70,13 +74,19 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   DRAKE_DEMAND(left_finger_actuator_index >= 0);
 
   // Set the input to a constant force.
-  Vector1d input;
-  input << -1.0;  // Force, in Newtons.
+  Vector2<double> input;
+  input << -1.0, 1.0;  // Force, in Newtons.
   const auto source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           input);
   source->set_name("source");
-  builder.Connect(source->get_output_port(), schunk->get_input_port(0));
+  const auto controller = builder.template AddSystem<SchunkWsgPlainController>(
+      2000, 0, 5, ControlMode::kForce);
+  builder.Connect(source->get_output_port(),
+                  controller->get_feed_forward_force_input_port());
+  builder.Connect(schunk->get_output_port(0),
+                  controller->get_state_input_port());
+  builder.Connect(controller->get_output_port(0), schunk->get_input_port(0));
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
