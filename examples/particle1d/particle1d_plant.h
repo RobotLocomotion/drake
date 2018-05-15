@@ -87,7 +87,7 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
     return dynamic_cast<systems::BasicVector<T>&>(cstate->get_mutable_vector());
   }
 
-  // Class that holds MotionGenesis-generated code.
+  // Class that holds particle parameters and equations of motion.
   mutable Particle1dManual<T> particle1d_;
 
   // This is the calculator method that assigns values to the state output port.
