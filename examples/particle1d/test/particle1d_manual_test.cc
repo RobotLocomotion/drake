@@ -42,11 +42,11 @@ void VerifyAutoDiffValueAndPartialDerivatives(const AutoDiffXd& y,
 GTEST_TEST(PlantTest, ManualClassTestDouble) {
   Particle1dManual<double> test_particle;
 
-  Particle1dManual<double>::ParticleData& particle_data =
+  const Particle1dManual<double>::ParticleData& particle_data =
       test_particle.get_particle_data();
 
   // Ensure the default initialization of mass is 1 kg.
-  EXPECT_TRUE(particle_data.mass_ == 1);
+  EXPECT_TRUE(particle_data.mass == 1);
 
   // Struct for the test data.
   struct TestData {
@@ -74,7 +74,7 @@ GTEST_TEST(PlantTest, ManualClassTestDouble) {
                     test_data[i].test_state[1]);  // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1],
                     std::cos(test_data[i].test_time) /
-                        particle_data.mass_);  // ẍ = cos(time)/m
+                        particle_data.mass);  // ẍ = cos(time)/m
   }
 }
 
@@ -84,11 +84,11 @@ GTEST_TEST(PlantTest, ManualClassTestDouble) {
 GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
   Particle1dManual<AutoDiffXd> test_particle;
 
-  Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
+  const Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
       test_particle.get_particle_data();
 
   // Ensure the default initialization of mass is 1 kg.
-  EXPECT_TRUE(particle_data.mass_ == 1);
+  EXPECT_TRUE(particle_data.mass == 1);
 
   // Struct for the test data.
   struct TestData {
@@ -116,7 +116,7 @@ GTEST_TEST(PlantTest, ManualClassTestAutoDiffValuesOnly) {
                     test_data[i].test_state[1].value());  // ẋ = v = state[1]
     VerifyValueOnly(stateDt[1].value(),
                     cos(test_data[i].test_time.value()) /
-                        particle_data.mass_.value());  // ẍ = cos(time)/m
+                        particle_data.mass.value());  // ẍ = cos(time)/m
   }
 }
 
@@ -139,8 +139,7 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
   auto_values[0] = mass_value;  // Variable mass
   auto_values[1] = time_value;  // Variable time
   auto_values[2] = x_value;     // Variable x
-
-
+  
   // Use an identity matrix to initialize the partials to:
   // ∂m/∂m = 1, ∂t/∂t = 1, ∂x/∂x = 1.
   Eigen::Matrix3d gradient_matrix;
@@ -152,42 +151,42 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
       auto_values, gradient_matrix);
 
   // Get struct that contains the particles data (mass, state, stateDt, and F).
-  Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
+  const Particle1dManual<AutoDiffXd>::ParticleData& particle_data =
       test_particle.get_particle_data();
 
   AutoDiffXd state[2];
   AutoDiffXd stateDt[2];
 
-  particle_data.mass_ = autodiff_vars[0];  // autodiff_vars[0] is AutoDiff mass.
-  AutoDiffXd time = autodiff_vars[1];      // autodiff_vars[1] is AutoDiff time.
-  state[0] = autodiff_vars[2];             // autodiff_vars[2] is AutoDiff x.
-  state[1].value() = xDt_value;            // AutoDiff ẋ.
+  test_particle.set_mass(autodiff_vars[0]); // autodiff_vars[0] is AutoDiff mass
+  AutoDiffXd time = autodiff_vars[1];       // autodiff_vars[1] is AutoDiff time
+  state[0] = autodiff_vars[2];              // autodiff_vars[2] is AutoDiff x
+  state[1].value() = xDt_value;             // AutoDiff ẋ
 
   test_particle.CalcDerivativesToStateDt(time, state, stateDt);
 
   // Verify AutoDiff values from initialization.
   // Value: m = mass (assigned above).
   // The expected values are: m = 3, ∂m/∂m = 1, ∂m/∂t = 0, ∂m/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.mass_, mass_value, 1,
+  VerifyAutoDiffValueAndPartialDerivatives(particle_data.mass, mass_value, 1,
                                            0, 0);
 
   // Value: x = state[0] (assigned above).
   // The expected values are: x = 0.5, ∂x/∂m = 0, ∂x/∂t = 0, ∂x/∂x = 1.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.x_, x_value, 0, 0, 1);
+  VerifyAutoDiffValueAndPartialDerivatives(particle_data.x, x_value, 0, 0, 1);
 
   // Verify AutoDiff values from calculation.
   // Value: ẍ = cos(t)/m.
   // The expected values are: ẍ = cos(t)/m, ∂ẍ/∂m = -cos(t)/m²,
   // ∂ẍ/∂t = -sint(t)/m, ∂ẍ/∂x = 0.
   VerifyAutoDiffValueAndPartialDerivatives(
-      stateDt[1], cos(time.value()) / particle_data.mass_.value(),
+      stateDt[1], cos(time.value()) / particle_data.mass.value(),
       -cos(time.value()) /
-          (particle_data.mass_.value() * particle_data.mass_.value()),
-      -sin(time.value()) / particle_data.mass_.value(), 0);
+          (particle_data.mass.value() * particle_data.mass.value()),
+      -sin(time.value()) / particle_data.mass.value(), 0);
 
   // Value: f = cos(t).
   // The expected values are: f = cos(t), ∂f/∂m = 0, ∂f/∂t = -sin(t), ∂f/∂x = 0.
-  VerifyAutoDiffValueAndPartialDerivatives(particle_data.F_, cos(time.value()),
+  VerifyAutoDiffValueAndPartialDerivatives(particle_data.F, cos(time.value()),
                                            0, -sin(time.value()), 0);
 }
 

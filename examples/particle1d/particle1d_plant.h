@@ -65,7 +65,7 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   }
 
   /// Returns the mass of the particle in kg.
-  T get_mass() const { return particle1d_.get_particle_data().mass_; }
+  const T get_mass() const { return particle1d_.get_particle_data().mass; }
 
  private:
   // Casts the continuous state vector from a VectorBase to a BasicVector

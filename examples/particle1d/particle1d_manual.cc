@@ -10,29 +10,23 @@ template<typename T>
 Particle1dManual<T>::Particle1dManual() {
   // Assign default value for this class's constant parameters (for this class,
   // only mass).
-  particle_data_.mass_ = 1;
+  this->set_mass(1);
 }
 
 // -----------------------------------------------------------------------------
 template<typename T>
 void Particle1dManual<T>::CalcDerivativesToStateDt(const T t, const T state[],
                                                    T stateDt[]) {
-  SetVariablesFromState(state);
+  // Set state variables x and xDt from their corresponding values in state[].
+  particle_data_.x = state[0];
+  particle_data_.xDt = state[1];
 
   using std::cos;
+  particle_data_.F = cos(t);
+  particle_data_.xDDt = particle_data_.F / particle_data_.mass;
 
-  particle_data_.F_ = cos(t);
-  particle_data_.xDDt_ = particle_data_.F_ / particle_data_.mass_;
-
-  stateDt[0] = particle_data_.xDt_;
-  stateDt[1] = particle_data_.xDDt_;
-}
-
-// -----------------------------------------------------------------------------
-template<typename T>
-void Particle1dManual<T>::SetVariablesFromState(const T state[]) {
-  particle_data_.x_ = state[0];
-  particle_data_.xDt_ = state[1];
+  stateDt[0] = particle_data_.xDt;
+  stateDt[1] = particle_data_.xDDt;
 }
 
 // -----------------------------------------------------------------------------

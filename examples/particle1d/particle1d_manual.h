@@ -35,38 +35,34 @@ class Particle1dManual {
   /// Struct to hold the particle member data.
   struct ParticleData {
     /// The particles Nx measure from a point fixed in N [m].
-    T x_;
+    T x;
 
     /// The 1ˢᵗ time derivative of the particles position (velocity) [m/s].
-    T xDt_;
+    T xDt;
 
     /// The 2ⁿᵈ time derivative of the particles position (acceleration) [m/s²].
-    T xDDt_;
+    T xDDt;
 
     /// The force applied to the particle [N].
-    T F_;
+    T F;
 
     /// The mass of the particle [kg].
-    T mass_;
+    T mass;
   };
 
   /// Returns a ParticleData struct which contains the particle's relevant data
   /// such as it's state, mass, and time derivatives.
   /// @returns ParticleData struct with particle's relevant data.
-  ParticleData& get_particle_data() { return particle_data_; };
+  const ParticleData& get_particle_data() const { return particle_data_; };
 
   /// Sets the particle's mass. The mass of the particle is initialized to 1 kg
   /// in the constructor.
   /// @param[in] mass mass of the particle in kg.
-  void set_mass(T mass) { particle_data_.mass_ = mass; }
+  void set_mass(T mass) { particle_data_.mass = mass; }
 
  private:
   // ParticleData object to hold the member data.
   ParticleData particle_data_;
-
-  // Set local state variables x_ and xDt_ from their corresponding values in
-  // state[].
-  void SetVariablesFromState(const T state[]);
 };
 
 // -----------------------------------------------------------------------------
