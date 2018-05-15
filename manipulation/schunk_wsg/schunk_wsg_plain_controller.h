@@ -9,8 +9,7 @@ namespace schunk_wsg {
 
 enum class ControlMode {
   kPosition = 0,
-  kForce = 1,
-  kPositionAndForce = 2,
+  kForce = 1
 };
 
 /// This class implements a controller for a Schunk WSG gripper.  It
@@ -23,9 +22,12 @@ enum class ControlMode {
 class SchunkWsgPlainController : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPlainController)
-  explicit SchunkWsgPlainController(
-      double kp, double ki, double kd,
-      ControlMode control_mode = ControlMode::kPosition);
+  SchunkWsgPlainController(
+      ControlMode control_mode = ControlMode::kPosition,
+      double kp = 2000, double ki = 0, double kd = 5);
+
+  SchunkWsgPlainController(double kp, double ki, double kd) :
+    SchunkWsgPlainController(ControlMode::kPosition, kp, ki, kd) {}
 
   const systems::InputPortDescriptor<double>& get_desired_state_input_port()
       const {

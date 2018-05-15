@@ -15,9 +15,9 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-SchunkWsgPlainController::SchunkWsgPlainController(double kp, double ki,
-                                                   double kd,
-                                                   ControlMode control_mode) {
+SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
+                                                   double kp, double ki,
+                                                   double kd) {
   systems::DiagramBuilder<double> builder;
 
   // Set up desired control state, x_d, signal.
@@ -28,8 +28,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(double kp, double ki,
     builder.AddSystem<systems::ConstantVectorSource<double>>(
         Vector2<double>::Zero());
   switch (control_mode) {
-    case ControlMode::kPosition:
-    case ControlMode::kPositionAndForce: {
+    case ControlMode::kPosition: {
       auto concatenate_desired_states =
           builder.AddSystem<systems::Multiplexer<double>>(
               std::vector<int>({2, 2}));
@@ -72,8 +71,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(double kp, double ki,
   // Set up the pre-saturation control, u, signal.
   const systems::OutputPort<double>* u_port;
   switch (control_mode) {
-    case ControlMode::kPosition:
-    case ControlMode::kPositionAndForce: {
+    case ControlMode::kPosition: {
       //  q0 = (qR - qL)
       //  q1 = 0.5(qR + qL)
       //  q0d = command
@@ -120,6 +118,9 @@ SchunkWsgPlainController::SchunkWsgPlainController(double kp, double ki,
       MatrixX<double> J_x{2, 4};
       J_x << J_q, MatrixX<double>::Zero(1, 2), MatrixX<double>::Zero(1, 2), J_q;
 
+      MatrixX<double> grip_position_jacobian{1, 2};
+      grip_position_jacobian << 0.5, -0.5;
+
       auto convert_to_x_tilde =
           builder.AddSystem<systems::MatrixGain<double>>(J_x);
       state_input_port_ =
@@ -148,11 +149,16 @@ SchunkWsgPlainController::SchunkWsgPlainController(double kp, double ki,
           builder.AddSystem<systems::MatrixGain<double>>(J_q.transpose());
       builder.Connect(wsg_controller->get_output_port_control(),
                       convert_to_u->get_input_port());
+      auto grip_force_to_joint_force =
+          builder.AddSystem<systems::MatrixGain<double>>(
+              grip_position_jacobian.transpose());
+      feed_forward_force_input_port_ =
+          builder.ExportInput(grip_force_to_joint_force->get_input_port());
       auto adder = builder.AddSystem<systems::Adder<double>>(2, 2);
       builder.Connect(convert_to_u->get_output_port(),
                       adder->get_input_port(0));
-      feed_forward_force_input_port_ =
-          builder.ExportInput(adder->get_input_port(1));
+      builder.Connect(grip_force_to_joint_force->get_output_port(),
+                      adder->get_input_port(1));
       u_port = &adder->get_output_port();
     } break;
   }

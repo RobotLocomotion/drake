@@ -74,19 +74,27 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   DRAKE_DEMAND(left_finger_actuator_index >= 0);
 
   // Set the input to a constant force.
-  Vector2<double> input;
-  input << -1.0, 1.0;  // Force, in Newtons.
+  Vector1<double> input;
+  input << -1.0;  // Force, in Newtons.
+  Vector1<double> max_force{40};  // Max force, in Newtons.
   const auto source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           input);
   source->set_name("source");
-  const auto controller = builder.template AddSystem<SchunkWsgPlainController>(
-      2000, 0, 5, ControlMode::kForce);
+  const auto max_force_source =
+      builder.template AddSystem<systems::ConstantVectorSource<double>>(
+          max_force);
+  source->set_name("max_force_source");
+  const auto wsg_controller =
+      builder.template AddSystem<SchunkWsgPlainController>(ControlMode::kForce);
   builder.Connect(source->get_output_port(),
-                  controller->get_feed_forward_force_input_port());
+                  wsg_controller->get_feed_forward_force_input_port());
   builder.Connect(schunk->get_output_port(0),
-                  controller->get_state_input_port());
-  builder.Connect(controller->get_output_port(0), schunk->get_input_port(0));
+                  wsg_controller->get_state_input_port());
+  builder.Connect(max_force_source->get_output_port(),
+                  wsg_controller->get_max_force_input_port());
+  builder.Connect(wsg_controller->get_output_port(0),
+                  schunk->get_input_port(0));
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.
