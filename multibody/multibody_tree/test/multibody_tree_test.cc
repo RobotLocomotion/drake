@@ -16,9 +16,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace multibody_model {
@@ -699,45 +696,48 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
 }
 
-// Fixture to setup a simple MBT model containing a prismatic mobilizer.
+// Fixture to setup a simple MBT model with weld mobilizers. The model is in
+// the x-y plane and is sketched below. See unit test code comments for details.
+//
+//       ◯  <-- Weld joint between the world W and body 1 frame B1.
+//       **
+//        **
+//         **  Body 1. Slab of length 1, at 45 degrees from the world's origin.
+//          **
+//           **
+//            ◯  <-- Weld joint between frames F (on body 1) and M (on body 2).
+//           **
+//          **
+//         **  Body 2. Slab of length 1, at 90 degrees with body 1.
+//        **
+//       **
+//
+// There are no other mobilizers and therefore there are no dofs.
 class WeldMobilizerTest : public ::testing::Test {
  public:
-  // Creates a simple model consisting of a single body with a prismatic joint
-  // connecting it to the world, with the sole purpose of verifying the
-  // PrismaticJoint methods.
+  // Setup the MBT model as sketched above.
   void SetUp() override {
-    // Spatial inertia for adding a body. The actual value is not important for
+    // Spatial inertia for each body. The actual value is not important for
     // these tests since they are all kinematic.
     const SpatialInertia<double> M_B;
 
-    // Add a body so we can add a mobilizer to it.
     body1_ = &model_.AddBody<RigidBody>(M_B);
     body2_ = &model_.AddBody<RigidBody>(M_B);
 
-    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
-    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
-
-    X_WB1_ =
-        AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0);
-
-    X_FM_ = AngleAxisd(-M_PI_2, Vector3d::UnitZ());
-
-
-    weld_body1_to_world_ = &model_.AddMobilizer<WeldMobilizer>(
+    model_.AddMobilizer<WeldMobilizer>(
         model_.world_body().body_frame(), body1_->body_frame(), X_WB1_);
 
-    weld_body2_to_body1_ = &model_.AddMobilizer<WeldMobilizer>(
-        frame_F, frame_M, X_FM_);
+    // Add a weld joint between bodies 1 and 2 by welding together inboard
+    // frame F (on body 1) with outboard frame M (on body 2).
+    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+    model_.AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
 
     // We are done adding modeling elements. Finalize the model:
     model_.Finalize();
 
     // Create a context to store the state for this model:
     context_ = model_.CreateDefaultContext();
-    // Performance critical queries take a MultibodyTreeContext to avoid dynamic
-    // casting.
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
-    ASSERT_NE(mbt_context_, nullptr);
 
     // Expected pose of body 2 in the world.
     X_WB2_.translation() =
@@ -751,15 +751,10 @@ class WeldMobilizerTest : public ::testing::Test {
   MultibodyTree<double> model_;
   const RigidBody<double>* body1_{nullptr};
   const RigidBody<double>* body2_{nullptr};
-  const WeldMobilizer<double>* weld_body1_to_world_{nullptr};
-  const WeldMobilizer<double>* weld_body2_to_body1_{nullptr};
   std::unique_ptr<Context<double>> context_;
-  MultibodyTreeContext<double>* mbt_context_{nullptr};
-  // Prismatic mobilizer axis, expressed in the inboard frame F.
-  // It's intentionally left non-normalized to verify the mobilizer properly
-  // normalizes it at construction.
-  Isometry3d X_WB1_;
-  Isometry3d X_FM_;
+  Isometry3d X_WB1_{
+      AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0)};
+  Isometry3d X_FM_{AngleAxisd(-M_PI_2, Vector3d::UnitZ())};
   Isometry3d X_B1F_{Translation3d(0.5, 0.0, 0.0)};
   Isometry3d X_B2M_{Translation3d(-0.5, 0.0, 0.0)};
   Isometry3d X_WB2_;
@@ -784,10 +779,6 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   EXPECT_TRUE(CompareMatrices(
       body_poses[body2_->index()].matrix(), X_WB2_.matrix(),
       kTolerance, MatrixCompareType::relative));
-
-  PRINT_VARn(body_poses[body1_->index()].matrix());
-
-  PRINT_VARn(body_poses[body2_->index()].matrix());
 }
 
 }  // namespace
