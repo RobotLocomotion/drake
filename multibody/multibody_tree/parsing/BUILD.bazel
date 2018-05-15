@@ -1,9 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -18,6 +19,15 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
     ]),
+)
+
+drake_cc_package_library(
+    name = "parsing",
+    deps = [
+        ":multibody_plant_sdf_parser",
+        ":scene_graph_parser_detail",
+        ":sdf_parser_common",
+    ],
 )
 
 drake_cc_library(
