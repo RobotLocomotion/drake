@@ -5,15 +5,15 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_system.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 using std::unique_ptr;
 
 namespace drake {
 
 using systems::BasicVector;
-using systems::ConstantVectorSource;
+using systems::LeafSystem;
 
 namespace pydrake {
 namespace {
@@ -21,10 +21,10 @@ namespace {
 using T = double;
 
 // Informs listener when this class is deleted.
-class DeleteListenerSystem : public ConstantVectorSource<T> {
+class DeleteListenerSystem : public LeafSystem<T> {
  public:
   explicit DeleteListenerSystem(std::function<void()> delete_callback)
-    : ConstantVectorSource(VectorX<T>::Constant(1, 0.)),
+      : LeafSystem<T>(),
       delete_callback_(delete_callback) {}
 
   ~DeleteListenerSystem() override {
@@ -89,7 +89,7 @@ PYBIND11_MODULE(test_util, m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
 
-  py::class_<DeleteListenerSystem, ConstantVectorSource<T>>(
+  py::class_<DeleteListenerSystem, LeafSystem<T>>(
       m, "DeleteListenerSystem")
     .def(py::init<std::function<void()>>());
   py::class_<DeleteListenerVector, BasicVector<T>>(
