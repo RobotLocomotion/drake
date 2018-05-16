@@ -21,10 +21,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
 
-#include <iostream>
-#define PRINT_VARn(a) std::cout << #a"\n" << a << std::endl;
-
-
 namespace drake {
 
 using Eigen::AngleAxisd;

@@ -39,7 +39,7 @@ class WeldMobilizerTest : public ::testing::Test {
     body_ = &model_.AddBody<RigidBody>(M_B);
 
     X_WB_ = Translation3d(1.0, 2.0, 3.0);
-    
+
     // Add a prismatic mobilizer between the world and the body:
     weld_body_to_world_ = &model_.AddMobilizer<WeldMobilizer>(
         model_.world_body().body_frame(), body_->body_frame(), X_WB_);
