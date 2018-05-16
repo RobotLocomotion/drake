@@ -470,6 +470,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const JointType<T>& GetJointByName(const std::string& name) const {
     return model_->template GetJointByName<JointType>(name);
   }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` model with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name) const {
+    return model_->GetJointActuatorByName(name);
+  }
   /// @}
 
   /// Registers `this` plant to serve as a source for an instance of

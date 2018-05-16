@@ -68,6 +68,7 @@
       <axis>
         <xyz>1.0 0.0 0.0</xyz>
       </axis>
+
     </joint>
 
     <joint name='PolePin' type='revolute'>
@@ -76,6 +77,10 @@
       <child>Pole</child>
       <axis>
         <xyz>0.0 -1.0 0.0</xyz>
+        <limit>
+          <!-- The pole pin joint is not actuated. -->
+          <effort>0</effort>
+        </limit>
       </axis>
     </joint>
   </model>
