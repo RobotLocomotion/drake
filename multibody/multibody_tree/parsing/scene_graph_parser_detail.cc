@@ -23,15 +23,16 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     case sdf::GeometryType::EMPTY: {
       return std::unique_ptr<geometry::Shape>(nullptr);
     }
+    case sdf::GeometryType::BOX: {
+      const sdf::Box& shape = *sdf_geometry.BoxShape();
+      const Vector3d box_size = ToVector3(shape.Size());
+      return make_unique<geometry::Box>(box_size(0), box_size(1), box_size(2));
+    }
     case sdf::GeometryType::CYLINDER: {
       // TODO(amcastro-tri): Verify with @nkoenig that sdf::Cylinder's axis
       // point in the positive z direction as Drake's cylinders do.
       const sdf::Cylinder& shape = *sdf_geometry.CylinderShape();
       return make_unique<geometry::Cylinder>(shape.Radius(), shape.Length());
-    }
-    case sdf::GeometryType::SPHERE: {
-      const sdf::Sphere& shape = *sdf_geometry.SphereShape();
-      return make_unique<geometry::Sphere>(shape.Radius());
     }
     case sdf::GeometryType::PLANE: {
       // While sdf::Plane contains the normal of the plane, geometry::HalfSpace
@@ -41,7 +42,10 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // half space in the parent link frame.
       return make_unique<geometry::HalfSpace>();
     }
-    // TODO(amcastro-tri): When SceneGraph supports it add the BOX case.
+    case sdf::GeometryType::SPHERE: {
+      const sdf::Sphere& shape = *sdf_geometry.SphereShape();
+      return make_unique<geometry::Sphere>(shape.Radius());
+    }
     // TODO(amcastro-tri): When sdformat supports it add the MESH case.
     default: {
       throw std::logic_error("Geometry type not supported.");

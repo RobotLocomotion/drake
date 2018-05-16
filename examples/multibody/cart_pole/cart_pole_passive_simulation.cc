@@ -61,16 +61,6 @@ int do_main() {
   cart_pole.AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3<double>::UnitZ());
 
-  // Register geometry for visualization.
-  // TODO(amcastro-tri): Add this visual from SDF parsing once SG supports
-  // boxes (or sdformat supports meshes).
-  const Body<double>& cart = cart_pole.GetBodyByName("Cart");
-  std::string box_mesh_path =
-      FindResourceOrThrow("drake/examples/multibody/cart_pole/box_2x1.obj");
-  cart_pole.RegisterVisualGeometry(
-      cart, Isometry3<double>::Identity(),
-      geometry::Mesh(box_mesh_path, 0.12 /* scale factor */), &scene_graph);
-
   // Now the model is complete.
   cart_pole.Finalize();
 
