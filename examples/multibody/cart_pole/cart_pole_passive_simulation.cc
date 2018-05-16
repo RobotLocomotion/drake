@@ -61,16 +61,6 @@ int do_main() {
   cart_pole.AddForceElement<UniformGravityFieldElement>(
       -9.81 * Vector3<double>::UnitZ());
 
-  // Register geometry for visualization.
-  // TODO(amcastro-tri): Add this visual from SDF parsing once SG supports
-  // boxes (or sdformat supports meshes).
-  const Body<double>& cart = cart_pole.GetBodyByName("Cart");
-  std::string box_mesh_path =
-      FindResourceOrThrow("drake/examples/multibody/cart_pole/box_2x1.obj");
-  cart_pole.RegisterVisualGeometry(
-      cart, Isometry3<double>::Identity(),
-      geometry::Mesh(box_mesh_path, 0.12 /* scale factor */), &scene_graph);
-
   // Now the model is complete.
   cart_pole.Finalize();
 
@@ -109,6 +99,10 @@ int do_main() {
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& cart_pole_context =
       diagram->GetMutableSubsystemContext(cart_pole, diagram_context.get());
+
+  // There is no input actuation in this example for the passive dynamics.
+  cart_pole_context.FixInputPort(
+      cart_pole.get_actuation_input_port().get_index(), Vector1d(0));
 
   // Get joints so that we can set initial conditions.
   const PrismaticJoint<double>& cart_slider =

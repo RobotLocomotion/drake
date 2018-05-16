@@ -64,55 +64,86 @@ template <typename T>
 void QuadrotorPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T> &context,
     systems::ContinuousState<T> *derivatives) const {
+  // Get the input value characterizing each of the 4 rotor's aerodynamics.
+  const Vector4<T> u = this->EvalVectorInput(context, 0)->get_value();
+
+  // For each rotor, calculate the Bz measure of its aerodynamic force on B.
+  // Note: B is the quadrotor body and Bz is parallel to each rotor's spin axis.
+  const Vector4<T> uF_Bz = kF_ * u;
+
+  // Compute the net aerodynamic force on B (from the 4 rotors), expressed in B.
+  const Vector3<T> Faero_B(0, 0, uF_Bz.sum());
+
+  // Compute the Bx and By measures of the moment on B about Bcm (B's center of
+  // mass) from the 4 rotor forces.  These moments arise from the cross product
+  // of a position vector with an aerodynamic force at the center of each rotor.
+  // For example, the moment of the aerodynamic forces on rotor 0 about Bcm
+  // results from Cross( L_* Bx, uF_Bz(0) * Bz ) = -L_ * uF_Bz(0) * By.
+  const T Mx = L_ * (uF_Bz(1) - uF_Bz(3));
+  const T My = L_ * (uF_Bz(2) - uF_Bz(0));
+
+  // For rotors 0 and 2, get the Bz measure of its aerodynamic torque on B.
+  // For rotors 1 and 3, get the -Bz measure of its aerodynamic torque on B.
+  // Sum the net Bz measure of the aerodynamic torque on B.
+  // Note: Rotors 0 and 2 rotate one way and rotors 1 and 3 rotate the other.
+  const Vector4<T> uM_Bz = kM_ * u;
+  const T Mz = uM_Bz(0) - uM_Bz(1) + uM_Bz(2) - uM_Bz(3);
+
+  // Form the net moment on B about Bcm, expressed in B. The net moment accounts
+  // for all contact and distance forces (aerodynamic and gravity forces) on B.
+  // Note: Since the net moment on B is about Bcm, gravity does not contribute.
+  const Vector3<T> M(Mx, My, Mz);
+
+  // Calculate local celestial body's (Earth's) gravity force on B, expressed in
+  // the Newtonian frame N (a.k.a the inertial or World frame).
+  const Vector3<T> Fgravity_N(0, 0, -m_ * g_);
+
+  // Extract roll-pitch-yaw angles (rpy) and their time-derivatives (rpyDt).
   VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
+  const drake::math::RollPitchYaw<T> rpy(state.template segment<3>(3));
+  const Vector3<T> rpyDt = state.template segment<3>(9);
 
-  VectorX<T> u = this->EvalVectorInput(context, 0)->get_value();
+  // Convert roll-pitch-yaw (rpy) orientation to the R_NB rotation matrix.
+  const drake::math::RotationMatrix<T> R_NB(rpy);
 
-  // Extract orientation and angular velocities.
-  Vector3<T> rpy = state.segment(3, 3);
-  Vector3<T> rpy_dot = state.segment(9, 3);
+  // Calculate the net force on B, expressed in N.
+  // Calculate B's center of mass acceleration, expressed in N.
+  const Vector3<T> Fnet_N = Fgravity_N + R_NB * Faero_B;
+  const Vector3<T> xyzDDt = Fnet_N / m_;
 
-  // Convert orientation to a rotation matrix.
-  Matrix3<T> R = drake::math::rpy2rotmat(rpy);
+  // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in N.
+  // Then calculate B's angular velocity in N, expressed in B.
+  // TODO(mitiguy) replace rpydot2angularvel with new RollPitchYaw method.
+  Vector3<T> w_BN_N;
+  rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
+  const Vector3<T> w_BN_B = R_NB.inverse() * w_BN_N;
 
-  // Compute the net input forces and moments.
-  VectorX<T> uF = kF_ * u;
-  VectorX<T> uM = kM_ * u;
+  // To compute B's angular acceleration in N, expressed in B, due to the net
+  // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
+  // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
+  // Next, calculate B's angular acceleration in N, expressed in N.
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);      // Expressed in B.
+  const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
+  const Vector3<T> alf_BN_N = R_NB * alf_BN_B;           // Expressed in N.
 
-  Vector3<T> Fg(0, 0, -m_ * g_);
-  Vector3<T> F(0, 0, uF.sum());
-  Vector3<T> M(L_ * (uF(1) - uF(3)), L_ * (uF(2) - uF(0)),
-               uM(0) - uM(1) + uM(2) - uM(3));
-
-  // Computing the resultant linear acceleration due to the forces.
-  Vector3<T> xyz_ddot = (1.0 / m_) * (Fg + R * F);
-
-  Vector3<T> pqr;
-  rpydot2angularvel(rpy, rpy_dot, pqr);
-  pqr = R.adjoint() * pqr;
-
-  // Computing the resultant angular acceleration due to the moments.
-  Vector3<T> pqr_dot = I_.ldlt().solve(M - pqr.cross(I_ * pqr));
+  // TODO(mitiguy) replace angularvel2rpydotMatrix with new RollPitchYaw method.
+  // TODO(mitiguy) continue fixing documentation for this example (here to end).
   Matrix3<T> Phi;
   typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
   typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
-  angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
+  angularvel2rpydotMatrix(rpy.vector(), Phi, &dPhi, ddPhi);
 
-  MatrixX<T> drpy2drotmat = drake::math::drpy2rotmat(rpy);
-  VectorX<T> Rdot_vec(9);
-  Rdot_vec = drpy2drotmat * rpy_dot;
-  Matrix3<T> Rdot = Eigen::Map<Matrix3<T>>(Rdot_vec.data());
-  VectorX<T> dPhi_x_rpydot_vec;
-  dPhi_x_rpydot_vec = dPhi * rpy_dot;
-  Matrix3<T> dPhi_x_rpydot = Eigen::Map<Matrix3<T>>(dPhi_x_rpydot_vec.data());
-  Vector3<T> rpy_ddot =
-      Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
+  const Eigen::Matrix<T, 9, 1> dPhi_x_rpyDt_vec = dPhi * rpyDt;
+  const Eigen::Map<const Matrix3<T>> dPhi_x_rpyDt(dPhi_x_rpyDt_vec.data());
+  const Matrix3<T> R_NB_Dt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
+  const Vector3<T> rpyDDt = Phi * alf_BN_N
+                          + dPhi_x_rpyDt * w_BN_N
+                          + Phi * R_NB_Dt * w_BN_B;
 
   // Recomposing the derivatives vector.
-  VectorX<T> xdot(12);
-  xdot << state.tail(6), xyz_ddot, rpy_ddot;
-
-  derivatives->SetFromVector(xdot);
+  VectorX<T> xDt(12);
+  xDt << state.template tail<6>(), xyzDDt, rpyDDt;
+  derivatives->SetFromVector(xDt);
 }
 
 // Declare storage for our constants.

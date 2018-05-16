@@ -7,6 +7,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/multibody/cart_pole/gen/cart_pole_params.h"
+#include "drake/multibody/multibody_tree/joint_actuator.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
@@ -21,6 +22,7 @@ namespace cart_pole {
 namespace {
 
 using drake::multibody::Body;
+using drake::multibody::JointActuator;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::AddModelFromSdfFile;
 using drake::multibody::PrismaticJoint;
@@ -43,12 +45,23 @@ class CartPoleTest : public ::testing::Test {
     // Now the model is complete.
     cart_pole_.Finalize();
 
+    ASSERT_EQ(cart_pole_.num_bodies(), 3);  // Includes the world body.
+    ASSERT_EQ(cart_pole_.num_joints(), 2);
+
     // Get joints so that we can set the state.
     cart_slider_ = &cart_pole_.GetJointByName<PrismaticJoint>("CartSlider");
     pole_pin_ = &cart_pole_.GetJointByName<RevoluteJoint>("PolePin");
 
+    // Verify there is a single actuator for the slider joint.
+    ASSERT_EQ(cart_pole_.num_actuators(), 1);
+    const JointActuator<double>& actuator =
+        cart_pole_.GetJointActuatorByName("CartSlider");
+    ASSERT_EQ(actuator.joint().index(), cart_slider_->index());
+
     // Create a context to store the state for this model:
     context_ = cart_pole_.CreateDefaultContext();
+    context_->FixInputPort(cart_pole_.get_actuation_input_port().get_index(),
+                           Vector1d(0));
   }
 
   // Makes the mass matrix for the cart-pole system.

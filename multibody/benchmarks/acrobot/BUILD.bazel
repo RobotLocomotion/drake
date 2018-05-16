@@ -30,7 +30,6 @@ drake_cc_library(
 
 filegroup(
     name = "models",
-    testonly = 1,
     srcs = glob([
         "**/*.obj",
         "**/*.sdf",
