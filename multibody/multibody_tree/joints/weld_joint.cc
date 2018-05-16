@@ -1,9 +1,8 @@
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 
 #include <memory>
-#include <stdexcept>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
 namespace drake {
@@ -39,9 +38,8 @@ std::unique_ptr<Joint<AutoDiffXd>> WeldJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class WeldJoint<double>;
-template class WeldJoint<AutoDiffXd>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::WeldJoint)
