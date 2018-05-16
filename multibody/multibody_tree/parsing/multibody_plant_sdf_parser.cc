@@ -129,8 +129,11 @@ Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
   return axis_J;
 }
 
-// Extracts the effort limit from a joint specification. Only available for
-// "revolute" and "prismatic" joints.
+// Extracts the effort limit from a joint specification and adds an actuator if
+// the value is non-zero. In SDF, effort limits are specified in
+// <joint><axis><limit><effort>. In Drake, we understand that joints with an
+// effort limit of zero are not actuated.
+// Only available for "revolute" and "prismatic" joints.
 void AddJointActuatorFromSpecification(
     const sdf::Joint &joint_spec, const Joint<double>& joint,
     MultibodyPlant<double>* plant) {

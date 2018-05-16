@@ -5,7 +5,7 @@
          They MUST be kept in sync. -->
     <link name='Link1'>
       <!-- The origin of the Link1 frame is defined to be coincident with
-           the origin of the world frame. -->
+           the origin of the x-z plane in the world frame. -->
       <pose>0 0.15 0 0 0 0</pose>
       <inertial>
         <pose>0 0 -0.5 0 0 0</pose>
@@ -46,7 +46,7 @@
     </joint>
     <link name='Link2'>
       <!-- The origin of the Link2 frame is defined to be coincident with
-           the origin of the elbow joint frame. -->
+           the origin of the x-z plane in the elbow joint frame. -->
       <pose>0 0.25 -1 0 0 0</pose>
       <inertial>
         <pose>0 0 -1 0 0 0</pose>
