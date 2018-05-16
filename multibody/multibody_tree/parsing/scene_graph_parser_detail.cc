@@ -20,6 +20,9 @@ using std::make_unique;
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
   switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY: {
+      return std::unique_ptr<geometry::Shape>(nullptr);
+    }
     case sdf::GeometryType::BOX: {
       const sdf::Box& shape = *sdf_geometry.BoxShape();
       const Vector3d box_size = ToVector3(shape.Size());
@@ -30,9 +33,6 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // point in the positive z direction as Drake's cylinders do.
       const sdf::Cylinder& shape = *sdf_geometry.CylinderShape();
       return make_unique<geometry::Cylinder>(shape.Radius(), shape.Length());
-    }
-    case sdf::GeometryType::EMPTY: {
-      return std::unique_ptr<geometry::Shape>(nullptr);
     }
     case sdf::GeometryType::PLANE: {
       // While sdf::Plane contains the normal of the plane, geometry::HalfSpace
