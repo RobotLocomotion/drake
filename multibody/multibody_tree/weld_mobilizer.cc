@@ -10,8 +10,8 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-void WeldMobilizer<T>::set_zero_state(const systems::Context<T>& context,
-                                          systems::State<T>* state) const {}
+void WeldMobilizer<T>::set_zero_state(const systems::Context<T>&,
+                                      systems::State<T>*) const {}
 
 template <typename T>
 Isometry3<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
@@ -37,7 +37,7 @@ WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 template <typename T>
 void WeldMobilizer<T>::ProjectSpatialForce(
     const MultibodyTreeContext<T>&,
-    const SpatialForce<T>& F_Mo_F,
+    const SpatialForce<T>&,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
 }

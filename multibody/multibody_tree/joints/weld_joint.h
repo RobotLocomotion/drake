@@ -51,10 +51,8 @@ class WeldJoint final : public Joint<T> {
   /// apply forces between them. Therefore this method throws an exception if
   /// invoked.
   void DoAddInOneForce(
-      const systems::Context<T>&,
-      int joint_dof,
-      const T& joint_tau,
-      MultibodyForces<T>* forces) const override {
+      const systems::Context<T>&, int, const T&,
+      MultibodyForces<T>*) const override {
     throw std::logic_error("Weld joints do not allow applying forces.");
   }
 
