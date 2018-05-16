@@ -113,9 +113,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
   // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in N.
   // Then calculate B's angular velocity in N, expressed in B.
-  // TODO(mitiguy) replace rpydot2angularvel with new RollPitchYaw method.
-  Vector3<T> w_BN_N;
-  rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
+  const Vector3<T> w_BN_N = rpy.RollPitchYawDtToAngularVelocityA(rpyDt);
   const Vector3<T> w_BN_B = R_NB.inverse() * w_BN_N;
 
   // To compute B's angular acceleration in N, expressed in B, due to the net

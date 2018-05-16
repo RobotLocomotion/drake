@@ -188,6 +188,17 @@ class RollPitchYaw {
     return R_r * rDt + R_p * pDt + R_y * yDt;
   }
 
+  /// Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
+  /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
+  /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
+  /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in A.
+  Vector3<T> RollPitchYawDtToAngularVelocityA(const Vector3<T>& rpyDt) const {
+    // Get the 3x3 coefficent matrix M that contains the partial derivatives of
+    // w_AD_A with respect to ṙ, ṗ, ẏ.  In other words, `w_AD_A = M * rpyDt`.
+    const Matrix3<T> M = PartialDerivativeAngularVelocityAWithRespectToRpyDt();
+    return M * rpyDt;
+  }
+
  private:
   // Constructs roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles) from a
   // quaternion and its associated rotation matrix.
@@ -322,6 +333,27 @@ class RollPitchYaw {
              c2_c1,   c2_s1 * s0 - s2_c0,   c2_s1 * c0 + s2_s0,
                  0,                    0,                    0;
     // clang-format off
+  }
+
+  // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
+  // relate the orientation of two generic frames A and D, returns the 3x3
+  // coefficent matrix M that contains the partial derivatives of `w_AD_A`
+  // (D's angular velocity in A, expressed in A) with respect to ṙ, ṗ, ẏ.
+  // In other words, `w_AD_A = M * rpyDt` where `rpyDt` is `[ṙ; ṗ; ẏ]`.
+  const Matrix3<T> PartialDerivativeAngularVelocityAWithRespectToRpyDt() const {
+    using std::cos;
+    using std::sin;
+    const T& p = get_pitch_angle();
+    const T& y = get_yaw_angle();
+    const T sp = sin(p), cp = cos(p);
+    const T sy = sin(y), cy = cos(y);
+    Matrix3<T> M;
+    // clang-format on
+    M << cp * cy,   -sy,  T(0),
+         cp * sy,    cy,  T(0),
+             -sp,  T(0),  T(1);
+    // clang-format off
+    return M;
   }
 
   /// Sets `this` %RollPitchYaw from a Vector3.
