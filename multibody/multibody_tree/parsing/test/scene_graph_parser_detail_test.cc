@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -382,6 +383,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
   EXPECT_EQ(friction.dynamic_friction(), 0.0);
 }
 
+// Verify we can parse friction coefficients from an <ode> element in
+// <collision><surface><friction>. Drake understands <mu> to be the static
+// coefficient and <mu2> the dynamic coefficient of friction.
 GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
@@ -404,6 +408,37 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
   EXPECT_EQ(friction.static_friction(), 0.8);
   EXPECT_EQ(friction.dynamic_friction(), 0.3);
+}
+
+// Verify MakeCoulombFrictionFromSdfCollisionOde() throws an exception if
+// provided a dynamic friction coefficient larger than the static friction
+// coefficient.
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_Throws) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+          "  <geometry>"
+          "    <plane>"
+          "      <normal>1.0 2.0 3.0</normal>"
+          "    </plane>"
+          "  </geometry>"
+          "  <surface>"
+          "    <friction>"
+          "      <ode>"
+          "        <mu>0.3</mu>"
+          "        <mu2>0.8</mu2>"
+          "      </ode>"
+          "    </friction>"
+          "  </surface>"
+          "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "From <collision> with name 'some_link_collision': "
+      "The given dynamic friction \\(.*\\) is greater than the given static "
+      "friction \\(.*\\); dynamic friction must be less than or equal to "
+      "static friction.");
 }
 
 }  // namespace
