@@ -36,38 +36,23 @@ def _git_clone(
     _run_git(repo_ctx, "clone", remote, ".")
     _run_git(repo_ctx, "reset", "--hard", commit)
 
-def _impl(repo_ctx):
-    snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
-    if not snopt_path:
-        # Download the snopt sources from an access-controlled git repository.
-        # We'll use git operations directly (and not the github_archive helper)
-        # because github_archive does not (yet, easily) support authentication.
-        #
-        # If a user wishes to use a different protocol that ssh for the remote,
-        # note that we will respect their config file, so they can configure
-        # the protocol without changing the attributes of the repository_rule.
-        # For example:
-        # git config --global url.https://github.com/.insteadOf git@github.com:
-        _git_clone(
-            repo_ctx,
-            remote = repo_ctx.attr.remote,
-            commit = repo_ctx.attr.commit,
-        )
-    else:
-        # TODO(jwnimmer-tri) Perhaps in the future we should allow SNOPT_PATH
-        # to also refer to the *.zip format of the download, and/or an already-
-        # unpacked source archive directory.
-        if not (snopt_path.startswith("/") and snopt_path.endswith(".tar.gz")):
-            fail("SNOPT_PATH of '{}' is malformed".format(snopt_path))
-        if not repo_ctx.path(snopt_path).exists:
-            fail("SNOPT_PATH of '{}' does not exist".format(snopt_path))
-        _execute(repo_ctx, "tar", [
-            "tar", "--gunzip", "--extract",
-            "--file", repo_ctx.path(snopt_path).realpath,
-            "--strip-components=1",
-        ])
+def _setup_git(repo_ctx):
+    # Download the snopt sources from an access-controlled git repository.
+    # We'll use git operations directly (and not the github_archive helper)
+    # because github_archive does not (yet, easily) support authentication.
+    #
+    # If a user wishes to use a different protocol that ssh for the remote,
+    # note that we will respect their config file, so they can configure
+    # the protocol without changing the attributes of the repository_rule.
+    # For example:
+    # git config --global url.https://github.com/.insteadOf git@github.com:
+    _git_clone(
+        repo_ctx,
+        remote = repo_ctx.attr.remote,
+        commit = repo_ctx.attr.commit,
+    )
     if repo_ctx.attr.use_drake_build_rules:
-        # Disable any files that came from the upstream snopt source archive.
+        # Disable any files that came from the upstream snopt source.
         _execute(repo_ctx, "find-and-mv", ["bash", "-c", """
             set -euxo pipefail
             find . -name BUILD -print0 -o -name BUILD.bazel -print0 |
@@ -79,11 +64,43 @@ def _impl(repo_ctx):
             Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
             "BUILD")
 
+def _extract_local_archive(repo_ctx, snopt_path):
+    # TODO(jwnimmer-tri) Perhaps in the future we should allow SNOPT_PATH
+    # to also refer to the *.zip format of the download, and/or an already-
+    # unpacked source archive directory.
+    if not (snopt_path.startswith("/") and snopt_path.endswith(".tar.gz")):
+        fail("SNOPT_PATH of '{}' is malformed".format(snopt_path))
+    if not repo_ctx.path(snopt_path).exists:
+        fail("SNOPT_PATH of '{}' does not exist".format(snopt_path))
+    _execute(repo_ctx, "tar", [
+        "tar", "--gunzip", "--extract",
+        "--file", repo_ctx.path(snopt_path).realpath,
+        "--strip-components=1",
+    ])
+
+def _setup_local_archive(repo_ctx, snopt_path):
+    _extract_local_archive(repo_ctx, snopt_path)
+    # Link Drake's BUILD file into the snopt workspace.
+    repo_ctx.symlink(
+        Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
+        "BUILD")
+
+def _impl(repo_ctx):
+    snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
+    if not snopt_path:
+        _setup_git(repo_ctx)
+    else:
+        _setup_local_archive(repo_ctx, snopt_path)
+
 snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
         "commit": attr.string(default = "c17db3769e59d4a8d651631d5d79641cecca0504"),  # noqa
-        "use_drake_build_rules": attr.bool(default = True),
+        "use_drake_build_rules": attr.bool(
+            default = True,
+            doc = ("When obtaining SNOPT via git, controls whether or not " +
+                   "Drake's BUILD file should supplant the file(s) in git"),
+        ),
     },
     environ = ["SNOPT_PATH"],
     local = False,
