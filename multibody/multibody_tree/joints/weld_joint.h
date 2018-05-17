@@ -21,6 +21,7 @@ namespace multibody {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -91,7 +92,7 @@ class WeldJoint final : public Joint<T> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // The pose of frame C in P.
-  Isometry3<double> X_PC_;
+  const Isometry3<double> X_PC_;
 };
 
 }  // namespace multibody
