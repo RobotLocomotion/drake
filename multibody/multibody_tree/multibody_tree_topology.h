@@ -793,12 +793,15 @@ class MultibodyTreeTopology {
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
       if (mobilizer.num_velocities == 0) {  // A weld mobilizer.
-        // For weld mobilizers these values should not even be accessed.
-        // Therefore we initialize them to invalid index values to ease
-        // debugging.
-        mobilizer.positions_start = -1;
-        mobilizer.velocities_start = -1;
-        mobilizer.velocities_start_in_v = -1;
+        // For weld mobilizers start indexes are not important since the number
+        // of dofs is zero. However, we do allow accessing Eigen segments with
+        // zero size and for that case Eigen enforces start >= zero.
+        // Therefore, these start indexes are set to zero to allow zero sized
+        // indexes without having to itroduce any special logic for weld
+        // mobilizers.
+        mobilizer.positions_start = 0;
+        mobilizer.velocities_start = 0;
+        mobilizer.velocities_start_in_v = 0;
       } else {
         mobilizer.positions_start = position_index;
         mobilizer.velocities_start = velocity_index;
@@ -816,11 +819,14 @@ class MultibodyTreeTopology {
 
       // Start index in a vector containing only generalized velocities.
       node.mobilizer_velocities_start_in_v = mobilizer.velocities_start_in_v;
-      // Demand indexes to be positive only for mobilizers with a non-zer number
-      // of dofs.
+      // Demand indexes to be positive only for mobilizers with a non-zero
+      // number of dofs.
       DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v ||
           node.num_mobilizer_velocities == 0);
-      DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_);
+      // This test would not pass for a model with all weld joints. Therefore
+      // the check for num_velocities_ == 0.
+      DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_ ||
+          num_velocities_ == 0);
     }
     DRAKE_DEMAND(position_index == num_positions_);
     DRAKE_DEMAND(velocity_index == num_states_);
