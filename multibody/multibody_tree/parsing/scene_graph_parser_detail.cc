@@ -4,8 +4,12 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -19,6 +23,30 @@ using std::make_unique;
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
+
+  // We deal with the <mesh> case separately since sdf::Geometry still does not
+  // support it.
+  // TODO(amcastro-tri): get rid of all sdf::ElementPtr once
+  // sdf::GeometryType::MESH is available.
+  sdf::ElementPtr geometry_element = sdf_geometry.Element();
+  DRAKE_ASSERT(geometry_element != nullptr);
+  sdf::ElementPtr mesh_element =
+      GetElementPointerOrNullPtr(geometry_element, "mesh");
+  if (mesh_element != nullptr) {
+    const std::string file_name =
+        GetValueOrThrow<std::string>(mesh_element, "uri");
+    const ignition::math::Vector3d& scale =
+        GetValueOrThrow<ignition::math::Vector3d>(mesh_element, "scale");
+    // geometry::Mesh only supports isotropic scaling and therefore we enforce
+    // it.
+    DRAKE_DEMAND(scale.X() == scale.Y() && scale.X() == scale.Z());
+    // We only support absolute paths for now.
+    // TODO(amcastro-tri): add support for paths relative to the SDF file
+    // location.
+    return make_unique<geometry::Mesh>(
+        FindResourceOrThrow(file_name), scale.X());
+  }
+
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY: {
       return std::unique_ptr<geometry::Shape>(nullptr);
@@ -60,11 +88,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   const Isometry3d X_LG = ToIsometry3(sdf_visual.Pose());
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
 
-  // Nothing left to do, return nullptr signaling this is an empty visual.
-  if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
-    return std::unique_ptr<GeometryInstance>(nullptr);
-  }
-
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
   // - A cylinder's length is parallel to the Cz axis,
@@ -72,6 +95,24 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
+
+  PRINT_VAR(sdf_visual.Name());
+
+  // We deal with the <mesh> case separately since sdf::Geometry still does not
+  // support it and marks <mesh> geometry with type sdf::GeometryType::EMPTY.
+  // TODO(amcastro-tri): get rid of all sdf::ElementPtr once
+  // sdf::GeometryType::MESH is available.
+  sdf::ElementPtr geometry_element = sdf_geometry.Element();
+  DRAKE_ASSERT(geometry_element != nullptr);
+  if (geometry_element->HasElement("mesh")) {
+    return make_unique<GeometryInstance>(
+        X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+  }
+
+  // Nothing left to do, return nullptr signaling this is an empty visual.
+  if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
+    return std::unique_ptr<GeometryInstance>(nullptr);
+  }
 
   // For a half-space, C and G are not the same since  SDF allows to specify
   // the normal of the plane in the G frame.
