@@ -1,15 +1,13 @@
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <sdf/sdf.hh>
 
-#include "drake/common/find_resource.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 
 namespace drake {
 namespace multibody {
@@ -20,6 +18,41 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using std::make_unique;
+
+namespace {
+
+// Helper to return the child element of `element` named `child_name`.
+// Returns nullptr if not present.
+sdf::ElementPtr GetElementPointerOrNullPtr(
+    sdf::ElementPtr element, const std::string& child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (element->HasElement(child_name)) {
+    return element->GetElement(child_name);
+  }
+  return nullptr;
+}
+
+// Helper to return the value of a child of `element` named `child_name`.
+// An std::logic_error is thrown if `child_name` does not exist or if no value
+// was provided by the user that is, if `<child_name></child_name>` is empty.
+template <typename T>
+T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
+  if (!element->HasElement(child_name)) {
+    throw std::logic_error(
+        "Element <" + child_name + "> is required within element "
+            "<" + element->GetName() + ">.");
+  }
+  std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
+  if (value_pair.second == false) {
+    throw std::logic_error(
+        "No value provide for <" + child_name + "> within element "
+            "<" + element->GetName() + ">.");
+  }
+  return value_pair.first;
+}
+
+}  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
@@ -35,16 +68,18 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
   if (mesh_element != nullptr) {
     const std::string file_name =
         GetValueOrThrow<std::string>(mesh_element, "uri");
-    const ignition::math::Vector3d& scale =
-        GetValueOrThrow<ignition::math::Vector3d>(mesh_element, "scale");
-    // geometry::Mesh only supports isotropic scaling and therefore we enforce
-    // it.
-    DRAKE_DEMAND(scale.X() == scale.Y() && scale.X() == scale.Z());
-    // We only support absolute paths for now.
-    // TODO(amcastro-tri): add support for paths relative to the SDF file
-    // location.
-    return make_unique<geometry::Mesh>(
-        FindResourceOrThrow(file_name), scale.X());
+    double scale = 1.0;
+    if (mesh_element->HasElement("scale")) {
+      const ignition::math::Vector3d& scale_vector =
+          GetValueOrThrow<ignition::math::Vector3d>(mesh_element, "scale");
+      // geometry::Mesh only supports isotropic scaling and therefore we enforce
+      // it.
+      DRAKE_DEMAND(scale_vector.X() == scale_vector.Y() &&
+          scale_vector.X() == scale_vector.Z());
+      scale = scale_vector.X();
+    }
+    // TODO(amcastro-tri): Fix the given path to be an absolute path.
+    return make_unique<geometry::Mesh>(file_name, scale);
   }
 
   switch (sdf_geometry.Type()) {
@@ -95,8 +130,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
-
-  PRINT_VAR(sdf_visual.Name());
 
   // We deal with the <mesh> case separately since sdf::Geometry still does not
   // support it and marks <mesh> geometry with type sdf::GeometryType::EMPTY.

@@ -571,9 +571,7 @@ MultibodyPlant<T>::get_continuous_state_output_port() const {
 
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
-  if (num_collision_geometries() > 0) {
-    geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
-  }
+  geometry_query_port_ = this->DeclareAbstractInputPort().get_index();
   // This presupposes that the source id has been assigned and _all_ frames have
   // been registered.
   std::vector<FrameId> ids;
