@@ -93,6 +93,7 @@ drake_cc_library(
         "joint_actuator.cc",
         "joints/prismatic_joint.cc",
         "joints/revolute_joint.cc",
+        "joints/weld_joint.cc",
         "mobilizer_impl.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
@@ -102,6 +103,7 @@ drake_cc_library(
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
         "uniform_gravity_field_element.cc",
+        "weld_mobilizer.cc",
     ],
     hdrs = [
         "body.h",
@@ -116,6 +118,7 @@ drake_cc_library(
         "joints/joint.h",
         "joints/prismatic_joint.h",
         "joints/revolute_joint.h",
+        "joints/weld_joint.h",
         "mobilizer.h",
         "mobilizer_impl.h",
         "multibody_forces.h",
@@ -126,6 +129,7 @@ drake_cc_library(
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",
+        "weld_mobilizer.h",
     ],
     # Hide this library outside of this package; users should depend on
     # ":multibody_tree" broadly, not just ":multibody_tree_core".
@@ -336,6 +340,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "weld_mobilizer_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "rigid_body_test",
     deps = [
         ":multibody_tree",
@@ -375,6 +387,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "prismatic_joint_test",
     srcs = ["joints/test/prismatic_joint_test.cc"],
+    deps = [
+        ":multibody_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "weld_joint_test",
+    srcs = ["joints/test/weld_joint_test.cc"],
     deps = [
         ":multibody_tree",
     ],

@@ -7,6 +7,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -28,6 +29,7 @@ using drake::multibody::RevoluteJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
+using drake::multibody::WeldJoint;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -213,20 +215,27 @@ void AddJointFromSpecification(
   // P directly. We indicate that by passing a nullopt.
   if (X_PJ.value().isApprox(Isometry3d::Identity())) X_PJ = nullopt;
 
-  // Only supporting revolute joints for now.
   switch (joint_spec.Type()) {
-    case sdf::JointType::REVOLUTE: {
+    case sdf::JointType::FIXED: {
+      plant->AddJoint<WeldJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ,
+          Isometry3d::Identity() /* X_JpJc */);
+      break;
+    }
+    case sdf::JointType::PRISMATIC: {
       Vector3d axis_J = ExtractJointAxis(joint_spec);
-      const auto& joint = plant->AddJoint<RevoluteJoint>(
+      const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
-    case sdf::JointType::PRISMATIC: {
+    case sdf::JointType::REVOLUTE: {
       Vector3d axis_J = ExtractJointAxis(joint_spec);
-      const auto& joint = plant->AddJoint<PrismaticJoint>(
+      const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
