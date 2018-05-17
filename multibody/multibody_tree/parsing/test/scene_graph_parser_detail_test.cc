@@ -28,6 +28,7 @@ using geometry::Shape;
 using geometry::Sphere;
 using math::RollPitchYaw;
 using math::RotationMatrix;
+using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollision;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
 using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
 using multibody::parsing::detail::MakeShapeFromSdfGeometry;
@@ -354,6 +355,30 @@ GTEST_TEST(SceneGraphParserDetail,
                               kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(X_LG.translation(), Vector3d::Zero(),
                               kTolerance, MatrixCompareType::relative));
+}
+
+GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+          "  <geometry>"
+          "    <plane>"
+          "      <normal>1.0 2.0 3.0</normal>"
+          "    </plane>"
+          "  </geometry>"
+          "  <drake_friction>"
+          "    <static_friction>0.8</static_friction>"
+          "    <dynamic_friction>0.3</dynamic_friction>"
+          "  </drake_friction>"
+          "</collision>");
+  const CoulombFriction<double> friction =
+      MakeCoulombFrictionFromSdfCollision(*sdf_collision);
+  // TODO(amcastro-tri): Allow custom elements for SDF files.
+  // Now they get ignored and get parsed by Drake as frictionless surfaces.
+  //EXPECT_EQ(friction.static_friction(), 0.8);
+  //EXPECT_EQ(friction.dynamic_friction(), 0.3);
+  EXPECT_EQ(friction.static_friction(), 0.0);
+  EXPECT_EQ(friction.dynamic_friction(), 0.0);
 }
 
 }  // namespace
