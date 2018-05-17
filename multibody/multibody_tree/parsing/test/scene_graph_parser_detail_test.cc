@@ -362,17 +362,17 @@ GTEST_TEST(SceneGraphParserDetail,
 GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
-          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
-          "  <geometry>"
-          "    <plane>"
-          "      <normal>1.0 2.0 3.0</normal>"
-          "    </plane>"
-          "  </geometry>"
-          "  <drake_friction>"
-          "    <static_friction>0.8</static_friction>"
-          "    <dynamic_friction>0.3</dynamic_friction>"
-          "  </drake_friction>"
-          "</collision>");
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <drake_friction>"
+      "    <static_friction>0.8</static_friction>"
+      "    <dynamic_friction>0.3</dynamic_friction>"
+      "  </drake_friction>"
+      "</collision>");
   const CoulombFriction<double> friction =
       MakeCoulombFrictionFromSdfCollision(*sdf_collision);
   // TODO(amcastro-tri): Allow custom elements for SDF files.
@@ -389,21 +389,21 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
 GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
-          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
-          "  <geometry>"
-          "    <plane>"
-          "      <normal>1.0 2.0 3.0</normal>"
-          "    </plane>"
-          "  </geometry>"
-          "  <surface>"
-          "    <friction>"
-          "      <ode>"
-          "        <mu>0.8</mu>"
-          "        <mu2>0.3</mu2>"
-          "      </ode>"
-          "    </friction>"
-          "  </surface>"
-          "</collision>");
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.8</mu>"
+      "        <mu2>0.3</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
   const CoulombFriction<double> friction =
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
   EXPECT_EQ(friction.static_friction(), 0.8);
@@ -417,21 +417,21 @@ GTEST_TEST(SceneGraphParserDetail,
            MakeCoulombFrictionFromSdfCollisionOde_Throws) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
-          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
-          "  <geometry>"
-          "    <plane>"
-          "      <normal>1.0 2.0 3.0</normal>"
-          "    </plane>"
-          "  </geometry>"
-          "  <surface>"
-          "    <friction>"
-          "      <ode>"
-          "        <mu>0.3</mu>"
-          "        <mu2>0.8</mu2>"
-          "      </ode>"
-          "    </friction>"
-          "  </surface>"
-          "</collision>");
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.3</mu>"
+      "        <mu2>0.8</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
       std::logic_error,
