@@ -153,7 +153,9 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
 
 // Verifies we can parse link visuals.
 GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
-  const std::string full_name = FindResourceOrThrow("drake/multibody/multibody_tree/parsing/test/links_with_visuals_and_collisions.sdf");
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromSdfFile(full_name, &plant, &scene_graph);

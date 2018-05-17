@@ -1,12 +1,14 @@
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
-#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 
 namespace drake {
 namespace multibody {
@@ -21,8 +23,10 @@ using std::make_unique;
 
 namespace {
 
+// Helper to return the child element of `element` named `child_name`.
+// Returns nullptr if not present.
 sdf::ElementPtr GetElementPointerOrNullPtr(
-    sdf::ElementPtr element, const std::string &child_name) {
+    sdf::ElementPtr element, const std::string& child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
   // side effect of adding new elements if not present!!).
   if (element->HasElement(child_name)) {
@@ -31,6 +35,8 @@ sdf::ElementPtr GetElementPointerOrNullPtr(
   return nullptr;
 }
 
+// Helper to return the child element of `element` named `child_name`.
+// Throws std::logic_error if not found.
 sdf::ElementPtr GetElementPointerOrThrow(
     sdf::ElementPtr element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
@@ -43,6 +49,9 @@ sdf::ElementPtr GetElementPointerOrThrow(
   return element->GetElement(child_name);;
 }
 
+// Helper to return the value of a child of `element` named `child_name`.
+// An std::logic_error is thrown if `child_name` does not exist or if no value
+// was provided by the user that is, if `<child_name></child_name>` is empty.
 template <typename T>
 T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
   if (!element->HasElement(child_name)) {
@@ -59,7 +68,7 @@ T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
   return value_pair.first;
 }
 
-}
+}  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
@@ -191,7 +200,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
 
   // If friction_element is not found, the default is that of a frictionless
   // surface (i.e. zero friction coefficients).
-  if(!friction_element) return CoulombFriction<double>();
+  if (!friction_element) return CoulombFriction<double>();
 
   // Once <drake_friction> is (optionally) specified, <static_friction> and
   // <dynamic_friction> are required.
@@ -221,7 +230,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 
   // If the surface is not found, the default is that of a frictionless
   // surface (i.e. zero friction coefficients).
-  if(!surface_element) return CoulombFriction<double>();
+  if (!surface_element) return CoulombFriction<double>();
 
   // Once <surface> is found, <friction> and <ode> are required.
   const sdf::ElementPtr friction_element =

@@ -322,7 +322,6 @@ void AddModelFromSdfFile(
               body, X_LG, *shape, coulomb_friction, scene_graph);
         }
       }
-      
     }  // scene_graph != nullptr
   }  // link_index
 
