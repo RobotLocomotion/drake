@@ -22,6 +22,39 @@
           </cylinder>
         </geometry>
       </visual>
+
+      <collision name = 'link1_collision1'>
+        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <plane>
+            <normal>1.0 2.0 3.0</normal>
+          </plane>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.8</mu>
+              <mu2>0.3</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+
+      <collision name = 'link1_collision2'>
+        <geometry>
+          <sphere>
+            <radius>1.0</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.5</mu>
+              <mu2>0.6</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
     </link>
 
     <link name='link2'>
@@ -57,6 +90,21 @@
           <empty/>
         </geometry>
       </visual>
+      <collision name = 'link3_collision'>
+        <geometry>
+          <box>
+            <size>1.0 2.0 3.0</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>0.5</mu>
+              <mu2>0.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
     </link>
 
   </model>

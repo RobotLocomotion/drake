@@ -153,8 +153,7 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
 
 // Verifies we can parse link visuals.
 GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
-  const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+  const std::string full_name = FindResourceOrThrow("drake/multibody/multibody_tree/parsing/test/links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
@@ -183,7 +182,8 @@ GTEST_TEST(MultibodyPlantSdfParser, LinkWithVisuals) {
 // supplied.
 GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   AddModelFromSdfFile(full_name, &plant);
   plant.Finalize();
@@ -196,7 +196,8 @@ GTEST_TEST(MultibodyPlantSdfParser, ParseWithoutASceneGraph) {
 // call to AddModelFromSdfFile().
 GTEST_TEST(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
   const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/multibody_tree/parsing/test/links_with_visuals.sdf");
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
@@ -220,6 +221,43 @@ GTEST_TEST(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
 
   // TODO(SeanCurtis-TRI): Once SG supports it, confirm `GeometryId` maps to the
   // correct geometry.
+}
+
+// Verifies we can parse link collision geometries and surface friction.
+GTEST_TEST(MultibodyPlantSdfParser, LinksWithCollisions) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
+
+  const std::vector<GeometryId>& link1_collision_geometry_ids =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1"));
+  ASSERT_EQ(link1_collision_geometry_ids.size(), 2);
+
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(link1_collision_geometry_ids[0]) ==
+          CoulombFriction<double>(0.8, 0.3)));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(link1_collision_geometry_ids[1]) ==
+          CoulombFriction<double>(1.5, 0.6)));
+
+  const std::vector<GeometryId>& link2_collision_geometry_ids =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link2"));
+  ASSERT_EQ(link2_collision_geometry_ids.size(), 0);
+
+  const std::vector<GeometryId>& link3_collision_geometry_ids =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link3"));
+  ASSERT_EQ(link3_collision_geometry_ids.size(), 1);
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
+          CoulombFriction<double>(0.5, 0.5)));
 }
 
 }  // namespace

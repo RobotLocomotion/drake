@@ -244,10 +244,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // std::vector of geometry ids for that body. The emplace_back() below
     // resizes visual_geometries_ to store the geometry ids for the body we
     // just added.
-    // TODO(amcastro-tri): static_cast should not be needed. Update when
-    // TypeSafeIndex is fixed to support this comparison.
-    DRAKE_DEMAND(static_cast<int>(visual_geometries_.size()) == body.index());
+    // Similarly for the collision_geometries_ vector.
+    DRAKE_DEMAND(visual_geometries_.size() == body.index());
     visual_geometries_.emplace_back();
+    DRAKE_DEMAND(collision_geometries_.size() == body.index());
+    collision_geometries_.emplace_back();
     return body;
   }
 
@@ -534,6 +535,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
       const Body<T>& body) const;
 
+  /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  int num_visual_geometries() const {
+    return static_cast<int>(geometry_id_to_visual_index_.size());
+  }
+
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
   /// More than one geometry can be registered with a body, in which case the
@@ -563,19 +572,20 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph);
 
-  /// Returns the number of geometries registered for visualization.
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, see Finalize().
+  /// Returns an array of GeometryId's identifying the different contact
+  /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can be called at any time during the lifetime of `this`
+  /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int num_visual_geometries() const {
-    return static_cast<int>(geometry_id_to_visual_index_.size());
-  }
+  /// @see RegisterCollisionGeometry(), Finalize()
+  const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
+      const Body<T>& body) const;
 
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int get_num_collision_geometries() const {
+  int num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
   }
 
@@ -1071,6 +1081,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // That is, visual_geometries_[body_index] corresponds to the array of visual
   // geometries for body with index body_index.
   std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
+
+  // Per-body arrays of collision geometries indexed by BodyIndex.
+  // That is, collision_geometries_[body_index] corresponds to the array of
+  // collision geometries for body with index body_index.
+  std::vector<std::vector<geometry::GeometryId>> collision_geometries_;
 
   // Maps a GeometryId with a collision index. This allows, for instance, to
   // find out collision properties (such as friction coefficient) for a given

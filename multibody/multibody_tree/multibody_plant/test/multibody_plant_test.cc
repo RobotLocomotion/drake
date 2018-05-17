@@ -369,7 +369,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
-  EXPECT_EQ(plant.get_num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
 
