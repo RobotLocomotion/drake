@@ -16,7 +16,7 @@ namespace drake {
 namespace multibody {
 
 /// This mobilizer fixes the relative pose `X_FM` of an outboard frame M in an
-/// inboard frames F as if "welding" them together at this fixed relative pose.
+/// inboard frame F as if "welding" them together at this fixed relative pose.
 /// Therefore, this mobilizer has no associated state with it.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.

@@ -24,12 +24,12 @@ using systems::Context;
 
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-// Fixture to setup a simple MBT model containing a prismatic mobilizer.
+// Fixture to setup a simple MBT model containing a weld mobilizer.
 class WeldMobilizerTest : public ::testing::Test {
  public:
-  // Creates a simple model consisting of a single body with a prismatic joint
+  // Creates a simple model consisting of a single body with a weld mobilizer
   // connecting it to the world, with the sole purpose of verifying the
-  // PrismaticJoint methods.
+  // WeldMobilizer methods.
   void SetUp() override {
     // Spatial inertia for adding a body. The actual value is not important for
     // these tests since they are all kinematic.
@@ -40,7 +40,7 @@ class WeldMobilizerTest : public ::testing::Test {
 
     X_WB_ = Translation3d(1.0, 2.0, 3.0);
 
-    // Add a prismatic mobilizer between the world and the body:
+    // Add a weld mobilizer between the world and the body:
     weld_body_to_world_ = &model_.AddMobilizer<WeldMobilizer>(
         model_.world_body().body_frame(), body_->body_frame(), X_WB_);
 
@@ -61,13 +61,10 @@ class WeldMobilizerTest : public ::testing::Test {
   const WeldMobilizer<double>* weld_body_to_world_{nullptr};
   std::unique_ptr<Context<double>> context_;
   MultibodyTreeContext<double>* mbt_context_{nullptr};
-  // Prismatic mobilizer axis, expressed in the inboard frame F.
-  // It's intentionally left non-normalized to verify the mobilizer properly
-  // normalizes it at construction.
+  // Pose of body B in the world frame W.
   Isometry3d X_WB_;
 };
 
-// Verifies method to mutate and access the context.
 TEST_F(WeldMobilizerTest, ZeroSizedState) {
   EXPECT_EQ(model_.num_positions(), 0);
   EXPECT_EQ(model_.num_velocities(), 0);
