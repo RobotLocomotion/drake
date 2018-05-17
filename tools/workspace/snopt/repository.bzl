@@ -53,6 +53,18 @@ def _impl(repo_ctx):
             remote = repo_ctx.attr.remote,
             commit = repo_ctx.attr.commit,
         )
+        if repo_ctx.attr.use_drake_build_rules:
+            # Disable any files that came from the upstream snopt source.
+            _execute(repo_ctx, "find-and-mv", ["bash", "-c", """
+                set -euxo pipefail
+                find . -name BUILD -print0 -o -name BUILD.bazel -print0 |
+                    xargs -t -n1 -0 -I{} \
+                    mv {} {}.upstream-ignored
+            """])
+            # Link Drake's BUILD file into the snopt workspace.
+            repo_ctx.symlink(
+                Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
+                "BUILD")
     else:
         # TODO(jwnimmer-tri) Perhaps in the future we should allow SNOPT_PATH
         # to also refer to the *.zip format of the download, and/or an already-
@@ -66,14 +78,6 @@ def _impl(repo_ctx):
             "--file", repo_ctx.path(snopt_path).realpath,
             "--strip-components=1",
         ])
-    if repo_ctx.attr.use_drake_build_rules:
-        # Disable any files that came from the upstream snopt source archive.
-        _execute(repo_ctx, "find-and-mv", ["bash", "-c", """
-            set -euxo pipefail
-            find . -name BUILD -print0 -o -name BUILD.bazel -print0 |
-                xargs -t -n1 -0 -I{} \
-                mv {} {}.upstream-ignored
-        """])
         # Link Drake's BUILD file into the snopt workspace.
         repo_ctx.symlink(
             Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
@@ -83,7 +87,11 @@ snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
         "commit": attr.string(default = "c17db3769e59d4a8d651631d5d79641cecca0504"),  # noqa
-        "use_drake_build_rules": attr.bool(default = True),
+        "use_drake_build_rules": attr.bool(
+            default = True,
+            doc = ("When obtaining SNOPT via git, controls whether or not " +
+                   "Drake's BUILD file should supplant the file(s) in git"),
+        ),
     },
     environ = ["SNOPT_PATH"],
     local = False,
