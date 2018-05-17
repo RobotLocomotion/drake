@@ -5,6 +5,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -26,6 +27,15 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 /// to a geometry of type `sdf::GeometryType::EMPTY` (<empty/> SDF tag.)
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual);
+
+/// Given `sdf_collision` stemming from the parsing of a `<collision>` element
+/// in an SDF file, this method makes the pose `X_LG` of frame G for the
+/// geometry of that collision element in the frame L of the link it belongs to.
+Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
+    const sdf::Collision& sdf_collision);
+
+multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
+    const sdf::Collision& sdf_collision);
 
 }  // namespace detail
 }  // namespace parsing

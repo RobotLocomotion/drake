@@ -21,6 +21,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::detail::ToIsometry3;
 using drake::multibody::parsing::detail::ToVector3;
@@ -304,8 +305,26 @@ void AddModelFromSdfFile(
               scene_graph);
         }
       }
-    }
-  }
+
+      for (uint64_t collision_index = 0; collision_index < link.VisualCount();
+           ++collision_index) {
+        const sdf::Collision& sdf_collision =
+            *link.CollisionByIndex(collision_index);
+        const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
+          const Isometry3d X_LG =
+              detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
+          std::unique_ptr<geometry::Shape> shape =
+              detail::MakeShapeFromSdfGeometry(sdf_geometry);
+          const CoulombFriction<double> coulomb_friction =
+              detail::MakeCoulombFrictionFromSdfCollision(sdf_collision);
+          plant->RegisterCollisionGeometry(
+              body, X_LG, *shape, coulomb_friction, scene_graph);
+        }
+      }
+      
+    }  // scene_graph != nullptr
+  }  // link_index
 
   // Add all the joints
   for (uint64_t joint_index = 0; joint_index < model.JointCount();

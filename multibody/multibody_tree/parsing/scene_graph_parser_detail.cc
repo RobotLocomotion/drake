@@ -6,6 +6,7 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -15,7 +16,52 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
+using multibody_plant::CoulombFriction;
 using std::make_unique;
+
+namespace {
+
+sdf::ElementPtr GetElementPointerOrNullPtr(
+    sdf::ElementPtr element, const std::string &child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (element->HasElement(child_name)) {
+    return element->GetElement(child_name);
+  }
+  return nullptr;
+}
+
+#if 0
+sdf::ElementPtr GetElementPointerOrThrow(
+    sdf::ElementPtr element, const std::string &child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (!element->HasElement(child_name)) {
+    throw std::logic_error(
+        "Element <" + child_name + "> not found nested within element <" +
+            element->GetName() + ">.");
+  }
+  return element->GetElement(child_name);;
+}
+#endif
+
+template <typename T>
+T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
+  if (!element->HasElement(child_name)) {
+    throw std::logic_error(
+        "Element <" + child_name + "> is required within element "
+            "<" + element->GetName() + ">.");
+  }
+  std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
+  if (value_pair.second == false) {
+    throw std::logic_error(
+        "No value provide for <" + child_name + "> within element "
+            "<" + element->GetName() + ">.");
+  }
+  return value_pair.first;
+}
+
+}
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
@@ -97,6 +143,71 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   return make_unique<GeometryInstance>(
       X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+}
+
+Isometry3d MakeGeometryPoseFromSdfCollision(
+    const sdf::Collision& sdf_collision) {
+  // Retrieve the pose of the collision frame G in the parent link L in which
+  // geometry gets defined.
+  const Isometry3d X_LG = ToIsometry3(sdf_collision.Pose());
+
+  // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
+  // - A half-space's normal is directed along the Cz axis,
+  // - A cylinder's length is parallel to the Cz axis,
+  // - etc.
+
+  // X_LC defines the pose of the canonical frame in the link frame L.
+  Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
+
+  // For a half-space, C and G are not the same since  SDF allows to specify
+  // the normal of the plane in the G frame.
+  const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+  if (sdf_geometry.Type() == sdf::GeometryType::PLANE) {
+    const sdf::Plane& shape = *sdf_geometry.PlaneShape();
+    const Vector3d normal_G = ToVector3(shape.Normal());
+    // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
+    // planes are entire half-spaces.
+
+    // The normal expressed in the frame G defines the pose of the half space
+    // in its canonical frame C in which the normal aligns with the z-axis
+    // direction.
+    const Isometry3d X_GC =
+        geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+
+    // Correct X_LC to include the pose X_GC
+    X_LC = X_LG * X_GC;
+  }
+  return X_LC;
+}
+
+CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
+    const sdf::Collision& sdf_collision) {
+
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  // Element pointers can only be nullptr if Load() was not called on the sdf::
+  // object. Only a bug could cause this.
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::ElementPtr friction_element =
+      GetElementPointerOrNullPtr(collision_element, "drake_friction");
+
+  // If friction_element is not found, the default is that of a frictionless
+  // surface (i.e. zero friction coefficients).
+  if(!friction_element) return CoulombFriction<double>();
+
+  // Once <drake_friction> is (optionally) specified, <static_friction> and
+  // <dynamic_friction> are required.
+  const double static_friction = GetValueOrThrow<double>(
+      friction_element, "static_friction");
+  const double dynamic_friction = GetValueOrThrow<double>(
+      friction_element, "dynamic_friction");
+
+  try {
+    return CoulombFriction<double>(static_friction, dynamic_friction);
+  } catch (std::logic_error& e) {
+    throw std::logic_error("From <collision> with name '" +
+        sdf_collision.Name() + "': " + e.what());
+  }
 }
 
 }  // namespace detail
