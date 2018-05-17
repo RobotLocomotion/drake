@@ -31,7 +31,6 @@ sdf::ElementPtr GetElementPointerOrNullPtr(
   return nullptr;
 }
 
-#if 0
 sdf::ElementPtr GetElementPointerOrThrow(
     sdf::ElementPtr element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
@@ -43,7 +42,6 @@ sdf::ElementPtr GetElementPointerOrThrow(
   }
   return element->GetElement(child_name);;
 }
-#endif
 
 template <typename T>
 T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
@@ -201,6 +199,41 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
       friction_element, "static_friction");
   const double dynamic_friction = GetValueOrThrow<double>(
       friction_element, "dynamic_friction");
+
+  try {
+    return CoulombFriction<double>(static_friction, dynamic_friction);
+  } catch (std::logic_error& e) {
+    throw std::logic_error("From <collision> with name '" +
+        sdf_collision.Name() + "': " + e.what());
+  }
+}
+
+CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+    const sdf::Collision& sdf_collision) {
+
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  // Element pointers can only be nullptr if Load() was not called on the sdf::
+  // object. Only a bug could cause this.
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::ElementPtr surface_element =
+      GetElementPointerOrNullPtr(collision_element, "surface");
+
+  // If the surface is not found, the default is that of a frictionless
+  // surface (i.e. zero friction coefficients).
+  if(!surface_element) return CoulombFriction<double>();
+
+  // Once <surface> is found, <friction> and <ode> are required.
+  const sdf::ElementPtr friction_element =
+      GetElementPointerOrThrow(surface_element, "friction");
+  const sdf::ElementPtr ode_element =
+      GetElementPointerOrThrow(friction_element, "ode");
+
+
+  // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
+  // required.
+  const double static_friction = GetValueOrThrow<double>(ode_element, "mu");
+  const double dynamic_friction = GetValueOrThrow<double>(ode_element, "mu2");
 
   try {
     return CoulombFriction<double>(static_friction, dynamic_friction);

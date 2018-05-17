@@ -37,6 +37,9 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
 multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
+multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+    const sdf::Collision& sdf_collision);
+
 }  // namespace detail
 }  // namespace parsing
 }  // namespace multibody
