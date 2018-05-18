@@ -113,22 +113,24 @@ class DrakeJoint {
    * p_PQ = X_PF * p_FQ
    * </pre>
    */
-  const Eigen::Isometry3d& get_transform_to_parent_body() const;
+  const Eigen::Isometry3d& get_transform_to_parent_body() const {
+    return transform_to_parent_body_;
+  }
 
   /**
    * Returns the number of position states of this joint.
    */
-  int get_num_positions() const;
+  int get_num_positions() const { return num_positions_; }
 
   /**
    * Returns the number of velocity states of this joint.
    */
-  int get_num_velocities() const;
+  int get_num_velocities() const { return num_velocities_; }
 
   /**
    * Returns the name of this joint.
    */
-  const std::string& get_name() const;
+  const std::string& get_name() const { return name_; }
 
   /**
    * Returns the name of a particular position degree of freedom of this joint.

@@ -109,8 +109,8 @@ GTEST_TEST(RigidBodyTreeCompleteness, MissingJointWeldingError) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string msg =
-        "ERROR: RigidBody<T>::getJoint(): Rigid body \"body3\" in "
-            "model robot does not have a joint!";
+        "ERROR: RigidBodyTree::compile(): Rigid body \"body3\" in "
+            "model robot has no joint!";
     ASSERT_EQ(e.what(), msg);
   }
 }
@@ -143,8 +143,8 @@ GTEST_TEST(RigidBodyTreeCompleteness, MissingJointConfigurationError) {
     GTEST_FAIL();
   } catch (std::runtime_error& e) {
     std::string msg =
-        "ERROR: RigidBody<T>::getJoint(): Rigid body \"body3\" in "
-            "model robot does not have a joint!";
+        "ERROR: RigidBodyTree::compile(): Rigid body \"body3\" in "
+            "model robot has no joint!";
     ASSERT_EQ(e.what(), msg);
   }
 }
