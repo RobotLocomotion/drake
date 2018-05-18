@@ -117,27 +117,13 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // To compute B's angular acceleration in N, expressed in B, due to the net
   // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
   // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
-  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);      // Expressed in B.
-  const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);        // Expressed in B.
+  const Vector3<T> alpha_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
+  const Vector3<T> alpha_BN_N = R_NB * alpha_BN_B;         // Expressed in N.
 
-  // For subsequent calculation (below) form B's angular acceleration in N
-  // expressed in N, and B's angular velocity in N expressed in N.
-  const Vector3<T> alf_BN_N = R_NB * alf_BN_B;           // Expressed in N.
-  const Vector3<T> w_BN_N = R_NB * w_BN_B;               // Expressed in N.
-
-  // TODO(mitiguy) replace angularvel2rpydotMatrix with new RollPitchYaw method.
-  // TODO(mitiguy) continue fixing documentation for this example (here to end).
-  Matrix3<T> Phi;
-  typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
-  typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
-  angularvel2rpydotMatrix(rpy.vector(), Phi, &dPhi, ddPhi);
-
-  const Eigen::Matrix<T, 9, 1> dPhi_x_rpyDt_vec = dPhi * rpyDt;
-  const Eigen::Map<const Matrix3<T>> dPhi_x_rpyDt(dPhi_x_rpyDt_vec.data());
-  const Matrix3<T> R_NB_Dt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
-  const Vector3<T> rpyDDt = Phi * alf_BN_N
-                          + dPhi_x_rpyDt * w_BN_N
-                          + Phi * R_NB_Dt * w_BN_B;
+  // Calculate the 2nd time-derivative of rpy.
+  const Vector3<T> rpyDDt =
+      rpy.AngularAccelerationAToRollPitchYawDDt(rpyDt, alpha_BN_N);
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);
