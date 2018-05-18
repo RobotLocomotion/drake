@@ -10,7 +10,7 @@
 
 // A simple example on how to take derivatives of the forward dynamics for a
 // simple pendulum with respect to the mass parameter.
-// The result get printed to std::out.
+// The result gets printed to std::out.
 
 namespace drake {
 namespace examples {
