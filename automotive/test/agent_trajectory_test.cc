@@ -55,7 +55,7 @@ GTEST_TEST(PoseVelocityTest, Accessors) {
   EXPECT_TRUE(CompareMatrices(actual.velocity().rotational(), w));
   EXPECT_TRUE(CompareMatrices(actual.velocity().translational(), v));
   const Vector3d expected_pose3{translation.x(), translation.y(),
-                                rpy.get_yaw_angle()};
+                                rpy.yaw_angle()};
   EXPECT_TRUE(CompareMatrices(actual.pose3(), expected_pose3));
   EXPECT_EQ(actual.speed(), sqrt(pow(v(0), 2) + pow(v(1), 2) + pow(v(2), 2)));
 }

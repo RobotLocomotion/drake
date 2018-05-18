@@ -92,7 +92,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // Form the net moment on B about Bcm, expressed in B. The net moment accounts
   // for all contact and distance forces (aerodynamic and gravity forces) on B.
   // Note: Since the net moment on B is about Bcm, gravity does not contribute.
-  const Vector3<T> M(Mx, My, Mz);
+  const Vector3<T> M_B(Mx, My, Mz);
 
   // Calculate local celestial body's (Earth's) gravity force on B, expressed in
   // the Newtonian frame N (a.k.a the inertial or World frame).
@@ -112,18 +112,18 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   const Vector3<T> xyzDDt = Fnet_N / m_;  // Equal to a_NBcm_N.
 
   // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in B.
-  const Vector3<T> w_BN_B = rpy.RollPitchYawDtToAngularVelocityD(rpyDt);
+  const Vector3<T> w_BN_B = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
 
   // To compute B's angular acceleration in N, expressed in B, due to the net
-  // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
-  // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
-  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);        // Expressed in B.
-  const Vector3<T> alpha_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
-  const Vector3<T> alpha_BN_N = R_NB * alpha_BN_B;         // Expressed in N.
+  // moment 𝛕 on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
+  // Euler's equation: 𝛕 = I α + ω × (I ω).
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);          // Expressed in B.
+  const Vector3<T> alpha_NB_B = I_.ldlt().solve(M_B - wIw);  // Expressed in B.
+  const Vector3<T> alpha_NB_N = R_NB * alpha_NB_B;           // Expressed in N.
 
   // Calculate the 2nd time-derivative of rpy.
   const Vector3<T> rpyDDt =
-      rpy.AngularAccelerationAToRollPitchYawDDt(rpyDt, alpha_BN_N);
+      rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_NB_N);
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);
