@@ -68,24 +68,8 @@ void RigidBody<T>::setJoint(std::unique_ptr<DrakeJoint> joint) {
 }
 
 template <typename T>
-const DrakeJoint& RigidBody<T>::getJoint() const {
-  if (joint_) {
-    return (*joint_);
-  } else {
-    throw runtime_error("ERROR: RigidBody<T>::getJoint(): Rigid body \"" +
-                        name_ + "\" in model " + model_name_ +
-                        " does not have a joint!");
-  }
-}
-
-template <typename T>
 void RigidBody<T>::set_parent(RigidBody* parent) { parent_ = parent; }
 
-template <typename T>
-const RigidBody<T>* RigidBody<T>::get_parent() const { return parent_; }
-
-template <typename T>
-bool RigidBody<T>::has_parent_body() const { return parent_ != nullptr; }
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
 template <typename T>
@@ -95,16 +79,8 @@ template <typename T>
 void RigidBody<T>::set_body_index(int body_index) { body_index_ = body_index; }
 
 template <typename T>
-int RigidBody<T>::get_body_index() const { return body_index_; }
-
-template <typename T>
 void RigidBody<T>::set_position_start_index(int position_start_index) {
   position_start_index_ = position_start_index;
-}
-
-template <typename T>
-int RigidBody<T>::get_position_start_index() const {
-  return position_start_index_;
 }
 
 template <typename T>
@@ -112,10 +88,6 @@ void RigidBody<T>::set_velocity_start_index(int velocity_start_index) {
   velocity_start_index_ = velocity_start_index;
 }
 
-template <typename T>
-int RigidBody<T>::get_velocity_start_index() const {
-  return velocity_start_index_;
-}
 
 template <typename T>
 void RigidBody<T>::AddVisualElement(const DrakeShapes::VisualElement& element) {
@@ -136,12 +108,6 @@ void RigidBody<T>::AddCollisionElement(
   collision_element_ids_.push_back(id);
   collision_element_groups_[group_name].push_back(id);
   collision_elements_.push_back(element);
-}
-
-template <typename T>
-const std::vector<drake::multibody::collision::ElementId>&
-RigidBody<T>::get_collision_element_ids() const {
-  return collision_element_ids_;
 }
 
 template <typename T>
@@ -288,12 +254,6 @@ template <typename T>
 void RigidBody<T>::set_spatial_inertia(const drake::SquareTwistMatrix<double>&
     spatial_inertia) {
   spatial_inertia_ = spatial_inertia;
-}
-
-template <typename T>
-const drake::SquareTwistMatrix<double>& RigidBody<T>::get_spatial_inertia()
-    const {
-  return spatial_inertia_;
 }
 
 ostream& operator<<(ostream& out, const RigidBody<double>& b) {

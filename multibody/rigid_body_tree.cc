@@ -3087,21 +3087,11 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
   return link->get_body_index();
 }
 
-template <typename T>
-const RigidBody<T>& RigidBodyTree<T>::get_body(int body_index) const {
-  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
-  return *bodies_[body_index].get();
-}
 
 template <typename T>
 RigidBody<T>* RigidBodyTree<T>::get_mutable_body(int body_index) {
   DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
   return bodies_[body_index].get();
-}
-
-template <typename T>
-int RigidBodyTree<T>::get_num_bodies() const {
-  return static_cast<int>(bodies_.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -3339,21 +3329,12 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
   return bodies_.back().get();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_positions() const {
-  return num_positions_;
-}
-
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
 int RigidBodyTree<T>::number_of_positions() const {
   return get_num_positions();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_velocities() const {
-  return num_velocities_;
-}
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
@@ -3362,20 +3343,8 @@ int RigidBodyTree<T>::number_of_velocities() const {
 }
 
 template <typename T>
-int RigidBodyTree<T>::get_num_actuators() const {
-  return static_cast<int>(actuators.size());
-}
-
-template <typename T>
 int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
-}
-
-// TODO(liang.fok) Update this method implementation once the world is assigned
-// its own model instance ID (#3088). It should return num_model_instances_ - 1.
-template <typename T>
-int RigidBodyTree<T>::get_num_model_instances() const {
-  return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

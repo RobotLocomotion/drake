@@ -25,31 +25,13 @@ int RigidBodyFrame<T>::get_model_instance_id() const {
 }
 
 template <typename T>
-const std::string& RigidBodyFrame<T>::get_name() const { return name_; }
-
-template <typename T>
-const RigidBody<T>& RigidBodyFrame<T>::get_rigid_body() const {
-  return *body_;
-}
-
-template <typename T>
 RigidBody<T>* RigidBodyFrame<T>::get_mutable_rigid_body() {
   return body_;
 }
 
 template <typename T>
-const Eigen::Isometry3d& RigidBodyFrame<T>::get_transform_to_body() const {
-  return transform_to_body_;
-}
-
-template <typename T>
 Eigen::Isometry3d* RigidBodyFrame<T>::get_mutable_transform_to_body() {
   return &transform_to_body_;
-}
-
-template <typename T>
-int RigidBodyFrame<T>::get_frame_index() const {
-  return frame_index_;
 }
 
 template <typename T>
