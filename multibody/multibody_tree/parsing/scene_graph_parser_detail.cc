@@ -25,8 +25,8 @@ namespace {
 
 // Helper to return the child element of `element` named `child_name`.
 // Returns nullptr if not present.
-sdf::ElementPtr GetElementPointerOrNullPtr(
-    sdf::ElementPtr element, const std::string& child_name) {
+sdf::ElementPtr GetChildElementPointerOrNullPtr(
+    sdf::ElementPtr element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
   // side effect of adding new elements if not present!!).
   if (element->HasElement(child_name)) {
@@ -37,7 +37,7 @@ sdf::ElementPtr GetElementPointerOrNullPtr(
 
 // Helper to return the child element of `element` named `child_name`.
 // Throws std::logic_error if not found.
-sdf::ElementPtr GetElementPointerOrThrow(
+sdf::ElementPtr GetChildElementPointerOrThrow(
     sdf::ElementPtr element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
   // side effect of adding new elements if not present!!).
@@ -53,7 +53,8 @@ sdf::ElementPtr GetElementPointerOrThrow(
 // An std::logic_error is thrown if `child_name` does not exist or if no value
 // was provided by the user that is, if `<child_name></child_name>` is empty.
 template <typename T>
-T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
+T GetChildElementValueOrThrow(
+    sdf::ElementPtr element, const std::string &child_name) {
   if (!element->HasElement(child_name)) {
     throw std::logic_error(
         "Element <" + child_name + "> is required within element "
@@ -158,15 +159,22 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   // geometry gets defined.
   const Isometry3d X_LG = ToIsometry3(sdf_collision.Pose());
 
-  // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
+  // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
+  // frame C is the frame in which the geometry is defined and it generally
+  // coincides with the geometry frame G (G is specified in the SDF file).
+  // For instance:
   // - A half-space's normal is directed along the Cz axis,
   // - A cylinder's length is parallel to the Cz axis,
   // - etc.
+  // There are cases however in which C might no coincide with C. A HalfSpace
+  // is one of such examples, since for geometry::HalfSpace the normal always
+  // is (0, 0, 1) in the C frame, however SDF allows to specify a different
+  // normal than Gz (that is, (0, 0, 1)) in the G frame.
 
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
 
-  // For a half-space, C and G are not the same since  SDF allows to specify
+  // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
   const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::PLANE) {
@@ -196,7 +204,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
   DRAKE_DEMAND(collision_element != nullptr);
 
   const sdf::ElementPtr friction_element =
-      GetElementPointerOrNullPtr(collision_element, "drake_friction");
+      GetChildElementPointerOrNullPtr(collision_element, "drake_friction");
 
   // If friction_element is not found, the default is that of a frictionless
   // surface (i.e. zero friction coefficients).
@@ -204,9 +212,9 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
 
   // Once <drake_friction> is (optionally) specified, <static_friction> and
   // <dynamic_friction> are required.
-  const double static_friction = GetValueOrThrow<double>(
+  const double static_friction = GetChildElementValueOrThrow<double>(
       friction_element, "static_friction");
-  const double dynamic_friction = GetValueOrThrow<double>(
+  const double dynamic_friction = GetChildElementValueOrThrow<double>(
       friction_element, "dynamic_friction");
 
   try {
@@ -226,7 +234,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   DRAKE_DEMAND(collision_element != nullptr);
 
   const sdf::ElementPtr surface_element =
-      GetElementPointerOrNullPtr(collision_element, "surface");
+      GetChildElementPointerOrNullPtr(collision_element, "surface");
 
   // If the surface is not found, the default is that of a frictionless
   // surface (i.e. zero friction coefficients).
@@ -234,15 +242,17 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 
   // Once <surface> is found, <friction> and <ode> are required.
   const sdf::ElementPtr friction_element =
-      GetElementPointerOrThrow(surface_element, "friction");
+      GetChildElementPointerOrThrow(surface_element, "friction");
   const sdf::ElementPtr ode_element =
-      GetElementPointerOrThrow(friction_element, "ode");
+      GetChildElementPointerOrThrow(friction_element, "ode");
 
 
   // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
   // required.
-  const double static_friction = GetValueOrThrow<double>(ode_element, "mu");
-  const double dynamic_friction = GetValueOrThrow<double>(ode_element, "mu2");
+  const double static_friction =
+      GetChildElementValueOrThrow<double>(ode_element, "mu");
+  const double dynamic_friction =
+      GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
   try {
     return CoulombFriction<double>(static_friction, dynamic_friction);

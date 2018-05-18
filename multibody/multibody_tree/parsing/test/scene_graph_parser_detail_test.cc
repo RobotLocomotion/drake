@@ -376,7 +376,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
   const CoulombFriction<double> friction =
       MakeCoulombFrictionFromSdfCollision(*sdf_collision);
   // TODO(amcastro-tri): Allow custom elements for SDF files.
-  // Now they get ignored and get parsed by Drake as frictionless surfaces.
+  // Since today sdformat does not allow for custom elements, <drake_friction>
+  // gets ignored and does not make it to sdformat's DOM representation.
+  // Therefore Drake believes it is not there and understands the user wanted a
+  // frictionless surface.
   // EXPECT_EQ(friction.static_friction(), 0.8);
   // EXPECT_EQ(friction.dynamic_friction(), 0.3);
   EXPECT_EQ(friction.static_friction(), 0.0);
@@ -413,8 +416,17 @@ GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
 // Verify MakeCoulombFrictionFromSdfCollisionOde() throws an exception if
 // provided a dynamic friction coefficient larger than the static friction
 // coefficient.
+// We do not need testing for each possible case of an invalid input such as:
+// - negative coefficients.
+// - dynamic > static.
+// - only one coefficient is negative.
+// Since class CoulombFriction performs these tests at construction and its unit
+// tests provide coverage for these cases. In that regard, this following
+// test is not needed but we provide it just to show how the exception message
+// thrown from CoulombFriction gets concatenated and re-thrown by
+// MakeCoulombFrictionFromSdfCollisionOde().
 GTEST_TEST(SceneGraphParserDetail,
-           MakeCoulombFrictionFromSdfCollisionOde_Throws) {
+           MakeCoulombFrictionFromSdfCollisionOde_DynamicLargerThanStatic) {
   unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
       "<collision name = 'some_link_collision'>"
       "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
@@ -439,6 +451,100 @@ GTEST_TEST(SceneGraphParserDetail,
       "The given dynamic friction \\(.*\\) is greater than the given static "
       "friction \\(.*\\); dynamic friction must be less than or equal to "
       "static friction.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_MuMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu2>0.8</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "Element <mu> is required within element <ode>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_Mu2Missing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.8</mu>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "Element <mu2> is required within element <ode>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_FrictionMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <ode>"
+      "      <mu>0.3</mu>"
+      "      <mu2>0.8</mu2>"
+      "    </ode>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "Element <friction> not found nested within element <surface>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_OdeMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+          "  <geometry>"
+          "    <plane>"
+          "      <normal>1.0 2.0 3.0</normal>"
+          "    </plane>"
+          "  </geometry>"
+          "  <surface>"
+          "    <friction>"
+          "      <mu>0.3</mu>"
+          "      <mu2>0.8</mu2>"
+          "    </friction>"
+          "  </surface>"
+          "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "Element <ode> not found nested within element <friction>.");
 }
 
 }  // namespace

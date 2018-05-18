@@ -44,10 +44,9 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
 ///     </drake_friction>
 ///   </collision>
 /// </pre>
-/// If a `<drake_collision>` is not found, it returns the coefficients for a
-/// frictionless surface. After `<drake_collision>` is found,
-/// `<static_friction>` and `<dynamic_friction>` are required to be present and
-/// an exception is thrown if not.
+/// If a `<drake_friction>` is not found, it returns the coefficients for a
+/// frictionless surface. An exception is thrown if `<static_friction>` and
+/// `<dynamic_friction>` are not found within the `<drake_friction>` tag.
 multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
@@ -68,7 +67,7 @@ multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
 ///   </collision>
 /// </pre>
 /// If a `<surface>` is not found, it returns the coefficients for a
-/// frictionless surface. After `<surface>` is found, all other nested elements
+/// frictionless surface. If `<surface>` is found, all other nested elements
 /// are required and an exception is thrown if not present.
 multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);

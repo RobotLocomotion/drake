@@ -1,9 +1,10 @@
 <sdf version='1.6'>
   <model name='test_robot'>
-    <!-- This sdf file defines a simple test robot with multiple links
-         so that we can test visuals are properly added to each link.
+    <!-- This sdf file defines a simple test robot with multiple links so that
+         we can test visuals and collisions are properly added to each link.
          Values in <inertial> are not important for this test model since
-         it's only to test the parsing of visuals into a MultibodyPlant.
+         it's only to test the parsing of visuals and collisions into a
+         MultibodyPlant.
          This file is meant to be kept in sync with the corresponding unit
          test file multibody_plant_sdf_parser_test.cc -->
     <link name='link1'>
@@ -57,6 +58,8 @@
       </collision>
     </link>
 
+    <!-- Link 2 has no collision geometry. Even though it is not needed, we
+         explicitly state it with an <empty/> tag for testing purposes. -->
     <link name='link2'>
       <visual name='link2_visual1'>
         <geometry>
@@ -80,6 +83,11 @@
           </plane>
         </geometry>
       </visual>
+      <collision name='link2_collision'>
+        <geometry>
+          <empty/>
+        </geometry>
+      </collision>
     </link>
 
     <!-- Link 3 has no visuals. Even though it is not needed, we explicitly
