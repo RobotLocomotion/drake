@@ -11,8 +11,8 @@ namespace scalar_conversion {
 /// scalar-dependent classes may specialize this template to indicate whether
 /// the framework should support conversion for a combination of S, T, and U.
 ///
-/// In supported cases, the "scalar-converting copy constructor" for those
-/// types will be used.  That constructor takes the form of, e.g.:
+/// When Traits::supported is true, the "scalar-converting copy constructor"
+/// for those types will be used.  That constructor takes the form of, e.g.:
 ///
 /// @code
 /// template <typename T>
@@ -22,8 +22,8 @@ namespace scalar_conversion {
 /// };
 /// @endcode
 ///
-/// In unsupported cases, the constructor will not even be mentioned by the
-/// framework, so that S need not even compile for certain values of T and U.
+/// When Traits::supported is false, the constructor will not even be mentioned
+/// by the framework, so that S need not even compile for certain T and U pairs.
 ///
 /// @tparam S is the scalar-templated type to copy
 template <template <typename> class S>
