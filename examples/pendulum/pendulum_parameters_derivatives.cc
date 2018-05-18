@@ -37,7 +37,7 @@ int DoMain() {
       system.get_mutable_parameters(context.get());
 
   // Mass is our independent variable for this example and therefore we set its
-  // vector of derivatives to one.
+  // derivative to one.
   // Note: all the other parameter values were set by PendulumParams's default
   // constructor to be constants (i.e. their derivative with respect to the mass
   // parameter is zero).
@@ -56,11 +56,12 @@ int DoMain() {
   fmt::print("θ̇ = {thetadot:8.4f}\n", "thetadot"_a = xdot.theta().value());
   fmt::print("ω̇ = {omegadot:8.4f}\n", "omegadot"_a = xdot.thetadot().value());
 
-  // Partial of xdot with respect to mass parameter.
-  fmt::print(
-      "Partial of the forward dynamics with respect to mass, i.e. ∂ẋ/∂m:\n");
-  // θ̇ is independent of the mass parameter. We verify it by checking the
-  // derivatives size before printing a lie.
+  // Partial derivative of xdot with respect to mass parameter.
+  fmt::print("Partial derivative of the forward dynamics with respect to mass, "
+                 "i.e. ∂ẋ/∂m:\n");
+  // θ̇ is independent of the mass parameter. We verify this by checking the
+  // size of its vector of derivatives. Since we are using AutoDiffXd, we expect
+  // this size to be zero (a constant).
   DRAKE_DEMAND(xdot.theta().derivatives().size() == 0);
   fmt::print("∂θ̇/∂m = {:8.4f}\n", 0.0);
   fmt::print("∂ω̇/∂m = {:8.4f}\n", xdot.thetadot().derivatives()[0]);
