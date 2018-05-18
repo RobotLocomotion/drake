@@ -69,12 +69,12 @@ class RigidBodyFrame final {
   /**
    * Returns the name of this frame.
    */
-  const std::string& get_name() const;
+  const std::string& get_name() const { return name_; }
 
   /**
    * Returns the rigid body to which this frame is attached.
    */
-  const RigidBody<T>& get_rigid_body() const;
+  const RigidBody<T>& get_rigid_body() const { return *body_; }
 
   /**
    * Returns the rigid body to which this frame is attached.
@@ -104,7 +104,9 @@ class RigidBodyFrame final {
    * p_B = T_BF * p_F;
    * </pre>
    */
-  const Eigen::Isometry3d& get_transform_to_body() const;
+  const Eigen::Isometry3d& get_transform_to_body() const {
+    return transform_to_body_;
+  }
 
   // TODO(liang.fok) Remove this method once it's no longer needed by
   // drake/systems/plants/constructModelmex.cpp.
@@ -121,7 +123,7 @@ class RigidBodyFrame final {
    * Returns the index of this `RigidBodyFrame` within the vector of
    * `RigidBodyFrame` objects in the `RigidBodyTree`.
    */
-  int get_frame_index() const;
+  int get_frame_index() const { return frame_index_; }
 
   /**
    * Sets the name of this `RigidBodyFrame`.
