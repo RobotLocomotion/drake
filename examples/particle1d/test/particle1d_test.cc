@@ -117,104 +117,39 @@ GTEST_TEST(ParticlePlantTest, DerivativesTest) {
             cos(time) / mass);  // ẍ = cos(t)/m.
 }
 
-// Verify that the system can be converted to an AutoDiffXd system.
-GTEST_TEST(ParticlePlantTest, ToAutoDiffTest) {
-  Particle1dPlant<double> test_particle;
-
-  auto context = test_particle.CreateDefaultContext();
-  auto& state = context->get_mutable_continuous_state_vector();
-
-  // Set the context time to an arbitrary time of 3 seconds.
-  context->set_time(3.0);
-  auto time = context->get_time();
-
-  auto mass = test_particle.get_mass();
-
-  // The state vector has the following assignments:
-  // state[0] = x and state[1] = ẋ.
-  int x_index = 0;
-  int xDt_index = 1;
-
-  // Set the state of the system.
-  state.SetAtIndex(x_index, (-cos(time) + 1) / mass);  // x = (-cos(t) + 1)/m.
-  state.SetAtIndex(xDt_index, sin(time) / mass);       // ẋ = sin(t)/m
-
-  // Transmogrify the particle to autodiff.
-  std::unique_ptr<Particle1dPlant<AutoDiffXd>> ad_test_particle =
-      systems::System<double>::ToAutoDiffXd(test_particle);
+GTEST_TEST(ParticlePlantTest, PartialTest) {
+  Particle1dPlant<AutoDiffXd> test_particle;
 
   // Construct a new context based on AutoDiff.
-  auto ad_context = ad_test_particle->CreateDefaultContext();
-  ad_context->SetTimeStateAndParametersFrom(*context);
-  auto ad_derivatives = ad_test_particle->AllocateTimeDerivatives();
-
-  auto& ad_state = ad_context->get_mutable_continuous_state_vector();
-
-  // Check that the transformed AutoDiff vector has the correct values and that
-  // the derivatives vector has been created.
-  EXPECT_EQ(ad_state[0].value(), state[0]);
-  EXPECT_EQ(ad_state[1].value(), state[1]);
-  EXPECT_EQ(ad_state[0].derivatives().size(), 0);
-  EXPECT_EQ(ad_state[1].derivatives().size(), 0);
-
-  // Compute derivatives.
-  ad_test_particle->CalcTimeDerivatives(*ad_context, ad_derivatives.get());
-
-  const systems::VectorBase<AutoDiffXd >& new_derivatives_vector =
-      ad_derivatives->get_vector();
-
-  // Check derivative results against the analytical solution.
-  EXPECT_EQ(new_derivatives_vector[0].value(),
-            sin(time) / mass);  // ẋ = sin(t)/m.
-  EXPECT_EQ(new_derivatives_vector[1].value(),
-            cos(time) / mass);  // ẍ = cos(t)/m.
-}
-
-GTEST_TEST(ParticlePlantTest, PartialTest) {
-  Particle1dPlant<double> test_particle;
-
   auto context = test_particle.CreateDefaultContext();
+  auto derivatives = test_particle.AllocateTimeDerivatives();
+
   auto& state = context->get_mutable_continuous_state_vector();
 
   // Test the derivatives at an arbitrary time of 3 seconds.
   context->set_time(3.0);
-  auto time = context->get_time();
+  const AutoDiffXd& time = context->get_time();
 
   // Get mass from the particle.
-  auto mass = test_particle.get_mass();
+  const AutoDiffXd mass = test_particle.get_mass();
 
-  // The state vector has the following assignments:
-  // state[0] = x and state[1] = ẋ.
-  int x_index = 0;
-  int xDt_index = 1;
-
-  // Set the state assuming the system has evolved over time.
-  state.SetAtIndex(x_index, (-cos(time) + 1) / mass);  // x = (-cos(t) + 1)/m.
-  state.SetAtIndex(xDt_index, sin(time) / mass);       // ẋ = sin(t)/m
-
-  // Transmogrify the particle to autodiff.
-  std::unique_ptr<Particle1dPlant<AutoDiffXd>> ad_test_particle =
-      systems::System<double>::ToAutoDiffXd(test_particle);
-
-  // Construct a new context based on AutoDiff.
-  auto ad_context = ad_test_particle->CreateDefaultContext();
-  ad_context->SetTimeStateAndParametersFrom(*context);
-  auto ad_derivatives = ad_test_particle->AllocateTimeDerivatives();
-
-  auto& ad_state = ad_context->get_mutable_continuous_state_vector();
+  // Set the state assuming the system has evolved over time. The state vector
+  // has the following assignments: state[0] = x and state[1] = ẋ.
+  state.SetAtIndex(0, (-cos(time) + 1) / mass); // x = (-cos(t) + 1)/m.
+  state.SetAtIndex(1, sin(time) / mass);        // ẋ = sin(t)/m
 
   // Check that the transformed AutoDiff vector has held on to the value of the
   // initlialized double type and that the derivatives vector has been created.
-  EXPECT_EQ(ad_state[0].value(), state[0]);
-  EXPECT_EQ(ad_state[1].value(), state[1]);
-  EXPECT_EQ(ad_state[0].derivatives().size(), 0);
-  EXPECT_EQ(ad_state[1].derivatives().size(), 0);
+  EXPECT_EQ(state[0].value(), state[0]);
+  EXPECT_EQ(state[1].value(), state[1]);
+  EXPECT_EQ(state[0].derivatives().size(), 0);
+  EXPECT_EQ(state[1].derivatives().size(), 0);
 
   // Compute derivatives.
-  ad_test_particle->CalcTimeDerivatives(*ad_context, ad_derivatives.get());
+  test_particle.CalcTimeDerivatives(*context, derivatives.get());
 
   const systems::VectorBase<AutoDiffXd>& new_derivatives_vector =
-      ad_derivatives->get_vector();
+      derivatives->get_vector();
 
   // Check derivative results against the analytical solution.
   EXPECT_EQ(new_derivatives_vector[0].value(),

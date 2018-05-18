@@ -10,7 +10,7 @@ namespace particle1d {
 
 // class constructor
 template <typename T>
-Particle1dPlant<T>::Particle1dPlant() : systems::LeafSystem<T>(systems::SystemTypeTag<examples::particle1d::Particle1dPlant>{}) {
+Particle1dPlant<T>::Particle1dPlant() {
   const int number_generalized_position = 1;
   const int number_generalized_velocity = 1;
   const int number_miscellaneous_variables = 0;

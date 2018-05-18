@@ -38,27 +38,23 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   /// Constructor defines a prototype for its continuous state and output port.
   Particle1dPlant();
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
-  template <typename U>
-  explicit Particle1dPlant(const Particle1dPlant<U>&) : Particle1dPlant<T>() {}
-
   /// Return the OutputPort associated with this Particle1dPlant.
   /// This method is called when connecting the ports in the diagram builder.
   const systems::OutputPort<T>& get_output_port() const {
     return systems::System<T>::get_output_port(0);
   }
 
-  /// Set constant parameters (such as body mass) after class construction
-  /// (but before calculations).
-  /// @param[in] tree A RigidBodyTree that contains a model of the particle
-  /// from the urdf file.
+  /// Uses the RigidBodyTree (which has a parsed version of the file
+  /// particle1d.urdf) to set constant parameters (such as mass).
+  /// @param[in] tree A RigidBodyTree that contains the parameters of the particle
+  /// from the particle1d.urdf file.
   void SetConstantParameters(const RigidBodyTree<double>& tree);
 
-  /// Returns the current state of the Particle1dPlant as a BasicVector.
-  /// This method is called when building a diagram in order to get access to
-  /// the state of the system as given by the System Context.
-  /// @param[in] context The Particle1dPlant sub-system context as given by the
-  /// simulator's system context.
+  /// Returns the current state of this Particle1dPlant as a BasicVector.
+  /// The return value is mutable to allow the calling method to change the
+  /// state (e.g., to set initial values). For example, this method is called
+  /// when building a diagram so initial values can be set by the simulator.
+  /// @param[in] context The Particle1dPlant sub-system context.
   static systems::BasicVector<T>& get_mutable_state(
       systems::Context<T>* context) {
     return get_mutable_state(&context->get_mutable_continuous_state());
@@ -68,20 +64,20 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   const T get_mass() const { return particle1d_.get_particle_data().mass; }
 
  private:
-  // Casts the continuous state vector from a VectorBase to a BasicVector
+  // Casts the continuous state vector from a VectorBase to a BasicVector.
   static const systems::BasicVector<T>& get_state(
       const systems::ContinuousState<T>& cstate) {
     return dynamic_cast<const systems::BasicVector<T>&>(cstate.get_vector());
   }
 
-  // This method is called in DoCalcTimeDerivative as a way to update the state
-  // before the time derivatives are calculated.
+  // This method is called in DoCalcTimeDerivative() as a way to update the
+  // state before the time derivatives are calculated.
   static const systems::BasicVector<T>& get_state(
       const systems::Context<T>& context) {
     return get_state(context.get_continuous_state());
   }
 
-  // Casts the continuous state vector from a VectorBase to a BasicVector
+  // Casts the mutable continuous state vector from a VectorBase to BasicVector.
   static systems::BasicVector<T>& get_mutable_state(
       systems::ContinuousState<T>* cstate) {
     return dynamic_cast<systems::BasicVector<T>&>(cstate->get_mutable_vector());
@@ -94,7 +90,7 @@ class Particle1dPlant final : public systems::LeafSystem<T> {
   void CopyStateOut(const systems::Context<T>& context,
                                         systems::BasicVector<T>* output) const;
 
-  // Method that calculates the state time derivatives
+  // Method that calculates the state time derivatives.
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 };
@@ -111,5 +107,4 @@ struct Traits<examples::particle1d::Particle1dPlant>
 
 }  // namespace scalar_conversion
 }  // namespace systems
-
 } // namespace drake

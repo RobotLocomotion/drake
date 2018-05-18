@@ -139,7 +139,7 @@ GTEST_TEST(PlantTest, AutoDiffPartials) {
   auto_values[0] = mass_value;  // Variable mass
   auto_values[1] = time_value;  // Variable time
   auto_values[2] = x_value;     // Variable x
-  
+
   // Use an identity matrix to initialize the partials to:
   // ∂m/∂m = 1, ∂t/∂t = 1, ∂x/∂x = 1.
   Eigen::Matrix3d gradient_matrix;

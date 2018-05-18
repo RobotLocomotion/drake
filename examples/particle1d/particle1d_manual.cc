@@ -30,10 +30,8 @@ void Particle1dManual<T>::CalcDerivativesToStateDt(const T t, const T state[],
 }
 
 // -----------------------------------------------------------------------------
-template
-class Particle1dManual<double>;
-template
-class Particle1dManual<AutoDiffXd>;
+template class Particle1dManual<double>;
+template class Particle1dManual<AutoDiffXd>;
 
 } // namespace particle1d
 } // namespace examples
