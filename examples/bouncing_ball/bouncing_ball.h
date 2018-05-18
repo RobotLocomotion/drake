@@ -15,7 +15,8 @@ namespace bouncing_ball {
 ///
 /// Instantiated templates for the following scalar types @p T are provided:
 /// - double
-/// - AutoDiffXd
+/// - drake::AutoDiffXd
+/// - symbolic::Expression
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///

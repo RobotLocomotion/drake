@@ -100,6 +100,7 @@ GTEST_TEST(BouncingBall, AutoDiff) {
 
 TEST_F(BouncingBallTest, Transmogrification) {
   ASSERT_TRUE(systems::is_autodiffxd_convertible(*dut_));
+  ASSERT_TRUE(systems::is_symbolic_convertible(*dut_));
 }
 
 TEST_F(BouncingBallTest, Topology) {
