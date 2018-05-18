@@ -46,6 +46,11 @@ class CubicPolynomial {
     return 0;
   }
 
+  // Checks whether the polynomial is zero.
+  bool zero() const {
+    return (a_ == 0.0 && b_ == 0.0 && c_ == 0.0 && d_ == 0.0);
+  }
+
   /// Evaluates the polynomial f at @p p.
   double f_p(double p) const {
     return a_ + (b_ * p) + (c_ * p * p) + (d_ * p * p * p);

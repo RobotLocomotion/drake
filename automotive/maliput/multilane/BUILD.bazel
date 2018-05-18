@@ -155,10 +155,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multilane_road_curve_accuracy_test",
-    size = "enormous",
-    timeout = "eternal",
     srcs = ["test/multilane_road_curve_accuracy_test.cc"],
-    tags = ["manual"],
     deps = [
         ":builder",
         "//automotive/maliput/api/test_utilities",

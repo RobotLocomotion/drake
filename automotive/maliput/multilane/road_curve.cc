@@ -120,18 +120,31 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
   // bounded by 4e/L.
   const double relative_tolerance = linear_tolerance_ / scale_length_;
 
-  // Sets `s_from_p`'s integration accuracy and step size.
+  // Sets `s_from_p`'s integration accuracy and step sizes. Said steps
+  // should not be too large, because that could make accuracy control
+  // fail, nor too small to avoid wasting cycles. The nature of the
+  // problem at hand varies with the parameterization of the RoadCurve,
+  // and so will optimal step sizes (in terms of their efficiency vs.
+  // accuracy balance). However, for the time being, the following
+  // constants (considering 0.0 <= p <= 1.0) work well as a heuristic
+  // approximation to appropriate step sizes.
   systems::IntegratorBase<double>* s_from_p_integrator =
       s_from_p_func_->get_mutable_integrator();
-  s_from_p_integrator->request_initial_step_size_target(0.1 / scale_length);
-  s_from_p_integrator->set_maximum_step_size(1.0 / scale_length);
+  s_from_p_integrator->request_initial_step_size_target(0.1);
+  s_from_p_integrator->set_maximum_step_size(1.0);
   s_from_p_integrator->set_target_accuracy(relative_tolerance);
 
-  // Sets `p_from_s`'s integration accuracy and step size.
+  // Sets `p_from_s`'s integration accuracy and step sizes. Said steps
+  // should not be too large, because that could make accuracy control
+  // fail, nor too small to avoid wasting cycles. The nature of the
+  // problem at hand varies with the shape of the RoadCurve, and so will
+  // optimal step sizes (in terms of their efficiency vs. accuracy balance).
+  // However, for the time being, the following proportions of the scale
+  // length work well as a heuristic approximation to appropriate step sizes.
   systems::IntegratorBase<double>* p_from_s_integrator =
       p_from_s_ivp_->get_mutable_integrator();
-  p_from_s_integrator->request_initial_step_size_target(scale_length);
-  p_from_s_integrator->set_maximum_step_size(10.0 * scale_length);
+  p_from_s_integrator->request_initial_step_size_target(0.1 * scale_length);
+  p_from_s_integrator->set_maximum_step_size(scale_length);
   p_from_s_integrator->set_target_accuracy(relative_tolerance);
 }
 
@@ -139,7 +152,7 @@ bool RoadCurve::are_fast_computations_accurate(double r) const {
   // When superelevation() has no influence on the curve's
   // geometry and elevation() is at most linear along the curve,
   // known analytical expressions are accurate.
-  return ((r == 0.0 || superelevation().order() == 0)
+  return ((r == 0.0 || superelevation().zero())
           && elevation().order() <= 1);
 }
 
