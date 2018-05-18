@@ -170,13 +170,6 @@ class RoadCurve {
   //                   implementation.
   virtual double p_scale() const = 0;
 
-  /// Scales elevation to account for the limitations of the arc length
-  /// parameterization computation.
-  /// @param p The reference curve parameter.
-  /// @return A scale factor for elevation values (and its derivatives).
-  /// @sa W_prime_of_prh()
-  double elevation_scale(double p) const;
-
   /// Converts a @p geo_coordinate in the world frame to the composed curve
   /// frame, i.e., the superposition of the reference curve, elevation and
   /// superelevation polynomials. The resulting coordinates [p, r, h] are
@@ -249,6 +242,14 @@ class RoadCurve {
   /// avoid recomputing it.)
   Vector3<double> r_hat_of_Rabg(const Rot3& Rabg) const;
 
+  /// Computes the most appropriate value for the elevation derivative g' at
+  /// @p p, that accounts for the limitations of the arc length parameterization
+  /// being used.
+  /// @param p The reference curve parameter.
+  /// @return The elevation derivative g'(@p p) value.
+  /// @sa W_prime_of_prh()
+  double g_prime_as_used_for_s_from_p(double p) const;
+
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
   /// @param linear_tolerance The linear tolerance for all computations, in the
@@ -301,10 +302,10 @@ class RoadCurve {
             const ComputationPolicy& computation_policy);
 
  private:
-  // Computes the minimum radius of curvature at a distance @p r along
-  // the curve length. Useful to identify potentially ill-conditioned
-  // evaluations e.g. `r` offsets passing through and past the instantaneous
-  // center of rotation.
+  // Computes the minimum radius of curvature along a parallel curve at a
+  // lateral distance @p r from the reference curve. Useful to identify
+  // potentially ill-conditioned evaluations e.g. `r` offsets passing through
+  // and past the instantaneous center of rotation.
   // @param r Lateral offset of the reference curve over the z = 0 plane.
   // @return The minimum radius of curvature.
   virtual double minimum_radius_at_offset(double r) const = 0;
@@ -315,30 +316,30 @@ class RoadCurve {
   // pair of virtual methods to check for the validity of the methods actually
   // implemented in the subclasses.
 
-  /// Resources fast, analytical methods to compute the parametric position
-  /// p along the reference curve corresponding to longitudinal position (in
-  /// path-length) `s` along a parallel curve laterally offset by `r` from the
-  /// reference curve.
-  ///
-  /// @remarks Said methods are only expected to be valid for curves that
-  /// show no superelevation and linear elevation at most.
+  // Resources fast, analytical methods to compute the parametric position
+  // p along the reference curve corresponding to longitudinal position (in
+  // path-length) `s` along a parallel curve laterally offset by `r` from the
+  // reference curve.
+  //
+  // @remarks Said methods are only expected to be valid for curves that
+  // show no superelevation and linear elevation at most.
   virtual double fast_p_from_s(double s, double r) const = 0;
 
-  /// Resources fast, analytical methods to compute the path length integral
-  /// in the interval of the parameter [0; p] and along a parallel curve
-  /// laterally offset by `r` the planar reference curve.
-  ///
-  /// @remarks Said methods are only expected to be valid for curves that
-  /// show no superelevation and linear elevation at most.
+  // Resources fast, analytical methods to compute the path length integral
+  // in the interval of the parameter [0; p] and along a parallel curve
+  // laterally offset by `r` the planar reference curve.
+  //
+  // @remarks Said methods are only expected to be valid for curves that
+  // show no superelevation and linear elevation at most.
   virtual double fast_s_from_p(double p, double r) const = 0;
 
-  /// Checks whether fast, analytical methods would be accurate for the curve
-  /// as defined. It boils down to checking if the curve shows no superelevation
-  /// and linear elevation at most.
-  ///
-  /// @param r Lateral offset of the reference curve over the z=0 plane.
-  /// @return True if fast, analytical results would be accurate, False
-  /// otherwise.
+  // Checks whether fast, analytical methods would be accurate for the curve
+  // as defined. It boils down to checking if the curve shows no superelevation
+  // and linear elevation at most.
+  //
+  // @param r Lateral offset of the reference curve over the z=0 plane.
+  // @return True if fast, analytical results would be accurate, False
+  // otherwise.
   bool are_fast_computations_accurate(double r) const;
 
   // The minimum length of variations that the curve expresses.

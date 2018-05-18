@@ -65,15 +65,17 @@ api::LanePosition Lane::DoEvalMotionDerivatives(
   const double h = position.h();
   const Rot3 R = road_curve_->Rabg_of_p(p);
   const double g_prime = road_curve_->elevation().f_dot_p(p);
-  const double scaled_g_prime = g_prime * road_curve_->elevation_scale(p);
+  // Note that the elevation derivative value used to compute ds/dp may
+  // not be the same as the one used for dσ/dp, to account for limitations
+  // in s_from_p() computations.
+  const double g_prime_for_ds = road_curve_->g_prime_as_used_for_s_from_p(p);
   // The definition of path-length of a path along σ yields dσ = |∂W/∂p| dp
   // evaluated at (p, r, h).
   // Similarly, path-length s along the segment surface at r = r0 (which is
   // along the Lane's centerline) is related to p by ds = |∂W/∂p| dp evaluated
   // at (p, r0, 0).  Chaining yields ds/dσ:
-  // Also, note the elevation derivative scaling when computing ds/dp.
   const double ds_dsigma =
-      road_curve_->W_prime_of_prh(p, r0_, 0, R, scaled_g_prime).norm() /
+      road_curve_->W_prime_of_prh(p, r0_, 0, R, g_prime_for_ds).norm() /
       road_curve_->W_prime_of_prh(p, r, h, R, g_prime).norm();
   return api::LanePosition(ds_dsigma * velocity.sigma_v,
                            velocity.rho_v,

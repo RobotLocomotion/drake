@@ -123,15 +123,15 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
   // Sets `s_from_p`'s integration accuracy and step size.
   systems::IntegratorBase<double>* s_from_p_integrator =
       s_from_p_func_->get_mutable_integrator();
-  s_from_p_integrator->request_initial_step_size_target(scale_length_);
-  s_from_p_integrator->set_maximum_step_size(10. * scale_length_);
+  s_from_p_integrator->request_initial_step_size_target(0.1 / scale_length);
+  s_from_p_integrator->set_maximum_step_size(1.0 / scale_length);
   s_from_p_integrator->set_target_accuracy(relative_tolerance);
 
   // Sets `p_from_s`'s integration accuracy and step size.
   systems::IntegratorBase<double>* p_from_s_integrator =
       p_from_s_ivp_->get_mutable_integrator();
-  p_from_s_integrator->request_initial_step_size_target(0.01 / scale_length_);
-  p_from_s_integrator->set_maximum_step_size(0.1 / scale_length_);
+  p_from_s_integrator->request_initial_step_size_target(scale_length);
+  p_from_s_integrator->set_maximum_step_size(10.0 * scale_length);
   p_from_s_integrator->set_target_accuracy(relative_tolerance);
 }
 
@@ -167,11 +167,11 @@ double RoadCurve::p_from_s(double s, double r) const {
   return fast_p_from_s(s, r);
 }
 
-double RoadCurve::elevation_scale(double p) const {
+double RoadCurve::g_prime_as_used_for_s_from_p(double p) const {
   if (computation_policy() == ComputationPolicy::kPreferSpeed) {
-    return elevation().fake_gprime(p) / elevation().f_dot_p(p);
+    return elevation().fake_gprime(p);
   }
-  return 1.0;
+  return elevation().f_dot_p(p);
 }
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {
