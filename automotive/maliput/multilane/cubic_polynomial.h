@@ -47,7 +47,7 @@ class CubicPolynomial {
   }
 
   // Checks whether the polynomial is zero.
-  bool zero() const {
+  bool is_zero() const {
     return (a_ == 0.0 && b_ == 0.0 && c_ == 0.0 && d_ == 0.0);
   }
 

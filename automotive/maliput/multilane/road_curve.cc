@@ -152,7 +152,7 @@ bool RoadCurve::are_fast_computations_accurate(double r) const {
   // When superelevation() has no influence on the curve's
   // geometry and elevation() is at most linear along the curve,
   // known analytical expressions are accurate.
-  return ((r == 0.0 || superelevation().zero())
+  return ((r == 0.0 || superelevation().is_zero())
           && elevation().order() <= 1);
 }
 
