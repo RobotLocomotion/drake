@@ -800,9 +800,11 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   // Get the context.
   Context<double>& context = simulator.get_mutable_context();
 
-  // Create the integrator.
-  simulator.reset_integrator<ExplicitEulerIntegrator<double>>(spring_mass, dt,
-                                                              &context);
+  // Create the integrator with the simple spelling.
+  auto euler_integrator =
+      std::make_unique<ExplicitEulerIntegrator<double>>(
+          spring_mass, dt, &context);
+  simulator.reset_integrator(std::move(euler_integrator));
 
   // set the integrator and initialize the simulator
   simulator.Initialize();
