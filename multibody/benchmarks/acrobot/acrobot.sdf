@@ -73,7 +73,7 @@
     <joint name='ElbowJoint' type='revolute'>
       <parent>Link1</parent>
       <child>Link2</child>
-      <pose>0 0 -1 0 0 0</pose>
+      <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
