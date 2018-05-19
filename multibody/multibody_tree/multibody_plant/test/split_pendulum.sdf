@@ -34,7 +34,7 @@
     </link>
 
     <joint name='pin' type='revolute'>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>0 3 0 0 0 0</pose>
       <parent>world</parent>
       <child>upper_section</child>
       <axis>
@@ -44,7 +44,7 @@
 
     <!-- Weld the upper and lower sections to form a single rod of length 12 -->
     <joint name='weld' type='fixed'>
-      <pose>0 -6.0 0 0 0 0</pose>
+      <pose>0 3.0 0 0 0 0</pose>
       <parent>upper_section</parent>
       <child>lower_section</child>
     </joint>
