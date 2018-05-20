@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":multibody_plant_sdf_parser",
         ":scene_graph_parser_detail",
         ":sdf_parser_common",
+        "//common:nice_type_name",
     ],
 )
 
@@ -95,6 +96,7 @@ drake_cc_googletest(
     deps = [
         ":scene_graph_parser_detail",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
     ],
 )

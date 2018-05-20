@@ -6,6 +6,7 @@
 
 #include <sdf/sdf.hh>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 
@@ -34,19 +35,21 @@ sdf::ElementPtr GetElementPointerOrNullPtr(
 }
 
 // Helper to return the value of a child of `element` named `child_name`.
-// An std::logic_error is thrown if `child_name` does not exist or if no value
-// was provided by the user that is, if `<child_name></child_name>` is empty.
+// A std::runtime_error is thrown if the `<child_name>` tag is missing from the
+// SDF file, or the tag has a bad or missing value.
 template <typename T>
 T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
   if (!element->HasElement(child_name)) {
-    throw std::logic_error(
+    throw std::runtime_error(
         "Element <" + child_name + "> is required within element "
             "<" + element->GetName() + ">.");
   }
   std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
   if (value_pair.second == false) {
-    throw std::logic_error(
-        "No value provide for <" + child_name + "> within element "
+    // TODO(amcastro-tri): Figure out a way to throw meaningful error messages
+    // with line/row numbers within the file.
+    throw std::runtime_error(
+        "Invalid value for <" + child_name + "> within element "
             "<" + element->GetName() + ">.");
   }
   return value_pair.first;
@@ -74,8 +77,12 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
           GetValueOrThrow<ignition::math::Vector3d>(mesh_element, "scale");
       // geometry::Mesh only supports isotropic scaling and therefore we enforce
       // it.
-      DRAKE_DEMAND(scale_vector.X() == scale_vector.Y() &&
-          scale_vector.X() == scale_vector.Z());
+      if (!(scale_vector.X() == scale_vector.Y() &&
+          scale_vector.X() == scale_vector.Z())) {
+        throw std::runtime_error(
+            "Drake meshes only support isotropic scaling. Therefore all three "
+                "scaling factors must be exactly equal.");
+      }
       scale = scale_vector.X();
     }
     // TODO(amcastro-tri): Fix the given path to be an absolute path.
@@ -133,18 +140,24 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // We deal with the <mesh> case separately since sdf::Geometry still does not
   // support it and marks <mesh> geometry with type sdf::GeometryType::EMPTY.
-  // TODO(amcastro-tri): get rid of all sdf::ElementPtr once
-  // sdf::GeometryType::MESH is available.
-  sdf::ElementPtr geometry_element = sdf_geometry.Element();
-  DRAKE_ASSERT(geometry_element != nullptr);
-  if (geometry_element->HasElement("mesh")) {
-    return make_unique<GeometryInstance>(
-        X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
-  }
-
-  // Nothing left to do, return nullptr signaling this is an empty visual.
+  // Therefore, there are two reasons we can have an EMPTY type:
+  //   1) The file does specify a mesh.
+  //   2) The file truly specifies and EMPTY geometry.
+  // We treat these two cases separately until sdformat provides support for
+  // meshes.
+  // TODO(amcastro-tri): Cleanup usage of sdf::ElementPtr once sdformat gets
+  // extended to support more data representation types.
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
-    return std::unique_ptr<GeometryInstance>(nullptr);
+    sdf::ElementPtr geometry_element = sdf_geometry.Element();
+    DRAKE_DEMAND(geometry_element != nullptr);
+    // Case 1: We do have a mesh.
+    if (geometry_element->HasElement("mesh")) {
+      return make_unique<GeometryInstance>(
+          X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+    } else {
+      // Case 2: The file truly specifies an EMPTY geometry.
+      return std::unique_ptr<GeometryInstance>(nullptr);
+    }
   }
 
   // For a half-space, C and G are not the same since  SDF allows to specify

@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -164,6 +165,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
 
 // Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
 GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
+  // TODO(amcastro-tri): Be warned, the result of this test might (should)
+  // change as we add support allowing to specify paths relative to the SDF file
+  // location.
   const std::string absolute_file_path = "path/to/some/mesh.obj";
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
       "<mesh>"
