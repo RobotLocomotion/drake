@@ -6,7 +6,6 @@
 
 #include <sdf/sdf.hh>
 
-#include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 
