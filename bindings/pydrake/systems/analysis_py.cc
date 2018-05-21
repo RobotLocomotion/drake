@@ -51,8 +51,8 @@ PYBIND11_MODULE(analysis, m) {
            py::arg("context"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>(),
-           // Keep alive, ownership: `Context` keeps `self` alive.
-           py::keep_alive<3, 1>());
+           // Keep alive, reference: `self` keeps `Context` alive.
+           py::keep_alive<1, 3>());
 
     DefineTemplateClassWithDefault<RungeKutta2Integrator<T>,
                                    IntegratorBase<T>>(
@@ -68,8 +68,8 @@ PYBIND11_MODULE(analysis, m) {
            py::arg("context"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>(),
-           // Keep alive, ownership: `Context` keeps `self` alive.
-           py::keep_alive<4, 1>());
+           // Keep alive, reference: `self` keeps `Context` alive.
+           py::keep_alive<1, 4>());
 
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>())
@@ -97,7 +97,9 @@ PYBIND11_MODULE(analysis, m) {
            [](Simulator<T>* self,
               std::unique_ptr<IntegratorBase<T>> integrator) {
              return self->reset_integrator(std::move(integrator));
-           })
+           },
+           // Keep alive, ownership: 'Integrator' keeps 'self' alive.
+           py::keep_alive<2, 1>())
       .def("set_publish_every_time_step",
            &Simulator<T>::set_publish_every_time_step)
       .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
