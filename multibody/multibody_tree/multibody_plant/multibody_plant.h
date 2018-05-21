@@ -162,7 +162,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
-  explicit MultibodyPlant(const MultibodyPlant<U>& other);
+  MultibodyPlant(const MultibodyPlant<U>& other) :
+      systems::LeafSystem<T>(systems::SystemTypeTag<
+          drake::multibody::multibody_plant::MultibodyPlant>()) {
+    DRAKE_THROW_UNLESS(other.is_finalized());
+    model_ = other.model_->template CloneToScalar<T>();
+    // Copy of all members related with geometry registration.
+    source_id_ = other.source_id_;
+    body_index_to_frame_id_ = other.body_index_to_frame_id_;
+    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+    geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+    geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
+    visual_geometries_ = other.visual_geometries_;
+    collision_geometries_ = other.collision_geometries_;
+    // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
+    // on the new MultibodyTree on U. Therefore we only Finalize the plant's
+    // internals (and not the MultibodyTree).
+    FinalizePlantOnly();
+  }
+
 
   /// Returns the number of bodies in the model, including the "world" body,
   /// which is always part of the model.
