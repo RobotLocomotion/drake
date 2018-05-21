@@ -15,6 +15,7 @@ from pydrake.symbolic import (
     )
 from pydrake.systems.analysis import (
     IntegratorBase_,
+    RungeKutta2Integrator, RungeKutta3Integrator,
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
@@ -289,3 +290,11 @@ class TestGeneral(unittest.TestCase):
 
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
+
+        simulator.reset_integrator(
+            RungeKutta2Integrator(
+                diagram, timestep, simulator.get_mutable_context()))
+
+        simulator.reset_integrator(
+            RungeKutta3Integrator(
+                diagram, simulator.get_mutable_context()))
