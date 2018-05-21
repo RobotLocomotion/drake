@@ -1,5 +1,6 @@
 #include "drake/geometry/identifier.h"
 
+#include <set>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
@@ -13,6 +14,7 @@ namespace {
 
 
 // Creates various dummy index types to test.
+using std::set;
 using std::stringstream;
 using std::unordered_set;
 using std::unordered_map;
@@ -105,6 +107,26 @@ TEST_F(IdentifierTests, ServeAsMapValue) {
   EXPECT_NE(ids.find(b1), ids.end());
   ids[b3] = a3_;
   EXPECT_NE(ids.find(b3), ids.end());
+}
+
+// Confirms that ids can be put into a set.
+TEST_F(IdentifierTests, PutInSet) {
+  set<AId> ids;
+  AId a1 = AId::get_new_id();
+  AId a2 = AId::get_new_id();
+
+  EXPECT_EQ(ids.size(), 0u);
+  ids.insert(a1);
+  EXPECT_EQ(ids.size(), 1u);
+  EXPECT_EQ(ids.count(a1), 1u);
+
+  ids.insert(a2);
+  EXPECT_EQ(ids.size(), 2u);
+  EXPECT_EQ(ids.count(a2), 1u);
+
+  ids.insert(a1);
+  EXPECT_EQ(ids.size(), 2u);
+  EXPECT_EQ(ids.count(a1), 1u);
 }
 
 // Tests the streaming behavior.
