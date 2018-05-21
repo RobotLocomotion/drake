@@ -19,6 +19,7 @@
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/builder_spec.h"
 #include "drake/automotive/maliput/multilane/connection.h"
 #include "drake/automotive/maliput/multilane/test_utilities/multilane_types_compare.h"
 

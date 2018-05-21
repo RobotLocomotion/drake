@@ -9,6 +9,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/builder_spec.h"
 #include "drake/automotive/maliput/multilane/connection.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_optional.h"
