@@ -49,7 +49,7 @@ class TestShapes(unittest.TestCase):
         material_in = [0.3, 0.4, 0.5, 0.6]
         material_in_2 = [0.6, 0.7, 0.8, 0.9]
         box = shapes.Box(size=[1., 1., 1.])
-        visual_element = VisualElement(box, box, np.eye(4), material_in)
+        visual_element = shapes.VisualElement(box, np.eye(4), material_in)
         self.assertTrue(np.allclose(visual_element.getMaterial(), material_in))
         visual_element.setMaterial(material_in_2)
         self.assertTrue(np.allclose(visual_element.getMaterial(),

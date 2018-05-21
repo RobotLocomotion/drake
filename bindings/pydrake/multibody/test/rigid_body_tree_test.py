@@ -11,6 +11,7 @@ from pydrake.forwarddiff import jacobian
 from pydrake.multibody.collision import CollisionElement
 from pydrake.multibody.joints import PrismaticJoint, RevoluteJoint
 from pydrake.multibody.parsers import PackageMap
+from pydrake.multibody.rigid_body import RigidBody
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
     RigidBodyFrame,
@@ -311,9 +312,11 @@ class TestRigidBodyTree(unittest.TestCase):
         # body_1 is connected to the world via
         # a prismatic joint along the +z axis.
         body_1 = RigidBody()
+        body_1.set_name("body_1")
         body_1_joint = PrismaticJoint("z", np.eye(4), np.array([0., 0., 1.]))
+        self.assertEqual(body_1_joint.get_num_positions(), 1)
         self.assertFalse(body_1.has_joint())
-        body_1.add_prismatic_joint(world_body, body_1_joint)
+        body_1.add_joint(world_body, body_1_joint)
         self.assertEqual(body_1.getJoint(), body_1_joint)
         self.assertTrue(body_1.has_joint())
 
@@ -322,18 +325,20 @@ class TestRigidBodyTree(unittest.TestCase):
         # body_2 is connected to body_1 via
         # a revolute joint around the z-axis.
         body_2 = RigidBody()
+        body_2.set_name("body_2")
         body_2_joint = RevoluteJoint("theta", np.eye(4),
                                      np.array([0., 0., 1.]))
-        body_2.add_revolute_joint(body_1)
+        self.assertEqual(body_2_joint.get_num_positions(), 1)
+        body_2.add_joint(body_1, body_2_joint)
         self.assertEqual(body_2.getJoint(), body_2_joint)
-        box_element = Box([1.0, 1.0, 1.0])
-        box_visual_element = VisualElement(box_element,
-                                           np.eye(4),
-                                           [1., 0., 0., 1.])
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_visual_element = shapes.VisualElement(
+            box_element, np.eye(4), [1., 0., 0., 1.])
         body_2.AddVisualElement(box_visual_element)
         body_2_visual_elements = body_2.get_visual_elements()
         self.assertEqual(len(body_2_visual_elements), 1)
-        self.assertEqual(body_2_visual_elements[0], box_visual_element)
+        self.assertEqual(body_2_visual_elements[0].getGeometry().getShape(),
+                         box_visual_element.getGeometry().getShape())
 
         rbt.add_rigid_body(body_2)
 
