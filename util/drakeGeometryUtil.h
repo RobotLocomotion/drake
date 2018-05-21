@@ -151,31 +151,6 @@ Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
   return ret;
 }
 
-template <typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
-void rpydot2angularvel(
-    const Eigen::MatrixBase<DerivedRPY>& rpy,
-    const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
-    Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize, 1>::type*
-        domega = nullptr) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           drake::kRpySize);
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
-                                           drake::kRpySize);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>,
-                                           drake::kRpySize, 1);
-
-  Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
-  if (domega) {
-    Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
-    rpydot2angularvelMatrix(rpy, E, &dE);
-    (*domega) << drake::math::matGradMult(dE, rpydot), E;
-  } else {
-    rpydot2angularvelMatrix(rpy, E);
-  }
-  omega = E * rpydot;
-}
-
 /*
  * spatial transform functions
  */

@@ -43,7 +43,9 @@ def execute_and_return(repo_ctx, command, additional_search_paths = []):
             error += "\n" + exec_result.stdout
         if exec_result.stderr:
             error += "\n" + exec_result.stderr
-    return struct(error = error)
+    return struct(
+        error = error,
+        stdout = exec_result.stdout)
 
 def execute_or_fail(repo_ctx, command):
     """Runs the `command` (list) and immediately fails on any error."""

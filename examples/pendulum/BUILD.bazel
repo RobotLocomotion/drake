@@ -130,6 +130,17 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "pendulum_parameters_derivatives",
+    srcs = ["pendulum_parameters_derivatives.cc"],
+    add_test_rule = 1,
+    deps = [
+        ":pendulum_plant",
+        ":pendulum_vector_types",
+        "@fmt",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(

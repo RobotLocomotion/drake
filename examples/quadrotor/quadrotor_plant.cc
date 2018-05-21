@@ -106,25 +106,24 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // Convert roll-pitch-yaw (rpy) orientation to the R_NB rotation matrix.
   const drake::math::RotationMatrix<T> R_NB(rpy);
 
-  // Calculate the net force on B, expressed in N.
-  // Calculate B's center of mass acceleration, expressed in N.
+  // Calculate the net force on B, expressed in N.  Use Newton's law to
+  // calculate a_NBcm_N (acceleration of B's center of mass, expressed in N).
   const Vector3<T> Fnet_N = Fgravity_N + R_NB * Faero_B;
-  const Vector3<T> xyzDDt = Fnet_N / m_;
+  const Vector3<T> xyzDDt = Fnet_N / m_;  // Equal to a_NBcm_N.
 
-  // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in N.
-  // Then calculate B's angular velocity in N, expressed in B.
-  // TODO(mitiguy) replace rpydot2angularvel with new RollPitchYaw method.
-  Vector3<T> w_BN_N;
-  rpydot2angularvel(rpy.vector(), rpyDt, w_BN_N);
-  const Vector3<T> w_BN_B = R_NB.inverse() * w_BN_N;
+  // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in B.
+  const Vector3<T> w_BN_B = rpy.RollPitchYawDtToAngularVelocityD(rpyDt);
 
   // To compute B's angular acceleration in N, expressed in B, due to the net
   // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
   // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
-  // Next, calculate B's angular acceleration in N, expressed in N.
   const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);      // Expressed in B.
   const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
+
+  // For subsequent calculation (below) form B's angular acceleration in N
+  // expressed in N, and B's angular velocity in N expressed in N.
   const Vector3<T> alf_BN_N = R_NB * alf_BN_B;           // Expressed in N.
+  const Vector3<T> w_BN_N = R_NB * w_BN_B;               // Expressed in N.
 
   // TODO(mitiguy) replace angularvel2rpydotMatrix with new RollPitchYaw method.
   // TODO(mitiguy) continue fixing documentation for this example (here to end).

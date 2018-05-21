@@ -56,7 +56,10 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "multibody_plant_test",
-    data = ["//multibody/multibody_tree/parsing:test_models"],
+    data = [
+        "test/split_pendulum.sdf",
+        "//multibody/multibody_tree/parsing:test_models",
+    ],
     deps = [
         ":multibody_plant",
         "//common:autodiff",
