@@ -37,8 +37,8 @@ class CubicPolynomial {
   // Returns the d coefficient.
   double d() const { return d_; }
 
-  // Returns the order of the polynomial, based on
-  // its nonzero coefficients.
+  /// Returns the order of the polynomial, based on
+  /// its nonzero coefficients.
   int order() const {
     if (d_ != 0.0) return 3;
     if (c_ != 0.0) return 2;
@@ -46,7 +46,7 @@ class CubicPolynomial {
     return 0;
   }
 
-  // Checks whether the polynomial is zero.
+  /// Checks whether the polynomial is \em exactly zero.
   bool is_zero() const {
     return (a_ == 0.0 && b_ == 0.0 && c_ == 0.0 && d_ == 0.0);
   }

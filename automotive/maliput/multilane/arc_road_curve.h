@@ -32,10 +32,10 @@ class ArcRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
-  /// @param linear_tolerance The linear tolerance for all computations, in the
-  /// the absolute error sense.
-  /// @param scale_length The minimum length, in meters, of variations that
-  /// the curve expresses.
+  /// @param linear_tolerance The linear tolerance, in meters, for all
+  /// computations. See RoadCurve class constructor for more details.
+  /// @param scale_length The minimum spatial period of variation in the curve,
+  /// in meters. See RoadCurve class constructor for more details.
   /// @param computation_policy Policy to guide all computations. If geared
   /// towards speed, computations will make use of analytical expressions even
   /// if not actually correct for the curve as specified.
@@ -46,7 +46,7 @@ class ArcRoadCurve : public RoadCurve {
       const CubicPolynomial& elevation,
       const CubicPolynomial& superelevation,
       double linear_tolerance = 0.01, double scale_length = 1.0,
-      const ComputationPolicy& computation_policy =
+      const ComputationPolicy computation_policy =
             ComputationPolicy::kPreferAccuracy)
       : RoadCurve(linear_tolerance, scale_length,
                   elevation, superelevation,

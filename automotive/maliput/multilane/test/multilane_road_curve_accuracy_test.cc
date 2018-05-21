@@ -28,6 +28,8 @@ std::ostream& operator<<(std::ostream& o, const CubicPolynomial& p) {
 
 namespace {
 
+// Checks brute force integral computations against known
+// path length arc road curves.
 GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   const double kAccuracy{1e-12};
 
@@ -62,9 +64,11 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   EXPECT_NEAR(path_length_adaptive_approx, kRadius * M_PI / 2., tolerance);
 }
 
+// A test fixture for RoadCurve computation accuracy tests.
 class RoadCurveAccuracyTest
     : public ::testing::TestWithParam<std::shared_ptr<RoadCurve>> {};
 
+// Checks that path length computations are within tolerance.
 TEST_P(RoadCurveAccuracyTest, PathLengthAccuracy) {
   const double kMinimumP = 0.;
   const double kMaximumP = 1.;

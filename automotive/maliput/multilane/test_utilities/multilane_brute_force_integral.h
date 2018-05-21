@@ -22,12 +22,12 @@ namespace test {
 //                are used in the approximation.
 // @param maximum_step A mutable reference that, if given (can be nullptr), is
 //                     set to the maximum step length used in the computation.
-// @pre The given upper integration bound @p p_1 is less than or equal to 1.
-// @pre The given upper integration bound @p p_1 is greater than or equal to
+// @pre Given upper integration bound @p p_1 is less than or equal to 1.
+// @pre Given upper integration bound @p p_1 is greater than or equal to
 //      the given lower integration bound @p p_0.
-// @pre The given lower integration bound @p p_0 is greater than or equal to 0.
-// @pre The @p k_order of the linear approximation is a non-negative number.
-// @throw std::runtime_error if preconditions are not met.
+// @pre Given lower integration bound @p p_0 is greater than or equal to 0.
+// @pre Given @p k_order for the linear approximation is a non-negative number.
+// @throw std::logic_error if preconditions are not met.
 double BruteForcePathLengthIntegral(const RoadCurve& road_curve,
                                     double p_0, double p_1, double r,
                                     double h, int k_order,
@@ -61,13 +61,14 @@ double BruteForcePathLengthIntegral(const RoadCurve& road_curve,
 //                     as hint on call and it's updated to the actually required
 //                     order necessary to achieve the specified tolerance on
 //                     return.
-// @pre The given upper integration bound @p p_1 is less than or equal to 1.
-// @pre The given upper integration bound @p p_1 is greater than or equal to
+// @pre Given upper integration bound @p p_1 is less than or equal to 1.
+// @pre Given upper integration bound @p p_1 is greater than or equal to
 //      the given lower integration bound @p p_0.
-// @pre The given lower integration bound @p p_0 is greater than or equal to 0.
+// @pre Given lower integration bound @p p_0 is greater than or equal to 0.
+// @pre Given tolerance is a positive real number.
 // @pre If given, the order suggested by @p k_order_hint is a non-negative
 //      number.
-// @throw std::runtime_error if preconditions are not met.
+// @throw std::logic_error if preconditions are not met.
 double AdaptiveBruteForcePathLengthIntegral(
     const RoadCurve& rc, double p_0, double p_1,
     double r, double h, double tolerance,

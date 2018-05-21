@@ -345,15 +345,15 @@ Vector3<T> CorkScrew<T>::orientation_at_srh(const Vector3<T>& srh) const {
       angular_length_ * (effective_r_offset * cgamma - srh(2) * sgamma));
   const Vector3<T> s_hat = s_vec.normalized();
   const Vector3<T> r_hat(0., cgamma, sgamma);
-  // TODO(hidmic): Make use of math::rotmat2rpy():
+  // TODO(hidmic): Make use of math::RollPitchYaw:
   //
   // Matrix3<T> rotmat;
   // rotmat << s_hat, r_hat, s_hat.cross(r_hat);
-  // return math::rotmat2rpy(rotmat);
+  // return math::RollPitchYaw<T>(math::RotationMatrix<T>(rotmat)).vector();
   //
   // Code below is a verbatim partial transcription of the
   // RoadCurve::Orientation() method implementation that, somehow, gives a
-  // different output than that of math::rotmat2rpy() for the same input.
+  // different output than that of above's code snippet for the same input.
   const T gamma = std::atan2(s_hat.y(), s_hat.x());
   const T beta =
       std::atan2(-s_hat.z(), Vector2<T>(s_hat.x(), s_hat.y()).norm());
@@ -365,11 +365,15 @@ Vector3<T> CorkScrew<T>::orientation_at_srh(const Vector3<T>& srh) const {
 
 }  // namespace
 
+// Checks Lane position, orientation and motion derivative computations
+// accuracy for a linearly superelevated, corkscrew-like baseline. The
+// numerical based approach used by the RoadCurve to deal with this kind
+// of complex shapes are compared against exact results.
 TEST_P(MultilaneLanesParamTest, CorkScrewLane) {
   const int kTurns = 10;
   const double kLength = 20.;
   const CorkScrew<double> corkscrew_curve(r0, kLength, kTurns);
-  // Reproduce the same superelevation profile as that of the corkscrew.
+  // Reproduces the same superelevation profile as that of the corkscrew.
   const CubicPolynomial corkscrew_polynomial(
       0., 2. * M_PI * kTurns / kLength, 0., 0.);
 

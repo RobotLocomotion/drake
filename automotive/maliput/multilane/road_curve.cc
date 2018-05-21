@@ -89,8 +89,14 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       superelevation_(superelevation),
       computation_policy_(computation_policy) {
   // Enforces preconditions.
-  DRAKE_THROW_UNLESS(scale_length > 0.);
-  DRAKE_THROW_UNLESS(linear_tolerance > 0.);
+  if (scale_length <= 0.) {
+    throw std::logic_error("Road curve's scale length must"
+                           " be a non negative number.");
+  }
+  if (linear_tolerance <= 0.) {
+    throw std::logic_error("Road curve's linear tolerance"
+                           " must be a non negative number.");
+  }
   // Sets default parameter value at the beginning of the
   // curve to 0 by default.
   const double initial_p_value = 0.0;

@@ -252,13 +252,15 @@ class RoadCurve {
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
-  /// @param linear_tolerance The linear tolerance for all computations, in the
-  /// the absolute error sense i.e. linear error must lie in the 0 ± linear
-  /// tolerance interval, for @p scale_length long features at most.
-  /// @param scale_length The minimum length, in meters, of variations that
-  /// the curve expresses. This imposes an upper limit to the spatial frequency
-  /// (e.g., the Nyquist limit), which indicates the maximum level of detail
-  /// captured.
+  /// @param linear_tolerance The linear tolerance, in meters, for all
+  /// computations. It is understood in the the absolute error sense i.e.
+  /// linear error must lie in the 0 ± linear tolerance interval, for
+  /// @p scale_length long features at most.
+  /// @param scale_length The minimum spatial period of variation in the
+  /// curve, in meters. This imposes an upper limit to the spatial frequency
+  /// (i.e. the Nyquist limit), which indicates the maximum level of detail
+  /// captured. In practice, however, the relative smoothness of the roads
+  /// makes this period scale with their size.
   /// @param elevation CubicPolynomial object that represents the elevation
   /// function (see below for more details).
   /// @param superelevation CubicPolynomial object that represents the
@@ -267,7 +269,7 @@ class RoadCurve {
   /// and accuracy. Actual behavior may vary across implementations.
   /// @pre The given @p scale_length is a non-negative number.
   /// @pre The given @p linear_tolerance is a non-negative number.
-  /// @throw std::runtime_error if preconditions are not met.
+  /// @throw std::logic_error if preconditions are not met.
   ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
