@@ -9,12 +9,12 @@ namespace multilane {
 
 const double LineRoadCurve::kMinimumNorm = 1e-12;
 
-double LineRoadCurve::fast_p_from_s(double s, double r) const {
+double LineRoadCurve::FastCalcPFromS(double s, double r) const {
   unused(r);
   return elevation().p_s(s / p_scale());
 }
 
-double LineRoadCurve::fast_s_from_p(double p, double r) const {
+double LineRoadCurve::FastCalcSFromP(double p, double r) const {
   unused(r);
   return p_scale() * elevation().s_p(p);
 }

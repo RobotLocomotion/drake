@@ -91,11 +91,11 @@ class LineRoadCurve : public RoadCurve {
   }
 
  private:
-  double fast_p_from_s(double s, double r) const override;
+  double FastCalcPFromS(double s, double r) const override;
 
-  double fast_s_from_p(double p, double r) const override;
+  double FastCalcSFromP(double p, double r) const override;
 
-  double minimum_radius_at_offset(double r) const override {
+  double CalcMinimumRadiusAtOffset(double r) const override {
     unused(r);
     return std::numeric_limits<double>::infinity();
   }

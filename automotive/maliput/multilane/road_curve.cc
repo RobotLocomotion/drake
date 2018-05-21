@@ -154,7 +154,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
   p_from_s_integrator->set_target_accuracy(relative_tolerance);
 }
 
-bool RoadCurve::are_fast_computations_accurate(double r) const {
+bool RoadCurve::AreFastComputationsAccurate(double r) const {
   // When superelevation() has no influence on the curve's
   // geometry and elevation() is at most linear along the curve,
   // known analytical expressions are accurate.
@@ -162,31 +162,31 @@ bool RoadCurve::are_fast_computations_accurate(double r) const {
           && elevation().order() <= 1);
 }
 
-double RoadCurve::s_from_p(double p, double r) const {
-  DRAKE_THROW_UNLESS(minimum_radius_at_offset(r) > 0.0);
+double RoadCurve::CalcSFromP(double p, double r) const {
+  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
-      && !are_fast_computations_accurate(r)) {
+      && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
     systems::AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = (VectorX<double>(2) << r, 0.0).finished();
     return s_from_p_func_->Evaluate(p, values);
   }
-  return fast_s_from_p(p, r);
+  return FastCalcSFromP(p, r);
 }
 
-double RoadCurve::p_from_s(double s, double r) const {
-  DRAKE_THROW_UNLESS(minimum_radius_at_offset(r) > 0.0);
+double RoadCurve::CalcPFromS(double s, double r) const {
+  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
-      && !are_fast_computations_accurate(r)) {
+      && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
     systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = (VectorX<double>(2) << r, 0.0).finished();
     return p_from_s_ivp_->Solve(s, values);
   }
-  return fast_p_from_s(s, r);
+  return FastCalcPFromS(s, r);
 }
 
-double RoadCurve::g_prime_as_used_for_s_from_p(double p) const {
+double RoadCurve::CalcGPrimeAsUsedForCalcSFromP(double p) const {
   if (computation_policy() == ComputationPolicy::kPreferSpeed) {
     return elevation().fake_gprime(p);
   }

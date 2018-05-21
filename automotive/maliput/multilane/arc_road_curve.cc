@@ -10,7 +10,7 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
-double ArcRoadCurve::fast_p_from_s(double s, double r) const {
+double ArcRoadCurve::FastCalcPFromS(double s, double r) const {
   const double effective_radius = offset_radius(r);
   const double elevation_domain = effective_radius / radius_;
   return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
@@ -18,7 +18,7 @@ double ArcRoadCurve::fast_p_from_s(double s, double r) const {
                                     elevation().fake_gprime(1.)));
 }
 
-double ArcRoadCurve::fast_s_from_p(double p, double r) const {
+double ArcRoadCurve::FastCalcSFromP(double p, double r) const {
   const double effective_radius = offset_radius(r);
   const double elevation_domain = effective_radius / radius_;
   return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +

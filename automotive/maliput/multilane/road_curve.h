@@ -127,7 +127,7 @@ class RoadCurve {
   /// @return The parametric position p along an offset of the reference curve.
   /// @throw std::runtime_error When `r` makes the radius of curvature be a non
   ///                           positive number.
-  double p_from_s(double s, double r) const;
+  double CalcPFromS(double s, double r) const;
 
   /// Computes the path length integral in the interval of the parameter [0; p]
   /// and along a parallel curve laterally offset by `r` the planar reference
@@ -136,7 +136,7 @@ class RoadCurve {
   /// polynomial.
   /// @throw std::runtime_error When `r` makes the radius of curvature be a non
   ///                           positive number.
-  double s_from_p(double p, double r) const;
+  double CalcSFromP(double p, double r) const;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.
@@ -248,7 +248,7 @@ class RoadCurve {
   /// @param p The reference curve parameter.
   /// @return The elevation derivative g'(@p p) value.
   /// @sa W_prime_of_prh()
-  double g_prime_as_used_for_s_from_p(double p) const;
+  double CalcGPrimeAsUsedForCalcSFromP(double p) const;
 
  protected:
   /// Constructs a road curve given elevation and superelevation curves.
@@ -310,7 +310,7 @@ class RoadCurve {
   // and past the instantaneous center of rotation.
   // @param r Lateral offset of the reference curve over the z = 0 plane.
   // @return The minimum radius of curvature.
-  virtual double minimum_radius_at_offset(double r) const = 0;
+  virtual double CalcMinimumRadiusAtOffset(double r) const = 0;
 
   // TODO(hidmic): Fast, analytical methods and the conditions in which these
   // are expected to hold were tailored for the currently available
@@ -325,7 +325,7 @@ class RoadCurve {
   //
   // @remarks Said methods are only expected to be valid for curves that
   // show no superelevation and linear elevation at most.
-  virtual double fast_p_from_s(double s, double r) const = 0;
+  virtual double FastCalcPFromS(double s, double r) const = 0;
 
   // Resources fast, analytical methods to compute the path length integral
   // in the interval of the parameter [0; p] and along a parallel curve
@@ -333,16 +333,16 @@ class RoadCurve {
   //
   // @remarks Said methods are only expected to be valid for curves that
   // show no superelevation and linear elevation at most.
-  virtual double fast_s_from_p(double p, double r) const = 0;
+  virtual double FastCalcSFromP(double p, double r) const = 0;
 
   // Checks whether fast, analytical methods would be accurate for the curve
   // as defined. It boils down to checking if the curve shows no superelevation
   // and linear elevation at most.
   //
   // @param r Lateral offset of the reference curve over the z=0 plane.
-  // @return True if fast, analytical results would be accurate, False
+  // @return true if fast, analytical results would be accurate, and false
   // otherwise.
-  bool are_fast_computations_accurate(double r) const;
+  bool AreFastComputationsAccurate(double r) const;
 
   // The minimum length of variations that the curve expresses.
   double scale_length_;

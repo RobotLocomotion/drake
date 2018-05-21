@@ -57,7 +57,7 @@ GTEST_TEST(BruteForceIntegralTest, ArcRoadCurvePathLength) {
   EXPECT_NEAR(maximum_step, path_length_zero_order, kAccuracy);
 
   int k_order_hint = 0;
-  const double tolerance = .01 * rc.s_from_p(1., 0.);
+  const double tolerance = .01 * rc.CalcSFromP(1., 0.);
   const double path_length_adaptive_approx =
       test::AdaptiveBruteForcePathLengthIntegral(
           rc, kP0, kP1, kR, kH, tolerance, &k_order_hint);
@@ -92,8 +92,8 @@ TEST_P(RoadCurveAccuracyTest, PathLengthAccuracy) {
               road_curve->linear_tolerance(), &k_order);
       const double relative_error =
           (k_order_s_approximation != 0.0) ?
-          (road_curve->s_from_p(p, r) - k_order_s_approximation) /
-          k_order_s_approximation : road_curve->s_from_p(p, r);
+          (road_curve->CalcSFromP(p, r) - k_order_s_approximation) /
+          k_order_s_approximation : road_curve->CalcSFromP(p, r);
       EXPECT_LE(relative_error, kTolerance)
           << "Path length estimation with a tolerance of "
           << road_curve->linear_tolerance() << " m failed"

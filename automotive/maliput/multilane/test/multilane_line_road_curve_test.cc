@@ -106,13 +106,13 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   // Evaluates inverse function for different path length and offset values.
   for (double r : r_vector) {
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.p_from_s(p * kDirection.norm(), r), p);
+      EXPECT_DOUBLE_EQ(flat_dut.CalcPFromS(p * kDirection.norm(), r), p);
     }
   }
   // Evaluates the path length integral for different offset values.
   for (double r : r_vector) {
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.s_from_p(p, r), p * kDirection.norm());
+      EXPECT_DOUBLE_EQ(flat_dut.CalcSFromP(p, r), p * kDirection.norm());
     }
   }
 
@@ -126,8 +126,8 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   for (double r : r_vector) {
     for (double p : p_vector) {
       const double s = p * kDirection.norm() * std::sqrt(1. + slope * slope);
-      EXPECT_DOUBLE_EQ(elevated_dut.p_from_s(s, r), p);
-      EXPECT_DOUBLE_EQ(elevated_dut.s_from_p(p, r), s);
+      EXPECT_DOUBLE_EQ(elevated_dut.CalcPFromS(s, r), p);
+      EXPECT_DOUBLE_EQ(elevated_dut.CalcSFromP(p, r), s);
     }
   }
 }
