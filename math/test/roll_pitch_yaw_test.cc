@@ -89,7 +89,7 @@ GTEST_TEST(RollPitchYaw, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
                               MatrixCompareType::absolute));
 }
 
-// For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,
+// For a RollPitchYaw R_AD(rpy) that relates frame D's orientation to frame A,
 // calculate conversion from rpy and its time-derivative rpyDt to w_AD_A
 // (D's angular velocity in A, expressed in A).
 GTEST_TEST(RollPitchYaw, RollPitchYawDtToAngularVelocityExpressedInA) {

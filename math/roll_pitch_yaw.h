@@ -192,6 +192,7 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in A.
+  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0,1).
   Vector3<T> CalcAngularVelocityInParentFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficent matrix M that contains the partial derivatives of
@@ -204,6 +205,7 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_D, frame D's angular velocity in frame A, expressed in D.
+  // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
   Vector3<T> CalcAngularVelocityInChildFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficent matrix M that contains the partial derivatives of
@@ -216,6 +218,7 @@ class RollPitchYaw {
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
+  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
   Vector3<T> CalcRpyDtFromAngularVelocityInParent(
       const Vector3<T>& w_AD_A) const {
     // Get the 3x3 M matrix that contains the partial derivatives of `[ṙ, ṗ, ẏ]`
@@ -231,6 +234,8 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
   /// expressed in frame A.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
+  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
+  // TODO(Mitiguy) Improve speed -- last column of MDt is (0, 0, 1).
   Vector3<T> CalcRpyDDtFromAngularAccelInParent(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_A) const {
     const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent();

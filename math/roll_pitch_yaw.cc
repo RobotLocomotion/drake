@@ -14,17 +14,6 @@ template <typename T>
 RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion) :
     RollPitchYaw(quaternion, RotationMatrix<T>(quaternion)) {}
 
-// Accurately constructs roll-pitch-yaw angles (i.e., SpaceXYZ Euler angles)
-// from a quaternion and its associated rotation matrix -- even when pitch
-// angle is within 1E-6 of π/2 or -π/2.
-// @param[in] quaternion unit quaternion with elements `[e0, e1, e2, e3]`.
-// @param[in] R The %RotationMatrix corresponding to `quaternion`.
-// @return %RollPitchYaw containing angles `[r, p, y]` with range
-// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
-//
-// This accurate algorithm avoids numerical round-off issues encountered by
-// some algorithms when pitch angle is within 1E-6 of π/2 or -π/2.
-//
 // <h3>Theory</h3>
 //
 // This algorithm was created October 2016 by Paul Mitiguy for TRI (Toyota).
