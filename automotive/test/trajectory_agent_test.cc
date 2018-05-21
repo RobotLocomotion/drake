@@ -156,6 +156,8 @@ GTEST_TEST(TrajectoryAgentTest, ToAutoDiff) {
     // Check that the public methods can be called without exceptions.
     autodiff_dut.CalcOutput(*context, output.get());
   }));
+
+  EXPECT_TRUE(is_symbolic_convertible(agent));
 }
 
 }  // namespace
