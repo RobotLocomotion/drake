@@ -46,7 +46,7 @@ class CubicPolynomial {
     return 0;
   }
 
-  /// Checks whether the polynomial is \em exactly zero.
+  /// Checks whether the polynomial is _exactly_ zero.
   bool is_zero() const {
     return (a_ == 0.0 && b_ == 0.0 && c_ == 0.0 && d_ == 0.0);
   }
