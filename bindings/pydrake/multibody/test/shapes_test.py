@@ -44,3 +44,13 @@ class TestShapes(unittest.TestCase):
         self.assertTrue(np.allclose(mesh.scale, [1., 1., 1.]))
         self.assertEqual(mesh.uri, obj_mesh_uri)
         self.assertEqual(mesh.resolved_filename, obj_mesh_path)
+
+    def test_visual_element_api(self):
+        material_in = [0.3, 0.4, 0.5, 0.6]
+        material_in_2 = [0.6, 0.7, 0.8, 0.9]
+        box = shapes.Box(size=[1., 1., 1.])
+        visual_element = VisualElement(box, box, np.eye(4), material_in)
+        self.assertTrue(np.allclose(visual_element.getMaterial(), material_in))
+        visual_element.setMaterial(material_in_2)
+        self.assertTrue(np.allclose(visual_element.getMaterial(),
+                                    material_in_2))
