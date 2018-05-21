@@ -96,9 +96,20 @@ def _impl(repository_ctx):
 
 licenses(["notice"])  # Python-2.0
 
+# Exclude a given set of non-system third-party libraries that Ubuntu may
+# overlay with the system Python install.
+headers = glob(
+    ["include/**"],
+    exclude = [
+        "**/mpi4py/**",
+        "**/numpy/**",
+        "**/pygame/**",
+    ],
+)
+
 cc_library(
     name = "python_headers",
-    hdrs = glob(["include/**"]),
+    hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
 )
