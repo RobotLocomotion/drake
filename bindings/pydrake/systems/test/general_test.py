@@ -293,8 +293,11 @@ class TestGeneral(unittest.TestCase):
 
         simulator.reset_integrator(
             RungeKutta2Integrator(
-                system, 0.01, simulator.get_mutable_context()))
+                system=system,
+                max_step_size=0.01,
+                context=simulator.get_mutable_context()))
 
         simulator.reset_integrator(
             RungeKutta3Integrator(
-                system, simulator.get_mutable_context()))
+                system=system,
+                context=simulator.get_mutable_context()))

@@ -44,8 +44,11 @@ PYBIND11_MODULE(analysis, m) {
        m, "RungeKutta3Integrator", GetPyParam<T>())
       .def(py::init<const System<T>&>(),
            // Keep alive, reference: `self` keeps `System` alive.
+           py::arg("system"),
            py::keep_alive<1, 2>())
       .def(py::init<const System<T>&, Context<T>*>(),
+           py::arg("system"),
+           py::arg("context"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>(),
            // Keep alive, ownership: `Context` keeps `self` alive.
@@ -71,9 +74,12 @@ PYBIND11_MODULE(analysis, m) {
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>())
       .def(py::init<const System<T>&>(),
+           py::arg("system"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>())
       .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
+           py::arg("system"),
+           py::arg("context"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>(),
            // Keep alive, ownership: `Context` keeps `self` alive.
