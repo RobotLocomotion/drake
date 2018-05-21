@@ -43,6 +43,7 @@ const sdf::Element* MaybeGetChildElement(
 template <typename T>
 T GetChildElementValueOrThrow(const sdf::Element& element,
                               const std::string& child_name) {
+  // TODO(amcastro-tri): unit tests for different error paths are needed.
   if (!element.HasElement(child_name)) {
     throw std::runtime_error(
         "Element <" + child_name + "> is required within element "
@@ -63,6 +64,7 @@ T GetChildElementValueOrThrow(const sdf::Element& element,
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
+  // TODO(amcastro-tri): unit tests for different error paths are needed.
 
   // We deal with the <mesh> case separately since sdf::Geometry still does not
   // support it.
