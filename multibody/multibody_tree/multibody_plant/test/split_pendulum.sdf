@@ -1,0 +1,52 @@
+<sdf version='1.6'>
+  <model name='SplitPendulum'>
+    <!-- This is the companion SDF file for the unit test SplitPendulum in
+         multibody_plant_test.cc. They must be kept in sync.
+         This file describes a physical pendulum with a thin rod of length
+         12 held from its end oscillating in the x-y plane. To test the
+         ability to weld bodies together, this test splits the rod in two
+         equal rods of length 6. The numerical parameters are chosen so that
+         their text representation in  this file is within machine epsilon. -->
+    <link name='upper_section'>
+      <pose>0 -3.0 0 0 0 0</pose>
+      <inertial>
+        <!-- Thin rod along the y axis of mass 0.5 and length 6.0 -->
+        <mass>0.5</mass>
+        <inertia>
+          <!-- Inertia about COM is Icm = m * l² / 12 -->
+          <ixx>1.5</ixx><iyy>1.0e-15</iyy><izz>1.5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <link name='lower_section'>
+      <pose>0 -9.0 0 0 0 0</pose>
+      <inertial>
+        <!-- Thin rod along the y axis of mass 0.5 and length 6.0 -->
+        <mass>0.5</mass>
+        <inertia>
+          <!-- Inertia about COM is Icm = m * l² / 12 -->
+          <ixx>1.5</ixx><iyy>1.0e-15</iyy><izz>1.5</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <joint name='pin' type='revolute'>
+      <pose>0 0 0 0 0 0</pose>
+      <parent>world</parent>
+      <child>upper_section</child>
+      <axis>
+        <xyz>0.0 0.0 1.0</xyz>
+      </axis>
+    </joint>
+
+    <!-- Weld the upper and lower sections to form a single rod of length 12 -->
+    <joint name='weld' type='fixed'>
+      <pose>0 -6.0 0 0 0 0</pose>
+      <parent>upper_section</parent>
+      <child>lower_section</child>
+    </joint>
+  </model>
+</sdf>
