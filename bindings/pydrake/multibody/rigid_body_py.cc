@@ -19,6 +19,12 @@ PYBIND11_MODULE(rigid_body, m) {
     .def("get_spatial_inertia", &RigidBody<double>::get_spatial_inertia)
     .def("set_spatial_inertia", &RigidBody<double>::set_spatial_inertia)
 
+    .def("has_joint", &RigidBody<double>::has_joint)
+    .def("getJoint", &RigidBody<double>::getJoint,
+         py::return_value_policy::reference_internal)
+
+    .def("get_position_start_index", &RigidBody<double>::get_position_start_index)
+
     .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
     .def("add_prismatic_joint", &RigidBody<double>::add_joint<PrismaticJoint>)
     .def("add_revolute_joint", &RigidBody<double>::add_joint<RevoluteJoint>)

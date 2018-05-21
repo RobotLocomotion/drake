@@ -17,7 +17,9 @@ PYBIND11_MODULE(joints, m) {
 
   m.doc() = "Drake joints.";
 
-  py::class_<DrakeJoint>(m, "DrakeJoint");
+  py::class_<DrakeJoint>(m, "DrakeJoint")
+    .def("get_num_positions", &DrakeJoint::get_num_positions)
+    .def("get_name", &DrakeJoint::get_name);
 
   py::class_<FixedAxisOneDoFJoint<PrismaticJoint>, DrakeJoint>(
       m, "FixedAxisOneDoFJoint_PrismaticJoint");
