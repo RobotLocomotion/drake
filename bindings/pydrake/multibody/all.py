@@ -1,4 +1,5 @@
 from .collision import *
+from .joints import *
 from .parsers import *
 from .rigid_body_plant import *
 from .rigid_body_tree import *

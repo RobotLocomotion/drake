@@ -8,6 +8,8 @@ import pydrake
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
+from pydrake.multibody.collision import CollisionElement
+from pydrake.multibody.joints import PrismaticJoint, RevoluteJoint
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
@@ -287,3 +289,60 @@ class TestRigidBodyTree(unittest.TestCase):
         #    the floating-base joints, as they are not present in the URDF.
         self.assertAlmostEqual(np.min(tree.joint_limit_min[6:]), -3.011)
         self.assertAlmostEqual(np.max(tree.joint_limit_max[6:]), 3.14159)
+
+    def test_rigid_body_api(self):
+        # Tests the simpler parts parts of the RigidBody API.
+        body_1 = RigidBody()
+        name = "body_1"
+        body_1.set_name(name)
+        self.assertEqual(body_1.get_name(), name)
+        inertia = np.eye(6)
+        body_1.set_spatial_inertia(inertia)
+        self.assertTrue(np.allclose(inertia, body_1.get_spatial_inertia()))
+
+    def test_rigid_body_tree_programmatic_construction(self):
+        # Tests RBT programmatic construction methods by assembling
+        # a simple RBT with a prismatic and revolute joint, with
+        # both visual and collision geometry on the last joint.
+        # In the process, covers most of the RigidBody API.
+        rbt = RigidBodyTree()
+        world_body = rbt.world()
+
+        # body_1 is connected to the world via
+        # a prismatic joint along the +z axis.
+        body_1 = RigidBody()
+        body_1_joint = PrismaticJoint("z", np.eye(4), np.array([0., 0., 1.]))
+        self.assertFalse(body_1.has_joint())
+        body_1.add_prismatic_joint(world_body, body_1_joint)
+        self.assertEqual(body_1.getJoint(), body_1_joint)
+        self.assertTrue(body_1.has_joint())
+
+        rbt.add_rigid_body(body_1)
+
+        # body_2 is connected to body_1 via
+        # a revolute joint around the z-axis.
+        body_2 = RigidBody()
+        body_2_joint = RevoluteJoint("theta", np.eye(4),
+                                     np.array([0., 0., 1.]))
+        body_2.add_revolute_joint(body_1)
+        self.assertEqual(body_2.getJoint(), body_2_joint)
+        box_element = Box([1.0, 1.0, 1.0])
+        box_visual_element = VisualElement(box_element,
+                                           np.eye(4),
+                                           [1., 0., 0., 1.])
+        body_2.AddVisualElement(box_visual_element)
+        body_2_visual_elements = body_2.get_visual_elements()
+        self.assertEqual(len(body_2_visual_elements), 1)
+        self.assertEqual(body_2_visual_elements[0], box_visual_element)
+
+        rbt.add_rigid_body(body_2)
+
+        box_collision_element = CollisionElement(box_element, np.eye(4))
+        box_collision_element.set_body(body_2)
+        self.assertEqual(box_collision_element.get_body(), body_2)
+        rbt.addCollisionElement(box_collision_element, body_2, "default")
+
+        rbt.compile()
+
+        self.assertEqual(body_1.get_position_start_index(), 0)
+        self.assertEqual(body_2.get_position_start_index(), 1)

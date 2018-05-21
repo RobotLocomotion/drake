@@ -12,10 +12,7 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(joints, m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  // It doesn't have one ???
-
-  m.doc() = "Drake joints.";
+  m.doc() = "Joint types supported by Drake.";
 
   py::class_<DrakeJoint>(m, "DrakeJoint")
     .def("get_num_positions", &DrakeJoint::get_num_positions)

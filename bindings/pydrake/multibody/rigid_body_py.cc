@@ -26,8 +26,8 @@ PYBIND11_MODULE(rigid_body, m) {
     .def("get_position_start_index", &RigidBody<double>::get_position_start_index)
 
     .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
-    .def("add_prismatic_joint", &RigidBody<double>::add_joint<PrismaticJoint>)
-    .def("add_revolute_joint", &RigidBody<double>::add_joint<RevoluteJoint>)
+    .def("add_joint", &RigidBody<double>::add_joint<PrismaticJoint>)
+    .def("add_joint", &RigidBody<double>::add_joint<RevoluteJoint>)
     .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
 }
 
