@@ -23,6 +23,7 @@ using geometry::Box;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
+using geometry::Mesh;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
@@ -159,6 +160,24 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
   // HalfSpace. Therefore we only verify it created the right object.
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
+}
+
+// Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
+  // TODO(amcastro-tri): Be warned, the result of this test might (should)
+  // change as we add support allowing to specify paths relative to the SDF file
+  // location.
+  const std::string absolute_file_path = "path/to/some/mesh.obj";
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<mesh>"
+      "  <uri>" + absolute_file_path + "</uri>"
+      "  <scale> 3 3 3 </scale>"
+      "</mesh>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->filename(), absolute_file_path);
+  EXPECT_EQ(mesh->scale(), 3);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
