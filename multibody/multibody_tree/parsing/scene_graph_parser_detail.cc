@@ -23,12 +23,16 @@ namespace {
 
 // Helper to return the child element of `element` named `child_name`.
 // Returns nullptr if not present.
-sdf::ElementPtr GetElementPointerOrNullPtr(
-    sdf::ElementPtr element, const std::string& child_name) {
+const sdf::Element* MaybeGetChildElement(
+    const sdf::Element& element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
   // side effect of adding new elements if not present!!).
-  if (element->HasElement(child_name)) {
-    return element->GetElement(child_name);
+  if (element.HasElement(child_name)) {
+    // NOTE: The const_cast() here is needed because sdformat does not provide
+    // a const version of GetElement(). However, the snippet below still
+    // guarantees "element" is not changed as promised by this method's
+    // signature.
+    return const_cast<sdf::Element&>(element).GetElement(child_name).get();
   }
   return nullptr;
 }
@@ -37,19 +41,20 @@ sdf::ElementPtr GetElementPointerOrNullPtr(
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
 // SDF file, or the tag has a bad or missing value.
 template <typename T>
-T GetValueOrThrow(sdf::ElementPtr element, const std::string& child_name) {
-  if (!element->HasElement(child_name)) {
+T GetChildElementValueOrThrow(const sdf::Element& element,
+                              const std::string& child_name) {
+  if (!element.HasElement(child_name)) {
     throw std::runtime_error(
         "Element <" + child_name + "> is required within element "
-            "<" + element->GetName() + ">.");
+            "<" + element.GetName() + ">.");
   }
-  std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
+  std::pair<T, bool> value_pair = element.Get<T>(child_name, T());
   if (value_pair.second == false) {
     // TODO(amcastro-tri): Figure out a way to throw meaningful error messages
     // with line/row numbers within the file.
     throw std::runtime_error(
         "Invalid value for <" + child_name + "> within element "
-            "<" + element->GetName() + ">.");
+            "<" + element.GetName() + ">.");
   }
   return value_pair.first;
 }
@@ -63,21 +68,22 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
   // support it.
   // TODO(amcastro-tri): get rid of all sdf::ElementPtr once
   // sdf::GeometryType::MESH is available.
-  sdf::ElementPtr geometry_element = sdf_geometry.Element();
-  DRAKE_ASSERT(geometry_element != nullptr);
-  sdf::ElementPtr mesh_element =
-      GetElementPointerOrNullPtr(geometry_element, "mesh");
+  const sdf::Element* const geometry_element = sdf_geometry.Element().get();
+  DRAKE_DEMAND(geometry_element != nullptr);
+  const sdf::Element* const mesh_element =
+      MaybeGetChildElement(*geometry_element, "mesh");
   if (mesh_element != nullptr) {
     const std::string file_name =
-        GetValueOrThrow<std::string>(mesh_element, "uri");
+        GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
     double scale = 1.0;
     if (mesh_element->HasElement("scale")) {
       const ignition::math::Vector3d& scale_vector =
-          GetValueOrThrow<ignition::math::Vector3d>(mesh_element, "scale");
+          GetChildElementValueOrThrow<ignition::math::Vector3d>(
+              *mesh_element, "scale");
       // geometry::Mesh only supports isotropic scaling and therefore we enforce
       // it.
       if (!(scale_vector.X() == scale_vector.Y() &&
-          scale_vector.X() == scale_vector.Z())) {
+            scale_vector.X() == scale_vector.Z())) {
         throw std::runtime_error(
             "Drake meshes only support isotropic scaling. Therefore all three "
                 "scaling factors must be exactly equal.");
@@ -141,7 +147,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // support it and marks <mesh> geometry with type sdf::GeometryType::EMPTY.
   // Therefore, there are two reasons we can have an EMPTY type:
   //   1) The file does specify a mesh.
-  //   2) The file truly specifies and EMPTY geometry.
+  //   2) The file truly specifies an EMPTY geometry.
   // We treat these two cases separately until sdformat provides support for
   // meshes.
   // TODO(amcastro-tri): Cleanup usage of sdf::ElementPtr once sdformat gets
