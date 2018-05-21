@@ -3524,6 +3524,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
 #endif
 #if DRAKE_RBT_SHARD == 0
 
+// N.B. The following order of instantiations is reflected in
+// `rigid_body_tree_py.cc`. If you change this order, also update this binding
+// file for traceability purposes.
+
 // Explicit template instantiations for massMatrix.
 template MatrixX<AutoDiffXd     > RigidBodyTree<double>::massMatrix<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&) const;  // NOLINT
 template MatrixXd                 RigidBodyTree<double>::massMatrix<double         >(KinematicsCache<double         >&) const;  // NOLINT

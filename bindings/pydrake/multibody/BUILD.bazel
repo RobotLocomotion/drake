@@ -76,6 +76,7 @@ drake_pybind_library(
     name = "rigid_body_tree_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake/util:type_pack",
     ],
     cc_so_name = "rigid_body_tree",
     cc_srcs = ["rigid_body_tree_py.cc"],
