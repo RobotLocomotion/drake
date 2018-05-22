@@ -86,13 +86,13 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // For rotors 1 and 3, get the -Bz measure of its aerodynamic torque on B.
   // Sum the net Bz measure of the aerodynamic torque on B.
   // Note: Rotors 0 and 2 rotate one way and rotors 1 and 3 rotate the other.
-  const Vector4<T> uM_Bz = kM_ * u;
-  const T Mz = uM_Bz(0) - uM_Bz(1) + uM_Bz(2) - uM_Bz(3);
+  const Vector4<T> uTau_Bz = kM_ * u;
+  const T Mz = uTau_Bz(0) - uTau_Bz(1) + uTau_Bz(2) - uTau_Bz(3);
 
   // Form the net moment on B about Bcm, expressed in B. The net moment accounts
   // for all contact and distance forces (aerodynamic and gravity forces) on B.
   // Note: Since the net moment on B is about Bcm, gravity does not contribute.
-  const Vector3<T> M_B(Mx, My, Mz);
+  const Vector3<T> Tau_B(Mx, My, Mz);
 
   // Calculate local celestial body's (Earth's) gravity force on B, expressed in
   // the Newtonian frame N (a.k.a the inertial or World frame).
@@ -114,12 +114,11 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in B.
   const Vector3<T> w_BN_B = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
 
-  // To compute B's angular acceleration in N, expressed in B, due to the net
-  // moment 𝛕 on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
-  // Euler's equation: 𝛕 = I α + ω × (I ω).
-  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);          // Expressed in B.
-  const Vector3<T> alpha_NB_B = I_.ldlt().solve(M_B - wIw);  // Expressed in B.
-  const Vector3<T> alpha_NB_N = R_NB * alpha_NB_B;           // Expressed in N.
+  // To compute α (B's angular acceleration in N) due to the net moment 𝛕 on B,
+  // rearrange Euler rigid body equation  𝛕 = I α + ω × (I ω)  and solve for α.
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);            // Expressed in B
+  const Vector3<T> alpha_NB_B = I_.ldlt().solve(Tau_B - wIw);  // Expressed in B
+  const Vector3<T> alpha_NB_N = R_NB * alpha_NB_B;             // Expressed in N
 
   // Calculate the 2nd time-derivative of rpy.
   const Vector3<T> rpyDDt =
