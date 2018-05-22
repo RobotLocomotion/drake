@@ -48,7 +48,7 @@ class TrajectoryFollower final : public systems::LeafSystem<T> {
 
   /// Constructs a TrajectoryFollower system that traces a given Trajectory.
   ///
-  /// @param trajectory an Trajectory containing the trajectory.
+  /// @param trajectory a Trajectory containing the trajectory.
   /// @param sampling_time_sec the requested sampling time (in sec) for this
   /// system.  @default 0.01.
   TrajectoryFollower(const Trajectory& trajectory,
