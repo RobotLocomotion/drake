@@ -1,5 +1,10 @@
 # -*- python -*-
 
+load(
+    "@drake//tools/workspace:execute.bzl",
+    "execute_and_return",
+)
+
 def _execute(repo_ctx, mnemonic, *command):
     # Run the command, with fail() a non-zero returncode.
     result = repo_ctx.execute(*command)
@@ -69,21 +74,32 @@ def _extract_local_archive(repo_ctx, snopt_path):
     # to also refer to the *.zip format of the download, and/or an already-
     # unpacked source archive directory.
     if not (snopt_path.startswith("/") and snopt_path.endswith(".tar.gz")):
-        fail("SNOPT_PATH of '{}' is malformed".format(snopt_path))
+        return "SNOPT_PATH of '{}' is malformed".format(snopt_path)
     if not repo_ctx.path(snopt_path).exists:
-        fail("SNOPT_PATH of '{}' does not exist".format(snopt_path))
-    _execute(repo_ctx, "tar", [
+        return "SNOPT_PATH of '{}' does not exist".format(snopt_path)
+    result = execute_and_return(repo_ctx, [
         "tar", "--gunzip", "--extract",
         "--file", repo_ctx.path(snopt_path).realpath,
         "--strip-components=1",
     ])
+    return result.error
 
 def _setup_local_archive(repo_ctx, snopt_path):
-    _extract_local_archive(repo_ctx, snopt_path)
-    # Link Drake's BUILD file into the snopt workspace.
-    repo_ctx.symlink(
-        Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
-        "BUILD")
+    error = _extract_local_archive(repo_ctx, snopt_path)
+    if error == None:
+        repo_ctx.symlink(
+            Label("@drake//tools/workspace/snopt:package.BUILD.bazel"),
+            "BUILD")
+    else:
+        # Add a build file that generates an error from its build actions, but
+        # not during the loading stage.
+        repo_ctx.file(
+            "error.txt",
+            "ERROR: Repository rule @{} failed: {}".format(
+                repo_ctx.name, error))
+        repo_ctx.symlink(
+            Label("@drake//tools/workspace/snopt:package-error.BUILD.bazel"),
+            "BUILD")
 
 def _impl(repo_ctx):
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
