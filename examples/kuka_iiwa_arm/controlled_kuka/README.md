@@ -8,7 +8,10 @@ controller with gravity compensation.
 
 The individual demos are:
 
-1. controlled_kuka_demo: The KUKA iiwa follows an arbitrarily designed plan.
+1. controlled_kuka_demo: The KUKA iiwa follows an arbitrarily designed
+   plan simulated with RigidBodyPlant.
+2. controlled_kuka_multibody_demo: The KUKA iiwa follows an
+   arbitrarily designed plan simulated with MultibodyPlant
 
 ## How To Run The Demos
 
