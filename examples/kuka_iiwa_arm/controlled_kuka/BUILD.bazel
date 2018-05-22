@@ -4,9 +4,22 @@ load(
     "//tools:drake.bzl",
     "drake_cc_library",
     "drake_cc_binary",
-    "drake_cc_googletest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "controlled_kuka_trajectory",
+    srcs = ["controlled_kuka_trajectory.cc"],
+    hdrs = ["controlled_kuka_trajectory.h"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//multibody:inverse_kinematics",
+        "//multibody/parsers",
+    ],
+)
 
 drake_cc_binary(
     name = "controlled_kuka_demo",
@@ -17,6 +30,7 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":controlled_kuka_trajectory",
         "//common:find_resource",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//lcm",
@@ -24,6 +38,32 @@ drake_cc_binary(
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:trajectory_source",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "controlled_kuka_multibody_demo",
+    srcs = ["controlled_kuka_multibody_demo.cc"],
+    add_test_rule = 1,
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":controlled_kuka_trajectory",
+        "//common:find_resource",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//lcm",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:trajectory_source",
+        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )

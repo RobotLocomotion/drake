@@ -99,6 +99,7 @@ drake_cc_binary(
         "//manipulation/util:sim_diagram_builder",
         "//manipulation/util:world_sim_tree_builder",
         "//math:geometric_transform",
+        "//multibody:inverse_kinematics",
         "//systems/analysis",
         "//systems/controllers:pid_controller",
         "//systems/primitives:demultiplexer",
