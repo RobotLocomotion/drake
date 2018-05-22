@@ -189,22 +189,43 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // For a half-space, C and G are not the same since  SDF allows to specify
   // the normal of the plane in the G frame.
-  if (sdf_geometry.Type() == sdf::GeometryType::PLANE) {
-    const sdf::Plane& shape = *sdf_geometry.PlaneShape();
-    // TODO(amcastro-tri): we assume the normal is in the frame of the visual
-    // geometry G. Verify this with @nkoenig.
-    const Vector3d normal_G = ToVector3(shape.Normal());
-    // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
-    // planes are entire half-spaces.
+  // Note to developers: if needed, update this switch statement to consider
+  // other geometry types whenever X_LC != X_LG.
+  switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CYLINDER: {
+      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+      break;
+    }
+    case sdf::GeometryType::PLANE: {
+      const sdf::Plane &shape = *sdf_geometry.PlaneShape();
+      // TODO(amcastro-tri): we assume the normal is in the frame of the visual
+      // geometry G. Verify this with @nkoenig.
+      const Vector3d normal_G = ToVector3(shape.Normal());
+      // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
+      // planes are entire half-spaces.
 
-    // The normal expressed in the frame G defines the pose of the half space
-    // in its canonical frame C in which the normal aligns with the z-axis
-    // direction.
-    const Isometry3d X_GC =
-        geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+      // The normal expressed in the frame G defines the pose of the half space
+      // in its canonical frame C in which the normal aligns with the z-axis
+      // direction.
+      const Isometry3d X_GC =
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
 
-    // Correct X_LC to include the pose X_GC
-    X_LC = X_LG * X_GC;
+      // Correct X_LC to include the pose X_GC
+      X_LC = X_LG * X_GC;
+      break;
+    }
+    case sdf::GeometryType::SPHERE:  {
+      // X_LC = X_LG for SPHERE.
+      break;
+    }
+    default: {
+      throw std::logic_error(
+          "It seems sdformat was updated to define a new geometry type. "
+          "Analyze whether X_LC = X_LG and update this switch statement"
+          "accordingly.");
+    }
   }
 
   // TODO(amcastro-tri): Extract <material> once sdf::Visual supports it.
@@ -226,10 +247,10 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   // - A half-space's normal is directed along the Cz axis,
   // - A cylinder's length is parallel to the Cz axis,
   // - etc.
-  // There are cases however in which C might no coincide with C. A HalfSpace
-  // is one of such examples, since for geometry::HalfSpace the normal always
-  // is (0, 0, 1) in the C frame, however SDF allows to specify a different
-  // normal than Gz (that is, (0, 0, 1)) in the G frame.
+  // There are cases however in which C might not coincide with G. A HalfSpace
+  // is one of such examples, since for geometry::HalfSpace the normal is
+  // represented in the C frame along Cz, whereas SDF defines the normal in a
+  // frame G which does not necessarily coinciding with C.
 
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
@@ -237,20 +258,39 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
   const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
-  if (sdf_geometry.Type() == sdf::GeometryType::PLANE) {
-    const sdf::Plane& shape = *sdf_geometry.PlaneShape();
-    const Vector3d normal_G = ToVector3(shape.Normal());
-    // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
-    // planes are entire half-spaces.
+  switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CYLINDER: {
+      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+      break;
+    }
+    case sdf::GeometryType::PLANE: {
+      const sdf::Plane& shape = *sdf_geometry.PlaneShape();
+      const Vector3d normal_G = ToVector3(shape.Normal());
+      // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
+      // planes are entire half-spaces.
 
-    // The normal expressed in the frame G defines the pose of the half space
-    // in its canonical frame C in which the normal aligns with the z-axis
-    // direction.
-    const Isometry3d X_GC =
-        geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+      // The normal expressed in the frame G defines the pose of the half space
+      // in its canonical frame C in which the normal aligns with the z-axis
+      // direction.
+      const Isometry3d X_GC =
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
 
-    // Correct X_LC to include the pose X_GC
-    X_LC = X_LG * X_GC;
+      // Correct X_LC to include the pose X_GC
+      X_LC = X_LG * X_GC;
+      break;
+    }
+    case sdf::GeometryType::SPHERE:  {
+      // X_LC = X_LG for SPHERE.
+      break;
+    }
+    default: {
+      throw std::logic_error(
+          "It seems sdformat was updated to define a new geometry type. "
+              "Analyze whether X_LC = X_LG and update this switch statement"
+              "accordingly.");
+    }
   }
   return X_LC;
 }
