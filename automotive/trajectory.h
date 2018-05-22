@@ -87,12 +87,12 @@ class Trajectory final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
 
   /// An identifier for the type of valid types of interpolation used in
-  /// evaluating the translational component of an Trajectory.  These types
+  /// evaluating the translational component of a Trajectory.  These types
   /// mirror the associated constructors for PiecewisePolynomial (see
   /// common/trajectories/piecewise_polynomial.h for further details).
   enum class InterpolationType { kFirstOrderHold, kCubic, kPchip };
 
-  /// Makes an Trajectory from a discrete set of time-indexed pose data
+  /// Makes a Trajectory from a discrete set of time-indexed pose data
   /// under the specified interpolation scheme.
   ///
   /// @param times a vector of time indices representing the break points of the
@@ -116,7 +116,7 @@ class Trajectory final {
       const InterpolationType& interp_type =
           InterpolationType::kFirstOrderHold);
 
-  /// Makes an Trajectory from a discrete set of (time-independent)
+  /// Makes a Trajectory from a discrete set of (time-independent)
   /// waypoints and a vector of speeds.  The resulting trajectory is assumed to
   /// start at time time t = 0 and follow a cubic-spline profile
   /// (InterpolationType::kCubic) for the translation elements, rendering speed
@@ -147,7 +147,7 @@ class Trajectory final {
       const std::vector<Eigen::Vector3d>& waypoints_translation,
       const std::vector<double>& speeds);
 
-  /// Makes an Trajectory from a discrete set of (time-independent)
+  /// Makes a Trajectory from a discrete set of (time-independent)
   /// waypoints, based on a constant speed, using cubic-polynomial
   /// interpolation.
   ///
@@ -168,7 +168,7 @@ class Trajectory final {
   PoseVelocity value(double time) const;
 
  private:
-  // Constructs an Trajectory from a translation PiecewisePolynomial, @p
+  // Constructs a Trajectory from a translation PiecewisePolynomial, @p
   // translation, and a rotation PiecewiseQuaternionSlerp, @p rotation.
   explicit Trajectory(
       const trajectories::PiecewisePolynomial<double>& translation,
