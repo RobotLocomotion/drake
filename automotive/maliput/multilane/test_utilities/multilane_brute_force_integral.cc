@@ -15,23 +15,10 @@ namespace test {
 double BruteForcePathLengthIntegral(const RoadCurve& rc, double p_0, double p_1,
                                     double r, double h, int k_order,
                                     double* maximum_step) {
-  // Enforces preconditions.
-  if (p_0 < 0. || p_0 > 1.) {
-    throw std::logic_error("Path length integral lower bound is"
-                           " defined in the [0, 1] interval only.");
-  }
-  if (p_1 < 0. || p_1 > 1.) {
-    throw std::logic_error("Path length integral upper bound is"
-                           " defined in the [0, 1] interval only.");
-  }
-  if (p_0 > p_1) {
-    throw std::logic_error("Path length integral upper bound cannot"
-                           " be less than the lower bound.");
-  }
-  if (k_order < 0) {
-    throw std::logic_error("Path length integral k-order "
-                           "must be a non-negative number");
-  }
+  DRAKE_THROW_UNLESS(0. <= p_0);
+  DRAKE_THROW_UNLESS(p_0 <= p_1);
+  DRAKE_THROW_UNLESS(p_1 <= 1.);
+  DRAKE_THROW_UNLESS(k_order >= 0);
   double length = 0.0;
   const double d_p = (p_1 - p_0);
   const int iterations = std::pow(2, k_order);
@@ -61,10 +48,7 @@ double BruteForcePathLengthIntegral(const RoadCurve& rc, double p_0, double p_1,
 double AdaptiveBruteForcePathLengthIntegral(
     const RoadCurve& rc, double p_0, double p_1, double r,
     double h, double tolerance, int* k_order_hint) {
-  // Enforce preconditions.
-  if (tolerance <= 0.) {
-    std::logic_error("Tolerance must be a positive number.");
-  }
+  DRAKE_THROW_UNLESS(tolerance > 0.);
   const double kInfinity = std::numeric_limits<double>::infinity();
   // Zero initializes the current k order unless a hint was provided.
   int k_order = k_order_hint != nullptr ? *k_order_hint : 0;

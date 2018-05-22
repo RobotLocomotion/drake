@@ -266,9 +266,9 @@ class RoadCurve {
   /// superelevation function (see below for more details).
   /// @param computation_policy Policy to guide computations in terms of speed
   /// and accuracy. Actual behavior may vary across implementations.
-  /// @pre The given @p scale_length is a non-negative number.
-  /// @pre The given @p linear_tolerance is a non-negative number.
-  /// @throw std::logic_error if preconditions are not met.
+  /// @pre The given @p scale_length is a positive number.
+  /// @pre The given @p linear_tolerance is a positive number.
+  /// @throw std::runtime_error if any of the preconditions is not met.
   ///
   /// @p elevation and @p superelevation are cubic-polynomial functions which
   /// define the elevation and superelevation as a function of position along
