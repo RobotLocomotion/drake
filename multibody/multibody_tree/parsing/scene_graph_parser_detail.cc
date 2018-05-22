@@ -33,24 +33,28 @@ const sdf::Element* MaybeGetChildElement(
     // NOTE: The const_cast() here is needed because sdformat does not provide
     // a const version of GetElement(). However, the snippet below still
     // guarantees "element" is not changed as promised by this method's
-    // signature.
+    // signature. See sdformat issue #188.
     return const_cast<sdf::Element&>(element).GetElement(child_name).get();
   }
   return nullptr;
 }
 
 // Helper to return the child element of `element` named `child_name`.
-// Throws std::logic_error if not found.
-sdf::ElementPtr GetChildElementPointerOrThrow(
-    sdf::ElementPtr element, const std::string &child_name) {
+// Throws std::runtime_error if not found.
+const sdf::Element& GetChildElementOrThrow(
+    const sdf::Element& element, const std::string &child_name) {
   // First verify <child_name> is present (otherwise GetElement() has the
   // side effect of adding new elements if not present!!).
-  if (!element->HasElement(child_name)) {
-    throw std::logic_error(
+  if (!element.HasElement(child_name)) {
+    throw std::runtime_error(
         "Element <" + child_name + "> not found nested within element <" +
-            element->GetName() + ">.");
+            element.GetName() + ">.");
   }
-  return element->GetElement(child_name);;
+  // NOTE: The const_cast() here is needed because sdformat does not provide
+  // a const version of GetElement(). However, the snippet below still
+  // guarantees "element" is not changed as promised by this method's
+  // signature. See sdformat issue #188.
+  return *const_cast<sdf::Element&>(element).GetElement(child_name);
 }
 
 // Helper to return the value of a child of `element` named `child_name`.
@@ -297,11 +301,10 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   if (!surface_element) return CoulombFriction<double>();
 
   // Once <surface> is found, <friction> and <ode> are required.
-  const sdf::ElementPtr friction_element =
-      GetChildElementPointerOrThrow(surface_element, "friction");
-  const sdf::ElementPtr ode_element =
-      GetChildElementPointerOrThrow(friction_element, "ode");
-
+  const sdf::Element& friction_element =
+      GetChildElementOrThrow(*surface_element, "friction");
+  const sdf::Element& ode_element =
+      GetChildElementOrThrow(friction_element, "ode");
 
   // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
   // required.

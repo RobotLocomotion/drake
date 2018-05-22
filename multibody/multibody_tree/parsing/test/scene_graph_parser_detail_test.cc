@@ -492,7 +492,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::logic_error,
+      std::runtime_error,
       "Element <mu> is required within element <ode>.");
 }
 
@@ -516,7 +516,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::logic_error,
+      std::runtime_error,
       "Element <mu2> is required within element <ode>.");
 }
 
@@ -539,7 +539,7 @@ GTEST_TEST(SceneGraphParserDetail,
       "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::logic_error,
+      std::runtime_error,
       "Element <friction> not found nested within element <surface>.");
 }
 
@@ -562,7 +562,7 @@ GTEST_TEST(SceneGraphParserDetail,
           "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
-      std::logic_error,
+      std::runtime_error,
       "Element <ode> not found nested within element <friction>.");
 }
 
