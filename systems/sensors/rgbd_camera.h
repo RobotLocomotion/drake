@@ -128,7 +128,9 @@ class RgbdCamera final : public LeafSystem<double> {
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = RenderingConfig::kDefaultShowWindow);
+             bool show_window = RenderingConfig::kDefaultShowWindow,
+             int width = RenderingConfig::kDefaultWidth,
+             int height = RenderingConfig::kDefaultHeight);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -167,7 +169,9 @@ class RgbdCamera final : public LeafSystem<double> {
              double z_near = 0.5,
              double z_far = 5.0,
              double fov_y = M_PI_4,
-             bool show_window = RenderingConfig::kDefaultShowWindow);
+             bool show_window = RenderingConfig::kDefaultShowWindow,
+             int width = RenderingConfig::kDefaultWidth,
+             int height = RenderingConfig::kDefaultHeight);
 
   ~RgbdCamera() = default;
 
