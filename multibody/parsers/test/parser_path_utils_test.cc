@@ -1,4 +1,4 @@
-#include "drake/multibody/parsers/parser_common.h"
+#include "drake/multibody/parsers/parser_path_utils.h"
 
 #include <fstream>
 #include <string>
@@ -14,7 +14,7 @@ namespace {
 
 // Verifies that GetFullPath() promotes a relative path to an absolute path,
 // and leaves already-absolute paths alone.
-GTEST_TEST(ParserCommonTest, TestGetFullPath_Relative) {
+GTEST_TEST(ParserPathUtilsTest, TestGetFullPath_Relative) {
   const string relative_path = "test_file.txt";
   std::ofstream ostr(relative_path);
   ASSERT_TRUE(ostr.is_open());
@@ -36,14 +36,14 @@ GTEST_TEST(ParserCommonTest, TestGetFullPath_Relative) {
 
 // Verifies that GetFullPath() throws when given a relative path to a
 // non-existent file.
-GTEST_TEST(ParserCommonTest, TestGetFullPathToNonexistentFile) {
+GTEST_TEST(ParserPathUtilsTest, TestGetFullPathToNonexistentFile) {
   const string relative_path =
       "drake/multibody/parsers/test/parser_common_test/nonexistent_file.txt";
   EXPECT_THROW(GetFullPath(relative_path), std::runtime_error);
 }
 
 // Verifies that GetFullPath() throws when given an empty path.
-GTEST_TEST(ParserCommonTest, TestGetFullPathOfEmptyPath) {
+GTEST_TEST(ParserPathUtilsTest, TestGetFullPathOfEmptyPath) {
   EXPECT_THROW(GetFullPath(""), std::runtime_error);
 }
 
