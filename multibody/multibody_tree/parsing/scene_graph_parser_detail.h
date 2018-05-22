@@ -35,22 +35,6 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision);
 
 /// Parses friction coefficients from `sdf_collision`.
-/// This method looks for a custom <drake_friction> element within <collision>
-/// as shown below: <pre>
-///   <collision>
-///     <drake_friction>
-///       <static_friction>0.8</static_friction>
-///       <dynamic_friction>0.3</dynamic_friction>
-///     </drake_friction>
-///   </collision>
-/// </pre>
-/// If a `<drake_friction>` is not found, it returns the coefficients for a
-/// frictionless surface. An exception is thrown if `<static_friction>` and
-/// `<dynamic_friction>` are not found within the `<drake_friction>` tag.
-multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
-    const sdf::Collision& sdf_collision);
-
-/// Parses friction coefficients from `sdf_collision`.
 /// This method looks for the definitions specific to ODE, as given by the SDF
 /// specification in `<collision><surface><friction><ode>`. Drake understands
 /// `<mu>` as the static coefficient of friction and `<mu2>` as the dynamic

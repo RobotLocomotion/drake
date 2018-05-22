@@ -378,33 +378,6 @@ GTEST_TEST(SceneGraphParserDetail,
                               kTolerance, MatrixCompareType::relative));
 }
 
-GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollision) {
-  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
-      "<collision name = 'some_link_collision'>"
-      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
-      "  <geometry>"
-      "    <plane>"
-      "      <normal>1.0 2.0 3.0</normal>"
-      "    </plane>"
-      "  </geometry>"
-      "  <drake_friction>"
-      "    <static_friction>0.8</static_friction>"
-      "    <dynamic_friction>0.3</dynamic_friction>"
-      "  </drake_friction>"
-      "</collision>");
-  const CoulombFriction<double> friction =
-      MakeCoulombFrictionFromSdfCollision(*sdf_collision);
-  // TODO(amcastro-tri): Allow custom elements for SDF files.
-  // Since today sdformat does not allow for custom elements, <drake_friction>
-  // gets ignored and does not make it to sdformat's DOM representation.
-  // Therefore Drake believes it is not there and understands the user wanted a
-  // frictionless surface.
-  // EXPECT_EQ(friction.static_friction(), 0.8);
-  // EXPECT_EQ(friction.dynamic_friction(), 0.3);
-  EXPECT_EQ(friction.static_friction(), 0.0);
-  EXPECT_EQ(friction.dynamic_friction(), 0.0);
-}
-
 // Verify we can parse friction coefficients from an <ode> element in
 // <collision><surface><friction>. Drake understands <mu> to be the static
 // coefficient and <mu2> the dynamic coefficient of friction.

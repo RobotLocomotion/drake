@@ -236,7 +236,6 @@ GTEST_TEST(MultibodyPlantSdfParser, LinksWithCollisions) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
-  EXPECT_EQ(plant.num_visual_geometries(), 5);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
 
   const std::vector<GeometryId>& link1_collision_geometry_ids =

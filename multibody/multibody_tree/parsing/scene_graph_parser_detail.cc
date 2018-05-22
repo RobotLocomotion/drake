@@ -288,41 +288,11 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
     default: {
       throw std::logic_error(
           "It seems sdformat was updated to define a new geometry type. "
-              "Analyze whether X_LC = X_LG and update this switch statement"
-              "accordingly.");
+          "Analyze whether X_LC = X_LG and update this switch statement"
+          "accordingly.");
     }
   }
   return X_LC;
-}
-
-CoulombFriction<double> MakeCoulombFrictionFromSdfCollision(
-    const sdf::Collision& sdf_collision) {
-
-  const sdf::ElementPtr collision_element = sdf_collision.Element();
-  // Element pointers can only be nullptr if Load() was not called on the sdf::
-  // object. Only a bug could cause this.
-  DRAKE_DEMAND(collision_element != nullptr);
-
-  const sdf::Element* const friction_element =
-      MaybeGetChildElement(*collision_element, "drake_friction");
-
-  // If friction_element is not found, the default is that of a frictionless
-  // surface (i.e. zero friction coefficients).
-  if (!friction_element) return CoulombFriction<double>();
-
-  // Once <drake_friction> is (optionally) specified, <static_friction> and
-  // <dynamic_friction> are required.
-  const double static_friction = GetChildElementValueOrThrow<double>(
-      *friction_element, "static_friction");
-  const double dynamic_friction = GetChildElementValueOrThrow<double>(
-      *friction_element, "dynamic_friction");
-
-  try {
-    return CoulombFriction<double>(static_friction, dynamic_friction);
-  } catch (std::logic_error& e) {
-    throw std::logic_error("From <collision> with name '" +
-        sdf_collision.Name() + "': " + e.what());
-  }
 }
 
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
