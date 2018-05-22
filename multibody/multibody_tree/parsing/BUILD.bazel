@@ -55,6 +55,7 @@ drake_cc_library(
     deps = [
         ":sdf_parser_common",
         "//geometry:scene_graph",
+        "//multibody/parsers:find_files",
         "@sdformat",
     ],
 )
