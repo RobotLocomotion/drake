@@ -313,7 +313,11 @@ class TestRigidBodyTree(unittest.TestCase):
         # a prismatic joint along the +z axis.
         body_1 = RigidBody()
         body_1.set_name("body_1")
-        body_1_joint = PrismaticJoint("z", np.eye(4), np.array([0., 0., 1.]))
+        # Verify construction from both Isometry3d and 4x4 arrays.
+        body_1_joint_no_isom = PrismaticJoint("z", np.eye(4),
+                                              np.array([0., 0., 1.]))
+        body_1_joint = PrismaticJoint("z", Isometry3(np.eye(4)),
+                                      np.array([0., 0., 1.]))
         self.assertEqual(body_1_joint.get_num_positions(), 1)
         self.assertFalse(body_1.has_joint())
         body_1.add_joint(world_body, body_1_joint)
@@ -326,7 +330,10 @@ class TestRigidBodyTree(unittest.TestCase):
         # a revolute joint around the z-axis.
         body_2 = RigidBody()
         body_2.set_name("body_2")
-        body_2_joint = RevoluteJoint("theta", np.eye(4),
+        # Verify construction from both Isometry3d and 4x4 arrays.
+        body_2_joint_no_isom = RevoluteJoint("theta", np.eye(4),
+                                             np.array([0., 0., 1.]))
+        body_2_joint = RevoluteJoint("theta", Isometry3(np.eye(4)),
                                      np.array([0., 0., 1.]))
         self.assertEqual(body_2_joint.get_num_positions(), 1)
         body_2.add_joint(body_1, body_2_joint)
@@ -342,7 +349,11 @@ class TestRigidBodyTree(unittest.TestCase):
 
         rbt.add_rigid_body(body_2)
 
-        box_collision_element = CollisionElement(box_element, np.eye(4))
+        # Verify construction from both Isometry3d and 4x4 arrays.
+        box_collision_element_no_isom = CollisionElement(
+            box_element, np.eye(4))
+        box_collision_element = CollisionElement(box_element,
+                                                 Isometry3(np.eye(4)))
         box_collision_element.set_body(body_2)
         self.assertEqual(box_collision_element.get_body(), body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")

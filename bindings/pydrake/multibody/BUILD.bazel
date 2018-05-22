@@ -107,11 +107,15 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "joints_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
     cc_so_name = "joints",
     cc_srcs = ["joints_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 
