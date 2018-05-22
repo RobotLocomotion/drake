@@ -124,9 +124,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_body", &RigidBodyTree<double>::get_body,
          py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
-<<<<<<< b2fb0ea14a29e1fe8805f89f2d26617debc3b780
-    .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
-=======
     .def("transformPoints", [](const RigidBodyTree<double>& tree,
                                const KinematicsCache<double>& cache,
                                const Eigen::Matrix<double, 3,
@@ -161,8 +158,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     })
     .def("add_rigid_body", &RigidBodyTree<double>::add_rigid_body)
     .def("addCollisionElement", &RigidBodyTree<double>::addCollisionElement)
-    .def("addFrame", &RigidBodyTree<double>::addFrame)
->>>>>>> Split out bindings for rigid_body and some joints and collision types
+    .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
                         const std::string& model_name = "",
