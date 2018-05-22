@@ -54,8 +54,8 @@ drake_cc_package_library(
         ":simple_car",
         ":simple_powertrain",
         ":trajectory",
-        ":trajectory_follower",
         ":trajectory_car",
+        ":trajectory_follower",
         ":trivial_right_of_way_state_provider",
     ],
 )
@@ -402,8 +402,8 @@ drake_cc_library(
     srcs = ["trajectory_follower.cc"],
     hdrs = ["trajectory_follower.h"],
     deps = [
-        ":trajectory",
         ":generated_vectors",
+        ":trajectory",
         "//common:autodiff",
         "//common:extract_double",
         "//systems/framework:leaf_system",

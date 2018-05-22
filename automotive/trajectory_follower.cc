@@ -43,8 +43,9 @@ void TrajectoryFollower<T>::CalcPoseOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-void TrajectoryFollower<T>::CalcVelocityOutput(const systems::Context<T>& context,
-                                            FrameVelocity<T>* velocity) const {
+void TrajectoryFollower<T>::CalcVelocityOutput(
+    const systems::Context<T>& context,
+    FrameVelocity<T>* velocity) const {
   const PoseVelocity values = GetValues(context);
   const Eigen::Vector3d& v = values.velocity().translational();
   const Eigen::Vector3d& w = values.velocity().rotational();

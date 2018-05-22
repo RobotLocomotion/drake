@@ -149,7 +149,8 @@ GTEST_TEST(TrajectoryFollowerTest, ToAutoDiff) {
   const TrajectoryFollower<double> follower(
       Trajectory::Make(times, rotations, translations));
 
-  EXPECT_TRUE(is_autodiffxd_convertible(follower, [&](const auto& autodiff_dut) {
+  EXPECT_TRUE(is_autodiffxd_convertible(follower,
+                                        [&](const auto& autodiff_dut) {
     auto context = autodiff_dut.CreateDefaultContext();
     auto output = autodiff_dut.AllocateOutput(*context);
 
