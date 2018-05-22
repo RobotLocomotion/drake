@@ -39,21 +39,6 @@ PYBIND11_MODULE(analysis, m) {
       .def("get_throw_on_minimum_step_size_violation",
            &IntegratorBase<T>::get_throw_on_minimum_step_size_violation);
 
-    DefineTemplateClassWithDefault<RungeKutta3Integrator<T>,
-                                   IntegratorBase<T>>(
-       m, "RungeKutta3Integrator", GetPyParam<T>())
-      .def(py::init<const System<T>&>(),
-           // Keep alive, reference: `self` keeps `System` alive.
-           py::arg("system"),
-           py::keep_alive<1, 2>())
-      .def(py::init<const System<T>&, Context<T>*>(),
-           py::arg("system"),
-           py::arg("context"),
-           // Keep alive, reference: `self` keeps `System` alive.
-           py::keep_alive<1, 2>(),
-           // Keep alive, reference: `self` keeps `Context` alive.
-           py::keep_alive<1, 3>());
-
     DefineTemplateClassWithDefault<RungeKutta2Integrator<T>,
                                    IntegratorBase<T>>(
        m, "RungeKutta2Integrator", GetPyParam<T>())
@@ -70,6 +55,21 @@ PYBIND11_MODULE(analysis, m) {
            py::keep_alive<1, 2>(),
            // Keep alive, reference: `self` keeps `Context` alive.
            py::keep_alive<1, 4>());
+
+    DefineTemplateClassWithDefault<RungeKutta3Integrator<T>,
+                                   IntegratorBase<T>>(
+       m, "RungeKutta3Integrator", GetPyParam<T>())
+      .def(py::init<const System<T>&>(),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::arg("system"),
+           py::keep_alive<1, 2>())
+      .def(py::init<const System<T>&, Context<T>*>(),
+           py::arg("system"),
+           py::arg("context"),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::keep_alive<1, 2>(),
+           // Keep alive, reference: `self` keeps `Context` alive.
+           py::keep_alive<1, 3>());
 
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>())
