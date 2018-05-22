@@ -206,13 +206,23 @@ class TestSensors(unittest.TestCase):
         frame = RigidBodyFrame("rgbd camera frame", tree.FindBody("link"))
         tree.addFrame(frame)
 
+        # Use HDTV size.
+        width = 1280
+        height = 720
+
         camera = mut.RgbdCamera(
             name="camera", tree=tree, frame=frame,
             z_near=0.5, z_far=5.0,
-            fov_y=np.pi / 4, show_window=False)
+            fov_y=np.pi / 4, show_window=False,
+            width=width, height=height)
 
-        self.assertIsInstance(camera.color_camera_info(), mut.CameraInfo)
-        self.assertIsInstance(camera.depth_camera_info(), mut.CameraInfo)
+        def check_info(camera_info):
+            self.assertIsInstance(camera_info, mut.CameraInfo)
+            self.assertEqual(camera_info.width(), width)
+            self.assertEqual(camera_info.height(), height)
+
+        check_info(camera.color_camera_info())
+        check_info(camera.depth_camera_info())
         self.assertIsInstance(camera.color_camera_optical_pose(), Isometry3)
         self.assertIsInstance(camera.depth_camera_optical_pose(), Isometry3)
         self.assertTrue(camera.tree() is tree)
