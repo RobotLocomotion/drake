@@ -103,7 +103,7 @@ def _setup_local_archive(repo_ctx, snopt_path):
 
 def _impl(repo_ctx):
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
-    if not snopt_path:
+    if snopt_path == "git":
         _setup_git(repo_ctx)
     else:
         _setup_local_archive(repo_ctx, snopt_path)
