@@ -4,12 +4,8 @@
 Binary installation (macOS, Ubuntu)
 ***********************************
 
-Important Note (October, 2016)
-==============================
-
-Drake is currently undergoing a major renovation, with all of the core
-libraries moving into C++.  The examples will move and the existing APIs will
-change.
+Nightly releases
+================
 
 There are `experimental binary packages <https://github.com/RobotLocomotion/drake/issues/1766#issuecomment-318955338>`_ of Drake available at:
 
