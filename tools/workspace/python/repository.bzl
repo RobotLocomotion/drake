@@ -96,9 +96,18 @@ def _impl(repository_ctx):
 
 licenses(["notice"])  # Python-2.0
 
+# Only include first level of headers included from `python_repository`
+# (`include/<destination>/*`). This should exclude third party C headers which
+# may be nested within `/usr/include/python2.7`, such as `numpy` when installed
+# via `apt` on Ubuntu.
+headers = glob(
+    ["include/*/*"],
+    exclude_directories = 1,
+)
+
 cc_library(
     name = "python_headers",
-    hdrs = glob(["include/**"]),
+    hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
 )

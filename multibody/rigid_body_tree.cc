@@ -370,6 +370,14 @@ void RigidBodyTree<T>::compile() {
   //   from the root towards the last leaf.
   for (size_t i = 0; i < bodies_.size(); ++i) {
     const auto& body = bodies_[i];
+
+    if (body->has_parent_body() && !body->has_joint()) {
+      throw runtime_error(
+          "ERROR: RigidBodyTree::compile(): Rigid body \"" +
+          body->get_name() + "\" in model " + body->get_model_name() +
+          " has no joint!");
+    }
+
     if (body->has_parent_body() &&
         body->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
@@ -1545,18 +1553,6 @@ void RigidBodyTree<T>::TestConnectedToWorld(const RigidBody<T>& body,
     "The connected set should always include the world node: 0.");
   int id = body.get_body_index();
   if (connected->find(id) == connected->end()) {
-    if (!body.has_joint()) {
-      // NOTE: This test is redundant if it is called during
-      // RigidBodyTree::compile because two previous operations will catch
-      // the missing joint error.  However, for the sake of completeness
-      // and because the cost of the redundancy is negligible, the joint
-      // test is also included.
-      throw runtime_error(
-          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
-              "Rigid body \"" +
-              body.get_name() + "\" in model " + body.get_model_name() +
-              " has no joint!");
-    }
     const RigidBody<T>* parent = body.get_parent();
     if (parent == nullptr) {
       // We know this is *not* the world node because the world node is in the
@@ -3087,21 +3083,11 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
   return link->get_body_index();
 }
 
-template <typename T>
-const RigidBody<T>& RigidBodyTree<T>::get_body(int body_index) const {
-  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
-  return *bodies_[body_index].get();
-}
 
 template <typename T>
 RigidBody<T>* RigidBodyTree<T>::get_mutable_body(int body_index) {
   DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
   return bodies_[body_index].get();
-}
-
-template <typename T>
-int RigidBodyTree<T>::get_num_bodies() const {
-  return static_cast<int>(bodies_.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -3339,21 +3325,12 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
   return bodies_.back().get();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_positions() const {
-  return num_positions_;
-}
-
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
 int RigidBodyTree<T>::number_of_positions() const {
   return get_num_positions();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_velocities() const {
-  return num_velocities_;
-}
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
@@ -3362,20 +3339,8 @@ int RigidBodyTree<T>::number_of_velocities() const {
 }
 
 template <typename T>
-int RigidBodyTree<T>::get_num_actuators() const {
-  return static_cast<int>(actuators.size());
-}
-
-template <typename T>
 int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
-}
-
-// TODO(liang.fok) Update this method implementation once the world is assigned
-// its own model instance ID (#3088). It should return num_model_instances_ - 1.
-template <typename T>
-int RigidBodyTree<T>::get_num_model_instances() const {
-  return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -3523,6 +3488,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
 
 #endif
 #if DRAKE_RBT_SHARD == 0
+
+// N.B. The following order of instantiations is reflected in
+// `rigid_body_tree_py.cc`. If you change this order, also update this binding
+// file for traceability purposes.
 
 // Explicit template instantiations for massMatrix.
 template MatrixX<AutoDiffXd     > RigidBodyTree<double>::massMatrix<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&) const;  // NOLINT

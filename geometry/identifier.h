@@ -164,6 +164,14 @@ class Identifier {
     return value_ != other.value_ && is_valid() && other.is_valid();
   }
 
+  /** Compare two identifiers in order to define a total ordering among
+   identifiers. This makes identifiers compatible with data structures which
+   require total ordering (e.g., std::set).  */
+  bool operator<(Identifier other) const {
+    DRAKE_ASSERT(is_valid() && other.is_valid());
+    return value_ < other.value_;
+  }
+
   /** Generates a new identifier for this id type. This new identifier will be
    different from all previous identifiers created. This method does _not_
    make any guarantees about the values of ids from successive invocations.
