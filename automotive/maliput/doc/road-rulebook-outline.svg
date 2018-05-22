@@ -342,17 +342,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994949"
-     inkscape:cx="43.726758"
-     inkscape:cy="499.46413"
+     inkscape:zoom="1.4"
+     inkscape:cx="415.4629"
+     inkscape:cy="470.16971"
      inkscape:document-units="in"
      inkscape:current-layer="g13384"
      showgrid="false"
      units="in"
      inkscape:window-width="1778"
      inkscape:window-height="1256"
-     inkscape:window-x="385"
-     inkscape:window-y="95"
+     inkscape:window-x="1098"
+     inkscape:window-y="59"
      inkscape:window-maximized="0" />
   <metadata
      id="metadata7">
@@ -371,11 +371,10 @@
      transform="translate(0,-62.362205)"
      id="g13384"
      inkscape:groupmode="layer"
-     inkscape:label="version 2"
-     sodipodi:insensitive="true">
+     inkscape:label="version 2">
     <g
        id="g13550"
-       transform="matrix(0.98880679,-0.14920173,0.14920173,0.98880679,-73.970606,187.348)">
+       transform="matrix(0.98880679,-0.14920173,0.14920173,0.98880679,-93.25632,179.49086)">
       <path
          style="fill:none;fill-rule:evenodd;stroke:#c0c0c0;stroke-width:4.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
          d="M 278.78057,747.11275 666.70068,349.29604"
@@ -508,49 +507,37 @@
            sodipodi:role="line">RoadGeometry</tspan></text>
     </g>
     <g
-       transform="translate(415.22843,285.38087)"
+       transform="translate(415.22843,267.38087)"
        id="g13418">
       <rect
          style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.79999995, 1.79999995;stroke-dashoffset:0;stroke-opacity:1"
          id="rect13420"
-         width="211.12189"
-         height="89.903603"
+         width="198.97903"
+         height="49.189331"
          x="82.832512"
-         y="374.54987" />
+         y="415.26416" />
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Bold';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          x="90.913727"
-         y="391.72244"
+         y="431.72244"
          id="text13422"
          sodipodi:linespacing="125%"><tspan
            sodipodi:role="line"
            id="tspan13424"
            x="90.913727"
-           y="391.72244">RightOfWayStateProvider</tspan></text>
+           y="431.72244">RightOfWayStateProvider</tspan></text>
       <text
          sodipodi:linespacing="125%"
          id="text13426"
-         y="407.98642"
+         y="447.98642"
          x="91.88327"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          xml:space="preserve"><tspan
-           y="407.98642"
+           sodipodi:role="line"
+           id="tspan24665"
            x="91.88327"
-           id="tspan13428"
-           sodipodi:role="line">GetState(id)</tspan><tspan
-           y="423.61142"
-           x="91.88327"
-           id="tspan13430"
-           sodipodi:role="line"> {Go, PrepareToStop, Stop,</tspan><tspan
-           y="439.23642"
-           x="91.88327"
-           id="tspan13432"
-           sodipodi:role="line">  ProceedWithCaution,</tspan><tspan
-           y="454.86142"
-           x="91.88327"
-           id="tspan13434"
-           sodipodi:role="line">  Disabled...}</tspan></text>
+           y="447.98642">GetState(id)</tspan></text>
     </g>
     <g
        style="opacity:0.5"
@@ -777,60 +764,95 @@
            id="text13518"
            y="411.98642"
            x="89.88327"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
            xml:space="preserve"><tspan
              sodipodi:role="line"
-             id="tspan23720"
-             x="89.88327"
-             y="411.98642">id</tspan><tspan
+             id="tspan21336">id</tspan><tspan
              sodipodi:role="line"
-             id="tspan23722"
-             x="89.88327"
-             y="427.61142">controlled_zone</tspan><tspan
+             id="tspan21338">zone</tspan><tspan
              sodipodi:role="line"
-             id="tspan23724"
-             x="89.88327"
-             y="443.23642">type {StopThenGo, ProceedWithCaution,</tspan><tspan
+             id="tspan21340">zone_type</tspan><tspan
              sodipodi:role="line"
-             id="tspan23726"
-             x="89.88327"
-             y="458.86142">      Dynamic, ...}</tspan><tspan
-             sodipodi:role="line"
-             id="tspan23728"
-             x="89.88327"
-             y="474.48642">...</tspan></text>
+             id="tspan21342">states</tspan></text>
+        <g
+           id="g23522"
+           transform="translate(-17.857143,15)">
+          <text
+             xml:space="preserve"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Bold';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+             x="231.32494"
+             y="395.76306"
+             id="text23492"
+             sodipodi:linespacing="125%"><tspan
+               y="395.76306"
+               x="231.32494"
+               id="tspan23496"
+               sodipodi:role="line">State</tspan></text>
+          <text
+             sodipodi:linespacing="125%"
+             id="text23498"
+             y="409.12927"
+             x="233.31184"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Normal';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+             xml:space="preserve"><tspan
+               y="409.12927"
+               x="233.31184"
+               id="tspan23514"
+               sodipodi:role="line">id</tspan><tspan
+               y="424.75427"
+               x="233.31184"
+               id="tspan23516"
+               sodipodi:role="line">type {Go, Stop, ...}</tspan><tspan
+               y="440.37927"
+               x="233.31184"
+               id="tspan23518"
+               sodipodi:role="line">yield_to</tspan></text>
+          <rect
+             y="381.68527"
+             x="226.79269"
+             height="65"
+             width="155.71428"
+             id="rect23520"
+             style="opacity:1;fill:#ffffff;fill-opacity:0;stroke:#000000;stroke-width:1.79999995;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:18;stroke-opacity:1" />
+        </g>
+        <path
+           style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker4504)"
+           d="m 139.64984,453.82814 68.57143,-12.14286"
+           id="path23531"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cc" />
       </g>
     </g>
     <text
        xml:space="preserve"
        style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Italic';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="319.55643"
-       y="530.71149"
+       x="320.93423"
+       y="541.35394"
        id="text13540"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3584"
-         x="319.55643"
-         y="530.71149">via LaneId</tspan></text>
+         x="320.93423"
+         y="541.35394">via LaneId</tspan></text>
     <path
        sodipodi:nodetypes="cc"
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 213.137,653.00178 292.94424,36.36548"
+       d="m 400.27986,650.14464 101.51567,60.65119"
        id="path13544"
        inkscape:connector-curvature="0" />
     <text
        sodipodi:linespacing="125%"
        id="text13546"
-       y="690.49579"
-       x="266.60464"
+       y="673.21008"
+       x="450.89035"
        style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12.5px;line-height:125%;font-family:FreeMono;-inkscape-font-specification:'FreeMono, Italic';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
          sodipodi:role="line"
-         id="tspan15805"
-         x="266.60464"
-         y="690.49579">via RightOfWayRule::Id</tspan></text>
+         id="tspan24663"
+         x="450.89035"
+         y="673.21008">via RightOfWayRule::State::Id</tspan></text>
     <g
-       transform="translate(379.85278,406.94436)"
+       transform="translate(379.85278,388.94436)"
        id="g13560"
        style="opacity:0.5">
       <rect
@@ -877,7 +899,7 @@
     </g>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.79999995, 1.79999995;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#marker15309)"
-       d="m 552.58886,782.2116 0,-31.8198"
+       d="m 552.58886,764.2116 0,-31.8198"
        id="path13578"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
@@ -943,7 +965,7 @@
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
        id="path13538"
-       d="M 241.42127,611.91042 502.54571,403.81899"
+       d="M 180.88391,613.51231 530.97356,406.972"
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.79999995;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#TriangleOutM)" />
   </g>
 </svg>
