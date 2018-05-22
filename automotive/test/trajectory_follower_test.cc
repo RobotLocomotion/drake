@@ -158,7 +158,7 @@ GTEST_TEST(TrajectoryFollowerTest, ToAutoDiff) {
     autodiff_dut.CalcOutput(*context, output.get());
   }));
 
-  EXPECT_TRUE(is_symbolic_convertible(agent));
+  EXPECT_TRUE(is_symbolic_convertible(follower));
 }
 
 }  // namespace
