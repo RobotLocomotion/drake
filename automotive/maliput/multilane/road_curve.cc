@@ -82,7 +82,7 @@ struct InverseArcLengthODEFunction {
 RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
                      const CubicPolynomial& elevation,
                      const CubicPolynomial& superelevation,
-                     const ComputationPolicy& computation_policy)
+                     const ComputationPolicy computation_policy)
     : scale_length_(scale_length),
       linear_tolerance_(linear_tolerance),
       elevation_(elevation),

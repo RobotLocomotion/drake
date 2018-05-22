@@ -259,8 +259,7 @@ class RoadCurve {
   /// @param scale_length The minimum spatial period of variation in the
   /// curve, in meters. This imposes an upper limit to the spatial frequency
   /// (i.e. the Nyquist limit), which indicates the maximum level of detail
-  /// captured. In practice, however, the relative smoothness of the roads
-  /// makes this period scale with their size.
+  /// expressed by the curve.
   /// @param elevation CubicPolynomial object that represents the elevation
   /// function (see below for more details).
   /// @param superelevation CubicPolynomial object that represents the
