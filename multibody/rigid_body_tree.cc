@@ -3237,6 +3237,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
       ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis_;
     }
   }
+  // Relative Distance Constraint
   for (size_t i = 0; i < distCons.size(); ++i) {
     auto measured_dist
           = transformPoints(cache,
@@ -3273,6 +3274,7 @@ RigidBodyTree<T>::positionConstraintsJacobian(
             .frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index(), in_terms_of_qdot);
   }
+  // Relative Distance Constraint
   for (size_t i = 0; i < distCons.size(); ++i) {
     auto measured_dist
           = transformPoints(cache,
@@ -3309,6 +3311,7 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
         loops[i].frameA_->get_frame_index(),
         loops[i].frameB_->get_frame_index());
   }
+  // Relative Distance Constraint
   for (size_t i = 0; i < distCons.size(); ++i) {
     auto measured_dist
           = transformPoints(cache,
@@ -3707,10 +3710,6 @@ template Vector3d                 RigidBodyTree<double>::centerOfMassJacobianDot
 // Explicit template instantiations for centroidalMomentumMatrixDotTimesV.
 template TwistVector<AutoDiffXd     > RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&, set<int, less<int>, allocator<int>> const&) const;  // NOLINT
 template TwistVector<double         > RigidBodyTree<double>::centroidalMomentumMatrixDotTimesV<double         >(KinematicsCache<double         >&, set<int, less<int>, allocator<int>> const&) const;  // NOLINT
-
-// Explicit template instantiations for positionConstraints.
-//template VectorX<AutoDiffXd     > RigidBodyTree<double>::addDistanceConstraint<AutoDiffXd     >(int, const Eigen::Vector3d&, int, const Eigen::Vector3d&, double) ;  // NOLINT
-//template VectorXd                 RigidBodyTree<double>::addDistanceConstraint<double         >(int, const Eigen::Vector3d&, int, const Eigen::Vector3d&, double) ;  // NOLINT
 
 // Explicit template instantiations for positionConstraints.
 template VectorX<AutoDiffXd     > RigidBodyTree<double>::positionConstraints<AutoDiffXd     >(KinematicsCache<AutoDiffXd     > const&) const;  // NOLINT
