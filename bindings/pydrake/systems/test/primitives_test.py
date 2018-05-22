@@ -23,6 +23,7 @@ from pydrake.systems.primitives import (
     ExponentialRandomSource,
     FirstOrderTaylorApproximation,
     GaussianRandomSource,
+    Gain, Gain_,
     Integrator, Integrator_,
     IsControllable,
     IsObservable,
@@ -63,6 +64,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(AffineSystem_)
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
+        self._check_instantiations(Gain_)
         self._check_instantiations(Integrator_)
         self._check_instantiations(LinearSystem_)
         self._check_instantiations(Multiplexer_)
@@ -172,6 +174,25 @@ class TestGeneral(unittest.TestCase):
         system.CalcOutput(context, output)
         output_value = output.get_data(0)
         compare_value(self, output_value, model_value)
+
+    def test_gain(self):
+        k = 42.
+        input_size = 10
+        systems = [Gain(k=k, size=input_size),
+                   Gain(k=k*np.ones(input_size))]
+
+        for system in systems:
+            context = system.CreateDefaultContext()
+            output = system.AllocateOutput(context)
+
+            def mytest(input, expected):
+                context.FixInputPort(0, BasicVector(input))
+                system.CalcOutput(context, output)
+                self.assertTrue(np.allclose(output.get_vector_data(
+                    0).CopyToVector(), expected))
+
+            test_input = np.arange(input_size)
+            mytest(np.arange(input_size), k*np.arange(input_size))
 
     def test_saturation(self):
         system = Saturation((0., -1., 3.), (1., 2., 4.))

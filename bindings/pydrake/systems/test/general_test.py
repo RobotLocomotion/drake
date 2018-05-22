@@ -15,6 +15,7 @@ from pydrake.symbolic import (
     )
 from pydrake.systems.analysis import (
     IntegratorBase_,
+    RungeKutta2Integrator, RungeKutta3Integrator,
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
@@ -289,3 +290,23 @@ class TestGeneral(unittest.TestCase):
 
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
+
+        # Test context-less constructors for
+        # integrator types.
+        test_integrator = RungeKutta2Integrator(
+            system=system, max_step_size=0.01)
+        test_integrator = RungeKutta3Integrator(system=system)
+
+        # Test simulator's reset_integrator,
+        # and also the full constructors for
+        # all integrator types.
+        simulator.reset_integrator(
+            RungeKutta2Integrator(
+                system=system,
+                max_step_size=0.01,
+                context=simulator.get_mutable_context()))
+
+        simulator.reset_integrator(
+            RungeKutta3Integrator(
+                system=system,
+                context=simulator.get_mutable_context()))

@@ -5,6 +5,7 @@ import os
 import unittest
 
 import pydrake
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
 from pydrake.multibody.parsers import PackageMap
@@ -174,6 +175,10 @@ class TestRigidBodyTree(unittest.TestCase):
         v = np.zeros(num_v)
         # Update kinematics.
         kinsol = tree.doKinematics(q, v)
+        # AutoDiff
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_ad = np.array(map(AutoDiffXd, v))
+        kinsol_ad = tree.doKinematics(q_ad, v_ad)
         # Sanity checks:
         # - Actuator map.
         self.assertEquals(tree.B.shape, (num_v, num_u))
@@ -182,16 +187,23 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(tree.B, B_expected))
         # - Mass matrix.
         H = tree.massMatrix(kinsol)
+        H_ad = tree.massMatrix(kinsol_ad)
         self.assertEquals(H.shape, (num_v, num_v))
+        self.assertEquals(H_ad.shape, (num_v, num_v))
         assert_sane(H)
         self.assertTrue(np.allclose(H[-1, -1], 0.25))
         # - Bias terms.
         C = tree.dynamicsBiasTerm(kinsol, {})
+        C_ad = tree.dynamicsBiasTerm(kinsol_ad, {})
         self.assertEquals(C.shape, (num_v,))
+        self.assertEquals(C_ad.shape, (num_v,))
         assert_sane(C)
         # - Inverse dynamics.
         vd = np.zeros(num_v)
         tau = tree.inverseDynamics(kinsol, {}, vd)
+        tau_ad = tree.inverseDynamics(kinsol_ad, {}, vd)
+        self.assertEquals(tau.shape, (num_v,))
+        self.assertEquals(tau_ad.shape, (num_v,))
         assert_sane(tau)
         # - Friction torques.
         friction_torques = tree.frictionTorques(v)
