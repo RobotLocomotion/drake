@@ -24,33 +24,12 @@ PYBIND11_MODULE(joints, m) {
                   const Eigen::Vector3d&>(),
          py::arg("name"),
          py::arg("transform_to_parent_body"),
-         py::arg("translation_axis"))
-    .def(py::init([](const std::string& name,
-                     const Eigen::Matrix4d& transform_to_parent_body,
-                     const Eigen::Vector3d& translation_axis) {
-           Eigen::Isometry3d tf;
-           tf.matrix() = transform_to_parent_body;
-           return std::make_unique<PrismaticJoint>(
-             name, tf, translation_axis);
-         }),
-         py::arg("name"),
-         py::arg("transform_to_parent_body"),
          py::arg("translation_axis"));
 
   py::class_<RevoluteJoint, DrakeJoint>(m, "RevoluteJoint")
     .def(py::init<const std::string&,
                   const Eigen::Isometry3d&,
                   const Eigen::Vector3d&>(),
-         py::arg("name"),
-         py::arg("transform_to_parent_body"),
-         py::arg("rotation_axis"))
-    .def(py::init([](const std::string& name,
-                     const Eigen::Matrix4d& transform_to_parent_body,
-                     const Eigen::Vector3d& rotation_axis) {
-           Eigen::Isometry3d tf;
-           tf.matrix() = transform_to_parent_body;
-           return std::make_unique<RevoluteJoint>(name, tf, rotation_axis);
-         }),
          py::arg("name"),
          py::arg("transform_to_parent_body"),
          py::arg("rotation_axis"));

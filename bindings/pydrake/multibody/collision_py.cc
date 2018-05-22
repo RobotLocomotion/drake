@@ -21,13 +21,6 @@ PYBIND11_MODULE(collision, m) {
   py::class_<Element, DrakeShapes::Element>(m, "CollisionElement")
   .def(py::init<const DrakeShapes::Geometry&, const Eigen::Isometry3d&>(),
          py::arg("geometry_in"), py::arg("T_element_to_local"))
-  .def(py::init([](const DrakeShapes::Geometry& geometry_in,
-                   const Eigen::Matrix4d& T_element_to_local) {
-           Eigen::Isometry3d tf;
-           tf.matrix() = T_element_to_local;
-           return std::make_unique<Element>(geometry_in, tf);
-         }),
-         py::arg("geometry_in"), py::arg("T_element_to_local"))
   .def("set_body", &Element::set_body)
   .def("get_body", &Element::get_body);
 }
