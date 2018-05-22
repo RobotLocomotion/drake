@@ -17,14 +17,6 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-namespace {
-
-// TODO(kunimatsu-tri) Add support for the arbitrary image size
-constexpr int kImageWidth = 640;  // In pixels
-constexpr int kImageHeight = 480;  // In pixels
-
-}  // namespace
-
 // Note that if `depth_image` holds any pixels that have NaN, the converted
 // points will aslo become NaN.
 void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
@@ -61,17 +53,18 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation, double z_near,
-                       double z_far, double fov_y, bool show_window)
+                       double z_far, double fov_y, bool show_window,
+                       int width, int height)
     : tree_(tree),
       frame_(RigidBodyFrame<double>()),
       camera_fixed_(true),
-      color_camera_info_(kImageWidth, kImageHeight, fov_y),
-      depth_camera_info_(kImageWidth, kImageHeight, fov_y),
+      color_camera_info_(width, height, fov_y),
+      depth_camera_info_(width, height, fov_y),
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::rpy2rotmat(orientation))),
       renderer_(new RgbdRendererVTK(
-          RenderingConfig{kImageWidth, kImageHeight, fov_y, z_near, z_far,
+          RenderingConfig{width, height, fov_y, z_near, z_far,
                           show_window},
           Eigen::Translation3d(position[0], position[1], position[2]) *
               Eigen::Isometry3d(math::rpy2rotmat(orientation)) * X_BC_)) {
@@ -81,14 +74,15 @@ RgbdCamera::RgbdCamera(const std::string& name,
 RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const RigidBodyFrame<double>& frame, double z_near,
-                       double z_far, double fov_y, bool show_window)
+                       double z_far, double fov_y, bool show_window,
+                       int width, int height)
     : tree_(tree),
       frame_(frame),
       camera_fixed_(false),
-      color_camera_info_(kImageWidth, kImageHeight, fov_y),
-      depth_camera_info_(kImageWidth, kImageHeight, fov_y),
+      color_camera_info_(width, height, fov_y),
+      depth_camera_info_(width, height, fov_y),
       renderer_(
-          new RgbdRendererVTK(RenderingConfig{kImageWidth, kImageHeight, fov_y,
+          new RgbdRendererVTK(RenderingConfig{width, height, fov_y,
                                               z_near, z_far, show_window},
                               Eigen::Isometry3d::Identity())) {
   Init(name);
@@ -101,15 +95,18 @@ void RgbdCamera::Init(const std::string& name) {
 
   state_input_port_ = &this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  ImageRgba8U color_image(kImageWidth, kImageHeight);
+  ImageRgba8U color_image(
+    color_camera_info_.width(), color_camera_info_.height());
   color_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageRgba8U(color_image), &RgbdCamera::OutputColorImage);
 
-  ImageDepth32F depth_image(kImageWidth, kImageHeight);
+  ImageDepth32F depth_image(
+      depth_camera_info_.width(), depth_camera_info_.height());
   depth_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageDepth32F(depth_image), &RgbdCamera::OutputDepthImage);
 
-  ImageLabel16I label_image(kImageWidth, kImageHeight);
+  ImageLabel16I label_image(
+      color_camera_info_.width(), color_camera_info_.height());
   label_image_port_ = &this->DeclareAbstractOutputPort(
       sensors::ImageLabel16I(label_image), &RgbdCamera::OutputLabelImage);
 
@@ -242,15 +239,16 @@ void RgbdCamera::OutputLabelImage(const Context<double>& context,
 RgbdCameraDiscrete::RgbdCameraDiscrete(
     std::unique_ptr<RgbdCamera> camera, double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {
-  constexpr int width = kImageWidth;
-  constexpr int height = kImageHeight;
+  const auto& color_camera_info = camera->color_camera_info();
+  const auto& depth_camera_info = camera->depth_camera_info();
 
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(camera));
   input_port_state_ = builder.ExportInput(camera_->state_input_port());
 
   // Color image.
-  const Value<ImageRgba8U> image_color(width, height);
+  const Value<ImageRgba8U> image_color(
+      color_camera_info.width(), color_camera_info.height());
   const auto* const zoh_color =
       builder.AddSystem<ZeroOrderHold>(period_, image_color);
   builder.Connect(camera_->color_image_output_port(),
@@ -258,7 +256,8 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(
   output_port_color_image_ = builder.ExportOutput(zoh_color->get_output_port());
 
   // Depth image.
-  const Value<ImageDepth32F> image_depth(width, height);
+  const Value<ImageDepth32F> image_depth(
+      depth_camera_info.width(), depth_camera_info.height());
   const auto* const zoh_depth =
       builder.AddSystem<ZeroOrderHold>(period_, image_depth);
   builder.Connect(camera_->depth_image_output_port(),
@@ -267,7 +266,8 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(
 
   // Label image.
   if (render_label_image) {
-    const Value<ImageLabel16I> image_label(width, height);
+    const Value<ImageLabel16I> image_label(
+        color_camera_info.width(), color_camera_info.height());
     const auto* const zoh_label =
         builder.AddSystem<ZeroOrderHold>(period_, image_label);
     builder.Connect(camera_->label_image_output_port(),
