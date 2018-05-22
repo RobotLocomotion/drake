@@ -16,7 +16,7 @@
 
 #+TITLE: maliput: Modeling Road Networks for Simulation
 #+AUTHOR: Matt Marjanović (maddog@tri.global)
-#+DATE: April 20, 2018
+#+DATE: June 14, 2018
 
 This document describes =maliput=, a model of road networks for use in
 agent and traffic simulations.  At the core of =maliput= is a
@@ -549,7 +549,7 @@ Six rule types are currently defined or proposed:
 
 A few common entities, which identify regions of the road network, occur in
 the various rule types:
- * =LaneId=: unique ID which identifies a =Lane= in a =RoadGeometry=;
+ * =LaneId=: unique ID of a =Lane= in a =RoadGeometry=;
  * =SRange=: inclusive longitudinal range $[s_0, s_1]$ between two
    s-coordinates;
  * =LaneSRange=: a =LaneId= paired with an =SRange=, describing a longitudinal
@@ -576,45 +576,280 @@ It comprises:
    * /TODO/ time-of-day/calendar condition
 
 *** =RightOfWayRule=: Stopping and Yielding
-A =RightOfWayRule= describes which vehicles have right-of-way (also known as
-"priority") when operating on intersecting regions of the road network.
-In the real world, such rules are typically signalled by stop signs, yield
-signs, and traffic lights, or are understood as implicit knowledge of the
-local laws (e.g., "vehicle on the right has priority at uncontrolled
+=RightOfWayRule= describes which vehicles have right-of-way (also
+known as "priority")[fn::Note that "right of way" does not mean "right
+to smash through obstacles".  A green light means
+that other cars should not enter an intersection, but the light turning
+green will not magically clear an intersection.  Even after acquiring
+the right-of-way, a vehicle should still respect the physical reality
+of its environment and operate in a safe manner.] when operating on
+intersecting regions of the road network.  In the real world, such
+rules are typically signalled by stop signs, yield signs, and traffic
+lights, or are understood as implicit knowledge of the local laws
+(e.g., "vehicle on the right has priority at uncontrolled
 intersections").
 
-=RightOfWayRule= comprises the static state of such rules:
-    * id
-    * controlled zone (=LaneSRoute=)
-      * /This is directional: the beginning of the range is considered
-        the "entry-point" or "stop-line"./
-    * type
-      * /Proceed/:  No contention with vehicles on other paths, but
-        vehicles should avoid stopping within the controlled zone
-        (e.g., pedestrian crosswalk).
-      * /Yield/:  E.g., a yield sign --- vehicle may continue but must yield
-        to conflicting traffic.
-      * /StopThenGo/:  E.g., a stop sign --- vehicle must come to a complete
-        stop before proceeding.
-      * /Dynamic/:  rule is determined by dynamic state.
-    * /TODO/ capture more complex yield semantics:
-      * controlled yield-to zones (e.g., whom to yield to when signals are
-        active/functioning)
-      * uncontrolled yield-to zones (e.g., whom to yield to when signals are
-        dark, e.g., fallback to 'yield to right' rule)
-      * e.g., capture semantics of N-way stop signs
-      * e.g., capture semantics of flashing turn arrows
+A =RightOfWayRule= instance is a collection of =RightOfWayRule::State=
+elements which all describe the right-of-way rules pertaining to a
+specific =zone= in the road network.  The elements of a =RightOfWayRule= are:
+#+ATTR_LATEX: :align |rl|
+|-------------+-------------------------------------------------|
+| =id=        | unique =RightOfWayRule::Id=                     |
+|-------------+-------------------------------------------------|
+| =zone=      | =LaneSRoute=                                    |
+|-------------+-------------------------------------------------|
+| =zone_type= | =ZoneType= enum {/StopExcluded/, /StopAllowed/} |
+|-------------+-------------------------------------------------|
+| =states=    | set of =State= mapped by =State::Id=            |
+|-------------+-------------------------------------------------|
+The =zone= is a directed longitudinal path in the road network,
+represented as a =LaneSRoute=; the rule applies to any vehicle
+traversing forward through the =zone=.  The =zone_type= specifies
+whether or not vehicles are allowed to come to a stop within the
+=zone=.  If the type is /StopExcluded/, then vehicles should not
+enter the =zone= if they do not expect to be able to completely
+transit the =zone= while they have the right-of-way, and vehicles
+should continue to transit and exit the =zone= if they lose the
+right-of-way while in the =zone=.  /StopExcluded/ implies a
+"stop line" at the beginning of the =zone=.  /StopAllowed/ has
+none of these expectations or restrictions.
 
-/Dynamic/ rules delegate to a =RightOfWayStateProvider= which provides
-a more complex enumeration of =DynamicState=:
-      * /Go/
-      * /PrepareToGo/
-      * /PrepareToStop/
-      * /ProceedWithCaution/
-      * /Stop/
-      * /StopThenGo/
-      * /Uncontrolled/ (e.g., dark mode)
-      * /Yield/
+Each =State= comprises:
+#+ATTR_LATEX: :align |rl|
+|------------+---------------------------------------------------------------|
+| =id=       | =State::Id= (unique within the context of the rule instance)  |
+|------------+---------------------------------------------------------------|
+| =type=     | =State::Type= enum: {/Go/, /Stop/, /StopThenGo/}              |
+|------------+---------------------------------------------------------------|
+| =yield_to= | list of =RightOfWayRule::Id=                                  |
+|------------+---------------------------------------------------------------|
+The state's =type= indicates whether a vehicle can /Go/ (has
+right-of-way), must /Stop/ (does not have right-of-way), or must
+/StopThenGo/ (has right-of-way after coming to a complete stop).
+The /Go/ and /StopThenGo/ types are modulated by =yield_to=, which is
+a (possibly empty) list of references to other rule instances
+whose right-of-way supersedes this rule.  A vehicle subject to a
+non-empty =yield_to= list does not necessarily have to stop, but its
+behavior should not hamper or interfere with the motion of
+vehicles which are controlled by rules in the =yield_to= list.
+
+Only one =State= of a rule may be in effect at any given time.  A rule
+instance which defines only a single =State= is called a /static
+rule/; its meaning is entirely static and fixed for all time.
+Conversely, a right-of-way rule instance with multiple =State=
+elements is a /dynamic rule/.  Although the collection of possible
+=State='s of a dynamic rule are fixed and described by the rule
+instance, knowing which =State= is in effect at any given time
+requires querying a =RightOfWayStateProvider=.
+
+=RightOfWayStateProvider= is an abstract interface that provides a query
+method that accepts a =RightOfWayRule::Id= and returns a result containing:
+#+ATTR_LATEX: :align |rl|
+|-----------------------+----------------------|
+| =current_id=          | =State::Id=          |
+|-----------------------+----------------------|
+| =next.id=             | optional =State::Id= |
+|-----------------------+----------------------|
+| =next.duration_until= | optional =double=    |
+|-----------------------+----------------------|
+=current_id= is the current =State= of the rule.  =next.id= is the
+/next/ =State= of the rule, if a transition is anticipated and the next
+state is known.  =next.duration_until= is the duration, if known,
+until the transition to the known next state.
+
+Following are discussions on =RightOfWayRule= configurations
+for a few example scenarios.
+
+*Example: Uncontrolled Midblock Pedestrian Crosswalk*
+
+#+CAPTION: Uncontrolled midblock pedestrian crosswalk.
+#+LABEL: fig:RoWR-lone-crosswalk
+#+ATTR_LATEX: :width 1.5in
+[[./right-of-way-example-lone-crosswalk.pdf]]
+
+Figure [[fig:RoWR-lone-crosswalk]] illustrates a very simple scenario:
+  * One-way traffic flows northbound, crossed by an uncontrolled pedestrian
+    crosswalk at midblock.
+  * The pedestrian traffic route is not modeled in the road network, so only
+    one zone (for the vehicular traffic intersecting the crosswalk) is involved.
+With only one zone and no changing signals, a single, static
+=RightOfWayRule= is required:
+#+ATTR_LATEX: :align |ll|lll|
+|-------------+----------------+------------+--------+------------|
+| Rule + Zone | =zone_type=    | State =id= | =type= | =yield_to= |
+|-------------+----------------+------------+--------+------------|
+|-------------+----------------+------------+--------+------------|
+| "North"     | /StopExcluded/ | "static"   | /Go/   | ---        |
+|-------------+----------------+------------+--------+------------|
+The =State::Id= chosen here ("static") is arbitrary.
+
+The zone is a =LaneSRoute= spanning from the southern edge of the
+crosswalk to the northern edge,
+with zone-type /StopExcluded/, which means that stopping
+within the zone is not allowed.  The single state has type /Go/, which
+means that vehicles have the right-of-way to proceed.  (Note that
+"when it is safe to do so" is always implied with any rule.)
+Furthermore, that single state has an empty =yield_to= list, which
+means no intersecting paths have priority over this one. (In fact,
+there are no intersecting paths.)
+
+This is a pretty trivial rule, since it has a single state which is
+always "Go".  However, it serves to capture the requirement that
+when a vehicle /does/ stop, it should avoid stopping in the crosswalk.
+
+Note that a more complete scenario, which actually modeled pedestrian
+traffic, would likely represent the crosswalk as a lane of its own
+(intersecting the vehicular lane) and the "North" rule would specify
+yielding to that crosswalk lane via the =yield_to= element.
+
+*Example: One-way Side Street onto Two-Lane Artery*
+
+#+CAPTION: Intersection with one-way side street onto two-lane artery.
+#+LABEL: fig:RoWR-one-way-to-two-way
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-one-way-side-street.pdf]]
+
+Figure [[fig:RoWR-one-way-to-two-way]] is a scenario with an intersection:
+  * East-west traffic is two way and uncontrolled.
+  * Northbound traffic is controlled by a stop sign.
+  * There are four zones (paths) traversing the intersection
+    (illustrated by the four arrows).
+
+With four zones and no changing signals, four static rules are
+required.  The rules have been labeled by a combination of the initial
+heading and the turn direction of their paths. (E.g., "NB/Left" refers
+to "the northbound path that turns left".)  All the zones are of the
+/StopExcluded/ type, so that detail has been omitted from the rule table:
+#+ATTR_LATEX: :align |l|lll|
+|---------------+------------+--------------+------------------------------|
+| Rule + Zone   | State =id= | =type=       | =yield_to=                   |
+|---------------+------------+--------------+------------------------------|
+|---------------+------------+--------------+------------------------------|
+| "EB/Straight" | "static"   | /Go/         | ---                          |
+|---------------+------------+--------------+------------------------------|
+| "WB/Straight" | "static"   | /Go/         | ---                          |
+|---------------+------------+--------------+------------------------------|
+| "NB/Right"    | "static"   | /StopThenGo/ | "EB/Straight"                |
+|---------------+------------+--------------+------------------------------|
+| "NB/Left"     | "static"   | /StopThenGo/ | "EB/Straight", "WB/Straight" |
+|---------------+------------+--------------+------------------------------|
+The =State::Id='s chosen here ("static") are arbitrary.
+
+As in the earlier Pedestrian Crosswalk example, the static /Go/ rules
+of the eastbound and westbound paths show that they always have the
+right-of-way, but vehicles are still required to avoid stopping in the
+intersection.  Traffic turning right onto the artery (following the
+"NB/Right" path) must stop at the stop sign, and then yield to any
+eastbound traffic.  Traffic turning left onto the artery must stop
+and then yield to both eastbound and westbound traffic.
+
+*Example: Protected/Permitted Left Turn*
+
+#+CAPTION: Intersection with protected/permitted left turn.
+#+LABEL: fig:RoWR-protected-left
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-protected-left.pdf]]
+
+Figure [[fig:RoWR-protected-left]] provides a more complex scenario with a
+dynamic signal-controlled intersection:
+  * The north-south street is one-way, northbound only.
+  * East-west traffic is two-way, with a dedicated left-turn lane for
+    eastbound traffic turning north.
+  * "Right Turn on Red" is allowed (which affects both northbound and
+    westbound vehicles).
+  * In the signalling cycle, eastbound traffic has both a protected-left
+    (green arrow) phase and a permitted-left (flashing yellow arrow) phase.
+  * There are a total of seven zones (paths) traversing the intersection
+    (illustrated by the seven arrows).
+
+With seven zones, seven rule instances are required.  The rules have
+been labeled by a combination of the initial heading and the turn
+direction of their paths. (E.g., "NB/Left" refers to "the northbound
+path that turns left".)  All the zones are of the /StopExcluded/ type,
+so that detail has been omitted from the rule table:
+#+ATTR_LATEX: :align |l|lll|
+|---------------+------------------+--------------+---------------------------|
+| Rule + Zone   | State =id=       | =type=       | =yield_to=                |
+|---------------+------------------+--------------+---------------------------|
+|---------------+------------------+--------------+---------------------------|
+| "NB/Right"    | "Red"            | /StopThenGo/ | "EB/Straight"             |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "NB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "NB/Left"     | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "EB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "EB/Left"     | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|               | "FlashingYellow" | /Go/         | "WB/Straight", "WB/Right" |
+|---------------+------------------+--------------+---------------------------|
+| "WB/Right"    | "Red"            | /StopThenGo/ | "NB/Straight", "EB/Left"  |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "WB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+The =State::Id='s have been chosen to loosely match the states of the
+corresponding traffic signals.  (Note that typically a "yellow light"
+confers the same right-of-way as a "green light"; the only difference
+is that the yellow indicates that a transition to red is imminent.)
+
+Each rule has at least two states.  The straight-ahead rules
+(*/Straight) and the northbound left-turning rule (NB/Left) are quite
+straightforward: either "Stop" with no right-of-way or "Go" with full
+right-of-way.  The other turning rules are a bit more interesting.
+
+Since "Right Turn on Red" is allowed, both the "NB/Right" and "WB/Right"
+rules have /StopThenGo/ states (instead of /Stop/ states) that must
+yield to other traffic.  "NB/Right" must yield to eastbound traffic,
+and "WB/Right" must yield to northbound traffic.
+
+The "EB/Left" rule has two /Go/ states.  One is the protected turn state, in
+which the left turn is given full priority over oncoming westbound traffic.
+The other is the permitted turn state, in which the left turn must yield
+to westbound traffic.  In the US, a possible traffic light configuration
+for such an intersection would signal the protected turn by a solid
+green arrow, and the permitted turn by a flashing yellow arrow.
+
+*Example: Freeway Merge*
+
+#+CAPTION: Entrance ramp merging onto a 2-lane (one-way) freeway.
+#+LABEL: fig:RoWR-freeway-merge
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-freeway-merge.pdf]]
+
+Figure [[fig:RoWR-freeway-merge]] is a scenario with a freeway merge:
+  * Freeway has two lanes of eastbound traffic.
+  * Entrance ramp merges onto the freeway from the right (south).
+  * Merging traffic must yield to traffic already on the freeway.
+  * Two zones traverse the area where the merge occurs (illustrated by
+    the two arrows).
+
+This is a static scenario with two static rules:
+#+ATTR_LATEX: :align |ll|lll|
+|-------------+---------------+------------+--------+------------|
+| Rule + Zone | =zone_type=   | State =id= | =type= | =yield_to= |
+|-------------+---------------+------------+--------+------------|
+|-------------+---------------+------------+--------+------------|
+| "Freeway"   | /StopAllowed/ | "static"   | /Go/   | ---        |
+| "Entrance"  | /StopAllowed/ | "static"   | /Go/   | "Freeway"  |
+|-------------+---------------+------------+--------+------------|
+The =State::Id='s chosen here ("static") are arbitrary.
+
+The only constraint encoded by these two rules is that the "Entrance"
+traffic should yield to the "Freeway" traffic.  Note that unlike
+previous examples, both zones in this scenario have a zone-type of
+/StopAllowed/.  That means there are no "stop lines" (real or
+implicit) and no exclusion zones that are expected to be left
+unblocked by stopped traffic.  Both rules' static states are of type
+/Go/, as well; neither path is expected to stop.  Ideally, the entrance
+traffic never stops, but instead speeds up to seamlessly merge into
+the freeway flow.
 
 *** /(TODO)/ =DirectionUsageRule=: Direction/Usage
 /Captures allowed direction-of-travel./
