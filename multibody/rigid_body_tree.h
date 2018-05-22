@@ -135,10 +135,13 @@ class RigidBodyTree {
   // This method is not thread safe.
   int get_next_clique_id() { return next_available_clique_++; }
 
+  // TODO(liang.fok) Update this method implementation once the world
+  // is assigned its own model instance ID (#3088). It should return
+  // num_model_instances_ - 1.
   /**
    * Returns the number of model instances in the tree, not including the world.
    */
-  int get_num_model_instances() const;
+  int get_num_model_instances() const { return num_model_instances_; }
 
   DRAKE_DEPRECATED("Please use get_num_model_instances().")
   int get_number_of_model_instances() const;
@@ -1349,7 +1352,10 @@ class RigidBodyTree {
    * between zero and the number of bodies in this tree, which can be determined
    * by calling RigidBodyTree::get_num_bodies().
    */
-  const RigidBody<T>& get_body(int body_index) const;
+  const RigidBody<T>& get_body(int body_index) const {
+    DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
+    return *bodies_[body_index].get();
+  }
 
   /**
    * Returns the body at index @p body_index. Parameter @p body_index must be
@@ -1362,7 +1368,9 @@ class RigidBodyTree {
    * Returns the number of bodies in this tree. This includes the one body that
    * represents the world.
    */
-  int get_num_bodies() const;
+  int get_num_bodies() const {
+    return static_cast<int>(bodies_.size());
+  }
 
   /**
    * Returns the number of frames in this tree.
@@ -1516,7 +1524,7 @@ class RigidBodyTree {
   /**
    * Returns the number of position states outputted by this %RigidBodyTree.
    */
-  int get_num_positions() const;
+  int get_num_positions() const { return num_positions_; }
 
   DRAKE_DEPRECATED("Please use get_num_positions().")
   int number_of_positions() const;
@@ -1524,7 +1532,7 @@ class RigidBodyTree {
   /**
    * Returns the number of velocity states outputted by this %RigidBodyTree.
    */
-  int get_num_velocities() const;
+  int get_num_velocities() const { return num_velocities_; }
 
   DRAKE_DEPRECATED("Please use get_num_velocities().")
   int number_of_velocities() const;
@@ -1532,7 +1540,7 @@ class RigidBodyTree {
   /**
    * Returns the number of actuators in this %RigidBodyTree.
    */
-  int get_num_actuators() const;
+  int get_num_actuators() const { return static_cast<int>(actuators.size()); }
 
   /**
    * Returns whether this %RigidBodyTree is initialized. It is initialized after

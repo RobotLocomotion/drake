@@ -21,13 +21,6 @@ namespace {
 
 using std::make_unique;
 
-// Tests whether an exception is thrown if RigidBody::getJoint() is called prior
-// to a joint being set.
-GTEST_TEST(RigidBodyTest, TestGetJointThatIsNotSet) {
-  auto rigid_body_ptr = make_unique<RigidBody<double>>();
-  EXPECT_THROW(rigid_body_ptr->getJoint(), std::runtime_error);
-}
-
 // Confirms that the adjacency of bodies is evaluated correctly.  See
 // RigidBody::adjacentTo for details
 GTEST_TEST(RigidBodyTest, TestAdjacency) {
