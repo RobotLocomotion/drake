@@ -3,6 +3,8 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
 using std::unique_ptr;
@@ -37,12 +39,47 @@ PYBIND11_MODULE(analysis, m) {
       .def("get_throw_on_minimum_step_size_violation",
            &IntegratorBase<T>::get_throw_on_minimum_step_size_violation);
 
+    DefineTemplateClassWithDefault<RungeKutta2Integrator<T>,
+                                   IntegratorBase<T>>(
+       m, "RungeKutta2Integrator", GetPyParam<T>())
+      .def(py::init<const System<T>&, const T&>(),
+           py::arg("system"),
+           py::arg("max_step_size"),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::keep_alive<1, 2>())
+      .def(py::init<const System<T>&, const T&, Context<T>*>(),
+           py::arg("system"),
+           py::arg("max_step_size"),
+           py::arg("context"),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::keep_alive<1, 2>(),
+           // Keep alive, reference: `self` keeps `Context` alive.
+           py::keep_alive<1, 4>());
+
+    DefineTemplateClassWithDefault<RungeKutta3Integrator<T>,
+                                   IntegratorBase<T>>(
+       m, "RungeKutta3Integrator", GetPyParam<T>())
+      .def(py::init<const System<T>&>(),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::arg("system"),
+           py::keep_alive<1, 2>())
+      .def(py::init<const System<T>&, Context<T>*>(),
+           py::arg("system"),
+           py::arg("context"),
+           // Keep alive, reference: `self` keeps `System` alive.
+           py::keep_alive<1, 2>(),
+           // Keep alive, reference: `self` keeps `Context` alive.
+           py::keep_alive<1, 3>());
+
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>())
       .def(py::init<const System<T>&>(),
+           py::arg("system"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>())
       .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
+           py::arg("system"),
+           py::arg("context"),
            // Keep alive, reference: `self` keeps `System` alive.
            py::keep_alive<1, 2>(),
            // Keep alive, ownership: `Context` keeps `self` alive.
@@ -56,6 +93,13 @@ PYBIND11_MODULE(analysis, m) {
            py_reference_internal)
       .def("get_mutable_context", &Simulator<T>::get_mutable_context,
            py_reference_internal)
+      .def("reset_integrator",
+           [](Simulator<T>* self,
+              std::unique_ptr<IntegratorBase<T>> integrator) {
+             return self->reset_integrator(std::move(integrator));
+           },
+           // Keep alive, ownership: 'Integrator' keeps 'self' alive.
+           py::keep_alive<2, 1>())
       .def("set_publish_every_time_step",
            &Simulator<T>::set_publish_every_time_step)
       .def("set_target_realtime_rate", &Simulator<T>::set_target_realtime_rate);
