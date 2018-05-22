@@ -34,9 +34,9 @@
     </link>
 
     <joint name='pin' type='revolute'>
-      <pose>0 3 0 0 0 0</pose>
       <parent>world</parent>
       <child>upper_section</child>
+      <pose>0 3 0 0 0 0</pose>
       <axis>
         <xyz>0.0 0.0 1.0</xyz>
       </axis>
@@ -44,9 +44,10 @@
 
     <!-- Weld the upper and lower sections to form a single rod of length 12 -->
     <joint name='weld' type='fixed'>
-      <pose>0 3.0 0 0 0 0</pose>
       <parent>upper_section</parent>
       <child>lower_section</child>
+      <!-- Pose X_CJ of the joint frame J in frame C of the child link. -->
+      <pose>0 3.0 0 0 0 0</pose>
     </joint>
   </model>
 </sdf>
