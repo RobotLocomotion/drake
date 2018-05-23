@@ -292,14 +292,35 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertAlmostEqual(np.max(tree.joint_limit_max[6:]), 3.14159)
 
     def test_rigid_body_api(self):
-        # Tests the simpler parts parts of the RigidBody API.
-        body_1 = RigidBody()
-        name = "body_1"
-        body_1.set_name(name)
-        self.assertEqual(body_1.get_name(), name)
+        # Tests as much of the RigidBody API as is possible in isolation.
+        # Adding collision geometry is *not* tested here, as it needs to
+        # be done in the context of the RigidBodyTree.
+        body = RigidBody()
+        name = "body"
+        body.set_name(name)
+        self.assertEqual(body.get_name(), name)
         inertia = np.eye(6)
-        body_1.set_spatial_inertia(inertia)
-        self.assertTrue(np.allclose(inertia, body_1.get_spatial_inertia()))
+        body.set_spatial_inertia(inertia)
+        self.assertTrue(np.allclose(inertia, body.get_spatial_inertia()))
+
+        # Try adding a joint to a dummy body.
+        body_joint = PrismaticJoint("z", np.eye(4),
+                                    np.array([0., 0., 1.]))
+        self.assertFalse(body.has_joint())
+        dummy_body = RigidBody()
+        body.add_joint(dummy_body, body_joint)
+        self.assertEqual(body.getJoint(), body_joint)
+        self.assertTrue(body.has_joint())
+
+        # Try adding visual geometry.
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_visual_element = shapes.VisualElement(
+            box_element, np.eye(4), [1., 0., 0., 1.])
+        body.AddVisualElement(box_visual_element)
+        body_visual_elements = body.get_visual_elements()
+        self.assertEqual(len(body_visual_elements), 1)
+        self.assertEqual(body_visual_elements[0].getGeometry().getShape(),
+                         box_visual_element.getGeometry().getShape())
 
     def test_joints_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays,
@@ -334,7 +355,6 @@ class TestRigidBodyTree(unittest.TestCase):
         # Tests RBT programmatic construction methods by assembling
         # a simple RBT with a prismatic and revolute joint, with
         # both visual and collision geometry on the last joint.
-        # In the process, covers most of the RigidBody API.
         rbt = RigidBodyTree()
         world_body = rbt.world()
 
@@ -342,34 +362,22 @@ class TestRigidBodyTree(unittest.TestCase):
         # the +z axis.
         body_1 = RigidBody()
         body_1.set_name("body_1")
-        self.assertEqual(body_1.get_name(), "body_1")
-        # Verify construction from both Isometry3d and 4x4 arrays.
         body_1_joint = PrismaticJoint("z", np.eye(4),
                                       np.array([0., 0., 1.]))
-        self.assertFalse(body_1.has_joint())
         body_1.add_joint(world_body, body_1_joint)
-        self.assertEqual(body_1.getJoint(), body_1_joint)
-        self.assertTrue(body_1.has_joint())
-
         rbt.add_rigid_body(body_1)
 
         # body_2 is connected to body_1 via a revolute joint around the z-axis.
         body_2 = RigidBody()
         body_2.set_name("body_2")
-        self.assertEqual(body_2.get_name(), "body_2")
         body_2_joint = RevoluteJoint("theta", np.eye(4),
                                      np.array([0., 0., 1.]))
         body_2.add_joint(body_1, body_2_joint)
-        self.assertEqual(body_2.getJoint(), body_2_joint)
         box_element = shapes.Box([1.0, 1.0, 1.0])
         box_visual_element = shapes.VisualElement(
             box_element, np.eye(4), [1., 0., 0., 1.])
         body_2.AddVisualElement(box_visual_element)
         body_2_visual_elements = body_2.get_visual_elements()
-        self.assertEqual(len(body_2_visual_elements), 1)
-        self.assertEqual(body_2_visual_elements[0].getGeometry().getShape(),
-                         box_visual_element.getGeometry().getShape())
-
         rbt.add_rigid_body(body_2)
 
         box_collision_element = CollisionElement(box_element, np.eye(4))
@@ -378,5 +386,6 @@ class TestRigidBodyTree(unittest.TestCase):
 
         rbt.compile()
 
+        # The RBT's position vector should now be [z, theta].
         self.assertEqual(body_1.get_position_start_index(), 0)
         self.assertEqual(body_2.get_position_start_index(), 1)
