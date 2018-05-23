@@ -204,7 +204,5 @@ class LeafOutputPort : public OutputPort<T> {
   EvalCallback  eval_function_;
 };
 
-// See diagram.h for DiagramOutputPort.
-
 }  // namespace systems
 }  // namespace drake

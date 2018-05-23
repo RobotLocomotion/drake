@@ -26,8 +26,6 @@ namespace systems {
 template <typename T>
 class System;
 
-using OutputPortIndex = TypeSafeIndex<class OutputPortTag>;
-
 /** An %OutputPort belongs to a System and represents the properties of one of
 that System's output ports. %OutputPort objects are assigned OutputPortIndex
 values in the order they are declared; these are unique within a single System.
