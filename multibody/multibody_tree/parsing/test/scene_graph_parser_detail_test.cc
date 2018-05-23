@@ -30,7 +30,6 @@ using geometry::Shape;
 using geometry::Sphere;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollision;
 using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
 using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
