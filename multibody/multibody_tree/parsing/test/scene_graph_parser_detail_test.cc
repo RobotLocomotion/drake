@@ -438,7 +438,6 @@ GTEST_TEST(SceneGraphParserDetail,
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
       std::logic_error,
-      "From <collision> with name 'some_link_collision': "
       "The given dynamic friction \\(.*\\) is greater than the given static "
       "friction \\(.*\\); dynamic friction must be less than or equal to "
       "static friction.");

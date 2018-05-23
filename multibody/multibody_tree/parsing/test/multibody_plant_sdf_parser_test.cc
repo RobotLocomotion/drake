@@ -162,16 +162,16 @@ class MultibodyPlantSdfParser : public ::testing::Test {
     AddModelFromSdfFile(full_name_, &plant_);
     plant_.Finalize();
   }
-  
+
   void LoadMultibodyPlantAndSceneGraph() {
     AddModelFromSdfFile(full_name_, &plant_, &scene_graph_);
     plant_.Finalize();
   }
-  
+
  protected:
   MultibodyPlant<double> plant_;
   SceneGraph<double> scene_graph_;
-  const char kSdfPath[] =
+  const std::string kSdfPath =
       "drake/multibody/multibody_tree/parsing/test/"
           "links_with_visuals_and_collisions.sdf";
   std::string full_name_;

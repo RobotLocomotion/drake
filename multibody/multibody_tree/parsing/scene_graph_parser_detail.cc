@@ -220,12 +220,6 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       // X_LC = X_LG for SPHERE.
       break;
     }
-    default: {
-      throw std::logic_error(
-          "It seems sdformat was updated to define a new geometry type. "
-          "Analyze whether X_LC = X_LG and update this switch statement"
-          "accordingly.");
-    }
   }
 
   // TODO(amcastro-tri): Extract <material> once sdf::Visual supports it.
@@ -250,13 +244,15 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   // There are cases however in which C might not coincide with G. A HalfSpace
   // is one of such examples, since for geometry::HalfSpace the normal is
   // represented in the C frame along Cz, whereas SDF defines the normal in a
-  // frame G which does not necessarily coinciding with C.
+  // frame G which does not necessarily coincide with C.
 
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
 
   // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
+  // Note to developers: if needed, update this switch statement to consider
+  // other geometry types whenever X_LC != X_LG.
   const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:
@@ -284,12 +280,6 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
     case sdf::GeometryType::SPHERE:  {
       // X_LC = X_LG for SPHERE.
       break;
-    }
-    default: {
-      throw std::logic_error(
-          "It seems sdformat was updated to define a new geometry type. "
-          "Analyze whether X_LC = X_LG and update this switch statement"
-          "accordingly.");
     }
   }
   return X_LC;
@@ -323,12 +313,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
   const double dynamic_friction =
       GetChildElementValueOrThrow<double>(ode_element, "mu2");
 
-  try {
-    return CoulombFriction<double>(static_friction, dynamic_friction);
-  } catch (std::logic_error& e) {
-    throw std::logic_error("From <collision> with name '" +
-        sdf_collision.Name() + "': " + e.what());
-  }
+  return CoulombFriction<double>(static_friction, dynamic_friction);
 }
 
 }  // namespace detail
