@@ -55,6 +55,7 @@ drake_cc_library(
     deps = [
         ":sdf_parser_common",
         "//geometry:scene_graph",
+        "//multibody/parsers:find_files",
         "@sdformat",
     ],
 )
@@ -80,6 +81,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/shapes:test_models",
     ],
     deps = [
         ":multibody_plant_sdf_parser",

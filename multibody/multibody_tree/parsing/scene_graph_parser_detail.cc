@@ -8,6 +8,7 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
+#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -33,6 +34,18 @@ const sdf::Element* MaybeGetChildElement(
     // guarantees "element" is not changed as promised by this method's
     // signature.
     return const_cast<sdf::Element&>(element).GetElement(child_name).get();
+  }
+  return nullptr;
+}
+
+// Helper to return the mutable child element of `element` named
+// `child_name`.  Returns nullptr if not present.
+sdf::Element* MaybeGetChildElement(
+    sdf::Element* element, const std::string &child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (element->HasElement(child_name)) {
+    return element->GetElement(child_name).get();
   }
   return nullptr;
 }
@@ -192,6 +205,43 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   return make_unique<GeometryInstance>(
       X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
 }
+
+
+sdf::Visual ResolveVisualUri(const sdf::Visual& original,
+                             const parsers::PackageMap& package_map,
+                             const std::string& root_dir) {
+  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
+  sdf::Element* geom_element =
+      MaybeGetChildElement(visual_element.get(), "geometry");
+  if (geom_element) {
+    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
+    if (mesh_element) {
+      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
+      if (uri_element) {
+        const std::string uri = uri_element->Get<std::string>();
+        const std::string resolved_name =
+            parsers::ResolveFilename(uri, package_map, root_dir);
+        if (!resolved_name.empty()) {
+          uri_element->Set(resolved_name);
+        } else {
+          throw std::runtime_error(
+              std::string(__FILE__) + ": " + __func__ +
+              ": ERROR: Mesh file name could not be resolved from the "
+              "provided uri \"" + uri + "\".");
+        }
+      } else {
+        throw std::runtime_error(
+            std::string(__FILE__) + ": " + __func__ +
+            ": ERROR: <mesh> tag specified without <uri?>");
+      }
+    }
+  }
+
+  sdf::Visual visual;
+  visual.Load(visual_element);
+  return visual;
+}
+
 
 }  // namespace detail
 
