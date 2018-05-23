@@ -152,6 +152,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
       .def("inverse", [](const Class* self) {
         return self->inverse();
       });
+    py::implicitly_convertible<Matrix4<T>, Class>();
   }
 
   // Quaternion.
