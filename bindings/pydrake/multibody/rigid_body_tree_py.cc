@@ -310,6 +310,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                           RigidBodyTree<double>*>(
             &parsers::urdf::
                 AddModelInstanceFromUrdfStringSearchingInRosPackages));
+  m.def("AddModelInstancesFromSdfFile",
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          std::shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfFile)),
   m.def("AddModelInstancesFromSdfString",
         py::overload_cast<const std::string&, const FloatingBaseType,
                           shared_ptr<RigidBodyFrame<double>>,
