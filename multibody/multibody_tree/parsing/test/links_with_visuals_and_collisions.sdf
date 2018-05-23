@@ -17,10 +17,9 @@
       </visual>
       <visual name='link1_visual2'>
         <geometry>
-          <cylinder>
-            <radius>0.5</radius>
-            <length>2.0</length>
-          </cylinder>
+          <mesh>
+            <uri>../../../shapes/test/tri_cube.obj</uri>
+          </mesh>
         </geometry>
       </visual>
 

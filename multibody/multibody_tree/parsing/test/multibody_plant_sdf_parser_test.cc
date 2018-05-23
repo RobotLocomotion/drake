@@ -226,6 +226,14 @@ TEST_F(MultibodyPlantSdfParser, RegisterWithASceneGraphBeforeParsing) {
       plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link1"));
   EXPECT_EQ(link1_visual_geometry_ids.size(), 2);
 
+  // TODO(sam.creasey) Verify that the path to the mesh for the second
+  // visual geometry on link 1 is resolved correctly.  Currently the
+  // resolved mesh filename is trapped inside the shape object within
+  // the scene graph and I can't find any good way to dig it back out.
+  // It would be possible to modify geometry::DispatchLoadMessage to
+  // take a DrakeLcmInterface and then scrape the filename out of the
+  // resulting lcmt_viewer_load_robot message, but I don't want to.
+
   const std::vector<GeometryId>& link2_visual_geometry_ids =
       plant_.GetVisualGeometriesForBody(plant_.GetBodyByName("link2"));
   EXPECT_EQ(link2_visual_geometry_ids.size(), 3);
@@ -272,4 +280,3 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
-

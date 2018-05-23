@@ -373,9 +373,9 @@ TEST_F(RotationConversionTest, rotmat2rpyTest) {
 
 TEST_F(RotationConversionTest, rpy2rotmatTest) {
   for (const RollPitchYaw<double>& rpyi : rpy_test_cases_) {
-    const double roll = rpyi.get_roll_angle();
-    const double pitch = rpyi.get_pitch_angle();
-    const double yaw = rpyi.get_yaw_angle();
+    const double roll = rpyi.roll_angle();
+    const double pitch = rpyi.pitch_angle();
+    const double yaw = rpyi.yaw_angle();
     const Quaterniond q = Eigen::AngleAxisd(yaw, Vector3d::UnitZ()) *
                           Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
                           Eigen::AngleAxisd(roll, Vector3d::UnitX());

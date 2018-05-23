@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/parsers/package_map.h"
 
 namespace drake {
 namespace multibody {
@@ -55,6 +57,22 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
 /// are required and an exception is thrown if not present.
 multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
+
+// TODO(sam.creasey) Making this operate specifically on sdf::Visual
+// is overly specific since we're going to be parsing collision meshes
+// at some point.
+
+/// Given an sdf::Visual object representing a <visual> element from
+/// an SDF file, this method makes a new Visual object which resolves
+/// the uri for the mesh element, if present.  If the mesh element is
+/// not present, the new object will be identical to the original.
+/// See parsers::ResolveFilename() for more detail on this operation.
+///
+/// @throws std::runtime_error if the <mesh> tag is present but
+/// missing <uri> or if the file referenced in <uri> can not be found.
+sdf::Visual ResolveVisualUri(const sdf::Visual& original,
+                             const parsers::PackageMap& package_map,
+                             const std::string& root_dir);
 
 }  // namespace detail
 }  // namespace parsing

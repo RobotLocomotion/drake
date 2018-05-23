@@ -129,9 +129,9 @@ class RotationMatrix {
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    const T &r = rpy.get_roll_angle();
-    const T &p = rpy.get_pitch_angle();
-    const T &y = rpy.get_yaw_angle();
+    const T &r = rpy.roll_angle();
+    const T &p = rpy.pitch_angle();
+    const T &y = rpy.yaw_angle();
     using std::sin;
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);

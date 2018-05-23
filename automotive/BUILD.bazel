@@ -28,7 +28,6 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "automotive",
     deps = [
-        ":agent_trajectory",
         ":automotive_simulator",
         ":bicycle_car",
         ":box_car_vis",
@@ -54,8 +53,9 @@ drake_cc_package_library(
         ":road_path",
         ":simple_car",
         ":simple_powertrain",
-        ":trajectory_agent",
+        ":trajectory",
         ":trajectory_car",
+        ":trajectory_follower",
         ":trivial_right_of_way_state_provider",
     ],
 )
@@ -94,9 +94,9 @@ drake_cc_vector_gen_translator_library(
 )
 
 drake_cc_library(
-    name = "agent_trajectory",
-    srcs = ["agent_trajectory.cc"],
-    hdrs = ["agent_trajectory.h"],
+    name = "trajectory",
+    srcs = ["trajectory.cc"],
+    hdrs = ["trajectory.h"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
@@ -398,12 +398,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "trajectory_agent",
-    srcs = ["trajectory_agent.cc"],
-    hdrs = ["trajectory_agent.h"],
+    name = "trajectory_follower",
+    srcs = ["trajectory_follower.cc"],
+    hdrs = ["trajectory_follower.h"],
     deps = [
-        ":agent_trajectory",
         ":generated_vectors",
+        ":trajectory",
         "//common:autodiff",
         "//common:extract_double",
         "//systems/framework:leaf_system",
@@ -564,9 +564,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "agent_trajectory_test",
+    name = "trajectory_test",
     deps = [
-        "//automotive:agent_trajectory",
+        "//automotive:trajectory",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework/test_utilities",
     ],
@@ -755,9 +755,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "trajectory_agent_test",
+    name = "trajectory_follower_test",
     deps = [
-        "//automotive:trajectory_agent",
+        "//automotive:trajectory_follower",
         "//common:extract_double",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities",

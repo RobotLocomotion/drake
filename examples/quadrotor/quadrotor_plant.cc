@@ -86,13 +86,13 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   // For rotors 1 and 3, get the -Bz measure of its aerodynamic torque on B.
   // Sum the net Bz measure of the aerodynamic torque on B.
   // Note: Rotors 0 and 2 rotate one way and rotors 1 and 3 rotate the other.
-  const Vector4<T> uM_Bz = kM_ * u;
-  const T Mz = uM_Bz(0) - uM_Bz(1) + uM_Bz(2) - uM_Bz(3);
+  const Vector4<T> uTau_Bz = kM_ * u;
+  const T Mz = uTau_Bz(0) - uTau_Bz(1) + uTau_Bz(2) - uTau_Bz(3);
 
   // Form the net moment on B about Bcm, expressed in B. The net moment accounts
   // for all contact and distance forces (aerodynamic and gravity forces) on B.
   // Note: Since the net moment on B is about Bcm, gravity does not contribute.
-  const Vector3<T> M(Mx, My, Mz);
+  const Vector3<T> Tau_B(Mx, My, Mz);
 
   // Calculate local celestial body's (Earth's) gravity force on B, expressed in
   // the Newtonian frame N (a.k.a the inertial or World frame).
@@ -112,32 +112,17 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   const Vector3<T> xyzDDt = Fnet_N / m_;  // Equal to a_NBcm_N.
 
   // Use rpy and rpyDt to calculate B's angular velocity in N, expressed in B.
-  const Vector3<T> w_BN_B = rpy.RollPitchYawDtToAngularVelocityD(rpyDt);
+  const Vector3<T> w_BN_B = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
 
-  // To compute B's angular acceleration in N, expressed in B, due to the net
-  // moment on B, rearrange Euler rigid body equation to solve for alpha_BN_B.
-  // Euler's equation: M = I_.Dot(alpha_BN_B) + w.Cross(I_.Dot(w)).
-  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);      // Expressed in B.
-  const Vector3<T> alf_BN_B = I_.ldlt().solve(M - wIw);  // Expressed in B.
+  // To compute α (B's angular acceleration in N) due to the net moment 𝛕 on B,
+  // rearrange Euler rigid body equation  𝛕 = I α + ω × (I ω)  and solve for α.
+  const Vector3<T> wIw = w_BN_B.cross(I_ * w_BN_B);            // Expressed in B
+  const Vector3<T> alpha_NB_B = I_.ldlt().solve(Tau_B - wIw);  // Expressed in B
+  const Vector3<T> alpha_NB_N = R_NB * alpha_NB_B;             // Expressed in N
 
-  // For subsequent calculation (below) form B's angular acceleration in N
-  // expressed in N, and B's angular velocity in N expressed in N.
-  const Vector3<T> alf_BN_N = R_NB * alf_BN_B;           // Expressed in N.
-  const Vector3<T> w_BN_N = R_NB * w_BN_B;               // Expressed in N.
-
-  // TODO(mitiguy) replace angularvel2rpydotMatrix with new RollPitchYaw method.
-  // TODO(mitiguy) continue fixing documentation for this example (here to end).
-  Matrix3<T> Phi;
-  typename drake::math::Gradient<Matrix3<T>, 3>::type dPhi;
-  typename drake::math::Gradient<Matrix3<T>, 3, 2>::type* ddPhi = nullptr;
-  angularvel2rpydotMatrix(rpy.vector(), Phi, &dPhi, ddPhi);
-
-  const Eigen::Matrix<T, 9, 1> dPhi_x_rpyDt_vec = dPhi * rpyDt;
-  const Eigen::Map<const Matrix3<T>> dPhi_x_rpyDt(dPhi_x_rpyDt_vec.data());
-  const Matrix3<T> R_NB_Dt = rpy.OrdinaryDerivativeRotationMatrix(rpyDt);
-  const Vector3<T> rpyDDt = Phi * alf_BN_N
-                          + dPhi_x_rpyDt * w_BN_N
-                          + Phi * R_NB_Dt * w_BN_B;
+  // Calculate the 2nd time-derivative of rpy.
+  const Vector3<T> rpyDDt =
+      rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_NB_N);
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);

@@ -108,7 +108,7 @@ class TestBarycentricMesh(unittest.TestCase):
         self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         rpy = mut.RollPitchYaw(roll=0, pitch=0, yaw=0)
         self.assertTupleEqual(
-            (rpy.get_roll_angle(), rpy.get_pitch_angle(), rpy.get_yaw_angle()),
+            (rpy.roll_angle(), rpy.pitch_angle(), rpy.yaw_angle()),
             (0, 0, 0))
         q_I = Quaternion()
         self.assertTrue(np.allclose(rpy.ToQuaternion().wxyz(), q_I.wxyz()))
