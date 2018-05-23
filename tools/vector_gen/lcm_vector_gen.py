@@ -198,7 +198,7 @@ def generate_set_to_named_variables(hh, caller_context, fields):
 
 
 DO_CLONE = """
-  %(camel)s<T>* DoClone() const override {
+  %(camel)s<T>* DoClone() const final {
     return new %(camel)s;
   }
 """
@@ -297,7 +297,7 @@ def generate_is_valid(hh, caller_context, fields):
 
 CALC_INEQUALITY_CONSTRAINT_BEGIN = """
   // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const override {
+  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
     value->resize(%(num_constraints)d);
 """
 CALC_INEQUALITY_CONSTRAINT_MIN_VALUE = """
@@ -365,7 +365,7 @@ VECTOR_CLASS_BEGIN = """
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class %(camel)s : public drake::systems::BasicVector<T> {
+class %(camel)s final : public drake::systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
   typedef %(indices)s K;
@@ -411,18 +411,18 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class %(camel)sTranslator
+class %(camel)sTranslator final
     : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
       : LcmAndVectorBaseTranslator(%(indices)s::kNumCoordinates) {}
   std::unique_ptr<drake::systems::BasicVector<double>> AllocateOutputVector()
-      const override;
+      const final;
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-      drake::systems::VectorBase<double>* vector_base) const override;
+      drake::systems::VectorBase<double>* vector_base) const final;
   void Serialize(double time,
       const drake::systems::VectorBase<double>& vector_base,
-      std::vector<uint8_t>* lcm_message_bytes) const override;
+      std::vector<uint8_t>* lcm_message_bytes) const final;
 };
 """
 

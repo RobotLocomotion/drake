@@ -38,7 +38,7 @@ struct SampleIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class Sample : public drake::systems::BasicVector<T> {
+class Sample final : public drake::systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
   typedef SampleIndices K;
@@ -63,7 +63,7 @@ class Sample : public drake::systems::BasicVector<T> {
     this->set_absone(symbolic::Variable("absone"));
   }
 
-  Sample<T>* DoClone() const override { return new Sample; }
+  Sample<T>* DoClone() const final { return new Sample; }
 
   /// @name Getters and Setters
   //@{
@@ -103,7 +103,7 @@ class Sample : public drake::systems::BasicVector<T> {
   }
 
   // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const override {
+  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
     value->resize(3);
     (*value)[0] = x() - T(0.0);
     (*value)[1] = absone() - T(-1.0);
