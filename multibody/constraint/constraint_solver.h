@@ -118,7 +118,7 @@ class ConstraintSolver {
   ///           enforce generic bilateral constraints. This packed storage
   ///           format can be turned into more useful representations through
   ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
-  ///           CalcImpactForcesInContactFrames(). `cf` will be resized as
+  ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
   /// @throws a std::runtime_error if the constraint forces cannot be computed
@@ -187,6 +187,9 @@ class ConstraintSolver {
 
   /// Gets the contact forces expressed in each contact frame *for 2D contact
   /// problems* from the "packed" solution returned by SolveConstraintProblem().
+  /// If the constraint forces are impulsive, the contact forces are impulsive;
+  /// similarly, if the constraint forces are non-impulsive, the contact forces
+  /// willb e non-impulsive.
   /// @param cf the output from SolveConstraintProblem()
   /// @param problem_data the problem data input to SolveConstraintProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
