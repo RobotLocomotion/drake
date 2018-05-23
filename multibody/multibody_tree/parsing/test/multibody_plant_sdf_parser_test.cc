@@ -156,6 +156,9 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
 class MultibodyPlantSdfParser : public ::testing::Test {
  public:
   void SetUp() override {
+    const std::string kSdfPath =
+        "drake/multibody/multibody_tree/parsing/test/"
+            "links_with_visuals_and_collisions.sdf";
     full_name_ = FindResourceOrThrow(kSdfPath);
   }
 
@@ -175,9 +178,6 @@ class MultibodyPlantSdfParser : public ::testing::Test {
  protected:
   MultibodyPlant<double> plant_;
   SceneGraph<double> scene_graph_;
-  const std::string kSdfPath =
-      "drake/multibody/multibody_tree/parsing/test/"
-          "links_with_visuals_and_collisions.sdf";
   std::string full_name_;
 };
 
