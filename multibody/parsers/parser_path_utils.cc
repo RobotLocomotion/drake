@@ -95,9 +95,6 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
         mesh_filename_spruce.append(split_raw.at(i));
       }
     } else {
-      drake::log()->warn("Mesh '{}' could not be resolved and will be ignored "
-                         "by Drake. If you don't want it to be ignored, please "
-                         "include it in the package map.", filename);
       return string();
     }
   } else {
@@ -116,10 +113,6 @@ string ResolveFilename(const string& filename, const PackageMap& package_map,
     mesh_filename_spruce.append(filename);
   }
   if (!mesh_filename_spruce.exists()) {
-    drake::log()->warn("File '{}' could not be found.",
-                       mesh_filename_spruce.getStr());
-    drake::log()->warn("Mesh '{}' could not be resolved and will be ignored by "
-                       "Drake.", filename);
     return string();
   }
   return mesh_filename_spruce.getStr();
