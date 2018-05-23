@@ -91,7 +91,7 @@ class ConstraintSolver {
   ///           forces applied to enforce generic bilateral constraints. This
   ///           packed storage format can be turned into more useful
   ///           representations through
-  ///           ComputeGeneralizedForceFromConstraintForces() and
+  ///           CalcGeneralizedForceFromConstraintForces() and
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
@@ -117,7 +117,7 @@ class ConstraintSolver {
   ///           final `b` values of `cf` correspond to the forces applied to
   ///           enforce generic bilateral constraints. This packed storage
   ///           format can be turned into more useful representations through
-  ///           ComputeGeneralizedImpulseFromConstraintImpulses() and
+  ///           CalcGeneralizedImpulseFromConstraintImpulses() and
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
@@ -141,7 +141,7 @@ class ConstraintSolver {
   ///             of `problem_data.f`.
   /// @throws std::logic_error if `generalized_force` is null or `cf`
   ///         vector is incorrectly sized.
-  static void ComputeGeneralizedForceFromConstraintForces(
+  static void CalcGeneralizedForceFromConstraintForces(
       const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_force);
@@ -158,7 +158,7 @@ class ConstraintSolver {
   ///             match the indices of `problem_data.v`.
   /// @throws std::logic_error if `generalized_impulse` is null or `cf`
   ///         vector is incorrectly sized.
-  static void ComputeGeneralizedImpulseFromConstraintImpulses(
+  static void CalcGeneralizedImpulseFromConstraintImpulses(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_impulse);
@@ -169,7 +169,7 @@ class ConstraintSolver {
   ///           format described in documentation for SolveConstraintProblem.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
-  static void ComputeGeneralizedAcceleration(
+  static void CalcGeneralizedAcceleration(
       const ConstraintAccelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_acceleration);
@@ -180,16 +180,13 @@ class ConstraintSolver {
   ///           format described in documentation for SolveImpactProblem.
   /// @throws std::logic_error if `generalized_delta_v` is null or
   ///         `cf` vector is incorrectly sized.
-  static void ComputeGeneralizedVelocityChange(
+  static void CalcGeneralizedVelocityChange(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& cf,
       VectorX<T>* generalized_delta_v);
 
   /// Gets the contact forces expressed in each contact frame *for 2D contact
   /// problems* from the "packed" solution returned by SolveConstraintProblem().
-  /// If the constraint forces are impulsive, the contact forces are impulsive;
-  /// similarly, if the constraint forces are non-impulsive, the contact forces
-  /// willb e non-impulsive.
   /// @param cf the output from SolveConstraintProblem()
   /// @param problem_data the problem data input to SolveConstraintProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
@@ -217,32 +214,35 @@ class ConstraintSolver {
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
-  /// Gets the contact impulses expressed in each contact frame *for 2D contact
-  /// problems* from the "packed" solution returned by SolveImpactProblem().
-  /// @param cf the output from SolveImpactProblem()
+  /// Gets the contact forces expressed in each contact frame *for 2D contact
+  /// problems* from a "packed" solution returned by, e.g.,
+  /// SolveImpactProblem().  If the constraint forces are impulsive, the contact
+  /// forces are impulsive; similarly, if the constraint forces are
+  /// non-impulsive, the contact forces will be non-impulsive.
+  /// @param cf the constraint forces in packed format.
   /// @param problem_data the problem data input to SolveImpactProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
   ///        The first column of each matrix should give the contact normal,
   ///        while the second column gives a contact tangent (specifically, the
   ///        tangent direction used to determine `problem_data.F`). All
   ///        vectors should be expressed in the global frame.
-  /// @param[out] contact_impulses a non-null vector of a doublet of values,
-  ///             where the iᵗʰ element represents the impulsive force along
+  /// @param[out] contact_forces a non-null vector of a doublet of values,
+  ///             where the iᵗʰ element represents the force along
   ///             each basis vector in the iᵗʰ contact frame.
-  /// @throws std::logic_error if `contact_impulses` is null, if
-  ///         `contact_impulses` is not empty, if `cf` is not the
+  /// @throws std::logic_error if `contact_forces` is null, if
+  ///         `contact_forces` is not empty, if `cf` is not the
   ///         proper size, if the number of tangent directions is not one per
   ///         contact (indicating that the contact problem might not be 2D), if
   ///         the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
-  /// @note On return, the contact impulse at the iᵗʰ contact point expressed
-  ///       in the world frame is `contact_frames[i]` * `contact_impulses[i]`.
+  /// @note On return, the contact force at the iᵗʰ contact point expressed
+  ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
       const ConstraintVelProblemData<T>& problem_data,
       const std::vector<Matrix2<T>>& contact_frames,
-      std::vector<Vector2<T>>* contact_impulses);
+      std::vector<Vector2<T>>* contact_forces);
 
  private:
   void FormAndSolveConstraintLCP(
@@ -265,7 +265,7 @@ class ConstraintSolver {
   // and M⁻¹ ∈ ℝᵐˣᵐ is the inverse of the generalized inertia matrix. Note that
   // mixing types of constraints is explicitly allowed. Aborts if A_iM_BT is
   // not of size a × b.
-  static void ComputeConstraintSpaceComplianceMatrix(
+  static void CalcConstraintSpaceComplianceMatrix(
       std::function<VectorX<T>(const VectorX<T>&)> A_mult,
       int a,
       const MatrixX<T>& M_inv_BT,
@@ -274,7 +274,7 @@ class ConstraintSolver {
   // Computes the matrix M⁻¹⋅Gᵀ, G ∈ ℝᵐˣⁿ is a constraint Jacobian matrix
   // (realized here using an operator) and M⁻¹ ∈ ℝⁿˣⁿ is the inverse of the
   // generalized inertia matrix. Resizes iM_GT as necessary.
-  static void ComputeInverseInertiaTimesGT(
+  static void CalcInverseInertiaTimesGT(
       std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
       std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
       int m,
@@ -784,10 +784,10 @@ void ConstraintSolver<T>::SolveConstraintProblem(
     // Form the Delassus matrix for the bilateral constraints.
     MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
     MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
-    ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
+    CalcInverseInertiaTimesGT(problem_data.solve_inertia,
                                  problem_data.G_transpose_mult,
                                  num_eq_constraints, &iM_GT);
-    ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
+    CalcConstraintSpaceComplianceMatrix(problem_data.G_mult,
                                            num_eq_constraints,
                                            iM_GT, Del);
 
@@ -1001,10 +1001,10 @@ void ConstraintSolver<T>::SolveImpactProblem(
   if (num_eq_constraints > 0) {
     MatrixX<T> Del(num_eq_constraints, num_eq_constraints);
     MatrixX<T> iM_GT(num_generalized_velocities, num_eq_constraints);
-    ComputeInverseInertiaTimesGT(problem_data.solve_inertia,
+    CalcInverseInertiaTimesGT(problem_data.solve_inertia,
                                  problem_data.G_transpose_mult,
                                  num_eq_constraints, &iM_GT);
-    ComputeConstraintSpaceComplianceMatrix(problem_data.G_mult,
+    CalcConstraintSpaceComplianceMatrix(problem_data.G_mult,
                                            num_eq_constraints,
                                            iM_GT, Del);
 
@@ -1155,7 +1155,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
+void ConstraintSolver<T>::CalcConstraintSpaceComplianceMatrix(
     std::function<VectorX<T>(const VectorX<T>&)> A_mult,
     int a,
     const MatrixX<T>& iM_BT,
@@ -1176,7 +1176,7 @@ void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeInverseInertiaTimesGT(
+void ConstraintSolver<T>::CalcInverseInertiaTimesGT(
     std::function<MatrixX<T>(const MatrixX<T>&)> M_inv_mult,
     std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult,
     int m,
@@ -1233,8 +1233,8 @@ void ConstraintSolver<T>::CheckAccelConstraintMatrix(
   // Compute the block from scratch.
   MatrixX<T> L_iM_FT_true(nl, nr);
   MatrixX<T> iM_FT(ngv, nr);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
+  CalcInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
 
   // Determine the zero tolerance.
   const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
@@ -1287,10 +1287,10 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
 
   // Precompute some matrices that will be reused repeatedly.
   MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
-  ComputeInverseInertiaTimesGT(
+  CalcInverseInertiaTimesGT(
       iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+  CalcInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  CalcInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
   // Name the blocks of the matrix, which takes the form:
   // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Fᵀ  N⋅M⁻¹⋅Lᵀ
@@ -1308,17 +1308,17 @@ void ConstraintSolver<T>::FormSustainedConstraintLinearSystem(
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc + nr, nc + nr, nl, nl);
 
   // Compute the blocks.
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(
       N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(
       F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(
       L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
   L_iM_FT = F_iM_LT.transpose().eval();
 
   // Construct the vector:
@@ -1396,10 +1396,10 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
 
   // Precompute some matrices that will be reused repeatedly.
   MatrixX<T> iM_NT_minus_muQT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
-  ComputeInverseInertiaTimesGT(
+  CalcInverseInertiaTimesGT(
       iM, problem_data.N_minus_muQ_transpose_mult, nc, &iM_NT_minus_muQT);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+  CalcInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  CalcInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
   // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅(Nᵀ - μₛQᵀ)  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
@@ -1421,17 +1421,17 @@ void ConstraintSolver<T>::FormSustainedConstraintLCP(
       nc + nk + num_non_sliding, 0, nl, nc);
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(
       nc + nk + num_non_sliding, nc + nk + num_non_sliding, nl, nl);
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(
       N, nc, iM_NT_minus_muQT, N_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(
       F, nr, iM_NT_minus_muQT, F_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(
       L, nl, iM_NT_minus_muQT, L_iM_NT_minus_muQT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
   // Construct the LCP matrix. First do the "normal contact direction" rows.
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
@@ -1519,11 +1519,11 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
   MatrixX<T> F_iM_NT_true(nr, num_contacts), L_iM_NT_true(nl, num_contacts);
   MatrixX<T> L_iM_FT_true(nl, nr);
   MatrixX<T> iM_NT(ngv, num_contacts), iM_FT(ngv, nr);
-  ComputeInverseInertiaTimesGT(iM, NT, num_contacts, &iM_NT);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_NT, F_iM_NT_true);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_NT, L_iM_NT_true);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
+  CalcInverseInertiaTimesGT(iM, NT, num_contacts, &iM_NT);
+  CalcInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_NT, F_iM_NT_true);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_NT, L_iM_NT_true);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_FT, L_iM_FT_true);
 
   // Determine the zero tolerance.
   const double zero_tol = std::numeric_limits<double>::epsilon() * MM.norm() *
@@ -1598,9 +1598,9 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
 
   // Precompute some matrices that will be reused repeatedly.
   MatrixX<T> iM_NT(ngv, nc), iM_FT(ngv, nr), iM_LT(ngv, nl);
-  ComputeInverseInertiaTimesGT(iM, NT, nc, &iM_NT);
-  ComputeInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
-  ComputeInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
+  CalcInverseInertiaTimesGT(iM, NT, nc, &iM_NT);
+  CalcInverseInertiaTimesGT(iM, FT, nr, &iM_FT);
+  CalcInverseInertiaTimesGT(iM, LT, nl, &iM_LT);
 
   // Prepare blocks of the LCP matrix, which takes the form:
   // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
@@ -1617,12 +1617,12 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
   Eigen::Ref<MatrixX<T>> F_iM_FT = MM->block(nc, nc, nr, nr);
   Eigen::Ref<MatrixX<T>> F_iM_LT = MM->block(nc, nc * 2 + nk, nr, nl);
   Eigen::Ref<MatrixX<T>> L_iM_LT = MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_NT, N_iM_NT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
-  ComputeConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
-  ComputeConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_NT, N_iM_NT);
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_FT, N_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(N, nc, iM_LT, N_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_FT, F_iM_FT);
+  CalcConstraintSpaceComplianceMatrix(F, nr, iM_LT, F_iM_LT);
+  CalcConstraintSpaceComplianceMatrix(L, nl, iM_LT, L_iM_LT);
 
   // Construct the LCP matrix. First do the "normal contact direction" rows:
   MM->block(0, nc + nr, nc, nr) = -MM->block(0, nc, nc, nr);
@@ -1686,7 +1686,7 @@ void ConstraintSolver<T>::FormImpactingConstraintLCP(
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
+void ConstraintSolver<T>::CalcGeneralizedForceFromConstraintForces(
     const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_force) {
@@ -1731,7 +1731,7 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
+void ConstraintSolver<T>::CalcGeneralizedImpulseFromConstraintImpulses(
     const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_impulse) {
@@ -1774,7 +1774,7 @@ void ConstraintSolver<T>::ComputeGeneralizedImpulseFromConstraintImpulses(
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
+void ConstraintSolver<T>::CalcGeneralizedAcceleration(
     const ConstraintAccelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration) {
@@ -1782,14 +1782,14 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
     throw std::logic_error("generalized_acceleration vector is null.");
 
   VectorX<T> generalized_force;
-  ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
+  CalcGeneralizedForceFromConstraintForces(problem_data, cf,
                                               &generalized_force);
   *generalized_acceleration = problem_data.solve_inertia(problem_data.tau +
                                                          generalized_force);
 }
 
 template <class T>
-void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
+void ConstraintSolver<T>::CalcGeneralizedVelocityChange(
     const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_delta_v) {
@@ -1798,7 +1798,7 @@ void ConstraintSolver<T>::ComputeGeneralizedVelocityChange(
     throw std::logic_error("generalized_delta_v vector is null.");
 
   VectorX<T> generalized_impulse;
-  ComputeGeneralizedImpulseFromConstraintImpulses(problem_data, cf,
+  CalcGeneralizedImpulseFromConstraintImpulses(problem_data, cf,
                                                   &generalized_impulse);
   *generalized_delta_v = problem_data.solve_inertia(generalized_impulse);
 }

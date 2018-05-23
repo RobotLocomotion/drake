@@ -345,7 +345,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     };
     data->kG.setZero(0);
 
-    // Add in gravitational forces. 
+    // Add in gravitational forces.
     const double grav_accel = rod_->get_gravitational_acceleration();
     data->Mv += Vector3<double>(0, grav_accel * rod_->get_rod_mass(), 0) * dt;
 
@@ -353,8 +353,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     CheckProblemConsistency(*data, contacts.size());
   }
 
-  // Function for computing constraint data without duplicate contacts or
-  // friction directions.
+  // Function for computing constraint data using non-impulsive forces and a
+  // first-order discretization (hence the use of velocity-level data) without
+  // duplicate contacts or friction directions.
   void CalcConstraintAccelProblemData(
       double dt,
       ConstraintVelProblemData<double>* data,
@@ -364,7 +365,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
   // Computes generalized acceleration for discretized problems using the
   // given problem data, prior velocity `v`, constraint forces `cf`, and `dt`.
-  void ComputeGeneralizedAcceleration(
+  void CalcGeneralizedAcceleration(
       const ConstraintVelProblemData<double>& data, const VectorX<double>& v,
       const VectorX<double>& cf, double dt, VectorX<double>* vdot) {
     unused(data);
@@ -392,7 +393,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         0);   // no friction directions duplicated
   }
 
-  // Computes rigid impacting contact data.
+  // Calcs rigid impacting contact data.
   // @param contact_points_dup the number of times (>= 0) each contact point
   //        should be duplicated in the contact data.
   // @param friction_directions_dup the number of times (>= 0) that each
@@ -634,7 +635,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to zero.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_LT(ga.norm(), lcp_eps_ * cf.size());
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -668,7 +669,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to the
         // gravitational acceleration.
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_NEAR(ga.norm(), std::fabs(grav_accel), lcp_eps_ * cf.size());
       }
     }
@@ -765,7 +766,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to zero.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_LT(ga.norm(), lcp_eps_ * cf.size());
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -799,7 +800,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized acceleration of the rod is equal to the
         // gravitational acceleration.
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_NEAR(ga.norm(), std::fabs(grav_accel), lcp_eps_ * cf.size());
       }
     }
@@ -887,7 +888,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the horizontal acceleration is in the appropriate
         // direction.
         VectorX<double> ga;
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -925,7 +926,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the vertical acceleration of the rod is equal to the
         // gravitational acceleration and that the horizontal acceleration is
         // in the appropriate direction.
-        solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+        solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
         EXPECT_NEAR(ga[1], std::fabs(grav_accel), lcp_eps_ * cf.size());
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
       }
@@ -1015,7 +1016,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the horizontal acceleration is in the appropriate
         // direction.
         VectorX<double> ga;
-        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
 
         // Now, set kN as if the bodies are accelerating twice as hard into
@@ -1053,7 +1054,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that the vertical acceleration of the rod is equal to the
         // gravitational acceleration and that the horizontal acceleration is
         // in the appropriate direction.
-        ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+        CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_NEAR(ga[1], std::fabs(grav_accel), lcp_eps_ * cf.size());
         EXPECT_GT((applied_to_right) ? ga[0] : -ga[0], 0);
       }
@@ -1137,7 +1138,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the horizontal velocity is in the proper direction.
         VectorX<double> dgv;
-        solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+        solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &dgv);
         const double sign = (sliding_to_right) ? 1 : -1;
         EXPECT_GT(sign * v[0] + dgv[0], 0);
 
@@ -1175,7 +1176,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the horizontal velocity is in the proper direction and
         // that the vertical velocity is essentially reversed.
-        solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+        solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &dgv);
         EXPECT_GT(sign * v[0] + dgv[0], 0);
         EXPECT_NEAR(v[1] + dgv[1], -v[1], lcp_eps_);
       }
@@ -1261,7 +1262,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
         // Verify that the generalized velocity of the rod is equal to zero.
         VectorX<double> dgv;
-        solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+        solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &dgv);
         EXPECT_LT((v + dgv).norm(), lcp_eps_);
 
         // Now, set kN as if the bodies are moving twice as fast into
@@ -1274,7 +1275,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         // Verify that all components of the generalized velocity of the rod
         // except that corresponding to the vertical motion are equal to zero;
         // the vertical motion should oppose the initial vertical motion.
-        solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dgv);
+        solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &dgv);
         EXPECT_LT((v[0] + dgv[0]), lcp_eps_);
         EXPECT_NEAR((v[1] + dgv[1]), -vert_vel, lcp_eps_);
         EXPECT_LT((v[2] + dgv[2]), lcp_eps_);
@@ -1367,7 +1368,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Verify that the normal component of the generalized acceleration is now
     // equal to the negated gravitational acceleration.
     VectorX<double> ga;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_NEAR(ga[1], -grav_accel, lcp_eps_);
   }
 
@@ -1454,7 +1455,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Verify that the normal component of the generalized acceleration is now
     // equal to the negated gravitational acceleration.
     VectorX<double> ga;
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_NEAR(ga[1], -grav_accel, lcp_eps_);
   }
 
@@ -1541,7 +1542,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Get the generalized acceleration and verify that there is no angular
     // acceleration.
     VectorX<double> ga;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
@@ -1549,7 +1550,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // orientation) and solve again.
     accel_data_->kG[0] = 1.0;    // Indicate a ccw angular motion..
     solver_.SolveConstraintProblem(*accel_data_, &cf);
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &ga);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &ga);
     EXPECT_NEAR(ga[2], -accel_data_->kG[0], lcp_eps_ * cf.size());
   }
 
@@ -1627,7 +1628,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Get the change in generalized velocity and verify that there is no
     // angular velocity.
     VectorX<double> gv;
-    solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
+    solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &gv);
     EXPECT_LT((v[2] + gv[2]), lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
@@ -1635,7 +1636,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // zero rotation) and solve again.
     vel_data_->kG[0] = 1.0;    // Indicate a ccw orientation..
     solver_.SolveImpactProblem(*vel_data_, &cf);
-    solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
+    solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &gv);
     EXPECT_NEAR(v[2] + gv[2], -vel_data_->kG[0],
                 lcp_eps_ * cf.size());
   }
@@ -1686,7 +1687,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         };
 
     // Solve the discretization problem.
-    VectorX<double> cf; 
+    VectorX<double> cf;
     SolveDiscretizationProblem(*vel_data_, dt, &cf);
 
     // cf should be 3-dimensional. First dimension is normal force (along
@@ -1727,10 +1728,10 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     EXPECT_NEAR(fN, fdown, lcp_eps_);
     EXPECT_NEAR(fF, sign * -fdown * rod_->get_mu_coulomb(), lcp_eps_);
 
-    // Get the generalized acceleration from the constraint forces and verify 
+    // Get the generalized acceleration from the constraint forces and verify
     // that the moment is zero.
     VectorX<double> ga;
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
 
     // Indicate through modification of the kG term that the system already has
@@ -1740,7 +1741,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     SolveDiscretizationProblem(*vel_data_, dt, &cf);
 
     // Compute the generalized acceleration.
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_NEAR(ga[2] * dt, -vel_data_->kG[0], lcp_eps_ * cf.size());
   }
 
@@ -1828,7 +1829,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // term LM⁻¹(Nᵀ - μQᵀ) is not computed properly, this acceleration might not
     // be zero. Note that μQᵀ will not have any effect here.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 
     // Set kN and kL terms to effectively double gravity, which should cause the
@@ -1836,7 +1837,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     accel_data_->kN.setOnes() *= grav_accel;
     accel_data_->kL.setOnes() *= grav_accel;
     solver_.SolveConstraintProblem(*accel_data_, &cf);
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &vdot);
     EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
   }
 
@@ -1950,7 +1951,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // term LM⁻¹Nᵀ is not computed properly, this acceleration might not
     // be zero.
     VectorX<double> vdot;
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
 
     // Set kN and kL terms to effectively double gravity, which should cause the
@@ -1958,7 +1959,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     vel_data_->kN.setOnes() *= grav_accel * dt;
     vel_data_->kL.setOnes() *= grav_accel * dt;
     SolveDiscretizationProblem(*vel_data_, dt, &cf);
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], -grav_accel, lcp_eps_);
   }
 
@@ -2009,7 +2010,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // sliding friction force. If the cross-constraint term FM⁻¹(Nᵀ - μQᵀ) is
     // not computed properly, this acceleration might not be zero.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &vdot);
     EXPECT_NEAR(vdot[0], 0, lcp_eps_);
   }
 
@@ -2075,7 +2076,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Verify that the horizontal and vertical acceleration of the rod c.o.m.
     // is zero.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &vdot);
     EXPECT_NEAR(vdot[0], 0, lcp_eps_);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
   }
@@ -2163,7 +2164,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Verify that the vertical acceleration is zero.
     VectorX<double> vdot;
-    solver_.ComputeGeneralizedAcceleration(*accel_data_, cf, &vdot);
+    solver_.CalcGeneralizedAcceleration(*accel_data_, cf, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
   }
 
@@ -2255,7 +2256,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Verify that the vertical acceleration is zero.
     VectorX<double> vdot;
-    ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
+    CalcGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
   }
 };
@@ -2488,7 +2489,7 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
   // Verify that the horizontal velocity is unchanged and that the vertical
   // velocity is zero.
   VectorX<double> dv;
-  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &dv);
+  solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &dv);
   EXPECT_NEAR(v[0] + dv[0], 0, lcp_eps_);
   EXPECT_NEAR(v[1] + dv[1], 0, lcp_eps_);
 }
@@ -2580,7 +2581,7 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 
   // Verify that the vertical velocity is zero.
   VectorX<double> vnew;
-  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &vnew);
+  solver_.CalcGeneralizedVelocityChange(*vel_data_, cf, &vnew);
   EXPECT_NEAR(v[1] + vnew[1], 0,
               lcp_eps_);
 

@@ -1196,7 +1196,7 @@ RigidBodyPlant<T>::DoCalcDiscreteVariableUpdatesImpl(
   // Solve the rigid impact problem.
   VectorX<T> new_velocity, contact_force;
   constraint_solver_.SolveImpactProblem(data, &contact_force);
-  constraint_solver_.ComputeGeneralizedVelocityChange(data, contact_force,
+  constraint_solver_.CalcGeneralizedVelocityChange(data, contact_force,
       &new_velocity);
   SPDLOG_DEBUG(drake::log(), "Actuator forces: {} ", u.transpose());
   SPDLOG_DEBUG(drake::log(), "Transformed actuator forces: {} ",
