@@ -124,38 +124,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_body", &RigidBodyTree<double>::get_body,
          py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
-    .def("transformPoints", [](const RigidBodyTree<double>& tree,
-                               const KinematicsCache<double>& cache,
-                               const Eigen::Matrix<double, 3,
-                                                   Eigen::Dynamic>& points,
-                               int from_body_or_frame_ind,
-                               int to_body_or_frame_ind) {
-      return tree.transformPoints(cache, points,
-                                  from_body_or_frame_ind, to_body_or_frame_ind);
-    })
-    .def("transformPoints", [](const RigidBodyTree<double>& tree,
-                               const KinematicsCache<AutoDiffXd>& cache,
-                               const Eigen::Matrix<double, 3,
-                                                   Eigen::Dynamic>& points,
-                               int from_body_or_frame_ind,
-                               int to_body_or_frame_ind) {
-      return tree.transformPoints(cache, points,
-                                  from_body_or_frame_ind, to_body_or_frame_ind);
-    })
-    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
-                                  const KinematicsCache<double>& cache,
-                                  int base_or_frame_ind,
-                                  int body_or_frame_ind) {
-      return tree.relativeTransform(cache, base_or_frame_ind,
-        body_or_frame_ind).matrix();
-    })
-    .def("relativeTransform", [](const RigidBodyTree<double>& tree,
-                                  const KinematicsCache<AutoDiffXd>& cache,
-                                  int base_or_frame_ind,
-                                  int body_or_frame_ind) {
-      return tree.relativeTransform(cache, base_or_frame_ind,
-        body_or_frame_ind).matrix();
-    })
     .def("add_rigid_body", &RigidBodyTree<double>::add_rigid_body)
     .def("addCollisionElement", &RigidBodyTree<double>::addCollisionElement)
     .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
