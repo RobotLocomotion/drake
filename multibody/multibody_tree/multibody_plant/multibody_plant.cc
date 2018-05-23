@@ -45,29 +45,13 @@ using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
 
-template<typename T>
+template <typename T>
 MultibodyPlant<T>::MultibodyPlant() :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()) {
   model_ = std::make_unique<MultibodyTree<T>>();
-  visual_geometries_.emplace_back();  // Entry for the "world" body.
-}
-
-template<typename T>
-template<typename U>
-MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other) {
-  DRAKE_THROW_UNLESS(other.is_finalized());
-  model_ = other.model_->template CloneToScalar<T>();
-  // Copy of all members related with geometry registration.
-  source_id_ = other.source_id_;
-  body_index_to_frame_id_ = other.body_index_to_frame_id_;
-  geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
-  geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
-  visual_geometries_ = other.visual_geometries_;
-  // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize() on
-  // the new MultibodyTree on U. Therefore we only Finalize the plant's
-  // internals (and not the MultibodyTree).
-  FinalizePlantOnly();
+  visual_geometries_.emplace_back();  // Entries for the "world" body.
+  collision_geometries_.emplace_back();
 }
 
 template <typename T>
@@ -145,7 +129,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   DRAKE_ASSERT(
       static_cast<int>(default_coulomb_friction_.size()) == collision_index);
   default_coulomb_friction_.push_back(coulomb_friction);
+  DRAKE_ASSERT(num_bodies() == static_cast<int>(collision_geometries_.size()));
+  collision_geometries_[body.index()].push_back(id);
   return id;
+}
+
+template <typename T>
+const std::vector<geometry::GeometryId>&
+MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
+  DRAKE_ASSERT(body.index() < num_bodies());
+  return collision_geometries_[body.index()];
 }
 
 template <typename T>
@@ -201,10 +194,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (source_id_) DeclareSceneGraphPorts();
   DeclareCacheEntries();
   scene_graph_ = nullptr;  // must not be used after Finalize().
-  if (get_num_collision_geometries() > 0 &&
+  if (num_collision_geometries() > 0 &&
       penalty_method_contact_parameters_.time_scale < 0)
     set_penetration_allowance();
-  if (get_num_collision_geometries() > 0 &&
+  if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
 }
@@ -273,7 +266,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   VectorX<T>& tau_array = forces.mutable_generalized_forces();
 
   // Compute contact forces on each body by penalty method.
-  if (get_num_collision_geometries() > 0) {
+  if (num_collision_geometries() > 0) {
     CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
   }
 
@@ -358,7 +351,7 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
     const PositionKinematicsCache<double>& pc,
     const VelocityKinematicsCache<double>& vc,
     std::vector<SpatialForce<double>>* F_BBo_W_array) const {
-  if (get_num_collision_geometries() == 0) return;
+  if (num_collision_geometries() == 0) return;
 
   const geometry::QueryObject<double>& query_object =
       this->EvalAbstractInput(context, geometry_query_port_)

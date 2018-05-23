@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -39,6 +40,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
 using systems::AbstractValue;
 using systems::BasicVector;
@@ -372,7 +374,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
-  EXPECT_EQ(plant.get_num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
 
@@ -554,7 +556,7 @@ class SplitPendulum : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/multibody_tree/"
-        "multibody_plant/test/split_pendulum.sdf");
+            "multibody_plant/test/split_pendulum.sdf");
     AddModelFromSdfFile(full_name, &plant_);
     plant_.Finalize();
 
@@ -595,6 +597,58 @@ TEST_F(SplitPendulum, MassMatrix) {
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+}
+
+// Verifies we can parse link collision geometries and surface friction.
+GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
+
+  const int link1_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_collisions, 2);
+  ASSERT_EQ(link2_num_collisions, 0);
+  ASSERT_EQ(link3_num_collisions, 1);
+
+  const int link1_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_visuals, 2);
+  ASSERT_EQ(link2_num_visuals, 3);
+  ASSERT_EQ(link3_num_visuals, 0);
+
+  // Scalar convert the plant and verify invariants.
+  MultibodyPlant<AutoDiffXd> plant_autodiff(plant);
+  EXPECT_EQ(plant_autodiff.num_collision_geometries(),
+            plant.num_collision_geometries());
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
 }
 
 }  // namespace

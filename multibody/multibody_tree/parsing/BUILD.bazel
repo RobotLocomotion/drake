@@ -55,6 +55,7 @@ drake_cc_library(
     deps = [
         ":sdf_parser_common",
         "//geometry:scene_graph",
+        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "//multibody/parsers:find_files",
         "@sdformat",
     ],
@@ -97,6 +98,7 @@ drake_cc_googletest(
     deps = [
         ":scene_graph_parser_detail",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
     ],
 )
