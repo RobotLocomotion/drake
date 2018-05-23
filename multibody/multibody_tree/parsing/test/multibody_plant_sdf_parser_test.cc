@@ -151,18 +151,22 @@ TEST_F(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifySdfModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
 }
 
+// Fixture to setup a simple model with both collision and visual geometry,
+// loaded with the SDF parser.
 class MultibodyPlantSdfParser : public ::testing::Test {
  public:
-  // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     full_name_ = FindResourceOrThrow(kSdfPath);
   }
 
+  // Loads the MultibodyPlant part of the model. Geometry is ignored.
   void LoadMultibodyPlantOnly() {
     AddModelFromSdfFile(full_name_, &plant_);
     plant_.Finalize();
   }
 
+  // Loads the entire model including the multibody dynamics part of it and the
+  // geometries for both visualization and contact modeling.
   void LoadMultibodyPlantAndSceneGraph() {
     AddModelFromSdfFile(full_name_, &plant_, &scene_graph_);
     plant_.Finalize();
