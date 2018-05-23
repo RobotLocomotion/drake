@@ -52,7 +52,7 @@ class TestShapes(unittest.TestCase):
         box = shapes.Box(size=[1., 1., 1.])
         visual_element_np = shapes.VisualElement(box, np.eye(4), material_in)
         visual_element_isom = shapes.VisualElement(
-            box, Isometry3(np.eye(4)), material_in)
+            box, Isometry3.Identity(), material_in)
         self.assertTrue(np.allclose(visual_element_np.getMaterial(),
                                     material_in))
         visual_element_np.setMaterial(material_in_2)

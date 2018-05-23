@@ -328,7 +328,7 @@ class TestRigidBodyTree(unittest.TestCase):
         name = "z"
         prismatic_joint_np = PrismaticJoint(name, np.eye(4),
                                             np.array([0., 0., 1.]))
-        prismatic_joint_isom = PrismaticJoint(name, Isometry3(np.eye(4)),
+        prismatic_joint_isom = PrismaticJoint(name, Isometry3.Identity(),
                                               np.array([0., 0., 1.]))
         self.assertEqual(prismatic_joint_isom.get_num_positions(), 1)
         self.assertEqual(prismatic_joint_isom.get_name(), name)
@@ -336,7 +336,7 @@ class TestRigidBodyTree(unittest.TestCase):
         name = "theta"
         revolute_joint_np = RevoluteJoint(name, np.eye(4),
                                           np.array([0., 0., 1.]))
-        revolute_joint_isom = RevoluteJoint(name, Isometry3(np.eye(4)),
+        revolute_joint_isom = RevoluteJoint(name, Isometry3.Identity(),
                                             np.array([0., 0., 1.]))
         self.assertEqual(revolute_joint_isom.get_num_positions(), 1)
         self.assertEqual(revolute_joint_isom.get_name(), name)
@@ -346,7 +346,7 @@ class TestRigidBodyTree(unittest.TestCase):
         box_element = shapes.Box([1.0, 1.0, 1.0])
         box_collision_element_np = CollisionElement(box_element, np.eye(4))
         box_collision_element_isom = CollisionElement(
-            box_element, Isometry3(np.eye(4)))
+            box_element, Isometry3.Identity())
         body = RigidBody()
         box_collision_element_isom.set_body(body)
         self.assertEqual(box_collision_element_isom.get_body(), body)
