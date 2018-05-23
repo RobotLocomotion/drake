@@ -59,6 +59,7 @@ drake_cc_googletest(
     data = [
         "test/split_pendulum.sdf",
         "//multibody/multibody_tree/parsing:test_models",
+        "//multibody/shapes:test_models",
     ],
     deps = [
         ":multibody_plant",
