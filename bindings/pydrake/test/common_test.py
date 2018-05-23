@@ -32,3 +32,9 @@ class TestCommon(unittest.TestCase):
     def test_temp_directory(self):
         self.assertEqual(os.environ.get('TEST_TMPDIR'),
                          pydrake.common.temp_directory())
+
+    def test_random_distribution(self):
+        # Simply test the spelling
+        pydrake.common.RandomDistribution.kUniform
+        pydrake.common.RandomDistribution.kGaussian
+        pydrake.common.RandomDistribution.kExponential

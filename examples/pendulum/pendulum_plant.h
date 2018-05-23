@@ -74,6 +74,12 @@ class PendulumPlant : public systems::LeafSystem<T> {
     return this->template GetNumericParameter<PendulumParams>(context, 0);
   }
 
+  PendulumParams<T>& get_mutable_parameters(
+      systems::Context<T>* context) const {
+    return this->template GetMutableNumericParameter<PendulumParams>(
+        context, 0);
+  }
+
  private:
   // This is the calculator method for the state output port.
   void CopyStateOut(const systems::Context<T>& context,

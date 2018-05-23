@@ -109,7 +109,7 @@ cc_library(
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = [
-        "//bindings/pydrake:__subpackages__",
+        "//bindings:__subpackages__",
         "//examples:__subpackages__",
     ],
     deps = [
@@ -127,4 +127,6 @@ cc_library(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = ["build_components_refresh.py"],
+)

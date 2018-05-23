@@ -37,16 +37,6 @@ std::unique_ptr<DrakeJoint> DrakeJoint::Clone() const {
   return clone;
 }
 
-const Isometry3d& DrakeJoint::get_transform_to_parent_body() const {
-  return transform_to_parent_body_;
-}
-
-int DrakeJoint::get_num_positions() const { return num_positions_; }
-
-int DrakeJoint::get_num_velocities() const { return num_velocities_; }
-
-const std::string& DrakeJoint::get_name() const { return name_; }
-
 std::string DrakeJoint::get_velocity_name(int index) const {
   return get_position_name(index) + "dot";
 }

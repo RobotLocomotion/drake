@@ -232,8 +232,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // and gammaE.
     data->kF.setZero(data->non_sliding_contacts.size() *
                                new_friction_directions);
-    data->gammaF.setZero(data->kF.size());
-    data->gammaE.setZero(data->non_sliding_contacts.size());
 
     // Add in empty rows to G, by default, allowing us to verify that no
     // constraint forces are added (and that solution method is robust to
@@ -518,11 +516,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.kN.size(), num_contacts);
-    EXPECT_EQ(data.gammaN.size(), num_contacts);
     EXPECT_EQ(data.kF.size(), num_fdir);
-    EXPECT_EQ(data.gammaF.size(), num_fdir);
-    EXPECT_EQ(data.gammaE.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.gammaL.size(), data.kL.size());
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -1793,9 +1787,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return N.row(0) * v;
     };
     accel_data_->kN.setZero(1);
-    accel_data_->gammaN.setZero(1);
     accel_data_->kL.setZero(1);
-    accel_data_->gammaL.setZero(1);
     accel_data_->N_minus_muQ_transpose_mult =
         [&N_minus_muQ_transpose](const VectorX<double>& l) {
       return N_minus_muQ_transpose.col(0) * l;
@@ -2052,7 +2044,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     const int ngc = get_rod_num_coordinates();
     const int num_generic_unilateral_constraints = 1;
     accel_data_->kL.resize(num_generic_unilateral_constraints);
-    accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
 
     // Set the Jacobian entry- in this case, the limit is an upper limit on the
     // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
@@ -2114,7 +2105,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return VectorX<double>(0);
     };
     accel_data_->kN.resize(0);
-    accel_data_->gammaN.resize(0);
     accel_data_->F_mult = [](const VectorX<double>&) {
       return VectorX<double>(0);
     };
@@ -2122,10 +2112,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return VectorX<double>::Zero(ngc);
     };
     accel_data_->kF.resize(0);
-    accel_data_->gammaF.resize(0);
-    accel_data_->gammaE.resize(0);
     accel_data_->kL.resize(1);
-    accel_data_->gammaL.setZero(1);
     accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
       return VectorX<double>::Zero(ngc);
     };

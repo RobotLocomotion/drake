@@ -5,10 +5,13 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -27,6 +30,7 @@ using drake::multibody::RevoluteJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
+using drake::multibody::WeldJoint;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -105,7 +109,8 @@ const Body<double>& GetBodyByLinkSpecificationName(
 }
 
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
-Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
+Vector3d ExtractJointAxis(const sdf::Model& model_spec,
+                          const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
 
@@ -121,11 +126,48 @@ Vector3d ExtractJointAxis(const sdf::Joint& joint_spec) {
   // supported by sdformat.
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
-    const Isometry3d X_MJ = ToIsometry3(joint_spec.Pose());
+    // Pose of the joint frame J in the frame of the child link C.
+    const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
+    // Get the pose of the child link C in the model frame M.
+    const Isometry3d X_MC =
+        ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
+    const Isometry3d X_MJ = X_MC * X_CJ;
     // axis_J actually contains axis_M, expressed in the model frame M.
     axis_J = X_MJ.linear().transpose() * axis_J;
   }
   return axis_J;
+}
+
+// Extracts the effort limit from a joint specification and adds an actuator if
+// the value is non-zero. In SDF, effort limits are specified in
+// <joint><axis><limit><effort>. In Drake, we understand that joints with an
+// effort limit of zero are not actuated.
+// Only available for "revolute" and "prismatic" joints.
+void AddJointActuatorFromSpecification(
+    const sdf::Joint &joint_spec, const Joint<double>& joint,
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+
+  double max_effort = axis->Effort();
+
+  // The SDF specification defines this max_effort = -1 when no limit is
+  // provided (a non-zero value). In Drake we interpret a value of exactly zero
+  // as a way to specify un-actuated joints. Thus, the user would say
+  // <effort>0</effort> for un-actuated joints.
+  if (max_effort != 0) {
+    // TODO(amcastro-tri): For positive max_effort values, store it and use it
+    // to limit input actuation.
+    plant->AddJointActuator(joint_spec.Name(), joint);
+  }
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
@@ -141,7 +183,7 @@ void AddJointFromSpecification(
   const Body<double>& child_body = GetBodyByLinkSpecificationName(
       model_spec, joint_spec.ChildLinkName(), *plant);
 
-  // Get the pose of frame J in the model frame M, as specified in
+  // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
   // TODO(amcastro-tri): Verify sdformat supports frame specifications
   // correctly.
@@ -152,15 +194,15 @@ void AddJointFromSpecification(
   // And combinations of the above?
   // There is no way to verify at this level which one is supported or not.
   // Here we trust that no mather how a user specified the file, joint.Pose()
-  // will ALWAYS return X_MJ.
-  const Isometry3d X_MJ = ToIsometry3(joint_spec.Pose());
+  // will ALWAYS return X_CJ.
+  const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
 
   // Get the pose of the child link C in the model frame M.
   const Isometry3d X_MC =
       ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
 
-  // Compute the location of the joint in the child link's frame.
-  const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
+  // Pose of the joint frame J in the model frame M.
+  const Isometry3d X_MJ = X_MC * X_CJ;
 
   // Pose of the frame J in the parent body frame P.
   optional<Isometry3d> X_PJ;
@@ -180,14 +222,31 @@ void AddJointFromSpecification(
   // P directly. We indicate that by passing a nullopt.
   if (X_PJ.value().isApprox(Isometry3d::Identity())) X_PJ = nullopt;
 
-  // Only supporting revolute joints for now.
   switch (joint_spec.Type()) {
-    case sdf::JointType::REVOLUTE: {
-      Vector3d axis_J = ExtractJointAxis(joint_spec);
-      plant->AddJoint<RevoluteJoint>(
+    case sdf::JointType::FIXED: {
+      plant->AddJoint<WeldJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ,
+          Isometry3d::Identity() /* X_JpJc */);
+      break;
+    }
+    case sdf::JointType::PRISMATIC: {
+      Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
+      const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      break;
+    }
+    case sdf::JointType::REVOLUTE: {
+      Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
+      const auto& joint = plant->AddJoint<RevoluteJoint>(
+          joint_spec.Name(),
+          parent_body, X_PJ,
+          child_body, X_CJ, axis_J);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     default: {
@@ -196,7 +255,6 @@ void AddJointFromSpecification(
     }
   }
 }
-
 }  // namespace
 
 void AddModelFromSdfFile(
@@ -206,9 +264,11 @@ void AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  // Load the SDF string
+  const std::string full_path = parsers::GetFullPath(file_name);
+
+  // Load the SDF file.
   sdf::Root root;
-  sdf::Errors errors = root.Load(file_name);
+  sdf::Errors errors = root.Load(full_path);
 
   // Check for any errors.
   if (!errors.empty()) {
@@ -228,6 +288,18 @@ void AddModelFromSdfFile(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
+
+  // Uses the directory holding the SDF to be the root directory
+  // in which to search for files referenced within the SDF file.
+  std::string root_dir = ".";
+  size_t found = full_path.find_last_of("/\\");
+  if (found != std::string::npos) {
+    root_dir = full_path.substr(0, found);
+  }
+
+  // TODO(sam.creasey) Add support for using an existing package map.
+  parsers::PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_path);
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -250,7 +322,8 @@ void AddModelFromSdfFile(
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        const sdf::Visual sdf_visual = detail::ResolveVisualUri(
+            *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
             detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
         // We check for nullptr in case someone decided to specify an SDF

@@ -11,7 +11,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
@@ -152,20 +152,30 @@ class DiagramContext final : public Context<T> {
     outputs_[index] = std::move(output);
   }
 
-  /// Declares that a particular input port of a particular subsystem is an
-  /// input to the entire Diagram that allocates this Context. Aborts if the
-  /// subsystem has not been added to the DiagramContext.
+  /// (Internal use only) Declares that a particular input port of a child
+  /// subsystem is an input to the entire Diagram that allocates this Context.
+  /// Sets up tracking of the child port's dependency on the parent
+  /// port. Aborts if the subsystem has not been added to the DiagramContext.
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
-  void ExportInput(const InputPortIdentifier& id) {
-    const SubsystemIndex system_index = id.first;
-    DRAKE_DEMAND(contexts_[system_index] != nullptr);
-    input_ids_.emplace_back(id);
+  // TODO(sherm1) Consider a better name for this when it is fully implemented,
+  // like SubscribeExportedPortToDiagramPort().
+  void ExportInput(InputPortIndex input_port_index,
+                   const InputPortIdentifier& subsystem_input_port) {
+    // Identify and validate the destination input port.
+    SubsystemIndex subsystem_index = subsystem_input_port.first;
+    InputPortIndex subsystem_iport_index = subsystem_input_port.second;
+    Context<T>& subcontext = GetMutableSubsystemContext(subsystem_index);
+    DRAKE_DEMAND(0 <= subsystem_iport_index &&
+        subsystem_iport_index < subcontext.get_num_input_ports());
+
+    // TODO(sherm1) Set up dependency of subsystem input on diagram input.
+    unused(input_port_index);  // For now.
   }
 
-  /// Declares that the output port specified by @p src is connected to the
-  /// input port specified by @p dest.
+  /// (Internal use only) Declares that the output port specified by @p src is
+  /// connected to the input port specified by @p dest.
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
@@ -177,8 +187,6 @@ class DiagramContext final : public Context<T> {
     SystemOutput<T>* src_ports = GetSubsystemOutput(src_system_index);
     DRAKE_DEMAND(src_port_index >= 0);
     DRAKE_DEMAND(src_port_index < src_ports->get_num_ports());
-    OutputPortValue* output_port_value =
-        src_ports->get_mutable_port_value(src_port_index);
 
     // Identify and validate the destination port.
     SubsystemIndex dest_system_index = dest.first;
@@ -187,14 +195,7 @@ class DiagramContext final : public Context<T> {
     DRAKE_DEMAND(dest_port_index >= 0);
     DRAKE_DEMAND(dest_port_index < dest_context.get_num_input_ports());
 
-    // Construct and install the destination port.
-    auto input_port =
-        std::make_unique<DependentInputPortValue>(output_port_value);
-    Context<T>::SetInputPortValue(&dest_context, dest_port_index,
-                                  std::move(input_port));
-
-    // Remember the input/output port connectivity. We need it in DoClone().
-    connection_map_[dest] = src;
+    // TODO(sherm1) Set up dependency of input port on connected output port.
   }
 
   /// Generates the state vector for the entire diagram by wrapping the states
@@ -289,10 +290,6 @@ class DiagramContext final : public Context<T> {
     }
   }
 
-  int get_num_input_ports() const override {
-    return static_cast<int>(input_ids_.size());
-  }
-
   const State<T>& get_state() const final {
     DRAKE_ASSERT(state_ != nullptr);
     return *state_;
@@ -325,7 +322,7 @@ class DiagramContext final : public Context<T> {
       DRAKE_DEMAND(source.contexts_[i] != nullptr);
       DRAKE_DEMAND(source.outputs_[i] != nullptr);
       // When a leaf context is cloned, it will clone the data that currently
-      // appears on each of its input ports into a FreestandingInputPortValue.
+      // appears on each of its input ports into a FixedInputPortValue.
       AddSystem(i, Context<T>::CloneWithoutPointers(*source.contexts_[i]),
                 source.outputs_[i]->Clone());
     }
@@ -336,33 +333,7 @@ class DiagramContext final : public Context<T> {
     // Build superparameters over the subsystem contexts.
     MakeParameters();
 
-    // Clone the internal graph structure. After this is done, the clone will
-    // still have FreestandingInputPortValues at the inputs to the Diagram
-    // itself, but all of the intermediate nodes will have
-    // DependentInputPortValues.
-    for (const auto& connection : source.connection_map_) {
-      const OutputPortIdentifier& src = connection.second;
-      const InputPortIdentifier& dest = connection.first;
-      Connect(src, dest);
-    }
-
-    // Clone the external input structure.
-    for (const InputPortIdentifier& id : source.input_ids_) {
-      ExportInput(id);
-    }
-
     // Everything else was handled by the Context<T> copy constructor.
-  }
-
-  /// Returns the input port at the given @p index, which of course belongs
-  /// to the subsystem whose input was exposed at that index.
-  const InputPortValue* GetInputPortValue(int index) const override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    const InputPortIdentifier& id = input_ids_[index];
-    const SubsystemIndex system_index = id.first;
-    const InputPortIndex port_index = id.second;
-    return Context<T>::GetInputPortValue(GetSubsystemContext(system_index),
-                                         port_index);
   }
 
  private:
@@ -387,28 +358,12 @@ class DiagramContext final : public Context<T> {
     return static_cast<int>(contexts_.size());
   }
 
-  void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) final {
-    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
-    const InputPortIdentifier& id = input_ids_[index];
-    SubsystemIndex system_index = id.first;
-    InputPortIndex port_index = id.second;
-    Context<T>::SetInputPortValue(&GetMutableSubsystemContext(system_index),
-                                  port_index, std::move(port));
-  }
-
-  std::vector<InputPortIdentifier> input_ids_;
-
   // The outputs are stored in SubsystemIndex order, and outputs_ is equal in
   // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<SystemOutput<T>>> outputs_;
   // The contexts are stored in SubsystemIndex order, and contexts_ is equal in
   // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;
-
-  // A map from the input ports of constituent systems, to the output ports of
-  // the systems from which they get their values.
-  std::map<InputPortIdentifier, OutputPortIdentifier> connection_map_;
 
   // The internal state of the Diagram, which includes all its subsystem states.
   std::unique_ptr<DiagramState<T>> state_;

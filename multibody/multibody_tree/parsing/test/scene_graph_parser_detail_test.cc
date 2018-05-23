@@ -19,9 +19,11 @@ namespace {
 using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using geometry::Box;
 using geometry::Cylinder;
 using geometry::GeometryInstance;
 using geometry::HalfSpace;
+using geometry::Mesh;
 using geometry::SceneGraph;
 using geometry::Shape;
 using geometry::Sphere;
@@ -109,6 +111,18 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   EXPECT_EQ(shape, nullptr);
 }
 
+// Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<box>"
+      "  <size>1.0 2.0 3.0</size>"
+      "</box>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Box* box = dynamic_cast<const Box*>(shape.get());
+  ASSERT_NE(box, nullptr);
+  EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
+}
+
 // Verify MakeShapeFromSdfGeometry can make a cylinder from an sdf::Geometry.
 GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
@@ -117,9 +131,10 @@ GTEST_TEST(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       "  <length>1.2</length>"
       "</cylinder>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Cylinder& cylinder = dynamic_cast<const Cylinder&>(*shape);
-  EXPECT_EQ(cylinder.get_radius(), 0.5);
-  EXPECT_EQ(cylinder.get_length(), 1.2);
+  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
+  ASSERT_NE(cylinder, nullptr);
+  EXPECT_EQ(cylinder->get_radius(), 0.5);
+  EXPECT_EQ(cylinder->get_length(), 1.2);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a sphere from an sdf::Geometry.
@@ -129,8 +144,9 @@ GTEST_TEST(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "</sphere>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Sphere& sphere = dynamic_cast<const Sphere&>(*shape);
-  EXPECT_EQ(sphere.get_radius(), 0.5);
+  const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
+  ASSERT_NE(sphere, nullptr);
+  EXPECT_EQ(sphere->get_radius(), 0.5);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a half space from an sdf::Geometry.
@@ -144,6 +160,24 @@ GTEST_TEST(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
   // HalfSpace. Therefore we only verify it created the right object.
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
+}
+
+// Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
+GTEST_TEST(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
+  // TODO(amcastro-tri): Be warned, the result of this test might (should)
+  // change as we add support allowing to specify paths relative to the SDF file
+  // location.
+  const std::string absolute_file_path = "path/to/some/mesh.obj";
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<mesh>"
+      "  <uri>" + absolute_file_path + "</uri>"
+      "  <scale> 3 3 3 </scale>"
+      "</mesh>");
+  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->filename(), absolute_file_path);
+  EXPECT_EQ(mesh->scale(), 3);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an

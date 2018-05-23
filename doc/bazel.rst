@@ -138,13 +138,16 @@ Proprietary Solvers
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
- * Gurobi 7.5.2
+ * Gurobi 8.0.0
  * MOSEK 8.1
- * SNOPT 7.2
+ * SNOPT 7.6
+
+.. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
+   solvers/test/snopt_solver_test.cc.
 
 .. _gurobi:
 
-Gurobi 7.5.2
+Gurobi 8.0.0
 ------------
 
 Install on Ubuntu
@@ -152,16 +155,16 @@ Install on Ubuntu
 1. Register for an account on https://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi7.5.2_linux64.tar.gz``
-5. Unzip it.  We suggest that you use ``/opt/gurobi752`` to simplify working with Drake installations.
-6. ``export GUROBI_PATH=/opt/gurobi752/linux64``
+4. Download ``gurobi8.0.0_linux64.tar.gz``
+5. Unzip it.  We suggest that you use ``/opt/gurobi800`` to simplify working with Drake installations.
+6. ``export GUROBI_PATH=/opt/gurobi800/linux64``
 
 Install on macOS
 ~~~~~~~~~~~~~~~~
 1. Register for an account on http://www.gurobi.com.
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi7.5.2_mac64.pkg``.
+4. Download and install ``gurobi8.0.0_mac64.pkg``.
 
 
 To confirm that your setup was successful, run the tests that require Gurobi:
@@ -190,8 +193,8 @@ these tests.  If you will be developing with MOSEK regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
-SNOPT 7.2
----------
+SNOPT
+-----
 
 Drake provides two mechanisms to include the SNOPT sources.  One mechanism is
 to provide your own SNOPT source archive.  The other mechanism is via access to
@@ -201,8 +204,8 @@ Using your own source archive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
-   named ``snopt7.5-1.4.tar.gz``).
-2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.5-1.4.tar.gz``
+   named ``snopt7.6.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.6.tar.gz``
 
 Using the RobotLocomotion git repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

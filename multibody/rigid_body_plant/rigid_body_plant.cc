@@ -961,7 +961,7 @@ void RigidBodyPlant<T>::DoCalcTimeDerivatives(
          -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi);
     // clang-format on
     const VectorX<T> vdot_f =
-        A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+        A.completeOrthogonalDecomposition().solve(b);
     vdot = vdot_f.head(get_num_velocities());
   } else {
     // Solve M*vdot = right_hand_side.

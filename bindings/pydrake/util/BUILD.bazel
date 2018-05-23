@@ -322,4 +322,19 @@ drake_py_unittest(
     ],
 )
 
+drake_pybind_library(
+    name = "wrap_test_util_py",
+    cc_deps = [":wrap_pybind"],
+    cc_so_name = "wrap_test_util",
+    cc_srcs = ["test/wrap_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "wrap_pybind_test",
+    deps = [
+        ":wrap_test_util_py",
+    ],
+)
+
 add_lint_tests()

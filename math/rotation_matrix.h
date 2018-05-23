@@ -34,7 +34,7 @@ namespace math {
 /// - double
 /// - AutoDiffXd
 ///
-// TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
+// TODO(Mitiguy) Ensure class handles RotationMatrix<symbolic::Expression>.
 template <typename T>
 class RotationMatrix {
  public:
@@ -129,9 +129,9 @@ class RotationMatrix {
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    const T &r = rpy.get_roll_angle();
-    const T &p = rpy.get_pitch_angle();
-    const T &y = rpy.get_yaw_angle();
+    const T &r = rpy.roll_angle();
+    const T &p = rpy.pitch_angle();
+    const T &y = rpy.yaw_angle();
     using std::sin;
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
@@ -690,34 +690,6 @@ Matrix3<typename Derived::Scalar> rpy2rotmat(
   const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
   const RotationMatrix<Scalar> R(roll_pitch_yaw);
   return R.matrix();
-}
-
-// TODO(mitiguy) Clean up this code, make more efficient, and change the name
-// of the method to PartialRotationMatrixWithRespectToRollPitchYaw().
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  auto rpy_array = rpy.array();
-  auto s = rpy_array.sin();
-  auto c = rpy_array.cos();
-
-  Eigen::Matrix<typename Derived::Scalar, 9, 3> dR;
-  dR.row(0) << 0, c(2) * -s(1), c(1) * -s(2);
-  dR.row(1) << 0, -s(1) * s(2), c(2) * c(1);
-  dR.row(2) << 0, -c(1), 0;
-  dR.row(3) << c(2) * s(1) * c(0) - s(2) * -s(0), c(2) * c(1) * s(0),
-      -s(2) * s(1) * s(0) - c(2) * c(0);
-  dR.row(4) << s(2) * s(1) * c(0) + c(2) * -s(0), s(2) * c(1) * s(0),
-      c(2) * s(1) * s(0) - s(2) * c(0);
-  dR.row(5) << c(1) * c(0), -s(1) * s(0), 0;
-  dR.row(6) << c(2) * s(1) * -s(0) + s(2) * c(0), c(2) * c(1) * c(0),
-      -s(2) * s(1) * c(0) + c(2) * s(0);
-  dR.row(7) << s(2) * s(1) * -s(0) - c(2) * c(0), s(2) * c(1) * c(0),
-      c(2) * s(1) * c(0) + s(2) * s(0);
-  dR.row(8) << c(1) * -s(0), -s(1) * c(0), 0;
-
-  return dR;
 }
 
 }  // namespace math

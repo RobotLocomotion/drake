@@ -14,7 +14,8 @@ Build configuration:
     BUILD_TESTING=OFF
     BUILD_SHARED_LIBS=ON
     CMAKE_BUILD_TYPE=Release
-    Module_vtkGUISupportQt=ON
+    Module_vtkRenderingOSPRay=ON
+    VTK_Group_Qt=ON
     VTK_LEGACY_REMOVE=ON
     VTK_QT_VERSION=5
     VTK_USE_SYSTEM_EXPAT=ON
@@ -51,7 +52,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.0"
+VTK_MAJOR_MINOR_VERSION = "8.1"
 
 def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
                     header_only = False, linkopts = []):
@@ -110,8 +111,11 @@ def _impl(repository_ctx):
             VTK_MAJOR_MINOR_VERSION), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.0.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
-            sha256 = "d6cb1b8cfe8d8b9abe400c39267954cbba5b12d4ff550d42a1fe695d3e01dc40"  # noqa
+            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64.tar.gz"
+            sha256 = "b2bc97da2d21dda16775de50638ffeaa4070673dcc01aaee88311f09678a36bc"  # noqa
+        elif os_result.ubuntu_release == "18.04":
+            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64.tar.gz"
+            sha256 = "3f61705139f2475bd035ccdd3d52920f2308b3581ca044a6a4bc535ceea9cc71"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 

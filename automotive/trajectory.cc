@@ -1,4 +1,4 @@
-#include "drake/automotive/agent_trajectory.h"
+#include "drake/automotive/trajectory.h"
 
 #include <algorithm>
 
@@ -34,7 +34,7 @@ PoseVelocity::PoseVelocity(const Eigen::Quaternion<double>& rotation,
                            const SpatialVelocity<double>& velocity)
     : rotation_(rotation), translation_(translation), velocity_(velocity) {}
 
-PoseVelocity AgentTrajectory::value(double time) const {
+PoseVelocity Trajectory::value(double time) const {
   const Eigen::Quaternion<double> rotation(rotation_.orientation(time));
   const Eigen::Vector3d translation(translation_.value(time));
   const Eigen::Vector3d translation_dot(translation_dot_.value(time));
@@ -43,7 +43,7 @@ PoseVelocity AgentTrajectory::value(double time) const {
   return PoseVelocity{rotation, translation, velocity};
 }
 
-AgentTrajectory AgentTrajectory::Make(
+Trajectory Trajectory::Make(
     const std::vector<double>& times,
     const std::vector<Eigen::Quaternion<double>>& knots_rotation,
     const std::vector<Eigen::Vector3d>& knots_translation,
@@ -68,10 +68,10 @@ AgentTrajectory AgentTrajectory::Make(
     default:
       throw std::logic_error("The provided interp_type is not supported.");
   }
-  return AgentTrajectory{translation, rotation};
+  return Trajectory{translation, rotation};
 }
 
-AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
+Trajectory Trajectory::MakeCubicFromWaypoints(
     const std::vector<Eigen::Quaternion<double>>& waypoints_rotation,
     const std::vector<Eigen::Vector3d>& waypoints_translation,
     const std::vector<double>& speeds) {
@@ -109,10 +109,10 @@ AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
       PiecewisePolynomial<double>::Cubic(times, translations,
                                          linear_velocities);
 
-  return AgentTrajectory(translation, rotation);
+  return Trajectory(translation, rotation);
 }
 
-AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
+Trajectory Trajectory::MakeCubicFromWaypoints(
     const std::vector<Eigen::Quaternion<double>>& waypoints_rotation,
     const std::vector<Eigen::Vector3d>& waypoints_translation, double speed) {
   DRAKE_THROW_UNLESS(waypoints_rotation.size() == waypoints_translation.size());
@@ -123,7 +123,7 @@ AgentTrajectory AgentTrajectory::MakeCubicFromWaypoints(
                                 speeds);
 }
 
-AgentTrajectory::AgentTrajectory(
+Trajectory::Trajectory(
     const PiecewisePolynomial<double>& translation,
     const PiecewiseQuaternionSlerp<double>& rotation)
     : translation_(translation),

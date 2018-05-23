@@ -1,4 +1,4 @@
-#include "drake/automotive/trajectory_agent.h"
+#include "drake/automotive/trajectory_follower.h"
 
 #include "drake/common/default_scalars.h"
 
@@ -10,21 +10,19 @@ using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
 template <typename T>
-TrajectoryAgent<T>::TrajectoryAgent(const AgentData& agent_data,
-                                    const AgentTrajectory& trajectory,
-                                    double sampling_time_sec)
+TrajectoryFollower<T>::TrajectoryFollower(const Trajectory& trajectory,
+                                          double sampling_time_sec)
     : systems::LeafSystem<T>(
-          systems::SystemTypeTag<automotive::TrajectoryAgent>{}),
-      agent_data_(agent_data),
+          systems::SystemTypeTag<automotive::TrajectoryFollower>{}),
       trajectory_(trajectory) {
   this->DeclarePeriodicUnrestrictedUpdate(sampling_time_sec, 0.);
-  this->DeclareVectorOutputPort(&TrajectoryAgent::CalcStateOutput);
-  this->DeclareVectorOutputPort(&TrajectoryAgent::CalcPoseOutput);
-  this->DeclareVectorOutputPort(&TrajectoryAgent::CalcVelocityOutput);
+  this->DeclareVectorOutputPort(&TrajectoryFollower::CalcStateOutput);
+  this->DeclareVectorOutputPort(&TrajectoryFollower::CalcPoseOutput);
+  this->DeclareVectorOutputPort(&TrajectoryFollower::CalcVelocityOutput);
 }
 
 template <typename T>
-void TrajectoryAgent<T>::CalcStateOutput(
+void TrajectoryFollower<T>::CalcStateOutput(
     const systems::Context<T>& context,
     SimpleCarState<T>* output_vector) const {
   const PoseVelocity values = GetValues(context);
@@ -35,7 +33,7 @@ void TrajectoryAgent<T>::CalcStateOutput(
 }
 
 template <typename T>
-void TrajectoryAgent<T>::CalcPoseOutput(const systems::Context<T>& context,
+void TrajectoryFollower<T>::CalcPoseOutput(const systems::Context<T>& context,
                                         PoseVector<T>* pose) const {
   const PoseVelocity values = GetValues(context);
   pose->set_translation(Eigen::Translation<T, 3>{values.translation()});
@@ -45,8 +43,9 @@ void TrajectoryAgent<T>::CalcPoseOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-void TrajectoryAgent<T>::CalcVelocityOutput(const systems::Context<T>& context,
-                                            FrameVelocity<T>* velocity) const {
+void TrajectoryFollower<T>::CalcVelocityOutput(
+    const systems::Context<T>& context,
+    FrameVelocity<T>* velocity) const {
   const PoseVelocity values = GetValues(context);
   const Eigen::Vector3d& v = values.velocity().translational();
   const Eigen::Vector3d& w = values.velocity().rotational();
@@ -54,7 +53,7 @@ void TrajectoryAgent<T>::CalcVelocityOutput(const systems::Context<T>& context,
 }
 
 template <typename T>
-PoseVelocity TrajectoryAgent<T>::GetValues(
+PoseVelocity TrajectoryFollower<T>::GetValues(
     const systems::Context<T>& context) const {
   return trajectory_.value(ExtractDoubleOrThrow(context.get_time()));
 }
@@ -62,5 +61,5 @@ PoseVelocity TrajectoryAgent<T>::GetValues(
 }  // namespace automotive
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::automotive::TrajectoryAgent)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::automotive::TrajectoryFollower)

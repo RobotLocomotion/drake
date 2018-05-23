@@ -53,8 +53,9 @@ class DiagramOutputPort : public OutputPort<T> {
   /// diagram.
   DiagramOutputPort(const Diagram<T>& diagram,
                     const OutputPort<T>* source_output_port)
-      : OutputPort<T>(diagram, source_output_port->get_data_type(),
-                      source_output_port->size()),
+      : OutputPort<T>(
+          diagram, diagram, OutputPortIndex(diagram.get_num_output_ports()),
+          source_output_port->get_data_type(), source_output_port->size()),
         source_output_port_(source_output_port),
         subsystem_index_(
             diagram.GetSystemIndexOrAbort(&source_output_port->get_system())) {}
@@ -963,9 +964,12 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
                        ConvertToContextPortIdentifier(dest));
     }
 
-    // Declare the Diagram-external inputs.
-    for (const InputPortLocator& id : input_port_ids_) {
-      context->ExportInput(ConvertToContextPortIdentifier(id));
+    // Diagram-external input ports are exported from child subsystems. Inform
+    // the new context so that it it can set up dependency tracking for the
+    // child subsystem's input port on its parent Diagram's input port.
+    for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
+      const InputPortLocator& id = input_port_ids_[i];
+      context->ExportInput(i, ConvertToContextPortIdentifier(id));
     }
 
     // TODO(sherm1) Move to final resource allocation phase.
@@ -990,7 +994,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // Evaluates the value of the specified subsystem input
   // port in the given context. The port has already been determined _not_ to
-  // be a freestanding port, so it must be connected either
+  // be a fixed port, so it must be connected either
   // - to the output port of a peer subsystem, or
   // - to an input port of this Diagram,
   // - or not connected at all in which case we return null.

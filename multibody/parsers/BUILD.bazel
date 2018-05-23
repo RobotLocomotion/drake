@@ -14,15 +14,15 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "parsers",
     deps = [
-        ":everything",
+        ":find_files",
+        ":parsing",
     ],
 )
 
 drake_cc_library(
-    name = "everything",
+    name = "parsing",
     srcs = [
         "model_instance_id_table.cc",
-        "package_map.cc",
         "parser_common.cc",
         "sdf_parser.cc",
         "urdf_parser.cc",
@@ -30,7 +30,6 @@ drake_cc_library(
     ],
     hdrs = [
         "model_instance_id_table.h",
-        "package_map.h",
         "parser_common.h",
         "sdf_parser.h",
         "urdf_parser.h",
@@ -38,8 +37,26 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":find_files",
         "//multibody:rigid_body_tree",
         "//multibody/rigid_body_plant:compliant_material",
+        "@tinydir",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "find_files",
+    srcs = [
+        "package_map.cc",
+        "parser_path_utils.cc",
+    ],
+    hdrs = [
+        "package_map.h",
+        "parser_path_utils.h",
+    ],
+    deps = [
+        "//common",
         "@spruce",
         "@tinydir",
         "@tinyxml2",
@@ -58,16 +75,16 @@ drake_cc_googletest(
         ":test_models",
     ],
     deps = [
-        ":parsers",
+        ":find_files",
         "//common:find_resource",
     ],
 )
 
 drake_cc_googletest(
-    name = "parser_common_test",
-    srcs = ["test/parser_common_test/parser_common_test.cc"],
+    name = "parser_path_utils_test",
+    srcs = ["test/parser_path_utils_test.cc"],
     deps = [
-        ":parsers",
+        ":find_files",
     ],
 )
 

@@ -142,7 +142,7 @@ class PrismaticJoint final : public Joint<T> {
   }
 
  protected:
-  /// Joint<T> final called through public NVI, Joint::AddInForce().
+  /// Joint<T> virtual override called through public NVI, Joint::AddInForce().
   /// Therefore arguments were already checked to be valid.
   /// For a %PrismaticJoint, we must always have `joint_dof = 0` since there is
   /// only a single degree of freedom (get_num_dofs() == 1). `joint_tau` is the

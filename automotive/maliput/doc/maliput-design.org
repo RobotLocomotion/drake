@@ -1,9 +1,13 @@
 # How to generate a proper PDF of this document:
 #
-# 1. Install "org-mode" and all of its recommended support packages.
-#     apt install org-mode
-#    (emacs ships with org-mode, installing it specifically will get you a
-#    more up-to-date version, along with all the important LaTeX dependencies.)
+# 1. Install "org-mode" (along with all of its recommended support packages)
+#    and an additional LaTeX package.
+#
+#       apt install org-mode texlive-latex-extra
+#
+#    Note that emacs already comes with a version of org-mode, but installing
+#    it specifically will get you a more up-to-date version, along with all
+#    the LaTeX dependencies required to generate PDF's.
 #
 # 2. Edit this file in emacs.
 #
@@ -66,8 +70,9 @@ fragments of very large, complex road networks on-demand and disposing
 of fragments that are no longer immediately necessary.
 
 
-* Geometry Model
-** Overview
+* Road Network Geometry
+** Geometry Model
+*** Overview
 At the core of =maliput= is a mathematical model for the geometry of
 the space around a road network; it is a model of both the road
 surface (of course) and the volume proximal to that surface.  In the
@@ -118,7 +123,7 @@ surface.  The routing graph (=Lanes= are joined end-to-end via
 =BranchPoints=) describes how one can get from one region of the road
 network to another.
 
-** =World= Frame versus =Lane= Frame
+*** =World= Frame versus =Lane= Frame
 Two types of coordinate frames are used in this model: the (single)
 =World=-frame and the (multiple) =Lane=-frames.  In both, distances
 are typically measured in units of meters.
@@ -199,7 +204,7 @@ some regions of the =RoadGeometry= manifold may not be covered by the
 surface/volume parameterizations in the future to complete the picture.
 #+END_QUOTE
 
-** Lanes as =Lanes=
+*** Lanes as =Lanes=
 
 A =Lane= represents a lane of travel in a road network.  As discussed above,
 it defines a map from curvilinear coordinates to the =World=-frame:
@@ -268,7 +273,7 @@ into regions that cannot be properly represented by the parameterization
 of a given =Lane=.
 #+END_QUOTE
 
-** Lanes Joined End-to-End via =BranchPoints=
+*** Lanes Joined End-to-End via =BranchPoints=
 
 =BranchPoints= are the points where =Lanes= are connected end-to-end.
 They are so named because they are the branch-points in the decision
@@ -328,7 +333,7 @@ be considered the same highway, whereas the other is considered an exit.
 (Also, note that default-branch relationships between =Lanes= need not
 be symmetric.)
 
-** Adjacent Lanes Grouped into =Segments=
+*** Adjacent Lanes Grouped into =Segments=
 
 In real roads, the pavement is often divided into multiple adjacent
 lanes of travel; in =maliput=, adjacent =Lanes= are grouped together
@@ -365,7 +370,7 @@ Given the consistent ordering, we index the =Lanes= in a =Segment=
 with unique integers, beginning with zero for the rightmost =Lane= and
 increasing leftward.
 
-** Intersecting =Segments= Grouped into =Junctions=
+*** Intersecting =Segments= Grouped into =Junctions=
 
 It is possible for multiple =Segments= to cover the same pavement.
 In fact, that how intersections are represented, by criss-crossing
@@ -396,37 +401,7 @@ to the same =Junction=.  It would be better split that single =Segment=
 into three:  one crossing each intersection, and one in between that
 joins those two end-to-end (resulting in three independent =Junctions=).
 
-* Annotations Database /(TODO)/
-  * (Rules may have time-of-day component.)
-** Lane-wide rules
-   * allowed travel direction
-     * single-direction (increasing $s$, decreasing $s$)
-     * bi-directional turning lane
-     * (time-of-day restrictions)
-   * use restrictions
-     * parking
-     * high-occupancy vehicles (HOV)
-     * pedestrian
-     * emergency vehicle
-   * speed limits
-   * passing rules
-** Physical features (features with spatial location and extent)
-   * linear features
-     * striping
-   * areal features
-     * crosswalks
-     * restricted medians
-     * do-not-block zones
-   * signage
-     * stop lights, stop signs
-     * turn restrictions
-   * other (volumetric) furniture
-     * traffic cones
-     * refrigerator that fell off a truck
-   * potholes
-
-* C++ Abstract API and Concrete Implementations
-** Generic =maliput::api=
+** Abstract Geometry API: =RoadGeometry=
  * /TODO:/  Explain semantics of object ID's.  (cross-referencing, tiling,
    debugging, visualization)
  * /TODO:/  Reference to =maliput::api= doxygen.
@@ -438,6 +413,10 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 *** =RoadGeometry=
     * accessors for component =Junctions=
     * accessors for component =BranchPoints=
+    * accessors for tolerances
+      * =linear_tolerance=
+      * =angular_tolerance=
+      * /TODO/ =scale_length=
 *** =Junction=
     * accessors for parent =RoadGeometry=, component =Junctions=
 *** =Segment=
@@ -464,14 +443,259 @@ joins those two end-to-end (resulting in three independent =Junctions=).
     * accessor for the set of ongoing =Lanes= for a given =Lane=
     * accessor for the default branch (ongoing =Lane=) for a given =Lane=
     * accessor for parent =RoadGeometry=
-** =maliput::monolane= Implementation
+** Concrete Implementation: =maliput::monolane=
  * /TODO:/  Reference to =maliput::api= doxygen.
  * /TODO:/  Basics of geometric primitives
  * /TODO:/  Basics of Builder
  * /TODO:/  Basics of yaml format
 
+* Rules and Features Databases
+** Rules of the Road: =RoadRulebook=
+
+A =RoadRulebook= (Figure [[fig:road-rulebook]]) expresses the semantic
+"rules of the road" for a road network, as rule elements associated to
+components of a =RoadGeometry=.  In a real, physical road network, road
+rules are typically signalled to users via signs or striping, though
+some rules are expected to be prior knowledge (e.g., "We drive on the
+right-hand side here.").  =RoadRulebook= abstracts away from both the
+physical artifacts and the symbolic state of such signals, and directly
+represents the intended use of a road network at a semantic level.
+
+We define three levels of knowledge of rules of the road:
+ * /Physical/Sensory/ comprises the physical artifacts (or simulated model
+   thereof) which signal rules to the sensors of humans or vehicles.
+   E.g., a traffic light of certain design hanging above a road,
+   emitting light; a white/black metal sign with numbers and words,
+   posted next to the road; a sequence of short yellow stripes painted
+   on the ground.
+ * /Symbolic/ is the discrete state of the signals, abstracted away from
+   the specifics of the physical manifestation.  E.g., a traffic light
+   with four bulbs, of which the red one and the green left-facing
+   arrow are illuminated; a speed limit sign bearing a limit of 45
+   miles per hour; a dashed-yellow lane separation line.
+ * /Semantic/ is the intended rules of the road, whether from implicit
+   knowledge, or conveyed via symbols and signals.  E.g., cars
+   travelling forward through the intersection must stop, but
+   left-turning cars may proceed; the speed limit for a specific
+   stretch of road is 45 mph; lane-change to the left in order to pass
+   is permitted.
+
+The =RoadRulebook= interface only concerns the semantic level, which
+is the level required to provide oracular /ado/ cars with interesting
+interactive behaviors.[fn::Future API's may be developed to express
+the sensory and symbolic levels of expression, and to coordinate
+between all three as required.]
+
+#+CAPTION: =RoadRulebook= outline.
+#+LABEL: fig:road-rulebook
+#+ATTR_LATEX: :height 0.6\textheight
+[[./road-rulebook-outline.pdf]]
+
+We distinguish two kinds of state:
+ * /Static state/ comprises the aspects of a simulation which are
+   established before the simulation begins and which cannot evolve
+   during the runtime of the simulation.  This can be considered to be
+   the configuration of a simulation.
+ * /Dynamic state/ comprises the aspects of a simulation which can evolve
+   during the runtime as the simulation's time progresses.
+
+The =RoadRulebook= design decouples static state from dynamic
+state. Dynamic state needs to be managed during the runtime of a
+simulation, and different simulation frameworks have different
+requirements for how they store and manage dynamic state.  In
+particular, the =drake= system framework requires that all dynamic state
+can be externalized and collated into a single generic state vector
+(called the “Context”), and the =RoadRulebook= design facilitates such a
+scheme. Decoupling the dynamic and static state also aids development;
+once the (small) interface between the two is established, development
+of API’s for each kind of state can proceed in parallel.
+
+=RoadRulebook= is an abstract interface which provides query methods to
+return rule instances which match some filter parameters, e.g., rules
+which involve a specified =Lane=.  Each flavor of rule is represented by
+a different =*Rule= class.  Rules are associated to a road network by
+referring to components of a =RoadGeometry= via component ID’s. Each
+rule is itself identified by a unique type-specific ID.  This ID is the
+handle for manipulating the rule during rulebook configuration, and for
+associating the rule with physical/symbolic models and/or dynamic state
+in a simulation.  A rule generally consists of static state, e.g., the
+speed limit as posted for a lane. Some rules may involve dynamic state
+as well. Any dynamic state will be provided by a separate entity, with
+an abstract interface for each flavor of dynamic state. For example, a
+=RightOfWayRule= may refer to dynamic state (e.g., if it represents a
+traffic light) via its =RightOfWayRule::Id=. An implementation of the
+=RightOfWayStateProvider= abstract interface will, via its =GetState()=
+method, return the current state for a given =RightOfWayRule::Id=.  How
+those states are managed and evolved over time is up to the
+implementation.
+
+Road rules can generally be interpreted as restrictions on behavior,
+and absent any rules, behavior is unrestricted (by rules of the road).
+For example, if a =RoadRulebook= does not provide a =SpeedLimitRule=
+for some section of the road network, then there is no speed limit
+established for that section of road.  Whether or not an agent follows
+the rules is up to the agent; =RoadRulebook= merely provides the rules.
+
+Six rule types are currently defined or proposed:
+ * =SpeedLimitRule= - speed limits
+ * =RightOfWayRule= - control of right-of-way/priority on specific routes
+ * /(TODO)/ =DirectionUsageRule= - direction-of-travel specification
+ * /(TODO)/ =LaneChangeRule= - adjacent-lane transition restrictions
+ * /(TODO)/ =OngoingRouteRule= - turning restrictions
+ * /(TODO)/ =PreferentialUseRule= - lane-based vehicle-type restrictions (e.g.,
+   HOV lanes)
+
+*** Common Region Entities
+
+A few common entities, which identify regions of the road network, occur in
+the various rule types:
+ * =LaneId=: unique ID which identifies a =Lane= in a =RoadGeometry=;
+ * =SRange=: inclusive longitudinal range $[s_0, s_1]$ between two
+   s-coordinates;
+ * =LaneSRange=: a =LaneId= paired with an =SRange=, describing a longitudinal
+   range of a specific =Lane=;
+ * =LaneSRoute=: a sequence of =LaneSRange='s which describe a contiguous
+   longitudinal path that may span multiple end-to-end connected =Lane='s;
+ * =LaneIdEnd=: a pair of =LaneId= and an "end" specifier, which describes
+   either the start or finish of a specific =Lane=.
+
+*** =SpeedLimitRule=: Speed Limits
+A =SpeedLimitRule= describes speed limits on a longitudinal range of a Lane.
+It comprises:
+   * id
+   * zone (=LaneSRange=)
+   * maximum and minimum speed limits (in which a minimum of zero is
+     effectively no minimum)
+   * severity:
+     * /strict/ (e.g., in the US, black-on-white posted limit)
+     * /advisory/ (e.g., in the US, black-on-yellow advisory limit on curves)
+   * /TODO/ applicable vehicle type (for limits applying to specific types):
+     * any
+     * trucks
+     * ...
+   * /TODO/ time-of-day/calendar condition
+
+*** =RightOfWayRule=: Stopping and Yielding
+A =RightOfWayRule= describes which vehicles have right-of-way (also known as
+"priority") when operating on intersecting regions of the road network.
+In the real world, such rules are typically signalled by stop signs, yield
+signs, and traffic lights, or are understood as implicit knowledge of the
+local laws (e.g., "vehicle on the right has priority at uncontrolled
+intersections").
+
+=RightOfWayRule= comprises the static state of such rules:
+    * id
+    * controlled zone (=LaneSRoute=)
+      * /This is directional: the beginning of the range is considered
+        the "entry-point" or "stop-line"./
+    * type
+      * /Proceed/:  No contention with vehicles on other paths, but
+        vehicles should avoid stopping within the controlled zone
+        (e.g., pedestrian crosswalk).
+      * /Yield/:  E.g., a yield sign --- vehicle may continue but must yield
+        to conflicting traffic.
+      * /StopThenGo/:  E.g., a stop sign --- vehicle must come to a complete
+        stop before proceeding.
+      * /Dynamic/:  rule is determined by dynamic state.
+    * /TODO/ capture more complex yield semantics:
+      * controlled yield-to zones (e.g., whom to yield to when signals are
+        active/functioning)
+      * uncontrolled yield-to zones (e.g., whom to yield to when signals are
+        dark, e.g., fallback to 'yield to right' rule)
+      * e.g., capture semantics of N-way stop signs
+      * e.g., capture semantics of flashing turn arrows
+
+/Dynamic/ rules delegate to a =RightOfWayStateProvider= which provides
+a more complex enumeration of =DynamicState=:
+      * /Go/
+      * /PrepareToGo/
+      * /PrepareToStop/
+      * /ProceedWithCaution/
+      * /Stop/
+      * /StopThenGo/
+      * /Uncontrolled/ (e.g., dark mode)
+      * /Yield/
+
+*** /(TODO)/ =DirectionUsageRule=: Direction/Usage
+/Captures allowed direction-of-travel./
+   * id
+   * zone (=LaneSRange=)
+   * allowed use:
+     * /bidirectional/ (e.g., non-striped single-lane residential street)
+     * /unidirectional, s increasing/
+     * /unidirectional, s decreasing/
+     * /bidirectional, turning-only/
+     * /no-traffic/ (e.g., median strip)
+     * /parking-lane/
+   * time-of-day/calendar condition?
+
+*** /(TODO)/ =LaneChangeRule=: Lane-change/Passing Restrictions
+/Captures restrictions on lateral/adjacent lane transitions./
+   * id
+   * zone (=LaneSRange=)
+   * applicable direction
+     * to-left
+     * to-right
+   * constraint
+     * allowed
+     * forbidden
+     * /discouraged?/ (e.g., to capture solid white lines separating turn
+       lanes from through traffic)
+   * /Should this capture "passing vs lane-change" purpose, too, (e.g.,
+     the white-vs-yellow distinction) or should that just be implied by/
+     =DirectionUsageRule=?
+   * time-of-day/calendar condition?
+
+*** /(TODO)/ =OngoingRouteRule=: "Turning" Restrictions
+/Captures restrictions on longitudinal/end-to-end lane transitions./
+   * id
+   * applicable originating =LaneIdEnd=
+   * ongoing =LaneIdEnd=
+   * restricted vehicle type
+     * (not) any
+     * (not) bus
+     * (not) truck
+     * ...
+   * time-of-day/calendar condition?
+   * /(Or, maybe this concept is better represented by vehicle restrictions
+     on the ongoing lane instead.)/
+
+*** /(TODO)/ =PreferentialUseRule=: Vehicle Restrictions
+/Captures vehicle-type traffic restrictions./
+   * id
+   * zone (=LaneSRange=)
+   * vehicle type
+     * high-occupancy vehicles (HOV) only
+     * no trucks
+     * bus only
+     * emergency vehicles only
+     * etc
+   * time-of-day/calendar condition?
+   * /Should this should be merged with =DirectionUsageRule=, because
+     lane usage/direction might be specified per vehicle type?/
+
+** /(TODO)/ Furniture and Physical Features
+/Provide a database of physical features with spatial location and extent./
+In many cases these are related to rules in the =RoadRulebook= (e.g., signs
+and stripes are indicators for rules of the road).
+   * linear features
+     * striping
+   * areal features
+     * crosswalks
+     * restricted medians
+     * do-not-block zones
+   * signage
+     * stop lights, stop signs
+     * turn restrictions
+   * other (volumetric) furniture
+     * benches
+     * mailboxes
+     * traffic cones
+     * refrigerator that fell off a truck
+   * potholes
+
 * Formatting                                                       :noexport:
-#+OPTIONS: toc:1
+#+OPTIONS: toc:2
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [12pt]
 #+LATEX_HEADER: \usepackage[scaled=0.85]{helvet}
@@ -482,3 +706,5 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 #+LATEX_HEADER: \usepackage{enumitem}
 #+LATEX_HEADER: \setlist[itemize]{itemsep=0.1em,parsep=0.1em,topsep=0.1em,partopsep=0.1em}
 #+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \renewcommand\floatpagefraction{0.8}
+#+LATEX_HEADER: \renewcommand\topfraction{0.8}

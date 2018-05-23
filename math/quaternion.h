@@ -29,7 +29,7 @@ namespace math {
 // (Deprecated), use @ref Eigen::Quaternion(w, x, y, z).
 // TODO(mitiguy) Delete this code that was deprecated on May 1, 2018.
 template <typename Derived>
-DRAKE_DEPRECATED("This code is deprecated.  Use Eigen's Quaternion constructor"
+DRAKE_DEPRECATED("This code is deprecated.  Use Eigen's Quaternion constructor "
                  "Quaternion(w, x, y, z) -- not a home-brew 4-element vectors")
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
     const Eigen::MatrixBase<Derived>& q) {

@@ -65,13 +65,6 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   EXPECT_EQ(index3, index2);
   EXPECT_FALSE(index1.is_valid());
 
-  // Int assignment
-  AIndex index4;
-  index4 = 17;
-  EXPECT_EQ(index4, 17);
-  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(index4 = -3, std::runtime_error,
-                                      "Assigning an invalid int.+");
-
   // Assignment involving invalid indices.
 
   // Copy assign *to* invalid.
@@ -328,14 +321,14 @@ GTEST_TEST(TypeSafeIndex, InPlaceSubtract) {
       "In-place subtraction with an int on an invalid index.+");
 
   // In-place with an index.
-  about_to_be_negative_index = 0;
+  about_to_be_negative_index = AIndex(0);
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       about_to_be_negative_index -= AIndex(1), std::runtime_error,
       "In-place subtraction with another index produced an invalid index.+");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       invalid -= AIndex(1), std::runtime_error,
       "In-place subtraction with another index invalid LHS.+");
-  about_to_be_negative_index = 0;
+  about_to_be_negative_index = AIndex(0);
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       about_to_be_negative_index -= invalid, std::runtime_error,
       "In-place subtraction with another index invalid RHS.+");
@@ -382,7 +375,6 @@ GTEST_TEST(TypeSafeIndex, UseInStl) {
   std::vector<AIndex> indices;
   EXPECT_NO_THROW(indices.resize(3));
   EXPECT_FALSE(indices[0].is_valid());
-  EXPECT_NO_THROW(indices[0] = 0);
   EXPECT_NO_THROW(indices[1] = AIndex(1));
   EXPECT_NO_THROW(indices[2] = AIndex());  // Valid for *move* assignment.
   AIndex invalid;
@@ -395,78 +387,120 @@ GTEST_TEST(TypeSafeIndex, UseInStl) {
 
 //-------------------------------------------------------------------
 
-// This code allows us to turn compile-time errors in to run-time errors that
-// we can incorporate in a unit test.  We can use it to confirm the
-// non-existence of a particular operator.  Specifically, we are using it to
-// confirm that an index with one tag type cannot be compared or combined with
-// index instances of another type. We are also confirming that those same
-// operations work with atomic data types that can be converted to int types.
-//
-// To simplify the test boilerplate, the infrastructure has been placed in a
-// macro, allowing for the test of a wide range of *binary* operations.  The
-// use is:
-//    BINARY_TEST( op, op_name )
-// It produces the templated method: has_op_name<T, U>(), which returns true
-// if `t op u` is a valid operation for `T t` and `U u`.
-//
-// Examples of invocations:
-//    op    |   op_name
-// ---------+-------------
-//   ==     |   equals
-//    <     |   less_than
-//    +     |   add
+// Helper functions for testing TypeSafeIndex interoperability with certain
+// integer types.
+template <typename Scalar>
+void TestScalarComparisons() {
+  Scalar small_value{10};
+  Scalar equal_value{15};
+  Scalar big_value{20};
 
-#define BINARY_TEST(OP, OP_NAME) \
-template <typename T, typename U, \
-    typename = decltype(std::declval<T>() OP std::declval<U>())> \
-bool has_ ## OP_NAME ## _helper(int) { return true; } \
-template <typename T, typename U> \
-bool has_ ## OP_NAME ## _helper(...) { return false; } \
-template <typename T, typename U> \
-bool has_ ## OP_NAME() { return has_ ## OP_NAME ## _helper<T, U>(1); } \
-GTEST_TEST(TypeSafeIndex, OP_NAME ## OperatorAvailiblity) { \
-  EXPECT_FALSE((has_ ## OP_NAME<AIndex, BIndex>())); \
-  EXPECT_TRUE((has_ ## OP_NAME<AIndex, AIndex>())); \
-  EXPECT_TRUE((has_ ## OP_NAME<AIndex, int>())); \
-  EXPECT_TRUE((has_ ## OP_NAME<AIndex, size_t>())); \
-  EXPECT_TRUE((has_ ## OP_NAME<AIndex, int64_t>())); \
+  AIndex index{static_cast<int>(equal_value)};
+
+  EXPECT_TRUE(small_value != index);
+  EXPECT_TRUE(index != small_value);
+  EXPECT_TRUE(equal_value == index);
+  EXPECT_TRUE(index == equal_value);
+
+  EXPECT_TRUE(small_value < index);
+  EXPECT_TRUE(index < big_value);
+  EXPECT_TRUE(small_value <= index);
+  EXPECT_TRUE(index <= big_value);
+  EXPECT_TRUE(index <= equal_value);
+
+  EXPECT_TRUE(big_value > index);
+  EXPECT_TRUE(index > small_value);
+  EXPECT_TRUE(big_value >= index);
+  EXPECT_TRUE(index >= small_value);
+  EXPECT_TRUE(index >= equal_value);
 }
 
-//-------------------------------------------------------------------
+template <typename Scalar>
+void TestScalarIncrement() {
+  const int initial_value = 5;
+  AIndex index{initial_value};
+  Scalar offset{1};
+  index += offset;
+  ASSERT_EQ(index, initial_value + offset);
+  index -= offset;
+  ASSERT_EQ(index, initial_value);
+}
 
-// Confirms that indices of different tag types cannot be compared for equality.
-BINARY_TEST(==, Equals)
+// Explicit tests to confirm operations between integral types and indices work
+// as expected.
 
-// Confirms that indices of different tag types cannot be compared for
-// inequality.
-BINARY_TEST(!=, NotEquals)
+GTEST_TEST(IntegralComparisons, CompareInt) {
+  TestScalarComparisons<int>();
+  TestScalarIncrement<int>();
+  const int value = 3;
+  AIndex constructed(value);
+  ASSERT_TRUE(constructed.is_valid());
+}
 
-// Confirms that indices of different tag types cannot be compared as one less
-// than the other.
-BINARY_TEST(<, LessThan)
+GTEST_TEST(IntegralComparisons, CompareInt64) {
+  TestScalarComparisons<int64_t>();
+  TestScalarIncrement<int64_t>();
 
-// Confirms that indices of different tag types cannot be compared as one less
-// than or equal to the other.
-BINARY_TEST(<=, LessThanOrEquals)
+  // Implicit narrowing for a valid value.
+  const int64_t valid_value = 3;
+  AIndex valid(valid_value);
+  ASSERT_TRUE(valid.is_valid());
 
-// Confirms that indices of different tag types cannot be compared as one
-// greater than the other.
-BINARY_TEST(>, GreaterThan)
+  // Implicit narrowing of value that is too large. In contrast to size_t
+  // (see below), the compiler warns about compile-time issues with this
+  // assignment. The lambda function provides sufficient indirection that
+  // compiler won't warn about the implicit conversion of the too-large int64_t
+  // value.
+  auto indirect_call = [](const int64_t local_value) {
+    AIndex a;
+    DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+        a = AIndex(local_value), std::runtime_error,
+        "Explicitly constructing an invalid index. Type .* has an invalid "
+        "value; it must lie in the range .*");
+  };
 
-// Confirms that indices of different tag types cannot be compared as one
-// greater than or equal to the other.
-BINARY_TEST(>=, GreaterThanOrEqual)
+  // The too-large number, when truncated, would produce a negative index which
+  // is inherently invalid.
+  const int64_t small_overflow_value = 2300000000;
+  EXPECT_LT(static_cast<int>(small_overflow_value), 0);
+  indirect_call(small_overflow_value);
 
-// Confirms that indices of different tag types cannot be added to each other.
-BINARY_TEST(+=, InPlaceAdd)
+  // The too-large number, when truncated, would produce a positive index which
+  // is inherently valid; but the pre-truncation value is validated.
+  const int64_t big_overflow_value = (1L << 48) | 0x1;
+  EXPECT_GT(static_cast<int>(big_overflow_value), 0);
+  indirect_call(big_overflow_value);
+}
 
-// Confirms that indices of different tag types cannot be added to each other.
-BINARY_TEST(-=, InPlaceSubtract)
+GTEST_TEST(IntegralComparisons, CompareSizeT) {
+  TestScalarComparisons<size_t>();
+  TestScalarIncrement<size_t>();
 
-// Confirms that one index cannot be assigned to by another index type (but int
-// types and same index types can). This is partially redundant to the
-// assignment test above, but the redundancy doesn't hurt.
-BINARY_TEST(=, Assignment)
+  // Implicit narrowing for a valid value.
+  const size_t valid_value = 3;
+  AIndex valid(valid_value);
+  ASSERT_TRUE(valid.is_valid());
+
+  // Implicit narrowing of value that is too large.
+
+  // The too-large number, when truncated, would produce a negative index which
+  // is inherently invalid.
+  const size_t small_overflow_value = 2300000000;
+  EXPECT_LT(static_cast<int>(small_overflow_value), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      AIndex junk(small_overflow_value), std::runtime_error,
+      "Explicitly constructing an invalid index. Type .* has an invalid "
+          "value; it must lie in the range .*");
+
+  // The too-large number, when truncated, would produce a positive index which
+  // is inherently valid; but the pre-truncation value is validated.
+  const size_t big_overflow_value = (1L << 48) | 0x1;
+  EXPECT_GT(static_cast<int>(big_overflow_value), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      AIndex junk(big_overflow_value), std::runtime_error,
+      "Explicitly constructing an invalid index. Type .* has an invalid "
+          "value; it must lie in the range .*");
+}
 
 // This tests that one index cannot be *constructed* from another index type,
 // but can be constructed from int types.
