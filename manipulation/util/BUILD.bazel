@@ -7,6 +7,11 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_unittest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -144,6 +149,14 @@ drake_cc_library(
     ],
 )
 
+drake_py_binary(
+    name = "show_model",
+    srcs = ["show_model.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -223,6 +236,15 @@ drake_cc_googletest(
         "//multibody:rigid_body_tree",
         "//multibody/parsers",
         "//systems/framework",
+    ],
+)
+
+drake_py_unittest(
+    name = "show_model_test",
+    data = [
+        ":show_model",
+        "//examples/acrobot:models",
+        "//examples/pendulum:models",
     ],
 )
 
