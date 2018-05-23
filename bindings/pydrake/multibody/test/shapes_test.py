@@ -5,6 +5,7 @@ import numpy as np
 
 import pydrake
 from pydrake.multibody import shapes
+from pydrake.util.eigen_geometry import Isometry3
 
 
 class TestShapes(unittest.TestCase):
@@ -49,8 +50,11 @@ class TestShapes(unittest.TestCase):
         material_in = [0.3, 0.4, 0.5, 0.6]
         material_in_2 = [0.6, 0.7, 0.8, 0.9]
         box = shapes.Box(size=[1., 1., 1.])
-        visual_element = shapes.VisualElement(box, np.eye(4), material_in)
-        self.assertTrue(np.allclose(visual_element.getMaterial(), material_in))
-        visual_element.setMaterial(material_in_2)
-        self.assertTrue(np.allclose(visual_element.getMaterial(),
+        visual_element_np = shapes.VisualElement(box, np.eye(4), material_in)
+        visual_element_isom = shapes.VisualElement(
+            box, Isometry3(np.eye(4)), material_in)
+        self.assertTrue(np.allclose(visual_element_np.getMaterial(),
+                                    material_in))
+        visual_element_np.setMaterial(material_in_2)
+        self.assertTrue(np.allclose(visual_element_np.getMaterial(),
                                     material_in_2))

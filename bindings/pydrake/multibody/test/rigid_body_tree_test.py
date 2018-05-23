@@ -301,6 +301,35 @@ class TestRigidBodyTree(unittest.TestCase):
         body_1.set_spatial_inertia(inertia)
         self.assertTrue(np.allclose(inertia, body_1.get_spatial_inertia()))
 
+    def test_joints_api(self):
+        # Verify construction from both Isometry3d and 4x4 arrays,
+        # and sanity-check that the accessors function.
+        name = "z"
+        prismatic_joint_np = PrismaticJoint(name, np.eye(4),
+                                            np.array([0., 0., 1.]))
+        prismatic_joint_isom = PrismaticJoint(name, Isometry3(np.eye(4)),
+                                              np.array([0., 0., 1.]))
+        self.assertEqual(prismatic_joint_isom.get_num_positions(), 1)
+        self.assertEqual(prismatic_joint_isom.get_name(), name)
+
+        name = "theta"
+        revolute_joint_np = RevoluteJoint(name, np.eye(4),
+                                          np.array([0., 0., 1.]))
+        revolute_joint_isom = RevoluteJoint(name, Isometry3(np.eye(4)),
+                                            np.array([0., 0., 1.]))
+        self.assertEqual(revolute_joint_isom.get_num_positions(), 1)
+        self.assertEqual(revolute_joint_isom.get_name(), name)
+
+    def test_collision_element_api(self):
+        # Verify construction from both Isometry3d and 4x4 arrays.
+        box_element = shapes.Box([1.0, 1.0, 1.0])
+        box_collision_element_np = CollisionElement(box_element, np.eye(4))
+        box_collision_element_isom = CollisionElement(
+            box_element, Isometry3(np.eye(4)))
+        body = RigidBody()
+        box_collision_element_isom.set_body(body)
+        self.assertEqual(box_collision_element_isom.get_body(), body)
+
     def test_rigid_body_tree_programmatic_construction(self):
         # Tests RBT programmatic construction methods by assembling
         # a simple RBT with a prismatic and revolute joint, with
@@ -309,16 +338,14 @@ class TestRigidBodyTree(unittest.TestCase):
         rbt = RigidBodyTree()
         world_body = rbt.world()
 
-        # body_1 is connected to the world via
-        # a prismatic joint along the +z axis.
+        # body_1 is connected to the world via a prismatic joint along
+        # the +z axis.
         body_1 = RigidBody()
         body_1.set_name("body_1")
+        self.assertEqual(body_1.get_name(), "body_1")
         # Verify construction from both Isometry3d and 4x4 arrays.
-        body_1_joint_no_isom = PrismaticJoint("z", np.eye(4),
-                                              np.array([0., 0., 1.]))
-        body_1_joint = PrismaticJoint("z", Isometry3(np.eye(4)),
+        body_1_joint = PrismaticJoint("z", np.eye(4),
                                       np.array([0., 0., 1.]))
-        self.assertEqual(body_1_joint.get_num_positions(), 1)
         self.assertFalse(body_1.has_joint())
         body_1.add_joint(world_body, body_1_joint)
         self.assertEqual(body_1.getJoint(), body_1_joint)
@@ -326,16 +353,12 @@ class TestRigidBodyTree(unittest.TestCase):
 
         rbt.add_rigid_body(body_1)
 
-        # body_2 is connected to body_1 via
-        # a revolute joint around the z-axis.
+        # body_2 is connected to body_1 via a revolute joint around the z-axis.
         body_2 = RigidBody()
         body_2.set_name("body_2")
-        # Verify construction from both Isometry3d and 4x4 arrays.
-        body_2_joint_no_isom = RevoluteJoint("theta", np.eye(4),
-                                             np.array([0., 0., 1.]))
-        body_2_joint = RevoluteJoint("theta", Isometry3(np.eye(4)),
+        self.assertEqual(body_2.get_name(), "body_2")
+        body_2_joint = RevoluteJoint("theta", np.eye(4),
                                      np.array([0., 0., 1.]))
-        self.assertEqual(body_2_joint.get_num_positions(), 1)
         body_2.add_joint(body_1, body_2_joint)
         self.assertEqual(body_2.getJoint(), body_2_joint)
         box_element = shapes.Box([1.0, 1.0, 1.0])
@@ -349,13 +372,8 @@ class TestRigidBodyTree(unittest.TestCase):
 
         rbt.add_rigid_body(body_2)
 
-        # Verify construction from both Isometry3d and 4x4 arrays.
-        box_collision_element_no_isom = CollisionElement(
-            box_element, np.eye(4))
-        box_collision_element = CollisionElement(box_element,
-                                                 Isometry3(np.eye(4)))
+        box_collision_element = CollisionElement(box_element, np.eye(4))
         box_collision_element.set_body(body_2)
-        self.assertEqual(box_collision_element.get_body(), body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
         rbt.compile()
