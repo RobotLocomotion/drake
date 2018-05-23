@@ -222,12 +222,12 @@ class TestGeneral(unittest.TestCase):
         # Create and attach inputs.
         # TODO(eric.cousineau): Not seeing any assertions being printed if no
         # inputs are connected. Need to check this behavior.
-        input0 = BasicVector([0.1, 0.2, 0.3])
+        input0 = np.array([0.1, 0.2, 0.3])
         context.FixInputPort(0, input0)
-        input1 = BasicVector([0.02, 0.03, 0.04])
+        input1 = np.array([0.02, 0.03, 0.04])
         context.FixInputPort(1, input1)
         input2 = BasicVector([0.003, 0.004, 0.005])
-        context.FixInputPort(2, input2)
+        context.FixInputPort(2, input2)  # Test the BasicVector overload.
 
         # Initialize integrator states.
         integrator_xc = (
