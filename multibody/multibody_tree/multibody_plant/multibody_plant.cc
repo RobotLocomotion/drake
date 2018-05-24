@@ -494,7 +494,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  // Compute contact forces on each body by penalty method. No friction, only normal forces.
   // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
   if (num_collision_geometries() > 0) {
     throw std::runtime_error("Contact not supported in time stepping mode.");
