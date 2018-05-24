@@ -10,32 +10,20 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
-double ArcRoadCurve::p_from_s(double s, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double ArcRoadCurve::FastCalcPFromS(double s, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
   const double elevation_domain = effective_radius / radius_;
   return s / (p_scale() * std::sqrt(elevation_domain * elevation_domain +
                                     elevation().fake_gprime(1.) *
-                                        elevation().fake_gprime(1.)));
+                                    elevation().fake_gprime(1.)));
 }
 
-double ArcRoadCurve::s_from_p(double p, double r) const {
-  // TODO(@maddog-tri) We should take care of the superelevation() scale that
-  //                   will modify curve's path length.
-  DRAKE_DEMAND(r == 0. || (superelevation().a() == 0. &&
-               superelevation().b() == 0. && superelevation().c() == 0. &&
-               superelevation().d() == 0.));
+double ArcRoadCurve::FastCalcSFromP(double p, double r) const {
   const double effective_radius = offset_radius(r);
-  DRAKE_THROW_UNLESS(effective_radius > 0.0);
   const double elevation_domain = effective_radius / radius_;
   return p * p_scale() * std::sqrt(elevation_domain * elevation_domain +
                                    elevation().fake_gprime(p) *
-                                       elevation().fake_gprime(p));
+                                   elevation().fake_gprime(p));
 }
 
 namespace {
