@@ -84,16 +84,6 @@ VectorX<double> LinearSolver<double>::Solve(
   }
   return lu_.solve(v);
 }
-
-template <>
-MatrixX<double> LinearSolver<double>::Solve(
-    const MatrixX<double>& m) const {
-  if (m.rows() == 0) {
-    DRAKE_DEMAND(lu_.rows() == 0);
-    return MatrixX<double>(0, m.cols());
-  }
-  return lu_.solve(m);
-}
 }  // anonymous namespace
 
 template <>
