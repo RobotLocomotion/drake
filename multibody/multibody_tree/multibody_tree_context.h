@@ -42,7 +42,13 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeContext)
 
   explicit MultibodyTreeContext(const MultibodyTreeTopology& topology) :
-      systems::LeafContext<T>(), topology_(topology) {
+      MultibodyTreeContext(topology, false) {}
+
+  explicit MultibodyTreeContext(
+      const MultibodyTreeTopology& topology, bool is_state_discrete) :
+      systems::LeafContext<T>(),
+      topology_(topology),
+      is_state_discrete_(is_state_discrete) {
     using systems::AbstractValue;
     using systems::BasicVector;
     using systems::Context;
@@ -77,6 +83,28 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return this->get_continuous_state().get_generalized_velocity().size();
   }
 
+  bool is_state_discrete() const {
+    return is_state_discrete_;
+  }
+
+  Eigen::VectorBlock<const VectorX<T>> get_state_vector() const {
+    DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
+    const systems::BasicVector<T>& state_vector =
+        (is_state_discrete()) ? this->get_discrete_state(0) :
+        dynamic_cast<const systems::BasicVector<T>&>(
+            this->get_continuous_state().get_vector());
+    return state_vector.get_value();
+  }
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector() {
+    DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
+    systems::BasicVector<T>& state_vector =
+        (is_state_discrete()) ? this->get_mutable_discrete_state(0) :
+        dynamic_cast<systems::BasicVector<T>&>(
+            this->get_mutable_continuous_state().get_mutable_vector());
+    return state_vector.get_mutable_value();
+  }
+
   /// Returns an Eigen expression of the vector of generalized positions.
   Eigen::VectorBlock<const VectorX<T>> get_positions() const {
     return get_state_segment(0, num_positions());
@@ -108,9 +136,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
-    Eigen::VectorBlock<const VectorX<T>> xc =
-        dynamic_cast<const systems::BasicVector<T>&>(
-            this->get_continuous_state().get_vector()).get_value();
+    Eigen::VectorBlock<const VectorX<T>> xc = get_state_vector();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -127,10 +153,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
-    Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>&>(
-            this->get_mutable_continuous_state().get_mutable_vector()).
-            get_mutable_value();
+    Eigen::VectorBlock<VectorX<T>> xc = get_mutable_state_vector();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -147,9 +170,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
-    Eigen::VectorBlock<const VectorX<T>> xc =
-        dynamic_cast<const systems::BasicVector<T>&>(
-            this->get_continuous_state().get_vector()).get_value();
+    Eigen::VectorBlock<const VectorX<T>> xc = get_state_vector();
     // xc.nestedExpression() resolves to "const VectorX<T>&" since the
     // continuous state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -166,10 +187,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // continuous state vector must be a BasicVector.
     // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
     // PR #6049 gets merged.
-    Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>&>(
-            this->get_mutable_continuous_state().get_mutable_vector()).
-            get_mutable_value();
+    Eigen::VectorBlock<VectorX<T>> xc = get_mutable_state_vector();
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -179,6 +197,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
  private:
   const MultibodyTreeTopology topology_;
+  bool is_state_discrete_{false};
 };
 
 }  // namespace multibody

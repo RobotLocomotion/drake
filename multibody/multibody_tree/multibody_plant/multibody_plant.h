@@ -158,7 +158,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
-  MultibodyPlant();
+  MultibodyPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
@@ -167,6 +167,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
           drake::multibody::multibody_plant::MultibodyPlant>()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
     model_ = other.model_->template CloneToScalar<T>();
+    time_step_ = other.time_step_;
     // Copy of all members related with geometry registration.
     source_id_ = other.source_id_;
     body_index_to_frame_id_ = other.body_index_to_frame_id_;
@@ -737,6 +738,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  /// Gets whether this system is modeled using discrete state.
+  bool is_state_discrete() const { return time_step_ > 0.0; }
+
   /// @anchor mbp_penalty_method
   /// @name Contact by penalty method
   ///
@@ -869,6 +873,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
   /// @}
 
+  bool is_time_stepping() const { return time_step_ != 0; }
+
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
   /// @throws if called pre-finalize. See Finalize().
@@ -915,6 +921,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context0,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      drake::systems::DiscreteValues<T>* updates) const override;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -1127,6 +1138,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Input/Output port indexes:
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
+
+  double time_step_{0};
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

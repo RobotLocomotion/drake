@@ -82,15 +82,27 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_positions_start());
   }
 
+  bool is_state_discrete(const systems::Context<T>& context) const {
+    return this->GetMultibodyTreeContextOrThrow(context).is_state_discrete();
+  }
+
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
+      const systems::Context<T>& context, systems::State<T>* state) const {
+    systems::BasicVector<T>& state_vector =
+        is_state_discrete(context) ?
+        state->get_mutable_discrete_state().get_mutable_vector() :
+        dynamic_cast<systems::BasicVector<T>&>(
+            state->get_mutable_continuous_state().get_mutable_vector());
+    return state_vector.get_mutable_value();
+  }
+
   /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// positions.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
-      systems::State<T>* state) const {
+      const systems::Context<T>& context, systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>&>(
-            state->get_mutable_continuous_state().get_mutable_vector()).
-            get_mutable_value();
+        get_mutable_state_vector(context, state);
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -103,11 +115,9 @@ class MobilizerImpl : public Mobilizer<T> {
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
-      systems::State<T>* state) const {
+      const systems::Context<T>& context, systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
-        dynamic_cast<systems::BasicVector<T>&>(
-            state->get_mutable_continuous_state().get_mutable_vector()).
-            get_mutable_value();
+        get_mutable_state_vector(context, state);
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -174,10 +184,10 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Be aware however that this default does not apply in general to all
   /// mobilizers and specific subclasses (for instance for unit quaternions)
   /// must override this method for correctness.
-  void set_default_zero_state(const systems::Context<T>&,
+  void set_default_zero_state(const systems::Context<T>& context,
                               systems::State<T>* state) const {
-    get_mutable_positions(state).setZero();
-    get_mutable_velocities(state).setZero();
+    get_mutable_positions(context, state).setZero();
+    get_mutable_velocities(context, state).setZero();
   }
 
  private:

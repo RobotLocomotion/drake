@@ -10,6 +10,13 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
+#include <fstream>
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) (void)a;
+//#define PRINT_VARn(a) (void)a;
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -45,10 +52,11 @@ using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
 
-template <typename T>
-MultibodyPlant<T>::MultibodyPlant() :
+template<typename T>
+MultibodyPlant<T>::MultibodyPlant(double time_step) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
-        drake::multibody::multibody_plant::MultibodyPlant>()) {
+        drake::multibody::multibody_plant::MultibodyPlant>()),
+    time_step_(time_step) {
   model_ = std::make_unique<MultibodyTree<T>>();
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
@@ -206,13 +214,17 @@ template<typename T>
 std::unique_ptr<systems::LeafContext<T>>
 MultibodyPlant<T>::DoMakeLeafContext() const {
   DRAKE_THROW_UNLESS(is_finalized());
-  return std::make_unique<MultibodyTreeContext<T>>(model_->get_topology());
+  return std::make_unique<MultibodyTreeContext<T>>(
+      model_->get_topology(), is_state_discrete());
 }
 
 template<typename T>
 void MultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
+  // No derivatives to compute if state is discrete.
+  if (is_state_discrete()) return;
+
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
           context.get_continuous_state_vector()).get_value();
@@ -285,64 +297,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
-}
-
-template<typename T>
-void MultibodyPlant<T>::set_penetration_allowance(
-    double penetration_allowance) {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  // Default to Earth's gravity for this estimation.
-  const double g = gravity_field_.has_value() ?
-                   gravity_field_.value()->gravity_vector().norm() : 9.81;
-
-  // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
-  // are several flying objects and fixed base robots (E.g.: manipulation
-  // cases.)
-
-  // The heuristic now is very simple. We should update it to:
-  //  - Only scan free bodies for weight.
-  //  - Consider an estimate of maximum velocities (context dependent).
-  // Right now we are being very conservative and use the maximum mass in the
-  // system.
-  double mass = 0.0;
-  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const Body<T>& body = model().get_body(body_index);
-    mass = std::max(mass, body.get_default_mass());
-  }
-
-  // For now, we use the model of a critically damped spring mass oscillator
-  // to estimate these parameters: mẍ+cẋ+kx=mg
-  // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
-  // which translate to a second order oscillator of the form:
-  // mẍ+(kdx)ẋ+kx=mg
-  // Therefore, for this more complex, non-linear, oscillator, we estimate the
-  // damping constant d using a time scale related to the free oscillation
-  // (omega below) and the requested penetration allowance as a length scale.
-
-  // We first estimate the stiffness based on static equilibrium.
-  const double stiffness = mass * g / penetration_allowance;
-  // Frequency associated with the stiffness above.
-  const double omega = sqrt(stiffness / mass);
-
-  // Estimated contact time scale. The relative velocity of objects coming into
-  // contact goes to zero in this time scale.
-  const double time_scale = 1.0 / omega;
-
-  // Damping ratio for a critically damped model. We could allow users to set
-  // this. Right now, critically damp the normal direction.
-  // This corresponds to a non-penetraion constraint in the limit for
-  // contact_penetration_allowance_ goint to zero (no bounce off).
-  const double damping_ratio = 1.0;
-  // We form the damping (with units of 1/velocity) using dimensional analysis.
-  // Thus we use 1/omega for the time scale and penetration_allowance for the
-  // length scale. We then scale it by the damping ratio.
-  const double damping = damping_ratio * time_scale / penetration_allowance;
-
-  // Final parameters used in the penalty method:
-  penalty_method_contact_parameters_.stiffness = stiffness;
-  penalty_method_contact_parameters_.damping = damping;
-  // The time scale can be requested to hint the integrator's time step.
-  penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
 template<>
@@ -485,6 +439,159 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
+void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<T>& context0,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    drake::systems::DiscreteValues<T>* updates) const {
+  // If plant state is continuous, no discrete state to update.
+  if (!is_state_discrete()) return;
+
+  // Assert this method was called on a context storing discrete state.
+  DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
+
+  const double dt = time_step_;  // just a shorter alias.
+
+  const int nq = this->num_positions();
+  const int nv = this->num_velocities();
+
+  // Get the system state as a raw Eigen vectors
+  // (solution at the previous time step).
+  auto x0 = context0.get_discrete_state(0).get_value();
+  VectorX<T> q0 = x0.topRows(nq);
+  VectorX<T> v0 = x0.bottomRows(nv);
+
+  // Mass matrix and its factorization.
+  MatrixX<T> M0(nv, nv);
+  model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
+  auto M0_ldlt = M0.ldlt();
+
+  // Forces at the previous time step.
+  MultibodyForces<T> forces0(*model_);
+
+  // Position and velocity kinematics at the previous time step.
+  const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
+  const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
+
+  // Compute forces applied through force elements. This effectively resets
+  // the forces to zero and adds in contributions due to force elements.
+  model_->CalcForceElementsContribution(context0, pc0, vc0, &forces0);
+
+  // If there is any input actuation, add it to the multibody forces.
+  if (num_actuators() > 0) {
+    Eigen::VectorBlock<const VectorX<T>> u =
+        this->EvalEigenVectorInput(context0, actuation_port_);
+    for (JointActuatorIndex actuator_index(0);
+         actuator_index < num_actuators(); ++actuator_index) {
+      const JointActuator<T>& actuator =
+          model().get_joint_actuator(actuator_index);
+      // We only support actuators on single dof joints for now.
+      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
+      for (int joint_dof = 0;
+           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
+        actuator.AddInOneForce(context0, joint_dof, u[actuator_index], &forces0);
+      }
+    }
+  }
+
+  // Compute contact forces on each body by penalty method. No friction, only normal forces.
+  // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
+  if (num_collision_geometries() > 0) {
+    throw std::runtime_error("Contact not supported in time stepping mode.");
+  }
+
+  // Workspace for inverse dynamics:
+  // Bodies' accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
+  // Generalized accelerations.
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
+
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
+
+  // With vdot = 0, this computes (includes normal forces):
+  //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
+  VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
+  model_->CalcInverseDynamics(
+      context0, pc0, vc0, vdot,
+      F_BBo_W_array, minus_tau,
+      &A_WB_array,
+      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &minus_tau);
+
+  // Velocity at next time step.
+  VectorX<T> vn = v0 + dt * M0_ldlt.solve(-minus_tau);
+  VectorX<T> qdot_star(this->num_positions());
+  model_->MapVelocityToQDot(context0, vn, &qdot_star);
+  VectorX<T> q_star = q0 + dt * qdot_star;
+
+  VectorX<T> qdotn(this->num_positions());
+  model_->MapVelocityToQDot(context0, vn, &qdotn);
+
+  // qn = q + dt * qdot.
+  VectorX<T> xn(this->num_multibody_states());
+  xn << q0 + dt * qdotn, vn;
+  updates->get_mutable_vector(0).SetFromVector(xn);
+}
+
+template<typename T>
+void MultibodyPlant<T>::set_penetration_allowance(
+    double penetration_allowance) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  // Default to Earth's gravity for this estimation.
+  const double g = gravity_field_.has_value() ?
+                   gravity_field_.value()->gravity_vector().norm() : 9.81;
+
+  // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
+  // are several flying objects and fixed base robots (E.g.: manipulation
+  // cases.)
+
+  // The heuristic now is very simple. We should update it to:
+  //  - Only scan free bodies for weight.
+  //  - Consider an estimate of maximum velocities (context dependent).
+  // Right now we are being very conservative and use the maximum mass in the
+  // system.
+  double mass = 0.0;
+  for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
+    const Body<T>& body = model().get_body(body_index);
+    mass = std::max(mass, body.get_default_mass());
+  }
+
+  // For now, we use the model of a critically damped spring mass oscillator
+  // to estimate these parameters: mẍ+cẋ+kx=mg
+  // Notice however that normal forces are computed according to: fₙ=kx(1+dẋ)
+  // which translate to a second order oscillator of the form:
+  // mẍ+(kdx)ẋ+kx=mg
+  // Therefore, for this more complex, non-linear, oscillator, we estimate the
+  // damping constant d using a time scale related to the free oscillation
+  // (omega below) and the requested penetration allowance as a length scale.
+
+  // We first estimate the stiffness based on static equilibrium.
+  const double stiffness = mass * g / penetration_allowance;
+  // Frequency associated with the stiffness above.
+  const double omega = sqrt(stiffness / mass);
+
+  // Estimated contact time scale. The relative velocity of objects coming into
+  // contact goes to zero in this time scale.
+  const double time_scale = 1.0 / omega;
+
+  // Damping ratio for a critically damped model. We could allow users to set
+  // this. Right now, critically damp the normal direction.
+  // This corresponds to a non-penetraion constraint in the limit for
+  // contact_penetration_allowance_ goint to zero (no bounce off).
+  const double damping_ratio = 1.0;
+  // We form the damping (with units of 1/velocity) using dimensional analysis.
+  // Thus we use 1/omega for the time scale and penetration_allowance for the
+  // length scale. We then scale it by the damping ratio.
+  const double damping = damping_ratio * time_scale / penetration_allowance;
+
+  // Final parameters used in the penalty method:
+  penalty_method_contact_parameters_.stiffness = stiffness;
+  penalty_method_contact_parameters_.damping = damping;
+  // The time scale can be requested to hint the integrator's time step.
+  penalty_method_contact_parameters_.time_scale = time_scale;
+}
+
+template<typename T>
 void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
@@ -523,10 +630,15 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
 
-  this->DeclareContinuousState(
-      BasicVector<T>(model_->num_states()),
-      model_->num_positions(),
-      model_->num_velocities(), 0 /* num_z */);
+  if (is_state_discrete()) {
+    this->DeclarePeriodicDiscreteUpdate(time_step_);
+    this->DeclareDiscreteState(num_multibody_states());
+  } else {
+    this->DeclareContinuousState(
+        BasicVector<T>(model_->num_states()),
+        model_->num_positions(),
+        model_->num_velocities(), 0 /* num_z */);
+  }
 
   if (num_actuators() > 0) {
     actuation_port_ =
