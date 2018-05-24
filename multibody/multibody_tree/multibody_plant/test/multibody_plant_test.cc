@@ -201,6 +201,24 @@ class AcrobotPlantTests : public ::testing::Test {
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }
 
+  void SetUpDiscreteAcrobotPlant(double time_step) {
+    systems::DiagramBuilder<double> builder;
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
+    AddModelFromSdfFile(full_name, discrete_plant_.get());
+    // Add gravity to the model.
+    discrete_plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
+    discrete_plant_->Finalize();
+
+    discrete_context_ = discrete_plant_->CreateDefaultContext();
+    ASSERT_EQ(discrete_plant_->num_actuators(), 1);
+    discrete_context_->FixInputPort(
+        discrete_plant_->get_actuation_input_port().get_index(),
+        Vector1<double>(0.0));
+  }
+
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
@@ -237,17 +255,64 @@ class AcrobotPlantTests : public ::testing::Test {
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
   }
 
+  void VerifyDoCalcDiscreteVariableUpdates(double theta1, double theta2,
+                                           double theta1dot, double theta2dot) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    DRAKE_DEMAND(discrete_plant_ != nullptr);
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    const double time_step = discrete_plant_->time_step();
+
+    // Set the state for the continuous model:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
+
+    // Set the state for the discrete model:
+    shoulder_->set_angle(discrete_context_.get(), theta1);
+    elbow_->set_angle(discrete_context_.get(), theta2);
+    shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
+    elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
+
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    auto updates = discrete_plant_->AllocateDiscreteVariables();
+    discrete_plant_->CalcDiscreteVariableUpdates(
+        *discrete_context_, updates.get());
+
+    const VectorXd x0 = context_->get_continuous_state_vector().CopyToVector();
+    const VectorXd xdot = derivatives_->CopyToVector();
+    const VectorXd xnext = updates->get_vector().CopyToVector();
+
+    // Verify that xnext is updated using a semi-explicit strategy, that is:
+    //   vnext = v0 + dt * vdot
+    //   qnext = q0 + dt * vnext
+    VectorXd xnext_expected(plant_->num_multibody_states());
+    const int nv = plant_->num_velocities();
+    const int nq = plant_->num_positions();
+    xnext_expected.segment(nq, nv) =
+        x0.segment(nq, nv) + time_step * xdot.segment(nq, nv);
+    // We use the fact that nq = nv for this case.
+    xnext_expected.segment(0, nq) =
+        x0.segment(0, nq) + time_step * xnext_expected.segment(nq, nv);
+
+    EXPECT_TRUE(CompareMatrices(
+        xnext, xnext_expected, kTolerance, MatrixCompareType::relative));
+  }
+
  protected:
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
   MultibodyPlant<double>* plant_{nullptr};
+  std::unique_ptr<MultibodyPlant<double>> discrete_plant_;
   // A SceneGraph so that we can test geometry registration.
   SceneGraph<double>* scene_graph_{nullptr};
   // The Diagram containing both the MultibodyPlant and the SceneGraph.
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<Context<double>> discrete_context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
@@ -288,6 +353,33 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       -M_PI, -M_PI / 2.0,       /* joint's angles */
       -1.5, -2.5,               /* joint's angular rates */
       2.0);                     /* Actuation torque */
+}
+
+// Verifies the correctness of MultibodyPlant::DoCalcDiscreteVariableUpdates()
+// on a model of an acrobot.
+TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
+  // Set up an additional discrete state model of the same acrobot model.
+  SetUpDiscreteAcrobotPlant(0.001);
+
+  // Verify the implementation for a number of arbitrarily chosen states.
+  VerifyDoCalcDiscreteVariableUpdates(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+
+#if 0
+  VerifyCalcTimeDerivatives(
+      M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
+      0.7, -1.0,                /* joint's angular rates */
+      1.0);                     /* Actuation torque */
+  VerifyCalcTimeDerivatives(
+      M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
+      -0.5, 2.0,                /* joint's angular rates */
+      -1.5);                    /* Actuation torque */
+  VerifyCalcTimeDerivatives(
+      -M_PI, -M_PI / 2.0,       /* joint's angles */
+      -1.5, -2.5,               /* joint's angular rates */
+      2.0);                     /* Actuation torque */
+#endif
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph

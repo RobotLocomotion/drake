@@ -489,7 +489,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
       for (int joint_dof = 0;
            joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(context0, joint_dof, u[actuator_index], &forces0);
+        actuator.AddInOneForce(
+            context0, joint_dof, u[actuator_index], &forces0);
       }
     }
   }
@@ -518,18 +519,15 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &minus_tau);
 
   // Velocity at next time step.
-  VectorX<T> vn = v0 + dt * M0_ldlt.solve(-minus_tau);
-  VectorX<T> qdot_star(this->num_positions());
-  model_->MapVelocityToQDot(context0, vn, &qdot_star);
-  VectorX<T> q_star = q0 + dt * qdot_star;
+  VectorX<T> v_next = v0 + dt * M0_ldlt.solve(-minus_tau);
+  VectorX<T> qdot_next(this->num_positions());
+  model_->MapVelocityToQDot(context0, v_next, &qdot_next);
+  VectorX<T> q_next = q0 + dt * qdot_next;
 
-  VectorX<T> qdotn(this->num_positions());
-  model_->MapVelocityToQDot(context0, vn, &qdotn);
-
-  // qn = q + dt * qdot.
-  VectorX<T> xn(this->num_multibody_states());
-  xn << q0 + dt * qdotn, vn;
-  updates->get_mutable_vector(0).SetFromVector(xn);
+  // q_next = q0 + dt * qdot_next.
+  VectorX<T> x_next(this->num_multibody_states());
+  x_next << q_next, v_next;
+  updates->get_mutable_vector(0).SetFromVector(x_next);
 }
 
 template<typename T>
@@ -595,6 +593,8 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
+  if (is_time_stepping()) return;
+
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 
@@ -612,6 +612,8 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
+  if (is_time_stepping()) return;
+
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 

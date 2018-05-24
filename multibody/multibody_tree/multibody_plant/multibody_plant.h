@@ -875,6 +875,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   bool is_time_stepping() const { return time_step_ != 0; }
 
+  double time_step() const { return time_step_; }
+
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
   /// @throws if called pre-finalize. See Finalize().
