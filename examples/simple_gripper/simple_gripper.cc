@@ -1,7 +1,7 @@
 #include <memory>
 
-#include "fmt/ostream.h"
 #include <gflags/gflags.h>
+#include "fmt/ostream.h"
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
@@ -10,6 +10,8 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
@@ -20,17 +22,14 @@
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/sine.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/serializer.h"
+#include "drake/systems/primitives/sine.h"
 #include "drake/systems/rendering/pose_bundle_to_draw_message.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace examples {
-namespace multibody {
-namespace cart_pole {
+namespace simple_gripper {
 namespace {
 
 using Eigen::Isometry3d;
@@ -113,14 +112,14 @@ DEFINE_double(frequency, 0, "The frequency (in Hz) of the harmonic"
     "oscillations carried out by the gripper.");
 
 // The pad was measured as a torus with the following major and minor radii.
-const double kPadMajorRadius = 14e-3; // 14 mm.
-const double kPadMinorRadius = 6e-3;  // 6 mm.
+const double kPadMajorRadius = 14e-3;  // 14 mm.
+const double kPadMinorRadius = 6e-3;   // 6 mm.
 
 void AddGripperPads(MultibodyPlant<double>* plant,
                     SceneGraph<double>* scene_graph,
                     const double pad_offset, const Body<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
-  const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0; // in radians
+  const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
   const double d_theta = 2 * M_PI / sample_count;
 
   Vector3d p_FSo;  // Position of the sphere frame S in the finger frame F.
@@ -130,7 +129,8 @@ void AddGripperPads(MultibodyPlant<double>* plant,
   //  - z axis points up.
   for (int i = 0; i < sample_count; ++i) {
     p_FSo(0) = pad_offset;  // Offset from the center of the gripper.
-    p_FSo(1) = std::cos(d_theta * i + sample_rotation) * kPadMajorRadius + 0.0265;
+    p_FSo(1) =
+        std::cos(d_theta * i + sample_rotation) * kPadMajorRadius + 0.0265;
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the gripper frame G.
@@ -176,7 +176,8 @@ int do_main() {
     const double finger_width = 0.007;  // From the visual in the SDF file.
     AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
     AddGripperPads(&plant, &scene_graph,
-                   -(FLAGS_grip_width + finger_width) + pad_offset, right_finger);
+                   -(FLAGS_grip_width + finger_width) + pad_offset,
+                   right_finger);
   } else {
     AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
     AddGripperPads(&plant, &scene_graph, +pad_offset, left_finger);
@@ -239,7 +240,7 @@ int do_main() {
   // The mass of the gripper in simple_gripper.sdf.
   // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
   const double mass = 1.0890;  // kg.
-  const double omega = 2 * M_PI * FLAGS_frequency;  //rad/s.
+  const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
   const double x0 = FLAGS_amplitude;  // meters.
   const double f0 = omega * omega * x0 * mass;  // Force amplitude, Newton.
   const double v0 = -x0 * omega;  // Velocity amplitude, initial velocity, m/s.
@@ -352,8 +353,7 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace cart_pole
-}  // namespace multibody
+}  // namespace simple_gripper
 }  // namespace examples
 }  // namespace drake
 
@@ -365,5 +365,5 @@ int main(int argc, char* argv[]) {
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
-  return drake::examples::multibody::cart_pole::do_main();
+  return drake::examples::simple_gripper::do_main();
 }
