@@ -26,6 +26,7 @@ void SampleTranslator::Serialize(
   message.x = vector->x();
   message.two_word = vector->two_word();
   message.absone = vector->absone();
+  message.unset = vector->unset();
   const int lcm_message_length = message.getEncodedSize();
   lcm_message_bytes->resize(lcm_message_length);
   message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
@@ -46,6 +47,7 @@ void SampleTranslator::Deserialize(
   my_vector->set_x(message.x);
   my_vector->set_two_word(message.two_word);
   my_vector->set_absone(message.absone);
+  my_vector->set_unset(message.unset);
 }
 
 }  // namespace test

@@ -147,6 +147,7 @@ def drake_cc_vector_gen(
         hdrs = outs.hdrs,
         deps = [drake_workspace_name + x for x in [
             "//systems/framework:vector",
+            "//common:dummy_value",
             "//common:essential",
             "//common:symbolic",
         ]]
