@@ -87,7 +87,9 @@ def _setup_local_archive(repo_ctx, snopt_path):
 
 def _impl(repo_ctx):
     snopt_path = repo_ctx.os.environ.get("SNOPT_PATH", "")
-    if not snopt_path:
+    # For now, an empty path defaults to use git.  In the future, settting
+    # SNOPT_PATH="git" will be required -- an empty path will report an error.
+    if snopt_path in ["git", ""]:
         _setup_git(repo_ctx)
     else:
         _setup_local_archive(repo_ctx, snopt_path)
