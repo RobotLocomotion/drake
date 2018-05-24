@@ -28,8 +28,8 @@ ABBREVIATE_BRIEF       = a \
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        = "@DRAKE_WORKSPACE_ROOT@"
-STRIP_FROM_INC_PATH    = "@DRAKE_WORKSPACE_ROOT@"
+STRIP_FROM_PATH        = "@INPUT_ROOT@"
+STRIP_FROM_INC_PATH    = "@INPUT_ROOT@"
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
 QT_AUTOBRIEF           = NO
@@ -96,7 +96,7 @@ SHOW_USED_FILES        = YES
 SHOW_FILES             = YES
 SHOW_NAMESPACES        = YES
 FILE_VERSION_FILTER    =
-LAYOUT_FILE            = "@DRAKE_WORKSPACE_ROOT@/doc/DoxygenLayout.xml"
+LAYOUT_FILE            = "@INPUT_ROOT@/drake/doc/DoxygenLayout.xml"
 CITE_BIB_FILES         =
 #---------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
@@ -112,7 +112,7 @@ WARN_LOGFILE           = "@BINARY_DIR@/doxygen_cxx.log"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@DRAKE_WORKSPACE_ROOT@"
+INPUT                  = "@INPUT_ROOT@"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.cc \
@@ -125,16 +125,14 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.h++
 RECURSIVE              = YES
-EXCLUDE                = "@DRAKE_WORKSPACE_ROOT@/build" \
-                         "@DRAKE_WORKSPACE_ROOT@/third_party"
+EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = "@DRAKE_WORKSPACE_ROOT@/bazel-*" \
-                         "@DRAKE_WORKSPACE_ROOT@/*/dev/*"
+EXCLUDE_PATTERNS       = "@INPUT_ROOT@/*/dev/*"
 EXCLUDE_SYMBOLS        =
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       =
 EXAMPLE_RECURSIVE      = NO
-IMAGE_PATH             = "@DRAKE_WORKSPACE_ROOT@"
+IMAGE_PATH             = "@INPUT_ROOT@/drake"
 INPUT_FILTER           =
 FILTER_PATTERNS        =
 FILTER_SOURCE_FILES    = NO
