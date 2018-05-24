@@ -19,11 +19,17 @@ drake_cc_vector_gen_library(
     srcs = ["cart_pole_params.named_vector"],
 )
 
+filegroup(
+    name = "cart_pole_model",
+    srcs = ["cart_pole.sdf"],
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_binary(
     name = "cart_pole_passive_simulation",
     srcs = ["cart_pole_passive_simulation.cc"],
     add_test_rule = 1,
-    data = ["cart_pole.sdf"],
+    data = [":cart_pole_model"],
     test_rule_args = [
         "--simulation_time=0.1",
         "--target_realtime_rate=0.0",
@@ -44,7 +50,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "cart_pole_test",
-    data = ["cart_pole.sdf"],
+    data = [":cart_pole_model"],
     deps = [
         ":cart_pole_params",
         "//common:find_resource",

@@ -150,8 +150,13 @@ class AcrobotPlantTests : public ::testing::Test {
     scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
-    plant_ =
-        builder.AddSystem(MakeAcrobotPlant(parameters_, false, scene_graph_));
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    plant_ = builder.AddSystem<MultibodyPlant>();
+    AddModelFromSdfFile(full_name, plant_, scene_graph_);
+    // Add gravity to the model.
+    plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
