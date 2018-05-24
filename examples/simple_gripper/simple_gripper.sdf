@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
-  <model name='Schunk_Gripper'>
-    <!-- From contact_model/rigid_mug_gripper: Eigen::Vector3d(0.055 + 5e-4, 0, kMugHeight / 2 + 5e-4) -->
+  <model name='simple_gripper'>
+    <!-- Pose X_WM of the gripper model M in the world frame W. -->
     <pose>0.0555 0 0.0505 0 0 1.57</pose>
 
     <joint name='weld_base' type='fixed'>
@@ -24,9 +24,6 @@
         </inertia>
         <pose frame=''>0 0 0 0 -0 0</pose>
       </inertial>
-      <self_collide>0</self_collide>
-      <kinematic>0</kinematic>
-      <gravity>1</gravity>
     </link>
 
     <joint name='y_translate_joint' type='prismatic'>
@@ -39,18 +36,8 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>-1</lower>
-          <upper>1</upper>
-          <effort>80</effort>
-          <stiffness>1500</stiffness>
-          <dissipation>50</dissipation>
+          <effort>500</effort>
         </limit>
-        <dynamics>
-          <spring_reference>0</spring_reference>
-          <spring_stiffness>0</spring_stiffness>
-          <damping>0</damping>
-          <friction>0</friction>
-        </dynamics>
       </axis>
     </joint>
 
@@ -101,7 +88,7 @@
         </geometry>
       </visual>
     </link>
-    <link name='right_finger'> <!-- When viewing from the top and +x-axis points back -->
+    <link name='right_finger'>
       <pose frame=''>0.047 0.029 0 0 0 0</pose>
       <inertial>
         <mass>0.05</mass>
@@ -131,12 +118,6 @@
       <pose>0 0 0 0 0 0</pose>
     </joint>
 
-    <!-- Collision filter groups-->
-    <collision_filter_group name="finger_filter">
-      <member link="left_finger"/>
-      <member link="right_finger"/>
-      <ignored_collision_filter_group collision_filter_group="finger_filter"/>
-    </collision_filter_group>
     <joint name='finger_sliding_joint' type='prismatic'>
       <parent>right_finger</parent>
       <child>left_finger</child>
@@ -147,9 +128,7 @@
         <!-- Drake attaches an actuator to all and only joints with a nonzero
              effort limit. -->
         <limit>
-          <lower>-0.1</lower> <!-- offset w.r.t. absolute zero -->
-          <upper>0</upper>
-          <effort>90</effort>
+          <effort>500</effort>
         </limit>
       </axis>
     </joint>
