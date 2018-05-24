@@ -17,7 +17,7 @@
 cd bazel-bin/examples/simple_gripper/simple_gripper.runfiles/drake
 
 ./examples/simple_gripper/simple_gripper \
-    --simulation_time=10 --target_realtime_rate=0.0 \
+    --simulation_time=0.01 --target_realtime_rate=0.0 \
     --integration_scheme=implicit_euler --max_time_step=1e-2 --accuracy=1e-2 \
     --gripper_force=10.0 \
     --amplitude=0.05 --frequency=1.0 \

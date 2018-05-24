@@ -11,11 +11,9 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
-#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -29,9 +27,6 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
 namespace drake {
 namespace examples {
 namespace multibody {
@@ -41,7 +36,6 @@ namespace {
 using Eigen::Isometry3d;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
-using Eigen::AngleAxisd;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
 using drake::lcm::DrakeLcm;
@@ -52,12 +46,11 @@ using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::AddModelFromSdfFile;
 using drake::multibody::PrismaticJoint;
-using drake::multibody::RevoluteJoint;
 using drake::multibody::UniformGravityFieldElement;
+using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::lcm::LcmPublisherSystem;
 using drake::systems::lcm::Serializer;
 using drake::systems::rendering::PoseBundleToDrawMessage;
-using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::RungeKutta2Integrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
@@ -70,31 +63,33 @@ DEFINE_double(target_realtime_rate, 1.0,
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
-DEFINE_double(grip_width, 0.1, "The initial distance between the gripper "
-    "fingers, when gripper_force > 0.");
+DEFINE_double(grip_width, 0.095,
+              "The initial distance between the gripper fingers.");
 
 // Integration paramters:
-DEFINE_string(integration_scheme, "runge_kutta2",
+DEFINE_string(integration_scheme, "implicit_euler",
               "Integration scheme to be used. Available options are: "
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
-DEFINE_double(max_time_step, -1.0,
-              "Time maximum step used for the integrators."
-              "If negative, a value based on penetration_allowance is used.");
-DEFINE_double(accuracy, 5e-5, "Sets the simulation accuracy for variable step"
+DEFINE_double(max_time_step, 1.0e-3,
+              "Time maximum step used for the integrators. "
+              "If negative, a value based on patemeter penetration_allowance "
+              "is used.");
+DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
     "size integrators with error control.");
 
 // Contact parameters
-DEFINE_double(penetration_allowance, 1.0e-3, "Penetration allowance, in meters");
-DEFINE_double(v_stiction_tolerance, 0.01,
+DEFINE_double(penetration_allowance, 1.0e-2,
+              "Penetration allowance, in meters");
+DEFINE_double(v_stiction_tolerance, 1.0e-2,
               "The maximum slipping speed allowed during stiction (m/s)");
 
 // Pads parameters
-DEFINE_int32(ring_samples, 4,
+DEFINE_int32(ring_samples, 8,
              "The number of spheres used to sample the pad ring");
 DEFINE_double(ring_orient, 0, "Rotation of pads around x-axis (in degrees)");
-DEFINE_double(ring_static_friction, 0.9, "The coefficient of static friction "
-    "for the ring pad. Defaults to 0.9.");
+DEFINE_double(ring_static_friction, 1.0, "The coefficient of static friction "
+    "for the ring pad. Defaults to 1.0.");
 DEFINE_double(ring_dynamic_friction, 0.5, "The coefficient of dynamic friction "
     "for the ring pad. Defaults to 0.5.");
 
@@ -107,8 +102,9 @@ DEFINE_double(rz, 0, "The z-rotation of the mug around its origin - the center "
     "of its bottom (in degrees). Rotation order: X, Y, Z");
 
 // Gripping force.
-DEFINE_double(gripper_force, 0, "The force to be applied by the gripper. A "
-    "value of 0 indicates a fixed grip width as set with grip_width.");
+DEFINE_double(gripper_force, 10, "The force to be applied by the gripper, "
+    "in Newtons. A value of 0 indicates a fixed grip width as set with "
+    "option grip_width.");
 
 // Parameters for shaking the mug.
 DEFINE_double(amplitude, 0, "The amplitude (in meters) of the harmonic"
@@ -116,10 +112,6 @@ DEFINE_double(amplitude, 0, "The amplitude (in meters) of the harmonic"
 DEFINE_double(frequency, 0, "The frequency (in Hz) of the harmonic"
     "oscillations carried out by the gripper.");
 
-// These values should match the cylinder defined in:
-// drake/examples/contact_model/cylinder_mug.sdf
-//const double kMugHeight = 0.1;
-//const double kMugRadius = 0.04;
 // The pad was measured as a torus with the following major and minor radii.
 const double kPadMajorRadius = 14e-3; // 14 mm.
 const double kPadMinorRadius = 6e-3;  // 6 mm.
@@ -142,10 +134,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
     // Pose of the sphere frame S in the gripper frame G.
-    const Isometry3d X_GS =
-        Isometry3d(Translation3d(p_FSo));
-        //AngleAxisd(-M_PI_2, Vector3d::UnitZ()) *
-        //Translation3d(x_coordinate, y_coordinate, z_coordinate);
+    const Isometry3d X_GS = Isometry3d(Translation3d(p_FSo));
 
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
@@ -200,17 +189,17 @@ int do_main() {
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_v_stiction_tolerance);
 
-  // Hint the integrator's time step based on the contact time scale.
-  // A fraction of this time scale is used which is chosen so that the fixed
-  // time step integrators are stable.
+  // If the user specifies a time step, we use that, otherwise estimate a
+  // maximum time step based on the compliance of the contact model.
   const double max_time_step =
       FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
       plant.get_contact_penalty_method_time_scale() / 30;
 
-  PRINT_VAR(FLAGS_max_time_step);
-  PRINT_VAR(plant.get_contact_penalty_method_time_scale());
-
-  PRINT_VAR(max_time_step);
+  // Print maximum time step and the time scale introduced by the compliance in
+  // the contact model as a reference to the user.
+  fmt::print("Maximum time step = {:10.6f} s\n", max_time_step);
+  fmt::print("Compliance time scale = {:10.6f} s\n",
+             plant.get_contact_penalty_method_time_scale());
 
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
@@ -224,7 +213,6 @@ int do_main() {
       *builder.template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  //publisher.set_publish_period(1 / 60.0);
 
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
@@ -261,9 +249,8 @@ int do_main() {
   const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
   const Vector2<double> frequencies(omega, 0.0);  // 1 Hz
   const Vector2<double> phases(0.0, M_PI_2);
-  const auto& harmonic_force = *builder.AddSystem<Sine>(amplitudes, frequencies, phases);
-  // Initial velocity.
-
+  const auto& harmonic_force = *builder.AddSystem<Sine>(
+      amplitudes, frequencies, phases);
 
   builder.Connect(harmonic_force.get_output_port(0),
                   plant.get_actuation_input_port());
@@ -298,7 +285,6 @@ int do_main() {
   const Vector3d& p_WBr = X_WB_all[right_finger.index()].translation();
   const Vector3d& p_WBl = X_WB_all[left_finger.index()].translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
-  (void) mug_y_W;
 
   Isometry3d X_WM;
   Vector3d rpy(FLAGS_rx * M_PI / 180,
@@ -308,6 +294,9 @@ int do_main() {
   X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
   plant.model().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
 
+  // Set the initial height of the gripper and its initial velocity so that with
+  // the applied harmonic forces it continues to move in a harmonic oscillation
+  // around this initial position.
   const PrismaticJoint<double>& y_translate_joint =
       plant.GetJointByName<PrismaticJoint>("y_translate_joint");
   y_translate_joint.set_translation(&plant_context, 0.015);
@@ -346,24 +335,17 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
 
-  // Print some time stepping stats.
-  PRINT_VAR(FLAGS_simulation_time);
-  PRINT_VAR(max_time_step);
-
-  // Checks for variable time step integrators.
+  // Print some stats for variable time step integrators.
+  fmt::print("Integrator stats:\n");
+  fmt::print("Number of time steps taken = {:d} s\n",
+             integrator->get_num_steps_taken());
   if (!integrator->get_fixed_step_mode()) {
-    // From IntegratorBase::set_maximum_step_size():
-    // "The integrator may stretch the maximum step size by as much as 1% to
-    // reach discrete event."
-    PRINT_VAR(integrator->get_actual_initial_step_size_taken());
-    PRINT_VAR(integrator->get_largest_step_size_taken());
-    PRINT_VAR(integrator->get_smallest_adapted_step_size_taken());
-    PRINT_VAR(integrator->get_num_steps_taken());
-  }
-
-  // Checks for fixed time step integrators.
-  if (integrator->get_fixed_step_mode()) {
-    PRINT_VAR(integrator->get_num_steps_taken());
+    fmt::print("Initial time step taken = {:10.6g} s\n",
+               integrator->get_actual_initial_step_size_taken());
+    fmt::print("Largest time step taken = {:10.6g} s\n",
+               integrator->get_largest_step_size_taken());
+    fmt::print("Smallest adapted step size = {:10.6g} s\n",
+               integrator->get_smallest_adapted_step_size_taken());
   }
 
   return 0;
@@ -377,8 +359,9 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple cart pole demo using Drake's MultibodyPlant,"
-      "with SceneGraph visualization. "
+      "Demo used to exercise MultibodyPlant's contact modeling in a gripping "
+      "scenario. SceneGraph is used for both visualization and contact "
+      "handling. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
