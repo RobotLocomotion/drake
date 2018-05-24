@@ -463,13 +463,13 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
         if (bodyA_index != world_index()) {
           // Spatial force on body A at Ao, expressed in W.
           const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-          F_BBo_W_array->at(bodyA_index) += F_AAo_W;
+          F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
         }
 
         if (bodyB_index != world_index()) {
           // Spatial force on body B at Bo, expressed in W.
           const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-          F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+          F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
         }
       }
     }
