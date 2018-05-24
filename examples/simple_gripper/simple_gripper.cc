@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "fmt/ostream.h"
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
@@ -109,6 +110,12 @@ DEFINE_double(rz, 0, "The z-rotation of the mug around its origin - the center "
 DEFINE_double(gripper_force, 0, "The force to be applied by the gripper. A "
     "value of 0 indicates a fixed grip width as set with grip_width.");
 
+// Parameters for shaking the mug.
+DEFINE_double(amplitude, 0, "The amplitude (in meters) of the harmonic"
+    "oscillations carried out by the gripper.");
+DEFINE_double(frequency, 0, "The frequency (in Hz) of the harmonic"
+    "oscillations carried out by the gripper.");
+
 // These values should match the cylinder defined in:
 // drake/examples/contact_model/cylinder_mug.sdf
 //const double kMugHeight = 0.1;
@@ -156,11 +163,11 @@ int do_main() {
 
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>();
   std::string full_name =
-      FindResourceOrThrow("drake/examples/contact_model/mbp/simple_gripper.sdf");
+      FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
 
   full_name =
-      FindResourceOrThrow("drake/examples/contact_model/mbp/simple_mug.sdf");
+      FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
 
   // Add gravity to the model.
@@ -232,15 +239,24 @@ int do_main() {
                   converter.get_input_port(0));
   builder.Connect(converter, publisher);
 
-  // Sinusoidal force input.
-  const double mass = 1.0890;
-  const double freq = 2.0;  // Hz
-  const double omega = 2*M_PI*freq; //rad/s
-  const double x0 = 0.15; // meters
-  const double f0 = omega*omega*x0*mass;  // Newton
-  const double v0 = -x0*omega;
-  const double a0 = omega*omega*x0;
-  PRINT_VAR(a0);
+  // Sinusoidal force input. We want the gripper to follow a trajectory of the
+  // form x(t) = X0 * sin(ω⋅t). By differentiating once, we get the velocity
+  // initial condition, and by differentiating twice, we get the input force we
+  // need to apply.
+  // The mass of the mug is ignored.
+  // TODO(amcastro-tri): add a PD controller to precisely controll the
+  // trajectory of the gripper. Even better, add a motion constraint when MBP
+  // supports it.
+
+  // The mass of the gripper in simple_gripper.sdf.
+  // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
+  const double mass = 1.0890;  // kg.
+  const double omega = 2 * M_PI * FLAGS_frequency;  //rad/s.
+  const double x0 = FLAGS_amplitude;  // meters.
+  const double f0 = omega * omega * x0 * mass;  // Force amplitude, Newton.
+  const double v0 = -x0 * omega;  // Velocity amplitude, initial velocity, m/s.
+  const double a0 = omega * omega * x0;  // Acceleration amplitude, m/s².
+  fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
   const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
   const Vector2<double> frequencies(omega, 0.0);  // 1 Hz
@@ -297,9 +313,8 @@ int do_main() {
                FLAGS_ry * M_PI / 180,
                (FLAGS_rz * M_PI / 180) + M_PI);
   X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
-  X_WM.translation() = Vector3d(0.0, 0, 0.0);
+  X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
   plant.model().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
-
 
   const PrismaticJoint<double>& y_translate_joint =
       plant.GetJointByName<PrismaticJoint>("y_translate_joint");
