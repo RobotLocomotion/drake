@@ -218,6 +218,7 @@ class RollPitchYaw {
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
+  /// @throws std::logic_error if `cos(p) ≈ 0`.
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -240,21 +241,65 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
   /// expressed in frame A.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
+  /// @throws std::logic_error if `cos(p) ≈ 0`.
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   /// There are associated precision problems (inaccuracies) in the neighborhood
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-  // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
-  // TODO(Mitiguy) Improve speed -- last column of MDt is (0, 0, 1).
-  // TODO(Mitiguy) Improve speed.  There are repeated sine/cosine calculations.
+  // TODO(Mitiguy) Improve speed: The last column of M is (0, 0, 1), the last
+  // column of MDt is (0, 0, 1) and there are repeated sine/cosine calculations.
   Vector3<T> CalcRpyDDtFromAngularAccelInParent(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_A) const {
     const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent();
     const Matrix3<T> MDt =
         CalcDtMatrixRelatingAngularVelocityInParentToRpyDt(rpyDt);
     return Minv * (alpha_AD_A - MDt * rpyDt);
+  }
+
+  /// Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
+  /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
+  /// @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
+  /// @param[in] alpha_AD_D, frame D's angular acceleration in frame A,
+  /// expressed in frame D.
+  /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
+  /// @throws std::logic_error if `cos(p) ≈ 0`.
+  /// @note This method has a divide-by-zero error (singularity) when the cosine
+  /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
+  /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
+  /// There are associated precision problems (inaccuracies) in the neighborhood
+  /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
+  Vector3<T> CalcRpyDDtFromAngularAccelInChild(
+      const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_D) const {
+    const T& r = roll_angle();
+    const T& p = pitch_angle();
+    using std::sin;
+    using std::cos;
+    const T sr = sin(r), cr = cos(r);
+    const T sp = sin(p), cp = cos(p);
+    ThrowIfCosPitchNearZero(cp);
+    const T one_over_cp = T(1)/cp;
+    const T cr_over_cp = cr * one_over_cp;
+    const T sr_over_cp = sr * one_over_cp;
+    // clang-format on
+    Matrix3<T> M;
+    M << T(1),  sr_over_cp * sp,  cr_over_cp * sp,
+         T(0),               cr,              -sr,
+         T(0),       sr_over_cp,       cr_over_cp;
+    // clang-format off
+
+    // Remainder terms (terms not multiplying α).
+    const T tanp = sp * one_over_cp;
+    const T rDt = rpyDt(0), pDt = rpyDt(1), yDt = rpyDt(2);
+    const T pDt_yDt = pDt * yDt;
+    const T rDt_pDt = rDt * pDt;
+    const Vector3<T> remainder(tanp * rDt_pDt + one_over_cp * pDt_yDt,
+                                -cp * rDt * yDt,
+                               tanp * pDt_yDt + one_over_cp * rDt_pDt);
+
+    // Combine terms that contains alpha with remainder terms.
+    return M * alpha_AD_D + remainder;
   }
 
  private:
@@ -274,6 +319,19 @@ class RollPitchYaw {
     if (!RollPitchYaw<T>::IsValid(rpy)) {
       throw std::logic_error(
        "Error: One (or more) of the roll-pitch-yaw angles is infinity or NaN.");
+    }
+  }
+
+  // Throws an exception if the cosine of the pitch-angle p is nearly zero --
+  // which means `p = (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  // @param[in] cos_pitch cosine of the pitch-angle p, i.e., `cos(p)`.
+  // @throws std::logic_error if `cos(p) ≈ 0`.
+  static void ThrowIfCosPitchNearZero(const T& cos_pitch) {
+    using std::abs;
+    const double tolerance = 1.0E-7; // E.g., within 5.7E-6 of 90 degrees.
+    if (abs(cos_pitch) < tolerance) {
+      throw std::logic_error(
+          "Error: Cosine of pitch angle is approximately zero.");
     }
   }
 
@@ -381,6 +439,7 @@ class RollPitchYaw {
   // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect to
   // `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
   // In other words, `rpyDt = M * w_AD_A`.
+  // @throws std::logic_error if `cos(p) ≈ 0`.
   // @note This method has a divide-by-zero error (singularity) when the cosine
   // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -392,7 +451,9 @@ class RollPitchYaw {
     using std::sin;
     const T& p = pitch_angle();
     const T& y = yaw_angle();
-    const T sp = sin(p), cp = cos(p), one_over_cp = 1.0/cp;
+    const T sp = sin(p), cp = cos(p);
+    ThrowIfCosPitchNearZero(cp);
+    const T one_over_cp = T(1)/cp;
     const T sy = sin(y), cy = cos(y);
     const T cy_over_cp = cy * one_over_cp;
     const T sy_over_cp = sy * one_over_cp;
