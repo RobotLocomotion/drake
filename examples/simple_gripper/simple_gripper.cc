@@ -171,8 +171,8 @@ int do_main() {
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
 
   // Add gravity to the model.
-  //plant.AddForceElement<UniformGravityFieldElement>(
-    //  -9.81 * Vector3<double>::UnitZ());
+  plant.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
 
   // Add the pads.
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");
@@ -282,14 +282,6 @@ int do_main() {
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
-#if 0
-  // Gripper force.
-  Vector2<double> actuation(1.0, FLAGS_gripper_force);
-  plant_context.FixInputPort(
-      plant.get_actuation_input_port().get_index(),
-      actuation);
-#endif
-
   // Get joints so that we can set initial conditions.
   const PrismaticJoint<double>& finger_slider =
       plant.GetJointByName<PrismaticJoint>("finger_sliding_joint");
@@ -298,7 +290,7 @@ int do_main() {
   finger_slider.set_translation(&plant_context, -FLAGS_grip_width);
 
   // Get mug body so we can set its initial pose.
-  const Body<double>& mug = plant.GetBodyByName("Mug");
+  const Body<double>& mug = plant.GetBodyByName("main_body");
 
   // Initialize the mug pose to be right in the middle between the fingers.
   std::vector<Isometry3d> X_WB_all;
