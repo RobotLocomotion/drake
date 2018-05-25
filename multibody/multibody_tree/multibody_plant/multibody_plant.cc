@@ -493,7 +493,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   // If plant state is continuous, no discrete state to update.
   if (!is_discrete()) return;
