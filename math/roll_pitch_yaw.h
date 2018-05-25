@@ -328,7 +328,7 @@ class RollPitchYaw {
   // @throws std::logic_error if `cos(p) ≈ 0`.
   static void ThrowIfCosPitchNearZero(const T& cos_pitch) {
     using std::abs;
-    const double tolerance = 1.0E-7; // E.g., within 5.7E-6 of 90 degrees.
+    const double tolerance = 1.0E-7;  // E.g., within 5.7E-6 of 90 degrees.
     if (abs(cos_pitch) < tolerance) {
       throw std::logic_error(
           "Error: Cosine of pitch angle is approximately zero.");
