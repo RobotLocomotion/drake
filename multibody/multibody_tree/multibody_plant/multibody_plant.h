@@ -993,6 +993,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  MatrixX<T> ComputeNormalVelocityJacobianMatrix(
+      const systems::Context<T>& context,
+      std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
+
+  MatrixX<T> ComputeTangentVelocityJacobianMatrix(
+      const systems::Context<T>& context,
+      std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
+
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
 
