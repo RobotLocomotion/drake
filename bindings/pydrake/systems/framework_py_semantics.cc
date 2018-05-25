@@ -69,15 +69,22 @@ void DefineFrameworkPySemantics(py::module m) {
       .def("FixInputPort",
            py::overload_cast<int, unique_ptr<BasicVector<T>>>(
                &Context<T>::FixInputPort),
+           py::arg("index"), py::arg("vec"),
            py_reference_internal,
            // Keep alive, ownership: `BasicVector` keeps `self` alive.
            py::keep_alive<3, 1>())
       .def("FixInputPort",
            py::overload_cast<int, unique_ptr<AbstractValue>>(
                &Context<T>::FixInputPort),
+           py::arg("index"), py::arg("value"),
            py_reference_internal,
            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
            py::keep_alive<3, 1>())
+      .def("FixInputPort",
+           py::overload_cast<int, const Eigen::Ref<const VectorX<T>>&>(
+               &Context<T>::FixInputPort),
+           py::arg("index"), py::arg("data"),
+           py_reference_internal)
       .def("get_time", &Context<T>::get_time)
       .def("set_time", &Context<T>::set_time)
       .def("set_accuracy", &Context<T>::set_accuracy)
