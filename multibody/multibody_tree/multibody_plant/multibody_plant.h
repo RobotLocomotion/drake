@@ -935,6 +935,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  // If the plant is modeled as a discrete system with periodic updates (see
+  // is_discrete()), this method computes the periodic updates of the state
+  // using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // this semi-explicit update is symplectic, which for Hamiltonian system has
+  // the nice property of nearly conserving energy (in many cases we can write a
+  // "modified energy functional" which can be shown to be exactly conserved and
+  // to be within O(dt) of the real energy of the mechanical system.
+  // TODO(amcastro-tri): Update this docs when contact is added.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context0,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
