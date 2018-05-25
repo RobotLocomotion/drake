@@ -227,10 +227,11 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const double alfAx = alpha_AD_A(0);
         const double alfAy = alpha_AD_A(1);
         const double alfAz = alpha_AD_A(2);
-        double rDDt = (alfAx * cos(y) + alfAy * sin(y)
-                    + pDt * yDt + sin(p) * pDt * rDt) / cos(p);
-        double pDDt =  alfAy * cos(y) - alfAx * sin(y) - cos(p) * rDt * yDt;
-        double yDDt = alfAz + cos(p) * pDt * rDt + tan(p) *
+        const double rDDt = (alfAx * cos(y) + alfAy * sin(y)
+                          + pDt * yDt + sin(p) * pDt * rDt) / cos(p);
+        const double pDDt =  alfAy * cos(y) - alfAx * sin(y)
+                          - cos(p) * rDt * yDt;
+        const double yDDt = alfAz + cos(p) * pDt * rDt + tan(p) *
              (alfAx * cos(y) + alfAy * sin(y) + pDt * yDt + sin(p) * pDt * rDt);
         const Vector3d rpyDDt_expected(rDDt, pDDt, yDDt);
         EXPECT_TRUE(CompareMatrices(rpyDDt, rpyDDt_expected, tolerance,
