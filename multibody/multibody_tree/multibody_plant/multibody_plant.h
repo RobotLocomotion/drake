@@ -160,7 +160,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Therefore, right after creation, num_bodies() returns one.
   /// @param[in] time_step
   ///   An optional parameter indicating whether `this` plant is modeled as a
-  ///   continuous system (`time_step = 0`) or, as a discrete system with
+  ///   continuous system (`time_step = 0`) or as a discrete system with
   ///   periodic updates of period `time_step > 0`. @default 0.0.
   /// @throws std::exception if `time_step` is negative.
   explicit MultibodyPlant(double time_step = 0);
@@ -743,8 +743,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
-  /// Returns `true` if `this` plant is modeled as a discrete system with
-  /// periodic updates of period equal to time_step().
+  /// Returns `true` if this plant is modeled as a discrete system.
   /// This property of the plant is specified at construction and therefore this
   /// query can be performed either pre- or post- finalize, see Finalize().
   bool is_discrete() const { return time_step_ > 0.0; }
@@ -754,6 +753,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// continuous system.
   /// This property of the plant is specified at construction and therefore this
   /// query can be performed either pre- or post- finalize, see Finalize().
+  /// @see MultibodyPlant::MultibodyPlant(double)
   double time_step() const { return time_step_; }
 
   /// @anchor mbp_penalty_method
@@ -940,10 +940,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // using a semi-explicit Euler strategy, that is:
   //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
   //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
-  // this semi-explicit update is symplectic, which for Hamiltonian system has
-  // the nice property of nearly conserving energy (in many cases we can write a
-  // "modified energy functional" which can be shown to be exactly conserved and
-  // to be within O(dt) of the real energy of the mechanical system.
+  // This semi-explicit update inherits some of the nice properties of the
+  // semi-implicit Euler scheme (which uses v̇ⁿ⁺¹ for the v updated instead) when
+  // there are no velocity-dependent forces (including Coriolis and gyroscopic
+  // terms). The semi-implicit Euler scheme is a symplectic integrator, which
+  // for a Hamiltonian system has the nice property of nearly conserving energy
+  // (in many cases we can write a "modified energy functional" which can be
+  // shown to be exactly conserved and to be within O(dt) of the real energy of
+  // the mechanical system.)
   // TODO(amcastro-tri): Update this docs when contact is added.
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context0,

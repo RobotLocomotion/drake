@@ -50,7 +50,7 @@ MultibodyPlant<T>::MultibodyPlant(double time_step) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()),
     time_step_(time_step) {
-  DRAKE_DEMAND(time_step >= 0);
+  DRAKE_THROW_UNLESS(time_step >= 0);
   model_ = std::make_unique<MultibodyTree<T>>();
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
@@ -507,7 +507,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
 
-  // Get the system state as a raw Eigen vectors
+  // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
   VectorX<T> q0 = x0.topRows(nq);
@@ -525,8 +525,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
-  // Compute forces applied through force elements. This effectively resets
-  // the forces to zero and adds in contributions due to force elements.
+  // Compute forces applied through force elements.
   model_->CalcForceElementsContribution(context0, pc0, vc0, &forces0);
 
   // If there is any input actuation, add it to the multibody forces.
@@ -560,14 +559,14 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
 
-  // With vdot = 0, this computes (includes normal forces):
+  // With vdot = 0, this computes:
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   model_->CalcInverseDynamics(
       context0, pc0, vc0, vdot,
       F_BBo_W_array, minus_tau,
       &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
   // Velocity at next time step.
@@ -576,7 +575,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
   VectorX<T> q_next = q0 + dt * qdot_next;
 
-  // q_next = q0 + dt * qdot_next.
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);

@@ -255,6 +255,14 @@ class AcrobotPlantTests : public ::testing::Test {
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
   }
 
+  // Verifies the computation performed by
+  // MultibodyPlant::CalcDiscreteVariableUpdates(). For this simple model
+  // without contact, we verify that this method performs the periodic update
+  // of the state using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // To perform this verification, we compute v̇ⁿ using
+  // MultibodyPlant::CalcTimeDerivatives().
   void VerifyDoCalcDiscreteVariableUpdates(double theta1, double theta2,
                                            double theta1dot, double theta2dot) {
     DRAKE_DEMAND(plant_ != nullptr);
@@ -309,7 +317,7 @@ class AcrobotPlantTests : public ::testing::Test {
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_{nullptr};
+  MultibodyPlant<double>* plant_{nullptr};  // Owned by diagram_ below.
   std::unique_ptr<MultibodyPlant<double>> discrete_plant_;
   // A SceneGraph so that we can test geometry registration.
   SceneGraph<double>* scene_graph_{nullptr};
