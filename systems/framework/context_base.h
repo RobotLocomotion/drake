@@ -160,6 +160,12 @@ class ContextBase : public internal::ContextMessageInterface {
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
+  /** Same as above method but the value is passed by const reference instead
+  of by unique_ptr. */
+  FixedInputPortValue& FixInputPort(int index, const AbstractValue& value) {
+    return FixInputPort(index, value.Clone());
+  }
+
   /** For input port `index`, returns a const FixedInputPortValue if the port is
   fixed, otherwise nullptr.
   @pre `index` selects an existing input port of this Context. */

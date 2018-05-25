@@ -16,6 +16,8 @@
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/value.h"
 
+using Eigen::VectorXd;
+
 namespace drake {
 namespace systems {
 
@@ -268,13 +270,46 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   SetNumInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  context.FixInputPort(0, AbstractValue::Make<std::string>("foo"));
+  context.FixInputPort(0, Value<std::string>("foo"));
 
   // Test that port 0 is retrievable.
   EXPECT_EQ("foo", *ReadStringInputPort(context, 0));
 
   // Test that port 1 is nullptr.
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
+}
+
+TEST_F(LeafContextTest, FixInputPort) {
+  const InputPortIndex index{0};
+  const int size = kInputSize[index];
+
+  // Test the unique_ptr<BasicVector> overload.
+  {
+    FixedInputPortValue& value = context_.FixInputPort(
+        index, std::make_unique<BasicVector<double>>(
+            VectorXd::Constant(size, 3.0)));
+    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
+    EXPECT_EQ(value.get_vector_value<double>()[0], 3.0);
+  }
+
+  // Test the const BasicVector& overload.
+  {
+    FixedInputPortValue& value = context_.FixInputPort(
+        index, BasicVector<double>(VectorXd::Constant(size, 2.0)));
+    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
+    EXPECT_EQ(value.get_vector_value<double>()[0], 2.0);
+  }
+
+  // Test the Eigen::Ref overload.
+  {
+    FixedInputPortValue& value = context_.FixInputPort(
+        index, VectorXd::Constant(size, 1.0));
+    EXPECT_EQ(context_.MaybeGetFixedInputPortValue(index), &value);
+    EXPECT_EQ(value.get_vector_value<double>()[0], 1.0);
+  }
+
+  // N.B. The GetAbstractInput test case above already covers the FixInputPort
+  // overloads for AbstractValue.
 }
 
 TEST_F(LeafContextTest, Clone) {
