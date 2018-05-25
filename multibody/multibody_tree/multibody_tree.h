@@ -1128,6 +1128,11 @@ class MultibodyTree {
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
 
+  void CalcPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
+      EigenPtr<MatrixX<T>> Jv_WQi) const;
+
   /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
   /// computes the geometric Jacobian `Jv_WF` defined by:
   /// <pre>

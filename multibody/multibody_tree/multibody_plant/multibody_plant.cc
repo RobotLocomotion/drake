@@ -217,7 +217,7 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
 template<typename T>
 MatrixX<T> MultibodyPlant<T>::ComputeNormalVelocityJacobianMatrix(
     const Context<T>& context,
-    std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
+    const std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
   const int num_contacts = contact_penetrations.size();
   MatrixX<T> N(num_contacts, num_velocities());
 
@@ -296,7 +296,7 @@ MatrixX<T> MultibodyPlant<T>::ComputeNormalVelocityJacobianMatrix(
 template<typename T>
 MatrixX<T> MultibodyPlant<T>::ComputeTangentVelocityJacobianMatrix(
     const Context<T>& context,
-    std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
+    const std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
   const int num_contacts = contact_penetrations.size();
   // Per contact we have two betas, one per each tangential direction.
   // betas can be either positive or negative.

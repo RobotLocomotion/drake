@@ -884,6 +884,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
 
+  // Friend class to facilitate testing.
+  friend class MultibodyPlantTester;
+
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
@@ -995,11 +998,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   MatrixX<T> ComputeNormalVelocityJacobianMatrix(
       const systems::Context<T>& context,
-      std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
+      const std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
 
   MatrixX<T> ComputeTangentVelocityJacobianMatrix(
       const systems::Context<T>& context,
-      std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
+      const std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;

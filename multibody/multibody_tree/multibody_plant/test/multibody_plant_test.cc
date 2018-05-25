@@ -11,6 +11,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -21,6 +24,10 @@
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
 namespace drake {
 
@@ -34,7 +41,11 @@ using Eigen::VectorXd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
+using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
+using math::RollPitchYaw;
+using math::RotationMatrix;
+using math::Transform;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -54,6 +65,17 @@ using systems::VectorBase;
 
 namespace multibody {
 namespace multibody_plant {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+  static MatrixX<double> ComputeNormalVelocityJacobianMatrix(
+      const MultibodyPlant<double>& plant, const Context<double>& context,
+      const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
+    return plant.ComputeNormalVelocityJacobianMatrix(context, point_pairs);
+  }
+};
+
 namespace {
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
@@ -649,6 +671,122 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+}
+
+GTEST_TEST(MultibodyPlantTest, NormalJacobian) {
+  // Parameters of the setup.
+  const double small_box_size = 1.0;
+  const double large_box_size = 5.0;
+  const double penetration = 0.01;
+
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  // Add two spherical bodies.
+  const RigidBody<double>& large_box =
+      plant.AddRigidBody("LargeBox", SpatialInertia<double>());
+  GeometryId large_box_id = plant.RegisterCollisionGeometry(
+      large_box, Isometry3d::Identity(),
+      geometry::Box(small_box_size, small_box_size, small_box_size),
+      CoulombFriction<double>(), &scene_graph);
+
+  const RigidBody<double>& small_box =
+      plant.AddRigidBody("SmallBox", SpatialInertia<double>());
+  CoulombFriction<double> sphere2_friction(0.7, 0.6);
+  GeometryId small_box_id = plant.RegisterCollisionGeometry(
+      small_box, Isometry3d::Identity(),
+      geometry::Box(large_box_size, large_box_size, large_box_size),
+      sphere2_friction, &scene_graph);
+
+  // We are done defining the model.
+  plant.Finalize();
+
+  ASSERT_EQ(plant.num_collision_geometries(), 2);
+  ASSERT_TRUE(plant.geometry_source_is_registered());
+  ASSERT_TRUE(plant.get_source_id());
+
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+
+  // Normal point outwards from the large box, expressed in the world frame.
+  const Vector3<double> nhat_large_box_W =
+      (Vector3d::UnitX() + Vector3d::UnitY()).normalized();
+  const Vector3<double> p_WLb =
+      -nhat_large_box_W * large_box_size / 2.0;
+  const Vector3<double> p_WSb =
+      nhat_large_box_W * (small_box_size / 2.0 - penetration);
+
+  const Transform<double> X_WLb(
+      RotationMatrix<double>::MakeZRotation(M_PI_4), p_WLb);
+  const Transform<double> X_WSb(
+      RotationMatrix<double>::MakeZRotation(M_PI_4), p_WSb);
+
+  //const Matrix3d R_LC_expected =
+    //  RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+
+  plant.model().SetFreeBodyPoseOrThrow(
+      large_box, X_WLb.GetAsIsometry3(), context.get());
+  // Place sphere 2 on top of the ground, with offset x = x_offset.
+  plant.model().SetFreeBodyPoseOrThrow(
+      small_box, X_WSb.GetAsIsometry3(), context.get());
+
+  std::unique_ptr<AbstractValue> poses_value =
+      plant.get_geometry_poses_output_port().Allocate();
+  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
+  const FramePoseVector<double>& pose_data =
+      poses_value->GetValueOrThrow<FramePoseVector<double>>();
+  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
+
+
+  std::vector<PenetrationAsPointPair<double>> penetrations;
+  for (double x : {-small_box_size / 2.0, small_box_size / 2.0}) {
+    for (double z : {-small_box_size / 2.0, small_box_size / 2.0}) {
+      PenetrationAsPointPair<double> point_pair;
+      point_pair.id_A = large_box_id;
+      point_pair.id_B = small_box_id;
+      // Collision point on A (Large box).
+      const Vector3<double> p_LbC(x, large_box_size / 2.0, z);
+      point_pair.p_WCa = X_WLb * p_LbC;
+      // Collision point on B (Small box).
+      const Vector3<double> p_SbC(x, -small_box_size / 2.0, z);
+      point_pair.p_WCb = X_WSb * p_SbC;
+      point_pair.nhat_BA_W = -nhat_large_box_W;
+      point_pair.depth = penetration;
+      penetrations.push_back(point_pair);
+    }
+  }
+
+  const MatrixX<double> N =
+      MultibodyPlantTester::ComputeNormalVelocityJacobianMatrix(
+          plant, *context, penetrations);
+
+  PRINT_VAR(N.rows());
+  PRINT_VAR(N.cols());
+  PRINT_VARn(N);
+
+#if 0
+  const MultibodyTree<double>& model = plant.model();
+  std::vector<Isometry3<double >> X_WB_all;
+  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  for (BodyIndex body_index(1);
+       body_index < plant.num_bodies(); ++body_index) {
+    const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
+    const Isometry3<double>& X_WB = pose_data.value(frame_id);
+    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
+                                kTolerance, MatrixCompareType::relative));
+  }
+
+  // Verify we can retrieve friction coefficients.
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(ground_id) == ground_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(large_box_id) == sphere1_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(small_box_id) == sphere2_friction));
+#endif
 }
 
 }  // namespace
