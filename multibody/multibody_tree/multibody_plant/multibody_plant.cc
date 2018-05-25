@@ -495,9 +495,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
-  // If plant state is continuous, no discrete state to update.
-  if (!is_discrete()) return;
-
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
@@ -585,8 +582,6 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  if (is_discrete()) return;
-
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 
@@ -604,8 +599,6 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  if (is_discrete()) return;
-
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 
