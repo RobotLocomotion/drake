@@ -113,10 +113,10 @@ class TestRigidBodyTree(unittest.TestCase):
         v = tree.transformQDotToVelocity(kinsol, qd)
         qd_ad = tree.transformVelocityToQDot(kinsol_ad, v_real_ad)
         v_ad = tree.transformQDotToVelocity(kinsol_ad, qd_ad)
-        self.assertEqual(qd.shape, (num_q, ))
-        self.assertEqual(v.shape, (num_v, ))
-        self.assertEqual(qd_ad.shape, (num_q, ))
-        self.assertEqual(v_ad.shape, (num_v, ))
+        self.assertEqual(qd.shape, (num_q,))
+        self.assertEqual(v.shape, (num_v,))
+        self.assertEqual(qd_ad.shape, (num_q,))
+        self.assertEqual(v_ad.shape, (num_v,))
 
         v_to_qdot = tree.GetVelocityToQDotMapping(kinsol)
         qdot_to_v = tree.GetQDotToVelocityMapping(kinsol)
@@ -163,6 +163,42 @@ class TestRigidBodyTree(unittest.TestCase):
         tree.drawKinematicTree(
             join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
 
+    def test_constraint_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/simple_four_bar/FourBar.urdf"))
+        num_q = 9
+        num_con = 7
+
+        bodyA = 1
+        bodyB = 2
+        point = np.ones(3)
+        distance = 1
+
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_q)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_ad = np.array(map(AutoDiffXd, v))
+        kinsol = tree.doKinematics(q, v)
+        kinsol_ad = tree.doKinematics(q_ad, v_ad)
+
+        self.assertEqual(tree.getNumPositionConstraints(), num_con - 1)
+        tree.addDistanceConstraint(bodyA, point, bodyB, point, distance)
+        self.assertEqual(tree.getNumPositionConstraints(), num_con)
+
+        constraint = tree.positionConstraints(kinsol)
+        J = tree.positionConstraintsJacobian(kinsol)
+        JdotV = tree.positionConstraintsJacDotTimesV(kinsol)
+        constraint_ad = tree.positionConstraints(kinsol_ad)
+        J_ad = tree.positionConstraintsJacobian(kinsol_ad)
+        JdotV_ad = tree.positionConstraintsJacDotTimesV(kinsol_ad)
+
+        self.assertEqual(constraint.shape, (num_con,))
+        self.assertEqual(J.shape, (num_con, num_q))
+        self.assertEqual(JdotV.shape, (num_con,))
+        self.assertEqual(constraint_ad.shape, (num_con,))
+        self.assertEqual(J_ad.shape, (num_con, num_q))
+        self.assertEqual(JdotV_ad.shape, (num_con,))
+
     def test_frame_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf"))
@@ -204,6 +240,9 @@ class TestRigidBodyTree(unittest.TestCase):
             [0., 1., 0., 0.2425, 0., 0., 0.],
             [0., 0., 1., 0., 0., 0., 0.]])
         self.assertTrue(np.allclose(Jc, Jc_expected))
+        # - JacobianDotTimesV
+        JcDotV = tree.centerOfMassJacobianDotTimesV(kinsol)
+        self.assertEqual(JcDotV.shape, (3,))
 
         # Specific body.
         arm_com = tree.FindBody("arm_com")
