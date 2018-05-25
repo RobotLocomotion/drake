@@ -55,66 +55,79 @@ using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
 using drake::systems::Sine;
 
+// TODO(amcastro-tri): Consider moving this large set of parameters to a
+// configuration file (e.g. YAML).
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
 DEFINE_double(simulation_time, 10.0,
-              "Desired duration of the simulation in seconds.");
+              "Desired duration of the simulation. [s].");
 
 DEFINE_double(grip_width, 0.095,
-              "The initial distance between the gripper fingers.");
+              "The initial distance between the gripper fingers. [m].");
 
-// Integration paramters:
+// Integration parameters:
 DEFINE_string(integration_scheme, "implicit_euler",
               "Integration scheme to be used. Available options are: "
               "'semi_explicit_euler','runge_kutta2','runge_kutta3',"
               "'implicit_euler'");
 DEFINE_double(max_time_step, 1.0e-3,
-              "Time maximum step used for the integrators. "
-              "If negative, a value based on patemeter penetration_allowance "
+              "Maximum time step used for the integrators. [s]. "
+              "If negative, a value based on parameter penetration_allowance "
               "is used.");
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
-    "size integrators with error control.");
+              "size integrators with error control.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
-              "Penetration allowance, in meters");
+              "Penetration allowance. [m]. "
+              "See MultibodyPlant::set_penetration_allowance().");
 DEFINE_double(v_stiction_tolerance, 1.0e-2,
-              "The maximum slipping speed allowed during stiction (m/s)");
+              "The maximum slipping speed allowed during stiction. [m/s]");
 
 // Pads parameters
 DEFINE_int32(ring_samples, 8,
              "The number of spheres used to sample the pad ring");
-DEFINE_double(ring_orient, 0, "Rotation of pads around x-axis (in degrees)");
+DEFINE_double(ring_orient, 0, "Rotation of the pads around x-axis. [degrees]");
 DEFINE_double(ring_static_friction, 1.0, "The coefficient of static friction "
-    "for the ring pad. Defaults to 1.0.");
+              "for the ring pad.");
 DEFINE_double(ring_dynamic_friction, 0.5, "The coefficient of dynamic friction "
-    "for the ring pad. Defaults to 0.5.");
+              "for the ring pad.");
 
 // Parameters for rotating the mug.
 DEFINE_double(rx, 0, "The x-rotation of the mug around its origin - the center "
-    "of its bottom (in degrees). Rotation order: X, Y, Z");
+              "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 DEFINE_double(ry, 0, "The y-rotation of the mug around its origin - the center "
-    "of its bottom (in degrees). Rotation order: X, Y, Z");
+              "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 DEFINE_double(rz, 0, "The z-rotation of the mug around its origin - the center "
-    "of its bottom (in degrees). Rotation order: X, Y, Z");
+              "of its bottom. [degrees]. Extrinsic rotation order: X, Y, Z");
 
 // Gripping force.
-DEFINE_double(gripper_force, 10, "The force to be applied by the gripper, "
-    "in Newtons. A value of 0 indicates a fixed grip width as set with "
-    "option grip_width.");
+DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
+              "A value of 0 indicates a fixed grip width as set with option "
+              "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0, "The amplitude (in meters) of the harmonic"
-    "oscillations carried out by the gripper.");
-DEFINE_double(frequency, 0, "The frequency (in Hz) of the harmonic"
-    "oscillations carried out by the gripper.");
+DEFINE_double(amplitude, 0, "The amplitude of the harmonic oscillations "
+              "carried out by the gripper. [m].");
+DEFINE_double(frequency, 0, "The frequency of the harmonic oscillations "
+              "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.
 const double kPadMajorRadius = 14e-3;  // 14 mm.
 const double kPadMinorRadius = 6e-3;   // 6 mm.
 
+// This uses the parameters of the ring to add collision geometries to a
+// rigid body for a finger. The collision geometries, consisting of a set of
+// small spheres, approximates a torus attached to the finger.
+//
+// @param[in] plant the MultiBodyPlant in which to add the pads.
+// @param[in] scene_graph the associated SceneGraph.
+// @param[in] pad_offset the ring offset along the x-axis in the finger
+// coordinate frame, i.e., how far the ring protrudes from the center of the
+// finger.
+// @param[in] finger the Body representing the finger
 void AddGripperPads(MultibodyPlant<double>* plant,
                     SceneGraph<double>* scene_graph,
                     const double pad_offset, const Body<double>& finger) {
@@ -123,24 +136,28 @@ void AddGripperPads(MultibodyPlant<double>* plant,
   const double d_theta = 2 * M_PI / sample_count;
 
   Vector3d p_FSo;  // Position of the sphere frame S in the finger frame F.
-  // The gripper frame is defined as:
+  // The finger frame is defined in simpler_gripper.sdf so that:
   //  - x axis pointing to the right of the gripper.
   //  - y axis pointing forward in the direction of the fingers.
   //  - z axis points up.
+  //  - It's origin Fo is right at the geometric center of the finger.
   for (int i = 0; i < sample_count; ++i) {
+    // The y-offset of the center of the torus in the finger frame F.
+    const double torus_center_y_position_F = 0.0265;
     p_FSo(0) = pad_offset;  // Offset from the center of the gripper.
     p_FSo(1) =
-        std::cos(d_theta * i + sample_rotation) * kPadMajorRadius + 0.0265;
+        std::cos(d_theta * i + sample_rotation) * kPadMajorRadius +
+            torus_center_y_position_F;
     p_FSo(2) = std::sin(d_theta * i + sample_rotation) * kPadMajorRadius;
 
-    // Pose of the sphere frame S in the gripper frame G.
-    const Isometry3d X_GS = Isometry3d(Translation3d(p_FSo));
+    // Pose of the sphere frame S in the finger frame F.
+    const Isometry3d X_FS = Isometry3d(Translation3d(p_FSo));
 
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
 
     plant->RegisterCollisionGeometry(
-        finger, X_GS, Sphere(kPadMinorRadius), friction, scene_graph);
+        finger, X_FS, Sphere(kPadMinorRadius), friction, scene_graph);
   }
 }
 
@@ -192,6 +209,9 @@ int do_main() {
 
   // If the user specifies a time step, we use that, otherwise estimate a
   // maximum time step based on the compliance of the contact model.
+  // The maximum time step is estimated to resolve this time scale with at
+  // least 30 time steps. Usually this is a good starting point for fixed step
+  // size integrators to be stable.
   const double max_time_step =
       FLAGS_max_time_step > 0 ? FLAGS_max_time_step :
       plant.get_contact_penalty_method_time_scale() / 30;
@@ -202,6 +222,10 @@ int do_main() {
   fmt::print("Compliance time scale = {:10.6f} s\n",
              plant.get_contact_penalty_method_time_scale());
 
+  // from simple_griper.sdf, there are two actuators. One actuator on the
+  // prismatic joint named "finger_sliding_joint" to actuate the left finger and
+  // a second actuator on the prismatic joint named "translate_joint" to impose
+  // motions of the gripper.
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
 
@@ -229,11 +253,11 @@ int do_main() {
   builder.Connect(converter, publisher);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
-  // form x(t) = X0 * sin(ω⋅t). By differentiating once, we get the velocity
-  // initial condition, and by differentiating twice, we get the input force we
-  // need to apply.
+  // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
+  // velocity initial condition, and by differentiating twice, we get the input
+  // force we need to apply.
   // The mass of the mug is ignored.
-  // TODO(amcastro-tri): add a PD controller to precisely controll the
+  // TODO(amcastro-tri): add a PD controller to precisely control the
   // trajectory of the gripper. Even better, add a motion constraint when MBP
   // supports it.
 
@@ -242,13 +266,18 @@ int do_main() {
   const double mass = 1.0890;  // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
   const double x0 = FLAGS_amplitude;  // meters.
-  const double f0 = omega * omega * x0 * mass;  // Force amplitude, Newton.
   const double v0 = -x0 * omega;  // Velocity amplitude, initial velocity, m/s.
   const double a0 = omega * omega * x0;  // Acceleration amplitude, m/s².
+  const double f0 = mass * a0;  // Force amplitude, Newton.
   fmt::print("Acceleration amplitude = {:8.4f} m/s²\n", a0);
 
+  // Notice we are using the same Sine source to:
+  //   1. Generate a harmonic forcing of the gripper with amplitude f0 and
+  //      angular frequency omega.
+  //   2. Impose a constant force to the left finger. That is, a harmonic
+  //      forcing with "zero" frequency.
   const Vector2<double> amplitudes(f0, FLAGS_gripper_force);
-  const Vector2<double> frequencies(omega, 0.0);  // 1 Hz
+  const Vector2<double> frequencies(omega, 0.0);
   const Vector2<double> phases(0.0, M_PI_2);
   const auto& harmonic_force = *builder.AddSystem<Sine>(
       amplitudes, frequencies, phases);
@@ -300,7 +329,7 @@ int do_main() {
   // around this initial position.
   const PrismaticJoint<double>& translate_joint =
       plant.GetJointByName<PrismaticJoint>("translate_joint");
-  translate_joint.set_translation(&plant_context, 0.015);
+  translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
 
   // Set up simulator.
@@ -331,6 +360,9 @@ int do_main() {
   if (!integrator->get_fixed_step_mode())
     integrator->set_target_accuracy(FLAGS_accuracy);
 
+  // The error controlled integrators might need to take very small time steps
+  // to compute a solution to the desired accuracy. Therefore, to visualize
+  // these very short transients, we publish every time step.
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();

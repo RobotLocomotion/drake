@@ -1,7 +1,20 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
+  <!-- Note: This is the accompaning SDF file for the example demo in
+       simple_gripper.cc and thefore these two files must be kept in sync.
+
+         This file defines the model for a simple gripper having two fingers.
+       The right finger is fixed to the body of the gripper. The left finger
+       is attached to the main body by a prismatic joint that allows it to
+       perform a grip.
+         The frame of the gripper, G, has its x-axis pointing to the right
+       of the gripper, its y-axis pointing "forward" (towards the fingers
+       side) and, the z-axis pointing upwards. This file only defines visual
+       geometry but not contact geometry, allowing the demo in
+       simple_gripper.cc to add contact geometry programmatically.
+  -->
   <model name='simple_gripper'>
-    <!-- Pose X_WM of the gripper model M in the world frame W. -->
+    <!-- Pose X_WG of the gripper model frame G in the world frame W. -->
     <pose>0.0555 0 0.0505 0 0 1.57</pose>
 
     <joint name='weld_base' type='fixed'>
@@ -33,8 +46,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <use_parent_model_frame>1</use_parent_model_frame>
-        <!-- Drake attaches an actuator to all and only joints with a nonzero
-             effort limit. -->
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
         <limit>
           <effort>500</effort>
         </limit>
@@ -125,8 +138,8 @@
       <axis>
         <xyz>1 0 0</xyz>
         <use_parent_model_frame>0</use_parent_model_frame>
-        <!-- Drake attaches an actuator to all and only joints with a nonzero
-             effort limit. -->
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
         <limit>
           <effort>500</effort>
         </limit>
