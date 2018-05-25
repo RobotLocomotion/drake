@@ -163,7 +163,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   continuous system (`time_step = 0`) or, as a discrete system with
   ///   periodic updates of period `time_step > 0`. @default 0.0.
   /// @throws std::exception if `time_step` is negative.
-  MultibodyPlant(double time_step = 0);
+  explicit MultibodyPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
