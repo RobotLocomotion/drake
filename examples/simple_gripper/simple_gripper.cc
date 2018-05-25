@@ -298,10 +298,10 @@ int do_main() {
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation
   // around this initial position.
-  const PrismaticJoint<double>& y_translate_joint =
-      plant.GetJointByName<PrismaticJoint>("y_translate_joint");
-  y_translate_joint.set_translation(&plant_context, 0.015);
-  y_translate_joint.set_translation_rate(&plant_context, v0);
+  const PrismaticJoint<double>& translate_joint =
+      plant.GetJointByName<PrismaticJoint>("translate_joint");
+  translate_joint.set_translation(&plant_context, 0.015);
+  translate_joint.set_translation_rate(&plant_context, v0);
 
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
