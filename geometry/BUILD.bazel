@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "geometry",
     deps = [
+        ":collision_group",
         ":frame_kinematics",
         ":geometry_context",
         ":geometry_frame",
@@ -29,6 +30,12 @@ drake_cc_package_library(
         ":scene_graph",
         ":shape_specification",
     ],
+)
+
+drake_cc_library(
+    name = "collision_group",
+    hdrs = ["collision_group.h"],
+    deps = [":geometry_ids"],
 )
 
 drake_cc_library(
@@ -127,6 +134,7 @@ drake_cc_library(
     srcs = ["geometry_state.cc"],
     hdrs = ["geometry_state.h"],
     deps = [
+        ":collision_group",
         ":frame_kinematics",
         ":geometry_frame",
         ":geometry_ids",
@@ -211,6 +219,14 @@ drake_cc_library(
 )
 
 # -----------------------------------------------------
+
+drake_cc_googletest(
+    name = "collision_group_test",
+    deps = [
+        ":collision_group",
+        ":geometry_ids",
+    ],
+)
 
 drake_cc_googletest(
     name = "proximity_engine_test",

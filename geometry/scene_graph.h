@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/geometry/collision_group.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
@@ -357,6 +358,50 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
+  /** @name         Collision filtering
+   The interface for limiting the scope of penetration queries (i.e., "filtering
+   collisions").
+
+   The scene graph consists of the set of geometry
+   `G = D ⋃ A = {g₀, g₁, ..., gₙ}`, where D is the set of dynamic geometry and
+   A is the set of anchored geometry (by definition `D ⋂ A = ∅`). Collision
+   occurs between pairs of geometries (e.g., (gᵢ, gⱼ)). The set of all possible
+   pairs is `𝒢 = G × G = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G, s.t. i ≠ j`. The default set
+   of collision candidate pairs C is a subset of 𝒢: `C = 𝒢 - (A × A) - F`,
+   where:
+     - `A × A` represents all pairs consisting only of anchored geometry;
+       anchored geometry is never tested against other anchored geometry.
+     - `F = (gᵢ, gⱼ)`, such that `frame(gᵢ) == frame(gⱼ)`; the pair where both
+       geometries are rigidly affixed to the same frame. By implication,
+       `gᵢ, gⱼ ∈ D` as only dynamic geometries are affixed to frames.
+
+   Only pairs contained in C will be tested as part of penetration queries.
+   These methods essentially create new sets of pairs and then subtract them
+   from the candidate set C. See each method for details.
+
+   Modifications to C _must_ be performed before context allocation.
+   */
+  //@{
+
+  /** Filters out possible collisions between members of the given `group`. For
+   the set of geometries implied by the `group` `G = {g₀, g₁, ..., gₘ}`,
+   the pairs `(gᵢ, gⱼ), ∀ gᵢ, gⱼ ∈ G`, are filtered out of consideration.
+
+   @throws std::logic_error if the group includes ids that don't exist in the
+                            scene graph.  */
+  void DisallowSelfCollisions(const CollisionGroup& group);
+
+  /** Filters out possible collisions between members of the two groups. If
+   `groupA` has the set of geometries `A = {a₀, a₁, ..., aₘ}` and `groupB` has
+   the set of geometries `B = {b₀, b₁, ..., bₙ}`, then the pairs
+   `(a, b), ∀ a ∈ A, b ∈ B`, are filtered out of consideration. This does _not_
+   preclude collisions between members of the _same_ set.
+   @throws std::logic_error if the groups include ids that don't exist in the
+                            scene graph.   */
+  void DisallowCrossCollisions(const CollisionGroup& groupA,
+                               const CollisionGroup& groupB);
+  //@}
+
  private:
   // Friend class to facilitate testing.
   friend class SceneGraphTester;
@@ -459,11 +504,11 @@ namespace systems {
 namespace scalar_conversion {
 template <>
 struct Traits<geometry::SceneGraph> {
-  template <typename T, typename U>
-  using supported =
-      typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
-                                    std::is_same<U, double>::value,
-                                std::true_type, std::false_type>::type;
+template <typename T, typename U>
+using supported =
+    typename std::conditional<!std::is_same<T, symbolic::Expression>::value &&
+                                  std::is_same<U, double>::value,
+                              std::true_type, std::false_type>::type;
 };
 }  // namespace scalar_conversion
 }  // namespace systems

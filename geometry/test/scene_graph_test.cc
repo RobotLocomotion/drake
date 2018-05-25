@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/collision_group.h"
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -334,6 +335,26 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
   EXPECT_THROW(geo_context_ad->get_geometry_state().BelongsToSource(
                    GeometryId::get_new_id(), s_id),
                std::logic_error);
+}
+
+// Tests that exercising the collision filtering logic *after* allocation leads
+// to an exception being thrown.
+TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
+  AllocateContext();
+
+  CollisionGroup group1{FrameId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.DisallowSelfCollisions(group1),
+      std::logic_error,
+      "The call to DisallowSelfCollisions is invalid; a context has already "
+          "been allocated.");
+
+  CollisionGroup group2{FrameId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.DisallowCrossCollisions(group1, group2),
+      std::logic_error,
+      "The call to DisallowCrossCollisions is invalid; a context has already "
+          "been allocated.");
 }
 
 // Dummy system to serve as geometry source.
