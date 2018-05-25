@@ -253,6 +253,13 @@ class Context : public ContextBase {
        std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
   }
 
+  /// Same as above method but the vector is passed by const reference instead
+  /// of by unique_ptr.  The port will contain a copy of the `vec` (not retain
+  /// a pointer to the `vec`).
+  FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec) {
+    return FixInputPort(index, vec.Clone());
+  }
+
   /// Same as above method but starts with an Eigen vector whose contents are
   /// used to initialize a BasicVector in the FixedInputPortValue.
   FixedInputPortValue& FixInputPort(
