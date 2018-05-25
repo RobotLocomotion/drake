@@ -197,6 +197,7 @@ drake_py_unittest(
     data = [
         "//examples/atlas:models",
         "//examples/pendulum:models",
+        "//examples/simple_four_bar:models",
     ],
     deps = [":rigid_body_tree_py"],
 )
