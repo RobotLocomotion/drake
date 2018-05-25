@@ -192,8 +192,7 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         if (is_near_singular) {
           EXPECT_THROW(rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(
                            rpyDt, alpha_AD_A), std::logic_error);
-        }
-        else {
+        } else {
           rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A);
         }
 
