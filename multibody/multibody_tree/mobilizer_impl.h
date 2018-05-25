@@ -82,10 +82,8 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_positions_start());
   }
 
-  bool is_state_discrete(const systems::Context<T>& context) const {
-    return this->GetMultibodyTreeContextOrThrow(context).is_state_discrete();
-  }
-
+  /// Returns a mutable reference to the state vector stored in `state` as an
+  /// Eigen::VectorBlock<VectorX<T>>.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
       const systems::Context<T>& context, systems::State<T>* state) const {
     systems::BasicVector<T>& state_vector =
@@ -143,13 +141,12 @@ class MobilizerImpl : public Mobilizer<T> {
   }
   /// @}
 
- protected:
   /// Helper method to retrieve a const reference to the MultibodyTreeContext
   /// object referenced by `context`.
   /// @throws `std::logic_error` if `context` is not a MultibodyTreeContext
   /// object.
-  const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
-      const systems::Context<T>& context) const {
+  static const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
+      const systems::Context<T>& context) {
     // TODO(amcastro-tri): Implement this in terms of
     // MultibodyTree::GetMultibodyTreeContextOrThrow() with additional validity
     // checks.
@@ -191,6 +188,12 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
  private:
+  /// Helper that returns `true` if the state of the multibody system is stored
+  /// as discrete state.
+  static bool is_state_discrete(const systems::Context<T>& context) {
+    return GetMultibodyTreeContextOrThrow(context).is_state_discrete();
+  }
+
   // Returns the index in the global array of generalized coordinates in the
   // MultibodyTree model to the first component of the generalized coordinates
   // vector that corresponds to this mobilizer.
