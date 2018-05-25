@@ -116,14 +116,6 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
     put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
-# One variant of a default constructor (all zeros).  (Depending on the
-# named_vector details, we will either use this variant or the subsequent one.)
-DEFAULT_CTOR_ZEROS = """
-  /// Default constructor.  Sets all rows to zero.
-  %(camel)s() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
-    this->SetFromVector(drake::VectorX<T>::Zero(K::kNumCoordinates));
-  }
-"""
 # A second variant of a default constructor (field-by-field setting).
 DEFAULT_CTOR_CUSTOM_BEGIN_API = """
   /// Default constructor.  Sets all rows to their default value:
@@ -141,22 +133,20 @@ DEFAULT_CTOR_CUSTOM_END = """
 }
 """
 DEFAULT_CTOR_FIELD_DEFAULT_VALUE = '0.0'  # When not otherwise overridden.
+DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
 def generate_default_ctor(hh, caller_context, fields):
-    # If all defaults are 0.0 and unit-less, then emit the simple ctor.
-    if all([item['default_value'] == DEFAULT_CTOR_FIELD_DEFAULT_VALUE and
-            item['doc_units'] == DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
-            for item in fields]):
-        put(hh, DEFAULT_CTOR_ZEROS % caller_context, 2)
-        return
     # Otherwise, emit a customized ctor.
     put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
         context.update(field=field['name'])
-        context.update(default_value=field['default_value'])
+        default_value = field['default_value']
+        if default_value == DEFAULT_CTOR_FIELD_DUMMY_TOKEN:
+            default_value = "a dummy value"
+        context.update(default_value=default_value)
         if field['doc_units'] == DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS:
             units_suffix = "with unknown units"
         else:
@@ -167,7 +157,10 @@ def generate_default_ctor(hh, caller_context, fields):
     for field in fields:
         context = dict(caller_context)
         context.update(field=field['name'])
-        context.update(default_value=field['default_value'])
+        default_value = field['default_value']
+        if default_value == DEFAULT_CTOR_FIELD_DUMMY_TOKEN:
+            default_value = "drake::dummy_value<T>::get()"
+        context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
 
@@ -354,6 +347,7 @@ VECTOR_HH_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -576,6 +570,9 @@ def generate_code(
     # Default some field attributes if they are missing.
     for item in fields:
         if len(item['default_value']) == 0:
+            print("warning: using an implicit default_value is deprecated;")
+            print(" add '{}' to {}.{} to prevent future errors".format(
+                'default_value: "0.0"', snake, item['name']))
             item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS

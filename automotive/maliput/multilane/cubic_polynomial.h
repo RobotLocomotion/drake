@@ -15,6 +15,7 @@ class CubicPolynomial {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CubicPolynomial)
 
   /// Default constructor, all zero coefficients.
+
   CubicPolynomial() : CubicPolynomial(0., 0., 0., 0.) {}
 
   /// Constructs a cubic polynomial given all four coefficients.
@@ -35,6 +36,20 @@ class CubicPolynomial {
 
   // Returns the d coefficient.
   double d() const { return d_; }
+
+  /// Returns the order of the polynomial, based on
+  /// its nonzero coefficients.
+  int order() const {
+    if (d_ != 0.0) return 3;
+    if (c_ != 0.0) return 2;
+    if (b_ != 0.0) return 1;
+    return 0;
+  }
+
+  /// Checks whether the polynomial is _exactly_ zero.
+  bool is_zero() const {
+    return (a_ == 0.0 && b_ == 0.0 && c_ == 0.0 && d_ == 0.0);
+  }
 
   /// Evaluates the polynomial f at @p p.
   double f_p(double p) const {
