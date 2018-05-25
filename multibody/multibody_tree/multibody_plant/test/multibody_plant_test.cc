@@ -270,6 +270,10 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_->set_angular_rate(context_.get(), theta2dot);
 
     // Set the state for the discrete model:
+    // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
+    // to whether the state is discrete or continuous. Therefore, we are allowed
+    // to using the same modeling elements to set both `context` and
+    // `discrete_context`.
     shoulder_->set_angle(discrete_context_.get(), theta1);
     elbow_->set_angle(discrete_context_.get(), theta2);
     shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
@@ -280,6 +284,7 @@ class AcrobotPlantTests : public ::testing::Test {
     discrete_plant_->CalcDiscreteVariableUpdates(
         *discrete_context_, updates.get());
 
+    // Copies to plain Eigen vectors to verify the math.
     const VectorXd x0 = context_->get_continuous_state_vector().CopyToVector();
     const VectorXd xdot = derivatives_->CopyToVector();
     const VectorXd xnext = updates->get_vector().CopyToVector();
@@ -359,27 +364,21 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
 // on a model of an acrobot.
 TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
   // Set up an additional discrete state model of the same acrobot model.
-  SetUpDiscreteAcrobotPlant(0.001);
+  SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
 
   // Verify the implementation for a number of arbitrarily chosen states.
   VerifyDoCalcDiscreteVariableUpdates(
       -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
       0.5, 1.0);                /* joint's angular rates */
-
-#if 0
-  VerifyCalcTimeDerivatives(
+  VerifyDoCalcDiscreteVariableUpdates(
       M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
-      0.7, -1.0,                /* joint's angular rates */
-      1.0);                     /* Actuation torque */
-  VerifyCalcTimeDerivatives(
+      0.7, -1.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
       M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
-      -0.5, 2.0,                /* joint's angular rates */
-      -1.5);                    /* Actuation torque */
-  VerifyCalcTimeDerivatives(
+      -0.5, 2.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
       -M_PI, -M_PI / 2.0,       /* joint's angles */
-      -1.5, -2.5,               /* joint's angular rates */
-      2.0);                     /* Actuation torque */
-#endif
+      -1.5, -2.5);              /* joint's angular rates */
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph

@@ -158,6 +158,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
+  /// @param[in] time_step
+  ///   An optional parameter indicating whether `this` plant is modeled as a
+  ///   continuous system (`time_step = 0`) or, as a discrete system with
+  ///   periodic updates of period `time_step > 0`. @default 0.0.
+  /// @throws std::exception if `time_step` is negative.
   MultibodyPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -738,8 +743,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
-  /// Gets whether this system is modeled using discrete state.
-  bool is_state_discrete() const { return time_step_ > 0.0; }
+  /// Returns `true` if `this` plant is modeled as a discrete system with
+  /// periodic updates of period equal to time_step().
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  bool is_discrete() const { return time_step_ > 0.0; }
+
+  /// The time step (or period) used to model `this` plant as a discrete system
+  /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
+  /// continuous system.
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  double time_step() const { return time_step_; }
 
   /// @anchor mbp_penalty_method
   /// @name Contact by penalty method
@@ -872,10 +887,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     stribeck_model_.set_stiction_tolerance(v_stiction);
   }
   /// @}
-
-  bool is_time_stepping() const { return time_step_ != 0; }
-
-  double time_step() const { return time_step_; }
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -1141,6 +1152,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
 
+  // If the plant is modeled as a discrete system with periodic updates,
+  // time_step_ corresponds to the period of those updates. Otherwise, if the
+  // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
 
   // Temporary solution for fake cache entries to help stabilize the API.

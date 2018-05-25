@@ -10,13 +10,6 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 
-#include <fstream>
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-//#define PRINT_VAR(a) (void)a;
-//#define PRINT_VARn(a) (void)a;
-
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -57,6 +50,7 @@ MultibodyPlant<T>::MultibodyPlant(double time_step) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
         drake::multibody::multibody_plant::MultibodyPlant>()),
     time_step_(time_step) {
+  DRAKE_DEMAND(time_step >= 0);
   model_ = std::make_unique<MultibodyTree<T>>();
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
@@ -215,7 +209,7 @@ std::unique_ptr<systems::LeafContext<T>>
 MultibodyPlant<T>::DoMakeLeafContext() const {
   DRAKE_THROW_UNLESS(is_finalized());
   return std::make_unique<MultibodyTreeContext<T>>(
-      model_->get_topology(), is_state_discrete());
+      model_->get_topology(), is_discrete());
 }
 
 template<typename T>
@@ -223,7 +217,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
   // No derivatives to compute if state is discrete.
-  if (is_state_discrete()) return;
+  if (is_discrete()) return;
 
   const auto x =
       dynamic_cast<const systems::BasicVector<T>&>(
@@ -444,7 +438,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
     drake::systems::DiscreteValues<T>* updates) const {
   // If plant state is continuous, no discrete state to update.
-  if (!is_state_discrete()) return;
+  if (!is_discrete()) return;
 
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
@@ -593,7 +587,7 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
-  if (is_time_stepping()) return;
+  if (is_discrete()) return;
 
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
@@ -612,7 +606,7 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
-  if (is_time_stepping()) return;
+  if (is_discrete()) return;
 
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
@@ -631,7 +625,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
   // The model must be finalized.
   DRAKE_DEMAND(this->is_finalized());
 
-  if (is_state_discrete()) {
+  if (is_discrete()) {
     this->DeclarePeriodicDiscreteUpdate(time_step_);
     this->DeclareDiscreteState(num_multibody_states());
   } else {
