@@ -92,7 +92,7 @@ GTEST_TEST(RollPitchYaw, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
 // For a RollPitchYaw R_AD(rpy) that relates frame D's orientation to frame A,
 // calculate conversion from rpy and its time-derivative rpyDt to w_AD_A
 // (D's angular velocity in A, expressed in A).
-GTEST_TEST(RollPitchYaw, RollPitchYawDtToAngularVelocityExpressedInA) {
+GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
   const Vector3d rpyDt(-2.1, 3.3, 5.7);
   const Vector3d w_AD_A = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
@@ -117,7 +117,30 @@ GTEST_TEST(RollPitchYaw, RollPitchYawDtToAngularVelocityExpressedInA) {
   EXPECT_TRUE(CompareMatrices(rpyDt_calculated, rpyDt, 16 * kEpsilon,
                               MatrixCompareType::absolute));
 
-  // EXPECT_THROW();
+  // Check for some throw conditions.
+  const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
+  EXPECT_THROW(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
+
+  const RollPitchYaw<double> rpyB(0.2, -M_PI / 2, 0.4);
+  EXPECT_THROW(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
+
+  const RollPitchYaw<double> rpyC(0.2, 3 * M_PI / 2, 0.4);
+  EXPECT_THROW(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
+
+  const RollPitchYaw<double> rpyD(0.2, -3 * M_PI / 2, 0.4);
+  EXPECT_THROW(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
+
+  const RollPitchYaw<double> rpyE(0.2, 3 * M_PI / 2 + 1E-8, 0.4);
+  EXPECT_THROW(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
+
+  const RollPitchYaw<double> rpyF(0.2, -3 * M_PI / 2 + 1E-8, 0.4);
+  EXPECT_THROW(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+               std::logic_error);
 }
 
 
