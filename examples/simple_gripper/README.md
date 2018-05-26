@@ -13,12 +13,12 @@ provide a value of exactly zero, the fingers of the gripper will be set to be at
 `--grip_width` distance (in meters) from each other. When `--gripper_force > 0`,
 `--grip_width` specifies the initial condition for the fingers position.
 
-The demo also allows to specify a vertical harmonic motion of the gripper to
+The demo also permits specifying a vertical harmonic motion of the gripper to
 evaluate the performance of the grip when the gripper is undergoing forced
 motions. The parameters controlling this motion are `--amplitude`, to specify
 the amplitude of the oscillations in meters and, `--frequency` to specify the
-frequency of the oscillations in Hertz. Aditionally, the user might like to
-change the direction of the oscillations (E.g. to be horizontal or in some other
+frequency of the oscillations in Hertz. Additionally, the user might like to
+change the direction of the oscillations (e.g. to be horizontal or in some other
 arbitrary direction). This can be accomplished by changing the `<axis>`
 specified for the `<joint>` named "translate_joint" in the SDF for the gripper
 model, `simple_gripper.sdf`.
@@ -36,7 +36,7 @@ bazel build //tools:drake_visualizer
 
 Build this example with
 ```
-bazel build examples/simple_gripper
+bazel build //examples/simple_gripper
 ```
 
 Running the Example
@@ -44,7 +44,7 @@ Running the Example
 
 Launch the visualizer
 ```
-bazel-bin/tools/drake_visualizer
+./bazel-bin/tools/drake_visualizer
 ```
 
 Launch the kuka simulation. Due to

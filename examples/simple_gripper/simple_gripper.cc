@@ -370,7 +370,7 @@ int do_main() {
 
   // Print some stats for variable time step integrators.
   fmt::print("Integrator stats:\n");
-  fmt::print("Number of time steps taken = {:d} s\n",
+  fmt::print("Number of time steps taken = {:d}\n",
              integrator->get_num_steps_taken());
   if (!integrator->get_fixed_step_mode()) {
     fmt::print("Initial time step taken = {:10.6g} s\n",
