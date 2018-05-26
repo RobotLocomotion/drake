@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -119,28 +120,28 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
 
   // Check for some throw conditions.
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
-  EXPECT_THROW(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 
   const RollPitchYaw<double> rpyB(0.2, -M_PI / 2, 0.4);
-  EXPECT_THROW(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 
   const RollPitchYaw<double> rpyC(0.2, 3 * M_PI / 2, 0.4);
-  EXPECT_THROW(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 
   const RollPitchYaw<double> rpyD(0.2, -3 * M_PI / 2, 0.4);
-  EXPECT_THROW(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 
   const RollPitchYaw<double> rpyE(0.2, 3 * M_PI / 2 + 1E-8, 0.4);
-  EXPECT_THROW(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 
   const RollPitchYaw<double> rpyF(0.2, -3 * M_PI / 2 + 1E-8, 0.4);
-  EXPECT_THROW(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, "Error: Pitch angle p = .*" );
 }
 
 
@@ -187,11 +188,12 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         // Calculate [r̈, p̈, ÿ] from alpha_AD_A which is
         // D's angular acceleration in A, expressed in A.
         const double abs_cos_pitch = std::abs(std::cos(pitch));
-        const bool is_near_singular = abs_cos_pitch <= 1.0E-5;
+        const bool is_near_singular = abs_cos_pitch <= 1.745329251935621E-05;
         Vector3d rpyDDt;
         if (is_near_singular) {
-          EXPECT_THROW(rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(
-                           rpyDt, alpha_AD_A), std::logic_error);
+          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
+             rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A),
+             std::logic_error, "Error: Pitch angle p = .*" );
         } else {
           rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A);
         }
@@ -202,8 +204,9 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const Vector3d alpha_AD_D = R_AD.inverse() * alpha_AD_A;
         Vector3d rpyDDt_verify;
         if (is_near_singular) {
-          EXPECT_THROW(rpyDDt_verify = rpy.CalcRpyDDtFromAngularAccelInChild(
-                           rpyDt, alpha_AD_D), std::logic_error);
+          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
+              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
+              std::logic_error, "Error: Pitch angle p = .*" );
         } else {
           rpyDDt_verify =
               rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);

@@ -3,6 +3,9 @@
 #include <cmath>
 #include <limits>
 
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
@@ -278,7 +281,7 @@ class RollPitchYaw {
     using std::cos;
     const T sr = sin(r), cr = cos(r);
     const T sp = sin(p), cp = cos(p);
-    ThrowIfCosPitchNearZero(cp);
+    ThrowIfCosPitchNearZero(__func__, cp, p);
     const T one_over_cp = T(1)/cp;
     const T cr_over_cp = cr * one_over_cp;
     const T sr_over_cp = sr * one_over_cp;
@@ -299,6 +302,8 @@ class RollPitchYaw {
                                tanp * pDt_yDt + one_over_cp * rDt_pDt);
 
     // Combine terms that contains alpha with remainder terms.
+    // TODO(Mitiguy) M * alpha_AD_D can be calculated faster since the first
+    // column of M is (1, 0, 0).
     return M * alpha_AD_D + remainder;
   }
 
@@ -324,14 +329,26 @@ class RollPitchYaw {
 
   // Throws an exception if the cosine of the pitch-angle p is nearly zero --
   // which means `p = (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  // @param[in] func name of calling function/method.
   // @param[in] cos_pitch cosine of the pitch-angle p, i.e., `cos(p)`.
+  // @param[in] p pitch angle (in radians).
   // @throws std::logic_error if `cos(p) ≈ 0`.
-  static void ThrowIfCosPitchNearZero(const T& cos_pitch) {
+  static void ThrowIfCosPitchNearZero(const char* func, const T& cos_pitch,
+                                      const T& p) {
+    // Note: tolerance_cos = cos((90 - 0.001) * M_PI/180), which is equal to
+    // the cosine of 89.999 degrees (within 0.001 degrees of gimbal-lock).
+    constexpr double tolerance_degrees = 0.001;
+    constexpr double tolerance_cos = 1.745329251935621E-05;
     using std::abs;
-    const double tolerance = 1.0E-7;  // E.g., within 5.7E-6 of 90 degrees.
-    if (abs(cos_pitch) < tolerance) {
-      throw std::logic_error(
-          "Error: Cosine of pitch angle is approximately zero.");
+    if (abs(cos_pitch) < tolerance_cos) {
+      const double p_deg = ExtractDoubleOrThrow(p) * 180 / M_PI;
+      std::string message = fmt::format("Error: Pitch angle p = {:G} is too"
+           " near gimbal-lock (it is within {:G} of gimbal-lock). There is a"
+           " divide-by-zero error (singularity) at gimbal-lock.  Pitch angles"
+           " near gimbal-lock cause numerical inaccuracies.  One way to avoid"
+           " this singularity is to use quaternions.  Note: the name of the"
+           " calling method is {}.", p_deg, tolerance_degrees, func);
+      throw std::logic_error(message);
     }
   }
 
@@ -452,7 +469,7 @@ class RollPitchYaw {
     const T& p = pitch_angle();
     const T& y = yaw_angle();
     const T sp = sin(p), cp = cos(p);
-    ThrowIfCosPitchNearZero(cp);
+    ThrowIfCosPitchNearZero(__func__, cp, p);
     const T one_over_cp = T(1)/cp;
     const T sy = sin(y), cy = cos(y);
     const T cy_over_cp = cy * one_over_cp;
