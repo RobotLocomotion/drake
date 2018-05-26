@@ -37,7 +37,7 @@ drake_cc_library(
     ],
     deps = [
         ":constraint_problem_data",
-        "//solvers:mathematical_program",
+        "//solvers:solvers",
     ],
 )
 
@@ -48,6 +48,7 @@ drake_cc_googletest(
     deps = [
         ":constraint_solver",
         "//examples/rod2d",
+        "//solvers:mathematical_program",
     ],
 )
 
