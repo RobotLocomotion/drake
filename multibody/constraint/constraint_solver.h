@@ -1336,6 +1336,165 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLCPSolution(
   }
 }
 
+template <typename T>
+void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
+    const ConstraintVelProblemData<T>& problem_data,
+    double dt,
+    MlcpToLcpData* mlcp_to_lcp_data,
+    VectorX<T>* a,
+    MatrixX<T>* MM,
+    VectorX<T>* qq) {
+  DRAKE_DEMAND(MM);
+  DRAKE_DEMAND(qq);
+  DRAKE_DEMAND(a);
+
+  // Look for early exit.
+  if (qq->rows() == 0)
+    return;
+
+  // Recompute the linear equation solvers, if necessary.
+  if (problem_data.kG.size() > 0) {
+    ConstructLinearEquationSolversForMLCP(
+        problem_data, mlcp_to_lcp_data);
+  }
+
+  // Compute a and A⁻¹a.
+  const int num_eq_constraints = problem_data.kG.size();
+  const VectorX<T>& Mv = problem_data.Mv;
+  a->resize(Mv.size() + num_eq_constraints);
+  a->head(Mv.size()) = -Mv;
+  a->tail(num_eq_constraints) = problem_data.kG;
+  const VectorX<T> invA_a = mlcp_to_lcp_data->A_solve(*a);
+  const VectorX<T> trunc_neg_invA_a = -invA_a.head(Mv.size());
+
+  // Look for quick exit.
+  if (qq->rows() == 0)
+    return;
+
+  // Get numbers of contacts.
+  const int num_contacts = problem_data.mu.size();
+  const int num_spanning_vectors = std::accumulate(problem_data.r.begin(),
+                                                   problem_data.r.end(), 0);
+  const int num_limits = problem_data.kL.size();
+
+  // Alias these variables for more readable construction of MM and qq.
+  const int nc = num_contacts;
+  const int nr = num_spanning_vectors;
+  const int nk = nr * 2;
+  const int nl = num_limits;
+
+  // Alias operators to make accessing them less clunky.
+  const auto N = problem_data.N_mult;
+  const auto F = problem_data.F_mult;
+  const auto L = problem_data.L_mult;
+
+  // Verify that all gamma vectors are either empty or non-negative.
+  const VectorX<T>& gammaN = problem_data.gammaN;
+  const VectorX<T>& gammaF = problem_data.gammaF;
+  const VectorX<T>& gammaE = problem_data.gammaE;
+  const VectorX<T>& gammaL = problem_data.gammaL;
+  DRAKE_DEMAND(gammaN.size() == 0 || gammaN.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaF.size() == 0 || gammaF.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaE.size() == 0 || gammaE.minCoeff() >= 0);
+  DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
+
+  // Scale the Delassus matrices, which are all but the third row (block) and
+  // third column (block) of the following matrix. 
+  // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
+  // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
+  // μ         -Eᵀ       0   0
+  // L⋅M⁻¹⋅Nᵀ  L⋅M⁻¹⋅Dᵀ  0   L⋅M⁻¹⋅Lᵀ
+  // where D = |  F |
+  //           | -F |
+  const int nr2 = nr * 2;
+  MM->topLeftCorner(nc + nr2, nc + nr2) *= dt;
+  MM->bottomLeftCorner(nl, nc + nr2) *= dt;
+  MM->topRightCorner(nc + nr2, nl) *= dt;
+  MM->bottomRightCorner(nl, nl) *= dt;  
+
+  // Regularize the LCP matrix.
+  MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
+  MM->block(nc, nc, nr, nr) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nr, nc + nr, nr, nr) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaF);
+  MM->block(nc + nk, nc + nk, nc, nc) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaE);
+  MM->block(nc * 2 + nk, nc * 2 + nk, nl, nl) +=
+      Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaL);
+
+  // Update qq.
+  qq->segment(0, nc) = N(trunc_neg_invA_a) + problem_data.kN;
+  qq->segment(nc, nr) = F(trunc_neg_invA_a) + problem_data.kF;
+  qq->segment(nc + nr, nr) = -qq->segment(nc, nr);
+  qq->segment(nc + nk, nc).setZero();
+  qq->segment(nc*2 + nk, num_limits) = L(trunc_neg_invA_a) + problem_data.kL;
+}
+
+template <typename T>
+void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLCP(
+    const ConstraintVelProblemData<T>& problem_data,
+    MlcpToLcpData* mlcp_to_lcp_data,
+    MatrixX<T>* MM,
+    VectorX<T>* qq) {
+  using std::max;
+  using std::abs;
+
+  DRAKE_DEMAND(MM);
+  DRAKE_DEMAND(qq);
+  DRAKE_DEMAND(mlcp_to_lcp_data);
+
+  // Get number of contacts and limits.
+  const int num_contacts = problem_data.mu.size();
+  if (static_cast<size_t>(num_contacts) != problem_data.r.size()) {
+    throw std::logic_error("Number of elements in 'r' does not match number"
+                               "of elements in 'mu'");
+  }
+  const int num_limits = problem_data.kL.size();
+  const int num_eq_constraints = problem_data.kG.size();
+
+  // Look for fast exit.
+  if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
+    MM->resize(0, 0);
+    qq->resize(0); 
+    return;
+  }
+
+  // If no impact and no bilateral constraints, construct an empty matrix
+  // and vector. (We avoid this possible shortcut if there are bilateral
+  // constraints because it's too hard to determine a workable tolerance at
+  // this point).
+  const VectorX<T> v = problem_data.solve_inertia(problem_data.Mv);
+  const VectorX<T> N_eval = problem_data.N_mult(v) +
+      problem_data.kN;
+  const VectorX<T> L_eval = problem_data.L_mult(v) +
+      problem_data.kL;
+  if ((num_contacts == 0 || N_eval.minCoeff() >= 0) &&
+      (num_limits == 0 || L_eval.minCoeff() >= 0) &&
+      (num_eq_constraints == 0)) {
+    MM->resize(0, 0);
+    qq->resize(0); 
+    return;
+  }
+
+  // Determine the "A" and fast "A" solution operators, which allow us to
+  // solve the mixed linear complementarity problem by first solving a "pure"
+  // linear complementarity problem. See
+  ConstructLinearEquationSolversForMLCP(problem_data, mlcp_to_lcp_data);
+
+  // Allocate storage for a.
+  VectorX<T> a(problem_data.Mv.size() + num_eq_constraints);
+
+  // Compute a and A⁻¹a.
+  const VectorX<T>& Mv = problem_data.Mv;
+  a.head(Mv.size()) = -Mv;
+  a.tail(num_eq_constraints) = problem_data.kG;
+  const VectorX<T> invA_a = mlcp_to_lcp_data->A_solve(a);
+  const VectorX<T> trunc_neg_invA_a = -invA_a.head(Mv.size());
+
+  // Set up the linear complementarity problem.
+  FormImpactingConstraintLCP(problem_data, trunc_neg_invA_a, MM, qq);
+}
+
 template <class T>
 void ConstraintSolver<T>::ComputeConstraintSpaceComplianceMatrix(
     std::function<VectorX<T>(const VectorX<T>&)> A_mult,
