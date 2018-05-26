@@ -673,120 +673,192 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
 }
 
-GTEST_TEST(MultibodyPlantTest, NormalJacobian) {
+class MultibodyPlantContactJacobianTests : public ::testing::Test {
+ public:
+  void SetUp() override {
+    plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
+
+    // Add two spherical bodies.
+    const RigidBody<double>& large_box =
+        plant_.AddRigidBody("LargeBox", SpatialInertia<double>());
+    large_box_id_ = plant_.RegisterCollisionGeometry(
+        large_box, Isometry3d::Identity(),
+        geometry::Box(large_box_size_, large_box_size_, large_box_size_),
+        CoulombFriction<double>(), &scene_graph_);
+
+    const RigidBody<double>& small_box =
+        plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
+    small_box_id_ = plant_.RegisterCollisionGeometry(
+        small_box, Isometry3d::Identity(),
+        geometry::Box(small_box_size_, small_box_size_, small_box_size_),
+        CoulombFriction<double>(), &scene_graph_);
+
+    // We are done defining the model.
+    plant_.Finalize();
+  }
+
+ protected:
+  MultibodyPlant<double> plant_;
+  SceneGraph<double> scene_graph_;
+  GeometryId small_box_id_;
+  GeometryId large_box_id_;
   // Parameters of the setup.
-  const double small_box_size = 1.0;
-  const double large_box_size = 5.0;
-  const double penetration = 0.01;
+  const double small_box_size_{1.0};
+  const double large_box_size_{5.0};
+  const double penetration_{0.01};
+};
 
-  SceneGraph<double> scene_graph;
-  MultibodyPlant<double> plant;
-  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  ASSERT_EQ(plant_.num_collision_geometries(), 2);
+  ASSERT_TRUE(plant_.geometry_source_is_registered());
+  ASSERT_TRUE(plant_.get_source_id());
+  const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
+  const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
-  // Add two spherical bodies.
-  const RigidBody<double>& large_box =
-      plant.AddRigidBody("LargeBox", SpatialInertia<double>());
-  GeometryId large_box_id = plant.RegisterCollisionGeometry(
-      large_box, Isometry3d::Identity(),
-      geometry::Box(small_box_size, small_box_size, small_box_size),
-      CoulombFriction<double>(), &scene_graph);
+  // Notation for frames:
+  //  - W: the world frame.
+  //  - Lb: the frame of the large box, with its origin at the box's center.
+  //  - Sb: the frame of the small box, with its origin at the box's center.
 
-  const RigidBody<double>& small_box =
-      plant.AddRigidBody("SmallBox", SpatialInertia<double>());
-  CoulombFriction<double> sphere2_friction(0.7, 0.6);
-  GeometryId small_box_id = plant.RegisterCollisionGeometry(
-      small_box, Isometry3d::Identity(),
-      geometry::Box(large_box_size, large_box_size, large_box_size),
-      sphere2_friction, &scene_graph);
+  const Transform<double> X_WLb =
+      // Pure rotation.
+      Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                        Vector3<double>::Zero()) *
+      // Pure translation.
+      Transform<double>(RotationMatrix<double>::Identity(),
+                        Vector3<double>(0, -large_box_size_ / 2.0, 0));
+  const Transform<double> X_WSb =
+      // Pure rotation.
+      Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                        Vector3<double>::Zero()) *
+      // Pure translation.
+      Transform<double>(RotationMatrix<double>::Identity(),
+                        Vector3<double>(
+                            0, small_box_size_ / 2.0 - penetration_, 0));
+  const RotationMatrix<double>& R_WSb = X_WSb.rotation();
 
-  // We are done defining the model.
-  plant.Finalize();
-
-  ASSERT_EQ(plant.num_collision_geometries(), 2);
-  ASSERT_TRUE(plant.geometry_source_is_registered());
-  ASSERT_TRUE(plant.get_source_id());
-
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-
-  // Normal point outwards from the large box, expressed in the world frame.
+  // Normal pointing outwards from the top surface of the large box.
   const Vector3<double> nhat_large_box_W =
-      (Vector3d::UnitX() + Vector3d::UnitY()).normalized();
-  const Vector3<double> p_WLb =
-      -nhat_large_box_W * large_box_size / 2.0;
-  const Vector3<double> p_WSb =
-      nhat_large_box_W * (small_box_size / 2.0 - penetration);
+      X_WLb.rotation() * Vector3<double>::UnitY();
 
-  const Transform<double> X_WLb(
-      RotationMatrix<double>::MakeZRotation(M_PI_4), p_WLb);
-  const Transform<double> X_WSb(
-      RotationMatrix<double>::MakeZRotation(M_PI_4), p_WSb);
+  PRINT_VARn(X_WLb.GetAsMatrix4());
+  PRINT_VARn(X_WSb.GetAsMatrix4());
+  PRINT_VARn(nhat_large_box_W);
 
-  //const Matrix3d R_LC_expected =
-    //  RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
+  const MultibodyTreeContext<double>& mbt_context =
+      dynamic_cast<const MultibodyTreeContext<double>&>(*context);
 
-  plant.model().SetFreeBodyPoseOrThrow(
+  plant_.model().SetFreeBodyPoseOrThrow(
       large_box, X_WLb.GetAsIsometry3(), context.get());
   // Place sphere 2 on top of the ground, with offset x = x_offset.
-  plant.model().SetFreeBodyPoseOrThrow(
+  plant_.model().SetFreeBodyPoseOrThrow(
       small_box, X_WSb.GetAsIsometry3(), context.get());
 
-  std::unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate();
-  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
-  const FramePoseVector<double>& pose_data =
-      poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
-  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
-
-
   std::vector<PenetrationAsPointPair<double>> penetrations;
-  for (double x : {-small_box_size / 2.0, small_box_size / 2.0}) {
-    for (double z : {-small_box_size / 2.0, small_box_size / 2.0}) {
+  for (double x : {-small_box_size_ / 2.0, small_box_size_ / 2.0}) {
+    for (double z : {-small_box_size_ / 2.0, small_box_size_ / 2.0}) {
       PenetrationAsPointPair<double> point_pair;
-      point_pair.id_A = large_box_id;
-      point_pair.id_B = small_box_id;
+      point_pair.id_A = large_box_id_;
+      point_pair.id_B = small_box_id_;
       // Collision point on A (Large box).
-      const Vector3<double> p_LbC(x, large_box_size / 2.0, z);
+      const Vector3<double> p_LbC(x, large_box_size_ / 2.0, z);
       point_pair.p_WCa = X_WLb * p_LbC;
       // Collision point on B (Small box).
-      const Vector3<double> p_SbC(x, -small_box_size / 2.0, z);
+      const Vector3<double> p_SbC(x, -small_box_size_ / 2.0, z);
       point_pair.p_WCb = X_WSb * p_SbC;
       point_pair.nhat_BA_W = -nhat_large_box_W;
-      point_pair.depth = penetration;
+      point_pair.depth = penetration_;
       penetrations.push_back(point_pair);
     }
   }
 
+  // Compute expected Jacobian by hand.
+  //Vector3<double> p_SbC()
+
   const MatrixX<double> N =
       MultibodyPlantTester::ComputeNormalVelocityJacobianMatrix(
-          plant, *context, penetrations);
+          plant_, *context, penetrations);
+
+  const int nv = plant_.num_velocities();
+  const int nc = penetrations.size();
+  ASSERT_EQ(N.rows(), nc);
+  ASSERT_EQ(N.cols(), nv);
 
   PRINT_VAR(N.rows());
   PRINT_VAR(N.cols());
   PRINT_VARn(N);
 
-#if 0
-  const MultibodyTree<double>& model = plant.model();
-  std::vector<Isometry3<double >> X_WB_all;
-  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
-  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-  for (BodyIndex body_index(1);
-       body_index < plant.num_bodies(); ++body_index) {
-    const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const Isometry3<double>& X_WB = pose_data.value(frame_id);
-    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
-    EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
-                                kTolerance, MatrixCompareType::relative));
-  }
 
-  // Verify we can retrieve friction coefficients.
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(ground_id) == ground_friction));
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(large_box_id) == sphere1_friction));
-  EXPECT_TRUE(ExtractBoolOrThrow(
-      plant.default_coulomb_friction(small_box_id) == sphere2_friction));
-#endif
+  // Reference to the vector of generalized velocities.
+  Eigen::VectorBlock<const VectorX<double>> v = mbt_context.get_velocities();
+
+  VectorX<double> vn(nc);
+  VectorX<double> vn_expected(nc);
+
+  // Small box rotation, stationary large box.
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      large_box, SpatialVelocity<double>::Zero(), context.get());
+  Vector3<double> w_WSb;
+
+  // Rotation about the x-axis of the small box.
+  w_WSb = R_WSb * Vector3<double>::UnitX();
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
+      context.get());
+  vn = N * v;
+  vn_expected << small_box_size_ / 2.0, -small_box_size_ / 2.0,
+      small_box_size_ / 2.0, -small_box_size_ / 2.0;
+  EXPECT_TRUE(CompareMatrices(
+      vn, vn_expected, kTolerance, MatrixCompareType::relative));
+
+  // Rotation about the z-axis of the small box.
+  w_WSb = R_WSb * Vector3<double>::UnitZ();
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
+      context.get());
+  vn = N * v;
+  vn_expected << -small_box_size_ / 2.0, -small_box_size_ / 2.0,
+      small_box_size_ / 2.0, small_box_size_ / 2.0;
+  EXPECT_TRUE(CompareMatrices(
+      vn, vn_expected, kTolerance, MatrixCompareType::relative));
+
+  // Rotation about the y-axis of the small box.
+  w_WSb = R_WSb * Vector3<double>::UnitY();
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
+      context.get());
+  vn = N * v;
+  vn_expected.setZero();
+  EXPECT_TRUE(CompareMatrices(
+      vn, vn_expected, kTolerance, MatrixCompareType::relative));
+
+  // Small box translation, stationary large box.
+  Vector3<double> v_WSb;
+
+  // Translation along a vector perpendicular to the y-axis of the small box.
+  v_WSb = R_WSb * Vector3<double>(1, 0, 1);
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      small_box, SpatialVelocity<double>(Vector3<double>::Zero(), v_WSb),
+      context.get());
+  vn = N * v;
+  vn_expected.setZero();
+  EXPECT_TRUE(CompareMatrices(
+      vn, vn_expected, kTolerance, MatrixCompareType::relative));
+
+  // Translation along the y-axis of the small box.
+  v_WSb = R_WSb * Vector3<double>::UnitY();
+  plant_.model().SetFreeBodySpatialVelocityOrThrow(
+      small_box, SpatialVelocity<double>(Vector3<double>::Zero(), v_WSb),
+      context.get());
+  vn = N * v;
+  vn_expected.setConstant(nc, 1.0);
+  EXPECT_TRUE(CompareMatrices(
+      vn, vn_expected, kTolerance, MatrixCompareType::relative));
+
+
+  PRINT_VAR((N * v).transpose());
 }
 
 }  // namespace
