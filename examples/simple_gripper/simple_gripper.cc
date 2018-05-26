@@ -176,9 +176,27 @@ int do_main() {
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
 
-  // Add gravity to the model.
-  plant.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
+  // Obtain the "translate_joint" axis so that we know the direction of the
+  // forced motions. We do not apply gravity if motions are forced in the
+  // vertical direction so that the gripper doesn't start free falling. See note
+  // below on how we apply these motions. A better strategy would be using
+  // constraints but we keep it simple for this demo.
+  const PrismaticJoint<double>& translate_joint =
+      plant.GetJointByName<PrismaticJoint>("translate_joint");
+  const Vector3d axis = translate_joint.translation_axis();
+  if (axis.isApprox(Vector3d::UnitZ())) {
+    fmt::print("Gripper motions forced in the vertical direction.\n");
+  } else if (axis.isApprox(Vector3d::UnitX())) {
+    fmt::print("Gripper motions forced in the horizontal direction.\n");
+    // Add gravity to the model.
+    plant.AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
+  } else {
+    throw std::runtime_error(
+        "Only horizontal or vertical motions of the gripper are supported for "
+        "this example. The joint axis in the SDF file must either be the "
+        "x-axis or the z-axis");
+  }
 
   // Add the pads.
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");
@@ -262,7 +280,7 @@ int do_main() {
   // supports it.
 
   // The mass of the gripper in simple_gripper.sdf.
-  // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
+  // TODO(amcastro-tri): we should call MultibodyTree::CalcMass() here.
   const double mass = 1.0890;  // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
   const double x0 = FLAGS_amplitude;  // meters.
@@ -327,8 +345,6 @@ int do_main() {
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation
   // around this initial position.
-  const PrismaticJoint<double>& translate_joint =
-      plant.GetJointByName<PrismaticJoint>("translate_joint");
   translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
 

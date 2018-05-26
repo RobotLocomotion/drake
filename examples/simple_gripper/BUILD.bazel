@@ -19,6 +19,7 @@ drake_cc_binary(
         "simple_mug.sdf",
     ],
     test_rule_args = [
+        "--integration_scheme=runge_kutta2",
         "--simulation_time=0.01",
         "--target_realtime_rate=0.0",
     ],

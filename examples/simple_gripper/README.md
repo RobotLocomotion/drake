@@ -18,10 +18,12 @@ evaluate the performance of the grip when the gripper is undergoing forced
 motions. The parameters controlling this motion are `--amplitude`, to specify
 the amplitude of the oscillations in meters and, `--frequency` to specify the
 frequency of the oscillations in Hertz. Additionally, the user might like to
-change the direction of the oscillations (e.g. to be horizontal or in some other
-arbitrary direction). This can be accomplished by changing the `<axis>`
+change the direction of the forced oscillations to either be in the horizontal
+or vertical direction. This can be accomplished by changing the `<axis>`
 specified for the `<joint>` named "translate_joint" in the SDF for the gripper
-model, `simple_gripper.sdf`.
+model, `simple_gripper.sdf`. Only vertical or horizontal forced motions are
+supported in this example and thus the axis must either be the x-axis or the
+z-axis. Otherwise an exception is thrown communicating this fact.
 
 Prerequisites
 -------------
