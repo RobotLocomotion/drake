@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/transform.h"
@@ -73,6 +74,12 @@ class MultibodyPlantTester {
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
     return plant.ComputeNormalVelocityJacobianMatrix(context, point_pairs);
+  }
+
+  template <typename T>
+  static BodyIndex geometry_id_to_body_index(
+      const MultibodyPlant<T>& plant, GeometryId id) {
+    return plant.geometry_id_to_body_index_.at(id);
   }
 };
 
@@ -697,6 +704,47 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     plant_.Finalize();
   }
 
+  template <typename T>
+  VectorX<T> CalcNormalVelocities(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T,
+      std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
+    std::vector<SpatialVelocity<T>> V_WB_set;
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
+        context_on_T, &V_WB_set);
+
+    std::vector<Isometry3<T>> X_WB_set;
+    plant_on_T.model().CalcAllBodyPosesInWorld(
+        context_on_T, &X_WB_set);
+
+    VectorX<T> vn(pairs_set.size());
+    int icontact = 0;
+    for (const auto& pair : pairs_set) {
+      PenetrationAsPointPair<T> pair_on_T;
+      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_A);
+      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_B);
+      const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
+      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
+
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
+      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+
+      // From the relative velocity of B in A, compute the normal separation
+      // velocity vn (vn > 0 if bodies are moving apart)
+      const Vector3<T> nhat_BA_W = pair.nhat_BA_W.cast<T>();
+      vn(icontact++) = -nhat_BA_W.dot(v_WCb - v_WCa);
+    }
+    return vn;
+  }
+
  protected:
   MultibodyPlant<double> plant_;
   SceneGraph<double> scene_graph_;
@@ -736,19 +784,12 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
       Transform<double>(RotationMatrix<double>::Identity(),
                         Vector3<double>(
                             0, small_box_size_ / 2.0 - penetration_, 0));
-  const RotationMatrix<double>& R_WSb = X_WSb.rotation();
 
   // Normal pointing outwards from the top surface of the large box.
   const Vector3<double> nhat_large_box_W =
       X_WLb.rotation() * Vector3<double>::UnitY();
 
-  PRINT_VARn(X_WLb.GetAsMatrix4());
-  PRINT_VARn(X_WSb.GetAsMatrix4());
-  PRINT_VARn(nhat_large_box_W);
-
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();
-  const MultibodyTreeContext<double>& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<double>&>(*context);
 
   plant_.model().SetFreeBodyPoseOrThrow(
       large_box, X_WLb.GetAsIsometry3(), context.get());
@@ -774,91 +815,43 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
     }
   }
 
-  // Compute expected Jacobian by hand.
-  //Vector3<double> p_SbC()
-
+  // Compute separation velocities Jacobian.
   const MatrixX<double> N =
       MultibodyPlantTester::ComputeNormalVelocityJacobianMatrix(
           plant_, *context, penetrations);
 
+  // Assert N has the right sizes.
   const int nv = plant_.num_velocities();
   const int nc = penetrations.size();
   ASSERT_EQ(N.rows(), nc);
   ASSERT_EQ(N.cols(), nv);
 
-  PRINT_VAR(N.rows());
-  PRINT_VAR(N.cols());
-  PRINT_VARn(N);
+  // Scalar convert the plant and its context.
+  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
+      systems::System<double>::ToAutoDiffXd(plant_);
+  std::unique_ptr<Context<AutoDiffXd>> context_autodiff =
+      plant_autodiff->CreateDefaultContext();
+  context_autodiff->SetTimeStateAndParametersFrom(*context);
 
+  // Initialize v_autodiff to have values v and so that it is the independent
+  // variable of the problem.
+  const VectorX<double> v =
+      context->get_continuous_state().get_generalized_velocity().CopyToVector();
+  VectorX<AutoDiffXd> v_autodiff(nv);
+  math::initializeAutoDiff(v, v_autodiff);
+  context_autodiff->get_mutable_continuous_state().
+      get_mutable_generalized_velocity().SetFromVector(v_autodiff);
 
-  // Reference to the vector of generalized velocities.
-  Eigen::VectorBlock<const VectorX<double>> v = mbt_context.get_velocities();
+  // Automatically differentiate vn (with respect to v) to get the normal
+  // separation velocities Jacobian N.
+  VectorX<AutoDiffXd> vn_autodiff = CalcNormalVelocities(
+      *plant_autodiff, *context_autodiff, penetrations);
+  const MatrixX<double> vn_derivs =
+      math::autoDiffToGradientMatrix(vn_autodiff);
 
-  VectorX<double> vn(nc);
-  VectorX<double> vn_expected(nc);
-
-  // Small box rotation, stationary large box.
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      large_box, SpatialVelocity<double>::Zero(), context.get());
-  Vector3<double> w_WSb;
-
-  // Rotation about the x-axis of the small box.
-  w_WSb = R_WSb * Vector3<double>::UnitX();
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
-      context.get());
-  vn = N * v;
-  vn_expected << small_box_size_ / 2.0, -small_box_size_ / 2.0,
-      small_box_size_ / 2.0, -small_box_size_ / 2.0;
+  // Verify the result.
   EXPECT_TRUE(CompareMatrices(
-      vn, vn_expected, kTolerance, MatrixCompareType::relative));
-
-  // Rotation about the z-axis of the small box.
-  w_WSb = R_WSb * Vector3<double>::UnitZ();
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
-      context.get());
-  vn = N * v;
-  vn_expected << -small_box_size_ / 2.0, -small_box_size_ / 2.0,
-      small_box_size_ / 2.0, small_box_size_ / 2.0;
-  EXPECT_TRUE(CompareMatrices(
-      vn, vn_expected, kTolerance, MatrixCompareType::relative));
-
-  // Rotation about the y-axis of the small box.
-  w_WSb = R_WSb * Vector3<double>::UnitY();
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      small_box, SpatialVelocity<double>(w_WSb, Vector3<double>::Zero()),
-      context.get());
-  vn = N * v;
-  vn_expected.setZero();
-  EXPECT_TRUE(CompareMatrices(
-      vn, vn_expected, kTolerance, MatrixCompareType::relative));
-
-  // Small box translation, stationary large box.
-  Vector3<double> v_WSb;
-
-  // Translation along a vector perpendicular to the y-axis of the small box.
-  v_WSb = R_WSb * Vector3<double>(1, 0, 1);
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      small_box, SpatialVelocity<double>(Vector3<double>::Zero(), v_WSb),
-      context.get());
-  vn = N * v;
-  vn_expected.setZero();
-  EXPECT_TRUE(CompareMatrices(
-      vn, vn_expected, kTolerance, MatrixCompareType::relative));
-
-  // Translation along the y-axis of the small box.
-  v_WSb = R_WSb * Vector3<double>::UnitY();
-  plant_.model().SetFreeBodySpatialVelocityOrThrow(
-      small_box, SpatialVelocity<double>(Vector3<double>::Zero(), v_WSb),
-      context.get());
-  vn = N * v;
-  vn_expected.setConstant(nc, 1.0);
-  EXPECT_TRUE(CompareMatrices(
-      vn, vn_expected, kTolerance, MatrixCompareType::relative));
-
-
-  PRINT_VAR((N * v).transpose());
+      N, vn_derivs, kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
