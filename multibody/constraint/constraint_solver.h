@@ -104,7 +104,7 @@ class ConstraintSolver {
   /// (4) 0 ≤ λ   ⊥  γ ≥ 0
   /// (5) 0 ≤ fL  ⊥  δ ≥ 0
   /// </pre>
-  // TODO: fill in variables above.
+  // TODO(edrumwri): fill in variables above.
   ///
   /// Converting the MLCP to a pure LCP:
   ///
@@ -353,11 +353,11 @@ class ConstraintSolver {
   /// forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
-  /// @param v  The system generalized velocity at time t. 
+  /// @param v  The system generalized velocity at time t.
   /// @param dt The discretization time constant used to take the system's
   ///           generalized velocities from time t to time t + `dt`.
   /// @throws std::logic_error if `generalized_acceleration` is null,
-  ///         `cf` vector is incorrectly sized, or `dt` is non-positive. 
+  ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
   static void ComputeGeneralizedAcceleration(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& v,
@@ -1148,7 +1148,7 @@ void ConstraintSolver<T>::SolveImpactProblem(
   const T max_dot = (zz.size() > 0) ?
                          (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
 
-  // Check the answer and solve using progressive regularization if necessary. 
+  // Check the answer and solve using progressive regularization if necessary.
   const int num_vars = qq.size();
   const int npivots = std::max(lcp_.get_num_pivots(), 1);
   if (!success ||
@@ -1399,7 +1399,7 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
   DRAKE_DEMAND(gammaL.size() == 0 || gammaL.minCoeff() >= 0);
 
   // Scale the Delassus matrices, which are all but the third row (block) and
-  // third column (block) of the following matrix. 
+  // third column (block) of the following matrix.
   // N⋅M⁻¹⋅Nᵀ  N⋅M⁻¹⋅Dᵀ  0   N⋅M⁻¹⋅Lᵀ
   // D⋅M⁻¹⋅Nᵀ  D⋅M⁻¹⋅Dᵀ  E   D⋅M⁻¹⋅Lᵀ
   // μ         -Eᵀ       0   0
@@ -1410,7 +1410,7 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
   MM->topLeftCorner(nc + nr2, nc + nr2) *= dt;
   MM->bottomLeftCorner(nl, nc + nr2) *= dt;
   MM->topRightCorner(nc + nr2, nl) *= dt;
-  MM->bottomRightCorner(nl, nl) *= dt;  
+  MM->bottomRightCorner(nl, nl) *= dt;
 
   // Regularize the LCP matrix.
   MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
@@ -1455,7 +1455,7 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLCP(
   // Look for fast exit.
   if (num_contacts == 0 && num_limits == 0 && num_eq_constraints == 0) {
     MM->resize(0, 0);
-    qq->resize(0); 
+    qq->resize(0);
     return;
   }
 
@@ -1472,7 +1472,7 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLCP(
       (num_limits == 0 || L_eval.minCoeff() >= 0) &&
       (num_eq_constraints == 0)) {
     MM->resize(0, 0);
-    qq->resize(0); 
+    qq->resize(0);
     return;
   }
 
@@ -2201,7 +2201,7 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
   // compute v(t+dt) and then solve for accel.
   const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv) +
                            dt * (*generalized_acceleration);
-  *generalized_acceleration = (vplus - v)/dt; 
+  *generalized_acceleration = (vplus - v)/dt;
 }
 
 template <class T>
