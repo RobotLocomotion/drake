@@ -104,7 +104,7 @@ class ConstraintSolver {
   /// (4) 0 ≤ λ   ⊥  γ ≥ 0
   /// (5) 0 ≤ fL  ⊥  δ ≥ 0
   /// </pre>
-  // TODO(edrumwri): fill in variables above.
+  // TODO(edrumwri): describe above variables.
   ///
   /// Converting the MLCP to a pure LCP:
   ///
@@ -405,9 +405,12 @@ class ConstraintSolver {
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
-  /// Gets the contact impulses expressed in each contact frame *for 2D contact
-  /// problems* from the "packed" solution returned by SolveImpactProblem().
-  /// @param cf the output from SolveImpactProblem()
+  /// Gets the contact forces expressed in each contact frame *for 2D contact
+  /// problems* from the "packed" solution returned by, e.g.,
+  /// SolveImpactProblem(). If `cf` corresponds to impulsive (non-impulsive)
+  /// forces, `contact_forces` will correspond to impulsive (non-impulsive)
+  /// forces.
+  /// @param cf the constraint forces. 
   /// @param problem_data the problem data input to SolveImpactProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
   ///        The first column of each matrix should give the contact normal,
@@ -424,7 +427,7 @@ class ConstraintSolver {
   ///         the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
-  /// @note On return, the contact impulse at the iᵗʰ contact point expressed
+  /// @note On return, the contact force at the iᵗʰ contact point expressed
   ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
