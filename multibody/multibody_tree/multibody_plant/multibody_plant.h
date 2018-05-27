@@ -996,7 +996,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
-  MatrixX<T> CalcNormalSeparationVelocityJacobian(
+  MatrixX<T> CalcNormalSeparationVelocitiesJacobian(
       const systems::Context<T> &context,
       const std::vector<geometry::PenetrationAsPointPair<T>> &penetrations) const;
 
