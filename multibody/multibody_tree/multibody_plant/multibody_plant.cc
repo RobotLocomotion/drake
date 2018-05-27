@@ -215,7 +215,7 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
 // has point_pair.depth = 0. That is, each contact pair is "exactly" at contact.
 // However in practice these are usually computed with some finite penetration.
 template<typename T>
-MatrixX<T> MultibodyPlant<T>::ComputeNormalVelocityJacobianMatrix(
+MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocityJacobian(
     const Context<T>& context,
     const std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
   const int num_contacts = contact_penetrations.size();

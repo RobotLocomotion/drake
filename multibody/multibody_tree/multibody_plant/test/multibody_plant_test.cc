@@ -70,10 +70,10 @@ namespace multibody_plant {
 class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
-  static MatrixX<double> ComputeNormalVelocityJacobianMatrix(
+  static MatrixX<double> CalcNormalSeparationVelocityJacobian(
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
-    return plant.ComputeNormalVelocityJacobianMatrix(context, point_pairs);
+    return plant.CalcNormalSeparationVelocityJacobian(context, point_pairs);
   }
 
   template <typename T>
@@ -817,7 +817,7 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
 
   // Compute separation velocities Jacobian.
   const MatrixX<double> N =
-      MultibodyPlantTester::ComputeNormalVelocityJacobianMatrix(
+      MultibodyPlantTester::CalcNormalSeparationVelocityJacobian(
           plant_, *context, penetrations);
 
   // Assert N has the right sizes.
