@@ -1000,9 +1000,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T> &context,
       const std::vector<geometry::PenetrationAsPointPair<T>> &penetrations) const;
 
-  MatrixX<T> ComputeTangentVelocityJacobianMatrix(
-      const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& penetrations) const;
+  MatrixX<T> CalcTangentVelocitiesJacobian(
+      const systems::Context<T> &context,
+      const std::vector<geometry::PenetrationAsPointPair<T>> &penetrations,
+      std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;

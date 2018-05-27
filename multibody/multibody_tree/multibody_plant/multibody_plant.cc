@@ -294,9 +294,10 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
 // has point_pair.depth = 0. That is, each contact pair is "exactly" at contact.
 // However in practice these are usually computed with some finite penetration.
 template<typename T>
-MatrixX<T> MultibodyPlant<T>::ComputeTangentVelocityJacobianMatrix(
+MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
     const Context<T>& context,
-    const std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
+    const std::vector<PenetrationAsPointPair<T>>& contact_penetrations,
+    std::vector<Matrix3<T>>* R_WC_set) const {
   const int num_contacts = contact_penetrations.size();
   // Per contact we have two betas, one per each tangential direction.
   // betas can be either positive or negative.
@@ -306,6 +307,7 @@ MatrixX<T> MultibodyPlant<T>::ComputeTangentVelocityJacobianMatrix(
 
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
+  if (R_WC_set != nullptr) R_WC_set->reserve(contact_penetrations.size());
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = contact_penetrations[icontact];
 
@@ -355,6 +357,10 @@ MatrixX<T> MultibodyPlant<T>::ComputeTangentVelocityJacobianMatrix(
     // nhat_BA_W points outwards from B. Therefore we define frame Bc at contac
     // point C with z-axis pointing along nhat_BA_W.
     const Matrix3<T> R_WBc = math::ComputeBasisFromAxis(2, nhat_BA_W);
+    if (R_WC_set != nullptr) {
+      R_WC_set->push_back(R_WBc);
+    }
+
     const Vector3<T> that1_W = R_WBc.col(0);
     const Vector3<T> that2_W = R_WBc.col(1);
     Vector3<T> dummy;

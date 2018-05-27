@@ -75,16 +75,24 @@ namespace multibody_plant {
 class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
+
+  template <typename T>
+  static BodyIndex geometry_id_to_body_index(
+      const MultibodyPlant<T>& plant, GeometryId id) {
+    return plant.geometry_id_to_body_index_.at(id);
+  }
+
   static MatrixX<double> CalcNormalSeparationVelocitiesJacobian(
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
     return plant.CalcNormalSeparationVelocitiesJacobian(context, point_pairs);
   }
 
-  template <typename T>
-  static BodyIndex geometry_id_to_body_index(
-      const MultibodyPlant<T>& plant, GeometryId id) {
-    return plant.geometry_id_to_body_index_.at(id);
+  static MatrixX<double> CalcTangentVelocitiesJacobian(
+      const MultibodyPlant<double>& plant, const Context<double>& context,
+      const std::vector<PenetrationAsPointPair<double>>& point_pairs,
+      std::vector<Matrix3<double>>* R_WC_set) {
+    return plant.CalcTangentVelocitiesJacobian(context, point_pairs, R_WC_set);
   }
 };
 
@@ -748,7 +756,6 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
 
     plant_.model().SetFreeBodyPoseOrThrow(
         large_box, X_WLb.GetAsIsometry3(), context);
-    // Place sphere 2 on top of the ground, with offset x = x_offset.
     plant_.model().SetFreeBodyPoseOrThrow(
         small_box, X_WSb.GetAsIsometry3(), context);
   }
@@ -852,6 +859,58 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     return vn;
   }
 
+  template <typename T>
+  VectorX<T> CalcTangentVelocities(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T,
+      std::vector<PenetrationAsPointPair<double>>& pairs_set,
+      const std::vector<Matrix3<double>>& R_WC_set) const {
+    std::vector<SpatialVelocity<T>> V_WB_set;
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
+        context_on_T, &V_WB_set);
+
+    std::vector<Isometry3<T>> X_WB_set;
+    plant_on_T.model().CalcAllBodyPosesInWorld(
+        context_on_T, &X_WB_set);
+
+    VectorX<T> vt(2 * pairs_set.size());
+    int icontact = 0;
+    for (const auto& pair : pairs_set) {
+      PenetrationAsPointPair<T> pair_on_T;
+      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_A);
+      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_B);
+      const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
+      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
+
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
+      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+
+      // The columns of R_WC (the orientation of contact frame C in the world),
+      // contains the versors of C's basis, expressed in the world frame.
+      // In particular, the first two columns corresponds to the versors tangent
+      // to the contact plane.
+      const Vector3<T> that1_W = R_WC_set[icontact].col(0).cast<T>();
+      const Vector3<T> that2_W = R_WC_set[icontact].col(1).cast<T>();
+
+      // Compute the relative velocity of B in A and obtain its components
+      // in the contact frame C. The tangential velocities correspond to the
+      // x and y components in this frame.
+      vt(2 * icontact)     = that1_W.dot(v_WCb - v_WCa);
+      vt(2 * icontact + 1) = that2_W.dot(v_WCb - v_WCa);
+
+      icontact++;
+    }
+    return vt;
+  }
+
  protected:
   MultibodyPlant<double> plant_;
   SceneGraph<double> scene_graph_;
@@ -894,6 +953,41 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       N, vn_derivs, kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+  // Store the orientation of the contact frames so that we can use them later
+  // to compute the same Jacobian using autodifferentiation.
+  std::vector<Matrix3<double>> R_WC_set;
+
+  // Compute separation velocities Jacobian.
+  const MatrixX<double> D =
+      MultibodyPlantTester::CalcTangentVelocitiesJacobian(
+          plant_, *context_, penetrations_, &R_WC_set);
+
+  // Assert D has the right sizes.
+  const int nv = plant_.num_velocities();
+  const int nc = penetrations_.size();
+  ASSERT_EQ(D.rows(), 2 * nc);
+  ASSERT_EQ(D.cols(), nv);
+
+  // Scalar convert the plant and its context_.
+  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
+  unique_ptr<Context<AutoDiffXd>> context_autodiff;
+  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
+
+  // Automatically differentiate vt (with respect to v) to get the tangent
+  // velocities Jacobian D.
+  VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
+      *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
+  const MatrixX<double> vt_derivs =
+      math::autoDiffToGradientMatrix(vt_autodiff);
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
