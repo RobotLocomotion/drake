@@ -158,7 +158,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
-  MultibodyPlant();
+  /// @param[in] time_step
+  ///   An optional parameter indicating whether `this` plant is modeled as a
+  ///   continuous system (`time_step = 0`) or as a discrete system with
+  ///   periodic updates of period `time_step > 0`. @default 0.0.
+  /// @throws std::exception if `time_step` is negative.
+  explicit MultibodyPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
@@ -167,6 +172,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
           drake::multibody::multibody_plant::MultibodyPlant>()) {
     DRAKE_THROW_UNLESS(other.is_finalized());
     model_ = other.model_->template CloneToScalar<T>();
+    time_step_ = other.time_step_;
     // Copy of all members related with geometry registration.
     source_id_ = other.source_id_;
     body_index_to_frame_id_ = other.body_index_to_frame_id_;
@@ -737,6 +743,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// finalized.
   void Finalize();
 
+  /// Returns `true` if this plant is modeled as a discrete system.
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  bool is_discrete() const { return time_step_ > 0.0; }
+
+  /// The time step (or period) used to model `this` plant as a discrete system
+  /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
+  /// continuous system.
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  /// @see MultibodyPlant::MultibodyPlant(double)
+  double time_step() const { return time_step_; }
+
   /// @anchor mbp_penalty_method
   /// @name Contact by penalty method
   ///
@@ -915,6 +934,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  // If the plant is modeled as a discrete system with periodic updates (see
+  // is_discrete()), this method computes the periodic updates of the state
+  // using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // This semi-explicit update inherits some of the nice properties of the
+  // semi-implicit Euler scheme (which uses v̇ⁿ⁺¹ for the v updated instead) when
+  // there are no velocity-dependent forces (including Coriolis and gyroscopic
+  // terms). The semi-implicit Euler scheme is a symplectic integrator, which
+  // for a Hamiltonian system has the nice property of nearly conserving energy
+  // (in many cases we can write a "modified energy functional" which can be
+  // shown to be exactly conserved and to be within O(dt) of the real energy of
+  // the mechanical system.)
+  // TODO(amcastro-tri): Update this docs when contact is added.
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context0,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      drake::systems::DiscreteValues<T>* updates) const override;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -1127,6 +1165,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Input/Output port indexes:
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
+
+  // If the plant is modeled as a discrete system with periodic updates,
+  // time_step_ corresponds to the period of those updates. Otherwise, if the
+  // plant is modeled as a continuous system, it is exactly zero.
+  double time_step_{0};
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
