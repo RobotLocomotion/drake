@@ -213,80 +213,53 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
       model_->get_topology(), is_discrete());
 }
 
-// This method is assuming that we are giving a compatible `context` with a
-// `contact_penetrations`, where each contact pair, in theory,
-// has point_pair.depth = 0. That is, each contact pair is "exactly" at contact.
-// However in practice these are usually computed with some finite penetration.
 template<typename T>
 MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
     const Context<T>& context,
-    const std::vector<PenetrationAsPointPair<T>>& contact_penetrations) const {
-  const int num_contacts = contact_penetrations.size();
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs_set) const {
+  const int num_contacts = point_pairs_set.size();
   MatrixX<T> N(num_contacts, num_velocities());
 
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
-    const auto& point_pair = contact_penetrations[icontact];
+    const auto& point_pair = point_pairs_set[icontact];
 
     const GeometryId geometryA_id = point_pair.id_A;
     const GeometryId geometryB_id = point_pair.id_B;
-
-    // TODO(amcastro-tri): Request GeometrySystem to do this filtering for us
-    // when that capability lands.
-    // TODO(amcastro-tri): consider allowing this id's to belong to a third
-    // external system when they correspond to anchored geometry.
-    if (!is_collision_geometry(geometryA_id) ||
-        !is_collision_geometry(geometryB_id))
-      continue;
 
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
     const Body<T>& bodyA = model().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
     const Body<T>& bodyB = model().get_body(bodyB_index);
 
-    // Penetration depth, > 0 during point_pair.
+    // Penetration depth, > 0 if bodies interpenetrate.
     const T& x = point_pair.depth;
     DRAKE_ASSERT(x >= 0);
     const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
     const Vector3<T>& p_WCa = point_pair.p_WCa;
     const Vector3<T>& p_WCb = point_pair.p_WCb;
 
-    // Approximate the position of the contact point as:
-    // In theory p_WC = p_WCa = p_WCb.
-    const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);  // notice this is at t_star.
-    // TODO(amcastro-tri): for each contact point, consider computing
-    // dtc = phi / phidot and then estimate the contact point as:
-    //  p_WCa = p_WCa_star + dtc * v0_WCa
-    //  p_WCb = p_WCb_star + dtc * v0_WCb
-    // In theory, these two estimations should be very close to the actual p_WC.
-    // Then do:
-    //  p_WC = 0.5 * (p_WCa + p_WCb);
-
-    MatrixX<T> Jv_WAc(3, this->num_velocities());  // s.t.: v_WAc = Jv_WAc * v.
+    // Geometric Jacobian for the velocity of the contact point C as moving with
+    // body A, s.t.: v_WAc = Jv_WAc * v
+    // where v is the vector of generalized velocities.
+    MatrixX<T> Jv_WAc(3, this->num_velocities());
     model().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyA.body_frame(), p_WC, &Jv_WAc);
+        context, bodyA.body_frame(), p_WCa, &Jv_WAc);
 
-    MatrixX<T> Jv_WBc(3, this->num_velocities());  // s.t.: v_WBc = Jv_WBc * v.
+    // Geometric Jacobian for the velocity of the contact point C as moving with
+    // body B, s.t.: v_WBc = Jv_WBc * v.
+    MatrixX<T> Jv_WBc(3, this->num_velocities());
     model().CalcPointsGeometricJacobianExpressedInWorld(
-        context, bodyB.body_frame(), p_WC, &Jv_WBc);
+        context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
-    // Therefore v_AcBc_W = v_WBc - v_WAc.
-    // if xdot = vn > 0 ==> they are getting closer.
-    // vn = v_AcBc_W.dot(nhat_BA_W);
-    // vn = (nhat^T * J) * v
-    //N.row(icontact) = nhat_BA_W.transpose() * (Jv_WBc - Jv_WAc);
-#if 0
-    PRINT_VAR(icontact);
-    PRINT_VAR(nhat_BA_W.transpose());
-    PRINT_VAR(bodyA.name());
-    PRINT_VARn(Jv_WAc);
-    PRINT_VAR(bodyB.name());
-    PRINT_VARn(Jv_WBc);
-    PRINT_VARn(N.row(icontact));
-#endif
+    // The velocity of Bc relative to Ac is
+    //   v_AcBc_W = v_WBc - v_WAc.
+    // From where the separation velocity is computed as
+    //   vn = -v_AcBc_W.dot(nhat_BA_W) = -nhat_BA_Wᵀ⋅v_AcBc_W
+    // where the negative sign stems from the sign convention for vn and xdot.
+    // This can be written in terms of the Jacobians as
+    //   vn = -nhat_BA_Wᵀ⋅(Jv_WBc - Jv_WAc)⋅v
 
     N.row(icontact) = nhat_BA_W.transpose() * (Jv_WAc - Jv_WBc);
-
-    //PRINT_VARn(N.row(icontact));
   }
 
   return N;
