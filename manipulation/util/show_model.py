@@ -15,7 +15,6 @@ from pydrake.multibody.rigid_body_tree import (
     FloatingBaseType,
     RigidBodyTree,
 )
-from pydrake.systems.framework import BasicVector
 
 
 def main():
@@ -43,7 +42,7 @@ def main():
     visualizer = DrakeVisualizer(tree=tree, lcm=lcm)
     visualizer.PublishLoadRobot()
     context = visualizer.CreateDefaultContext()
-    context.FixInputPort(0, BasicVector(np.concatenate([q, v])))
+    context.FixInputPort(0, np.concatenate([q, v]))
     visualizer.Publish(context)
 
 

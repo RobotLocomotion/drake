@@ -156,6 +156,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multilane_road_curve_accuracy_test",
     srcs = ["test/multilane_road_curve_accuracy_test.cc"],
+    shard_count = 10,
     deps = [
         ":builder",
         "//automotive/maliput/api/test_utilities",

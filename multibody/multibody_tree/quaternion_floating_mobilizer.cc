@@ -52,10 +52,10 @@ QuaternionFloatingMobilizer<T>::set_quaternion(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_quaternion(
-    const systems::Context<T>&, const Quaternion<T>& q_FM,
+    const systems::Context<T>& context, const Quaternion<T>& q_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  auto q = this->get_mutable_positions(state);
+  auto q = this->get_mutable_positions(context, state);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: see storage order notes in get_quaternion().
   q[0] = q_FM.w();
@@ -75,10 +75,10 @@ QuaternionFloatingMobilizer<T>::set_position(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_position(
-    const systems::Context<T>&, const Vector3<T>& p_FM,
+    const systems::Context<T>& context, const Vector3<T>& p_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  auto q = this->get_mutable_positions(state);
+  auto q = this->get_mutable_positions(context, state);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: see storage order notes in get_position().
   q.template tail<3>() = p_FM;
@@ -120,10 +120,10 @@ QuaternionFloatingMobilizer<T>::set_angular_velocity(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, const Vector3<T>& w_FM,
+    const systems::Context<T>& context, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
   // Note: See storage order notes in get_angular_velocity().
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   v.template head<3>() = w_FM;
   return *this;
@@ -150,9 +150,9 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_translational_velocity(
-    const systems::Context<T>&, const Vector3<T>& v_FM,
+    const systems::Context<T>& context, const Vector3<T>& v_FM,
     systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   // Note: See storage order notes in get_translational_velocity().
   v.template tail<3>() = v_FM;
