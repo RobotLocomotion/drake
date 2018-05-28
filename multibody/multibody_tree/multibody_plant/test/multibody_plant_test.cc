@@ -793,12 +793,28 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
 }
 
+// This test is used to verify the correctness of the methods to compute the
+// normal Jacobian N and the tangent Jacobian D.
+// We do this for the particular case of a small box sitting on top of a larger
+// box. The boxes interpenetrate by a small depth amount. A multicontact
+// situation is emulated in which the contact engine supplied four point
+// contact pairs corresponding to the four corners of the small box.
+// To make the problem more interesting, and essentially to avoid considering
+// a trivial case with zero translations and identity transformations, the
+// entire setup with the small box on top of the large box is rotated about the
+// z-axis by 45 degrees.
+// We verify the correctness of the Jacobian matrices computed by
+// MultibodyPlant by comparing them against a result obtained using automatic
+// differentiation of the relative contact velocities.
 class MultibodyPlantContactJacobianTests : public ::testing::Test {
  public:
   void SetUp() override {
+    // Scene graph is only used to emulate a typical geometry registration.
+    // Later we create the results of a query for the particular scenario in
+    // this test by hand.
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
 
-    // Add two spherical bodies.
+    // The model simply contains a small and a large box.
     const RigidBody<double>& large_box =
         plant_.AddRigidBody("LargeBox", SpatialInertia<double>());
     large_box_id_ = plant_.RegisterCollisionGeometry(
@@ -829,6 +845,10 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     SetPenetrationPairs(*context_, &penetrations_);
   }
 
+  // Helper method to set the state of the system so that the small box sits
+  // on top of the large box, with a small penetration depth.
+  // The entire setup is rotated 45 degrees about the z axis into a slanted
+  // configuration.
   void SetBoxesOnSlantedConfiguration(Context<double>* context) {
     // Notation for frames:
     //  - W: the world frame.
@@ -860,6 +880,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         small_box, X_WSb.GetAsIsometry3(), context);
   }
 
+  // Generate a valid set of penetrations for this particular setup that
+  // emulates a multicontact scenario.
   void SetPenetrationPairs(
       const Context<double>& context,
       std::vector<PenetrationAsPointPair<double>>* penetrations) {
@@ -895,6 +917,10 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     }
   }
 
+  // Helper method to scalar convert the model and its context to AutoDiffXd.
+  // The newly scalar converted context is set from the original context
+  // templated on double such that we can take gradients with respect to the
+  // generalized velocities.
   pair<unique_ptr<MultibodyPlant<AutoDiffXd>>,
        unique_ptr<Context<AutoDiffXd>>> ConvertPlantAndContextToAutoDiffXd() {
     // Scalar convert the plant and its context_.
@@ -918,6 +944,12 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
                           std::move(context_autodiff));
   }
 
+  // Helper method to compute the separation velocity in the direction defined
+  // by the normal nhat_BA for each contact pair in pairs_set. The i-th entry in
+  // the output vector contains the separation velocity for the i-th pair in
+  // pairs_set.
+  // This method is templated to facilitate automatic differentiation for this
+  // test.
   template <typename T>
   VectorX<T> CalcNormalVelocities(
       const MultibodyPlant<T>& plant_on_T,
@@ -959,6 +991,12 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     return vn;
   }
 
+  // Helper method to compute the tangential velocities in a pair of directions
+  // defined orthogonal to the normal nhat_BA for each contact pair in
+  // pairs_set. Entries i and i+1 in the output vector contain the tangential
+  // components of the relative velocity for the i-th pair in pairs_set.
+  // This method is templated to facilitate automatic differentiation for this
+  // test.
   template <typename T>
   VectorX<T> CalcTangentVelocities(
       const MultibodyPlant<T>& plant_on_T,
