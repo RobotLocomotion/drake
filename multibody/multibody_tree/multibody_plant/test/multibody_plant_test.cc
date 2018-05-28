@@ -27,10 +27,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/linear_system.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 
 using Eigen::AngleAxisd;
@@ -926,7 +922,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   VectorX<T> CalcNormalVelocities(
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
-      std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
+      const std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
     std::vector<SpatialVelocity<T>> V_WB_set;
     plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
         context_on_T, &V_WB_set);
@@ -967,7 +963,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   VectorX<T> CalcTangentVelocities(
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
-      std::vector<PenetrationAsPointPair<double>>& pairs_set,
+      const std::vector<PenetrationAsPointPair<double>>& pairs_set,
       const std::vector<Matrix3<double>>& R_WC_set) const {
     std::vector<SpatialVelocity<T>> V_WB_set;
     plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
