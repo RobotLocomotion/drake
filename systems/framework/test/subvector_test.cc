@@ -85,9 +85,7 @@ TEST_F(SubvectorTest, ArrayOperator) {
 
 // Tests that a VectorBase can be added to a Subvector.
 TEST_F(SubvectorTest, PlusEq) {
-  BasicVector<double> addend(2);
-  addend.SetAtIndex(0, 7);
-  addend.SetAtIndex(1, 8);
+  const BasicVector<double> addend{7, 8};
 
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   subvec += addend;
@@ -171,13 +169,11 @@ TEST_F(SubvectorTest, InfNormAutodiff) {
 // Tests all += * operations for VectorBase.
 TEST_F(SubvectorTest, PlusEqScaled) {
   Subvector<double> orig_vec(vector_.get(), 0, kSubVectorLength);
-  BasicVector<double> vec1(2), vec2(2), vec3(2), vec4(2), vec5(2);
-  Eigen::Vector2d ans1, ans2, ans3, ans4, ans5;
-  vec1.get_mutable_value() << 1, 2;
-  vec2.get_mutable_value() << 3, 5;
-  vec3.get_mutable_value() << 7, 11;
-  vec4.get_mutable_value() << 13, 17;
-  vec5.get_mutable_value() << 19, 23;
+  BasicVector<double> vec1{1, 2};
+  BasicVector<double> vec2{3, 5};
+  BasicVector<double> vec3{7, 11};
+  BasicVector<double> vec4{13, 17};
+  BasicVector<double> vec5{19, 23};
   VectorBase<double>& v1 = vec1;
   VectorBase<double>& v2 = vec2;
   VectorBase<double>& v3 = vec3;

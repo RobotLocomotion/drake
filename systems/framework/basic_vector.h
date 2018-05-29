@@ -29,6 +29,9 @@ class BasicVector : public VectorBase<T> {
   // assignment of a BasicVector could change its size.)
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BasicVector)
 
+  /// Constructs an empty BasicVector.
+  BasicVector() = default;
+
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
   explicit BasicVector(int size)
@@ -38,14 +41,18 @@ class BasicVector : public VectorBase<T> {
   explicit BasicVector(const VectorX<T>& data) : values_(data) {}
 
   /// Constructs a BasicVector whose elements are the elements of @p data.
-  static std::unique_ptr<BasicVector<T>> Make(
-      const std::initializer_list<T>& data) {
-    auto vec = std::make_unique<BasicVector<T>>(data.size());
+  BasicVector(const std::initializer_list<T>& data)
+      : BasicVector<T>(data.size()) {
     int i = 0;
     for (const T& datum : data) {
-      vec->SetAtIndex(i++, datum);
+      this->SetAtIndex(i++, datum);
     }
-    return vec;
+  }
+
+  /// Constructs a BasicVector whose elements are the elements of @p data.
+  static std::unique_ptr<BasicVector<T>> Make(
+      const std::initializer_list<T>& data) {
+    return std::make_unique<BasicVector<T>>(data);
   }
 
   /// Constructs a BasicVector where each element is constructed using the
