@@ -67,27 +67,29 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy);
 ///  - theta: superelevation (rotation of road surface around r = 0 centerline;
 ///           when theta > 0, elevation at r > 0 is above elevation at r < 0)
 ///  - theta_dot: rate of change of superelevation with respect to arc length
-///               of the reference path
+///               of the reference path. It is optional because it may be
+///               unknown when building a RoadGeometry and the Builder may need
+///               to adjust it to force the same orientation for all r at a
+///               certain s coordinate of the Segment surface.
 class EndpointZ {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)
   // Constructs an EndpointZ with all zero parameters.
   EndpointZ() = default;
 
-  EndpointZ(double z, double z_dot, double theta)
-      : z_(z), z_dot_(z_dot), theta_(theta) {}
-
-  EndpointZ(double z, double z_dot, double theta, double theta_dot)
+  EndpointZ(double z, double z_dot, double theta, optional<double> theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
   /// Returns an EndpointZ with reversed direction.
   ///
   /// Reversing direction is equivalent to rotating s (and along with it, r)
   /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
-  /// and theta.
+  /// and theta. theta_dot will remain the same.
   EndpointZ reverse() const {
-    DRAKE_DEMAND(theta_dot_.has_value());
-    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_.value());
+    if (theta_dot_.has_value()) {
+      return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
+    }
+    return EndpointZ(z_, -z_dot_, -theta_, {});
   }
 
   double z() const { return z_; }

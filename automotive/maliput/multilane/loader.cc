@@ -47,7 +47,7 @@ struct LoadedEndpoint {
 // Parses a YAML `node` and returns an api::HBounds object from it.
 // `node` must be a sequence and have two doubles. First item will be minimum
 // height and the second item will be the maximum height.
-api::HBounds h_bounds(const YAML::Node& node) {
+api::HBounds ParseHBounds(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   return api::HBounds(node[0].as<double>(), node[1].as<double>());
@@ -62,7 +62,7 @@ double deg_to_rad(double degrees) {
 // `node` must be a sequence of three doubles. First item will be x coordinate,
 // second item will be y coordinate and the third item will be heading angle in
 // degrees.
-EndpointXy endpointxy(const YAML::Node& node) {
+EndpointXy ParseEndpointXy(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
   return EndpointXy(node[0].as<double>(), node[1].as<double>(),
@@ -70,29 +70,30 @@ EndpointXy endpointxy(const YAML::Node& node) {
 }
 
 // Parses a YAML `node` and returns an EndpointZ object from it.
-// `node` must be a sequence of three or four doubles, the last item is not
-// mandatory. The first two items are z coordinate and z_dot. The last
-// two items are theta angle and theta_dot which are expressed in degrees and,
+// `node` must be a sequence of three or four doubles, the last item is
+// optional. The first two items are z coordinate and z_dot. The last
+// two items are theta angle and theta_dot which are expressed in degrees and
 // degrees per meter respectively.
-// theta_dot is optional since continuity constraints may need to be adjusted.
-EndpointZ endpointz(const YAML::Node& node) {
+// theta_dot is optional since, in general, its value must be derived from other
+// endpoint/connection parameters in order to preserve continuity.
+EndpointZ ParseEndpointZ(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3 || node.size() == 4);
-  return node.size() == 4
-             ? EndpointZ(node[0].as<double>(), node[1].as<double>(),
-                         deg_to_rad(node[2].as<double>()),
-                         deg_to_rad(node[3].as<double>()))
-             : EndpointZ(node[0].as<double>(), node[1].as<double>(),
-                         deg_to_rad(node[2].as<double>()));
+  return EndpointZ(node[0].as<double>(), node[1].as<double>(),
+                   deg_to_rad(node[2].as<double>()),
+                   node.size() == 4
+                       ? optional<double>(deg_to_rad(node[3].as<double>()))
+                       : nullopt);
 }
 
 // Parses a YAML `node` and returns an Endpoint object from it.
 // `node` must be a map and contain a sequence node named "xypoint" that
 // represents and EndpointXY as well as another sequence node named "zpoint"
 // that represents an EndpointZ.
-Endpoint endpoint(const YAML::Node& node) {
+Endpoint ParseEndpoint(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
-  return Endpoint(endpointxy(node["xypoint"]), endpointz(node["zpoint"]));
+  return Endpoint(ParseEndpointXy(node["xypoint"]),
+                  ParseEndpointZ(node["zpoint"]));
 }
 
 // Parses a YAML `node` and returns a tuple object from it.
@@ -100,7 +101,7 @@ Endpoint endpoint(const YAML::Node& node) {
 // will be the number of lanes in the connection, the second item will be the
 // reference lane and the third item will be the distance from the reference
 // lane to the reference curve.
-std::tuple<int, int, double> lanes(const YAML::Node& node) {
+std::tuple<int, int, double> ParseLanes(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 3);
   const int num_lanes = node[0].as<int>();
@@ -113,6 +114,22 @@ std::tuple<int, int, double> lanes(const YAML::Node& node) {
   return std::make_tuple(num_lanes, ref_lane, r_ref);
 }
 
+// Parses a YAML `node` and returns a LineOffset object from it.
+// `node` must be a double scalar.
+LineOffset ParseLineOffset(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsScalar());
+  return LineOffset(node.as<double>());
+}
+
+// Parses a YAML `node` and returns an ArcOffset object from it.
+// `node` must be a sequence of two doubles. The first item will be the radius
+// and the second item will be the angle span in degrees.
+ArcOffset ParseArcOffset(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsSequence());
+  DRAKE_DEMAND(node.size() == 2);
+  return ArcOffset(node[0].as<double>(), deg_to_rad(node[1].as<double>()));
+}
+
 // Builds a LaneLayout based `node`'s lane node, the left and right shoulders.
 LaneLayout ResolveLaneLayout(const YAML::Node& node,
                              double default_left_shoulder,
@@ -120,7 +137,7 @@ LaneLayout ResolveLaneLayout(const YAML::Node& node,
   int num_lanes{0};
   int ref_lane{0};
   double r_ref{0.};
-  std::tie(num_lanes, ref_lane, r_ref) = lanes(node["lanes"]);
+  std::tie(num_lanes, ref_lane, r_ref) = ParseLanes(node["lanes"]);
 
   // Left and right shoulders are not required, if any of them is present it
   // will override the default value.
@@ -132,22 +149,6 @@ LaneLayout ResolveLaneLayout(const YAML::Node& node,
                                     : default_right_shoulder;
   // Create lane layout.
   return LaneLayout(left_shoulder, right_shoulder, num_lanes, ref_lane, r_ref);
-}
-
-// Parses a YAML `node` and returns a LineOffset object from it.
-// `node` must be a double scalar.
-LineOffset ResolveLineOffset(const YAML::Node& node) {
-  DRAKE_DEMAND(node.IsScalar());
-  return LineOffset(node.as<double>());
-}
-
-// Parses a YAML `node` and returns an ArcOffset object from it.
-// `node` must be a sequence of two doubles. The first item will be the radius
-// and the second item will be the angle span in degrees.
-ArcOffset ResolveArcOffset(const YAML::Node& node) {
-  DRAKE_DEMAND(node.IsSequence());
-  DRAKE_DEMAND(node.size() == 2);
-  return ArcOffset(node[0].as<double>(), deg_to_rad(node[1].as<double>()));
 }
 
 // Looks for the Endpoint in `xyz_catalog` given `ref` description. `ref` can
@@ -215,7 +216,8 @@ std::pair<CurveType, EndpointZ> ResolveEndpointZReference(
   // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
   //                       lane ID.
   DRAKE_DEMAND(end_node[0].as<std::string>() == "ref");
-  return std::make_pair(CurveType::kReferenceCurve, endpointz(end_node[1]));
+  return std::make_pair(CurveType::kReferenceCurve,
+                        ParseEndpointZ(end_node[1]));
 }
 
 // Returns a string with the following format:
@@ -236,60 +238,33 @@ void ResolveEndpointsFromPoints(
   DRAKE_DEMAND(points.IsMap());
   DRAKE_DEMAND(xyz_catalog != nullptr);
   for (const auto& p : points) {
-    const Endpoint point = endpoint(p.second);
+    const Endpoint point = ParseEndpoint(p.second);
     DRAKE_DEMAND(point.z().theta_dot() != nullopt);
     (*xyz_catalog)[PointsKey(p.first.as<std::string>())] = {
         EndpointType::kRaw, point, {}};
   }
 }
 
-// Let theta_dot_A, z_dot_A, K_A be the rate of change in superelevation with
-// respect to arc length of the reference path, grade (rate of change of
-// elevation with respect to arc length of the reference path) and the
-// curvature at one end point of connection's curve A. And let theta_dot_B,
-// z_dot_B, K_B be the same magnitudes at one end point of connection's curve
-// B. Then, if we want to connect both curves at their respective end points A
-// and B, making:
-//
-// theta_dot_A - (K_A * sin(-atan(z_dot_A))) = 0
-// theta_dot_B - (K_B * sin(-atan(z_dot_B))) = 0
-//
-// It is enough to make the connection joint be G1. Given that, `curvature` is
-// K and `endpointz` is z_dot. `endpointz.theta_dot` is computed as:
-//
-// theta_dot = K * sin(-atan(z_dot))
-void ComputeContinuityConstraint(double curvature, EndpointZ* endpointz) {
-  DRAKE_DEMAND(curvature >= 0.);
-  DRAKE_DEMAND(endpointz != nullptr);
-  endpointz->get_mutable_theta_dot() =
-      curvature * std::sin(-std::atan(endpointz->z_dot()));
-}
-
-// Depending on the `type` of endpoint `ez_point` is, continuity constraint may
-// need to be forced or not. When `type` is Endpoint::kRaw, it means that it
-// belongs to either a point in "points" YAML map or it has been inlined in a
-// "z_end" YAML sequence and the continuity constraint needs to be computed if
-// theta_dot is nullopt.
-// When `type` is either KReference or kLane, the continuity constraint needs
-// to be computed.
-void EvaluateContinuityConstraint(EndpointType type, double curvature,
-                                  EndpointZ* ez_point) {
-  DRAKE_DEMAND(curvature >= 0.);
+// Enforces `ez_point`'s theta_dot to nullopt to make the builder adjust it to
+// match continuity constraint. Two different situations are identified:
+// - `type` == kRaw: `ez_point` was either listed in "points" YAML map or it was
+// inlined (as "z_end" value). The former will be a full EndpointZ which means
+// that the builder must keep that theta_dot value. The later may or may not
+// have a theta_dot value and the builder needs to adjust it if it is not
+// provided.
+// - `type` == kReference or `type` == kLane: `ez_point` belongs to another
+// connection curve. Consequently, the builder must adjust theta_dot to ensure
+// the continuity constraints in that connection.
+void EnforceContinuityConstraint(EndpointType type, EndpointZ* ez_point) {
   DRAKE_DEMAND(ez_point != nullptr);
 
   switch (type) {
     case EndpointType::kRaw: {
-      if (ez_point->theta_dot() == nullopt) {
-        ComputeContinuityConstraint(curvature, ez_point);
-      }
       break;
     }
-    case EndpointType::kReference: {
-      ComputeContinuityConstraint(curvature, ez_point);
-      break;
-    }
+    case EndpointType::kReference:
     case EndpointType::kLane: {
-      ComputeContinuityConstraint(curvature, ez_point);
+      ez_point->get_mutable_theta_dot() = {};
       break;
     }
     default: { DRAKE_ABORT(); }
@@ -325,21 +300,6 @@ const Connection* MaybeMakeConnection(
   const Connection::Type geometry_type =
       node["length"] ? Connection::kLine : Connection::kArc;
 
-  LineOffset line_offset{};
-  ArcOffset arc_offset{};
-
-  // TODO(agalbachicar): Once the Builder can create lane-connected
-  //                     segments, curvature for arc geometries will depend on
-  //                     the r-offset that a lane has WRT the reference curve.
-  double curvature{};
-  if (geometry_type == Connection::kLine) {
-    line_offset = ResolveLineOffset(node["length"]);
-    curvature = 0.;
-  } else {
-    arc_offset = ResolveArcOffset(node["arc"]);
-    curvature = 1. / arc_offset.radius();
-  }
-
   // Resolve start endpoint.
   std::pair<CurveType, optional<LoadedEndpoint>> start_point =
       ResolveEndpoint(node["start"], xyz_catalog);
@@ -350,8 +310,8 @@ const Connection* MaybeMakeConnection(
   //                     segments, this requirement should be removed and
   //                     appropriate continuity constraint must be applied.
   DRAKE_DEMAND(start_point.first == CurveType::kReferenceCurve);
-  EvaluateContinuityConstraint(start_point.second->type, curvature,
-                               &(start_point.second->endpoint.get_mutable_z()));
+  EnforceContinuityConstraint(start_point.second->type,
+                              &(start_point.second->endpoint.get_mutable_z()));
 
   // Resolve end endpoint
   EndpointZ ez_point{};
@@ -365,8 +325,8 @@ const Connection* MaybeMakeConnection(
     //                     segments, this requirement should be removed and
     //                     appropriate continuity constraint must be applied.
     DRAKE_DEMAND(end_point.first == CurveType::kReferenceCurve);
-    EvaluateContinuityConstraint(end_point.second->type, curvature,
-                                 &(end_point.second->endpoint.get_mutable_z()));
+    EnforceContinuityConstraint(end_point.second->type,
+                                &(end_point.second->endpoint.get_mutable_z()));
     ez_point = end_point.second->endpoint.z();
   } else {
     std::pair<CurveType, EndpointZ> end_z_point =
@@ -375,8 +335,7 @@ const Connection* MaybeMakeConnection(
     //                     segments, this requirement should be removed and
     //                     appropriate continuity constraint must be applied.
     DRAKE_DEMAND(end_z_point.first == CurveType::kReferenceCurve);
-    EvaluateContinuityConstraint(EndpointType::kRaw, curvature,
-                                 &(end_z_point.second));
+    EnforceContinuityConstraint(EndpointType::kRaw, &(end_z_point.second));
     ez_point = end_z_point.second;
   }
 
@@ -392,14 +351,16 @@ const Connection* MaybeMakeConnection(
           id, lane_layout,
           StartReference().at(start_point.second->endpoint,
                               Direction::kForward),
-          line_offset, EndReference().z_at(ez_point, Direction::kForward));
+          ParseLineOffset(node["length"]),
+          EndReference().z_at(ez_point, Direction::kForward));
     }
     case Connection::kArc: {
       return builder->Connect(
           id, lane_layout,
           StartReference().at(start_point.second->endpoint,
                               Direction::kForward),
-          arc_offset, EndReference().z_at(ez_point, Direction::kForward));
+          ParseArcOffset(node["arc"]),
+          EndReference().z_at(ez_point, Direction::kForward));
     }
     default: {
       DRAKE_ABORT();
@@ -477,7 +438,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
   DRAKE_DEMAND(angular_tolerance >= 0.);
 
   auto builder =
-      builder_factory.Make(lane_width, h_bounds(mmb["elevation_bounds"]),
+      builder_factory.Make(lane_width, ParseHBounds(mmb["elevation_bounds"]),
                            linear_tolerance, angular_tolerance);
   DRAKE_DEMAND(builder != nullptr);
 

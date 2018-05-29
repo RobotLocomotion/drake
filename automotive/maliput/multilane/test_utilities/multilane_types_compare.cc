@@ -90,7 +90,6 @@ namespace test {
                     ", tolerance = " +
                     std::to_string(tolerance) + "\n";
   }
-
   if (z1.theta_dot().has_value() && z2.theta_dot().has_value()) {
     delta = std::abs(z1.theta_dot().value() - z2.theta_dot().value());
     if (delta > tolerance) {
