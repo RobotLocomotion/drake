@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":my_vector",
         ":pack_value",
         ":scalar_conversion",
+        "//common:pointer_cast",
     ],
 )
 
@@ -37,6 +38,7 @@ drake_cc_library(
     hdrs = ["my_vector.h"],
     deps = [
         "//common:essential",
+        "//common:pointer_cast",
         "//systems/framework:vector",
     ],
 )

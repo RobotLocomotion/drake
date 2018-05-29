@@ -1,0 +1,69 @@
+#pragma once
+
+#include <memory>
+#include <stdexcept>
+
+#include <fmt/format.h>
+
+#include "drake/common/nice_type_name.h"
+
+namespace drake {
+
+/// Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/// no type checking is performed.
+///
+/// This method is similar to the built-in std::static_pointer_cast that
+/// operates on a std::shared_ptr.
+///
+/// Note that this function only supports default deleters.
+template <class T, class U>
+std::unique_ptr<T> static_pointer_cast(std::unique_ptr<U> other) noexcept {
+  return std::unique_ptr<T>(static_cast<T*>(other.release()));
+}
+
+/// Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/// if the cast fails, returns nullptr.  On success, `other`'s managed value is
+/// transferred to the result and `other` is empty; on failure, `other` will
+/// retain its original managed value and the result is empty.
+///
+/// This method is similar to the built-in std::dynamic_pointer_cast that
+/// operates on a std::shared_ptr.
+///
+/// Note that this function only supports default deleters.
+template <class T, class U>
+std::unique_ptr<T> dynamic_pointer_cast(std::unique_ptr<U>&& other) noexcept {
+  T* result = dynamic_cast<T*>(other.get());
+  if (!result) { return nullptr; }
+  other.release();
+  return std::unique_ptr<T>(result);
+}
+
+/// Casts the object owned by the std::unique_ptr `other` from type `U` to `T`;
+/// if `other` is nullptr or the cast fails, throws a std::logic_error.  On
+/// success, `other`'s managed value is transferred to the result and `other`
+/// is empty; on failure, `other` will retain its original managed value.
+///
+/// @throw std::logic_error if the cast fails.
+///
+/// Note that this function only supports default deleters.
+template <class T, class U>
+std::unique_ptr<T> dynamic_pointer_cast_or_throw(std::unique_ptr<U>&& other) {
+  if (!other) {
+    throw std::logic_error(fmt::format(
+        "Cannot downcast unique_ptr containing nullptr from {} to {}.",
+        NiceTypeName::Get<U>(),
+        NiceTypeName::Get<T>()));
+  }
+  T* result = dynamic_cast<T*>(other.get());
+  if (!result) {
+    throw std::logic_error(fmt::format(
+        "Cannot downcast unique_ptr containing {} from {} to {}.",
+        NiceTypeName::Get(*other),
+        NiceTypeName::Get<U>(),
+        NiceTypeName::Get<T>()));
+  }
+  other.release();
+  return std::unique_ptr<T>(result);
+}
+
+}  // namespace drake
