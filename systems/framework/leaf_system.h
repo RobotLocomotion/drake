@@ -17,6 +17,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -97,10 +98,8 @@ class LeafSystem : public System<T> {
   /// Shadows System<T>::AllocateContext to provide a more concrete return
   /// type LeafContext<T>.
   std::unique_ptr<LeafContext<T>> AllocateContext() const {
-    std::unique_ptr<Context<T>> context = System<T>::AllocateContext();
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(context.get()) != nullptr);
-    return std::unique_ptr<LeafContext<T>>(
-        static_cast<LeafContext<T>*>(context.release()));
+    return dynamic_pointer_cast_or_throw<LeafContext<T>>(
+        System<T>::AllocateContext());
   }
 
   // =========================================================================

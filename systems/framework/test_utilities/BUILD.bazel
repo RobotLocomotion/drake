@@ -37,6 +37,7 @@ drake_cc_library(
     hdrs = ["my_vector.h"],
     deps = [
         "//common:essential",
+        "//common:pointer_cast",
         "//systems/framework:vector",
     ],
 )
