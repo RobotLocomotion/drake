@@ -51,7 +51,7 @@ GTEST_TEST(EndpointZTest, DefaultConstructor) {
 }
 
 GTEST_TEST(EndpointZTest, ParametrizedConstructors) {
-  const EndpointZ dut_without_theta_dot{1., 2., M_PI / 4.};
+  const EndpointZ dut_without_theta_dot{1., 2., M_PI / 4., {}};
   EXPECT_EQ(dut_without_theta_dot.z(), 1.);
   EXPECT_EQ(dut_without_theta_dot.z_dot(), 2.);
   EXPECT_EQ(dut_without_theta_dot.theta(), M_PI / 4.);
@@ -66,10 +66,16 @@ GTEST_TEST(EndpointZTest, ParametrizedConstructors) {
 }
 
 GTEST_TEST(EndpointZTest, Reverse) {
-  const EndpointZ dut{1., 2., M_PI / 4., M_PI / 2.};
   const double kZeroTolerance{0.};
-  EXPECT_TRUE(test::IsEndpointZClose(
-      dut.reverse(), {1., -2., -M_PI / 4., M_PI / 2.}, kZeroTolerance));
+  const EndpointZ dut_without_theta_dot{1., 2., M_PI / 4., {}};
+  EXPECT_TRUE(test::IsEndpointZClose(dut_without_theta_dot.reverse(),
+                                     {1., -2., -M_PI / 4., {}},
+                                     kZeroTolerance));
+
+  const EndpointZ dut_with_theta_dot{1., 2., M_PI / 4., M_PI / 2.};
+  EXPECT_TRUE(test::IsEndpointZClose(dut_with_theta_dot.reverse(),
+                                     {1., -2., -M_PI / 4., M_PI / 2.},
+                                     kZeroTolerance));
 }
 
 // LineOffset check.

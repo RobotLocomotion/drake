@@ -470,6 +470,8 @@ struct BranchPointLaneIds {
   std::vector<std::string> finish_b_side;
 };
 
+// Holds common properties to create a Builder and Connections of different
+// geometries.
 class MultilaneBuilderPrimitivesTest : public ::testing::Test {
  protected:
   const double kLaneWidth{4.};
@@ -597,6 +599,88 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
   }
   // Checks the number of branch points.
   EXPECT_EQ(rg->num_branch_points(), 2 * kNumLanes);
+}
+
+// Holds common properties to create a Builder and Connections whose endpoint
+// information lacks of theta_dot so it is adjusted.
+class MultilaneBuilderPrimitiveContinuityConstraintTest
+    : public ::testing::Test {
+ protected:
+  const double kLaneWidth{4.};
+  const double kRefR0{0.};
+  const double kLeftShoulder{2.};
+  const double kRightShoulder{2.};
+  const int kNumLanes{1};
+  const int kRefLane{0};
+  const LaneLayout kLaneLayout{kLeftShoulder, kRightShoulder, kNumLanes,
+                               kRefLane, kRefR0};
+  const api::HBounds kElevationBounds{0., 5.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+  const EndpointZ kStartZ{1., 2., M_PI / 6., {}};
+  const double kStartHeading{-M_PI / 4.};
+  const Endpoint kStartEndpoint{{0., 0., kStartHeading}, kStartZ};
+  const EndpointZ kEndZ{4., 5., -M_PI / 6., {}};
+};
+
+// Checks how theta_dot is adjusted at the end points of the connection and set
+// to zero always because of infinite curvature radius of a line.
+TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const LineOffset kLineOffset(50.);
+  auto c0 =
+      b.Connect("c0", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                kLineOffset, EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(c0, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      c0->start(), {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.}},
+      kLinearTolerance));
+  EXPECT_TRUE(
+      test::IsEndpointClose(c0->end(),
+                            {{50. * std::cos(kStartHeading),
+                              50. * std::sin(kStartHeading), kStartHeading},
+                             {4., 5., -M_PI / 6., 0.}},
+                            kLinearTolerance));
+}
+
+// Checks how theta_dot is adjusted at the end points of the connection based
+// on curvature and angular displacement.
+TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kRadius = 30.;
+  const double kDTheta = 0.5 * M_PI;
+  auto counter_clockwise_conn =
+      b.Connect("counter_clockwise", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                ArcOffset(kRadius, kDTheta),
+                EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(counter_clockwise_conn, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      counter_clockwise_conn->start(),
+      {kStartEndpoint.xy(), {1., 2., M_PI / 6., -0.0298142396999972}},
+      kLinearTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(
+      counter_clockwise_conn->end(),
+      {{kRadius * std::sqrt(2.), 0., kStartHeading + kDTheta},
+       {4., 5., -M_PI / 6., -0.0326860225230307}},
+      kLinearTolerance));
+
+  auto clockwise_conn =
+      b.Connect("clockwise", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                ArcOffset(kRadius, -kDTheta),
+                EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(clockwise_conn, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      clockwise_conn->start(),
+      {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.0298142396999972}},
+      kLinearTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(
+      clockwise_conn->end(),
+      {{0., -kRadius * std::sqrt(2.), kStartHeading - kDTheta},
+       {4., 5., -M_PI / 6., 0.0326860225230307}},
+      kLinearTolerance));
 }
 
 // Checks that Junctions, Segments, Lanes and BranchPoints are correctly made
