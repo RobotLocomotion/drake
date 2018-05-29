@@ -2,9 +2,9 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "drake/manipulation/util/frame_pose_tracker.h"
-#include "drake/systems/sensors/optitrack_encoder.h"
 #include "drake/systems/sensors/optitrack_sender.h"
 
 namespace drake {
@@ -15,8 +15,7 @@ namespace pick_and_place {
 using manipulation::util::FramePoseTracker;
 using manipulation::util::ModelInstanceInfo;
 using manipulation::util::WorldSimTreeBuilder;
-using systems::sensors::OptitrackEncoder;
-using systems::sensors::OptitrackLCMFrameSender;
+using systems::sensors::OptitrackLcmFrameSender;
 
 namespace {
 
@@ -186,23 +185,25 @@ const systems::OutputPort<double>& AddOptitrackComponents(
   }
   auto pose_tracker = builder->AddSystem<FramePoseTracker>(tree, &frames);
 
-  // Create the OptitrackEncoder system. This assigns a unique Optitrack ID to
-  // each tracked frame (similar to the Motive software). These are used to
-  // create a tracked Optitrack body.
-  auto optitrack_encoder =
-      builder->AddSystem<OptitrackEncoder>(frame_name_to_id_map);
+  std::map<geometry::FrameId, std::pair<std::string, int>> frame_map;
+  const std::map<std::string, geometry::FrameId>&
+      frame_name_to_geometry_id_map =
+      pose_tracker->get_frame_name_to_id_map();
+  for (auto it = frame_name_to_id_map.begin();
+       it != frame_name_to_id_map.end(); ++it) {
+    frame_map[frame_name_to_geometry_id_map.at(it->first)] =
+        std::pair<std::string, int>(it->first, it->second);
+  }
 
   // Create the Optitrack sender.
   auto optitrack_sender =
-      builder->AddSystem<OptitrackLCMFrameSender>(frame_name_to_id_map.size());
+      builder->AddSystem<OptitrackLcmFrameSender>(frame_map);
 
   // Connect the systems related to tracking bodies.
   builder->Connect(kinematics_port,
                    pose_tracker->get_kinematics_input_port());
-  builder->Connect(pose_tracker->get_pose_bundle_output_port(),
-                  optitrack_encoder->get_pose_bundle_input_port());
-  builder->Connect(optitrack_encoder->get_optitrack_output_port(),
-                  optitrack_sender->get_optitrack_input_port());
+  builder->Connect(pose_tracker->get_pose_vector_output_port(),
+                   optitrack_sender->get_optitrack_input_port());
 
   return optitrack_sender->get_lcm_output_port();
 }
