@@ -126,6 +126,38 @@ class QueryObject {
       const;
 
   //@}
+  
+  //---------------------------------------------------------------------------
+  /** @name                   Signed Distance Queries
+   
+   These queries represent _signed_distance_ querites -- queries to determine
+   the signed distance. When two objects do not overlap, the signed distance
+   is the actual distance between the two objects A and B, defined as the
+   minimal distance between any pair of points Na and Nb, with Na on object A
+   and Nb on object B. The nearest points are the pair of points that gives the
+   minimal distance. When the two objects overlap, the signed distance is the
+   penetration depth, a non-positive number. It is the smallest distance of a
+   vector v, such that by shifting one object (for example, object A) along that
+   vector to object A', the shifted object A' do not overlap with B (or they
+   only overlap at the boundary). The nearest points between A' and B is Na' and
+   Nb. The nearest points between A and B when the overlap, is defined as
+   Na' - v and Nb. Notice that the signed distance function is a continuous
+   function w.r.t the pose of the objects. */
+
+  //@{
+  
+  /**
+   * Computes the signed distance together with the nearest points across all
+   * pairs of geometries in the world. Reports both the separating geometries
+   * and penetrating geometries.
+   * @retval near_pairs A vector of reporting the signed distance characterized
+   * as point pairs. Notice that this is an O(N²) operation, where N is the 
+   * number of geometries in the world. We report the distance between dynamic
+   * objects, or between a dynamic object and a static object. We DO NOT report
+   * the distance between two static objects.
+   */
+  std::vector<NearestPair<T>> ComputeSignedDistancePairwiseClosestPoints() const;
+  //@}
 
  private:
   // SceneGraph is the only class that can instantiate QueryObjects.
