@@ -1043,9 +1043,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // PenetrationAsPointPair::depth) is decreasing. Since for contact problems
   // the (positive) depth in PenetrationAsPointPair is defined so that it
   // corresponds to interpenetrating body geometries, a positive separation
-  // velocity corresponds to bodies moving apart. From this definition, the i-th
-  // separation velocity corresponds to the velocity in the opposite direction
-  // of the i-th normal (PenetrationAsPointPair::nhat_BA_W).
+  // velocity corresponds to bodies moving apart.
   MatrixX<T> CalcNormalSeparationVelocitiesJacobian(
       const systems::Context<T>& context,
       const std::vector<geometry::PenetrationAsPointPair<T>>&
