@@ -449,6 +449,23 @@ class RigidBodyTree {
 
   /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
   /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. Frame F is rigidly attached to
+  /// @p body. This version does not allocate memory and will assert if `J_WF`
+  /// is incorrectly sized.
+  /// @param[in] cache Reference to the KinematicsCache.
+  /// @param[in] B Reference to the RigidBody.
+  /// @param[in] X_BF The pose of frame F in body frame B.
+  /// @param[in] in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @param[out] J_WF Pointer to the output Jacobian.
+  void CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot,
+      drake::Matrix6X<T>* J_WF) const;
+
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
   /// where `v` is the generalized velocity. @p frame_F does not necessarily
   /// need to be owned by this RigidBodyTree. However, the RigidBody to which
   /// @p frame_F attaches to has to be owned by this RigidBodyTree.
@@ -466,6 +483,28 @@ class RigidBodyTree {
         frame_F.get_transform_to_body().template cast<T>(), in_terms_of_qdot);
   }
 
+  /// Computes the Jacobian `J_WF` of the spatial velocity `V_WF` of frame F
+  /// measured and expressed in the world frame W such that `V_WF = J_WF * v`,
+  /// where `v` is the generalized velocity. @p frame_F does not necessarily
+  /// need to be owned by this RigidBodyTree. However, the RigidBody to which
+  /// @p frame_F attaches to has to be owned by this RigidBodyTree. This
+  /// version does not allocate memory and will assert if `J_WF` is incorrectly
+  /// sized.
+  /// @param[in] cache Reference to the KinematicsCache.
+  /// @param[in] frame_F Reference to the RigidBodyFrame.
+  /// @param[in] in_terms_of_qdot `true` for `J_WF` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WF = J_WF * qdot`. `false` for `J_WF` computed with respect to `v`.
+  /// @param[out] J_WF Pointer to the output Jacobian.
+  void CalcFrameSpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBodyFrame<T>& frame_F,
+      bool in_terms_of_qdot, drake::Matrix6X<T>* J_WF) const {
+    return CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, frame_F.get_rigid_body(),
+        frame_F.get_transform_to_body().template cast<T>(),
+        in_terms_of_qdot, J_WF);
+  }
+
   /// Computes the Jacobian `J_WB` of the spatial velocity `V_WB` of body
   /// frame B measured and expressed in the world frame `W` such that
   /// `V_WB = J_WB * v`, where `v` is the generalized velocity.
@@ -480,6 +519,23 @@ class RigidBodyTree {
       bool in_terms_of_qdot = false) const {
     return CalcFrameSpatialVelocityJacobianInWorldFrame(
         cache, body, drake::Isometry3<T>::Identity(), in_terms_of_qdot);
+  }
+
+  /// Computes the Jacobian `J_WB` of the spatial velocity `V_WB` of body
+  /// frame B measured and expressed in the world frame `W` such that
+  /// `V_WB = J_WB * v`, where `v` is the generalized velocity. This version
+  /// does not allocate memory and will assert if `J_WB` is incorrectly sized.
+  /// @param[in] cache Reference to the KinematicsCache.
+  /// @param[in] body Reference to the RigidBody.
+  /// @param[in] in_terms_of_qdot `true` for `J_WB` computed with respect to the
+  /// time derivative of the generalized position such that
+  /// `V_WB = J_WB * qdot`. `false` for `J_WB` computed with respect to `v`.
+  /// @param[out] J_WB Pointer to the output Jacobian.
+  void CalcBodySpatialVelocityJacobianInWorldFrame(
+      const KinematicsCache<T>& cache, const RigidBody<T>& body,
+      bool in_terms_of_qdot, drake::Matrix6X<T>* J_WB) const {
+    CalcFrameSpatialVelocityJacobianInWorldFrame(
+        cache, body, drake::Isometry3<T>::Identity(), in_terms_of_qdot, J_WB);
   }
 
   /// Computes `Jdot_WF * v`, where `J_WF` is the Jacobian of spatial velocity,
@@ -681,14 +737,28 @@ class RigidBodyTree {
    * the ancestors of the body are found. Ancestors are returned in a vector of
    * body indexes.
    *
-   * @return A vector of body indexes of the ancestor bodies of the body with
-   * index @p body_index.
+   * @param[out] ancestor_bodies A vector of body indexes of the ancestor bodies
+   * of the body with index @p body_index.
    */
+  void FindAncestorBodies(int body_index,
+                          std::vector<int>* ancestor_bodies) const;
+
+  /// Identical to the above overload, expect that this function return the
+  /// ancestor bodies instead of using an output argument.
   std::vector<int> FindAncestorBodies(int body_index) const;
 
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindAncestorBodies().")
+  DRAKE_DEPRECATED("Please use void RigidBodyTree::FindAncestorBodies().")
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
+
+  /// Find the kinematic path between two bodies or frames. This function will
+  /// not allocate memory if `path`, `start_body_ancestors` and
+  /// `end_body_ancestors` are preallocated.
+  void FindKinematicPath(int start_body_or_frame_idx,
+                         int end_body_or_frame_idx,
+                         std::vector<int>* start_body_ancestors,
+                         std::vector<int>* end_body_ancestors,
+                         KinematicPath* path) const;
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx,
                                   int end_body_or_frame_idx) const;
@@ -872,6 +942,15 @@ class RigidBodyTree {
       bool in_terms_of_qdot = false,
       std::vector<int>* v_indices = nullptr) const;
 
+ private:
+  template <typename Scalar>
+  void GeometricJacobian(
+      const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
+      int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
+      bool in_terms_of_qdot, std::vector<int>* v_indices,
+      drake::Matrix6X<Scalar>* J) const;
+
+ public:
   template <typename Scalar>
   drake::TwistVector<Scalar> geometricJacobianDotTimesV(
       const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
