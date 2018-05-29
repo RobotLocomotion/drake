@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/parameters.h"
@@ -51,10 +52,7 @@ class Context : public ContextBase {
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   std::unique_ptr<Context<T>> Clone() const {
-    std::unique_ptr<ContextBase> clone_base(ContextBase::Clone());
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(clone_base.get()) != nullptr);
-    return std::unique_ptr<Context<T>>(
-        static_cast<Context<T>*>(clone_base.release()));
+    return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
   }
 
   ~Context() override = default;
@@ -385,12 +383,8 @@ class Context : public ContextBase {
   // more convenient type.
   static std::unique_ptr<Context<T>> CloneWithoutPointers(
       const Context<T>& source) {
-    std::unique_ptr<ContextBase> clone_base(
+    return dynamic_pointer_cast_or_throw<Context<T>>(
         ContextBase::CloneWithoutPointers(source));
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(clone_base.get()) != nullptr);
-    std::unique_ptr<Context<T>> clone(
-        static_cast<Context<T>*>(clone_base.release()));
-    return clone;
   }
 
   /// Override to return the appropriate concrete State class to be returned

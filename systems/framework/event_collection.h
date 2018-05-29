@@ -362,8 +362,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
 
     const std::vector<const EventType*>& other_events = other.get_events();
     for (const EventType* other_event : other_events) {
-      auto ptr = static_cast<EventType*>(other_event->Clone().release());
-      this->add_event(std::unique_ptr<EventType>(ptr));
+      this->add_event(static_pointer_cast<EventType>(other_event->Clone()));
     }
   }
 

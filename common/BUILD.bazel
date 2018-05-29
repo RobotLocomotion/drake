@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":is_less_than_comparable",
         ":nice_type_name",
         ":number_traits",
+        ":pointer_cast",
         ":polynomial",
         ":reset_after_move",
         ":reset_on_copy",
@@ -350,6 +351,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pointer_cast",
+    srcs = ["pointer_cast.cc"],
+    hdrs = ["pointer_cast.h"],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     deps = [
@@ -540,6 +550,14 @@ drake_cc_googletest(
     name = "reset_on_copy_test",
     deps = [
         ":reset_on_copy",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pointer_cast_test",
+    deps = [
+        ":pointer_cast",
+        "//common/test_utilities",
     ],
 )
 
