@@ -355,15 +355,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     CheckProblemConsistency(*data, contacts.size());
   }
 
-  // Function for computing constraint data without duplicate contacts or
-  // friction directions.
-  void CalcConstraintAccelProblemData(
-      double dt,
-      ConstraintVelProblemData<double>* data,
-      VectorX<double>* v) {
-    CalcConstraintAccelProblemData(dt, data, 0, 0, v);
-  }
-
   void SolveDiscretizationProblem(
       const ConstraintVelProblemData<double>& problem_data, double dt,
       VectorX<double>* cf) {
@@ -384,7 +375,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Attempt to solve the linear complementarity problem.
     int num_pivots;
     VectorX<double> zz;
-    bool success = lcp.SolveLcpLemke(MM, qq, &zz, &num_pivots);
+    const bool success = lcp.SolveLcpLemke(MM, qq, &zz, &num_pivots);
     VectorX<double> ww = MM*zz + qq;
     double max_dot = (zz.size() > 0) ?
                      (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
@@ -715,20 +706,20 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Get the acceleration due to gravity.
     const double grav_accel = rod_->get_gravitational_acceleration();
 
+    // Set the state of the rod to resting vertically with no velocity.
+    SetRodToRestingVerticalConfig();
+
     // Duplicate contact points up to two times and the friction directions up
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
-        // Set the state of the rod to resting vertically with no velocity.
-        SetRodToRestingVerticalConfig();
-
         // Compute the problem data.
         VectorX<double> v;
         CalcConstraintAccelProblemData(
           dt, vel_data_.get(), contact_dup, friction_dir_dup, &v);
 
-        // Add a force, acting at the point of contact, that pulls the rod
-        // horizontally.
+        // Add a force acting at the point of contact and expressed at the
+        // rod center-of-mass that pulls the rod horizontally.
         const double horz_f = (force_applied_to_right) ? 100 : -100;
         vel_data_->Mv += Vector3<double>(horz_f, 0,
             horz_f * rod_->get_rod_half_length()) * dt;

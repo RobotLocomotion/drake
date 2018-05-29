@@ -75,6 +75,7 @@ class ConstraintSolver {
   ConstraintSolver() = default;
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
+  // TODO(edrumwri): fill in variables below.
   /// @name Velocity-level constraint problems formulated as MLCPs.
   /// Constraint problems can be posed as mixed linear complementarity problems
   /// (MLCP), which are problems that take the form:<pre>
@@ -104,7 +105,6 @@ class ConstraintSolver {
   /// (4) 0 ≤ λ   ⊥  γ ≥ 0
   /// (5) 0 ≤ fL  ⊥  δ ≥ 0
   /// </pre>
-  // TODO(edrumwri): fill in variables above.
   ///
   /// Converting the MLCP to a pure LCP:
   ///

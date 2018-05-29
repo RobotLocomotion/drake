@@ -37,7 +37,7 @@ drake_cc_library(
     ],
     deps = [
         ":constraint_problem_data",
-        "//solvers",
+        "//solvers:moby_lcp_solver",
     ],
 )
 
