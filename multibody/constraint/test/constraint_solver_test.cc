@@ -265,29 +265,11 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       int contact_points_dup,
       int friction_directions_dup,
       VectorX<double>* v) {
-    DRAKE_DEMAND(contact_points_dup >= 0);
-    DRAKE_DEMAND(friction_directions_dup >= 0);
     DRAKE_DEMAND(v);
 
-    // Reset the constraint velocity data.
-    const int num_velocities = 3;
-    *data = ConstraintVelProblemData<double>(num_velocities);
-
-    // Get the points of contact from Rod2D.
-    std::vector<Vector2d> contacts;
-    std::vector<double> tangent_vels;
-    rod_->GetContactPoints(*context_, &contacts);
-
-    // Duplicate the contact points.
-    std::vector<Vector2d> contacts_dup;
-    for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-      for (int j = 0; j < contact_points_dup; ++j)
-        contacts_dup.push_back(contacts[i]);
-    }
-    contacts.insert(contacts.end(), contacts_dup.begin(), contacts_dup.end());
-
-    // Compute the problem data.
-    rod_->CalcImpactProblemData(*context_, contacts, data);
+    // Use the constraint velocity data to do most of the work.
+    CalcConstraintVelProblemData(data, contact_points_dup,
+                                 friction_directions_dup);
 
     // Get the system velocity.
     *v = data->solve_inertia(data->Mv);
@@ -301,56 +283,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     const double cfm = 1.0 / denom;
     data->gammaN.setOnes() *= cfm;
 
-    // Get old F.
-    const int num_fdir = std::accumulate(data->r.begin(), data->r.end(), 0);
-    const int ngc = get_rod_num_coordinates();
-    MatrixX<double> Fold = MatrixX<double>::Zero(num_fdir, ngc);
-    for (int j = 0; j < ngc; ++j)
-      Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
-
-    // Determine new F by duplicating each row the specified number of times.
-    const int new_friction_directions = friction_directions_dup + 1;
-    MatrixX<double> F(new_friction_directions * contacts.size(), ngc);
-    for (int i = 0, k = 0; i < Fold.rows(); ++i)
-      for (int j = 0; j < new_friction_directions; ++j)
-        F.row(k++) = Fold.row(i);
-
-    // Redetermine F_mult and F_transpose_mult operator lambdas.
-    data->F_mult = [F](const VectorX<double>& w) -> VectorX<double> {
-      return F * w;
-    };
-    data->F_transpose_mult = [F](const VectorX<double>& w) -> VectorX<double> {
-      return F.transpose() * w;
-    };
-
-    // Update r with the new friction directions.
-    for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
-      data->r[i] = new_friction_directions;
-
-    // Resize kF (recall the vector always is zero for this 2D problem), gammaF,
-    // and gammaE.
-    data->kF.setZero(contacts.size() * new_friction_directions);
-    data->gammaF.setZero(data->kF.size());
-    data->gammaE.setZero(contacts.size());
-
-    // Add in empty rows to G, by default, allowing us to verify that no
-    // constraint forces are added (and that solution method is robust to
-    // unnecessary constraints).
-    data->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
-      return VectorX<double>::Zero(1);
-    };
-    data->G_transpose_mult = [ngc](const VectorX<double>& w)
-        -> VectorX<double> {
-      return VectorX<double>::Zero(ngc);
-    };
-    data->kG.setZero(0);
-
     // Add in gravitational forces.
     const double grav_accel = rod_->get_gravitational_acceleration();
     data->Mv += Vector3<double>(0, grav_accel * rod_->get_rod_mass(), 0) * dt;
-
-    // Check the consistency of the data.
-    CheckProblemConsistency(*data, contacts.size());
   }
 
   void SolveDiscretizationProblem(

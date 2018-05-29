@@ -88,9 +88,9 @@ class ConstraintSolver {
   /// solved for:<pre>
   /// (e) u = -A⁻¹ (a + Xv)
   /// </pre>
-  /// allowing the mixed LCP to be converted to a "pure" LCP (q, M) by:<pre>
-  /// (f) q = b - YA⁻¹a
-  /// (g) M = B - YA⁻¹X
+  /// allowing the mixed LCP to be converted to a "pure" LCP (qq, MM) by:<pre>
+  /// (f) qq = b - YA⁻¹a
+  /// (g) MM = B - YA⁻¹X
   /// </pre>
   ///
   /// The constraint problems considered here take the specific form:<pre>
@@ -123,7 +123,7 @@ class ConstraintSolver {
   ///                     | fL |
   /// </pre>
   /// Therefore, using Equations (f) and (g) and defining C as the upper left
-  /// block of A⁻¹, the pure LCP (q,M) is defined as:<pre>
+  /// block of A⁻¹, the pure LCP (qq,MM) is defined as:<pre>
   /// MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
   ///      | DCNᵀ  DCDᵀ   E   DCLᵀ |
   ///      | μ      -Eᵀ   0   0    |
@@ -134,9 +134,14 @@ class ConstraintSolver {
   ///      |       0        |
   ///      | kᴸ - |L 0|A⁻¹a |
   /// </pre>
-  ///
-  /// The matrix `A` and vector `a` will be used extensively in the following
-  /// documentation.
+  /// and are related by MM⋅zz + qq = ww, where:<pre>
+  /// zz ≡ | fN |      ww = | α |
+  ///      | fD |           | β |
+  ///      | λ  |           | γ |
+  ///      | fL |           | δ |
+  /// </pre>
+  /// The matrix `A` and vector `a` are used extensively in the documentation of
+  /// MlcpToLcpData and the following methods.
 
   /// Structure used to convert a mixed linear complementarity problem to a
   /// pure linear complementarity problem (by solving for free variables).
