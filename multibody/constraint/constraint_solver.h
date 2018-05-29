@@ -75,8 +75,26 @@ class ConstraintSolver {
   ConstraintSolver() = default;
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConstraintSolver)
 
+  /// Structure used to convert a mixed linear complementarity problem to a
+  /// pure linear complementarity problem (by solving for free variables).
+  struct MlcpToLcpData {
+    /// Decomposition of the Delassus matrix GM⁻¹Gᵀ, where G is the bilateral
+    /// constraint matrix and M is the system generalized inertia matrix.
+    Eigen::CompleteOrthogonalDecomposition<MatrixX<T>> delassus_QTZ;
+
+    /// A function pointer for solving linear systems using MLCP "A" matrix
+    /// (see @ref Velocity-level-MLCPs).
+    std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
+
+    /// A function pointer for solving linear systems using only the upper left
+    /// block of A⁻¹ in the MLCP (see @ref Velocity-level-MLCPs),
+    /// toward exploiting zero blocks in common operations.
+    std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
+  };
+
   // TODO(edrumwri): fill in variables below.
   /// @name Velocity-level constraint problems formulated as MLCPs.
+  /// @anchor Velocity-level-MLCPs
   /// Constraint problems can be posed as mixed linear complementarity problems
   /// (MLCP), which are problems that take the form:<pre>
   /// (a)    Au + Xv + a = 0
@@ -142,23 +160,6 @@ class ConstraintSolver {
   /// </pre>
   /// The matrix `A` and vector `a` are used extensively in the documentation of
   /// MlcpToLcpData and the following methods.
-
-  /// Structure used to convert a mixed linear complementarity problem to a
-  /// pure linear complementarity problem (by solving for free variables).
-  struct MlcpToLcpData {
-    /// Decomposition of the Delassus matrix GM⁻¹Gᵀ, where G is the bilateral
-    /// constraint matrix and M is the system generalized inertia matrix.
-    Eigen::CompleteOrthogonalDecomposition<MatrixX<T>> delassus_QTZ;
-
-    /// A function pointer for solving linear systems using MLCP "A" matrix.
-    std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
-
-    /// A function pointer for solving linear systems using only the upper left
-    /// block of A⁻¹ in the MLCP, toward exploiting zero blocks in common
-    /// operations.
-    std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
-  };
-
   // @{
   /// Computes the time-discretization of the system using the problem data,
   /// generalized force `f`, intended time step `target_dt`.
