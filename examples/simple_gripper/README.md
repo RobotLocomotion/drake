@@ -30,10 +30,10 @@ Fixed Gripper with Gravity
 --------------------------
 To run a case with gravity but no forced oscillations, set the `<joint>` axis
 for the joint named "translate_joint" to be the x-axis in the SDF file.
-The parameter `--gripper_force` allows to specify the grip force while
-`--grip_width` specifies the initial condition for the position of the fingers.
-If the gripper force is set to zero, the fingers width will be fixed and set to
-be apart by `--grip_width`. The later is an important test case since it
+The parameter `--gripper_force` specifies the grip force while `--grip_width`
+specifies the initial condition for the position of the fingers.
+If the gripper force is set to zero, the fingers will be placed at a fixed
+`--grip_width` distance apart. The latter is an important test case since it
 eliminates the additional complexity introduced by having moving fingers.
 
 Prerequisites
