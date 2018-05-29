@@ -23,7 +23,18 @@ or vertical direction. This can be accomplished by changing the `<axis>`
 specified for the `<joint>` named "translate_joint" in the SDF for the gripper
 model, `simple_gripper.sdf`. Only vertical or horizontal forced motions are
 supported in this example and thus the axis must either be the x-axis or the
-z-axis. Otherwise an exception is thrown communicating this fact.
+z-axis. Otherwise an exception is thrown communicating this fact. There is no
+gravity for the forced vertical oscillations case.
+
+Fixed Gripper with Gravity
+--------------------------
+To run a case with gravity but no forced oscillations, set the `<joint>` axis
+for the joint named "translate_joint" to be the x-axis in the SDF file.
+The parameter `--gripper_force` allows to specify the grip force while
+`--grip_width` specifies the initial condition for the position of the fingers.
+If the gripper force is set to zero, the fingers width will be fixed and set to
+be apart by `--grip_width`. The later is an important test case since it
+eliminates the additional complexity introduced by having moving fingers.
 
 Prerequisites
 -------------
