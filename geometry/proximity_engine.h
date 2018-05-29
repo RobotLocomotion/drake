@@ -7,6 +7,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/query_results/nearest_pair.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -106,6 +107,42 @@ class ProximityEngine {
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
   void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG);
+
+  /**                         Signed distance Queries
+   
+   These queries represent _signed_distance_ querites -- queries to determine
+   the signed distance. When two objects do not overlap, the signed distance
+   is the actual distance between the two objects A and B, defined as the
+   minimal distance between any pair of points Na and Nb, with Na on object A
+   and Nb on object B. The nearest points are the pair of points that gives the
+   minimal distance. When the two objects overlap, the signed distance is the
+   penetration depth, a non-positive number. It is the smallest distance of a
+   vector v, such that by shifting one object (for example, object A) along that
+   vector to object A', the shifted object A' do not overlap with B (or they
+   only overlap at the boundary). The nearest points between A' and B is Na' and
+   Nb. The nearest points between A and B when the overlap, is defined as
+   Na' - v and Nb. Notice that the signed distance function is a continuous
+   function w.r.t the pose of the objects. */
+
+  //@{
+  // NOTE: This maps to Model::ClosestPointsAllToAll().
+  /** Determines all the closest points between any pair of bodies/elements.
+   * This function returns the _signed_ distance function between each pair of
+   * elements in @p dynamic_map (object whose pose will change), and between
+   * each pair between an element in @p dynamic_map and another element in
+   * @p anchored_map. The order and size of the closest points are invariant
+   * when the poses of the objects are changed.
+   @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
+                              global geometry identifier for dynamic geometries.
+   @param[in]   anchored_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier for anchored
+                              geometries.
+   @returns A vector populated with all pairs of closest points.
+   */
+  std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints(
+      const std::vector<GeometryId>& dynamic_map,
+      const std::vector<GeometryId>& anchored_map) const;
+  //@}
 
 
   //----------------------------------------------------------------------------

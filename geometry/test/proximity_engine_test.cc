@@ -11,6 +11,26 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+// Compare nearest pair. Note that we can switch body A with body B in one pair,
+// and the comparison result would be the same.
+void CompareNearestPair(const NearestPair<double>& pair1,
+                        const NearestPair<double>& pair2, double tol) {
+  EXPECT_TRUE(pair1.id_A == pair2.id_A || pair1.id_B == pair2.id_A);
+  EXPECT_NEAR(pair1.distance, pair2.distance, tol);
+  if (pair1.id_A == pair2.id_A) {
+    EXPECT_EQ(pair1.id_B, pair2.id_B);
+    EXPECT_TRUE(CompareMatrices(pair1.p_ACa, pair2.p_ACa, tol,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(pair1.p_BCb, pair2.p_BCb, tol,
+                                MatrixCompareType::absolute));
+  } else {
+    EXPECT_EQ(pair1.id_B, pair2.id_A);
+    EXPECT_TRUE(CompareMatrices(pair1.p_ACa, pair2.p_BCb, tol,
+                                MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(pair1.p_BCb, pair2.p_ACa, tol,
+                                MatrixCompareType::absolute));
+  }
+}
 
 class ProximityEngineTester {
  public:
@@ -126,6 +146,56 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   EXPECT_EQ(move_construct.num_dynamic(), 0);
 }
 
+// Signed distance tests -- testing data flow; not testing the value of the
+// query.
+
+// A scene with no geometry reports no nearest pairs.
+GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsOnEmptyScene) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> empty_map;
+
+  const auto results =
+      engine.ComputeSignedDistancePairwiseClosestPoints(empty_map, empty_map);
+  EXPECT_EQ(results.size(), 0);
+}
+
+// A scene with a single anchored geometry reports no distance.
+GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsSingleAnchored) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> dynamic_map;
+  std::vector<GeometryId> anchored_map;
+
+  Sphere sphere{0.5};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  AnchoredGeometryIndex index = engine.AddAnchoredGeometry(sphere, pose);
+  anchored_map.push_back(GeometryId::get_new_id());
+  EXPECT_EQ(index, 0);
+  const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
+      dynamic_map, anchored_map);
+  EXPECT_EQ(results.size(), 0);
+}
+
+// Tests that anchored geometry don't report closest distance with each other 
+GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> dynamic_map;
+  std::vector<GeometryId> anchored_map;
+
+  const double radius = 0.5;
+  Sphere sphere{radius};
+  Isometry3<double> pose = Isometry3<double>::Identity();
+  AnchoredGeometryIndex index1 = engine.AddAnchoredGeometry(sphere, pose);
+  anchored_map.push_back(GeometryId::get_new_id());
+  EXPECT_EQ(index1, 0);
+  pose.translation() << 1.8 * radius, 0, 0;
+  AnchoredGeometryIndex index2 = engine.AddAnchoredGeometry(sphere, pose);
+  anchored_map.push_back(GeometryId::get_new_id());
+  EXPECT_EQ(index2, 1);
+  const auto results = engine.ComputeSignedDistancePairwiseClosestPoints(
+      dynamic_map, anchored_map);
+  EXPECT_EQ(results.size(), 0);
+}
+
 // Penetration tests -- testing data flow; not testing the value of the query.
 
 // A scene with no geometry reports no penetrations.
@@ -173,9 +243,9 @@ GTEST_TEST(ProximityEngineTests, PenetrationMultipleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
-// These tests validate collisions between spheres. This does *not* test against
-// other geometry types because we assume FCL works. This merely confirms that
-// the ProximityEngine functions provide the correct mapping.
+// These tests validate collisions/distance between spheres. This does *not*
+// test against other geometry types because we assume FCL works. This merely
+// confirms that the ProximityEngine functions provide the correct mapping.
 
 // Common class for evaluating a simple penetration case between two spheres.
 // This tests that collisions that are expected are reported between
@@ -231,10 +301,16 @@ class SimplePenetrationTest : public ::testing::Test {
   template <typename T>
   void ExpectPenetration(GeometryId origin_sphere, GeometryId colliding_sphere,
                          ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> results =
+    std::vector<PenetrationAsPointPair<double>> penetration_results =
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
-    ASSERT_EQ(results.size(), 1);
-    const PenetrationAsPointPair<double> penetration = results[0];
+    ASSERT_EQ(penetration_results.size(), 1);
+    const PenetrationAsPointPair<double> penetration = penetration_results[0];
+
+    std::vector<NearestPair<double>> distance_results =
+        engine->ComputeSignedDistancePairwiseClosestPoints(dynamic_map_,
+                                                           anchored_map_);
+    ASSERT_EQ(distance_results.size(), 1);
+    const NearestPair<double> distance = distance_results[0];
 
     // There are no guarantees as to the ordering of which element is A and
     // which is B. This test enforces an order for validation.
@@ -244,6 +320,10 @@ class SimplePenetrationTest : public ::testing::Test {
                  penetration.id_B == colliding_sphere) ||
                 (penetration.id_A == colliding_sphere &&
                  penetration.id_B == origin_sphere));
+
+    EXPECT_TRUE(
+        (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
+        (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
 
     // Assume A => origin_sphere and b => colliding_sphere
     // NOTE: In this current version, penetration is only reported in double.
@@ -263,23 +343,71 @@ class SimplePenetrationTest : public ::testing::Test {
     Vector3<double> norm_into_B = Vector3<double>::UnitX();
     expected.nhat_BA_W = origin_is_A ? -norm_into_B : norm_into_B;
 
-    EXPECT_EQ(penetration.id_A, expected.id_A);
-    EXPECT_EQ(penetration.id_B, expected.id_B);
-    EXPECT_EQ(penetration.depth, expected.depth);
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected.p_WCa, 1e-13,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected.p_WCb, 1e-13,
-                                MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W, expected.nhat_BA_W,
+    // Reverse if previous order assumption is false
+    if (penetration.id_A == colliding_sphere) {
+      Vector3<double> temp;
+      // Swap the indices
+      expected_penetration.id_A = colliding_sphere;
+      expected_penetration.id_B = origin_sphere;
+      // Swap the points
+      temp = expected_penetration.p_WCa;
+      expected_penetration.p_WCa = expected_penetration.p_WCb;
+      expected_penetration.p_WCb = temp;
+      // Reverse the normal
+      expected_penetration.nhat_BA_W = -expected_penetration.nhat_BA_W;
+      // Penetration depth is same either way; do nothing.
+    }
+>>>>>>> Pick what I want
+
+    EXPECT_EQ(penetration.id_A, expected_penetration.id_A);
+    EXPECT_EQ(penetration.id_B, expected_penetration.id_B);
+    EXPECT_EQ(penetration.depth, expected_penetration.depth);
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected_penetration.p_WCa,
                                 1e-13, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected_penetration.p_WCb,
+                                1e-13, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W,
+                                expected_penetration.nhat_BA_W, 1e-13,
+                                MatrixCompareType::absolute));
+
+    // Should return the penetration depth here.
+    /*NearestPair<double> expected_distance;
+    expected_distance.distance = -expected_penetration.depth;
+    expected_distance.id_A = origin_sphere;
+    expected_distance.id_B = colliding_sphere;
+    expected_distance.p_ACa = Eigen::Vector3d(radius_, 0, 0);
+    expected_distance.p_BCb = Eigen::Vector3d(-radius_, 0, 0);
+    CompareNearestPair(distance, expected_distance, 1e-13);*/
   }
 
   // Compute penetration and confirm that none were found.
   template <typename T>
   void ExpectNoPenetration(ProximityEngine<T>* engine) {
-    std::vector<PenetrationAsPointPair<double>> results =
+    std::vector<PenetrationAsPointPair<double>> penetration_results =
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
-    EXPECT_EQ(results.size(), 0);
+    EXPECT_EQ(penetration_results.size(), 0);
+
+    std::vector<NearestPair<double>> distance_results =
+        engine->ComputeSignedDistancePairwiseClosestPoints(dynamic_map_,
+                                                           anchored_map_);
+    ASSERT_EQ(distance_results.size(), 1);
+    NearestPair<double> distance = distance_results[0];
+
+    // There are no guarantees as to the ordering of which element is A and
+    // which is B. This test enforces an order for validation.
+
+    EXPECT_TRUE(
+        (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
+        (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
+
+    NearestPair<double> expected_distance;
+    expected_distance.id_A = origin_sphere;     // located at origin
+    expected_distance.id_B = colliding_sphere;  // located at [1.5R, 0, 0]
+    expected_distance.distance = 2 * radius_ - colliding_x_;
+    expected_distance.p_ACa = Vector3<double>{radius_, 0, 0};
+    expected_distance.p_BCb = Vector3<double>{-radius_, 0, 0};
+
+    CompareNearestPair(distance, expected_distance, 1e-13);
   }
 
   ProximityEngine<double> engine_;

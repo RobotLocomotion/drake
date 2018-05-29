@@ -46,6 +46,7 @@ drake_cc_library(
         ":shape_specification",
         "//common",
         "//common:default_scalars",
+        "//geometry/query_results:nearest_pair",
         "//geometry/query_results:penetration_as_point_pair",
         "@fcl",
     ],

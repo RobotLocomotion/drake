@@ -9,6 +9,7 @@
 #include <fcl/fcl.h>
 #include <fcl/geometry/shape/box.h>
 #include <fcl/narrowphase/collision_request.h>
+#include <fcl/narrowphase/distance_request.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
@@ -206,6 +207,23 @@ class CollisionFilterLegacy {
   int next_available_clique_{0};
 };
 
+// Struct for use in SingleDistanceCallback(). Contains the distance request
+// and accumulates result in a drake::multibody::collision::NearestPair vector.
+struct DistanceData {
+  DistanceData(const std::vector<GeometryId>* dynamic_map_in,
+               const std::vector<GeometryId>* anchored_map_in)
+      : dynamic_map(*dynamic_map_in), anchored_map(*anchored_map_in) {}
+  // Maps so the distance call back can map from engine index to geometry id.
+  const std::vector<GeometryId>& dynamic_map;
+  const std::vector<GeometryId>& anchored_map;
+
+  // Distance request
+  fcl::DistanceRequestd request;
+
+  // Vectors of distance results
+  std::vector<NearestPair<double>>* nearest_pairs{};
+};
+
 // Struct for use in SingleCollisionCallback(). Contains the collision request
 // and accumulates results in a drake::multibody::collision::PointPair vector.
 struct CollisionData {
@@ -226,6 +244,44 @@ struct CollisionData {
   // Vector of distance results
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
+
+bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
+                      fcl::CollisionObjectd* fcl_object_B_ptr,
+                      void* callback_data, double& dist) {
+  // NOTE: Although this function *takes* non-const pointers to satisfy the
+  // fcl api, it should not exploit the non-constness to modify the collision
+  // objects. We insure this by immediately assigning to a const version and
+  // not directly using the provided parameters.
+  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
+  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
+
+  // TODO(SeanCurtis-TRI): Introduce collision filtering here.
+    // Unpack the callback data
+    auto& distance_data = *static_cast<DistanceData*>(callback_data);
+    const fcl::DistanceRequestd& request = distance_data.request;
+    const std::vector<GeometryId> dynamic_map = distance_data.dynamic_map;
+    const std::vector<GeometryId> anchored_map = distance_data.anchored_map;
+
+    fcl::DistanceResultd result;
+
+    // Perform nearphase distance computation.
+    fcl::distance(&fcl_object_A, &fcl_object_B, request, result);
+
+    NearestPair<double> nearest_pair;
+    nearest_pair.id_A = EncodedData(fcl_object_A).id(dynamic_map, anchored_map);
+    nearest_pair.id_B = EncodedData(fcl_object_B).id(dynamic_map, anchored_map);
+
+    nearest_pair.p_ACa = result.nearest_points[0];
+    nearest_pair.p_BCb = result.nearest_points[1];
+    nearest_pair.distance = result.min_distance;
+
+    distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
+
+  // Returning true would tell the broadphase manager to terminate early. Since
+  // we want to find all the collisions present in the model's current
+  // configuration, we return false.
+  return false;
+}
 
 // Callback function for FCL's collide() function for retrieving a *single*
 // contact.
@@ -543,6 +599,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_sphere, user_data);
   }
 
+  std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints(
+      const std::vector<GeometryId>& dynamic_map,
+      const std::vector<GeometryId>& anchored_map) const {
+    std::vector<NearestPair<double>> nearest_pairs;
+    DistanceData distance_data{&dynamic_map, &anchored_map};
+    distance_data.nearest_pairs = &nearest_pairs;
+    distance_data.request.enable_nearest_points = true;
+    distance_data.request.enable_signed_distance = true;
+    distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+
+    dynamic_tree_.distance(&distance_data, DistanceCallback);
+    dynamic_tree_.distance(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &distance_data, DistanceCallback);
+    return nearest_pairs;
+  }
+
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const {
@@ -839,6 +913,15 @@ template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
     const std::vector<Isometry3<T>>& X_WG) {
   impl_->UpdateWorldPoses(X_WG);
+}
+
+template <typename T>
+std::vector<NearestPair<double>>
+ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
+    const std::vector<GeometryId>& dynamic_map,
+    const std::vector<GeometryId>& anchored_map) const {
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(dynamic_map,
+                                                           anchored_map);
 }
 
 template <typename T>
