@@ -285,6 +285,7 @@ drake_cc_library(
         ":vector",
         "//common:default_scalars",
         "//common:essential",
+        "//common:pointer_cast",
     ],
 )
 
@@ -299,6 +300,7 @@ drake_cc_library(
         ":state",
         "//common:default_scalars",
         "//common:essential",
+        "//common:pointer_cast",
     ],
 )
 
@@ -369,6 +371,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
+        "//common:pointer_cast",
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
@@ -438,6 +441,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:number_traits",
+        "//common:pointer_cast",
         "//common:unused",
     ],
 )
@@ -450,6 +454,7 @@ drake_cc_library(
         ":continuous_state",
         "//common:default_scalars",
         "//common:essential",
+        "//common:pointer_cast",
     ],
 )
 
@@ -461,6 +466,7 @@ drake_cc_library(
         ":discrete_values",
         "//common:default_scalars",
         "//common:essential",
+        "//common:pointer_cast",
     ],
 )
 
@@ -625,6 +631,7 @@ drake_cc_googletest(
     deps = [
         ":diagram_context",
         "//common:essential",
+        "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework/test_utilities:pack_value",
         "//systems/primitives:adder",
