@@ -113,7 +113,7 @@ int do_main() {
       -9.81 * Vector3<double>::UnitZ());
 
   // We are done defining the model.
-  acrobot.Finalize();
+  acrobot.Finalize(&scene_graph);
 
   DRAKE_DEMAND(acrobot.num_actuators() == 1);
   DRAKE_DEMAND(acrobot.num_actuated_dofs() == 1);
