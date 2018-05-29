@@ -81,7 +81,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
       -gravity * Vector3<double>::UnitZ());
 
   // We are done creating the plant.
-  plant->Finalize();
+  plant->Finalize(scene_graph);
 
   return plant;
 }

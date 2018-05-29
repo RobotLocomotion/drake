@@ -102,7 +102,7 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
       -params.g() * Vector3d::UnitZ());
 
   // We are done creating the plant.
-  if (finalize) plant->Finalize();
+  if (finalize) plant->Finalize(scene_graph);
 
   return plant;
 }

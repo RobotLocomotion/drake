@@ -183,8 +183,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 }
 
 template<typename T>
-void MultibodyPlant<T>::Finalize() {
+void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   model_->Finalize();
+  FilterAdjacentBodies(scene_graph);
   FinalizePlantOnly();
 }
 
@@ -202,6 +203,42 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
+}
+
+template <typename T>
+void MultibodyPlant<T>::FilterAdjacentBodies(SceneGraph<T>* scene_graph) {
+  if (geometry_source_is_registered()) {
+    if (scene_graph == nullptr) {
+      throw std::logic_error(
+          "This MultibodyPlant has been registered as a SceneGraph geometry "
+              "source. Finalize() should be invoked with a pointer to the "
+              "SceneGraph instance");
+    }
+
+    if (scene_graph != scene_graph_) {
+      throw std::logic_error(
+          "Finalizing on a SceneGraph instance must be performed on the SAME "
+              "instance of SceneGraph used on the first call to "
+              "RegisterAsSourceForSceneGraph()");
+    }
+    // Disallow collisions between adjacent bodies. Adjacency is implied by the
+    // existence of a joint between bodies.
+    for (JointIndex j{0}; j < model_->num_joints(); ++j) {
+      const Joint<T>& joint = model_->get_joint(j);
+      const Body<T>& child = joint.child_body();
+      const Body<T>& parent = joint.parent_body();
+      // TODO(SeanCurtis-TRI): Determine what the correct action for a body
+      // joined to the world -- should it filter out collisions between the
+      // body and all *anchored* geometry? That seems really heavy-handed. So,
+      // for now, we skip the joints to the world.
+      if (parent.index() == world_index()) continue;
+      FrameId child_id = GetBodyFrameIdOrThrow(child.index());
+      FrameId parent_id = GetBodyFrameIdOrThrow(parent.index());
+
+      scene_graph->DisallowCrossCollisions(geometry::GeometrySet(child_id),
+                                           geometry::GeometrySet(parent_id));
+    }
+  }
 }
 
 template<typename T>
