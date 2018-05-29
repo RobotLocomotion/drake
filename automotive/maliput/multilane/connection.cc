@@ -15,8 +15,11 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy) {
 
 std::ostream& operator<<(std::ostream& out, const EndpointZ& endpoint_z) {
   return out << "(z = " << endpoint_z.z() << ", z_dot = " << endpoint_z.z_dot()
-             << ", theta = " << endpoint_z.theta()
-             << ", theta_dot = " << endpoint_z.theta_dot().value() << ")";
+             << ", theta = " << endpoint_z.theta() << ", theta_dot = "
+             << (endpoint_z.theta_dot().has_value()
+                     ? std::to_string(endpoint_z.theta_dot().value())
+                     : std::string("nullopt"))
+             << ")";
 }
 
 std::ostream& operator<<(std::ostream& out, const Endpoint& endpoint) {
