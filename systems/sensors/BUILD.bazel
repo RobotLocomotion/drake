@@ -27,7 +27,6 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_to_lcm_image_array_t",
-        ":optitrack_encoder",
         ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
@@ -319,19 +318,9 @@ drake_cc_library(
     srcs = ["optitrack_sender.cc"],
     hdrs = ["optitrack_sender.h"],
     deps = [
-        ":optitrack_encoder",
+        "//geometry:frame_kinematics",
         "//systems/framework:leaf_system",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_library(
-    name = "optitrack_encoder",
-    srcs = ["optitrack_encoder.cc"],
-    hdrs = ["optitrack_encoder.h"],
-    deps = [
-        "//systems/framework:leaf_system",
-        "//systems/rendering:pose_bundle",
     ],
 )
 
@@ -516,19 +505,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "optitrack_encoder_test",
-    srcs = ["test/optitrack_encoder_test.cc"],
-    deps = [
-        ":optitrack_encoder",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_googletest(
     name = "optitrack_sender_test",
     srcs = ["test/optitrack_sender_test.cc"],
     deps = [
-        ":optitrack_encoder",
         ":optitrack_sender",
         "//systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
