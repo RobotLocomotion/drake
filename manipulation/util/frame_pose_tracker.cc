@@ -4,24 +4,19 @@
 #include <cstddef>
 #include <utility>
 
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 #include "drake/multibody/rigid_body_plant/kinematics_results.h"
-#include "drake/systems/rendering/frame_velocity.h"
-#include "drake/systems/rendering/pose_bundle.h"
 
 namespace drake {
 namespace manipulation {
 namespace util {
 
 using drake::systems::KinematicsResults;
-using systems::rendering::PoseBundle;
-using systems::rendering::FrameVelocity;
-using multibody::SpatialVelocity;
 
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
     std::vector<std::unique_ptr<RigidBodyFrame<double>>>* frames)
-    : tree_(&tree) {
+    : tree_(&tree),
+      source_id_(geometry::SourceId::get_new_id()) {
 
   if (frames == nullptr) {
     throw std::runtime_error("FramePoseTracker::FramePoseTracker: ERROR: "
@@ -55,7 +50,9 @@ FramePoseTracker::FramePoseTracker(
 FramePoseTracker::FramePoseTracker(
     const RigidBodyTree<double>& tree,
     const std::map<std::string, std::pair<std::string, int>> frames_info,
-    std::vector<Eigen::Isometry3d> frame_poses) : tree_(&tree) {
+    std::vector<Eigen::Isometry3d> frame_poses)
+    : tree_(&tree),
+      source_id_(geometry::SourceId::get_new_id()) {
 
   // If the frame vector is empty, set all frame poses to the identity pose.
   if (frame_poses.empty()) {
@@ -90,59 +87,42 @@ void FramePoseTracker::Init() {
   // Abstract input port of type KinematicsResults
   kinematics_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
-  // Abstract output port of type systems::rendering::PoseBundle
-  pose_bundle_output_port_index_ =
+  // Make our frame ids and declare the output port.
+  std::vector<geometry::FrameId> frame_ids;
+
+  for (auto it = frame_name_to_frame_map_.begin();
+       it != frame_name_to_frame_map_.end(); ++it) {
+    geometry::FrameId id = geometry::FrameId::get_new_id();
+    frame_name_to_id_map_[it->first] = id;
+    frame_ids.push_back(id);
+  }
+
+  pose_vector_output_port_index_ =
       this->DeclareAbstractOutputPort(
-          &FramePoseTracker::MakeOutputStatus,
+          geometry::FramePoseVector<double>(source_id_, frame_ids),
           &FramePoseTracker::OutputStatus).get_index();
 }
 
-PoseBundle<double> FramePoseTracker::MakeOutputStatus() const {
-  PoseBundle<double> frame_pose_bundle(
-      static_cast<int>(frame_name_to_frame_map_.size()));
-  return frame_pose_bundle;
-}
-
-void FramePoseTracker::OutputStatus(const systems::Context<double>& context,
-                                    PoseBundle<double>* output) const {
-  PoseBundle<double>& frame_pose_bundle = *output;
+void FramePoseTracker::OutputStatus(
+    const systems::Context<double>& context,
+    geometry::FramePoseVector<double>* output) const {
 
   // Extract the input port for the KinematicsResults object, get the
   // transformation of the bodies we care about, and fill in the
-  // frame_pose_bundle object.
+  // FramePoseVector.
   const KinematicsResults<double>* kinematic_results =
       this->EvalInputValue<KinematicsResults<double>>(
           context, kinematics_input_port_index_);
 
-  DRAKE_DEMAND(frame_pose_bundle.get_num_poses() ==
-      static_cast<int>(frame_name_to_frame_map_.size()));
-  int frame_index = 0;
-  for (auto it = frame_name_to_frame_map_.begin();
-       it != frame_name_to_frame_map_.end(); ++frame_index, ++it) {
-    // Set the pose.
-    frame_pose_bundle.set_name(frame_index, it->first);
-    frame_pose_bundle.set_model_instance_id(
-        frame_index, it->second.get()->get_model_instance_id());
-    frame_pose_bundle.set_pose(frame_index, tree_->CalcFramePoseInWorldFrame(
-        kinematic_results->get_cache(), *(it->second.get())));
+  output->clear();
 
-    // Set the velocities.
-    SpatialVelocity<double> spatial_velocity(
-        tree_->CalcFrameSpatialVelocityInWorldFrame(
-            kinematic_results->get_cache(), *(it->second.get())));
-    FrameVelocity<double> frame_velocity;
-    frame_velocity.set_velocity(spatial_velocity);
-    frame_pose_bundle.set_velocity(frame_index, frame_velocity);
-  }
-}
-
-std::vector<std::string> FramePoseTracker::get_tracked_frame_names()  {
-  std::vector<std::string> names;
   for (auto it = frame_name_to_frame_map_.begin();
        it != frame_name_to_frame_map_.end(); ++it) {
-    names.push_back(it->first);
+    output->set_value(
+        frame_name_to_id_map_.at(it->first),
+        tree_->CalcFramePoseInWorldFrame(
+            kinematic_results->get_cache(), *(it->second.get())));
   }
-  return names;
 }
 
 }  // namespace util
