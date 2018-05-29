@@ -1,0 +1,48 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "//tools:drake.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_binary(
+    name = "simple_gripper",
+    srcs = ["simple_gripper.cc"],
+    add_test_rule = 1,
+    data = [
+        "simple_gripper.sdf",
+        "simple_mug.sdf",
+    ],
+    test_rule_args = [
+        "--integration_scheme=runge_kutta2",
+        "--simulation_time=0.01",
+        "--target_realtime_rate=0.0",
+    ],
+    test_rule_timeout = "moderate",
+    deps = [
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//math:geometric_transform",
+        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:implicit_euler_integrator",
+        "//systems/analysis:runge_kutta2_integrator",
+        "//systems/analysis:runge_kutta3_integrator",
+        "//systems/analysis:semi_explicit_euler_integrator",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/primitives:sine",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@fmt",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
