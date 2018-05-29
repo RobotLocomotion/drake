@@ -163,13 +163,14 @@ class ConstraintSolver {
   /// Computes the time-discretization of the system using the problem data,
   /// generalized force `f`, intended time step `target_dt`.
   /// @param problem_data the constraint problem data.
-  /// @param[out] a pointer to a valid MlcpToLcpData object; the caller must
-  ///             ensure that this pointer remains valid through the constraint
-  ///             solution process.
+  /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
+  ///             the caller must ensure that this pointer remains valid through
+  ///             the constraint solution process.
   /// @param[out] MM a pointer to a matrix that will contain the parts of the
   ///             LCP matrix not dependent upon the time step on return.
   /// @param[out] qq a pointer to a vector that will contain the parts of the
   ///             LCP vector not dependent upon the time step on return.
+  /// @pre `mlcp_to_lcp_data`, `MM`, and `qq` are non-null on entry.
   static void ConstructBaseDiscretizedTimeLCP(
       const ConstraintVelProblemData<T>& problem_data,
       MlcpToLcpData* mlcp_to_lcp_data,
@@ -179,13 +180,13 @@ class ConstraintSolver {
   /// Updates the time-discretization of the LCP initially computed in
   /// ConstructBaseDiscretizedTimeLCP() using the problem data, time step `dt`.
   /// @param problem_data the constraint problem data.
-  /// @param[out] a pointer to a valid MlcpToLcpData object; the caller must
-  ///             ensure that this pointer remains valid through the constraint
-  ///             solution process.
+  /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
+  ///             the caller must ensure that this pointer remains valid through
+  ///             the constraint solution process.
   /// @param[out] a the vector corresponding to the MLCP vector `a`, on return.
   /// @param[out] MM a pointer to the updated LCP matrix on return.
   /// @param[out] qq a pointer to the updated LCP vector on return.
-  /// @pre `a`, `MM`, and `qq` are non-null on entry.
+  /// @pre `mlcp_to_lcp_data`, `a`, `MM`, and `qq` are non-null on entry.
   static void UpdateDiscretizedTimeLCP(
       const ConstraintVelProblemData<T>& problem_data,
       double dt,
