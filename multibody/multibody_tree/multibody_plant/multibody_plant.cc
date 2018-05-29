@@ -233,7 +233,6 @@ MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
 
     // Penetration depth, > 0 if bodies interpenetrate.
     const T& x = point_pair.depth;
-    DRAKE_ASSERT(x >= 0);
     const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
     const Vector3<T>& p_WCa = point_pair.p_WCa;
     const Vector3<T>& p_WCb = point_pair.p_WCb;
