@@ -49,7 +49,7 @@ QueryObject<T>::ComputePointPairPenetration() const {
 }
 
 template <typename T>
-std::vector<NearestPair<T>>
+std::vector<NearestPair<double>>
 QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints() const {
   ThrowIfDefault();
 

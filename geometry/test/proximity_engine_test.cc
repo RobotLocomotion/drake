@@ -175,7 +175,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsSingleAnchored) {
   EXPECT_EQ(results.size(), 0);
 }
 
-// Tests that anchored geometry don't report closest distance with each other 
+// Tests that anchored geometry don't report closest distance with each other.
 GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> dynamic_map;

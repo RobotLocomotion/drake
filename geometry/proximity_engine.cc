@@ -247,6 +247,7 @@ struct CollisionData {
 
 bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                       fcl::CollisionObjectd* fcl_object_B_ptr,
+                      // NOLINTNEXTLINE
                       void* callback_data, double& dist) {
   // NOTE: Although this function *takes* non-const pointers to satisfy the
   // fcl api, it should not exploit the non-constness to modify the collision

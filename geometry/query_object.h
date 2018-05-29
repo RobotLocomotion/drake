@@ -126,7 +126,7 @@ class QueryObject {
       const;
 
   //@}
-  
+
   //---------------------------------------------------------------------------
   /** @name                   Signed Distance Queries
    
@@ -145,7 +145,7 @@ class QueryObject {
    function w.r.t the pose of the objects. */
 
   //@{
-  
+
   /**
    * Computes the signed distance together with the nearest points across all
    * pairs of geometries in the world. Reports both the separating geometries
@@ -156,7 +156,8 @@ class QueryObject {
    * objects, or between a dynamic object and a static object. We DO NOT report
    * the distance between two static objects.
    */
-  std::vector<NearestPair<T>> ComputeSignedDistancePairwiseClosestPoints() const;
+  std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints()
+      const;
   //@}
 
  private:
