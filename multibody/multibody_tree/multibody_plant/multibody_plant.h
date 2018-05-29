@@ -903,6 +903,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
 
+  // Friend class to facilitate testing.
+  friend class MultibodyPlantTester;
+
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
@@ -1030,6 +1033,46 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Given a set of point pairs in `point_pairs_set`, this method computes the
+  // Jacobian N(q) such that:
+  //   vn = N(q) v
+  // where the i-th component of vn corresponds to the "separation velocity"
+  // for the i-th point pair in the set. The i-th separation velocity is defined
+  // positive for when the depth in the i-th point pair (
+  // PenetrationAsPointPair::depth) is decreasing. Since for contact problems
+  // the (positive) depth in PenetrationAsPointPair is defined so that it
+  // corresponds to interpenetrating body geometries, a positive separation
+  // velocity corresponds to bodies moving apart.
+  MatrixX<T> CalcNormalSeparationVelocitiesJacobian(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs_set) const;
+
+  // Given a set of nc point pairs in `point_pairs_set`, this method computes
+  // the tangential velocities Jacobian D(q) such that:
+  //   vt = D(q) v
+  // where v ∈ ℝⁿᵛ is the vector of generalized velocities, D(q) is a matrix of
+  // size 2⋅nc×nv and vt is a vector of size 2⋅nc.
+  // This method defines a contact frame C with orientation R_WC in the world
+  // frame W such that Cz_W = nhat_BA_W, the normal direction in the point
+  // pair (PenetrationAsPointPair::nhat_BA_W).
+  // With this definition, the first two columns of R_WC correspond to
+  // orthogonal versors Cx = that1 and Cy = that2 which span the tangent plane
+  // to nhat_BA_W.
+  // vt is defined such that its i-th and (i+1)-th entries correspond to
+  // relative velocity of the i-th point pair in these two orthogonal
+  // directions. That is:
+  //   vt(2 * i)     = vx_AB_C = Cx ⋅ v_AB
+  //   vt(2 * i + 1) = vy_AB_C = Cy ⋅ v_AB
+  //
+  // If the optional output argument R_WC_set is provided with a valid non
+  // nullptr vector, on output the i-th entry of R_WC_set will contain the
+  // orientation R_WC of the i-th point pair in the set.
+  MatrixX<T> CalcTangentVelocitiesJacobian(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+      std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
