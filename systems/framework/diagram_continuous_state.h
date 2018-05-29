@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/supervector.h"
@@ -65,8 +66,7 @@ class DiagramContinuousState final: public ContinuousState<T> {
   std::unique_ptr<DiagramContinuousState> Clone() const {
     // Note that DoClone() below cannot be overridden so we can count on the
     // concrete type being DiagramContinuousState.
-    return std::unique_ptr<DiagramContinuousState>(
-        static_cast<DiagramContinuousState*>(DoClone().release()));
+    return static_pointer_cast<DiagramContinuousState>(DoClone());
   }
 
   int num_substates() const { return static_cast<int>(substates_.size()); }

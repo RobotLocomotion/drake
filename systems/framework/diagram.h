@@ -883,11 +883,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_systems; ++i) {
       const System<T>& sys = *registered_systems_[i];
-      std::unique_ptr<ContextBase> subcontext_base =
-          SystemBase::MakeContext(sys);
-      DRAKE_DEMAND(dynamic_cast<Context<T>*>(subcontext_base.get()) != nullptr);
-      std::unique_ptr<Context<T>> subcontext(
-          static_cast<Context<T>*>(subcontext_base.release()));
+      auto subcontext = dynamic_pointer_cast_or_throw<Context<T>>(
+          SystemBase::MakeContext(sys));
       auto suboutput = sys.AllocateOutput(*subcontext);
       context->AddSystem(i, std::move(subcontext), std::move(suboutput));
     }

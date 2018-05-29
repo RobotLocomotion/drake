@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/discrete_values.h"
 #include "drake/systems/framework/framework_common.h"
@@ -61,8 +62,7 @@ class DiagramDiscreteValues final: public DiscreteValues<T> {
   std::unique_ptr<DiagramDiscreteValues> Clone() const {
     // Note that DoClone() below cannot be overridden so we can count on the
     // concrete type being DiagramDiscreteValues.
-    return std::unique_ptr<DiagramDiscreteValues>(
-        static_cast<DiagramDiscreteValues*>(DoClone().release()));
+    return static_pointer_cast<DiagramDiscreteValues>(DoClone());
   }
 
   /// Returns the number of DiscreteValues objects referenced by this
