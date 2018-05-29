@@ -1123,6 +1123,8 @@ class MultibodyTree {
   /// the same size as the input array `p_BQi_set`.
   /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
@@ -1166,6 +1168,8 @@ class MultibodyTree {
   ///
   /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
