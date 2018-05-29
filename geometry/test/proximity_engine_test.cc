@@ -371,13 +371,17 @@ class SimplePenetrationTest : public ::testing::Test {
                                 MatrixCompareType::absolute));
 
     // Should return the penetration depth here.
-    /*NearestPair<double> expected_distance;
+    NearestPair<double> expected_distance;
     expected_distance.distance = -expected_penetration.depth;
     expected_distance.id_A = origin_sphere;
     expected_distance.id_B = colliding_sphere;
     expected_distance.p_ACa = Eigen::Vector3d(radius_, 0, 0);
     expected_distance.p_BCb = Eigen::Vector3d(-radius_, 0, 0);
-    CompareNearestPair(distance, expected_distance, 1e-13);*/
+    // TODO(hongkai.dai): the penetration depth computed from GJK algorithm is
+    // inaccruate (with tolerance 3E-3). I should modify the FCL code upstream,
+    // such that it calls the primitive-to-primitive distance, instead of GJK
+    // algorithm.
+    CompareNearestPair(distance, expected_distance, 3e-3);
   }
 
   // Compute penetration and confirm that none were found.
