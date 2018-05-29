@@ -10,9 +10,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "query_results",
-    srcs = [],
     deps = [
         ":nearest_pair",
         ":penetration_as_point_pair",
