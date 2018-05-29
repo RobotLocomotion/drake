@@ -140,12 +140,11 @@ drake_cc_library(
     srcs = ["frame_pose_tracker.cc"],
     hdrs = ["frame_pose_tracker.h"],
     deps = [
+        "//geometry:frame_kinematics",
         "//multibody:rigid_body_tree",
         "//multibody/multibody_tree/math:spatial_velocity",
         "//multibody/rigid_body_plant",
         "//systems/framework:leaf_system",
-        "//systems/rendering:frame_velocity",
-        "//systems/rendering:pose_bundle",
     ],
 )
 
