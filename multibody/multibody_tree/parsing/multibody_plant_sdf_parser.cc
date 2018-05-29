@@ -11,6 +11,7 @@
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -22,6 +23,7 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
+using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::parsing::detail::ToIsometry3;
 using drake::multibody::parsing::detail::ToVector3;
@@ -254,7 +256,6 @@ void AddJointFromSpecification(
     }
   }
 }
-
 }  // namespace
 
 void AddModelFromSdfFile(
@@ -264,9 +265,11 @@ void AddModelFromSdfFile(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
 
-  // Load the SDF string
+  const std::string full_path = parsers::GetFullPath(file_name);
+
+  // Load the SDF file.
   sdf::Root root;
-  sdf::Errors errors = root.Load(file_name);
+  sdf::Errors errors = root.Load(full_path);
 
   // Check for any errors.
   if (!errors.empty()) {
@@ -286,6 +289,18 @@ void AddModelFromSdfFile(
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
+
+  // Uses the directory holding the SDF to be the root directory
+  // in which to search for files referenced within the SDF file.
+  std::string root_dir = ".";
+  size_t found = full_path.find_last_of("/\\");
+  if (found != std::string::npos) {
+    root_dir = full_path.substr(0, found);
+  }
+
+  // TODO(sam.creasey) Add support for using an existing package map.
+  parsers::PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_path);
 
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
@@ -308,7 +323,8 @@ void AddModelFromSdfFile(
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
-        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        const sdf::Visual sdf_visual = detail::ResolveVisualUri(
+            *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
             detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
         // We check for nullptr in case someone decided to specify an SDF
@@ -317,6 +333,23 @@ void AddModelFromSdfFile(
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
               scene_graph);
+        }
+      }
+
+      for (uint64_t collision_index = 0;
+           collision_index < link.CollisionCount(); ++collision_index) {
+        const sdf::Collision& sdf_collision =
+            *link.CollisionByIndex(collision_index);
+        const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
+          const Isometry3d X_LG =
+              detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
+          std::unique_ptr<geometry::Shape> shape =
+              detail::MakeShapeFromSdfGeometry(sdf_geometry);
+          const CoulombFriction<double> coulomb_friction =
+              detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
+          plant->RegisterCollisionGeometry(
+              body, X_LG, *shape, coulomb_friction, scene_graph);
         }
       }
     }

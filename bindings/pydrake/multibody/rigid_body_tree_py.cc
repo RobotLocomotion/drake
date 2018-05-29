@@ -8,6 +8,8 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/util/type_pack.h"
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -19,6 +21,7 @@ using std::make_unique;
 namespace drake {
 namespace pydrake {
 
+
 PYBIND11_MODULE(rigid_body_tree, m) {
   m.doc() = "Bindings for the RigidBodyTree class";
 
@@ -27,7 +30,10 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   namespace sdf = drake::parsers::sdf;
   using std::shared_ptr;
 
+  py::module::import("pydrake.multibody.collision");
+  py::module::import("pydrake.multibody.joints");
   py::module::import("pydrake.multibody.parsers");
+  py::module::import("pydrake.multibody.rigid_body");
   py::module::import("pydrake.multibody.shapes");
   py::module::import("pydrake.util.eigen_geometry");
 
@@ -118,6 +124,8 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("get_body", &RigidBodyTree<double>::get_body,
          py::return_value_policy::reference)
     .def("get_position_name", &RigidBodyTree<double>::get_position_name)
+    .def("add_rigid_body", &RigidBodyTree<double>::add_rigid_body)
+    .def("addCollisionElement", &RigidBodyTree<double>::addCollisionElement)
     .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
@@ -262,13 +270,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   py::class_<KinematicsCache<double> >(m, "KinematicsCacheDouble");
   py::class_<KinematicsCache<AutoDiffXd> >(m, "KinematicsCacheAutoDiffXd");
 
-  py::class_<RigidBody<double> >(m, "RigidBody")
-    .def("get_name", &RigidBody<double>::get_name)
-    .def("get_body_index", &RigidBody<double>::get_body_index)
-    .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass)
-    .def("get_visual_elements", &RigidBody<double>::get_visual_elements)
-    .def("AddVisualElement", &RigidBody<double>::AddVisualElement);
-
   py::class_<RigidBodyFrame<double>,
              shared_ptr<RigidBodyFrame<double> > >(m, "RigidBodyFrame")
     .def(
@@ -310,6 +311,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                           RigidBodyTree<double>*>(
             &parsers::urdf::
                 AddModelInstanceFromUrdfStringSearchingInRosPackages));
+  m.def("AddModelInstancesFromSdfFile",
+        py::overload_cast<const std::string&, const FloatingBaseType,
+                          std::shared_ptr<RigidBodyFrame<double>>,
+                          RigidBodyTree<double>*>(
+            &sdf::AddModelInstancesFromSdfFile)),
   m.def("AddModelInstancesFromSdfString",
         py::overload_cast<const std::string&, const FloatingBaseType,
                           shared_ptr<RigidBodyFrame<double>>,

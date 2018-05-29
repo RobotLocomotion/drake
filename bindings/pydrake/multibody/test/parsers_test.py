@@ -7,6 +7,7 @@ from pydrake import getDrakePath
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
     AddModelInstanceFromUrdfStringSearchingInRosPackages,
+    AddModelInstancesFromSdfFile,
     AddModelInstancesFromSdfString,
     AddModelInstancesFromSdfStringSearchingInRosPackages,
     FloatingBaseType,
@@ -66,8 +67,14 @@ class TestParsers(unittest.TestCase):
             floating_base_type,
             weld_frame,
             robot_2)
+        robot_3 = RigidBodyTree()
+        AddModelInstancesFromSdfFile(
+            sdf_file,
+            floating_base_type,
+            weld_frame,
+            robot_3)
 
-        for robot in robot_1, robot_2:
+        for robot in robot_1, robot_2, robot_3:
             expected_num_bodies = 4
             self.assertEqual(robot.get_num_bodies(), expected_num_bodies)
 

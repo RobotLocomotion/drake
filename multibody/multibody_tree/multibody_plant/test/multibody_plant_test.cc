@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -39,6 +40,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::multibody_plant::MultibodyPlant;
 using multibody::parsing::AddModelFromSdfFile;
 using systems::AbstractValue;
 using systems::BasicVector;
@@ -148,8 +150,13 @@ class AcrobotPlantTests : public ::testing::Test {
     scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
-    plant_ =
-        builder.AddSystem(MakeAcrobotPlant(parameters_, false, scene_graph_));
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    plant_ = builder.AddSystem<MultibodyPlant>();
+    AddModelFromSdfFile(full_name, plant_, scene_graph_);
+    // Add gravity to the model.
+    plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
@@ -194,6 +201,24 @@ class AcrobotPlantTests : public ::testing::Test {
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }
 
+  void SetUpDiscreteAcrobotPlant(double time_step) {
+    systems::DiagramBuilder<double> builder;
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
+    AddModelFromSdfFile(full_name, discrete_plant_.get());
+    // Add gravity to the model.
+    discrete_plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
+    discrete_plant_->Finalize();
+
+    discrete_context_ = discrete_plant_->CreateDefaultContext();
+    ASSERT_EQ(discrete_plant_->num_actuators(), 1);
+    discrete_context_->FixInputPort(
+        discrete_plant_->get_actuation_input_port().get_index(),
+        Vector1<double>(0.0));
+  }
+
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
   // for the acrobot model. The comparison is carried out against a benchmark
   // with hand written dynamics.
@@ -230,17 +255,77 @@ class AcrobotPlantTests : public ::testing::Test {
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
   }
 
+  // Verifies the computation performed by
+  // MultibodyPlant::CalcDiscreteVariableUpdates(). For this simple model
+  // without contact, we verify that this method performs the periodic update
+  // of the state using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // To perform this verification, we compute v̇ⁿ using
+  // MultibodyPlant::CalcTimeDerivatives().
+  void VerifyDoCalcDiscreteVariableUpdates(double theta1, double theta2,
+                                           double theta1dot, double theta2dot) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    DRAKE_DEMAND(discrete_plant_ != nullptr);
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    const double time_step = discrete_plant_->time_step();
+
+    // Set the state for the continuous model:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
+
+    // Set the state for the discrete model:
+    // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
+    // to whether the state is discrete or continuous. Therefore, we are allowed
+    // to using the same modeling elements to set both `context` and
+    // `discrete_context`.
+    shoulder_->set_angle(discrete_context_.get(), theta1);
+    elbow_->set_angle(discrete_context_.get(), theta2);
+    shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
+    elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
+
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    auto updates = discrete_plant_->AllocateDiscreteVariables();
+    discrete_plant_->CalcDiscreteVariableUpdates(
+        *discrete_context_, updates.get());
+
+    // Copies to plain Eigen vectors to verify the math.
+    const VectorXd x0 = context_->get_continuous_state_vector().CopyToVector();
+    const VectorXd xdot = derivatives_->CopyToVector();
+    const VectorXd xnext = updates->get_vector().CopyToVector();
+
+    // Verify that xnext is updated using a semi-explicit strategy, that is:
+    //   vnext = v0 + dt * vdot
+    //   qnext = q0 + dt * vnext
+    VectorXd xnext_expected(plant_->num_multibody_states());
+    const int nv = plant_->num_velocities();
+    const int nq = plant_->num_positions();
+    xnext_expected.segment(nq, nv) =
+        x0.segment(nq, nv) + time_step * xdot.segment(nq, nv);
+    // We use the fact that nq = nv for this case.
+    xnext_expected.segment(0, nq) =
+        x0.segment(0, nq) + time_step * xnext_expected.segment(nq, nv);
+
+    EXPECT_TRUE(CompareMatrices(
+        xnext, xnext_expected, kTolerance, MatrixCompareType::relative));
+  }
+
  protected:
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_{nullptr};
+  MultibodyPlant<double>* plant_{nullptr};  // Owned by diagram_ below.
+  std::unique_ptr<MultibodyPlant<double>> discrete_plant_;
   // A SceneGraph so that we can test geometry registration.
   SceneGraph<double>* scene_graph_{nullptr};
   // The Diagram containing both the MultibodyPlant and the SceneGraph.
   std::unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
   std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<Context<double>> discrete_context_;
   std::unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
@@ -281,6 +366,27 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       -M_PI, -M_PI / 2.0,       /* joint's angles */
       -1.5, -2.5,               /* joint's angular rates */
       2.0);                     /* Actuation torque */
+}
+
+// Verifies the correctness of MultibodyPlant::DoCalcDiscreteVariableUpdates()
+// on a model of an acrobot.
+TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
+  // Set up an additional discrete state model of the same acrobot model.
+  SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
+
+  // Verify the implementation for a number of arbitrarily chosen states.
+  VerifyDoCalcDiscreteVariableUpdates(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
+      0.7, -1.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
+      -0.5, 2.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      -M_PI, -M_PI / 2.0,       /* joint's angles */
+      -1.5, -2.5);              /* joint's angular rates */
 }
 
 // Verifies the process of visual geometry registration with a SceneGraph
@@ -372,7 +478,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   plant.Finalize();
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
-  EXPECT_EQ(plant.get_num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
 
@@ -554,7 +660,7 @@ class SplitPendulum : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/multibody_tree/"
-        "multibody_plant/test/split_pendulum.sdf");
+            "multibody_plant/test/split_pendulum.sdf");
     AddModelFromSdfFile(full_name, &plant_);
     plant_.Finalize();
 
@@ -595,6 +701,58 @@ TEST_F(SplitPendulum, MassMatrix) {
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+}
+
+// Verifies we can parse link collision geometries and surface friction.
+GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
+
+  const int link1_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_collisions, 2);
+  ASSERT_EQ(link2_num_collisions, 0);
+  ASSERT_EQ(link3_num_collisions, 1);
+
+  const int link1_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_visuals, 2);
+  ASSERT_EQ(link2_num_visuals, 3);
+  ASSERT_EQ(link3_num_visuals, 0);
+
+  // Scalar convert the plant and verify invariants.
+  MultibodyPlant<AutoDiffXd> plant_autodiff(plant);
+  EXPECT_EQ(plant_autodiff.num_collision_geometries(),
+            plant.num_collision_geometries());
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
 }
 
 }  // namespace

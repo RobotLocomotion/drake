@@ -7,7 +7,9 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
+#include "drake/multibody/parsers/parser_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -17,6 +19,7 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
+using multibody_plant::CoulombFriction;
 using std::make_unique;
 
 namespace {
@@ -31,8 +34,38 @@ const sdf::Element* MaybeGetChildElement(
     // NOTE: The const_cast() here is needed because sdformat does not provide
     // a const version of GetElement(). However, the snippet below still
     // guarantees "element" is not changed as promised by this method's
-    // signature.
+    // signature. See sdformat issue #188.
     return const_cast<sdf::Element&>(element).GetElement(child_name).get();
+  }
+  return nullptr;
+}
+
+// Helper to return the child element of `element` named `child_name`.
+// Throws std::runtime_error if not found.
+const sdf::Element& GetChildElementOrThrow(
+    const sdf::Element& element, const std::string &child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (!element.HasElement(child_name)) {
+    throw std::runtime_error(
+        "Element <" + child_name + "> not found nested within element <" +
+            element.GetName() + ">.");
+  }
+  // NOTE: The const_cast() here is needed because sdformat does not provide
+  // a const version of GetElement(). However, the snippet below still
+  // guarantees "element" is not changed as promised by this method's
+  // signature. See sdformat issue #188.
+  return *const_cast<sdf::Element &>(element).GetElement(child_name);
+}
+
+// Helper to return the mutable child element of `element` named
+// `child_name`.  Returns nullptr if not present.
+sdf::Element* MaybeGetChildElement(
+    sdf::Element* element, const std::string &child_name) {
+  // First verify <child_name> is present (otherwise GetElement() has the
+  // side effect of adding new elements if not present!!).
+  if (element->HasElement(child_name)) {
+    return element->GetElement(child_name).get();
   }
   return nullptr;
 }
@@ -169,28 +202,166 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 
   // For a half-space, C and G are not the same since  SDF allows to specify
   // the normal of the plane in the G frame.
-  if (sdf_geometry.Type() == sdf::GeometryType::PLANE) {
-    const sdf::Plane& shape = *sdf_geometry.PlaneShape();
-    // TODO(amcastro-tri): we assume the normal is in the frame of the visual
-    // geometry G. Verify this with @nkoenig.
-    const Vector3d normal_G = ToVector3(shape.Normal());
-    // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
-    // planes are entire half-spaces.
+  // Note to developers: if needed, update this switch statement to consider
+  // other geometry types whenever X_LC != X_LG.
+  switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CYLINDER: {
+      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+      break;
+    }
+    case sdf::GeometryType::PLANE: {
+      const sdf::Plane &shape = *sdf_geometry.PlaneShape();
+      // TODO(amcastro-tri): we assume the normal is in the frame of the visual
+      // geometry G. Verify this with @nkoenig.
+      const Vector3d normal_G = ToVector3(shape.Normal());
+      // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
+      // planes are entire half-spaces.
 
-    // The normal expressed in the frame G defines the pose of the half space
-    // in its canonical frame C in which the normal aligns with the z-axis
-    // direction.
-    const Isometry3d X_GC =
-        geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+      // The normal expressed in the frame G defines the pose of the half space
+      // in its canonical frame C in which the normal aligns with the z-axis
+      // direction.
+      const Isometry3d X_GC =
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
 
-    // Correct X_LC to include the pose X_GC
-    X_LC = X_LG * X_GC;
+      // Correct X_LC to include the pose X_GC
+      X_LC = X_LG * X_GC;
+      break;
+    }
+    case sdf::GeometryType::SPHERE:  {
+      // X_LC = X_LG for SPHERE.
+      break;
+    }
   }
 
   // TODO(amcastro-tri): Extract <material> once sdf::Visual supports it.
 
   return make_unique<GeometryInstance>(
       X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+}
+
+Isometry3d MakeGeometryPoseFromSdfCollision(
+    const sdf::Collision& sdf_collision) {
+  // Retrieve the pose of the collision frame G in the parent link L in which
+  // geometry gets defined.
+  const Isometry3d X_LG = ToIsometry3(sdf_collision.Pose());
+
+  // GeometryInstance defines its shapes in a "canonical frame" C. The canonical
+  // frame C is the frame in which the geometry is defined and it generally
+  // coincides with the geometry frame G (G is specified in the SDF file).
+  // For instance:
+  // - A half-space's normal is directed along the Cz axis,
+  // - A cylinder's length is parallel to the Cz axis,
+  // - etc.
+  // There are cases however in which C might not coincide with G. A HalfSpace
+  // is one of such examples, since for geometry::HalfSpace the normal is
+  // represented in the C frame along Cz, whereas SDF defines the normal in a
+  // frame G which does not necessarily coincide with C.
+
+  // X_LC defines the pose of the canonical frame in the link frame L.
+  Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
+
+  // For a half-space, C and G are not the same since SDF allows to specify
+  // the normal of the plane in the G frame.
+  // Note to developers: if needed, update this switch statement to consider
+  // other geometry types whenever X_LC != X_LG.
+  const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+  switch (sdf_geometry.Type()) {
+    case sdf::GeometryType::EMPTY:
+    case sdf::GeometryType::BOX:
+    case sdf::GeometryType::CYLINDER: {
+      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+      break;
+    }
+    case sdf::GeometryType::PLANE: {
+      const sdf::Plane& shape = *sdf_geometry.PlaneShape();
+      const Vector3d normal_G = ToVector3(shape.Normal());
+      // sdf::Plane also has sdf::Plane::Size(), but we ignore it since in Drake
+      // planes are entire half-spaces.
+
+      // The normal expressed in the frame G defines the pose of the half space
+      // in its canonical frame C in which the normal aligns with the z-axis
+      // direction.
+      const Isometry3d X_GC =
+          geometry::HalfSpace::MakePose(normal_G, Vector3d::Zero());
+
+      // Correct X_LC to include the pose X_GC
+      X_LC = X_LG * X_GC;
+      break;
+    }
+    case sdf::GeometryType::SPHERE:  {
+      // X_LC = X_LG for SPHERE.
+      break;
+    }
+  }
+  return X_LC;
+}
+
+CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+    const sdf::Collision& sdf_collision) {
+
+  const sdf::ElementPtr collision_element = sdf_collision.Element();
+  // Element pointers can only be nullptr if Load() was not called on the sdf::
+  // object. Only a bug could cause this.
+  DRAKE_DEMAND(collision_element != nullptr);
+
+  const sdf::Element* const surface_element =
+      MaybeGetChildElement(*collision_element, "surface");
+
+  // If the surface is not found, the default is that of a frictionless
+  // surface (i.e. zero friction coefficients).
+  if (!surface_element) return CoulombFriction<double>();
+
+  // Once <surface> is found, <friction> and <ode> are required.
+  const sdf::Element& friction_element =
+      GetChildElementOrThrow(*surface_element, "friction");
+  const sdf::Element& ode_element =
+      GetChildElementOrThrow(friction_element, "ode");
+
+  // Once <ode> is found, <mu> (for static) and <mu2> (for dynamic) are
+  // required.
+  const double static_friction =
+      GetChildElementValueOrThrow<double>(ode_element, "mu");
+  const double dynamic_friction =
+      GetChildElementValueOrThrow<double>(ode_element, "mu2");
+
+  return CoulombFriction<double>(static_friction, dynamic_friction);
+}
+
+sdf::Visual ResolveVisualUri(const sdf::Visual& original,
+                             const parsers::PackageMap& package_map,
+                             const std::string& root_dir) {
+  std::shared_ptr<sdf::Element> visual_element = original.Element()->Clone();
+  sdf::Element* geom_element =
+      MaybeGetChildElement(visual_element.get(), "geometry");
+  if (geom_element) {
+    sdf::Element* mesh_element = MaybeGetChildElement(geom_element, "mesh");
+    if (mesh_element) {
+      sdf::Element* uri_element = MaybeGetChildElement(mesh_element, "uri");
+      if (uri_element) {
+        const std::string uri = uri_element->Get<std::string>();
+        const std::string resolved_name =
+            parsers::ResolveFilename(uri, package_map, root_dir);
+        if (!resolved_name.empty()) {
+          uri_element->Set(resolved_name);
+        } else {
+          throw std::runtime_error(
+              std::string(__FILE__) + ": " + __func__ +
+              ": ERROR: Mesh file name could not be resolved from the "
+              "provided uri \"" + uri + "\".");
+        }
+      } else {
+        throw std::runtime_error(
+            std::string(__FILE__) + ": " + __func__ +
+            ": ERROR: <mesh> tag specified without <uri?>");
+      }
+    }
+  }
+
+  sdf::Visual visual;
+  visual.Load(visual_element);
+  return visual;
 }
 
 }  // namespace detail
