@@ -37,7 +37,7 @@ T PurePursuit<T>::Evaluate(const PurePursuitParams<T>& pp_params,
 
   const T x = pose.get_translation().translation().x();
   const T y = pose.get_translation().translation().y();
-  const T heading = math::RollPitchYaw<T>(pose.get_rotation()).get_yaw_angle();
+  const T heading = math::RollPitchYaw<T>(pose.get_rotation()).yaw_angle();
 
   const T delta_r = -(goal_position.x() - x) * sin(heading) +
                     (goal_position.y() - y) * cos(heading);

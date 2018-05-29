@@ -9,6 +9,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/util/wrap_function.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace pydrake {
@@ -79,6 +80,25 @@ struct wrap_callback<std::function<Signature>>
 template <typename Func>
 auto WrapCallbacks(Func&& func) {
   return WrapFunction<detail::wrap_callback, false>(std::forward<Func>(func));
+}
+
+/// Idempotent to pybind11's `def_readwrite()`, with the exception that the
+/// setter is protected with keep_alive on a `member` variable that is a bare
+/// pointer.  Should not be used for unique_ptr members.
+///
+/// @tparam PyClass the python class.
+/// @tparam Class the C++ class.
+/// @tparam T type for the member we wish to apply keep alive semantics.
+template <typename PyClass, typename Class, typename T>
+void DefReadWriteKeepAlive(PyClass* cls, const char* name, T Class::*member) {
+  auto getter = [member](const Class* obj) { return obj->*member; };
+  auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
+  cls->def_property(
+    name,
+    py::cpp_function(getter),
+    py::cpp_function(setter,
+                     // Keep alive, reference: `self` keeps `value` alive.
+                     py::keep_alive<1, 2>()));
 }
 
 }  // namespace pydrake

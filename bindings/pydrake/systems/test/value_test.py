@@ -73,6 +73,12 @@ class TestValue(unittest.TestCase):
                     self.assertTrue(value_copy is not value_data)
                     self.assertEquals(value_data.size(), n)
 
+    def test_basic_vector_set_get(self):
+        value = BasicVector(np.arange(3., 5.))
+        self.assertEquals(value.GetAtIndex(1), 4.)
+        value.SetAtIndex(1, 5.)
+        self.assertEquals(value.GetAtIndex(1), 5.)
+
     def test_abstract_value_copyable(self):
         expected = "Hello world"
         value = Value[str](expected)

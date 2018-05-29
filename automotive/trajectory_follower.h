@@ -2,8 +2,8 @@
 
 #include <Eigen/Geometry>
 
-#include "drake/automotive/agent_trajectory.h"
 #include "drake/automotive/gen/simple_car_state.h"
+#include "drake/automotive/trajectory.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/extract_double.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -13,23 +13,7 @@
 namespace drake {
 namespace automotive {
 
-/// Container for static data for a given agent model.
-struct AgentData {
-  enum class AgentType { kCar, kBicycle, kPedestrian };
-  // TODO(jadecastro) Add more types as necessary.
-
-  explicit AgentData(const AgentType& t) : type(t) {}
-
-  AgentType type{AgentType::kCar};
-};
-
-// Provide an explicit specialization for the kCar agent type.
-struct CarAgent : AgentData {
-  CarAgent() : AgentData(AgentType::kCar) {}
-};
-
-/// TrajectoryAgent models an agent that follows a pre-established trajectory,
-/// taking as input an AgentData structure and an AgentTrajectory.
+/// TrajectoryFollower simply moves along a pre-established trajectory.
 ///
 /// Note that, when T = AutoDiffXd, the AutoDiffXd derivatives for each element
 /// of the the outputs are empty.
@@ -39,7 +23,7 @@ struct CarAgent : AgentData {
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, positive-left-turn.
 /// * speed: s = √{ẋ² + ẏ²}
-///   (OutputPort getter: raw_pose_output())
+///   (OutputPort getter: state_output())
 ///
 /// output port 1: A PoseVector containing X_WA, where A is the agent's
 /// reference frame.
@@ -52,33 +36,32 @@ struct CarAgent : AgentData {
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - drake::AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 ///
 /// @ingroup automotive_plants
 template <typename T>
-class TrajectoryAgent final : public systems::LeafSystem<T> {
+class TrajectoryFollower final : public systems::LeafSystem<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryAgent)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryFollower)
 
-  /// Constructs a TrajectoryAgent system that traces a given AgentTrajectory.
+  /// Constructs a TrajectoryFollower system that traces a given Trajectory.
   ///
-  /// @param agent_data an AgentData structure defining the agent.
-  /// @param trajectory an AgentTrajectory containing the trajectory.
+  /// @param trajectory a Trajectory containing the trajectory.
   /// @param sampling_time_sec the requested sampling time (in sec) for this
   /// system.  @default 0.01.
-  TrajectoryAgent(const AgentData& agent_data,
-                  const AgentTrajectory& trajectory,
-                  double sampling_time_sec = 0.01);
+  TrajectoryFollower(const Trajectory& trajectory,
+                     double sampling_time_sec = 0.01);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
-  explicit TrajectoryAgent(const TrajectoryAgent<U>& other)
-      : TrajectoryAgent<T>(other.agent_data_, other.trajectory_) {}
+  explicit TrajectoryFollower(const TrajectoryFollower<U>& other)
+      : TrajectoryFollower<T>(other.trajectory_) {}
 
   /// @name Accessors for the outputs, as enumerated in the class documentation.
   /// @{
-  const systems::OutputPort<T>& raw_pose_output() const {
+  const systems::OutputPort<T>& state_output() const {
     return this->get_output_port(0);
   }
   const systems::OutputPort<T>& pose_output() const {
@@ -111,10 +94,9 @@ class TrajectoryAgent final : public systems::LeafSystem<T> {
 
   // Allow different specializations to access each other's private data.
   template <typename>
-  friend class TrajectoryAgent;
+  friend class TrajectoryFollower;
 
-  const AgentData agent_data_;
-  const AgentTrajectory trajectory_;
+  const Trajectory trajectory_;
 };
 
 }  // namespace automotive

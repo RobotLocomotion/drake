@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":multilane_brute_force_integral",
         ":multilane_types_compare",
     ],
 )
@@ -29,6 +30,17 @@ drake_cc_library(
         "//common:essential",
         "//math:geometric_transform",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "multilane_brute_force_integral",
+    testonly = 1,
+    srcs = ["multilane_brute_force_integral.cc"],
+    hdrs = ["multilane_brute_force_integral.h"],
+    deps = [
+        "//automotive/maliput/multilane:lanes",
+        "//common:essential",
     ],
 )
 

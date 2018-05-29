@@ -111,7 +111,11 @@ cc_library(
     include_prefix = "drake/common/proto",
     strip_include_prefix = "/third_party/com_github_google_protobuf",
     tags = [
+        # Developers should not use this directly.
         "exclude_from_package",
+        # Don't install via cc_library; instead, rely on the :install rule
+        # below to handle the install path correctly.
+        "exclude_from_libdrake",
     ],
 )
 

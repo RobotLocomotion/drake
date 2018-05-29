@@ -67,7 +67,8 @@ class TestSystem : public System<double> {
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto port = std::make_unique<LeafOutputPort<double>>(*this,
+    auto port = std::make_unique<LeafOutputPort<double>>(
+        *this, *this, OutputPortIndex(get_num_output_ports()),
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -412,7 +413,8 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
         []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
@@ -424,7 +426,7 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1,
                            RandomDistribution::kGaussian);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this,
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
         1,  // Vector size.
         []() {
           return std::make_unique<Value<BasicVector<T>>>(1);
@@ -470,9 +472,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
-    context->SetNumInputPorts(this->get_num_input_ports());
-    return std::move(context);
+    return std::make_unique<LeafContext<T>>();
   }
 
   void DoValidateAllocatedContext(const ContextBase& context) const final {}
@@ -637,10 +637,10 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
       ".*EvalEigenVectorInput.*input port\\[1\\].*neither connected nor "
-          "freestanding.*");
+          "fixed.*");
 
   // Assign values to all ports. All but port 0 are BasicVector ports.
-  system_.AllocateFreestandingInputs(context_.get());
+  system_.AllocateFixedInputs(context_.get());
 
   EXPECT_NO_THROW(system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
@@ -724,7 +724,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
-  test_sys_.AllocateFreestandingInputs(context_.get());
+  test_sys_.AllocateFixedInputs(context_.get());
   // First input should have been re-allocated to the empty string.
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
             "");

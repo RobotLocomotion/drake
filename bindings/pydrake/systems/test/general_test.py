@@ -15,6 +15,7 @@ from pydrake.symbolic import (
     )
 from pydrake.systems.analysis import (
     IntegratorBase_,
+    RungeKutta2Integrator, RungeKutta3Integrator,
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
@@ -221,12 +222,12 @@ class TestGeneral(unittest.TestCase):
         # Create and attach inputs.
         # TODO(eric.cousineau): Not seeing any assertions being printed if no
         # inputs are connected. Need to check this behavior.
-        input0 = BasicVector([0.1, 0.2, 0.3])
+        input0 = np.array([0.1, 0.2, 0.3])
         context.FixInputPort(0, input0)
-        input1 = BasicVector([0.02, 0.03, 0.04])
+        input1 = np.array([0.02, 0.03, 0.04])
         context.FixInputPort(1, input1)
         input2 = BasicVector([0.003, 0.004, 0.005])
-        context.FixInputPort(2, input2)
+        context.FixInputPort(2, input2)  # Test the BasicVector overload.
 
         # Initialize integrator states.
         integrator_xc = (
@@ -289,3 +290,23 @@ class TestGeneral(unittest.TestCase):
 
         const_integrator = simulator.get_integrator()
         self.assertTrue(const_integrator is integrator)
+
+        # Test context-less constructors for
+        # integrator types.
+        test_integrator = RungeKutta2Integrator(
+            system=system, max_step_size=0.01)
+        test_integrator = RungeKutta3Integrator(system=system)
+
+        # Test simulator's reset_integrator,
+        # and also the full constructors for
+        # all integrator types.
+        simulator.reset_integrator(
+            RungeKutta2Integrator(
+                system=system,
+                max_step_size=0.01,
+                context=simulator.get_mutable_context()))
+
+        simulator.reset_integrator(
+            RungeKutta3Integrator(
+                system=system,
+                context=simulator.get_mutable_context()))

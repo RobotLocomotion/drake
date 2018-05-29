@@ -261,18 +261,30 @@ class Simulator {
 
   /// Resets the integrator with a new one. An example usage is:
   /// @code
-  /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
-  ///               (sys, DT, context).
+  /// simulator.reset_integrator(std::move(integrator));
   /// @endcode
   /// The %Simulator must be reinitialized after resetting the integrator to
   /// ensure the integrator is properly initialized. You can do that explicitly
   /// with the Initialize() method or it will be done implicitly at the first
   /// time step.
+  template <class U>
+  U* reset_integrator(std::unique_ptr<U> integrator) {
+    initialization_done_ = false;
+    integrator_ = std::move(integrator);
+    return static_cast<U*>(integrator_.get());
+  }
+
+  /// Resets the integrator with a new one using factory construction. An
+  /// example usage is:
+  /// @code
+  /// simulator.reset_integrator<ExplicitEulerIntegrator<double>>
+  ///               (sys, DT, context).
+  /// @endcode
+  /// See the base overload for `reset_integrator` for more details.
   template <class U, typename... Args>
   U* reset_integrator(Args&&... args) {
-    initialization_done_ = false;
-    integrator_ = std::make_unique<U>(std::forward<Args>(args)...);
-    return static_cast<U*>(integrator_.get());
+    auto integrator = std::make_unique<U>(std::forward<Args>(args)...);
+    return reset_integrator(std::move(integrator));
   }
 
   /// Gets the length of the interval used for witness function time isolation.

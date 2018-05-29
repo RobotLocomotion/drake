@@ -74,16 +74,7 @@ constexpr int kAutoSize = -1;
 #ifndef DRAKE_DOXYGEN_CXX
 class AbstractValue;
 class ContextBase;
-
-// (Stub, please ignore) An empty type-agnostic base class for input ports.
-// TODO(sherm1) Replace with the real InputPortBase in its own header (see
-// caching branch).
-class InputPortBase {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortBase)
-  InputPortBase() = default;
-  virtual ~InputPortBase() = default;
-};
+class InputPortBase;
 
 namespace internal {
 
@@ -103,13 +94,14 @@ class SystemMessageInterface {
   virtual ~SystemMessageInterface() = default;
 
   // Returns a human-readable simple name of this subsystem, suitable for use
-  // in constructing a system pathname. If there is no name this should still
-  // return some non-empty placeholder name.
+  // in constructing a system pathname. If there is no name this should return
+  // the string provided by no_name() below.
   virtual const std::string& GetSystemName() const = 0;
 
   // Generates and returns the full path name of this subsystem, starting at
   // the root of the containing Diagram, with path name separators between
-  // segments. The individual segment names should come from GetSystemName().
+  // segments. The individual segment names should come from GetSystemName(),
+  // and path separators should come from path_separator() below.
   virtual std::string GetSystemPathname() const = 0;
 
   // Returns the concrete type of this subsystem. This should be the
@@ -123,6 +115,26 @@ class SystemMessageInterface {
   //    DRAKE_ASSERT_VOID(ThrowIfContextNotCompatible(context));
   // @endcode
   virtual void ThrowIfContextNotCompatible(const ContextBase&) const = 0;
+
+  // Use this string as a stand-in name for an unnamed System. This is not
+  // a default name, just an indicator that there is no name. This is a policy
+  // and should be used by both System/ContextMessageInterface.
+  // TODO(sherm1) Revisit this "_" business. Maybe something like "(noname)",
+  // or a unique default like DiagramBuilder uses?
+  // Be sure to update implementation comments if you change this policy.
+  static const std::string& no_name() {
+    static never_destroyed<std::string> dummy("_");
+    return dummy.access();
+  }
+
+  // Use this string as the separator in System path names. This is a policy
+  // and should be used by both System/ContextMessageInterface.
+  // TODO(sherm1) Change to more conventional "/" delimiter.
+  // Be sure to update implementation comments if you change this policy.
+  static const std::string& path_separator() {
+    static never_destroyed<std::string> separator("::");
+    return separator.access();
+  }
 
  protected:
   SystemMessageInterface() = default;
@@ -141,12 +153,13 @@ class ContextMessageInterface {
   // Returns a human-readable simple name of this subcontext's corresponding
   // subsystem, suitable for use in constructing a system pathname. If there is
   // no name this should still return some non-empty placeholder name, using
-  // the same method as SystemMessageInterface does.
+  // the SystemMessageInterface::no_name() method.
   virtual const std::string& GetSystemName() const = 0;
 
   // Generates and returns the full path name of this subsystem, starting at
   // the root of the containing Diagram, with path name separators between
-  // segments. The individual segment names should come from GetSystemName().
+  // segments. The individual segment names should come from GetSystemName()
+  // and the path separator from SystemMessageInterface::path_separator().
   virtual std::string GetSystemPathname() const = 0;
 
  protected:

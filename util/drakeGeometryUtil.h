@@ -151,47 +151,21 @@ Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
   return ret;
 }
 
-template <typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
-void rpydot2angularvel(
-    const Eigen::MatrixBase<DerivedRPY>& rpy,
-    const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
-    Eigen::MatrixBase<DerivedOMEGA>& omega,
-    typename drake::math::Gradient<DerivedOMEGA, drake::kRpySize, 1>::type*
-        domega = nullptr) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>,
-                                           drake::kRpySize);
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>,
-                                           drake::kRpySize);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>,
-                                           drake::kRpySize, 1);
-
-  Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
-  if (domega) {
-    Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
-    rpydot2angularvelMatrix(rpy, E, &dE);
-    (*domega) << drake::math::matGradMult(dE, rpydot), E;
-  } else {
-    rpydot2angularvelMatrix(rpy, E);
-  }
-  omega = E * rpydot;
-}
-
 /*
  * spatial transform functions
  */
-template <typename Derived>
-struct TransformSpatial {
-  typedef typename Eigen::Matrix<typename Derived::Scalar, drake::kTwistSize,
-                                 Derived::ColsAtCompileTime>
-      type;
-};
 
+// This function is only applicable to input matrices with columns less than or
+// equal to 6 and will assert if the number of columns is greater than 6.
 template <typename DerivedM>
-typename TransformSpatial<DerivedM>::type transformSpatialMotion(
+decltype(auto) transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M) {
+  DRAKE_ASSERT(M.cols() <= 6);
   Eigen::Matrix<typename DerivedM::Scalar, drake::kTwistSize,
-                DerivedM::ColsAtCompileTime>
+                DerivedM::ColsAtCompileTime, 0, drake::kTwistSize,
+                DerivedM::ColsAtCompileTime == Eigen::Dynamic
+                  ? 6 : DerivedM::ColsAtCompileTime>
       ret(drake::kTwistSize, M.cols());
   ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
   ret.template bottomRows<3>().noalias() =
@@ -255,12 +229,11 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
 }
 
 template <typename DerivedF>
-typename TransformSpatial<DerivedF>::type transformSpatialForce(
+decltype(auto) transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F) {
   Eigen::Matrix<typename DerivedF::Scalar, drake::kTwistSize,
-                DerivedF::ColsAtCompileTime>
-      ret(drake::kTwistSize, F.cols());
+                DerivedF::ColsAtCompileTime> ret(drake::kTwistSize, F.cols());
   ret.template bottomRows<3>().noalias() =
       T.linear() * F.template bottomRows<3>().eval();
   ret.template topRows<3>() =
@@ -419,10 +392,11 @@ drake::SquareTwistMatrix<typename DerivedI::Scalar> transformSpatialInertia(
 }
 
 template <typename DerivedA, typename DerivedB>
-typename TransformSpatial<DerivedB>::type crossSpatialMotion(
+decltype(auto) crossSpatialMotion(
     const Eigen::MatrixBase<DerivedA>& a,
     const Eigen::MatrixBase<DerivedB>& b) {
-  typename TransformSpatial<DerivedB>::type ret(drake::kTwistSize, b.cols());
+  Eigen::Matrix<typename DerivedB::Scalar, drake::kTwistSize,
+                DerivedB::ColsAtCompileTime> ret(drake::kTwistSize, b.cols());
   ret.template topRows<3>() =
       -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template bottomRows<3>() =
@@ -433,10 +407,11 @@ typename TransformSpatial<DerivedB>::type crossSpatialMotion(
 }
 
 template <typename DerivedA, typename DerivedB>
-typename TransformSpatial<DerivedB>::type crossSpatialForce(
+decltype(auto) crossSpatialForce(
     const Eigen::MatrixBase<DerivedA>& a,
     const Eigen::MatrixBase<DerivedB>& b) {
-  typename TransformSpatial<DerivedB>::type ret(drake::kTwistSize, b.cols());
+  Eigen::Matrix<typename DerivedB::Scalar, drake::kTwistSize,
+                DerivedB::ColsAtCompileTime> ret(drake::kTwistSize, b.cols());
   ret.template topRows<3>() =
       -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template topRows<3>() -=

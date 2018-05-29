@@ -1,4 +1,4 @@
-#include "drake/automotive/trajectory_agent.h"
+#include "drake/automotive/trajectory_follower.h"
 
 #include <vector>
 
@@ -20,33 +20,33 @@ using Eigen::Vector3d;
 using systems::rendering::FrameVelocity;
 using systems::rendering::PoseVector;
 
-GTEST_TEST(TrajectoryAgentTest, Topology) {
+GTEST_TEST(TrajectoryFollowerTest, Topology) {
   const std::vector<double> times{0., 1.};
   std::vector<Quaternion<double>> rotations{Quaternion<double>::Identity(),
                                             Quaternion<double>::Identity()};
   std::vector<Vector3d> translations{Vector3d::Zero(), Vector3d::Zero()};
-  const TrajectoryAgent<double> car(
-      CarAgent(), AgentTrajectory::Make(times, rotations, translations));
+  const TrajectoryFollower<double> follower(
+      Trajectory::Make(times, rotations, translations));
 
-  ASSERT_EQ(0, car.get_num_input_ports());
-  ASSERT_EQ(3, car.get_num_output_ports());
+  ASSERT_EQ(0, follower.get_num_input_ports());
+  ASSERT_EQ(3, follower.get_num_output_ports());
 
-  const auto& state_output = car.raw_pose_output();
+  const auto& state_output = follower.state_output();
   EXPECT_EQ(systems::kVectorValued, state_output.get_data_type());
   EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, state_output.size());
 
-  const auto& pose_output = car.pose_output();
+  const auto& pose_output = follower.pose_output();
   EXPECT_EQ(systems::kVectorValued, pose_output.get_data_type());
   EXPECT_EQ(PoseVector<double>::kSize, pose_output.size());
 
-  const auto& velocity_output = car.velocity_output();
+  const auto& velocity_output = follower.velocity_output();
   EXPECT_EQ(systems::kVectorValued, velocity_output.get_data_type());
   EXPECT_EQ(FrameVelocity<double>::kSize, velocity_output.size());
 
-  ASSERT_FALSE(car.HasAnyDirectFeedthrough());
+  ASSERT_FALSE(follower.HasAnyDirectFeedthrough());
 }
 
-GTEST_TEST(TrajectoryAgentTest, Outputs) {
+GTEST_TEST(TrajectoryFollowerTest, Outputs) {
   using std::cos;
   using std::sin;
 
@@ -79,16 +79,16 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
     const std::vector<Vector3d> translations{start_translation,
                                              end_translation};
     const std::vector<double> times{0., it.distance / kSpeed};
-    const AgentTrajectory trajectory =
-        AgentTrajectory::Make(times, rotations, translations);
+    const Trajectory trajectory =
+        Trajectory::Make(times, rotations, translations);
 
-    const TrajectoryAgent<double> agent(CarAgent(), trajectory);
+    const TrajectoryFollower<double> follower(trajectory);
 
     // Check that the outputs are correct over the entirety of the trajectory.
-    systems::Simulator<double> simulator(agent);
+    systems::Simulator<double> simulator(follower);
     systems::Context<double>& context = simulator.get_mutable_context();
     std::unique_ptr<systems::SystemOutput<double>> outputs =
-        agent.AllocateOutput(context);
+        follower.AllocateOutput(context);
     simulator.Initialize();
 
     const double end_time = it.distance / kSpeed;
@@ -101,21 +101,21 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
       Eigen::Translation<double, 3> expected_translation(
           start_translation +
           Vector3d{cos(it.heading) * position, sin(it.heading) * position, 0.});
-      agent.CalcOutput(context, outputs.get());
+      follower.CalcOutput(context, outputs.get());
 
-      // Tests the raw pose output.
-      const auto raw_pose = dynamic_cast<const SimpleCarState<double>*>(
-          outputs->get_vector_data(agent.raw_pose_output().get_index()));
-      EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, raw_pose->size());
+      // Tests the state output.
+      const auto state = dynamic_cast<const SimpleCarState<double>*>(
+          outputs->get_vector_data(follower.state_output().get_index()));
+      EXPECT_EQ(SimpleCarStateIndices::kNumCoordinates, state->size());
 
-      EXPECT_NEAR(expected_translation.x(), raw_pose->x(), kTol);
-      EXPECT_NEAR(expected_translation.y(), raw_pose->y(), kTol);
-      EXPECT_NEAR(it.heading, raw_pose->heading(), kTol);
-      EXPECT_DOUBLE_EQ(kSpeed, raw_pose->velocity());
+      EXPECT_NEAR(expected_translation.x(), state->x(), kTol);
+      EXPECT_NEAR(expected_translation.y(), state->y(), kTol);
+      EXPECT_NEAR(it.heading, state->heading(), kTol);
+      EXPECT_DOUBLE_EQ(kSpeed, state->velocity());
 
       // Tests the PoseVector output.
       const auto pose = dynamic_cast<const PoseVector<double>*>(
-          outputs->get_vector_data(agent.pose_output().get_index()));
+          outputs->get_vector_data(follower.pose_output().get_index()));
       ASSERT_NE(nullptr, pose);
       EXPECT_EQ(PoseVector<double>::kSize, pose->size());
 
@@ -128,7 +128,7 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
 
       // Tests the FrameVelocity output.
       const auto velocity = dynamic_cast<const FrameVelocity<double>*>(
-          outputs->get_vector_data(agent.velocity_output().get_index()));
+          outputs->get_vector_data(follower.velocity_output().get_index()));
 
       ASSERT_NE(nullptr, velocity);
       EXPECT_EQ(FrameVelocity<double>::kSize, velocity->size());
@@ -141,21 +141,24 @@ GTEST_TEST(TrajectoryAgentTest, Outputs) {
   }
 }
 
-GTEST_TEST(TrajectoryAgentTest, ToAutoDiff) {
+GTEST_TEST(TrajectoryFollowerTest, ToAutoDiff) {
   const std::vector<double> times{0., 1.};
   std::vector<Quaternion<double>> rotations{Quaternion<double>::Identity(),
                                             Quaternion<double>::Identity()};
   std::vector<Vector3d> translations{Vector3d::Zero(), Vector3d::Zero()};
-  const TrajectoryAgent<double> agent(
-      CarAgent(), AgentTrajectory::Make(times, rotations, translations));
+  const TrajectoryFollower<double> follower(
+      Trajectory::Make(times, rotations, translations));
 
-  EXPECT_TRUE(is_autodiffxd_convertible(agent, [&](const auto& autodiff_dut) {
+  EXPECT_TRUE(is_autodiffxd_convertible(follower,
+                                        [&](const auto& autodiff_dut) {
     auto context = autodiff_dut.CreateDefaultContext();
     auto output = autodiff_dut.AllocateOutput(*context);
 
     // Check that the public methods can be called without exceptions.
     autodiff_dut.CalcOutput(*context, output.get());
   }));
+
+  EXPECT_TRUE(is_symbolic_convertible(follower));
 }
 
 }  // namespace

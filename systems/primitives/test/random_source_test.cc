@@ -33,8 +33,6 @@ void CheckStatistics(
   auto logger = LogOutput(source->get_output_port(0), &builder);
   logger->set_name("logger");
 
-  source->set_random_seed(42);
-
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
@@ -86,7 +84,7 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
   const double min_value = 0.0;
   const double max_value = 1.0;
   const double h = 0.1;
-  const double fudge_factor = 1.0;
+  const double fudge_factor = 1.5;
   CheckStatistics(Phi, min_value, max_value, h, fudge_factor,
                   std::move(random_source));
 }
@@ -126,7 +124,6 @@ class TestSystem : public LeafSystem<double> {
   using LeafSystem::DeclareInputPort;
   using LeafSystem::EvalVectorInput;
 };
-
 
 //      +-------------------------+
 //      |                         |
@@ -231,6 +228,31 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
     // using the same seed will lead to numbers ≊ 1.
     EXPECT_LE(xcorr / N, 0.1);
   }
+}
+
+// Make sure that calling SetRandomContext changes the output, and
+// SetDefaultContext returns it to the original (default) output.
+GTEST_TEST(RandomSourceTest, SetRandomContextTest) {
+  UniformRandomSource random_source(2, 0.0025);
+  auto output = random_source.get_output_port(0).Allocate();
+  const BasicVector<double>& output_values =
+      output->GetValueOrThrow<systems::BasicVector<double>>();
+
+  auto context = random_source.CreateDefaultContext();
+
+  random_source.get_output_port(0).Calc(*context, output.get());
+  Eigen::Vector2d default_values = output_values.CopyToVector();
+
+  RandomGenerator generator;
+  random_source.SetRandomContext(context.get(), &generator);
+  random_source.get_output_port(0).Calc(*context, output.get());
+  EXPECT_NE(default_values[0], output_values.GetAtIndex(0));
+  EXPECT_NE(default_values[1], output_values.GetAtIndex(1));
+
+  random_source.SetDefaultContext(context.get());
+  random_source.get_output_port(0).Calc(*context, output.get());
+  EXPECT_EQ(default_values[0], output_values.GetAtIndex(0));
+  EXPECT_EQ(default_values[1], output_values.GetAtIndex(1));
 }
 
 }  // namespace

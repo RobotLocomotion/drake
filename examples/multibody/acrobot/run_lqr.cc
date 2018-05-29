@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
@@ -10,6 +11,8 @@
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -25,7 +28,10 @@ using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::multibody_plant::MultibodyPlant;
+using multibody::parsing::AddModelFromSdfFile;
+using multibody::JointActuator;
 using multibody::RevoluteJoint;
+using multibody::UniformGravityFieldElement;
 using systems::Context;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::Serializer;
@@ -43,17 +49,29 @@ DEFINE_double(target_realtime_rate, 1.0,
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
 
-std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
-    const AcrobotParameters& acrobot_parameters) {
-  std::unique_ptr<const MultibodyPlant<double>> acrobot =
-      MakeAcrobotPlant(acrobot_parameters, true);
+// This helper method makes an LQR controller to balance an acrobot model
+// specified in the SDF file `file_name`.
+std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
+    const std::string &file_name) {
+  const std::string full_name = FindResourceOrThrow(file_name);
+  // LinearQuadraticRegulator() below requires the controller's model of the
+  // plant to only have a single input port corresponding to the actuation.
+  // Therefore we create a new model that meets this requirement. (a model
+  // created along with a SceneGraph for simulation would also have input ports
+  // to interact with that SceneGraph).
+  MultibodyPlant<double> acrobot;
+  AddModelFromSdfFile(full_name, &acrobot);
+  // Add gravity to the model.
+  acrobot.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
+  // We are done defining the model.
+  acrobot.Finalize();
+
   const RevoluteJoint<double>& shoulder =
-      acrobot->GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
+      acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
-      acrobot->GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
-  std::unique_ptr<Context<double>> context = acrobot->CreateDefaultContext();
+      acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
+  std::unique_ptr<Context<double>> context = acrobot.CreateDefaultContext();
 
   // Set nominal actuation torque to zero.
   context->FixInputPort(0, Vector1d::Constant(0.0));
@@ -72,7 +90,7 @@ std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
   Vector1d R = Vector1d::Constant(1);
 
   return systems::controllers::LinearQuadraticRegulator(
-      *acrobot, *context, Q, R);
+      acrobot, *context, Q, R);
 }
 
 int do_main() {
@@ -84,20 +102,37 @@ int do_main() {
   const double simulation_time = FLAGS_simulation_time;
 
   // Make and add the acrobot model.
-  const AcrobotParameters acrobot_parameters;
-  const MultibodyPlant<double>& acrobot = *builder.AddSystem(MakeAcrobotPlant(
-      acrobot_parameters, true /* Finalize the plant */, &scene_graph));
+  const std::string relative_name =
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf";
+  const std::string full_name = FindResourceOrThrow(relative_name);
+  MultibodyPlant<double>& acrobot = *builder.AddSystem<MultibodyPlant>();
+  AddModelFromSdfFile(full_name, &acrobot, &scene_graph);
+
+  // Add gravity to the model.
+  acrobot.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
+
+  // We are done defining the model.
+  acrobot.Finalize();
+
+  DRAKE_DEMAND(acrobot.num_actuators() == 1);
+  DRAKE_DEMAND(acrobot.num_actuated_dofs() == 1);
+
   const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.shoulder_joint_name());
+      acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>(
-          acrobot_parameters.elbow_joint_name());
+      acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
+
+  // Drake's parser will default the name of the actuator to match the name of
+  // the joint it actuates.
+  const JointActuator<double>& actuator =
+      acrobot.GetJointActuatorByName("ElbowJoint");
+  DRAKE_DEMAND(actuator.joint().name() == "ElbowJoint");
 
   // For this example the controller's model of the plant exactly matches the
   // plant to be controlled (in reality there would always be a mismatch).
   auto controller = builder.AddSystem(
-      BalancingLQRController(acrobot_parameters));
+      MakeBalancingLQRController(relative_name));
   controller->set_name("controller");
   builder.Connect(acrobot.get_continuous_state_output_port(),
                   controller->get_input_port());

@@ -10,6 +10,23 @@ using drake::solvers::SolutionResult;
 namespace drake {
 namespace multibody {
 namespace {
+GTEST_TEST(GlobalInverseKinematicsTest, TestConstructor) {
+  // Test the constructor. With options linear_constraint_only_ = false, the
+  // program contains lorentz cone constraint. Otherwise there are only linear
+  // constraints.
+  auto kuka = ConstructKuka();
+  GlobalInverseKinematics::Options global_ik_options;
+  // The default option sets linear_constraint_only_ to false.
+  GlobalInverseKinematics global_ik_default(*kuka, global_ik_options);
+  EXPECT_FALSE(global_ik_default.lorentz_cone_constraints().empty());
+  EXPECT_FALSE(global_ik_default.rotated_lorentz_cone_constraints().empty());
+
+  global_ik_options.linear_constraint_only = true;
+  GlobalInverseKinematics global_ik_milp(*kuka, global_ik_options);
+  EXPECT_TRUE(global_ik_milp.lorentz_cone_constraints().empty());
+  EXPECT_TRUE(global_ik_milp.rotated_lorentz_cone_constraints().empty());
+}
+
 TEST_F(KukaTest, UnreachableTest) {
   // Test a cartesian pose that we know is not reachable.
   Eigen::Vector3d ee_pos_lb(0.6, -0.1, 0.7);

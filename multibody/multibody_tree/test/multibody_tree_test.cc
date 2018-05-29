@@ -12,6 +12,7 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/weld_mobilizer.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 
@@ -22,8 +23,10 @@ namespace {
 
 using benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel;
 using benchmarks::kuka_iiwa_robot::MG::MGKukaIIwaRobot;
+using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
 using Eigen::MatrixXd;
+using Eigen::Translation3d;
 using Eigen::Vector3d;
 using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::Context;
@@ -142,7 +145,8 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
     // We added actuators and joints in the same order. Assert this before
     // making that assumption in the test that follows.
     const Joint<T>& joint = actuator.joint();
-    ASSERT_EQ(actuator.index(), joint.index());
+    ASSERT_EQ(static_cast<int>(actuator.index()),
+              static_cast<int>(joint.index()));
     const std::string& joint_name = kJointNames[names_index];
     EXPECT_EQ(joint.name(), joint_name);
     ++names_index;
@@ -690,6 +694,91 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   // Since in this case we are querying for the world frame, the Jacobian should
   // be exactly zero.
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
+}
+
+// Fixture to setup a simple MBT model with weld mobilizers. The model is in
+// the x-y plane and is sketched below. See unit test code comments for details.
+//
+//       ◯  <-- Weld joint between the world W and body 1 frame B1.
+//       **
+//        **
+//         **  Body 1. Slab of length 1, at 45 degrees from the world's origin.
+//          **
+//           **
+//            ◯  <-- Weld joint between frames F (on body 1) and M (on body 2).
+//           **
+//          **
+//         **  Body 2. Slab of length 1, at 90 degrees with body 1.
+//        **
+//       **
+//
+// There are no other mobilizers and therefore there are no dofs.
+class WeldMobilizerTest : public ::testing::Test {
+ public:
+  // Setup the MBT model as sketched above.
+  void SetUp() override {
+    // Spatial inertia for each body. The actual value is not important for
+    // these tests since they are all kinematic.
+    const SpatialInertia<double> M_B;
+
+    body1_ = &model_.AddBody<RigidBody>(M_B);
+    body2_ = &model_.AddBody<RigidBody>(M_B);
+
+    model_.AddMobilizer<WeldMobilizer>(
+        model_.world_body().body_frame(), body1_->body_frame(), X_WB1_);
+
+    // Add a weld joint between bodies 1 and 2 by welding together inboard
+    // frame F (on body 1) with outboard frame M (on body 2).
+    const auto& frame_F = model_.AddFrame<FixedOffsetFrame>(*body1_, X_B1F_);
+    const auto& frame_M = model_.AddFrame<FixedOffsetFrame>(*body2_, X_B2M_);
+    model_.AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
+
+    // We are done adding modeling elements. Finalize the model:
+    model_.Finalize();
+
+    // Create a context to store the state for this model:
+    context_ = model_.CreateDefaultContext();
+
+    // Expected pose of body 2 in the world.
+    X_WB2_.translation() =
+        Vector3d(M_SQRT2 / 4, -M_SQRT2 / 4, 0.0) - Vector3d::UnitY() / M_SQRT2;
+    X_WB2_.linear() =
+        AngleAxisd(-3 * M_PI_4, Vector3d::UnitZ()).toRotationMatrix();
+    X_WB2_.makeAffine();
+  }
+
+ protected:
+  MultibodyTree<double> model_;
+  const RigidBody<double>* body1_{nullptr};
+  const RigidBody<double>* body2_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+  Isometry3d X_WB1_{
+      AngleAxisd(-M_PI_4, Vector3d::UnitZ()) * Translation3d(0.5, 0.0, 0.0)};
+  Isometry3d X_FM_{AngleAxisd(-M_PI_2, Vector3d::UnitZ())};
+  Isometry3d X_B1F_{Translation3d(0.5, 0.0, 0.0)};
+  Isometry3d X_B2M_{Translation3d(-0.5, 0.0, 0.0)};
+  Isometry3d X_WB2_;
+};
+
+TEST_F(WeldMobilizerTest, StateHasZeroSize) {
+  EXPECT_EQ(model_.num_positions(), 0);
+  EXPECT_EQ(model_.num_velocities(), 0);
+  EXPECT_EQ(context_->get_continuous_state().size(), 0);
+}
+
+TEST_F(WeldMobilizerTest, PositionKinematics) {
+  // Numerical tolerance used to verify numerical results.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  std::vector<Isometry3d> body_poses;
+  model_.CalcAllBodyPosesInWorld(*context_, &body_poses);
+
+  EXPECT_TRUE(CompareMatrices(
+      body_poses[body1_->index()].matrix(), X_WB1_.matrix(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      body_poses[body2_->index()].matrix(), X_WB2_.matrix(),
+      kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

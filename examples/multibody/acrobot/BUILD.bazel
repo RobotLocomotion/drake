@@ -37,14 +37,17 @@ drake_cc_binary(
     name = "run_lqr",
     srcs = ["run_lqr.cc"],
     add_test_rule = 1,
+    data = ["//multibody/benchmarks/acrobot:models"],
     test_rule_args = [
         "--simulation_time=0.1",
         "--target_realtime_rate=0.0",
     ],
     deps = [
+        "//common:find_resource",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis:simulator",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:diagram",

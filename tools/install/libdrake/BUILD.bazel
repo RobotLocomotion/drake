@@ -97,22 +97,28 @@ cc_library(
     ],
 )
 
-# Provide a cc_library target that provides libdrake.so, its headers, and its
-# required *.so's that are WORKSPACE downloads (such as VTK, Gurobi, etc).
+# Provide a cc_library target that provides libdrake.so, its headers, its
+# header-only dependencies, and its required *.so's that are WORKSPACE
+# downloads (such as VTK, Gurobi, etc).
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
 # *.so files for us, without us having to know up-front here which dependencies
 # are coming from the WORKSPACE in the form of *.so.
+#
+# TODO(jwnimmer-tri) Ideally, drake_cc_library's installed_headers support
+# would capture a list of headerfile dependencies, so that we don't need to
+# write out the "list of libraries directly mentioned in Drake headers" below.
 cc_library(
     name = "drake_shared_library",
     hdrs = [":libdrake_headers"],
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = [
-        "//bindings/pydrake:__subpackages__",
+        "//bindings:__subpackages__",
         "//examples:__subpackages__",
     ],
     deps = [
+        # The list of depended-on *.so files.
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
@@ -124,7 +130,12 @@ cc_library(
         "@osqp",
         "@scs//:scsdir",
         "@tinyxml2",
+    ] + [
+        # The list of libraries directly mentioned in Drake headers.
+        "@fmt",
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = ["build_components_refresh.py"],
+)

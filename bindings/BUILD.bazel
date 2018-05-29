@@ -1,0 +1,30 @@
+# -*- python -*-
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+)
+load(
+    ":bazel_workaround_4594_libdrake.bzl",
+    "get_bazel_workaround_4594_libdrake_package_info",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This is placed outside of `pydrake` so that we can import this without
+# pulling in an extra copy of `pydrake`. For more information, see
+# `pydrake/__init__.py`.
+drake_pybind_library(
+    name = "bazel_workaround_4594_libdrake_py",
+    add_install = False,
+    cc_so_name = "bazel_workaround_4594_libdrake",
+    cc_srcs = ["bazel_workaround_4594_libdrake_py.cc"],
+    # Since `package_info` must be a `struct`, we must define this in a `*.bzl`
+    # file.
+    package_info = get_bazel_workaround_4594_libdrake_package_info(),
+)
+
+add_lint_tests()

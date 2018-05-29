@@ -12,6 +12,8 @@ PYBIND11_MODULE(shapes, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace DrakeShapes;
 
+  py::module::import("pydrake.util.eigen_geometry");
+
   m.doc() = "Core geometry and shape types.";
 
   py::enum_<Shape>(m, "Shape")

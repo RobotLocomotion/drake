@@ -370,6 +370,14 @@ void RigidBodyTree<T>::compile() {
   //   from the root towards the last leaf.
   for (size_t i = 0; i < bodies_.size(); ++i) {
     const auto& body = bodies_[i];
+
+    if (body->has_parent_body() && !body->has_joint()) {
+      throw runtime_error(
+          "ERROR: RigidBodyTree::compile(): Rigid body \"" +
+          body->get_name() + "\" in model " + body->get_model_name() +
+          " has no joint!");
+    }
+
     if (body->has_parent_body() &&
         body->get_spatial_inertia().isConstant(0)) {
       bool hasChild = false;
@@ -1545,18 +1553,6 @@ void RigidBodyTree<T>::TestConnectedToWorld(const RigidBody<T>& body,
     "The connected set should always include the world node: 0.");
   int id = body.get_body_index();
   if (connected->find(id) == connected->end()) {
-    if (!body.has_joint()) {
-      // NOTE: This test is redundant if it is called during
-      // RigidBodyTree::compile because two previous operations will catch
-      // the missing joint error.  However, for the sake of completeness
-      // and because the cost of the redundancy is negligible, the joint
-      // test is also included.
-      throw runtime_error(
-          "ERROR: RigidBodyTree::TestConnectedToWorld(): "
-              "Rigid body \"" +
-              body.get_name() + "\" in model " + body.get_model_name() +
-              " has no joint!");
-    }
     const RigidBody<T>* parent = body.get_parent();
     if (parent == nullptr) {
       // We know this is *not* the world node because the world node is in the
@@ -1997,19 +1993,27 @@ int RigidBodyTree<T>::parseBodyOrFrameID(const int body_or_frame_id) const {
 }
 
 template <typename T>
-std::vector<int> RigidBodyTree<T>::FindAncestorBodies(
-    int body_index) const {
+void
+RigidBodyTree<T>::FindAncestorBodies(int body_index,
+                                     std::vector<int>* ancestor_bodies) const {
   // Verifies that body_index is valid. Aborts if it is invalid.
   DRAKE_DEMAND(body_index >= 0 &&
-      body_index < static_cast<int>(bodies_.size()));
+               body_index < static_cast<int>(bodies_.size()));
+  DRAKE_DEMAND(ancestor_bodies != nullptr);
 
-  std::vector<int> ancestor_body_list;
+  ancestor_bodies->clear();
   const RigidBody<T>* current_body = bodies_[body_index].get();
   while (current_body->has_parent_body()) {
-    ancestor_body_list.push_back(current_body->get_parent()->get_body_index());
+    ancestor_bodies->push_back(current_body->get_parent()->get_body_index());
     current_body = current_body->get_parent();
   }
-  return ancestor_body_list;
+}
+
+template <typename T>
+std::vector<int> RigidBodyTree<T>::FindAncestorBodies(int body_index) const {
+  std::vector<int> ancestor_bodies;
+  FindAncestorBodies(body_index, &ancestor_bodies);
+  return ancestor_bodies;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to Release 1.0.
@@ -2017,30 +2021,50 @@ template <typename T>
 // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
 void RigidBodyTree<T>::findAncestorBodies(std::vector<int>& ancestor_bodies,
                                           int body_idx) const {
-  ancestor_bodies = FindAncestorBodies(body_idx);
+  FindAncestorBodies(body_idx, &ancestor_bodies);
 }
 
 template <typename T>
 KinematicPath RigidBodyTree<T>::findKinematicPath(
     int start_body_or_frame_idx, int end_body_or_frame_idx) const {
+  KinematicPath path;
+  std::vector<int> start_body_ancestors;
+  std::vector<int> end_body_ancestors;
+  FindKinematicPath(start_body_or_frame_idx, end_body_or_frame_idx,
+                    &start_body_ancestors, &end_body_ancestors, &path);
+  return path;
+}
+
+template <typename T>
+void RigidBodyTree<T>::FindKinematicPath(int start_body_or_frame_idx,
+                                         int end_body_or_frame_idx,
+                                         std::vector<int>* start_body_ancestors,
+                                         std::vector<int>* end_body_ancestors,
+                                         KinematicPath* path) const {
+  DRAKE_DEMAND(start_body_ancestors != nullptr);
+  DRAKE_DEMAND(end_body_ancestors != nullptr);
+  DRAKE_DEMAND(path != nullptr);
+
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
 
-  std::vector<int> start_body_ancestors = FindAncestorBodies(start_body);
-  start_body_ancestors.insert(start_body_ancestors.begin(), start_body);
+  start_body_ancestors->clear();
+  FindAncestorBodies(start_body, start_body_ancestors);
+  start_body_ancestors->insert(start_body_ancestors->begin(), start_body);
 
   int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
-  std::vector<int> end_body_ancestors = FindAncestorBodies(end_body);
-  end_body_ancestors.insert(end_body_ancestors.begin(), end_body);
+  end_body_ancestors->clear();
+  FindAncestorBodies(end_body, end_body_ancestors);
+  end_body_ancestors->insert(end_body_ancestors->begin(), end_body);
 
   // find least common ancestor
   size_t common_size =
-      std::min(start_body_ancestors.size(), end_body_ancestors.size());
+      std::min(start_body_ancestors->size(), end_body_ancestors->size());
   bool least_common_ancestor_found = false;
   std::vector<int>::iterator start_body_lca_it =
-      start_body_ancestors.end() - common_size;
+      start_body_ancestors->end() - common_size;
   std::vector<int>::iterator end_body_lca_it =
-      end_body_ancestors.end() - common_size;
+      end_body_ancestors->end() - common_size;
 
   for (size_t i = 0; i < common_size; ++i) {
     if (*start_body_lca_it == *end_body_lca_it) {
@@ -2060,24 +2084,25 @@ KinematicPath RigidBodyTree<T>::findKinematicPath(
   int least_common_ancestor = *start_body_lca_it;
 
   // compute path
-  KinematicPath path;
+  path->joint_path.clear();
+  path->joint_direction_signs.clear();
+  path->body_path.clear();
 
-  std::vector<int>::iterator it = start_body_ancestors.begin();
+  std::vector<int>::iterator it = start_body_ancestors->begin();
   for (; it != start_body_lca_it; ++it) {
-    path.joint_path.push_back(*it);
-    path.joint_direction_signs.push_back(-1);
-    path.body_path.push_back(*it);
+    path->joint_path.push_back(*it);
+    path->joint_direction_signs.push_back(-1);
+    path->body_path.push_back(*it);
   }
 
-  path.body_path.push_back(least_common_ancestor);
+  path->body_path.push_back(least_common_ancestor);
 
   std::vector<int>::reverse_iterator reverse_it(end_body_lca_it);
-  for (; reverse_it != end_body_ancestors.rend(); ++reverse_it) {
-    path.joint_path.push_back(*reverse_it);
-    path.joint_direction_signs.push_back(1);
-    path.body_path.push_back(*reverse_it);
+  for (; reverse_it != end_body_ancestors->rend(); ++reverse_it) {
+    path->joint_path.push_back(*reverse_it);
+    path->joint_direction_signs.push_back(1);
+    path->body_path.push_back(*reverse_it);
   }
-  return path;
 }
 
 #endif
@@ -2089,11 +2114,65 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind,
     int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind,
     bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const {
-  CheckCacheValidity(cache);
-  cache.checkCachedKinematicsSettings(false, false, "geometricJacobian");
+  TwistMatrix<Scalar> J(kTwistSize, in_terms_of_qdot ? get_num_positions()
+                            : get_num_velocities());
+  std::vector<int> indices;
+  GeometricJacobian(cache, base_body_or_frame_ind,
+                    end_effector_body_or_frame_ind,
+                    expressed_in_body_or_frame_ind, in_terms_of_qdot,
+                    v_or_qdot_indices != nullptr ? v_or_qdot_indices :
+                    &indices, &J);
+  return J.block(0, 0, kTwistSize, v_or_qdot_indices != nullptr ?
+                v_or_qdot_indices->size() : indices.size());
+}
 
-  KinematicPath kinematic_path =
-      findKinematicPath(base_body_or_frame_ind, end_effector_body_or_frame_ind);
+namespace {
+
+template <typename Scalar>
+void TransformJacobian(
+  const Eigen::Transform<Scalar, 3, Eigen::Isometry>& transform,
+  drake::Matrix6X<Scalar>* J) {
+    DRAKE_DEMAND(J != nullptr);
+
+    // This block of computation is similar to transformSpatialMotion but J
+    // could have more than 6 columns, so we do not call transformSpatialMotion
+    // directly. A for loop is used here instead of matrix operations to
+    // prevent a dynamically sized temporary from being allocated.
+    for (int col = 0; col < J->cols(); ++col) {
+      J->col(col).template head<3>() =
+        transform.linear() * J->col(col).template head<3>();
+      J->col(col).template tail<3>() =
+        transform.linear() * J->col(col).template tail<3>();
+      J->col(col).template tail<3>().noalias() +=
+         -J->col(col).template head<3>().cross(transform.translation());
+    }
+}
+
+}  // namespace
+
+template <typename T>
+template <typename Scalar>
+void RigidBodyTree<T>::GeometricJacobian(const KinematicsCache<Scalar>& cache,
+                                         int base_body_or_frame_ind,
+                                         int end_effector_body_or_frame_ind,
+                                         int expressed_in_body_or_frame_ind,
+                                         bool in_terms_of_qdot,
+                                         std::vector<int>* v_or_q_indices,
+                                         Matrix6X<Scalar>* J) const {
+  DRAKE_DEMAND(J != nullptr);
+
+  CheckCacheValidity(cache);
+  cache.checkCachedKinematicsSettings(false, false, "GeometricJacobian");
+
+  KinematicPath& kinematic_path = cache.geometric_jacobian_temp.kinematic_path;
+  std::vector<int>& start_body_ancestors =
+      cache.geometric_jacobian_temp.start_body_ancestors;
+  std::vector<int>& end_body_ancestors =
+      cache.geometric_jacobian_temp.end_body_ancestors;
+
+  FindKinematicPath(base_body_or_frame_ind, end_effector_body_or_frame_ind,
+                    &start_body_ancestors, &end_body_ancestors,
+                    &kinematic_path);
 
   int cols = 0;
   int body_index;
@@ -2101,16 +2180,16 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     body_index = kinematic_path.joint_path[i];
     const RigidBody<T>& body = *bodies_[body_index];
     const DrakeJoint& joint = body.getJoint();
-    cols +=
-        in_terms_of_qdot ? joint.get_num_positions() :
-        joint.get_num_velocities();
+    cols += in_terms_of_qdot ? joint.get_num_positions()
+                             : joint.get_num_velocities();
   }
 
-  TwistMatrix<Scalar> J(kTwistSize, cols);
+  DRAKE_DEMAND(J->cols() >= cols);
+  J->setZero();
 
-  if (v_or_qdot_indices != nullptr) {
-    v_or_qdot_indices->clear();
-    v_or_qdot_indices->reserve(cols);
+  if (v_or_q_indices != nullptr) {
+    v_or_q_indices->clear();
+    v_or_q_indices->reserve(cols);
   }
 
   int col_start = 0;
@@ -2119,11 +2198,10 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
     RigidBody<T>& body = *bodies_[body_index];
     const auto& element = cache.get_element(body.get_body_index());
     const DrakeJoint& joint = body.getJoint();
-    int ncols_block =
-        in_terms_of_qdot ? joint.get_num_positions() :
-        joint.get_num_velocities();
+    int ncols_block = in_terms_of_qdot ? joint.get_num_positions()
+                                       : joint.get_num_velocities();
     int sign = kinematic_path.joint_direction_signs[i];
-    auto J_block = J.template block<kTwistSize, Dynamic>(
+    auto J_block = J->template block<kTwistSize, Dynamic>(
         0, col_start, kTwistSize, ncols_block);
     if (in_terms_of_qdot) {
       J_block.noalias() =
@@ -2132,12 +2210,11 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
       J_block.noalias() = sign * element.motion_subspace_in_world;
     }
 
-    if (v_or_qdot_indices != nullptr) {
-      int cols_block_start =
-          in_terms_of_qdot ? body.get_position_start_index() :
-          body.get_velocity_start_index();
+    if (v_or_q_indices != nullptr) {
+      int cols_block_start = in_terms_of_qdot ? body.get_position_start_index()
+                                              : body.get_velocity_start_index();
       for (int j = 0; j < ncols_block; ++j) {
-        v_or_qdot_indices->push_back(cols_block_start + j);
+        v_or_q_indices->push_back(cols_block_start + j);
       }
     }
     col_start += ncols_block;
@@ -2146,10 +2223,8 @@ TwistMatrix<Scalar> RigidBodyTree<T>::geometricJacobian(
   if (expressed_in_body_or_frame_ind != 0) {
     auto T_world_to_frame =
         relativeTransform(cache, expressed_in_body_or_frame_ind, 0);
-    J = transformSpatialMotion(T_world_to_frame, J);
+    TransformJacobian(T_world_to_frame, J);
   }
-
-  return J;
 }
 
 template <typename T>
@@ -3087,21 +3162,11 @@ int RigidBodyTree<T>::FindIndexOfChildBodyOfJoint(const std::string& joint_name,
   return link->get_body_index();
 }
 
-template <typename T>
-const RigidBody<T>& RigidBodyTree<T>::get_body(int body_index) const {
-  DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
-  return *bodies_[body_index].get();
-}
 
 template <typename T>
 RigidBody<T>* RigidBodyTree<T>::get_mutable_body(int body_index) {
   DRAKE_DEMAND(body_index >= 0 && body_index < get_num_bodies());
   return bodies_[body_index].get();
-}
-
-template <typename T>
-int RigidBodyTree<T>::get_num_bodies() const {
-  return static_cast<int>(bodies_.size());
 }
 
 // TODO(liang.fok) Remove this method prior to Release 1.0.
@@ -3339,21 +3404,12 @@ RigidBody<T>* RigidBodyTree<T>::add_rigid_body(
   return bodies_.back().get();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_positions() const {
-  return num_positions_;
-}
-
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
 int RigidBodyTree<T>::number_of_positions() const {
   return get_num_positions();
 }
 
-template <typename T>
-int RigidBodyTree<T>::get_num_velocities() const {
-  return num_velocities_;
-}
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
 template <typename T>
@@ -3362,20 +3418,8 @@ int RigidBodyTree<T>::number_of_velocities() const {
 }
 
 template <typename T>
-int RigidBodyTree<T>::get_num_actuators() const {
-  return static_cast<int>(actuators.size());
-}
-
-template <typename T>
 int RigidBodyTree<T>::add_model_instance() {
   return num_model_instances_++;
-}
-
-// TODO(liang.fok) Update this method implementation once the world is assigned
-// its own model instance ID (#3088). It should return num_model_instances_ - 1.
-template <typename T>
-int RigidBodyTree<T>::get_num_model_instances() const {
-  return num_model_instances_;
 }
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
@@ -3460,35 +3504,53 @@ template <typename T> drake::Matrix6X<T>
 RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
     const KinematicsCache<T>& cache, const RigidBody<T>& body,
     const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot) const {
+  Matrix6X<T> J(kTwistSize, in_terms_of_qdot ? get_num_positions() :
+                get_num_velocities());
+  CalcFrameSpatialVelocityJacobianInWorldFrame(cache, body, X_BF,
+                                               in_terms_of_qdot, &J);
+  return J;
+}
+
+template <typename T>
+void RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
+    const KinematicsCache<T>& cache, const RigidBody<T>& body,
+    const drake::Isometry3<T>& X_BF, bool in_terms_of_qdot,
+    Matrix6X<T>* J_WF) const {
+  DRAKE_DEMAND(J_WF != nullptr);
   const int world_index = world().get_body_index();
   const int num_col =
       in_terms_of_qdot ? get_num_positions() : get_num_velocities();
+  DRAKE_DEMAND(J_WF->cols() == num_col);
 
   drake::Vector3<T> p_WF =
       CalcFramePoseInWorldFrame(cache, body, X_BF).translation();
 
-  std::vector<int> v_or_q_indices;
+  std::vector<int>& v_or_q_indices =
+    cache.spatial_velocity_jacobian_temp.v_or_q_indices;
+
   // J_WBwo is the Jacobian of the spatial velocity of frame Bwo measured
   // and expressed in the world frame, where Bwo is rigidly attached to B and
   // instantaneously coincides with the world frame.
-  drake::MatrixX<T> J_WBwo = geometricJacobian(
-      cache, world_index, body.get_body_index(), world_index, in_terms_of_qdot,
-      &v_or_q_indices);
+  auto& J_WBwo = in_terms_of_qdot ?
+                    cache.spatial_velocity_jacobian_temp.J_positions :
+                    cache.spatial_velocity_jacobian_temp.J_velocities;
+  GeometricJacobian(cache, world_index, body.get_body_index(), world_index,
+                    in_terms_of_qdot, &v_or_q_indices, &J_WBwo);
 
+  J_WF->setZero();
   int col = 0;
-  drake::Matrix6X<T> J_WF = MatrixX<T>::Zero(6, num_col);
   for (int idx : v_or_q_indices) {
     // Angular velocity stays the same.
-    J_WF.col(idx) = J_WBwo.col(col);
+    J_WF->col(idx) = J_WBwo.col(col);
     // Linear velocity needs an additional cross product term.
-    J_WF.col(idx).template tail<3>() +=
+    J_WF->col(idx).template tail<3>() +=
         J_WBwo.col(col).template head<3>().cross(p_WF);
     col++;
   }
-  return J_WF;
 }
 
-template <typename T> drake::Vector6<T>
+template <typename T>
+drake::Vector6<T>
 RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
       const KinematicsCache<T>& cache, const RigidBody<T>& body,
       const drake::Isometry3<T>& X_BF) const {
@@ -3523,6 +3585,10 @@ RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianDotTimesVInWorldFrame(
 
 #endif
 #if DRAKE_RBT_SHARD == 0
+
+// N.B. The following order of instantiations is reflected in
+// `rigid_body_tree_py.cc`. If you change this order, also update this binding
+// file for traceability purposes.
 
 // Explicit template instantiations for massMatrix.
 template MatrixX<AutoDiffXd     > RigidBodyTree<double>::massMatrix<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&) const;  // NOLINT
