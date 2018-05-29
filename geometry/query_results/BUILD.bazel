@@ -39,4 +39,15 @@ drake_cc_library(
         "//geometry:geometry_ids",
     ],
 )
+
+drake_cc_library(
+    name = "point_proximity",
+    srcs = [],
+    hdrs = ["point_proximity.h"],
+    deps = [
+        "//common",
+        "//geometry:geometry_ids",
+    ],
+)
+
 add_lint_tests()
