@@ -520,23 +520,32 @@ class SystemBase : public internal::SystemMessageInterface {
   variables for this System. By default this is set to the continuous
   second-order state variables q, but configuration may be represented
   differently in some systems (discrete ones, for example), in which case this
-  ticket should have been set to depend on that representation. */
+  ticket should have been set to depend on that representation. This ticket
+  also assumes that configuration computations may depend on any parameter and
+  on the accuracy setting (which don't change often), but not on time. */
   static DependencyTicket configuration_ticket() {
     return DependencyTicket(internal::kConfigurationTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the velocity variables
-  for this System. By default this is set to the continuous state variables v,
-  but velocity may be represented differently in some systems (discrete ones,
-  for example), in which case this ticket should have been set to depend on that
-  representation. */
+  /** (Advanced) Returns a ticket indicating dependence on all of the velocity
+  variables, but _not_ the configuration variables for this System. By default
+  this is set to the continuous state variables v, but velocity may be
+  represented differently in some systems (discrete ones, for example), in which
+  case this ticket should have been set to depend on that representation. This
+  ticket also assumes that velocity calculations may depend on any parameter and
+  on the accuracy setting (which don't change often), but not on time.
+
+  @warning This _does not_ include dependence on configuration, although
+  most velocity calculations do depend on configuration. If you want to
+  register dependence on both (more common), use kinematics_ticket(). */
   static DependencyTicket velocity_ticket() {
     return DependencyTicket(internal::kVelocityTicket);
   }
 
   /** Returns a ticket indicating dependence on all of the configuration
   and velocity state variables of this System. This ticket depends on the
-  configuration_ticket and the velocity_ticket.
+  configuration_ticket and the velocity_ticket. Note that this includes
+  dependence on all parameters and the accuracy setting, but not on time.
   @see configuration_ticket(), velocity_ticket() */
   static DependencyTicket kinematics_ticket() {
     return DependencyTicket(internal::kKinematicsTicket);
@@ -662,6 +671,17 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
     output_ports_.push_back(std::move(port));
   }
+
+  /** (Internal use only) This is for cache entries associated with pre-defined
+  tickets, for example the cache entry for time derivatives. See the public API
+  for the most-general DeclareCacheEntry() signature for the meanings of the
+  other parameters here. */
+  const CacheEntry& DeclareCacheEntryWithKnownTicket(
+      DependencyTicket known_ticket,
+      std::string description, CacheEntry::AllocCallback alloc_function,
+      CacheEntry::CalcCallback calc_function,
+      std::vector<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
 
   /** Returns a pointer to the service interface of the immediately enclosing
   Diagram if one has been set, otherwise nullptr. */
@@ -843,7 +863,7 @@ class SystemBase : public internal::SystemMessageInterface {
   @see DoCheckValidContext() for runtime checking. */
   virtual void DoValidateAllocatedContext(const ContextBase& context) const = 0;
 
-  /** DiagramSystem must override this to return the actual number of immediate
+  /** Diagram must override this to return the actual number of immediate
   child subsystems it contains. The default is 0, suitable for leaf systems. */
   virtual int do_num_subsystems() const { return 0; }
 

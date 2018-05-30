@@ -200,6 +200,8 @@ void ContextBase::CreateBuiltInTrackers() {
   // This default subscription must be changed if configuration is not
   // represented by q in this System.
   configuration_tracker.SubscribeToPrerequisite(&q_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&p_tracker);
+  configuration_tracker.SubscribeToPrerequisite(&accuracy_tracker);
 
   // Should track changes to configuration time rate of change (i.e., velocity)
   // regardless of how represented. The default is that the continuous "v"
@@ -209,6 +211,8 @@ void ContextBase::CreateBuiltInTrackers() {
   // This default subscription must be changed if velocity is not
   // represented by v in this System.
   velocity_tracker.SubscribeToPrerequisite(&v_tracker);
+  velocity_tracker.SubscribeToPrerequisite(&p_tracker);
+  velocity_tracker.SubscribeToPrerequisite(&accuracy_tracker);
 
   // This tracks configuration & velocity regardless of how represented.
   auto& kinematics_tracker = graph.CreateNewDependencyTracker(
@@ -216,14 +220,18 @@ void ContextBase::CreateBuiltInTrackers() {
   kinematics_tracker.SubscribeToPrerequisite(&configuration_tracker);
   kinematics_tracker.SubscribeToPrerequisite(&velocity_tracker);
 
+  // The following trackers are for well-known cache entries which don't
+  // exist yet at this point in Context creation. When the corresponding cache
+  // entry values are created (by SystemBase), these trackers will be subscribed
+  // to the Calc() method's prerequisites, and set to invalidate the cache entry
+  // value when the prerequisites change.
+
   auto& xcdot_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXcdotTicket), "xcdot");
-  // TODO(sherm1) Connect to cache entry.
   unused(xcdot_tracker);
 
   auto& xdhat_tracker = graph.CreateNewDependencyTracker(
       DependencyTicket(internal::kXdhatTicket), "xdhat");
-  // TODO(sherm1) Connect to cache entry.
   unused(xdhat_tracker);
 }
 

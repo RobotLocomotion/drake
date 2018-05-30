@@ -75,6 +75,7 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   for (int ticket_int = 0; ticket_int < internal::kNextAvailableTicket;
        ++ticket_int) {
     const DependencyTicket ticket(ticket_int);
+    ASSERT_TRUE(context.get_dependency_graph().has_tracker(ticket));
     auto& tracker = context.get_tracker(ticket);
     EXPECT_EQ(tracker.ticket(), ticket);
     EXPECT_NO_THROW(tracker.ThrowIfBadDependencyTracker(
@@ -109,13 +110,16 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(nothing.prerequisites().size(), 0);
   EXPECT_EQ(nothing.subscribers().size(), 0);
 
-  // time and accuracy are independent but all_sources subscribes.
+  // time and accuracy are independent. all_sources depends on both,
+  // configuration and velocity trackers depend on accuracy.
   EXPECT_EQ(time.prerequisites().size(), 0);
   ASSERT_EQ(time.subscribers().size(), 1);
   EXPECT_EQ(time.subscribers()[0], &all_sources);
   EXPECT_EQ(accuracy.prerequisites().size(), 0);
-  ASSERT_EQ(accuracy.subscribers().size(), 1);
+  ASSERT_EQ(accuracy.subscribers().size(), 3);
   EXPECT_EQ(accuracy.subscribers()[0], &all_sources);
+  EXPECT_EQ(accuracy.subscribers()[1], &configuration);
+  EXPECT_EQ(accuracy.subscribers()[2], &velocity);
 
   // q, v, z are independent but xc subscribes to all, configuration to q,
   // and velocity to v.
@@ -157,15 +161,19 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   ASSERT_EQ(x.subscribers().size(), 1);
   EXPECT_EQ(x.subscribers()[0], &all_sources);
 
-  // configuration depends on q, kinematics subscribes.
-  ASSERT_EQ(configuration.prerequisites().size(), 1);
+  // configuration depends on q, parameters, accuracy & kinematics subscribes.
+  ASSERT_EQ(configuration.prerequisites().size(), 3);
   EXPECT_EQ(configuration.prerequisites()[0], &q);
+  EXPECT_EQ(configuration.prerequisites()[1], &p);
+  EXPECT_EQ(configuration.prerequisites()[2], &accuracy);
   ASSERT_EQ(configuration.subscribers().size(), 1);
   EXPECT_EQ(configuration.subscribers()[0], &kinematics);
 
-  // velocity depends on q, kinematics subscribes.
-  ASSERT_EQ(velocity.prerequisites().size(), 1);
+  // velocity depends on q, parameters, accuracy & kinematics subscribes.
+  ASSERT_EQ(velocity.prerequisites().size(), 3);
   EXPECT_EQ(velocity.prerequisites()[0], &v);
+  EXPECT_EQ(velocity.prerequisites()[1], &p);
+  EXPECT_EQ(velocity.prerequisites()[2], &accuracy);
   ASSERT_EQ(velocity.subscribers().size(), 1);
   EXPECT_EQ(velocity.subscribers()[0], &kinematics);
 
@@ -175,10 +183,13 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(kinematics.prerequisites()[1], &velocity);
   EXPECT_EQ(kinematics.subscribers().size(), 0);
 
-  // No parameters or inputs yet so p,u independent; all_sources subscribes.
+  // No parameters or inputs yet so p,u independent; all_sources, configuration,
+  // and velocity subscribe.
   EXPECT_EQ(p.prerequisites().size(), 0);
-  ASSERT_EQ(p.subscribers().size(), 1);
+  ASSERT_EQ(p.subscribers().size(), 3);
   EXPECT_EQ(p.subscribers()[0], &all_sources);
+  EXPECT_EQ(p.subscribers()[1], &configuration);
+  EXPECT_EQ(p.subscribers()[2], &velocity);
   EXPECT_EQ(u.prerequisites().size(), 0);
   ASSERT_EQ(u.subscribers().size(), 1);
   EXPECT_EQ(u.subscribers()[0], &all_sources);
@@ -192,7 +203,9 @@ GTEST_TEST(DependencyTracker, BuiltInTrackers) {
   EXPECT_EQ(all_sources.prerequisites()[4], &u);
   EXPECT_EQ(all_sources.subscribers().size(), 0);
 
-  // TODO(sherm1) xcdot and xdhat are not yet connected.
+  // xcdot and xdhat are created during Context construction but are not
+  // connected to the corresponding cache entry values until those are
+  // allocated later by the system framework (in SystemBase).
   EXPECT_EQ(xc_dot.prerequisites().size(), 0);
   EXPECT_EQ(xc_dot.subscribers().size(), 0);
   EXPECT_EQ(xd_hat.prerequisites().size(), 0);

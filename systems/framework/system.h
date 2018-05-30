@@ -1465,6 +1465,7 @@ class System : public SystemBase {
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
+
   /// Constructs an empty %System base class object and allocates base class
   /// resources, possibly supporting scalar-type conversion support (AutoDiff,
   /// etc.) using @p converter.
@@ -1473,27 +1474,33 @@ class System : public SystemBase {
   /// related to scalar-type conversion support.
   explicit System(SystemScalarConverter converter)
       : system_scalar_converter_(std::move(converter)) {
-    // Potential energy must *not* be time dependent.
+    // Note that configuration and kinematics tickets also include dependence
+    // on parameters and accuracy.
+
+    // Potential and kinetic energy, and conservative power that measures
+    // the transfer between them, must *not* be (directly) time dependent.
     potential_energy_cache_index_ =
         DeclareCacheEntry("potential energy", T(0),
                           &System::CalcPotentialEnergy2,
-                          {all_parameters_ticket(), configuration_ticket()})
+                          {configuration_ticket()})
             .cache_index();
+
     kinetic_energy_cache_index_ =
         DeclareCacheEntry("kinetic energy", T(0), &System::CalcKineticEnergy2,
-                          {all_parameters_ticket(), kinematics_ticket()})
+                          {kinematics_ticket()})
             .cache_index();
+
     conservative_power_cache_index_ =
         DeclareCacheEntry("conservative power", T(0),
                           &System::CalcConservativePower2,
-                          {all_parameters_ticket(), kinematics_ticket()})
+                          {kinematics_ticket()})
             .cache_index();
 
     // Only non-conservative power can have an explicit time dependence.
     nonconservative_power_cache_index_ =
         DeclareCacheEntry(
             "non-conservative power", T(0), &System::CalcNonConservativePower2,
-            {all_parameters_ticket(), time_ticket(), kinematics_ticket()})
+            {time_ticket(), kinematics_ticket()})
             .cache_index();
 
     // For the time derivative cache we need to use the general form for
@@ -1510,11 +1517,16 @@ class System : public SystemBase {
       const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
       CalcTimeDerivatives(context, &state);
     };
+
+    // We must assume that time derivatives can depend on *any* context source.
     time_derivatives_cache_index_ =
-        this->DeclareCacheEntry(
+        this->DeclareCacheEntryWithKnownTicket(
+                xcdot_ticket(),
                 "time derivatives", std::move(alloc_derivatives),
                 std::move(calc_derivatives), {all_sources_ticket()})
             .cache_index();
+
+    // TODO(sherm1) Allocate and use discrete update cache.
   }
 
   /// Adds a port with the specified @p type and @p size to the input topology.

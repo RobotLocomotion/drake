@@ -150,6 +150,19 @@ class DependencyTracker {
   DependencyGraph. The ticket is unique within the containing subcontext. */
   DependencyTicket ticket() const { return ticket_; }
 
+  /** (Internal use only) Sets the cache entry value to be marked out-of-date
+  when this tracker's prerequisites change.
+  @pre The supplied cache entry value is non-null.
+  @pre No cache entry value has previously been assigned. */
+  // This is intended for use in connecting pre-defined trackers to cache
+  // entry values that are created later. See the private constructor
+  // documentation for more information.
+  void set_cache_entry_value(CacheEntryValue* cache_value) {
+    DRAKE_DEMAND(cache_value != nullptr);
+    DRAKE_DEMAND(cache_entry_value() == nullptr);
+    cache_value_ = cache_value;
+  }
+
   /** Returns a pointer to the CacheEntryValue if this tracker is a cache
   entry tracker, otherwise nullptr. */
   // This is for validating that this tracker is associated with the right
