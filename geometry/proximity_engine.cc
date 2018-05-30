@@ -13,6 +13,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace geometry {
@@ -245,10 +246,18 @@ struct CollisionData {
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
 
+// The callback function in fcl::distance request. @p dist is used in
+// fcl::distance, that the distance between two geometries is proved to be
+// greater than @p dist (for example, the smallest distance between the bounding
+// boxes containing object A and object B is greater than @p dist), then
+// fcl::distance will skip this callback. In our case, as we want to compute
+// the distance between any pair of geometries, we leave @p dist unchanged as
+// its default value (max_double).
 bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                       fcl::CollisionObjectd* fcl_object_B_ptr,
                       // NOLINTNEXTLINE
                       void* callback_data, double& dist) {
+  unused(dist);
   // NOTE: Although this function *takes* non-const pointers to satisfy the
   // fcl api, it should not exploit the non-constness to modify the collision
   // objects. We insure this by immediately assigning to a const version and
