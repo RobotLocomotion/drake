@@ -157,6 +157,53 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
                               std::logic_error, expected_message);
 }
 
+#if 0
+// Test accuracy of back-and-forth conversion from angular velocity to rpyDt
+// (time-derivative of roll-pitch-yaw angles) and back to angular velocity as a
+// way to understand how many digits of precision are lost near gimbal-lock.
+GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
+  const Vector3d wA(1, 1, 1);
+  const Vector3d alphaA(1, 1, 1);
+  const double tolerate = RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
+  for (int i = -10; i < 10; ++i) {
+    const double pitch_angle = M_PI / 2 + i * tolerate;
+    const RollPitchYaw<double> rpy(1, pitch_angle, 1);
+    const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
+
+    // Calculate rpyDt from angular velocity.
+    Vector3d rpyDt, rpyDDt;
+    if (is_near_singular) {
+      DRAKE_EXPECT_THROWS_MESSAGE(rpyDt =
+                 rpy.CalcRpyDtFromAngularVelocityInParent(wA), std::logic_error,
+                      "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*");
+      DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
+        rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
+        std::logic_error,
+        "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*");
+    } else {
+      rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
+      rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA);
+    }
+    const double max_rpyDt = rpyDt.template lpNorm<Eigen::Infinity>();
+    const double max_rpyDDt = rpyDDt.template lpNorm<Eigen::Infinity>();
+    EXPECT_TRUE(0.001 / tolerate <= max_rpyDt && max_rpyDt <= 1000 / tolerate);
+    EXPECT_TRUE(0.001 / (tolerate * tolerate) <= max_rpyDDt &&
+                max_rpyDDt <= 1000 / (tolerate * tolerate));
+
+    // Calculate angular velocity from rpyDt.
+    const Vector3d wB = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
+
+    // Compare the given angular velocity with the calculated angular velocity.
+    const Vector3d w_diff = wB - wA;
+    const Vector3d w_error(w_diff(0) / wA(0),
+                           w_diff(1) / wA(1),
+                           w_diff(2) / wA(2));
+    const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
+    EXPECT_LE(max_error, 512*kEpsilon);
+  }
+}
+#endif
+
 
 // For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,
 // calculate conversion from rpy and its time-derivative rpyDt to w_AD_D
@@ -203,13 +250,13 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
         Vector3d rpyDDt;
         if (is_near_singular) {
-          const char* expected_message = "RollPitchYaw::"
-              "CalcRpyDDtFromAngularAccelInParent().*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
-             rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A),
-             std::logic_error, expected_message);
+             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
+             std::logic_error,
+             "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*");
         } else {
-          rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A);
+          rpyDDt =
+              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
         }
 
         // Calculate [r̈, p̈, ÿ] from alpha_AD_D which is

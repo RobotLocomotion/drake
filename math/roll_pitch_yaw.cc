@@ -12,7 +12,7 @@ namespace drake {
 namespace math {
 
 template <class T>
-const double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle_;
+constexpr double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle_;
 
 template <typename T>
 RollPitchYaw<T>::RollPitchYaw(const RotationMatrix<T>& R) :
@@ -192,7 +192,7 @@ void RollPitchYaw<T>::ThrowIfNearGimbalLockWhichIsCosPitchNearZero(
     const T& cos_pitch, const T& pitch_angle) {
   if (IsCosPitchAngleNearGimbalLock(cos_pitch)) {
     const double tolerance_degrees =
-        gimbal_lock_pitch_angle_tolerance() * 180 / M_PI;
+        GimbalLockPitchAngleTolerance() * 180 / M_PI;
     const double pitch_degrees = ExtractDoubleOrThrow(pitch_angle) * 180 / M_PI;
     std::string message = fmt::format("RollPitchYaw::{}():"
         " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."

@@ -184,6 +184,13 @@ class RollPitchYaw {
     return IsCosPitchAngleNearGimbalLock();
   }
 
+  /// Returns the internally-defined allowable closeness (in radians) of the
+  /// pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
+  /// `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  static double GimbalLockPitchAngleTolerance() {
+    return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle_);
+  }
+
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
   /// @param[in] rpy allegedly valid roll, pitch, yaw angles.
   /// @note an angle is invalid if it is NaN or infinite.
@@ -274,7 +281,7 @@ class RollPitchYaw {
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
   // TODO(Mitiguy) Improve speed: The last column of M is (0, 0, 1), the last
   // column of MDt is (0, 0, 1) and there are repeated sine/cosine calculations.
-  Vector3<T> CalcRpyDDtFromAngularAccelInParent(
+  Vector3<T> CalcRpyDDtFromRpyDtAndAngularAccelInParent(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_A) const {
     const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
         __func__, __FILE__, __LINE__);
@@ -516,13 +523,6 @@ class RollPitchYaw {
     return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle_;
   }
 
-  // Returns the internally-defined allowable closeness (in radians) of the
-  // pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
-  // `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
-  static double gimbal_lock_pitch_angle_tolerance() {
-    return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle_);
-  }
-
   // Sets `this` %RollPitchYaw from a Vector3.
   // @param[in] rpy allegedly valid roll-pitch-yaw angles.
   // @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
@@ -542,7 +542,12 @@ class RollPitchYaw {
   // proximity of the pitch-angle (in radians) to gimbal-lock.  Example: A value
   // of 0.01 corresponds to `p` within ≈ 0.01 radians of gimbal-lock, i.e.,
   // `p` is within 0.01 radians of `(n*π + π/2)` where `n = 0, ±1, ±2, ...`
-  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 1E-04;
+  // @note The conversion from angular velocity to rpyDt (the time-derivative of
+  // %RollPitchYaw) has a calculation that divides by `cos(p` (the cosine of the
+  // pitch angle).  This results in values of rpyDt that scale with angular
+  // velocity multiplied by `1/cos(p)`, which causes problems with
+  // numerical integration.
+  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 0.001;
 };
 
 /// (Deprecated), use @ref math::RollPitchYaw(quaternion).
