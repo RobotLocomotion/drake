@@ -199,6 +199,12 @@ class BuilderBase {
   /// Gets `angular_tolerance` value.
   virtual double get_angular_tolerance() const = 0;
 
+  /// Gets `scale_length` value.
+  virtual double get_scale_length() const = 0;
+
+  /// Gets `computation_policy` value.
+  virtual ComputationPolicy get_computation_policy() const = 0;
+
   /// Connects `start_spec`'s Endpoint to an end-point linearly displaced from
   /// `start_spec`'s Endpoint.
   ///
@@ -351,6 +357,12 @@ class Builder : public BuilderBase {
 
   /// Gets `angular_tolerance` value.
   double get_angular_tolerance() const override { return angular_tolerance_; }
+
+  double get_scale_length() const override { return scale_length_; }
+
+  ComputationPolicy get_computation_policy() const override {
+    return computation_policy_;
+  }
 
   const Connection* Connect(const std::string& id,
                             const LaneLayout& lane_layout,

@@ -65,6 +65,12 @@ class BuilderMock : public BuilderBase {
     ON_CALL(*this, get_angular_tolerance())
         .WillByDefault(Invoke(&builder_, &Builder::get_angular_tolerance));
 
+    ON_CALL(*this, get_scale_length())
+        .WillByDefault(Invoke(&builder_, &Builder::get_scale_length));
+
+    ON_CALL(*this, get_computation_policy())
+        .WillByDefault(Invoke(&builder_, &Builder::get_computation_policy));
+
     const Connection* (Builder::*connect_line_ref)(
         const std::string&, const LaneLayout&, const StartReference::Spec&,
         const LineOffset&, const EndReference::Spec&) = &Builder::Connect;
@@ -101,6 +107,10 @@ class BuilderMock : public BuilderBase {
   MOCK_CONST_METHOD0(get_linear_tolerance, double());
 
   MOCK_CONST_METHOD0(get_angular_tolerance, double());
+
+  MOCK_CONST_METHOD0(get_scale_length, double());
+
+  MOCK_CONST_METHOD0(get_computation_policy, ComputationPolicy());
 
   MOCK_METHOD5(Connect,
                const Connection*(const std::string&, const LaneLayout&,
@@ -162,8 +172,10 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   left_shoulder: 1
   right_shoulder: 2
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: 0.01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   points: {}
   connections: {}
   groups: {}
@@ -249,8 +261,10 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   left_shoulder: 1
   right_shoulder: 1.5
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: 0.01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   points:
     a:
       xypoint: [0, 0, 0]

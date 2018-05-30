@@ -35,8 +35,7 @@ class PurePursuitTest : public ::testing::Test {
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
         100 /* length */, 4. /* lane_width */, 0. /* shoulder_width */,
-        5. /* maximum_height */, kLinearTolerance /* linear_tolerance */,
-        kAngularTolerance /* angular_tolerance */));
+        5. /* maximum_height */, kLinearTolerance, kAngularTolerance));
   }
 
   void MakeQuarterCircleRoad() {

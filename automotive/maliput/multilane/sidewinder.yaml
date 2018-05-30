@@ -7,8 +7,10 @@ maliput_multilane_builder:
   left_shoulder: 5
   right_shoulder: 5
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: .01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   points:
     start:
       xypoint: [0, 0, 0]  # x,y, heading

@@ -299,20 +299,10 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
   const double angular_tolerance =
       deg_to_rad(mmb["angular_tolerance"].as<double>());
   DRAKE_DEMAND(angular_tolerance >= 0.);
-  // Makes "scale_length" parameter optional by providing a
-  // suitable default.
-  const double kDefaultScaleLength = 1.0;
-  const double scale_length =
-      mmb["scale_length"].as<double>(kDefaultScaleLength);
+  const double scale_length = mmb["scale_length"].as<double>();
   DRAKE_DEMAND(scale_length > 0.);
-
-  // Makes "computation_policy" parameter optional by providing a
-  // suitable default.
-  const ComputationPolicy kDefaultComputationPolicy =
-      ComputationPolicy::kPreferAccuracy;
   const ComputationPolicy computation_policy =
-      mmb["computation_policy"] ? ResolveComputationPolicy(
-          mmb["computation_policy"]) : kDefaultComputationPolicy;
+      ResolveComputationPolicy(mmb["computation_policy"]);
 
   auto builder =
       builder_factory.Make(lane_width, h_bounds(mmb["elevation_bounds"]),

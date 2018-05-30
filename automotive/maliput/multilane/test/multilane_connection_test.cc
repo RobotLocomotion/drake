@@ -141,6 +141,9 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   EXPECT_EQ(dut.lane_offset(0), kR0);
   EXPECT_EQ(dut.lane_offset(1), kR0 + kLaneWidth);
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
+  EXPECT_EQ(dut.computation_policy(), kComputationPolicy);
+  EXPECT_EQ(dut.linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(dut.scale_length(), kScaleLength);
 }
 
 TEST_F(MultilaneConnectionTest, LineAccessors) {
@@ -172,6 +175,9 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
   EXPECT_EQ(dut.lane_offset(0), kR0);
   EXPECT_EQ(dut.lane_offset(1), kR0 + kLaneWidth);
   EXPECT_EQ(dut.lane_offset(2), kR0 + 2. * kLaneWidth);
+  EXPECT_EQ(dut.computation_policy(), kComputationPolicy);
+  EXPECT_EQ(dut.linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(dut.scale_length(), kScaleLength);
 }
 
 // Checks RoadCurve creation.
@@ -230,6 +236,11 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
   EXPECT_EQ(road_curve->superelevation().b(), 0.);
   EXPECT_EQ(road_curve->superelevation().c(), 0.);
   EXPECT_EQ(road_curve->superelevation().d(), 0.);
+  // Checks that computation accuracy and speed related parameters are
+  // correctly set.
+  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
+  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{40., 30., kHeading + kDTheta},
@@ -272,6 +283,11 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
               kVeryExact);
   EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.9528595479208968,
               kVeryExact);
+  // Checks that computation accuracy and speed related parameters are
+  // correctly set.
+  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
+  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
 }
 
 TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
@@ -314,6 +330,11 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
   EXPECT_EQ(road_curve->superelevation().b(), 0.);
   EXPECT_EQ(road_curve->superelevation().c(), 0.);
   EXPECT_EQ(road_curve->superelevation().d(), 0.);
+  // Checks that computation accuracy and speed related parameters are
+  // correctly set.
+  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
+  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{50., 0., kHeading},
@@ -357,6 +378,11 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
               kVeryExact);
   EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.975317317010231,
               kVeryExact);
+  // Checks that computation accuracy and speed related parameters are
+  // correctly set.
+  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
+  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
 }
 
 // Lane Endpoints with different EndpointZ. Those are selected to cover

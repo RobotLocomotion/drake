@@ -5,8 +5,10 @@ maliput_multilane_builder:
   id: "ring"
   lane_width: 6
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: .01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   right_shoulder: 5
   left_shoulder: 5
   points:

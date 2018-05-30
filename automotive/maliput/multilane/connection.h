@@ -338,6 +338,21 @@ class Connection {
   /// Segment.
   double r_max() const { return r_max_; }
 
+  /// Returns the linear tolerance, in meters, that applies to RoadCurve
+  /// instances as constructed by this Connection. Refer to RoadCurve class
+  /// documentation for further details.
+  double linear_tolerance() const { return linear_tolerance_; }
+
+  /// Returns the scale length, in meters, that applies to RoadCurve instances
+  /// as constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  double scale_length() const { return scale_length_; }
+
+  /// Returns the computation policy that applies to RoadCurve instances as
+  /// constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  ComputationPolicy computation_policy() const { return computation_policy_; }
+
   /// Returns an Endpoint describing the start of the `lane_index` lane.
   Endpoint LaneStart(int lane_index) const;
 
