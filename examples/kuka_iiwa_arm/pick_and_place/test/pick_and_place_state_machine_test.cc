@@ -124,8 +124,8 @@ GTEST_TEST(PickAndPlaceStateMachineTest, StateMachineTest) {
 
     dut.Update(world_state, iiwa_callback, wsg_callback);
     step_count++;
-    // Check that it hasn't taken too many tries to find a plan.
-    ASSERT_LE(step_count, 10);
+    // Check an insanity bound to ensure that we don't run forever.
+    ASSERT_LE(step_count, 15);
   }
 
   // Now check that we get the expected behavior for the rest of the states.

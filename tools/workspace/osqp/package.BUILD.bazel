@@ -29,7 +29,6 @@ cmake_configure_file(
     defines = [
         "PRINTING",
         "PROFILING",
-        "DFLOAT",
         "DLONG",
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
