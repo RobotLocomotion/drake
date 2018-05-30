@@ -152,17 +152,25 @@ class ConstraintSolver {
   ///      |       0        |
   ///      | kᴸ - |L 0|A⁻¹a |
   /// </pre>
-  /// and are related by MM⋅zz + qq = ww, where:<pre>
+  /// and are related by:<pre>
+  /// MM⋅zz + qq = ww
+  /// zz ≥ 0
+  /// ww ≥ 0
+  /// zzᵀww = 0
+  /// </pre>where:<pre>
   /// zz ≡ | fN |      ww = | α |
   ///      | fD |           | β |
   ///      | λ  |           | γ |
   ///      | fL |           | δ |
   /// </pre>
-  /// The matrix `A` and vector `a` are used extensively in the documentation of
-  /// MlcpToLcpData and the following methods.
+  /// The key variables for using the MLCP-based formulations are the matrix `A`
+  /// and vector `a`, as seen in documentation of MlcpToLcpData and the
+  /// following methods. ConstructBaseDiscretizedTimeLCP() constructs functions
+  /// for solving `AX=B`, where `B` is a given matrix and `X` is an unknown
+  /// matrix. UpdateDiscretizedTimeLCP() computes `a`.
   // @{
   /// Computes the time-discretization of the system using the problem data,
-  /// generalized force `f`, intended time step `target_dt`.
+  /// generalized force `f`, and intended time step `target_dt`.
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -179,7 +187,8 @@ class ConstraintSolver {
       VectorX<T>* qq);
 
   /// Updates the time-discretization of the LCP initially computed in
-  /// ConstructBaseDiscretizedTimeLCP() using the problem data, time step `dt`.
+  /// ConstructBaseDiscretizedTimeLCP() using the problem data and time step
+  /// `dt`.
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
