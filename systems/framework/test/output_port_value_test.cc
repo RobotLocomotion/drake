@@ -14,9 +14,8 @@ namespace systems {
 class OutputPortVectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
-    vec->get_mutable_value() << 5, 6;
-    output_port_value_.reset(new OutputPortValue(std::move(vec)));
+    const BasicVector<double> vec{5, 6};
+    output_port_value_.reset(new OutputPortValue(vec.Clone()));
   }
 
   std::unique_ptr<OutputPortValue> output_port_value_;
@@ -98,14 +97,12 @@ class LeafSystemOutputTest : public ::testing::Test {
  protected:
   void SetUp() override {
     {
-      std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
-      vec->get_mutable_value() << 5, 25;
-      output_.add_port(std::make_unique<OutputPortValue>(std::move(vec)));
+      const BasicVector<double> vec{5, 25};
+      output_.add_port(std::make_unique<OutputPortValue>(vec.Clone()));
     }
     {
-      std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(3));
-      vec->get_mutable_value() << 125, 625, 3125;
-      output_.add_port(std::make_unique<OutputPortValue>(std::move(vec)));
+      const BasicVector<double> vec{125, 625, 3125};
+      output_.add_port(std::make_unique<OutputPortValue>(vec.Clone()));
     }
   }
 
