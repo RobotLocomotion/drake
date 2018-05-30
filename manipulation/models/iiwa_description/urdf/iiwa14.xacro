@@ -160,7 +160,7 @@
       </xacro:if>
       <xacro:if value="${collision_type == 'primitive'}">
         <collision>
-          <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.035"/>
+          <origin rpy="1.570796326794897 0 0" xyz="0 0.056 0.035"/>
           <geometry>
             <cylinder radius="0.101" length="0.29"/>
           </geometry>
@@ -262,7 +262,7 @@
       </xacro:if>
       <xacro:if value="${collision_type == 'primitive'}">
         <collision>
-          <origin rpy="1.57079632679 0 0" xyz="0 0.056 0.025"/>
+          <origin rpy="1.570796326794897 0 0" xyz="0 0.056 0.025"/>
           <geometry>
             <cylinder radius="0.092" length="0.25"/>
           </geometry>
@@ -450,12 +450,12 @@
     <joint name="tool0_joint" type="fixed">
       <parent link="${robot_name}_link_7"/>
       <child link="${robot_name}_link_ee"/>
-      <origin rpy="0 -1.57079632679 0" xyz="0 0 0.045"/>
+      <origin rpy="0 -1.570796326794897 0" xyz="0 0 0.045"/>
     </joint>
     <link name="${robot_name}_link_ee">
     </link>
     <frame name="${robot_name}_frame_ee" link="${robot_name}_link_ee"
-           xyz="0.09 0 0" rpy="3.14159265359 0 1.57079632679"/>
+           xyz="0.09 0 0" rpy="3.141592653589793 0 1.570796326794897"/>
     <!--Extensions -->
     <xacro:iiwa_gazebo robot_name="${robot_name}" />
     <xacro:iiwa_transmission hardware_interface="${hardware_interface}"
