@@ -18,7 +18,7 @@ GTEST_TEST(SystemScalarConversionDoxygen, PendulumPlantAutodiff) {
   //   tau = 0, theta = 0.1, thetadot = 0.2.
   auto plant = std::make_unique<PendulumPlant<double>>();
   auto context = plant->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d::Zero());  // tau
+  context->FixInputPort(0, {0.0});  // tau
   auto* state = dynamic_cast<PendulumState<double>*>(
       &context->get_mutable_continuous_state_vector());
   state->set_theta(0.1);

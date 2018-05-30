@@ -1737,9 +1737,9 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
-  auto input = std::make_unique<InputVector>();
-  input->SetAtIndex(0, 3.0);
-  context->FixInputPort(0, std::move(input));
+  InputVector input;
+  input.SetAtIndex(0, 3.0);
+  context->FixInputPort(0, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));

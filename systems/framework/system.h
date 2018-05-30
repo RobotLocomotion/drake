@@ -1275,7 +1275,7 @@ class System : public SystemBase {
         for (int j = 0; j < our_vec->size(); ++j) {
           our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
         }
-        target_context->FixInputPort(i, std::move(our_vec));
+        target_context->FixInputPort(i, *our_vec);
       } else if (descriptor.get_data_type() == kAbstractValued) {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.

@@ -91,7 +91,7 @@ void SystemSymbolicInspector::InitializeVectorInputs(
       input_variables_[i][j] = symbolic::Variable(name.str());
       value->SetAtIndex(j, input_variables_[i][j]);
     }
-    context_->FixInputPort(i, std::move(value));
+    context_->FixInputPort(i, *value);
   }
 }
 
