@@ -41,6 +41,17 @@ GTEST_TEST(RollPitchYaw, testAcessMethods) {
   EXPECT_TRUE(v(2) == yaw && yaw == -0.56);
 }
 
+// Test whether or not pitch angle is near gimbal lock.
+GTEST_TEST(RollPitchYaw, testIsPitchAngleNearGimbalLock) {
+  RollPitchYaw<double> rpy(-2.1, 0, 5.7);
+  EXPECT_FALSE(rpy.IsPitchAngleNearGimbalLock());
+  EXPECT_TRUE(rpy.set(-2.1, M_PI_2, 5.7).IsPitchAngleNearGimbalLock());
+  EXPECT_FALSE(rpy.set(M_PI_2, 1, M_PI_2).IsPitchAngleNearGimbalLock());
+  EXPECT_TRUE(rpy.set(2.3, -M_PI_2, 4.5).IsPitchAngleNearGimbalLock());
+  EXPECT_FALSE(rpy.set(-9 * M_PI_2, 90, M_PI_2).IsPitchAngleNearGimbalLock());
+  EXPECT_TRUE(rpy.set(2.3, 91 * M_PI_2, 4.5).IsPitchAngleNearGimbalLock());
+}
+
 // This tests the RollPitchYaw.ToQuaternion() method.
 GTEST_TEST(RollPitchYaw, testToQuaternion) {
   const RollPitchYaw<double> rpy(0.12, 0.34, -0.56);
@@ -119,29 +130,31 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
                               MatrixCompareType::absolute));
 
   // Check for some throw conditions.
+  const char* expected_message = "RollPitchYaw::"
+                                 "CalcRpyDtFromAngularVelocityInParent().*";
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 
   const RollPitchYaw<double> rpyB(0.2, -M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 
   const RollPitchYaw<double> rpyC(0.2, 3 * M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 
   const RollPitchYaw<double> rpyD(0.2, -3 * M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 
   const RollPitchYaw<double> rpyE(0.2, 3 * M_PI / 2 + 1E-8, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 
   const RollPitchYaw<double> rpyF(0.2, -3 * M_PI / 2 + 1E-8, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
-                              std::logic_error, "Error: Pitch angle p = .*" );
+                              std::logic_error, expected_message);
 }
 
 
@@ -187,13 +200,14 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
 
         // Calculate [r̈, p̈, ÿ] from alpha_AD_A which is
         // D's angular acceleration in A, expressed in A.
-        const double abs_cos_pitch = std::abs(std::cos(pitch));
-        const bool is_near_singular = abs_cos_pitch <= 1.745329251935621E-05;
+        const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
         Vector3d rpyDDt;
         if (is_near_singular) {
+          const char* expected_message = "RollPitchYaw::"
+              "CalcRpyDDtFromAngularAccelInParent().*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
              rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A),
-             std::logic_error, "Error: Pitch angle p = .*" );
+             std::logic_error, expected_message);
         } else {
           rpyDDt = rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A);
         }
@@ -204,9 +218,11 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const Vector3d alpha_AD_D = R_AD.inverse() * alpha_AD_A;
         Vector3d rpyDDt_verify;
         if (is_near_singular) {
+          const char* expected_message = "RollPitchYaw::"
+              "CalcRpyDDtFromAngularAccelInChild().*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
               rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
-              std::logic_error, "Error: Pitch angle p = .*" );
+              std::logic_error, expected_message);
         } else {
           rpyDDt_verify =
               rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);

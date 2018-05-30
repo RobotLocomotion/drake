@@ -3,9 +3,6 @@
 #include <cmath>
 #include <limits>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include <Eigen/Dense>
 
 #include "drake/common/drake_assert.h"
@@ -70,7 +67,7 @@ class RollPitchYaw {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RollPitchYaw)
 
   /// Constructs a %RollPitchYaw from a 3x1 array of angles.
-  /// @param[in] rpy roll, pitch, yaw angles (units of radians).
+  /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
   /// @throws std::logic_error in debug builds if !IsValid(rpy).
   explicit RollPitchYaw(const Vector3<T>& rpy) {
     SetOrThrowIfNotValidInDebugBuild(rpy);
@@ -83,8 +80,7 @@ class RollPitchYaw {
   /// @throws std::logic_error in debug builds if
   /// !IsValid(Vector3<T>(roll, pitch, yaw)).
   RollPitchYaw(const T& roll, const T& pitch, const T& yaw) {
-    const Vector3<T> rpy(roll, pitch, yaw);
-    SetOrThrowIfNotValidInDebugBuild(rpy);
+    SetOrThrowIfNotValidInDebugBuild(Vector3<T>(roll, pitch, yaw));
   }
 
   /// Constructs a %RollPitchYaw from a %RotationMatrix with
@@ -102,6 +98,23 @@ class RollPitchYaw {
   /// @note This new high-accuracy algorithm avoids numerical round-off issues
   /// encountered by some algorithms when pitch is within 1E-6 of π/2 or -π/2.
   explicit RollPitchYaw(const Eigen::Quaternion<T>& quaternion);
+
+  /// Sets `this` %RollPitchYaw from a 3x1 array of angles.
+  /// @param[in] rpy 3x1 array with roll, pitch, yaw angles (units of radians).
+  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  RollPitchYaw<T>& set(const Vector3<T>& rpy) {
+    return SetOrThrowIfNotValidInDebugBuild(rpy);
+  }
+
+  /// Sets `this` %RollPitchYaw from roll, pitch, yaw angles (radian units).
+  /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
+  /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
+  /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
+  /// @throws std::logic_error in debug builds if
+  /// !IsValid(Vector3<T>(roll, pitch, yaw)).
+  RollPitchYaw<T>& set(const T& roll, const T& pitch, const T& yaw) {
+    return SetOrThrowIfNotValidInDebugBuild(Vector3<T>(roll, pitch, yaw));
+  }
 
   /// Returns the Vector3 underlying a %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
@@ -154,7 +167,7 @@ class RollPitchYaw {
   bool IsNearlySameOrientation(const RollPitchYaw<T>& other,
                                double tolerance) const;
 
-  /// Returns true if roll-pitch-yaw angles `[r, p, y]` are the range
+  /// Returns true if roll-pitch-yaw angles `[r, p, y]` are in the range
   /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
   bool IsRollPitchYawInCanonicalRange() const {
     const T& r = roll_angle();
@@ -162,6 +175,13 @@ class RollPitchYaw {
     const T& y = yaw_angle();
     return (-M_PI <= r && r <= M_PI) && (-M_PI / 2 <= p && p <= M_PI / 2) &&
         (-M_PI <= y && y <= M_PI);
+  }
+
+  /// Returns true if the pitch-angle `p` is within an internally-defined
+  /// tolerance of gimbal-lock.  In other words, this method returns true if
+  /// `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  bool IsPitchAngleNearGimbalLock() const {
+    return IsCosPitchAngleNearGimbalLock();
   }
 
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
@@ -221,7 +241,7 @@ class RollPitchYaw {
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0`.
+  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -234,7 +254,8 @@ class RollPitchYaw {
     // Get the 3x3 M matrix that contains the partial derivatives of `[ṙ, ṗ, ẏ]`
     // with respect to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
     // In other words, `rpyDt = M * w_AD_A`.
-    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent();
+    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+        __func__, __FILE__, __LINE__);
     return M * w_AD_A;
   }
 
@@ -244,7 +265,7 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
   /// expressed in frame A.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0`.
+  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -255,7 +276,8 @@ class RollPitchYaw {
   // column of MDt is (0, 0, 1) and there are repeated sine/cosine calculations.
   Vector3<T> CalcRpyDDtFromAngularAccelInParent(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_A) const {
-    const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent();
+    const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+        __func__, __FILE__, __LINE__);
     const Matrix3<T> MDt =
         CalcDtMatrixRelatingAngularVelocityInParentToRpyDt(rpyDt);
     return Minv * (alpha_AD_A - MDt * rpyDt);
@@ -267,7 +289,7 @@ class RollPitchYaw {
   /// @param[in] alpha_AD_D, frame D's angular acceleration in frame A,
   /// expressed in frame D.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
-  /// @throws std::logic_error if `cos(p) ≈ 0`.
+  /// @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
@@ -281,7 +303,8 @@ class RollPitchYaw {
     using std::cos;
     const T sr = sin(r), cr = cos(r);
     const T sp = sin(p), cp = cos(p);
-    ThrowIfCosPitchNearZero(__func__, cp, p);
+    ThrowIfNearGimbalLockWhichIsCosPitchNearZero(__func__, __FILE__, __LINE__,
+                                                 cp, p);
     const T one_over_cp = T(1)/cp;
     const T cr_over_cp = cr * one_over_cp;
     const T sr_over_cp = sr * one_over_cp;
@@ -327,30 +350,18 @@ class RollPitchYaw {
     }
   }
 
-  // Throws an exception if the cosine of the pitch-angle p is nearly zero --
-  // which means `p = (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
-  // @param[in] func name of calling function/method.
-  // @param[in] cos_pitch cosine of the pitch-angle p, i.e., `cos(p)`.
-  // @param[in] p pitch angle (in radians).
-  // @throws std::logic_error if `cos(p) ≈ 0`.
-  static void ThrowIfCosPitchNearZero(const char* func, const T& cos_pitch,
-                                      const T& p) {
-    // Note: tolerance_cos = cos((90 - 0.001) * M_PI/180), which is equal to
-    // the cosine of 89.999 degrees (within 0.001 degrees of gimbal-lock).
-    constexpr double tolerance_degrees = 0.001;
-    constexpr double tolerance_cos = 1.745329251935621E-05;
-    using std::abs;
-    if (abs(cos_pitch) < tolerance_cos) {
-      const double p_deg = ExtractDoubleOrThrow(p) * 180 / M_PI;
-      std::string message = fmt::format("Error: Pitch angle p = {:G} is too"
-           " near gimbal-lock (it is within {:G} of gimbal-lock). There is a"
-           " divide-by-zero error (singularity) at gimbal-lock.  Pitch angles"
-           " near gimbal-lock cause numerical inaccuracies.  One way to avoid"
-           " this singularity is to use quaternions.  Note: the name of the"
-           " calling method is {}.", p_deg, tolerance_degrees, func);
-      throw std::logic_error(message);
-    }
-  }
+  // Throws an exception if the cosine of the pitch-angle `p` is within an
+  // internally-defined value of gimbal-lock, which occurs when `cos(p) ≈ 0`,
+  // which means `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  // @param[in] function_name name of the calling function/method.
+  // @param[in] file_name name of the file with the calling function/method.
+  // @param[in] line_number the line number in file_name that made the call.
+  // @param[in] cos_pitch cosine of the pitch-angle `p`, i.e., `cos(p)`.
+  // @param[in] pitch_angle pitch angle `p` (in radians).
+  // @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
+  static void ThrowIfNearGimbalLockWhichIsCosPitchNearZero(
+    const char* function_name, const char* file_name, const int line_number,
+    const T& cos_pitch, const T& pitch_angle);
 
   // For the %RotationMatrix `R` generated by `this` %RollPitchYaw, this method
   // calculates the partial derivatives of `R` with respect to roll, pitch, yaw.
@@ -456,20 +467,25 @@ class RollPitchYaw {
   // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect to
   // `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
   // In other words, `rpyDt = M * w_AD_A`.
-  // @throws std::logic_error if `cos(p) ≈ 0`.
+  // @param[in] function_name name of the calling function/method.
+  // @param[in] file_name name of the file with the calling function/method.
+  // @param[in] line_number the line number in file_name that made the call.
+  // @throws std::logic_error if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   // @note This method has a divide-by-zero error (singularity) when the cosine
   // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
   // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
   // There are associated precision problems (inaccuracies) in the neighborhood
   // of these pitch angles, i.e., when `cos(p) ≈ 0`.
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent() const {
+  const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+      const char* function_name, const char* file_name, int line_number) const {
     using std::cos;
     using std::sin;
     const T& p = pitch_angle();
     const T& y = yaw_angle();
     const T sp = sin(p), cp = cos(p);
-    ThrowIfCosPitchNearZero(__func__, cp, p);
+    ThrowIfNearGimbalLockWhichIsCosPitchNearZero(function_name, file_name,
+                                                 line_number, cp, p);
     const T one_over_cp = T(1)/cp;
     const T sy = sin(y), cy = cos(y);
     const T cy_over_cp = cy * one_over_cp;
@@ -483,17 +499,50 @@ class RollPitchYaw {
     return M;
   }
 
-  /// Sets `this` %RollPitchYaw from a Vector3.
-  /// @param[in] rpy allegedly valid roll-pitch-yaw angles.
-  /// @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
-  void SetOrThrowIfNotValidInDebugBuild(const Vector3<T>& rpy) {
+  // Returns true if the cosine of `this` %RollPitchYaw's pitch-angle `p` is
+  // within an internal tolerance of gimbal-lock, which means `cos(p) ≈ 0`.
+  // Hence, returns true if `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  bool IsCosPitchAngleNearGimbalLock() const {
+    using std::cos;
+    return IsCosPitchAngleNearGimbalLock(cos(pitch_angle()));
+  }
+
+  // Returns true if the cosine of the pitch-angle `p` is within an internally
+  // defined tolerance of gimbal-lock, which means `cos(p) ≈ 0`.
+  // Hence, returns true if `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  // @param[in] cos_pitch_angle cosine of the pitch angle, i.e., `cos(p)`.
+  static bool IsCosPitchAngleNearGimbalLock(const T& cos_pitch_angle) {
+    using std::abs;
+    return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle_;
+  }
+
+  // Returns the internally-defined allowable closeness (in radians) of the
+  // pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
+  // `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
+  static double gimbal_lock_pitch_angle_tolerance() {
+    return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle_);
+  }
+
+  // Sets `this` %RollPitchYaw from a Vector3.
+  // @param[in] rpy allegedly valid roll-pitch-yaw angles.
+  // @throws std::logic_error in debug builds if rpy fails IsValid(rpy).
+  RollPitchYaw<T>& SetOrThrowIfNotValidInDebugBuild(const Vector3<T>& rpy) {
     DRAKE_ASSERT_VOID(ThrowIfNotValid(rpy));
     roll_pitch_yaw_ = rpy;
+    return *this;
   }
 
   // Stores the underlying roll-pitch-yaw angles.
   // There is no default initialization needed.
   Vector3<T> roll_pitch_yaw_;
+
+  // Internally-defined value for the allowable proximity of the cosine of the
+  // pitch-angle `p` to gimbal-lock [the proximity of `cos(p)` to 0].
+  // @note For small values (<= 0.1), this value approximates the allowable
+  // proximity of the pitch-angle (in radians) to gimbal-lock.  Example: A value
+  // of 0.01 corresponds to `p` within ≈ 0.01 radians of gimbal-lock, i.e.,
+  // `p` is within 0.01 radians of `(n*π + π/2)` where `n = 0, ±1, ±2, ...`
+  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 1E-04;
 };
 
 /// (Deprecated), use @ref math::RollPitchYaw(quaternion).
