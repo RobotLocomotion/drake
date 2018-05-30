@@ -9,6 +9,7 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/math/orthonormal_basis.h"
 
 namespace drake {
 namespace multibody {
@@ -213,6 +214,122 @@ MultibodyPlant<T>::DoMakeLeafContext() const {
 }
 
 template<typename T>
+MatrixX<T> MultibodyPlant<T>::CalcNormalSeparationVelocitiesJacobian(
+    const Context<T>& context,
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs_set) const {
+  const int num_contacts = point_pairs_set.size();
+  MatrixX<T> N(num_contacts, num_velocities());
+
+  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+    const auto& point_pair = point_pairs_set[icontact];
+
+    const GeometryId geometryA_id = point_pair.id_A;
+    const GeometryId geometryB_id = point_pair.id_B;
+
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    const Body<T>& bodyA = model().get_body(bodyA_index);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const Body<T>& bodyB = model().get_body(bodyB_index);
+
+    // Penetration depth, > 0 if bodies interpenetrate.
+    const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
+    const Vector3<T>& p_WCa = point_pair.p_WCa;
+    const Vector3<T>& p_WCb = point_pair.p_WCb;
+
+    // Geometric Jacobian for the velocity of the contact point C as moving with
+    // body A, s.t.: v_WAc = Jv_WAc * v
+    // where v is the vector of generalized velocities.
+    MatrixX<T> Jv_WAc(3, this->num_velocities());
+    model().CalcPointsGeometricJacobianExpressedInWorld(
+        context, bodyA.body_frame(), p_WCa, &Jv_WAc);
+
+    // Geometric Jacobian for the velocity of the contact point C as moving with
+    // body B, s.t.: v_WBc = Jv_WBc * v.
+    MatrixX<T> Jv_WBc(3, this->num_velocities());
+    model().CalcPointsGeometricJacobianExpressedInWorld(
+        context, bodyB.body_frame(), p_WCb, &Jv_WBc);
+
+    // The velocity of Bc relative to Ac is
+    //   v_AcBc_W = v_WBc - v_WAc.
+    // From where the separation velocity is computed as
+    //   vn = -v_AcBc_W.dot(nhat_BA_W) = -nhat_BA_Wᵀ⋅v_AcBc_W
+    // where the negative sign stems from the sign convention for vn and xdot.
+    // This can be written in terms of the Jacobians as
+    //   vn = -nhat_BA_Wᵀ⋅(Jv_WBc - Jv_WAc)⋅v
+
+    N.row(icontact) = nhat_BA_W.transpose() * (Jv_WAc - Jv_WBc);
+  }
+
+  return N;
+}
+
+template<typename T>
+MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
+    const Context<T>& context,
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs_set,
+    std::vector<Matrix3<T>>* R_WC_set) const {
+  const int num_contacts = point_pairs_set.size();
+  // D is defined such that vt = D * v, with vt of size 2nc.
+  MatrixX<T> D(2 * num_contacts, num_velocities());
+
+  if (R_WC_set != nullptr) R_WC_set->reserve(point_pairs_set.size());
+  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+    const auto& point_pair = point_pairs_set[icontact];
+
+    const GeometryId geometryA_id = point_pair.id_A;
+    const GeometryId geometryB_id = point_pair.id_B;
+
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    const Body<T>& bodyA = model().get_body(bodyA_index);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+    const Body<T>& bodyB = model().get_body(bodyB_index);
+
+    // Penetration depth, > 0 if bodies interpenetrate.
+    const T& x = point_pair.depth;
+    DRAKE_ASSERT(x >= 0);
+    const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
+    const Vector3<T>& p_WCa = point_pair.p_WCa;
+    const Vector3<T>& p_WCb = point_pair.p_WCb;
+
+    // Compute the orientation of a contact frame C at the contact point such
+    // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
+    // arbitrary, with the only requirement being that they form a valid right
+    // handed basis with nhat_BA.
+    const Matrix3<T> R_WC = math::ComputeBasisFromAxis(2, nhat_BA_W);
+    if (R_WC_set != nullptr) {
+      R_WC_set->push_back(R_WC);
+    }
+
+    const Vector3<T> that1_W = R_WC.col(0);  // that1 = Cx.
+    const Vector3<T> that2_W = R_WC.col(1);  // that2 = Cy.
+
+    // TODO(amcastro-tri): Consider using the midpoint between Ac and Bc for
+    // stability reasons. Besides that, there is no other reason to use the
+    // midpoint (or any other point between Ac and Bc for that matter) since,
+    // in the limit to rigid contact, Ac = Bc.
+
+    MatrixX<T> Jv_WAc(3, this->num_velocities());  // s.t.: v_WAc = Jv_WAc * v.
+    model().CalcPointsGeometricJacobianExpressedInWorld(
+        context, bodyA.body_frame(), p_WCa, &Jv_WAc);
+
+    MatrixX<T> Jv_WBc(3, this->num_velocities());  // s.t.: v_WBc = Jv_WBc * v.
+    model().CalcPointsGeometricJacobianExpressedInWorld(
+        context, bodyB.body_frame(), p_WCb, &Jv_WBc);
+
+    // The velocity of Bc relative to Ac is
+    //   v_AcBc_W = v_WBc - v_WAc.
+    // The first two components of this velocity in C corresponds to the
+    // tangential velocities in a plane normal to nhat_BA.
+    //   vx_AcBc_C = that1⋅v_AcBc = that1ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
+    //   vy_AcBc_C = that2⋅v_AcBc = that2ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
+
+    D.row(2 * icontact)     = that1_W.transpose() * (Jv_WBc - Jv_WAc);
+    D.row(2 * icontact + 1) = that2_W.transpose() * (Jv_WBc - Jv_WAc);
+  }
+  return D;
+}
+
+template<typename T>
 void MultibodyPlant<T>::set_penetration_allowance(
     double penetration_allowance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -388,13 +505,13 @@ void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
         if (bodyA_index != world_index()) {
           // Spatial force on body A at Ao, expressed in W.
           const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
-          F_BBo_W_array->at(bodyA_index) += F_AAo_W;
+          F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
         }
 
         if (bodyB_index != world_index()) {
           // Spatial force on body B at Bo, expressed in W.
           const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
-          F_BBo_W_array->at(bodyB_index) += F_BBo_W;
+          F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
         }
       }
     }
