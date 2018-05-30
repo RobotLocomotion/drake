@@ -25,7 +25,7 @@ using Which = api::LaneEnd::Which;
 //                   road surface is continuous, off the centerline, at the
 //                   branch-point where two connections connect
 
-// StartReferenceSpec using an Endpoint.
+// StartReference::Spec using an Endpoint.
 GTEST_TEST(StartReferenceSpecTest, Endpoint) {
   const Endpoint point{{1., 2., 3.}, {4., 5., 6., 7.}};
   const double kVeryExact{1e-15};
@@ -40,36 +40,48 @@ GTEST_TEST(StartReferenceSpecTest, Endpoint) {
                                     kVeryExact));
 }
 
-// StartReferenceSpec using a connection's reference curve.
+// StartReference::Spec using a connection's reference curve.
 GTEST_TEST(StartReferenceSpecTest, Connection) {
-  const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
-  const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
-  const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
-                        1.5, LineOffset(10.));
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const EndpointXy kStartXy{1., 2., 3.};
+  const EndpointXy kEndXy{1. + 10. * std::cos(3.), 2. + 10. * std::sin(3.), 3.};
+  const Endpoint kStartEndpoint{kStartXy, kFlatZ};
+  const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
+  const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
+                        LineOffset(10.));
   const double kVeryExact{1e-15};
 
   const StartReference::Spec forward_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kForward);
-  EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(), conn.start(),
+  const Endpoint expected_forward_start_endpoint{kStartXy,
+                                                 kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(),
+                                    expected_forward_start_endpoint,
                                     kVeryExact));
 
   const StartReference::Spec reversed_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kReverse);
+  const Endpoint expected_reversed_start_endpoint{
+      kStartXy.reverse(), kFlatZWithoutThetaDot.reverse()};
   EXPECT_TRUE(test::IsEndpointClose(reversed_start_dut.endpoint(),
-                                    conn.start().reverse(), kVeryExact));
+                                    expected_reversed_start_endpoint,
+                                    kVeryExact));
 
   const StartReference::Spec forward_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kForward);
-  EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(), conn.end(),
-                                    kVeryExact));
+  const Endpoint expected_forward_end_endpoint{kEndXy, kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(),
+                                    expected_forward_end_endpoint, kVeryExact));
 
   const StartReference::Spec reversed_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kReverse);
-  EXPECT_TRUE(test::IsEndpointClose(reversed_end_dut.endpoint(),
-                                    conn.end().reverse(), kVeryExact));
+  const Endpoint expected_reversed_end_endpoint{
+      kEndXy.reverse(), kFlatZWithoutThetaDot.reverse()};
+  EXPECT_TRUE(test::IsEndpointClose(
+      reversed_end_dut.endpoint(), expected_reversed_end_endpoint, kVeryExact));
 }
 
-// EndReferenceSpec using an EndpointZ.
+// EndReference::Spec using an EndpointZ.
 GTEST_TEST(EndReferenceSpecTest, Endpoint) {
   const EndpointZ z_point{4., 5., 6., 7.};
   const double kVeryExact{1e-15};
@@ -83,6 +95,40 @@ GTEST_TEST(EndReferenceSpecTest, Endpoint) {
       EndReference().z_at(z_point, Direction::kReverse);
   EXPECT_TRUE(test::IsEndpointZClose(z_reversed_dut.endpoint_z(),
                                      z_point.reverse(), kVeryExact));
+}
+
+// EndReference::Spec using a connection's reference curve.
+GTEST_TEST(EndReferenceSpecTest, Connection) {
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const EndpointXy kStartXy{1., 2., 3.};
+  const Endpoint kStartEndpoint{kStartXy, kFlatZ};
+  const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
+  const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
+                        LineOffset(10.));
+  const double kVeryExact{1e-15};
+
+  const EndReference::Spec forward_start_dut =
+      EndReference().z_at(conn, Which::kStart, Direction::kForward);
+  const EndpointZ expected_forward_start_endpoint{kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointZClose(forward_start_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot, kVeryExact));
+
+  const EndReference::Spec reversed_start_dut =
+      EndReference().z_at(conn, Which::kStart, Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(reversed_start_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot.reverse(),
+                                     kVeryExact));
+
+  const EndReference::Spec forward_end_dut =
+      EndReference().z_at(conn, Which::kFinish, Direction::kForward);
+  EXPECT_TRUE(test::IsEndpointZClose(forward_end_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot, kVeryExact));
+
+  const EndReference::Spec reversed_end_dut =
+      EndReference().z_at(conn, Which::kFinish, Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(reversed_end_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot.reverse(),
+                                     kVeryExact));
 }
 
 // LaneLayout check.
