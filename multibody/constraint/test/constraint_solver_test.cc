@@ -263,16 +263,12 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       double dt,
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
-      int friction_directions_dup,
-      VectorX<double>* v) {
+      int friction_directions_dup) {
     DRAKE_DEMAND(v);
 
     // Use the constraint velocity data to do most of the work.
-    CalcConstraintVelProblemData(data, contact_points_dup,
-                                 friction_directions_dup);
-
-    // Get the system velocity.
-    *v = data->solve_inertia(data->Mv);
+    CalcConstraintProblemDataForImpact(data, contact_points_dup,
+                                       friction_directions_dup);
 
     // Set the normal compliance and damping to yield truly rigid contact.
     const double stiffness = std::numeric_limits<double>::infinity();
@@ -343,7 +339,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   //        friction basis direction should be duplicated. Since the 2D tests
   //        only use one friction direction, duplication ensures that the
   //        algorithms are able to handle duplicated directions without error.
-  void CalcConstraintVelProblemData(
+  void CalcConstraintProblemDataForImpact(
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
       int friction_directions_dup) {
@@ -419,9 +415,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
   // Computes rigid impacting contact data with no duplication of contact points
   // or friction directions.
-  void CalcConstraintVelProblemData(
+  void CalcConstraintProblemDataForImpact(
       ConstraintVelProblemData<double>* data) {
-    CalcConstraintVelProblemData(
+    CalcConstraintProblemDataForImpact(
         data,
         0,    // no contact points duplicated
         0);   // no friction directions duplicated
@@ -643,9 +639,8 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
         // Compute the problem data.
-        VectorX<double> v;
         CalcConstraintAccelProblemData(
-          dt, vel_data_.get(), contact_dup, friction_dir_dup, &v);
+          dt, vel_data_.get(), contact_dup, friction_dir_dup);
 
         // Add a force acting at the point of contact and expressed at the
         // rod center-of-mass that pulls the rod horizontally.
@@ -950,7 +945,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
             CopyToVector()[4];
 
         // Compute the problem data.
-        CalcConstraintVelProblemData(
+        CalcConstraintProblemDataForImpact(
            vel_data_.get(), contact_dup, friction_dir_dup);
 
         // Get the generalized velocity of the rod.
@@ -1071,7 +1066,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
             CopyToVector()[4];
 
         // Compute the impact problem data.
-        CalcConstraintVelProblemData(
+        CalcConstraintProblemDataForImpact(
             vel_data_.get(), contact_dup, friction_dir_dup);
 
         // Get the generalized velocity of the rod.
@@ -1345,7 +1340,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     rod_->set_mu_coulomb(0.1);
 
     // Compute the problem data.
-    CalcConstraintVelProblemData(vel_data_.get());
+    CalcConstraintProblemDataForImpact(vel_data_.get());
 
     // Compute the generalized velocity.
     const VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
@@ -1874,7 +1869,7 @@ TEST_P(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
       SetRodToUpwardMovingHorizontalConfig();
 
       // Compute the problem data.
-      CalcConstraintVelProblemData(
+      CalcConstraintProblemDataForImpact(
           vel_data_.get(), contact_dup, friction_dir_dup);
 
       // Compute the contact forces.
@@ -1970,7 +1965,7 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 
   // First, construct the velocity-level problem data as normal to set
   // inertia solver and external forces.
-  CalcConstraintVelProblemData(vel_data_.get());
+  CalcConstraintProblemDataForImpact(vel_data_.get());
 
   // Compute v.
   VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
