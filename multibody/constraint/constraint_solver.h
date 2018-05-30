@@ -102,15 +102,22 @@ class ConstraintSolver {
   /// (c)              v ≥ 0
   /// (d) vᵀ(b + Yu + Bv) = 0
   /// </pre>
-  /// where u are "free" variables. If the matrix A is nonsingular, u can be
-  /// solved for:<pre>
+  /// where `u` are "free" variables, `v` are constrained variables, `A`, `X`,
+  /// `Y`, and `B` are given matrices and `a` and `b` are given vectors. If `A`
+  /// is nonsingular, `u` can be solved for:<pre>
   /// (e) u = -A⁻¹ (a + Xv)
   /// </pre>
-  /// allowing the mixed LCP to be converted to a "pure" LCP (qq, MM) by:<pre>
+  /// allowing the mixed LCP to be converted to a "pure" LCP `(qq, MM)` by:<pre>
   /// (f) qq = b - YA⁻¹a
   /// (g) MM = B - YA⁻¹X
   /// </pre>
-  ///
+  /// This pure LCP can then be solved for `v` such that:<pre>
+  /// (h)     MMv + qq ≥ 0
+  /// (i)            v ≥ 0
+  /// (j) vᵀ(MMv + qq) = 0
+  /// </pre>
+  /// and this `v` can be substituted into (e) to obtain `u`.
+
   /// The constraint problems considered here take the specific form:<pre>
   /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-M v | = | 0 |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
@@ -140,8 +147,8 @@ class ConstraintSolver {
   ///                     |  λ |
   ///                     | fL |
   /// </pre>
-  /// Therefore, using Equations (f) and (g) and defining C as the upper left
-  /// block of A⁻¹, the pure LCP (qq,MM) is defined as:<pre>
+  /// Therefore, using Equations (f) and (g) and defining `C` as the upper left
+  /// block of `A⁻¹`, the pure LCP `(qq,MM)` is defined as:<pre>
   /// MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
   ///      | DCNᵀ  DCDᵀ   E   DCLᵀ |
   ///      | μ      -Eᵀ   0   0    |
@@ -152,16 +159,11 @@ class ConstraintSolver {
   ///      |       0        |
   ///      | kᴸ - |L 0|A⁻¹a |
   /// </pre>
-  /// and are related by:<pre>
-  /// MM⋅zz + qq = ww
-  /// zz ≥ 0
-  /// ww ≥ 0
-  /// zzᵀww = 0
-  /// </pre>where:<pre>
-  /// zz ≡ | fN |      ww = | α |
-  ///      | fD |           | β |
-  ///      | λ  |           | γ |
-  ///      | fL |           | δ |
+  /// The solution `v` will then take the form:
+  /// v ≡ | fN |
+  ///     | fD |
+  ///     | λ  |
+  ///     | fL |
   /// </pre>
   /// The key variables for using the MLCP-based formulations are the matrix `A`
   /// and vector `a`, as seen in documentation of MlcpToLcpData and the
