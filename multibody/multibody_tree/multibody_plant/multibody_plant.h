@@ -1156,11 +1156,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// previously with set_stiction_tolerance().
     double stiction_tolerance() const { return v_stiction_tolerance_; }
 
-    T ComputeFrictionCoefficient2(
-        const T& speed_BcAc, const T& mu) const;
+    // Dimensionless modified Stribeck function defined as:
+    // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
+    //         ⌊ mu                ,  x >= 1
+    // where x corresponds to the dimensionless tangential speed
+    // x = v / v_stribeck.
+    static T ModifiedStribeck(const T& x, const T& mu);
 
-    T ComputeFrictionCoefficient2Prime(
-        const T& speed_BcAc, const T& mu) const;
+    // Derivative of the dimensionless modified Stribeck function:
+    // ms(x) = ⌈ mu * (2 * (1 - x)),  x  < 1
+    //         ⌊ 0                 ,  x >= 1
+    // where x corresponds to the dimensionless tangential speed
+    // x = v / v_stribeck.
+    static T ModifiedStribeckPrime(const T& speed_BcAc, const T& mu);
 
    private:
     // Stiction velocity tolerance for the Stribeck model.

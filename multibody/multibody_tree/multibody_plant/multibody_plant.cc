@@ -658,9 +658,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   using std::max;
   using std::abs;
   // If plant state is continuous, no discrete state to update.
-  if (!is_discrete()) return;  // just a shorter alias.
+  if (!is_discrete()) return;
 
-  const double dt = time_step_;  // shorter alias.
+  const double dt = time_step_;  // just a shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
@@ -668,31 +668,25 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
   (void) istep;
 
-  // Save the system state as a raw Eigen vector (solution at previous time step).
+  // Get the system state as raw Eigen vectors
+  // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
   VectorX<T> q0 = x0.topRows(nq);
   VectorX<T> v0 = x0.bottomRows(nv);
 
-  // Allocate workspace. We might want to cache these to avoid allocations.
-  // Mass matrix.
+  // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
-  // Mass matrix and its LDLT factorization.
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
-  auto M0_ldlt = M0.ldlt();
+  auto M0_llt = M0.llt();
 
-  // Forces.
-  MultibodyForces<T> forces(*model_);
-  // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
-  // Generalized accelerations.
-  VectorX<T> vdot = VectorX<T>::Zero(nv);
+  // Forces at the previous time step.
+  MultibodyForces<T> forces0(*model_);
 
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
-  // Compute forces applied through force elements. This effectively resets
-  // the forces to zero and adds in contributions due to force elements.
-  model_->CalcForceElementsContribution(context0, pc0, vc0, &forces);
+  // Compute forces applied through force elements.
+  model_->CalcForceElementsContribution(context0, pc0, vc0, &forces0);
 
   // If there is any input actuation, add it to the multibody forces.
   if (num_actuators() > 0) {
@@ -706,50 +700,49 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
       for (int joint_dof = 0;
            joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(context0, joint_dof, u[actuator_index], &forces);
+        actuator.AddInOneForce(
+            context0, joint_dof, u[actuator_index], &forces0);
       }
     }
   }
 
   // Velocity at next time step.
-  VectorX<T> vn(this->num_velocities());
-
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
+  VectorX<T> v_next(this->num_velocities());
 
   std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
   VectorX<T> fn(num_contacts);
 
-  // Compute contact forces on each body by penalty method. No friction, only normal forces.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
+  // Compute contact forces0 on each body by penalty method. No friction, only normal forces0.
   if (num_collision_geometries() > 0) {
     CalcAndAddContactForcesByPenaltyMethod(
         context0, pc0, vc0, &F_BBo_W_array, false, point_pairs0, &fn);
   }
 
+  // Workspace for inverse dynamics:
+  // Bodies' accelerations, ordered by BodyNodeIndex.
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
+  // Generalized accelerations.
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
+
   // With vdot = 0, this computes (includes normal forces):
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-  VectorX<T>& minus_tau = forces.mutable_generalized_forces();
+  VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   model_->CalcInverseDynamics(
       context0, pc0, vc0, vdot,
       F_BBo_W_array, minus_tau,
       &A_WB_array,
-      &F_BBo_W_array, /* Notice these arrays gets overwritten on output. */
+      &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // WORK WITH CONTEXT_STAR
-  //////////////////////////////////////////////////////////////////////////////
-
   // Compute discrete update without friction forces.
-  VectorX<T> v_star = vn = v0 + dt * M0_ldlt.solve(-minus_tau);
+  // We denote this state x* = [q*, v*], the "star" state.
+  VectorX<T> v_star = v_next = v0 + dt * M0_llt.solve(-minus_tau);
   VectorX<T> qdot_star(this->num_positions());
-  model_->MapVelocityToQDot(context0, vn, &qdot_star);
+  model_->MapVelocityToQDot(context0, v_next, &qdot_star);
   VectorX<T> q_star = q0 + dt * qdot_star;
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Compute Jacobians and Delassus operators.
-  //////////////////////////////////////////////////////////////////////////////
 
   // Compute normal and tangential velocity Jacobians at tstar.
   MatrixX<T> D(2*num_contacts, nv);  // of size (2nc) x nv
@@ -762,7 +755,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     vtstar = D * v_star;
 
     // M0^{-1} * D^{T}
-    Minv_times_Dtrans = M0_ldlt.solve(D.transpose());
+    Minv_times_Dtrans = M0_llt.solve(D.transpose());
     // Wtt = D * M0^{-1} * D^{T}:
     Wtt = D * Minv_times_Dtrans;
 
@@ -821,7 +814,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     VectorX<T> mus(num_contacts); // Stribeck friction.
     VectorX<T> dmudv(num_contacts);
     std::vector<Matrix2<T>> dft_dv(num_contacts);
-    vtk = vtstar;  // Initial guess with zero friction forces.
+    vtk = vtstar;  // Initial guess with zero friction forces0.
+    const double v_stribeck = stribeck_model_.stiction_tolerance();
     for (iter = 0; iter < max_iterations; ++iter) {
       // Compute 2D tangent vectors.
       for (int ic = 0; ic < num_contacts; ++ic) {
@@ -831,7 +825,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         const Vector2<T> that_ic =  vt_ic / vs_ic;
         that.template segment<2>(ik) = that_ic;
         vsk(ic) = vs_ic;
-        mus(ic) = stribeck_model_.ComputeFrictionCoefficient2(vsk(ic), mu(ic));
+        mus(ic) = stribeck_model_.ModifiedStribeck(
+            vsk(ic) / v_stribeck, mu(ic));
         // Note: minus sign not included.
         ftk.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
       }
@@ -856,8 +851,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         }
 
         // Compute dmudv needed for Jacobian computation.
-        dmudv(ic) =
-            stribeck_model_.ComputeFrictionCoefficient2Prime(vsk(ic), mu(ic));
+        dmudv(ic) = stribeck_model_.ModifiedStribeckPrime(
+            vsk(ic) / v_stribeck, mu(ic)) / v_stribeck;
 
         const auto that_ic = that.template segment<2>(ik);
 
@@ -926,13 +921,13 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
           PRINT_VAR(dv.transpose());
         }
 
-        const T x = v_norm / stribeck_model_.stiction_tolerance();
-        const T x1 = v1_norm / stribeck_model_.stiction_tolerance();
+        const T x = v_norm / v_stribeck;
+        const T x1 = v1_norm / v_stribeck;
 
         // 180 degrees direction change.
         if ( abs(1.0+cos_init) < 1.0e-10 ) {
           // Clip to near the origin since we know for sure we crossed it.
-          valpha = v / (v.norm()+1e-14) * stribeck_model_.stiction_tolerance() / 2.0;
+          valpha = v / (v.norm()+1e-14) * v_stribeck / 2.0;
         } else if (cos_init > cmin || (v1_norm*v_norm) < 1.0e-14 || x < 1.0 || x1 < 1.0) {  // the angle change is small enough
           alpha = 1.0;
           valpha = v1;
@@ -1010,18 +1005,18 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   outfile.close();
 
   // Compute solution
-  vn = v_star;
+  v_next = v_star;
   if (num_contacts > 0) {
-    vn -= time_step_ * Minv_times_Dtrans * ftk;
+    v_next -= time_step_ * Minv_times_Dtrans * ftk;
   }
 
-  VectorX<T> qdotn(this->num_positions());
-  model_->MapVelocityToQDot(context0, vn, &qdotn);
+  VectorX<T> qdot_next(this->num_positions());
+  model_->MapVelocityToQDot(context0, v_next, &qdot_next);
 
   // qn = q + dt*qdot.
-  VectorX<T> xn(this->num_multibody_states());
-  xn << q0 + dt * qdotn, vn;
-  updates->get_mutable_vector(0).SetFromVector(xn);
+  VectorX<T> x_next(this->num_multibody_states());
+  x_next << q0 + dt * qdot_next, v_next;
+  updates->get_mutable_vector(0).SetFromVector(x_next);
 }
 
 template<typename T>
@@ -1229,10 +1224,8 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
 }
 
 template <typename T>
-T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient2(
-    const T& speed_BcAc, const T& mu) const {
-  DRAKE_ASSERT(speed_BcAc >= 0);
-  const T x = speed_BcAc * inv_v_stiction_tolerance_;
+T MultibodyPlant<T>::StribeckModel::ModifiedStribeck(const T& x, const T& mu) {
+  DRAKE_ASSERT(x >= 0);
   if (x >= 1) {
     return mu;
   } else {
@@ -1241,14 +1234,13 @@ T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient2(
 }
 
 template <typename T>
-T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient2Prime(
-    const T& speed_BcAc, const T& mu) const {
-  DRAKE_ASSERT(speed_BcAc >= 0);
-  const T x = speed_BcAc * inv_v_stiction_tolerance_;
+T MultibodyPlant<T>::StribeckModel::ModifiedStribeckPrime(
+    const T& x, const T& mu) {
+  DRAKE_ASSERT(x >= 0);
   if (x >= 1) {
     return 0;
   } else {
-    return mu * (2*(1-x)) * inv_v_stiction_tolerance_;
+    return mu * (2 * (1 - x));
   }
 }
 
