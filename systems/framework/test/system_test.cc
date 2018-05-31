@@ -682,15 +682,10 @@ class SystemIOTest : public ::testing::Test {
     output_ = test_sys_.AllocateOutput(*context_);
 
     // make string input
-    std::unique_ptr<Value<std::string>> str_input =
-        std::make_unique<Value<std::string>>("input");
-    context_->FixInputPort(0, std::move(str_input));
+    context_->FixInputPort(0, Value<std::string>("input"));
 
     // make vector input
-    std::unique_ptr<BasicVector<double>> vec_input =
-        std::make_unique<BasicVector<double>>(1);
-    vec_input->SetAtIndex(0, 2);
-    context_->FixInputPort(1, std::move(vec_input));
+    context_->FixInputPort(1, {2.0});
   }
 
   ValueIOTestSystem<double> test_sys_;

@@ -221,7 +221,7 @@ TEST_F(VectorSystemTest, OutputStateless) {
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate();
-  context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
+  context->FixInputPort(0, {1.0, 2.0});
   output_port.Calc(*context, output.get());
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
@@ -244,7 +244,7 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate();
-  context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
+  context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   output_port.Calc(*context, output.get());
@@ -267,7 +267,7 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
   std::unique_ptr<AbstractValue> output = output_port.Allocate();
-  context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
+  context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   output_port.Calc(*context, output.get());
@@ -302,7 +302,7 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   // Now we have state, so the VectorSystem base should call our DUT.
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   context = dut.CreateDefaultContext();
-  context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
+  context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
   derivatives = dut.AllocateTimeDerivatives();
@@ -331,7 +331,7 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   // Now we have state, so the VectorSystem base should call our DUT.
   dut.set_prototype_discrete_state_count(1);
   context = dut.CreateDefaultContext();
-  context->FixInputPort(0, BasicVector<double>::Make({1, 2}));
+  context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
   discrete_updates = dut.AllocateDiscreteVariables();
