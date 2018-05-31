@@ -5,7 +5,6 @@ load(
     "drake_cc_library",
     "drake_cc_binary",
     "drake_cc_googletest",
-    "drake_example_cc_binary",
 )
 load(
     "//tools/skylark:drake_py.bzl",
@@ -87,7 +86,7 @@ drake_cc_library(
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "iiwa_controller",
     srcs = ["iiwa_controller.cc"],
     data = [
@@ -97,11 +96,13 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":lcm_plan_interpolator",
-        "@gflags",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//systems/lcm:lcm_driven_loop",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "iiwa_wsg_simulation",
     srcs = ["iiwa_wsg_simulation.cc"],
     add_test_rule = 1,
@@ -120,12 +121,15 @@ drake_example_cc_binary(
         ":iiwa_common",
         ":iiwa_lcm",
         ":oracular_state_estimator",
+        "//common:text_logging_gflags",
         "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
-        "@gflags",
+        "//lcm",
+        "//manipulation/schunk_wsg",
+        "//systems/analysis",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "kuka_simulation",
     srcs = ["kuka_simulation.cc"],
     add_test_rule = 1,
@@ -142,11 +146,17 @@ drake_example_cc_binary(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "@gflags",
+        "//common:text_logging_gflags",
+        "//lcm",
+        "//manipulation/util:sim_diagram_builder",
+        "//multibody:rigid_body_tree_construction",
+        "//multibody/rigid_body_plant:frame_visualizer",
+        "//systems/analysis",
+        "//systems/controllers:inverse_dynamics_controller",
     ],
 )
 
-drake_example_cc_binary(
+drake_cc_binary(
     name = "kuka_plan_runner",
     srcs = ["kuka_plan_runner.cc"],
     data = [
