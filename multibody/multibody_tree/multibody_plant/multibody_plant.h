@@ -1029,6 +1029,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   std::vector<geometry::PenetrationAsPointPair<T>>
   CalcPointPairPenetrations(const systems::Context<T>& context) const;
 
+  std::vector<CoulombFriction<T>> CalcCombinedFrictionCoefficients(
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs) const;
+
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
@@ -1036,7 +1040,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& penetrations,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       VectorX<T>* fn) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
