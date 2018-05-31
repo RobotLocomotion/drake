@@ -45,14 +45,18 @@ class DrealSolver : public MathematicalProgramSolverInterface {
                                                    double delta);
 
   /// Finds a solution to minimize @p objective function while satisfying a
-  /// given @p constraint using @p delta.
+  /// given @p constraint using @p delta. When @p use_local_optimization is
+  /// true, enable "--local-optimization" dReal option which uses NLopt's
+  /// local-optimization algorithms to refine counterexamples in the process of
+  /// global optimization.
   ///
   /// @returns a model, a mapping from a variable to an interval, if a solution
   /// exists.
   /// @returns nullopt, if there is no solution.
   static optional<IntervalBox> Minimize(const symbolic::Expression& objective,
                                         const symbolic::Formula& constraint,
-                                        double delta);
+                                        double delta,
+                                        bool use_local_optimization);
 };
 
 }  // namespace solvers
