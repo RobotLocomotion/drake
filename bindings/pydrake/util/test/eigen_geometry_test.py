@@ -17,16 +17,16 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertTrue(np.allclose(q_identity.wxyz(), [1, 0, 0, 0]))
         self.assertTrue(np.allclose(
             q_identity.wxyz(), mut.Quaternion.Identity().wxyz()))
-        self.assertEquals(
+        self.assertEqual(
             str(q_identity), "Quaternion(w=1.0, x=0.0, y=0.0, z=0.0)")
         # Test ordering.
         q_wxyz = normalize([0.1, 0.3, 0.7, 0.9])
         q = mut.Quaternion(w=q_wxyz[0], x=q_wxyz[1], y=q_wxyz[2], z=q_wxyz[3])
         # - Accessors.
-        self.assertEquals(q.w(), q_wxyz[0])
-        self.assertEquals(q.x(), q_wxyz[1])
-        self.assertEquals(q.y(), q_wxyz[2])
-        self.assertEquals(q.z(), q_wxyz[3])
+        self.assertEqual(q.w(), q_wxyz[0])
+        self.assertEqual(q.x(), q_wxyz[1])
+        self.assertEqual(q.y(), q_wxyz[2])
+        self.assertEqual(q.z(), q_wxyz[3])
         self.assertTrue(np.allclose(q.xyz(), q_wxyz[1:]))
         self.assertTrue(np.allclose(q.wxyz(), q_wxyz))
         # - Mutators.
@@ -82,7 +82,7 @@ class TestEigenGeometry(unittest.TestCase):
         transform = mut.Isometry3()
         X = np.eye(4, 4)
         self.assertTrue(np.allclose(transform.matrix(), X))
-        self.assertEquals(str(transform), str(X))
+        self.assertEqual(str(transform), str(X))
         # - Constructor with (X)
         transform = mut.Isometry3(matrix=X)
         self.assertTrue(np.allclose(transform.matrix(), X))
@@ -131,5 +131,5 @@ class TestEigenGeometry(unittest.TestCase):
     def test_translation(self):
         # Test `type_caster`s.
         value = test_util.create_translation()
-        self.assertEquals(value.shape, (3,))
+        self.assertEqual(value.shape, (3,))
         test_util.check_translation(value)

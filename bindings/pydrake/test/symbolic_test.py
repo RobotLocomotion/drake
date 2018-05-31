@@ -433,9 +433,9 @@ class TestSymbolicExpression(SymbolicTestCase):
             VectorizedAlgebra(
                 self._check_array,
                 scalar_to_float=lambda x: x.Evaluate()))
-        self.assertEquals(xv.shape, (2,))
+        self.assertEqual(xv.shape, (2,))
         self.assertIsInstance(xv[0], sym.Variable)
-        self.assertEquals(e_xv.shape, (2,))
+        self.assertEqual(e_xv.shape, (2,))
         self.assertIsInstance(e_xv[0], sym.Expression)
 
     def test_equalto(self):
