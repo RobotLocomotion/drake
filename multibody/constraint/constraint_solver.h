@@ -108,30 +108,30 @@ class ConstraintSolver {
   /// @anchor Velocity-level-MLCPs
   /// Constraint problems can be posed as mixed linear complementarity problems
   /// (MLCP), which are problems that take the form:<pre>
-  /// (a)    Au + Xv + a = 0
-  /// (b)    Yu + Bv + b ≥ 0
-  /// (c)              v ≥ 0
-  /// (d) vᵀ(b + Yu + Bv) = 0
+  /// (a)    Au + Xy + a = 0
+  /// (b)    Yu + By + b ≥ 0
+  /// (c)              y ≥ 0
+  /// (d) vᵀ(b + Yu + By) = 0
   /// </pre>
-  /// where `u` are "free" variables, `v` are constrained variables, `A`, `X`,
+  /// where `u` are "free" variables, `y` are constrained variables, `A`, `X`,
   /// `Y`, and `B` are given matrices and `a` and `b` are given vectors. If `A`
   /// is nonsingular, `u` can be solved for:<pre>
-  /// (e) u = -A⁻¹ (a + Xv)
+  /// (e) u = -A⁻¹ (a + Xy)
   /// </pre>
   /// allowing the mixed LCP to be converted to a "pure" LCP `(qq, MM)` by:<pre>
   /// (f) qq = b - YA⁻¹a
   /// (g) MM = B - YA⁻¹X
   /// </pre>
-  /// This pure LCP can then be solved for `v` such that:<pre>
+  /// This pure LCP can then be solved for `y` such that:<pre>
   /// (h)     MMv + qq ≥ 0
-  /// (i)            v ≥ 0
-  /// (j) vᵀ(MMv + qq) = 0
+  /// (i)            y ≥ 0
+  /// (j) yᵀ(MMv + qq) = 0
   /// </pre>
-  /// and this `v` can be substituted into (e) to obtain `u`.
+  /// and this `y` can be substituted into (e) to obtain `u`.
   ///
   /// Consider constrained dynamics problems with velocity-level unknowns,
   /// which take the specific form:<pre>
-  /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-M v | = | 0 |
+  /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-Mv⁻ | = | 0 |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
   ///     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
   ///     | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
@@ -147,7 +147,7 @@ class ConstraintSolver {
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
   /// solve with active-set-type mathematical programming approaches:<pre>
-  /// A ≡ | M  -Ĝᵀ|   a ≡ |-M v |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
+  /// A ≡ | M  -Ĝᵀ|   a ≡ |-Mv⁻ |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
   ///     | Ĝ   0 |       |  kᴳ |       | 0    0   0   0  |
   ///
   /// Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
@@ -155,10 +155,10 @@ class ConstraintSolver {
   ///     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
   ///     | L   0 |       |  kᴸ |       | 0    0   0   0  |
   ///
-  /// u ≡ | v⁺ |      v ≡ | fN |
-  ///     | fG |          | fD |
-  ///                     |  λ |
-  ///                     | fL |
+  /// u ≡ | v⁺ |      y ≡ | fN  |
+  ///     | fG |          | fD  |
+  ///                     |  λ  |
+  ///                     | fL  |
   /// </pre>
   /// Therefore, using Equations (f) and (g) and defining `C` as the
   /// nv × nv-dimensional upper left block of `A⁻¹` (`nv` is the dimension of
@@ -174,8 +174,8 @@ class ConstraintSolver {
   ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
   /// </pre>
   /// where `nb` is the number of bilateral constraint equations. The solution
-  /// `v` will then take the form:<pre>
-  /// v ≡ | fN |
+  /// `y` will then take the form:<pre>
+  /// y ≡ | fN |
   ///     | fD |
   ///     | λ  |
   ///     | fL |
@@ -244,6 +244,34 @@ class ConstraintSolver {
       MatrixX<T>* MM,
       VectorX<T>* qq);
 
+  /// Solves the impact problem described above.
+  /// @param problem_data The data used to compute the impulsive constraint
+  ///            forces.
+  /// @param cf The computed impulsive forces, on return, in a packed storage
+  ///           format. The first `nc` elements of `cf` correspond to the
+  ///           magnitudes of the contact impulses applied along the normals of
+  ///           the `nc` contact points. The next elements of `cf`
+  ///           correspond to the frictional impulses along the `r` spanning
+  ///           directions at each point of contact. The first `r`
+  ///           values (after the initial `nc` elements) correspond to the first
+  ///           contact, the next `r` values correspond to the second contact,
+  ///           etc. The next `ℓ` values of `cf` correspond to the impulsive
+  ///           forces applied to enforce unilateral constraint functions. The
+  ///           final `b` values of `cf` correspond to the forces applied to
+  ///           enforce generic bilateral constraints. This packed storage
+  ///           format can be turned into more useful representations through
+  ///           ComputeGeneralizedForceFromConstraintForces() and
+  ///           CalcContactForcesInContactFrames(). `cf` will be resized as
+  ///           necessary.
+  /// @pre Constraint data has been computed.
+  /// @throws a std::runtime_error if the constraint forces cannot be computed
+  ///         (due to, e.g., the effects of roundoff error in attempting to
+  ///         solve a complementarity problem); in such cases, it is
+  ///         recommended to increase regularization and attempt again.
+  /// @throws a std::logic_error if `cf` is null.
+  void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
+                          VectorX<T>* cf) const;
+
   /// Populates the packed constraint force vector from the solution to the
   /// linear complementarity problem (LCP) constructed using
   /// ConstructBaseDiscretizedTimeLCP() and UpdateDiscretizedTimeLCP().
@@ -302,34 +330,6 @@ class ConstraintSolver {
   /// @throws a std::logic_error if `cf` is null.
   void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
                               VectorX<T>* cf) const;
-
-  /// Solves the appropriate impact problem at the velocity level.
-  /// @param problem_data The data used to compute the impulsive constraint
-  ///            forces.
-  /// @param cf The computed impulsive forces, on return, in a packed storage
-  ///           format. The first `nc` elements of `cf` correspond to the
-  ///           magnitudes of the contact impulses applied along the normals of
-  ///           the `nc` contact points. The next elements of `cf`
-  ///           correspond to the frictional impulses along the `r` spanning
-  ///           directions at each point of contact. The first `r`
-  ///           values (after the initial `nc` elements) correspond to the first
-  ///           contact, the next `r` values correspond to the second contact,
-  ///           etc. The next `ℓ` values of `cf` correspond to the impulsive
-  ///           forces applied to enforce unilateral constraint functions. The
-  ///           final `b` values of `cf` correspond to the forces applied to
-  ///           enforce generic bilateral constraints. This packed storage
-  ///           format can be turned into more useful representations through
-  ///           ComputeGeneralizedForceFromConstraintForces() and
-  ///           CalcContactForcesInContactFrames(). `cf` will be resized as
-  ///           necessary.
-  /// @pre Constraint data has been computed.
-  /// @throws a std::runtime_error if the constraint forces cannot be computed
-  ///         (due to, e.g., the effects of roundoff error in attempting to
-  ///         solve a complementarity problem); in such cases, it is
-  ///         recommended to increase regularization and attempt again.
-  /// @throws a std::logic_error if `cf` is null.
-  void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
-                          VectorX<T>* cf) const;
 
   /// Computes the generalized force on the system from the constraint forces
   /// given in packed storage.
