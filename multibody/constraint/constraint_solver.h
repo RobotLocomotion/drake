@@ -549,6 +549,7 @@ class ConstraintSolver {
   static ProblemData* UpdateProblemDataForUnilateralConstraints(
       const ProblemData& problem_data,
       std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
+      int gv_dim,
       ProblemData* modified_problem_data);
 
   drake::solvers::MobyLCPSolver<T> lcp_;
@@ -705,6 +706,7 @@ template <typename ProblemData>
 ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     const ProblemData& problem_data,
     std::function<const MatrixX<T>(const MatrixX<T>&)> modified_inertia_solve,
+    int gv_dim,
     ProblemData* modified_problem_data) {
   // Verify that the modified problem data points to something.
   DRAKE_DEMAND(modified_problem_data);
@@ -724,10 +726,18 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     // Copy most of the data unchanged.
     new_data = problem_data;
 
+    // Construct zero functions.
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>(0);
+    };
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+      return VectorX<T>::Zero(gv_dim);
+    };
+
     // Remove the bilateral constraints.
     new_data.kG.resize(0);
-    new_data.G_mult = new_data.zero_fn;
-    new_data.G_transpose_mult = new_data.gv_dim_zero_fn;
+    new_data.G_mult = zero_fn;
+    new_data.G_transpose_mult = zero_gv_dim_fn;
 
     // Update the inertia function pointer.
     new_data.solve_inertia = modified_inertia_solve;
@@ -1055,11 +1065,12 @@ void ConstraintSolver<T>::SolveConstraintProblem(
 
   // Copy the problem data and then update it to account for bilateral
   // constraints.
+  const int gv_dim = problem_data.tau.size();
   ConstraintAccelProblemData<T> modified_problem_data(
-      problem_data.tau.size() + num_eq_constraints);
+       gv_dim + num_eq_constraints);
   ConstraintAccelProblemData<T>* data_ptr = &modified_problem_data;
   data_ptr = UpdateProblemDataForUnilateralConstraints(
-      problem_data, mlcp_to_lcp_data.fast_A_solve, data_ptr);
+      problem_data, mlcp_to_lcp_data.fast_A_solve, gv_dim, data_ptr);
 
   // Compute a and A⁻¹a.
   VectorX<T> a(problem_data.tau.size() + num_eq_constraints);
@@ -1166,11 +1177,12 @@ void ConstraintSolver<T>::SolveImpactProblem(
 
   // Copy the problem data and then update it to account for bilateral
   // constraints.
+  const int gv_dim = problem_data.Mv.size();
   ConstraintVelProblemData<T> modified_problem_data(
-      problem_data.Mv.size() + num_eq_constraints);
+      gv_dim + num_eq_constraints);
   ConstraintVelProblemData<T>* data_ptr = &modified_problem_data;
   data_ptr = UpdateProblemDataForUnilateralConstraints(
-      problem_data, mlcp_to_lcp_data.fast_A_solve, data_ptr);
+      problem_data, mlcp_to_lcp_data.fast_A_solve, gv_dim, data_ptr);
 
   // Compute a and A⁻¹a.
   const VectorX<T>& Mv = problem_data.Mv;

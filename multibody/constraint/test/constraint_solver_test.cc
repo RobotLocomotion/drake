@@ -264,8 +264,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
       int friction_directions_dup) {
-    DRAKE_DEMAND(v);
-
     // Use the constraint velocity data to do most of the work.
     CalcConstraintProblemDataForImpact(data, contact_points_dup,
                                        friction_directions_dup);
