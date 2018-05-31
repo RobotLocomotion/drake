@@ -16,6 +16,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("//tools:drake.bzl", "drake_cc_binary")
 
+# TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
+# such that no downstream users can use it?
 cmake_config(
     cps_file_name = "drake.cps",
     package = "drake",
@@ -122,6 +124,7 @@ cc_library(
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
+        "//common:drake_marker_shared_library",
         "@dreal",
         "@ignition_math",
         "@ignition_rndf",
