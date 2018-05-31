@@ -15,25 +15,22 @@ class RigidBodyDistCon {
  public:
   /// The constructor
   ///
-  /// @param[in] bodyA_ind Index of first Rigid Body involved in constraint
+  /// @param[in] bodyA_index Index of first Rigid Body involved in constraint
   ///
   /// @param[in] pointA Point on first Rigid Body to measure distance from
   ///
-  /// @param[in] bodyB_ind Index of second Rigid Body involved in constraint
+  /// @param[in] bodyB_index Index of second Rigid Body involved in constraint
   ///
   /// @param[in] pointB Point on second Rigid Body to measure distance from
   ///
   /// @param[in] dist Distance the two points should be separated by
-  RigidBodyDistCon(int bodyA_ind, const Eigen::Vector3d& pointA,
-                  int bodyB_ind, const Eigen::Vector3d& pointB,
+  RigidBodyDistCon(int bodyA_index, const Eigen::Vector3d& pointA,
+                  int bodyB_index, const Eigen::Vector3d& pointB,
                   double dist);
 
   const int from_body, to_body;
   const Eigen::Vector3d from_point, to_point;
   const double distance;
-
-  // friend std::ostream& operator<<(std::ostream& os,
-  //                                 const RigidBodyDistCon& obj);
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
