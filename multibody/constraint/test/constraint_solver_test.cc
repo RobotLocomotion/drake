@@ -642,8 +642,8 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         CalcConstraintAccelProblemData(
           dt, vel_data_.get(), contact_dup, friction_dir_dup);
 
-        // Add a force acting at the point of contact and expressed at the
-        // rod center-of-mass that pulls the rod horizontally.
+        // Add a force applied at the point of contact that results in a torque
+        // at the rod center-of-mass.
         const double horz_f = (force_applied_to_right) ? 100 : -100;
         vel_data_->Mv += Vector3<double>(horz_f, 0,
             horz_f * rod_->get_rod_half_length()) * dt;

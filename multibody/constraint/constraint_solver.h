@@ -88,9 +88,20 @@ class ConstraintSolver {
 
     /// A function pointer for solving linear systems using only the upper left
     /// block of A⁻¹ in the MLCP (see @ref Velocity-level-MLCPs),
-    /// toward exploiting zero blocks in common operations.
+    /// toward exploiting operations with zero blocks. For example:<pre>
+    /// A⁻¹ | b |
+    ///     | 0 |</pre> and<pre>
+    /// A⁻¹ | B |
+    ///     | 0 |
+    /// </pre>
+    /// where `b ∈ ℝⁿᵛ` is an arbitrary vector of dimension equal to the
+    /// generalized velocities and `B ∈ ℝⁿᵛˣᵐ` is an arbitrary matrix with
+    /// row dimension equal to the dimension of the generalized velocities and
+    /// arbitrary number of columns (denoted `m` here).
     std::function<MatrixX<T>(const MatrixX<T>&)> fast_A_solve;
   };
+  // TODO(edrumwri): Describe conditions under which it is safe to replace
+  // A⁻¹ by a pseudo-inverse.
 
   // TODO(edrumwri): fill in variables below.
   /// @name Velocity-level constraint problems formulated as MLCPs.
@@ -117,7 +128,7 @@ class ConstraintSolver {
   /// (j) vᵀ(MMv + qq) = 0
   /// </pre>
   /// and this `v` can be substituted into (e) to obtain `u`.
-
+  ///
   /// The constraint problems considered here take the specific form:<pre>
   /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-M v | = | 0 |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
@@ -147,19 +158,21 @@ class ConstraintSolver {
   ///                     |  λ |
   ///                     | fL |
   /// </pre>
-  /// Therefore, using Equations (f) and (g) and defining `C` as the upper left
-  /// block of `A⁻¹`, the pure LCP `(qq,MM)` is defined as:<pre>
+  /// Therefore, using Equations (f) and (g) and defining `C` as the
+  /// nv × nv-dimensional upper left block of `A⁻¹` (`nv` is the dimension of
+  /// the generalized velocities) the pure LCP `(qq,MM)` is defined as:<pre>
   /// MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
   ///      | DCNᵀ  DCDᵀ   E   DCLᵀ |
   ///      | μ      -Eᵀ   0   0    |
   ///      | LCNᵀ  LCDᵀ   0   LCLᵀ |
   ///
-  /// qq ≡ | kᴺ - |N 0|A⁻¹a |
-  ///      | kᴰ - |D 0|A⁻¹a |
-  ///      |       0        |
-  ///      | kᴸ - |L 0|A⁻¹a |
+  /// qq ≡ | kᴺ - |N 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      | kᴰ - |D 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      |       0             |
+  ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
   /// </pre>
-  /// The solution `v` will then take the form:
+  /// where `nb` is the number of bilateral constraint equations. The solution
+  /// `v` will then take the form:
   /// v ≡ | fN |
   ///     | fD |
   ///     | λ  |
@@ -171,8 +184,7 @@ class ConstraintSolver {
   /// for solving `AX=B`, where `B` is a given matrix and `X` is an unknown
   /// matrix. UpdateDiscretizedTimeLCP() computes `a`.
   // @{
-  /// Computes the time-discretization of the system using the problem data,
-  /// generalized force `f`, and intended time step `target_dt`.
+  /// Computes the time-discretization of the system using the problem data.
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -1454,9 +1466,6 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLCP(
     MlcpToLcpData* mlcp_to_lcp_data,
     MatrixX<T>* MM,
     VectorX<T>* qq) {
-  using std::max;
-  using std::abs;
-
   DRAKE_DEMAND(MM);
   DRAKE_DEMAND(qq);
   DRAKE_DEMAND(mlcp_to_lcp_data);
@@ -1496,7 +1505,8 @@ void ConstraintSolver<T>::ConstructBaseDiscretizedTimeLCP(
 
   // Determine the "A" and fast "A" solution operators, which allow us to
   // solve the mixed linear complementarity problem by first solving a "pure"
-  // linear complementarity problem. See
+  // linear complementarity problem. See @ref Velocity-level-MLCPs in
+  // Doxygen documentation (above).
   ConstructLinearEquationSolversForMLCP(problem_data, mlcp_to_lcp_data);
 
   // Allocate storage for a.
