@@ -110,14 +110,20 @@ cc_library(
 # TODO(jwnimmer-tri) Ideally, drake_cc_library's installed_headers support
 # would capture a list of headerfile dependencies, so that we don't need to
 # write out the "list of libraries directly mentioned in Drake headers" below.
+#
+# TODO(eric.cousineau) This target should be merged into `//:drake_shared_library`
+# to minimize name duplication.
 cc_library(
     name = "drake_shared_library",
+    srcs = [":libdrake.so"],
     hdrs = [":libdrake_headers"],
+    # N.B. To pull in transitive `data` dependencies, we must list
+    # `libdrake.so` as a data target.
+    data = [":libdrake.so"],
     include_prefix = "drake",
     strip_include_prefix = "/",
     visibility = [
-        "//bindings:__subpackages__",
-        "//examples:__subpackages__",
+        "//:__pkg__",
     ],
     deps = [
         # The list of depended-on *.so files.
@@ -134,8 +140,10 @@ cc_library(
         "@scs//:scsdir",
         "@tinyxml2",
     ] + [
-        # The list of libraries directly mentioned in Drake headers.
+        # The list of depended-on header-only libraries.
+        "@eigen",
         "@fmt",
+        "@stx",
     ],
 )
 

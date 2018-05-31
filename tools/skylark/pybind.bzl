@@ -36,20 +36,14 @@ def _drake_pybind_cc_binary(
     drake_cc_binary(
         name = name,
         # This is how you tell Bazel to link in a shared library.
-        srcs = srcs + ["//tools/install/libdrake:libdrake.so"],
+        srcs = srcs,
         # This is how you tell Bazel to create a shared library.
         linkshared = 1,
         linkstatic = 1,
         # For all pydrake_foo.so, always link to Drake and pybind11.
         deps = [
-            # Even though "libdrake.so" appears in srcs above, we have to list
-            # :drake_shared_library here in order to get its headers onto the
-            # include path, and its prerequisite *.so's onto LD_LIBRARY_PATH.
-            "//tools/install/libdrake:drake_shared_library",
+            "//:drake_shared_library",
             "@pybind11",
-            # TODO(jwnimmer-tri) We should be getting stx header path from
-            # :drake_shared_library, but that isn't working yet.
-            "@stx",
         ] + deps,
         testonly = testonly,
         visibility = visibility,
@@ -213,8 +207,8 @@ def drake_pybind_cc_googletest(
         name = cc_name,
         srcs = cc_srcs,
         deps = cc_deps + [
+            "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
-            "//tools/install/libdrake:drake_shared_library",
             "@pybind11",
             "@python//:python_direct_link",
         ],
