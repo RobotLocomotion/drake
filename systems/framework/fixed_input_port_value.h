@@ -96,6 +96,9 @@ class FixedInputPortValue {
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 
+  /** Returns the ticket used to find the associated DependencyTracker. */
+  DependencyTicket ticket() const { return ticket_; }
+
   /** Returns a const reference to the context that owns this object. */
   const ContextBase& get_owning_context() const {
     DRAKE_ASSERT(owning_subcontext_ != nullptr);
@@ -111,10 +114,21 @@ class FixedInputPortValue {
 
   // Copy constructor is only used for cloning and is not a complete copy --
   // owning_subcontext_ is left unassigned.
-  FixedInputPortValue(const FixedInputPortValue& source) =
-      default;
+  FixedInputPortValue(const FixedInputPortValue& source) = default;
 
-  // Informs this FixedInputPortValue of the subcontext that owns it.
+  /** Returns a mutable reference to the context that owns this object. */
+  ContextBase& get_mutable_owning_context() {
+    DRAKE_ASSERT(owning_subcontext_ != nullptr);
+    return *owning_subcontext_;
+  }
+
+  /** (Internal use only) */
+  // Informs this FixedInputPortValue of its assigned DependencyTracker
+  // so it knows who to notify when its value changes.
+  void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
+
+  /** (Internal use only) */
+  // Informs this %FixedInputPortValue of the subcontext that owns it.
   // Aborts if this has already been done or given bad args.
   void set_owning_subcontext(ContextBase* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr && owning_subcontext_ == nullptr);
@@ -134,6 +148,10 @@ class FixedInputPortValue {
   // recorded the number somewhere. If the serial number matches, the value
   // is either unchanged since you last saw it, or an identical copy.
   int64_t serial_number_{-1};
+
+  // Index of the dependency tracker for this fixed value. The input port
+  // should have registered with this tracker.
+  DependencyTicket ticket_;
 };
 
 // TODO(sherm1) Get rid of this after 8/7/2018 (three months).
@@ -156,6 +174,12 @@ class ContextBaseFixedInputAttorney {
                                     ContextBase* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr && fixed != nullptr);
     fixed->set_owning_subcontext(owning_subcontext);
+  }
+
+  static void set_ticket(FixedInputPortValue* fixed,
+                         DependencyTicket ticket) {
+    DRAKE_DEMAND(ticket.is_valid() && fixed != nullptr);
+    fixed->set_ticket(ticket);
   }
 };
 

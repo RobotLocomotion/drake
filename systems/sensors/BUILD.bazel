@@ -426,6 +426,7 @@ filegroup(
 
 drake_cc_googletest(
     name = "rgbd_camera_test",
+    srcs = ["test/rgbd_camera_test.cc"],
     data = [
         ":test_models",
     ],

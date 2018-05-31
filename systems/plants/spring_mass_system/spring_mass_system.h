@@ -153,7 +153,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// Context. This force f is given by `f = -k (x-x0)`; the spring applies the
   /// opposite force -f to the world attachment point at the other end. The
   /// force is in newtons N (kg-m/s^2).
-  T EvalSpringForce(const Context<T>& context) const;
+  T CalcSpringForce(const Context<T>& context) const;
 
   /// Returns the potential energy currently stored in the spring in the given
   /// Context. For this linear spring, `pe = k (x-x0)^2 / 2`, so that spring

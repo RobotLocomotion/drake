@@ -134,10 +134,20 @@ class System : public SystemBase {
   /// output ports. It is sized with the number of output ports and uses each
   /// output port's allocation method to provide an object of the right type
   /// for that port.
-  // TODO(sherm1) Get rid of context parameter. We are stuck with it for now
-  // because of the way DiagramOutput is implemented. Fixed in caching branch.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const = 0;
+  std::unique_ptr<SystemOutput<T>> AllocateOutput() const {
+    std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      const OutputPort<T>& port = this->get_output_port(i);
+      output->add_port(port.Allocate());
+    }
+    return std::move(output);
+  }
+
+  /// (Deprecated) Context is ignored.
+  // TODO(sherm1) Get rid of this.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(const Context<T>&) const {
+    return AllocateOutput();
+  }
 
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
@@ -370,13 +380,42 @@ class System : public SystemBase {
   /// a helpful message.
   //@{
 
+  /// Returns a reference to the cached value of the continuous state variable
+  /// time derivatives, evaluating first if necessary using
+  /// CalcTimeDerivatives().
+  /// @see CalcTimeDerivatives()
+  const ContinuousState<T>& EvalTimeDerivatives(
+      const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(time_derivatives_cache_index_);
+    return entry.Eval<ContinuousState<T>>(context);
+  }
+
+  /// Returns a reference to the cached value of the potential energy. If
+  /// necessary the cache will be updated first using CalcPotentialEnergy().
+  /// @see CalcPotentialEnergy()
+  const T& EvalPotentialEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(potential_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
+  /// Returns a reference to the cached value of the kinetic energy. If
+  /// necessary the cache will be updated first using CalcKineticEnergy().
+  /// @see CalcPotentialEnergy()
+  const T& EvalKineticEnergy(const Context<T>& context) const {
+    const CacheEntry& entry =
+        this->get_cache_entry(kinetic_energy_cache_index_);
+    return entry.Eval<T>(context);
+  }
+
   /// Returns a reference to the cached value of the conservative power. If
   /// necessary the cache will be updated first using CalcConservativePower().
   /// @see CalcConservativePower()
   const T& EvalConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_conservative_power_ = CalcConservativePower(context);
-    return fake_cache_conservative_power_;
+    const CacheEntry& entry =
+        this->get_cache_entry(conservative_power_cache_index_);
+    return entry.Eval<T>(context);
   }
 
   /// Returns a reference to the cached value of the non-conservative power. If
@@ -384,9 +423,9 @@ class System : public SystemBase {
   /// CalcNonConservativePower().
   /// @see CalcNonConservativePower()
   const T& EvalNonConservativePower(const Context<T>& context) const {
-    // TODO(sherm1) Replace with an actual cache entry.
-    fake_cache_nonconservative_power_ = CalcNonConservativePower(context);
-    return fake_cache_nonconservative_power_;
+    const CacheEntry& entry =
+        this->get_cache_entry(nonconservative_power_cache_index_);
+    return entry.Eval<T>(context);
   }
 
   /// Returns the value of the vector-valued input port with the given
@@ -417,7 +456,8 @@ class System : public SystemBase {
 
     const BasicVector<T>* const basic_value =
         EvalBasicVectorInputImpl(__func__, context, iport_index);
-    if (basic_value == nullptr) return nullptr;  // An unconnected port.
+    if (basic_value == nullptr)
+      return nullptr;  // An unconnected port.
 
     // It's a BasicVector, but we're fussy about the subtype here.
     const Vec<T>* const value = dynamic_cast<const Vec<T>*>(basic_value);
@@ -452,6 +492,7 @@ class System : public SystemBase {
 
     return basic_value->get_value();
   }
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -627,7 +668,7 @@ class System : public SystemBase {
   }
 
   /// This method forces an unrestricted update on the system given a
-  /// @p context, and the updated state is stored in @p discrete_state. The
+  /// @p context, and the updated state is stored in @p state. The
   /// unrestricted update event will have a trigger type of kForced, with no
   /// additional data, attribute or custom callback.
   ///
@@ -741,8 +782,11 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
     for (OutputPortIndex i(0); i < get_num_output_ports(); ++i) {
-      get_output_port(i).Calc(
-          context, outputs->get_mutable_port_value(i)->GetMutableData());
+      // TODO(sherm1) Would be better to use Eval() here but we don't have
+      // a generic abstract assignment capability that would allow us to
+      // copy into existing memory in `outputs` (rather than clone). User
+      // code depends on memory stability in SystemOutput.
+      get_output_port(i).Calc(context, outputs->GetMutableData(i));
     }
   }
 
@@ -960,11 +1004,7 @@ class System : public SystemBase {
 
   // So we don't have to keep writing this->get_num_input_ports().
   using SystemBase::get_num_input_ports;
-
-  /// Returns the number of output ports of the system.
-  int get_num_output_ports() const {
-    return static_cast<int>(output_ports_.size());
-  }
+  using SystemBase::get_num_output_ports;
 
   /// Returns the typed input port at index @p port_index.
   // TODO(sherm1) Make this an InputPortIndex.
@@ -976,13 +1016,8 @@ class System : public SystemBase {
   /// Returns the typed output port at index @p port_index.
   // TODO(sherm1) Make this an OutputPortIndex.
   const OutputPort<T>& get_output_port(int port_index) const {
-    if (port_index < 0 || port_index >= get_num_output_ports()) {
-      throw std::out_of_range(
-          "System " + get_name() + ": Port index " +
-          std::to_string(port_index) + " is out of range. There are only " +
-          std::to_string(get_num_output_ports()) + " output ports.");
-    }
-    return *output_ports_[port_index];
+    return dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, port_index));
   }
 
   /// Returns the number of constraints specified for the system.
@@ -1021,14 +1056,6 @@ class System : public SystemBase {
     return true;
   }
 
-  /// Returns the total dimension of all of the output ports (as if they were
-  /// muxed).
-  int get_num_total_outputs() const {
-    int count = 0;
-    for (const auto& out : output_ports_) count += out->size();
-    return count;
-  }
-
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
   /// @throw exception unless `output` is non-null and valid for this system.
@@ -1064,8 +1091,11 @@ class System : public SystemBase {
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
                        this->get_num_input_ports());
 
-    // Checks that the size of the fixed vector input ports in the
-    // context matches the declarations made by the system.
+    DRAKE_THROW_UNLESS(context.get_num_output_ports() ==
+                       this->get_num_output_ports());
+
+    // Checks that the size of the fixed vector input ports in the context
+    // matches the declarations made by the system.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const FixedInputPortValue* port_value =
           context.MaybeGetFixedInputPortValue(i);
@@ -1329,8 +1359,35 @@ class System : public SystemBase {
       Event<T>* event,
       CompositeEventCollection<T>* events) const = 0;
 
-  // Promote so we don't need "this->" everywhere.
+  // Promote these so we don't need "this->" everywhere.
   using SystemBase::get_name;
+  using SystemBase::CheckValidContext;
+  using SystemBase::DeclareCacheEntry;
+  using SystemBase::all_sources_ticket;
+  using SystemBase::nothing_ticket;
+  using SystemBase::time_ticket;
+  using SystemBase::accuracy_ticket;
+  using SystemBase::q_ticket;
+  using SystemBase::v_ticket;
+  using SystemBase::z_ticket;
+  using SystemBase::xc_ticket;
+  using SystemBase::xd_ticket;
+  using SystemBase::xa_ticket;
+  using SystemBase::all_state_ticket;
+  using SystemBase::xcdot_ticket;
+  using SystemBase::xdhat_ticket;
+  using SystemBase::configuration_ticket;
+  using SystemBase::velocity_ticket;
+  using SystemBase::kinematics_ticket;
+  using SystemBase::all_parameters_ticket;
+  using SystemBase::all_input_ports_ticket;
+  using SystemBase::input_port_ticket;
+  using SystemBase::output_port_ticket;
+  using SystemBase::cache_entry_ticket;
+  using SystemBase::discrete_state_ticket;
+  using SystemBase::abstract_state_ticket;
+  using SystemBase::numeric_parameter_ticket;
+  using SystemBase::abstract_parameter_ticket;
 
  protected:
   /// Derived classes will implement this method to evaluate a witness function
@@ -1402,18 +1459,75 @@ class System : public SystemBase {
       State<T>* state) const = 0;
   //@}
 
+
   //----------------------------------------------------------------------------
   /// @name                 System construction
   /// Authors of derived %Systems can use these methods in the constructor
   /// for those %Systems.
   //@{
-  /// Constructs an empty %System base class object, possibly supporting
-  /// scalar-type conversion support (AutoDiff, etc.) using @p converter.
+
+  /// Constructs an empty %System base class object and allocates base class
+  /// resources, possibly supporting scalar-type conversion support (AutoDiff,
+  /// etc.) using @p converter.
   ///
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   explicit System(SystemScalarConverter converter)
-      : system_scalar_converter_(std::move(converter)) {}
+      : system_scalar_converter_(std::move(converter)) {
+    // Note that configuration and kinematics tickets also include dependence
+    // on parameters and accuracy.
+
+    // Potential and kinetic energy, and conservative power that measures
+    // the transfer between them, must *not* be (directly) time dependent.
+    potential_energy_cache_index_ =
+        DeclareCacheEntry("potential energy", T(0),
+                          &System::CalcPotentialEnergy2,
+                          {configuration_ticket()})
+            .cache_index();
+
+    kinetic_energy_cache_index_ =
+        DeclareCacheEntry("kinetic energy", T(0), &System::CalcKineticEnergy2,
+                          {kinematics_ticket()})
+            .cache_index();
+
+    conservative_power_cache_index_ =
+        DeclareCacheEntry("conservative power", T(0),
+                          &System::CalcConservativePower2,
+                          {kinematics_ticket()})
+            .cache_index();
+
+    // Only non-conservative power can have an explicit time dependence.
+    nonconservative_power_cache_index_ =
+        DeclareCacheEntry(
+            "non-conservative power", T(0), &System::CalcNonConservativePower2,
+            {time_ticket(), kinematics_ticket()})
+            .cache_index();
+
+    // For the time derivative cache we need to use the general form for
+    // cache creation because we're dealing with pre-defined allocator and
+    // calculator method signatures.
+    CacheEntry::AllocCallback alloc_derivatives = [this]() {
+      return std::make_unique<Value<ContinuousState<T>>>(
+          this->AllocateTimeDerivatives());
+    };
+    CacheEntry::CalcCallback calc_derivatives = [this](
+        const ContextBase& context_base, AbstractValue* result) {
+      DRAKE_DEMAND(result != nullptr);
+      ContinuousState<T>& state = result->GetMutableValue<ContinuousState<T>>();
+      const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
+      CalcTimeDerivatives(context, &state);
+    };
+
+    // We must assume that time derivatives can depend on *any* context source.
+    time_derivatives_cache_index_ =
+        this->DeclareCacheEntryWithKnownTicket(
+                xcdot_ticket(),
+                "time derivatives", std::move(alloc_derivatives),
+                std::move(calc_derivatives), {all_sources_ticket()})
+            .cache_index();
+
+    // TODO(sherm1) Allocate and use discrete update cache.
+  }
 
   /// Adds a port with the specified @p type and @p size to the input topology.
   /// If the port is intended to model a random noise or disturbance input,
@@ -1439,15 +1553,6 @@ class System : public SystemBase {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
-  /// Adds an already-created output port to this System. Insists that the port
-  /// already contains a reference to this System, and that the port's index is
-  /// already set to the next available output port index for this System.
-  void CreateOutputPort(std::unique_ptr<OutputPort<T>> port) {
-    DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system() == this);
-    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
-    output_ports_.push_back(std::move(port));
-  }
   //@}
 
   /// Adds an already-created constraint to the list of constraints for this
@@ -1689,10 +1794,10 @@ class System : public SystemBase {
   }
   //@}
 
-//----------------------------------------------------------------------------
-/// @name             Constraint-related functions (protected).
-///
-// @{
+  //----------------------------------------------------------------------------
+  /// @name             Constraint-related functions (protected).
+  ///
+  // @{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1827,6 +1932,23 @@ class System : public SystemBase {
     CheckValidContextT(*context);
   }
 
+  void CalcPotentialEnergy2(const Context<T>& context, T* pe) const {
+    DRAKE_DEMAND(pe != nullptr);
+    *pe = CalcPotentialEnergy(context);
+  }
+  void CalcKineticEnergy2(const Context<T>& context, T* ke) const {
+    DRAKE_DEMAND(ke != nullptr);
+    *ke = CalcKineticEnergy(context);
+  }
+  void CalcConservativePower2(const Context<T>& context, T* power) const {
+    DRAKE_DEMAND(power != nullptr);
+    *power = CalcConservativePower(context);
+  }
+  void CalcNonConservativePower2(const Context<T>& context, T* power) const {
+    DRAKE_DEMAND(power != nullptr);
+    *power = CalcNonConservativePower(context);
+  }
+
   // Shared code for updating a vector input port and returning a pointer to its
   // value as a BasicVector<T>, or nullptr if the port is not connected. Throws
   // a logic_error if the port_index is out of range or if the input port is not
@@ -1861,9 +1983,6 @@ class System : public SystemBase {
     return basic_value;
   }
 
-  // TODO(sherm1) Move output ports up with input ports.
-  std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
-
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
@@ -1879,12 +1998,11 @@ class System : public SystemBase {
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
 
-  // TODO(sherm1) Replace these fake cache entries with real cache asap.
-  // These are temporaries and hence uninitialized.
-  mutable T fake_cache_pe_;
-  mutable T fake_cache_ke_;
-  mutable T fake_cache_conservative_power_;
-  mutable T fake_cache_nonconservative_power_;
+  CacheIndex time_derivatives_cache_index_,
+             potential_energy_cache_index_,
+             kinetic_energy_cache_index_,
+             conservative_power_cache_index_,
+             nonconservative_power_cache_index_;
 };
 
 }  // namespace systems

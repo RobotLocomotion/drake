@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -196,7 +197,8 @@ class LeafSystemTest : public ::testing::Test {
   }
 
   TestSystem<double> system_;
-  LeafContext<double> context_;
+  std::unique_ptr<LeafContext<double>> context_ptr_ = system_.AllocateContext();
+  LeafContext<double>& context_ = *context_ptr_;
 
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
@@ -742,8 +744,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 // correct values.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
-  auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);
+  auto system_output = dut.AllocateOutput();
 
   // Check that BasicVector<double>(3) came out.
   auto output0 = system_output->get_vector_data(0);
@@ -776,12 +777,49 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i = 0; i < 4; ++i) {
+  for (OutputPortIndex i(0); i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
   }
+
+  const auto& port2 = dut.get_output_port(OutputPortIndex(2));
+  const auto& cache2 = dut.get_cache_entry(
+      dynamic_cast<const LeafOutputPort<double>&>(port2).cache_index());
+  const auto& cacheval2 = cache2.get_cache_entry_value(*context);
+  EXPECT_EQ(cacheval2.serial_number(), 1);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_THROW(cache2.GetKnownUpToDate<std::string>(*context),
+               std::logic_error);
+  const std::string& str2_cached = port2.Eval<std::string>(*context);
+  EXPECT_EQ(str2_cached, "concrete string");
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);
+
+  // Check that setting time invalidates correctly.
+  context->set_time(1.);  // Should invalidate time- and everything-dependents.
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  context->set_time(1.);  // Same time; no invalidation.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+
+  // Should invalidate accuracy- and everything-dependents.
+  context->set_accuracy(.000025);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
+  context->set_accuracy(.000025);  // Same accuracy; no invalidation.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
 
   // Downcast to concrete types.
   const BasicVector<double>* vec0{};
@@ -922,7 +960,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
 GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   DeclaredNonModelOutputSystem dut;
   auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);  // Invokes all allocators.
+  auto system_output = dut.AllocateOutput();  // Invokes all allocators.
 
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);

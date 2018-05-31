@@ -273,7 +273,9 @@ struct Impl {
              py::arg("input_port"), py::arg("output_port"))
         // Context.
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext)
-        .def("AllocateOutput", &System<T>::AllocateOutput)
+        .def("AllocateOutput",
+             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
+                 &System<T>::AllocateOutput))
         .def(
             "EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {

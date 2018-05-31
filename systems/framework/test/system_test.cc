@@ -56,11 +56,6 @@ class TestSystem : public System<double> {
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* params) const override {}
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    return nullptr;
-  }
-
   const InputPortDescriptor<double>& AddAbstractInputPort() {
     return this->DeclareAbstractInputPort();
   }
@@ -68,9 +63,12 @@ class TestSystem : public System<double> {
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
     auto port = std::make_unique<LeafOutputPort<double>>(
-        *this, *this, OutputPortIndex(get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        assign_next_dependency_ticket(),
         typename LeafOutputPort<double>::AllocCallback(nullptr),
-        typename LeafOutputPort<double>::CalcCallback(nullptr));
+        typename LeafOutputPort<double>::CalcCallback(nullptr),
+        std::vector<DependencyTicket>{});
     LeafOutputPort<double>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -213,6 +211,8 @@ class TestSystem : public System<double> {
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<double>>();
   }
+
+  void DoAcquireContextResources(ContextBase*) const final {}
 
   void DoValidateAllocatedContext(const ContextBase&) const final {}
 
@@ -414,26 +414,28 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareAbstractInputPort();
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
         []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
-        }));
+        },
+        std::vector<DependencyTicket>{}));
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kGaussian);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
         1,  // Vector size.
-        []() {
-          return std::make_unique<Value<BasicVector<T>>>(1);
-        },
+        []() { return std::make_unique<Value<BasicVector<T>>>(1); },
         [this](const Context<T>& context, BasicVector<T>* output) {
           this->CalcVectorOutput(context, output);
-        }));
+        },
+        std::vector<DependencyTicket>{}));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -468,11 +470,17 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    return nullptr;
+    return std::make_unique<ContinuousState<T>>();
   }
+
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<LeafContext<T>*>(context_base);
+    EXPECT_TRUE(context != nullptr);
   }
 
   void DoValidateAllocatedContext(const ContextBase& context) const final {}
@@ -514,15 +522,6 @@ class ValueIOTestSystem : public System<T> {
                         BasicVector<T>* vec_out) const {
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
     vec_out->get_mutable_value() = 2 * vec_in->get_value();
-  }
-
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(
-        new LeafSystemOutput<T>);
-    output->add_port(this->get_output_port(0).Allocate());
-    output->add_port(this->get_output_port(1).Allocate());
-    return std::move(output);
   }
 
   void DispatchPublishHandler(
