@@ -66,18 +66,16 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
   const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
-  // The target_position_mm field represents the distance between
-  // the two fingers. The fingers are connected by a mechanical
-  // linkage, so the relative movement between the two fingers is
-  // twice the actuator's movement (and what we want to calcuate
-  // here is the value for the actuator).
-  double target_position = -(command.target_position_mm / 1e3) / 2.;
+  // The target_position_mm field represents the distance between the two
+  // fingers in milimeters. This class generates trajectories for the negative
+  // of the distance between the fingers in meters.
+  double target_position = -command.target_position_mm / 1e3;
   if (std::isnan(target_position)) {
     target_position = 0;
   }
 
   const systems::BasicVector<double>* state = this->EvalVectorInput(context, 1);
-  const double cur_position = state->GetAtIndex(position_index_);
+  const double cur_position = 2 * state->GetAtIndex(position_index_);
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
@@ -117,8 +115,8 @@ void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
   // The acceleration and velocity limits correspond to the maximum
   // values available for manual control through the gripper's web
   // interface.
-  const double kMaxVelocity = 0.42;  // m/s
-  const double kMaxAccel = 5.;       // m/s^2
+  const double kMaxVelocity = 2 * 0.42;  // m/s
+  const double kMaxAccel = 2 * 5.;       // m/s^2
   const double kTimeToMaxVelocity = kMaxVelocity / kMaxAccel;
   // TODO(sam.creasey) this should probably consider current speed
   // if the gripper is already moving.
