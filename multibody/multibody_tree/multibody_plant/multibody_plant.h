@@ -1026,13 +1026,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
+  std::vector<geometry::PenetrationAsPointPair<T>>
+  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& penetrations,
+      VectorX<T>* fn) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
   // Jacobian N(q) such that:
@@ -1150,6 +1155,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// It returns a negative value when the stiction tolerance has not been set
     /// previously with set_stiction_tolerance().
     double stiction_tolerance() const { return v_stiction_tolerance_; }
+
+    T ComputeFrictionCoefficient2(
+        const T& speed_BcAc, const T& mu) const;
+
+    T ComputeFrictionCoefficient2Prime(
+        const T& speed_BcAc, const T& mu) const;
 
    private:
     // Stiction velocity tolerance for the Stribeck model.
