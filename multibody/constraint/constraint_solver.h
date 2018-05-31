@@ -184,7 +184,11 @@ class ConstraintSolver {
   /// for solving `AX=B`, where `B` is a given matrix and `X` is an unknown
   /// matrix. UpdateDiscretizedTimeLCP() computes `a`.
   // @{
-  /// Computes the time-discretization of the system using the problem data.
+  /// Computes the base time-discretization of the system using the problem
+  /// data, resulting in the `MM` and `qq` shown above. The data output
+  /// (`mlcp_to_lcp_data`, `MM`, and `qq`) will be updated using a particular
+  /// time step in UpdateDiscretizedTimeLCP(), resulting in a non-impulsive
+  /// problem formulation.
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -202,7 +206,20 @@ class ConstraintSolver {
 
   /// Updates the time-discretization of the LCP initially computed in
   /// ConstructBaseDiscretizedTimeLCP() using the problem data and time step
-  /// `dt`.
+  /// `h`. The resulting problem will modify the LCP to the form:<pre>
+  /// MM ≡ | hNCNᵀ  hNCDᵀ   0   hNCLᵀ |
+  ///      | hDCNᵀ  hDCDᵀ   E   hDCLᵀ |
+  ///      | μ      -Eᵀ     0   0     |
+  ///      | hLCNᵀ  hLCDᵀ   0   hLCLᵀ |
+  ///
+  /// qq ≡ | kᴺ - |N 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      | kᴰ - |D 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      |       0             |
+  ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  /// </pre>which yields a problem with non-impulsive forces. `kᴺ`, `kᴸ`, and
+  /// `a` are all functions of `h`. Solving the resulting pure LCP yields
+  /// non-impulsive constraint forces that can be obtained from
+  /// PopulatePackedConstraintForcesFromLCPSolution().
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -213,7 +230,7 @@ class ConstraintSolver {
   /// @pre `mlcp_to_lcp_data`, `a`, `MM`, and `qq` are non-null on entry.
   static void UpdateDiscretizedTimeLCP(
       const ConstraintVelProblemData<T>& problem_data,
-      double dt,
+      double h,
       MlcpToLcpData* mlcp_to_lcp_data,
       VectorX<T>* a,
       MatrixX<T>* MM,
