@@ -6,6 +6,7 @@
 
 #include <spruce.hh>
 
+#include "drake/common/drake_marker.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_loaded_library.h"
 #include "drake/common/never_destroyed.h"
@@ -107,12 +108,14 @@ optional<std::string> getenv_optional(const char* const name) {
   return nullopt;
 }
 
-// If we are linked against libdrake.so, return a candidate directory based on
-// libdrake.so's path; otherwise, return nullopt.  The resulting string will
-// already end with "drake"; that is, the directory will contain files named
-// like "common/foo.txt", not "drake/common/foo.txt".
-optional<std::string>  GetCandidateDirFromLibdrake() {
-  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake.so");
+// If we are linked against libdrake_marker.so, return a candidate directory
+// based on libdrake_marker.so's path; otherwise, return nullopt.  The
+// resulting string will already end with "drake"; that is, the directory will
+// contain files named like "common/foo.txt", not "drake/common/foo.txt".
+optional<std::string>  GetCandidateDirFromLibDrakeMarker() {
+  // Ensure that we have the library loaded.
+  DRAKE_DEMAND(drake::internal::drake_marker_lib_check() == 1234);
+  optional<std::string> libdrake_dir = LoadedLibraryPath("libdrake_marker.so");
   if (libdrake_dir) {
     libdrake_dir = libdrake_dir.value() + "/../share/drake";
   }
@@ -276,9 +279,10 @@ Result FindResource(string resource_path) {
     candidate_dirs.emplace_back(CheckCandidateDir(candidate_dir));
   }
 
-  // (3) Find where `librake.so` is, and add search path that corresponds to
-  // resource folder in install tree based on `libdrake.so` location.
-  candidate_dirs.emplace_back(GetCandidateDirFromLibdrake());
+  // (3) Find where `libdrake_marker.so` is, and add search path that
+  // corresponds to resource folder in install tree based on
+  // `libdrake_marker.so` location.
+  candidate_dirs.emplace_back(GetCandidateDirFromLibDrakeMarker());
 
   // (4) Find resources during `bazel test` execution.
   candidate_dirs.emplace_back(GetTestRunfilesDir());

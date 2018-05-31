@@ -67,6 +67,7 @@
       "Link-Flags": ["-ltinyxml2"],
       "Requires": [
         ":drake-lcmtypes-cpp",
+        ":drake-marker",
         "bot2-core-lcmtypes:lcmtypes_bot2-core-cpp",
         "Eigen3:Eigen",
         "fmt:fmt-header-only",
@@ -95,6 +96,10 @@
       "Type": "jar",
       "Location": "@prefix@/share/java/lcmtypes_drake.jar",
       "Requires": ["lcm:lcm-java"]
+    },
+    "drake-marker": {
+      "Type": "dylib",
+      "Location": "@prefix@/lib/libdrake_marker.so"
     }
   },
   "X-CMake-Variables": {
