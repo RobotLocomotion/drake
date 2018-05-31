@@ -38,14 +38,11 @@ class MyContextBase : public ContextBase {
 class FixedInputPortTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::unique_ptr<BasicVector<double>> vec(new BasicVector<double>(2));
-    vec->get_mutable_value() << 5, 6;
     port0_value_ = &context_.FixInputPort(
-        InputPortIndex(0),
-        std::make_unique<Value<BasicVector<double>>>(std::move(vec)));
+        InputPortIndex(0), Value<BasicVector<double>>({5.0, 6.0}));
 
-    auto value = std::make_unique<Value<std::string>>("foo");
-    port1_value_ = &context_.FixInputPort(InputPortIndex(1), std::move(value));
+    port1_value_ = &context_.FixInputPort(
+        InputPortIndex(1), Value<std::string>("foo"));
 
     // TODO(sherm1) Tracker & ticket setup here.
 

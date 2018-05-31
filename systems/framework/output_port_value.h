@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
@@ -44,7 +45,7 @@ class OutputPortValue {
   /// @tparam T The type of the data.
   template <typename T>
   explicit OutputPortValue(std::unique_ptr<Value<T>> data)
-      : OutputPortValue(std::unique_ptr<AbstractValue>(data.release())) {}
+      : OutputPortValue(static_pointer_cast<AbstractValue>(std::move(data))) {}
 
   virtual ~OutputPortValue();
 

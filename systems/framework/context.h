@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/parameters.h"
@@ -51,10 +52,7 @@ class Context : public ContextBase {
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   std::unique_ptr<Context<T>> Clone() const {
-    std::unique_ptr<ContextBase> clone_base(ContextBase::Clone());
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(clone_base.get()) != nullptr);
-    return std::unique_ptr<Context<T>>(
-        static_cast<Context<T>*>(clone_base.release()));
+    return dynamic_pointer_cast_or_throw<Context<T>>(ContextBase::Clone());
   }
 
   ~Context() override = default;
@@ -247,25 +245,30 @@ class Context : public ContextBase {
   /// modify the input port's value using the appropriate
   /// FixedInputPortValue method, which will ensure that invalidation
   /// notifications are delivered.
-  FixedInputPortValue& FixInputPort(
-      int index, std::unique_ptr<BasicVector<T>> vec) {
-    return ContextBase::FixInputPort(index,
-       std::make_unique<Value<BasicVector<T>>>(std::move(vec)));
-  }
-
-  /// Same as above method but the vector is passed by const reference instead
-  /// of by unique_ptr.  The port will contain a copy of the `vec` (not retain
-  /// a pointer to the `vec`).
   FixedInputPortValue& FixInputPort(int index, const BasicVector<T>& vec) {
-    return FixInputPort(index, vec.Clone());
+    return ContextBase::FixInputPort(
+        index, std::make_unique<Value<BasicVector<T>>>(vec.Clone()));
   }
 
   /// Same as above method but starts with an Eigen vector whose contents are
   /// used to initialize a BasicVector in the FixedInputPortValue.
   FixedInputPortValue& FixInputPort(
       int index, const Eigen::Ref<const VectorX<T>>& data) {
-    auto vec = std::make_unique<BasicVector<T>>(data);
-    return FixInputPort(index, std::move(vec));
+    return FixInputPort(index, BasicVector<T>(data));
+  }
+
+  /// Same as the above method that takes a `const BasicVector<T>&`, but here
+  /// the vector is passed by unique_ptr instead of by const reference.  The
+  /// caller must not retain any aliases to `vec`; within this method, `vec`
+  /// is cloned and then deleted.
+  /// @note This overload will become deprecated in the future, because it can
+  /// mislead users to believe that they can retain an alias of `vec` to mutate
+  /// the fixed value during a simulation.  Callers should prefer to use one of
+  /// the other overloads instead.
+  FixedInputPortValue& FixInputPort(
+      int index, std::unique_ptr<BasicVector<T>> vec) {
+    DRAKE_THROW_UNLESS(vec.get() != nullptr);
+    return FixInputPort(index, *vec);
   }
 
   // =========================================================================
@@ -385,12 +388,8 @@ class Context : public ContextBase {
   // more convenient type.
   static std::unique_ptr<Context<T>> CloneWithoutPointers(
       const Context<T>& source) {
-    std::unique_ptr<ContextBase> clone_base(
+    return dynamic_pointer_cast_or_throw<Context<T>>(
         ContextBase::CloneWithoutPointers(source));
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(clone_base.get()) != nullptr);
-    std::unique_ptr<Context<T>> clone(
-        static_cast<Context<T>*>(clone_base.release()));
-    return clone;
   }
 
   /// Override to return the appropriate concrete State class to be returned

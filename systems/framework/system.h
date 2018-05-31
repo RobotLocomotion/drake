@@ -18,6 +18,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
@@ -91,10 +92,8 @@ class System : public SystemBase {
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
   std::unique_ptr<Context<T>> AllocateContext() const {
-    std::unique_ptr<ContextBase> context_base(SystemBase::AllocateContext());
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(context_base.get()) != nullptr);
-    return std::unique_ptr<Context<T>>(
-        static_cast<Context<T>*>(context_base.release()));
+    return dynamic_pointer_cast_or_throw<Context<T>>(
+        SystemBase::AllocateContext());
   }
 
   /// Allocates a CompositeEventCollection for this system. The allocated
@@ -1182,13 +1181,7 @@ class System : public SystemBase {
       throw std::logic_error(ss.str().c_str());
     }
 
-    // Downcast to the derived type S (throwing on error), and then transfer
-    // ownership to a correctly-typed unique_ptr.
-    // NOLINTNEXTLINE(runtime/casting)
-    std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
-    base_result.release();
-
-    return result;
+    return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 
   /// Creates a deep copy of this system exactly like ToAutoDiffXd(), but
@@ -1243,13 +1236,7 @@ class System : public SystemBase {
       throw std::logic_error(ss.str().c_str());
     }
 
-    // Downcast to the derived type S (throwing on error), and then transfer
-    // ownership to a correctly-typed unique_ptr.
-    // NOLINTNEXTLINE(runtime/casting)
-    std::unique_ptr<S<U>> result{&dynamic_cast<S<U>&>(*base_result)};
-    base_result.release();
-
-    return result;
+    return dynamic_pointer_cast_or_throw<S<U>>(std::move(base_result));
   }
 
   /// Creates a deep copy of this system exactly like ToSymbolic(), but returns
@@ -1288,7 +1275,7 @@ class System : public SystemBase {
         for (int j = 0; j < our_vec->size(); ++j) {
           our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
         }
-        target_context->FixInputPort(i, std::move(our_vec));
+        target_context->FixInputPort(i, *our_vec);
       } else if (descriptor.get_data_type() == kAbstractValued) {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.

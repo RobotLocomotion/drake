@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -110,8 +111,8 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    context_->FixInputPort(0, BasicVector<double>::Make({128}));
-    context_->FixInputPort(1, BasicVector<double>::Make({256}));
+    context_->FixInputPort(0, {128.0});
+    context_->FixInputPort(1, {256.0});
   }
 
   // Reads a FixedInputPortValue connected to @p context at @p index.
@@ -270,8 +271,7 @@ TEST_F(DiagramContextTest, Clone) {
                     {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
   AttachInputPorts();
 
-  std::unique_ptr<DiagramContext<double>> clone(
-      dynamic_cast<DiagramContext<double>*>(context_->Clone().release()));
+  auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());
   ASSERT_TRUE(clone != nullptr);
 
   // Verify that the time was copied.
