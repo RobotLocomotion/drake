@@ -755,7 +755,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  // Compute discrete update without friction forces.
+  // Compute discrete update before applying friction forces.
   // We denote this state x* = [q*, v*], the "star" state.
   VectorX<T> v_star = v0 + dt * M0_llt.solve(-minus_tau);
   VectorX<T> qdot_star(this->num_positions());
@@ -772,7 +772,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     vt_star = D * v_star;
     // M⁻¹Dᵀ
     Minv_times_Dtrans = M0_llt.solve(D.transpose());
-    // Wtt = DM⁻¹Dᵀ
+    // Delassus operator coupling tangential velocities with (tangential)
+    // friction forces: Wtt = DM⁻¹Dᵀ
     Wtt = D * Minv_times_Dtrans;
   }
 
@@ -849,19 +850,41 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         const auto that_ic = that.template segment<2>(ik);
 
         // Projection matrix. It projects in the direction of that.
+        // Notice it is a symmetric 2x2 matrix.
         const Matrix2<T> P_ic = that_ic * that_ic.transpose();
 
         // Removes the projected direction along that.
+        // This is also a symmetric 2x2 matrix.
         const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
 
+        // Some notes about projection matrices P:
+        //  - They are symmetric, positive semi-definite.
+        //  - All their eigenvalues are either one or zero.
+        //  - Their rank equals the number of non-zero eigenvales.
+        //  - From the previous item we have rank(P) = trace(P).
+        //  - If P is a projection matrix, so is (I - P).
+        // From the above we then know that P and Pperp are both projection
+        // matrices of rank one (i.e. rank deficient) and are symmetric
+        // semi-positive definite. This has very important consequences for the
+        // Jacobian of the residual.
+
+        // We now compute dft/dvt as:
+        //   dft/dvt = fn * (
+        //     Pperp(t̂) * mu_stribeck(‖vₜ‖) / ‖vₜ‖ + P(t̂) * dmu_stribeck/d‖vₜ‖)
+        // Therefore dft/dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
+        // (P and Pperp) where the coefficients of the combination are positive
+        // scalars. Therefore,
+        // IMPORTANT NOTE: dft/dvt also PSD.
+
         // Compute dft/dv:
-        // Changes in direction of that.
+        // Changes of vt in the direction perpendicular to that.
         dft_dv[ic] = Pperp_ic * mus(ic) / vsk(ic);
 
-        // Changes due to mu stribeck, in the direction of that.
+        // Changes in the magnitude of vt (which in turns makes mu_stribeck
+        // change), in the direction of that.
         dft_dv[ic] += P_ic * dmudv(ic);
 
-        // Note: dft_dv is symmetric, PD?
+        // Note: dft_dv is a symmetric 2x2 matrix.
         dft_dv[ic] *= fn(ic);
       }
 
