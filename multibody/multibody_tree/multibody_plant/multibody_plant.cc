@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/extract_double.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -511,12 +512,9 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
             default_coulomb_friction_[collision_indexA];
         const CoulombFriction<double>& geometryB_friction =
             default_coulomb_friction_[collision_indexB];
-        const CoulombFriction<double> combined_friction_coefficients =
+        const CoulombFriction<T> combined_friction_coefficients =
             CalcContactFrictionFromSurfaceProperties(
-                geometryA_friction, geometryB_friction);
-        const CoulombFriction<T> combined_friction_coefficients_on_T(
-            combined_friction_coefficients.static_friction(),
-            combined_friction_coefficients.dynamic_friction());
+                geometryA_friction, geometryB_friction).template cast<T>();
         // Compute tangential velocity, that is, v_AcBc projected onto the tangent
         // plane with normal nhat_BA:
         const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
@@ -531,7 +529,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
           const T vt = sqrt(vt_squared);
           // Stribeck friction coefficient.
           const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
-              vt, combined_friction_coefficients_on_T);
+              vt, combined_friction_coefficients);
           // Tangential direction.
           const Vector3<T> that_W = vt_AcBc_W / vt;
 
@@ -647,49 +645,50 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
-template<>
-void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<double>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>& events,
-    drake::systems::DiscreteValues<double>* updates) const {
+template<typename T>
+void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<T>& context0,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    drake::systems::DiscreteValues<T>* updates) const {
+  // Assert this method was called on a context storing discrete state.
+  DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
+  DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
+
   using std::sqrt;
   using std::max;
+  using std::abs;
   // If plant state is continuous, no discrete state to update.
-  if (!is_discrete()) return;
+  if (!is_discrete()) return;  // just a shorter alias.
 
-  const double& dt = time_step_;  // shorter alias.
+  const double dt = time_step_;  // shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
 
-  int istep = context0.get_time() / time_step_;
+  int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
   (void) istep;
 
   // Save the system state as a raw Eigen vector (solution at previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
-  VectorX<double> q0 = x0.topRows(nq);
-  VectorX<double> v0 = x0.bottomRows(nv);
-
-  //////////////////////////////////////////////////////////////////////////////
-  // WORK WITH CONTEXT0
-  //////////////////////////////////////////////////////////////////////////////
+  VectorX<T> q0 = x0.topRows(nq);
+  VectorX<T> v0 = x0.bottomRows(nv);
 
   // Allocate workspace. We might want to cache these to avoid allocations.
   // Mass matrix.
-  MatrixX<double> M0(nv, nv);
+  MatrixX<T> M0(nv, nv);
   // Mass matrix and its LDLT factorization.
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
   auto M0_ldlt = M0.ldlt();
 
   // Forces.
-  MultibodyForces<double> forces(*model_);
+  MultibodyForces<T> forces(*model_);
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<double>> A_WB_array(model_->num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations.
-  VectorX<double> vdot = VectorX<double>::Zero(nv);
+  VectorX<T> vdot = VectorX<T>::Zero(nv);
 
-  const PositionKinematicsCache<double>& pc0 = EvalPositionKinematics(context0);
-  const VelocityKinematicsCache<double>& vc0 = EvalVelocityKinematics(context0);
+  const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
+  const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
   // Compute forces applied through force elements. This effectively resets
   // the forces to zero and adds in contributions due to force elements.
@@ -697,11 +696,11 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   if (num_actuators() > 0) {
-    Eigen::VectorBlock<const VectorX<double>> u =
+    Eigen::VectorBlock<const VectorX<T>> u =
         this->EvalEigenVectorInput(context0, actuation_port_);
     for (JointActuatorIndex actuator_index(0);
          actuator_index < num_actuators(); ++actuator_index) {
-      const JointActuator<double>& actuator =
+      const JointActuator<T>& actuator =
           model().get_joint_actuator(actuator_index);
       // We only support actuators on single dof joints for now.
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
@@ -713,14 +712,14 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
   }
 
   // Velocity at next time step.
-  VectorX<double> vn(this->num_velocities());
+  VectorX<T> vn(this->num_velocities());
 
-  std::vector<SpatialForce<double>>& F_BBo_W_array = forces.mutable_body_forces();
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces.mutable_body_forces();
 
-  std::vector<PenetrationAsPointPair<double>> point_pairs0 =
+  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
-  VectorX<double> fn(num_contacts);
+  VectorX<T> fn(num_contacts);
 
   // Compute contact forces on each body by penalty method. No friction, only normal forces.
   if (num_collision_geometries() > 0) {
@@ -730,7 +729,7 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
 
   // With vdot = 0, this computes (includes normal forces):
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
-  VectorX<double>& minus_tau = forces.mutable_generalized_forces();
+  VectorX<T>& minus_tau = forces.mutable_generalized_forces();
   model_->CalcInverseDynamics(
       context0, pc0, vc0, vdot,
       F_BBo_W_array, minus_tau,
@@ -743,20 +742,20 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
   //////////////////////////////////////////////////////////////////////////////
 
   // Compute discrete update without friction forces.
-  VectorX<double> v_star = vn = v0 + dt * M0_ldlt.solve(-minus_tau);
-  VectorX<double> qdot_star(this->num_positions());
+  VectorX<T> v_star = vn = v0 + dt * M0_ldlt.solve(-minus_tau);
+  VectorX<T> qdot_star(this->num_positions());
   model_->MapVelocityToQDot(context0, vn, &qdot_star);
-  VectorX<double> q_star = q0 + dt * qdot_star;
+  VectorX<T> q_star = q0 + dt * qdot_star;
 
   //////////////////////////////////////////////////////////////////////////////
   // Compute Jacobians and Delassus operators.
   //////////////////////////////////////////////////////////////////////////////
 
   // Compute normal and tangential velocity Jacobians at tstar.
-  MatrixX<double> D(2*num_contacts, nv);  // of size (2nc) x nv
-  MatrixX<double> Minv_times_Dtrans(nv, 2*num_contacts);  // of size nv x (2nc).
-  MatrixX<double> Wtt(2*num_contacts, 2*num_contacts);  // of size (2nc) x (2*nc)
-  VectorX<double> vtstar(2*num_contacts);
+  MatrixX<T> D(2*num_contacts, nv);  // of size (2nc) x nv
+  MatrixX<T> Minv_times_Dtrans(nv, 2*num_contacts);  // of size nv x (2nc).
+  MatrixX<T> Wtt(2*num_contacts, 2*num_contacts);  // of size (2nc) x (2*nc)
+  VectorX<T> vtstar(2*num_contacts);
   //Eigen::LDLT<MatrixX<double>> W_ldlt;
   if (num_contacts > 0) {
     D = CalcTangentVelocitiesJacobian(context0, point_pairs0);
@@ -778,7 +777,7 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
   }
 
   // Compute friction coefficients at each contact point.
-  VectorX<double> mu(num_contacts);
+  VectorX<T> mu(num_contacts);
   if (num_contacts > 0) {
     for (int ic = 0; ic < num_contacts; ++ic) {
       const auto& penetration = point_pairs0[ic];
@@ -790,51 +789,51 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
           geometry_id_to_collision_index_.at(geometryA_id);
       const int collision_indexB =
           geometry_id_to_collision_index_.at(geometryB_id);
-      const CoulombFriction<double> &geometryA_friction =
+      const CoulombFriction<double>& geometryA_friction =
           default_coulomb_friction_[collision_indexA];
-      const CoulombFriction<double> &geometryB_friction =
+      const CoulombFriction<double>& geometryB_friction =
           default_coulomb_friction_[collision_indexB];
-      const CoulombFriction<double> combined_friction_coefficients =
+      const CoulombFriction<T> combined_friction_coefficients =
           CalcContactFrictionFromSurfaceProperties(
-              geometryA_friction, geometryB_friction);
+              geometryA_friction, geometryB_friction).template cast<T>();
       // Static friction is ignored, they are supposed to be equal.
       mu[ic] = combined_friction_coefficients.dynamic_friction();
     }
   }
 
   int iter(0);
-  double residual(0);
+  T residual(0);
   const int num_unknowns = 2 * num_contacts;
 
-  VectorX<double> ftk(num_unknowns);
+  VectorX<T> ftk(num_unknowns);
   if (num_contacts > 0) {
 
     const int max_iterations = 200;
-    const double tolerance = 1.0e-6;
+    const T tolerance = 1.0e-6;
     residual = 2 * tolerance;
 
-    VectorX<double> vtk(num_unknowns);
-    VectorX<double> Rk(vtk.size());
-    MatrixX<double> Jk(vtk.size(), vtk.size());
-    VectorX<double> Delta_vtk(vtk.size());
-    VectorX<double> that(vtk.size());
-    VectorX<double> vsk(num_contacts);
-    VectorX<double> mus(num_contacts); // Stribeck friction.
-    VectorX<double> dmudv(num_contacts);
-    std::vector<Matrix2<double>> dft_dv(num_contacts);
+    VectorX<T> vtk(num_unknowns);
+    VectorX<T> Rk(vtk.size());
+    MatrixX<T> Jk(vtk.size(), vtk.size());
+    VectorX<T> Delta_vtk(vtk.size());
+    VectorX<T> that(vtk.size());
+    VectorX<T> vsk(num_contacts);
+    VectorX<T> mus(num_contacts); // Stribeck friction.
+    VectorX<T> dmudv(num_contacts);
+    std::vector<Matrix2<T>> dft_dv(num_contacts);
     vtk = vtstar;  // Initial guess with zero friction forces.
     for (iter = 0; iter < max_iterations; ++iter) {
       // Compute 2D tangent vectors.
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
-        const auto vt_ic = vtk.segment<2>(ik);
-        const double vs_ic = vt_ic.norm() + 1.0e-14;  // Sliding speed.
-        const Vector2<double> that_ic =  vt_ic / vs_ic;
-        that.segment<2>(ik) = that_ic;
+        const auto vt_ic = vtk.template segment<2>(ik);
+        const T vs_ic = vt_ic.norm() + 1.0e-14;  // Sliding speed.
+        const Vector2<T> that_ic =  vt_ic / vs_ic;
+        that.template segment<2>(ik) = that_ic;
         vsk(ic) = vs_ic;
         mus(ic) = stribeck_model_.ComputeFrictionCoefficient2(vsk(ic), mu(ic));
         // Note: minus sign not included.
-        ftk.segment<2>(ik) = mus(ic) * that_ic * fn(ic);
+        ftk.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
       }
 
       // After the previous iteration, we allow updating ftk above to have its
@@ -847,12 +846,12 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
       Rk = vtk - vtstar;
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
-        auto Rk_ic = Rk.segment(ik, 2);
+        auto Rk_ic = Rk.template segment(ik, 2);
 
         for (int jc = 0; jc < num_contacts; ++jc) {
           const int jk = 2 * jc;
-          const auto Wij = Wtt.block<2, 2>(ik, jk);
-          const auto ft_jc = ftk.segment<2>(jk);
+          const auto Wij = Wtt.template block<2, 2>(ik, jk);
+          const auto ft_jc = ftk.template segment<2>(jk);
           Rk_ic += time_step_ * Wij * ft_jc;
         }
 
@@ -860,13 +859,13 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
         dmudv(ic) =
             stribeck_model_.ComputeFrictionCoefficient2Prime(vsk(ic), mu(ic));
 
-        const auto that_ic = that.segment<2>(ik);
+        const auto that_ic = that.template segment<2>(ik);
 
         // Projection matrix. It projects in the direction of that.
-        const Matrix2<double> P_ic = that_ic * that_ic.transpose();
+        const Matrix2<T> P_ic = that_ic * that_ic.transpose();
 
         // Removes the projected direction along that.
-        const Matrix2<double> Pperp_ic = Matrix2<double>::Identity() - P_ic;
+        const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
 
         // Compute dft/dv:
         // Changes in direction of that.
@@ -887,8 +886,8 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
         for (int jc = 0; jc < num_contacts; ++jc) {
           const int jk = 2 * jc;
 
-          const auto Wij = Wtt.block<2, 2>(ik, jk);
-          auto Jij = Jk.block<2, 2>(ik, jk);
+          const auto Wij = Wtt.template block<2, 2>(ik, jk);
+          auto Jij = Jk.template block<2, 2>(ik, jk);
 
           Jij += time_step_ * Wij * dft_dv[jc];
         }
@@ -898,26 +897,26 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
       residual = Delta_vtk.norm();
 
       // Limit the angle change
-      const  double theta_max = 0.25;  // about 15 degs
-      const double cmin = cos(theta_max);
+      const  T theta_max = 0.25;  // about 15 degs
+      const T cmin = cos(theta_max);
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
-        auto v = vtk.segment<2>(ik);
-        const auto dv = Delta_vtk.segment<2>(ik);
+        auto v = vtk.template segment<2>(ik);
+        const auto dv = Delta_vtk.template segment<2>(ik);
 
-        double A = v.norm();
-        double B = v.dot(dv);
-        double DD = dv.norm();
+        T A = v.norm();
+        T B = v.dot(dv);
+        T DD = dv.norm();
 
         //if (A < 1e-14 && D < 1e-14) continue;
 
-        Vector2<double> v1 = v+dv;  // for alpha = 1
-        const double v1_norm = v1.norm();
-        const double v_norm = v.norm();
-        const double cos_init = v1.dot(v) / (v1_norm+1e-10) / (v_norm+1e-10);
+        Vector2<T> v1 = v+dv;  // for alpha = 1
+        const T v1_norm = v1.norm();
+        const T v_norm = v.norm();
+        const T cos_init = v1.dot(v) / (v1_norm+1e-10) / (v_norm+1e-10);
 
-        Vector2<double> valpha;
-        double alpha;
+        Vector2<T> valpha;
+        T alpha;
 
         if (istep==598){
           PRINT_VAR(iter);
@@ -927,26 +926,26 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
           PRINT_VAR(dv.transpose());
         }
 
-        const double x = v_norm / stribeck_model_.stiction_tolerance();
-        const double x1 = v1_norm / stribeck_model_.stiction_tolerance();
+        const T x = v_norm / stribeck_model_.stiction_tolerance();
+        const T x1 = v1_norm / stribeck_model_.stiction_tolerance();
 
         // 180 degrees direction change.
-        if ( std::abs(1.0+cos_init) < 1.0e-10 ) {
+        if ( abs(1.0+cos_init) < 1.0e-10 ) {
           // Clip to near the origin since we know for sure we crossed it.
           valpha = v / (v.norm()+1e-14) * stribeck_model_.stiction_tolerance() / 2.0;
         } else if (cos_init > cmin || (v1_norm*v_norm) < 1.0e-14 || x < 1.0 || x1 < 1.0) {  // the angle change is small enough
           alpha = 1.0;
           valpha = v1;
         } else { // Limit the angle change
-          double A2 = A * A;
-          double A4 = A2 * A2;
-          double cmin2 = cmin * cmin;
+          T A2 = A * A;
+          T A4 = A2 * A2;
+          T cmin2 = cmin * cmin;
 
-          double a = A2 * DD * DD * cmin2 - B * B;
-          double b = 2 * A2 * B * (cmin2 - 1.0);
-          double c = A4 * (cmin2 - 1.0);
+          T a = A2 * DD * DD * cmin2 - B * B;
+          T b = 2 * A2 * B * (cmin2 - 1.0);
+          T c = A4 * (cmin2 - 1.0);
 
-          double delta = b * b - 4 * a * c;
+          T delta = b * b - 4 * a * c;
           if ( delta <  0 || istep == 598) {
             PRINT_VAR(iter);
             PRINT_VAR(istep);
@@ -956,14 +955,14 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
             PRINT_VAR(cmin);
             PRINT_VAR(DD);
             PRINT_VAR(cos_init);
-            PRINT_VAR(std::abs(1.0+cos_init));
+            PRINT_VAR(abs(1.0+cos_init));
             PRINT_VAR(v.transpose());
             PRINT_VAR(v1.transpose());
             PRINT_VAR(dv.transpose());
             DRAKE_DEMAND(delta > -1e-16);
           }
 
-          double sqrt_delta = sqrt(std::max(delta, 0.0));
+          T sqrt_delta = sqrt(max(delta, 0.0));
 
           // There should be a positive and a negative root.
           alpha = (-b + sqrt_delta) / a / 2.0;
@@ -978,7 +977,7 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
             PRINT_VAR(cmin);
             PRINT_VAR(DD);
             PRINT_VAR(cos_init);
-            PRINT_VAR(std::abs(1.0+cos_init));
+            PRINT_VAR(abs(1.0+cos_init));
             PRINT_VAR(a);
             PRINT_VAR(b);
             PRINT_VAR(c);
@@ -1016,21 +1015,13 @@ void MultibodyPlant<double>::DoCalcDiscreteVariableUpdates(
     vn -= time_step_ * Minv_times_Dtrans * ftk;
   }
 
-  VectorX<double> qdotn(this->num_positions());
+  VectorX<T> qdotn(this->num_positions());
   model_->MapVelocityToQDot(context0, vn, &qdotn);
 
   // qn = q + dt*qdot.
-  VectorX<double> xn(this->num_multibody_states());
+  VectorX<T> xn(this->num_multibody_states());
   xn << q0 + dt * qdotn, vn;
   updates->get_mutable_vector(0).SetFromVector(xn);
-}
-
-template<typename T>
-void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-    drake::systems::DiscreteValues<T>* updates) const {
-  DRAKE_ABORT_MSG("T != double not supported.");
 }
 
 template<typename T>

@@ -66,6 +66,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant",
         "//common:autodiff",
+        "//common:extract_double",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

@@ -86,6 +86,20 @@ class CoulombFriction {
   /// Performs a bitwise-identical comparison, not done to any tolerance.
   Bool<T> operator==(const CoulombFriction& other) const;
 
+  /// Returns a new %CoulombFriction object templated on `Scalar` initialized
+  /// from the friction coefficient values of `this` %CoulombFriction object.
+  ///
+  /// @tparam Scalar The scalar type on which the new %CoulombFriction object
+  /// will be templated.
+  ///
+  /// @note `CoulombFriction<From>::cast<To>()` creates a new
+  /// `CoulombFriction<To>` from a `CoulombFriction<From>` but only if
+  /// type `To` is constructible from type `From`.
+  template <typename Scalar>
+  CoulombFriction<Scalar> cast() const {
+    return CoulombFriction<Scalar>(static_friction(), dynamic_friction());
+  }
+
  private:
   // Confirms two properties on the friction coefficient pair:
   //  1. Both values non-negative.
