@@ -129,7 +129,8 @@ class ConstraintSolver {
   /// </pre>
   /// and this `v` can be substituted into (e) to obtain `u`.
   ///
-  /// The constraint problems considered here take the specific form:<pre>
+  /// Consider constrained dynamics problems with velocity-level unknowns,
+  /// which take the specific form:<pre>
   /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-M v | = | 0 |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
   ///     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
@@ -141,10 +142,11 @@ class ConstraintSolver {
   /// (4) 0 ≤ λ   ⊥  γ ≥ 0
   /// (5) 0 ≤ fL  ⊥  δ ≥ 0
   /// </pre>
+  /// This particular form is useful for modeling impact problems.
   ///
-  /// Converting the MLCP to a pure LCP:
-  ///
-  /// From the notation above in Equations (a)-(d):<pre>
+  /// From the notation above in Equations (a)-(d), we can convert the MLCP
+  /// to a "pure" linear complementarity problem (LCP), which is easier to
+  /// solve with active-set-type mathematical programming approaches:<pre>
   /// A ≡ | M  -Ĝᵀ|   a ≡ |-M v |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
   ///     | Ĝ   0 |       |  kᴳ |       | 0    0   0   0  |
   ///
@@ -172,7 +174,7 @@ class ConstraintSolver {
   ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
   /// </pre>
   /// where `nb` is the number of bilateral constraint equations. The solution
-  /// `v` will then take the form:
+  /// `v` will then take the form:<pre>
   /// v ≡ | fN |
   ///     | fD |
   ///     | λ  |
@@ -180,15 +182,19 @@ class ConstraintSolver {
   /// </pre>
   /// The key variables for using the MLCP-based formulations are the matrix `A`
   /// and vector `a`, as seen in documentation of MlcpToLcpData and the
-  /// following methods. ConstructBaseDiscretizedTimeLCP() constructs functions
-  /// for solving `AX=B`, where `B` is a given matrix and `X` is an unknown
-  /// matrix. UpdateDiscretizedTimeLCP() computes `a`.
+  /// following methods. During its operation, ConstructBaseDiscretizedTimeLCP()
+  /// constructs (and returns) functions for solving `AX=B`, where `B` is a
+  /// given matrix and `X` is an unknown matrix. UpdateDiscretizedTimeLCP()
+  /// computes and returns `a` during its operation.
   // @{
   /// Computes the base time-discretization of the system using the problem
-  /// data, resulting in the `MM` and `qq` shown above. The data output
-  /// (`mlcp_to_lcp_data`, `MM`, and `qq`) will be updated using a particular
-  /// time step in UpdateDiscretizedTimeLCP(), resulting in a non-impulsive
-  /// problem formulation.
+  /// data, resulting in the `MM` and `qq` shown above; if `MM` and `qq` are
+  /// modified no further, the LCP corresponds to an impact problem (i.e., the
+  /// multibody dynamics problem would not be discretized). The data
+  /// output (`mlcp_to_lcp_data`, `MM`, and `qq`) can be updated using a
+  /// particular time step in UpdateDiscretizedTimeLCP(), resulting in a
+  /// non-impulsive problem formulation. In that case, the multibody dynamics
+  /// equations *are* discretized, as described in UpdateDiscretizedTimeLCP().
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -198,6 +204,7 @@ class ConstraintSolver {
   /// @param[out] qq a pointer to a vector that will contain the parts of the
   ///             LCP vector not dependent upon the time step on return.
   /// @pre `mlcp_to_lcp_data`, `MM`, and `qq` are non-null on entry.
+  /// @see UpdateDiscretizedTimeLCP()
   static void ConstructBaseDiscretizedTimeLCP(
       const ConstraintVelProblemData<T>& problem_data,
       MlcpToLcpData* mlcp_to_lcp_data,
@@ -228,6 +235,7 @@ class ConstraintSolver {
   /// @param[out] MM a pointer to the updated LCP matrix on return.
   /// @param[out] qq a pointer to the updated LCP vector on return.
   /// @pre `mlcp_to_lcp_data`, `a`, `MM`, and `qq` are non-null on entry.
+  /// @see ConstructBaseDiscretizedTimeLCP()
   static void UpdateDiscretizedTimeLCP(
       const ConstraintVelProblemData<T>& problem_data,
       double h,
