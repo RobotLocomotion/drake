@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -73,6 +74,9 @@ class EndpointZ {
   // Constructs an EndpointZ with all zero parameters.
   EndpointZ() = default;
 
+  EndpointZ(double z, double z_dot, double theta)
+      : z_(z), z_dot_(z_dot), theta_(theta) {}
+
   EndpointZ(double z, double z_dot, double theta, double theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
@@ -82,7 +86,8 @@ class EndpointZ {
   /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
   /// and theta.
   EndpointZ reverse() const {
-    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
+    DRAKE_DEMAND(theta_dot_.has_value());
+    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_.value());
   }
 
   double z() const { return z_; }
@@ -91,14 +96,16 @@ class EndpointZ {
 
   double theta() const { return theta_; }
 
-  double theta_dot() const { return theta_dot_; }
+  const optional<double>& theta_dot() const { return theta_dot_; }
+
+  optional<double>& get_mutable_theta_dot() { return theta_dot_; }
 
  private:
   double z_{};
   double z_dot_{};
 
   double theta_{};
-  double theta_dot_{};
+  optional<double> theta_dot_{};
 };
 
 /// Streams a string representation of `endpoint_z` into `out`. Returns
@@ -128,6 +135,8 @@ class Endpoint {
   /// Returns the subset of parameters pertaining to out-of-ground-plane
   /// aspects.
   const EndpointZ& z() const { return z_; }
+
+  EndpointZ& get_mutable_z() { return z_; }
 
  private:
   EndpointXy xy_;
@@ -215,11 +224,12 @@ class Connection {
   /// Constructs a line-segment connection.
   ///
   /// Segment's reference curve begins at `start` and extends on the plane
-  /// z=0 `line_length` distance with `start.xy().heading()` heading angle.
+  /// z=0 `line_offset.length()` distance with `start.xy().heading()` heading
+  /// angle.
   /// `end_z` will be used to build elevation and superelevation information of
   /// the road.
   ///
-  /// `line_length` must be non negative.
+  /// `line_offset` holds the length of the line.
   ///
   /// Segments will contain `num_lanes` lanes, which must be greater than zero.
   /// First Lane centerline will be placed at `r0` distance from the reference
@@ -232,7 +242,7 @@ class Connection {
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             double line_length);
+             const LineOffset& line_offset);
 
   /// Constructs an arc-segment connection.
   ///
@@ -326,6 +336,10 @@ class Connection {
 
   /// Returns an Endpoint describing the end of the `lane_index` lane.
   Endpoint LaneEnd(int lane_index) const;
+
+  double ReferenceCurvature() const;
+
+  double LaneCurvature(int lane_index) const;
 
   /// Creates a RoadCurve that describes the reference curve of this Connection.
   std::unique_ptr<RoadCurve> CreateRoadCurve() const;
