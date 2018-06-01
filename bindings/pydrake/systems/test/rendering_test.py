@@ -35,7 +35,7 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(isinstance(value, BasicVector))
         self.assertTrue(isinstance(copy.copy(value), PoseVector))
         self.assertTrue(isinstance(value.Clone(), PoseVector))
-        self.assertEquals(value.size(), PoseVector.kSize)
+        self.assertEqual(value.size(), PoseVector.kSize)
         # - Accessors.
         self.assertTrue(isinstance(
             value.get_isometry(), Isometry3))
@@ -68,7 +68,7 @@ class TestRendering(unittest.TestCase):
         self.assertTrue(isinstance(frame_velocity, BasicVector))
         self.assertTrue(isinstance(copy.copy(frame_velocity), FrameVelocity))
         self.assertTrue(isinstance(frame_velocity.Clone(), FrameVelocity))
-        self.assertEquals(frame_velocity.size(), FrameVelocity.kSize)
+        self.assertEqual(frame_velocity.size(), FrameVelocity.kSize)
         # - Accessors.
         self.assertTrue(isinstance(
             frame_velocity.get_velocity(), SpatialVelocity))

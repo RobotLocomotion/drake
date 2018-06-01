@@ -138,7 +138,7 @@ class TestGeneral(unittest.TestCase):
             def check_output(context):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput(context)
-                self.assertEquals(output.get_num_ports(), 1)
+                self.assertEqual(output.get_num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
@@ -167,7 +167,7 @@ class TestGeneral(unittest.TestCase):
             context.set_time(0.)
 
             context.set_accuracy(1e-4)
-            self.assertEquals(context.get_accuracy(), 1e-4)
+            self.assertEqual(context.get_accuracy(), 1e-4)
 
             # @note `simulator` now owns `context`.
             simulator = Simulator_[T](system, context)
