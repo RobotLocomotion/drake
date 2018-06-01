@@ -77,6 +77,15 @@ class LeafContextTest : public ::testing::Test {
     context_.init_discrete_state(
         std::make_unique<DiscreteValues<double>>(std::move(xd)));
 
+    // Add a tracker for the discrete variable xd0 and subscribe the xd
+    // tracker to it.
+    DependencyGraph& graph = context_.get_mutable_dependency_graph();
+    auto& xd0_tracker = graph.CreateNewDependencyTracker(next_ticket_++,
+                                                         "xd0");
+    context_.AddDiscreteStateTicket(xd0_tracker.ticket());
+    graph.get_mutable_tracker(DependencyTicket(internal::kXdTicket))
+        .SubscribeToPrerequisite(&xd0_tracker);
+
     // Reserve an abstract state with one element, which is not owned.
     abstract_state_ = PackValue(42);
     std::vector<AbstractValue*> xa;
@@ -84,13 +93,34 @@ class LeafContextTest : public ::testing::Test {
     context_.init_abstract_state(
         std::make_unique<AbstractValues>(std::move(xa)));
 
+    // Add a tracker for the abstract variable xa0 and subscribe the xa
+    // tracker to it.
+    auto& xa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++,
+                                                         "xa0");
+    context_.AddAbstractStateTicket(xa0_tracker.ticket());
+    graph.get_mutable_tracker(DependencyTicket(internal::kXaTicket))
+        .SubscribeToPrerequisite(&xa0_tracker);
+
     // Reserve two numeric parameters of size 3 and size 4, and one abstract
     // valued parameter of type TestAbstractType.
     std::vector<std::unique_ptr<BasicVector<double>>> vector_params;
     vector_params.push_back(BasicVector<double>::Make({1.0, 2.0, 4.0}));
     vector_params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
+    auto& pn0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pn0");
+    auto& pn1_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pn1");
+    context_.AddNumericParameterTicket(pn0_tracker.ticket());
+    context_.AddNumericParameterTicket(pn1_tracker.ticket());
+    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+        .SubscribeToPrerequisite(&pn0_tracker);
+    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+        .SubscribeToPrerequisite(&pn1_tracker);
+
     std::vector<std::unique_ptr<AbstractValue>> abstract_params;
     abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
+    auto& pa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "pa0");
+    context_.AddAbstractParameterTicket(pa0_tracker.ticket());
+    graph.get_mutable_tracker(DependencyTicket(internal::kAllParametersTicket))
+        .SubscribeToPrerequisite(&pa0_tracker);
 
     context_.init_parameters(std::make_unique<Parameters<double>>(
         std::move(vector_params), std::move(abstract_params)));
@@ -337,6 +367,45 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
+// Tests that items can be stored and retrieved in the cache.
+TEST_F(LeafContextTest, SetAndGetCache) {
+  CacheIndex index = context_.get_mutable_cache()
+                         .CreateNewCacheEntryValue(
+                             CacheIndex(0), ++next_ticket_, "entry",
+                             {DependencyTicket(internal::kNothingTicket)},
+                             &context_.get_mutable_dependency_graph())
+                         .cache_index();
+  CacheEntryValue& entry =
+      context_.get_mutable_cache().get_mutable_cache_entry_value(index);
+  entry.SetInitialValue(PackValue(42));
+  EXPECT_EQ(entry.cache_index(), index);
+  EXPECT_TRUE(entry.ticket().is_valid());
+  EXPECT_EQ(entry.description(), "entry");
+
+  EXPECT_TRUE(entry.is_out_of_date());  // Initial value is not up to date.
+  EXPECT_THROW(entry.GetValueOrThrow<int>(), std::logic_error);
+  entry.mark_up_to_date();
+  EXPECT_NO_THROW(entry.GetValueOrThrow<int>());
+
+  const AbstractValue& value = entry.GetAbstractValueOrThrow();
+  EXPECT_EQ(42, UnpackIntValue(value));
+  EXPECT_EQ(42, entry.GetValueOrThrow<int>());
+  EXPECT_EQ(42, entry.get_value<int>());
+
+  // Already up to date.
+  EXPECT_THROW(entry.SetValueOrThrow<int>(43), std::logic_error);
+  entry.mark_out_of_date();
+
+  EXPECT_NO_THROW(entry.SetValueOrThrow<int>(43));
+  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(43, UnpackIntValue(entry.GetAbstractValueOrThrow()));
+
+  entry.mark_out_of_date();
+  entry.set_value<int>(99);
+  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(99, entry.get_value<int>());
+}
+
 TEST_F(LeafContextTest, FixInputPort) {
   const InputPortIndex index{0};
   const int size = kInputSize[index];
@@ -527,6 +596,166 @@ TEST_F(LeafContextTest, Accuracy) {
   context_.set_accuracy(unity);
   std::unique_ptr<Context<double>> clone = context_.Clone();
   EXPECT_EQ(clone->get_accuracy().value(), unity);
+}
+
+void MarkAllCacheValuesUpToDate(Cache* cache) {
+  for (CacheIndex i(0); i < cache->cache_size(); ++i) {
+    if (cache->has_cache_entry_value(i))
+      cache->get_mutable_cache_entry_value(i).mark_up_to_date();
+  }
+}
+
+void CheckAllCacheValuesUpToDateExcept(
+    const Cache& cache, const std::set<CacheIndex>& should_be_out_of_date) {
+  for (CacheIndex i(0); i < cache.cache_size(); ++i) {
+    if (!cache.has_cache_entry_value(i)) continue;
+    const CacheEntryValue& entry = cache.get_cache_entry_value(i);
+    if (should_be_out_of_date.count(i) != 0) {
+      EXPECT_TRUE(entry.is_out_of_date()) << "Entry " << i;
+    } else {
+      EXPECT_FALSE(entry.is_out_of_date()) << "Entry " << i;
+    }
+  }
+}
+
+// Test that changing any Context source value invalidates computations that
+// are dependent on that source value. The possible sources are:
+// time, accuracy, state, parameters, and input ports. In addition, state
+// is partitioned into continuous, discrete, and abstract, and parameters
+// are partitioned into numeric and abstract.
+//
+TEST_F(LeafContextTest, Invalidation) {
+  // Add cache entries to the context, each dependent on one ticket and
+  // record the associated CacheIndex. Start with everything valid.
+  Cache& cache = context_.get_mutable_cache();
+  CacheIndex index(cache.cache_size());  // Next available index.
+  std::map<int, CacheIndex> depends;     // Maps ticket number to cache index.
+  for (int ticket = internal::kNothingTicket;
+       ticket <= internal::kAllSourcesTicket; ++ticket) {
+    CacheEntryValue& entry = cache.CreateNewCacheEntryValue(
+        index, next_ticket_++, "entry" + std::to_string(index),
+        {DependencyTicket(ticket)}, &context_.get_mutable_dependency_graph());
+    depends[ticket] = index;
+    entry.SetInitialValue(AbstractValue::Make<int>(int{index}));
+    ++index;
+  }
+
+  // Baseline: nothing modified.
+  MarkAllCacheValuesUpToDate(&cache);
+  CheckAllCacheValuesUpToDateExcept(cache, {});
+
+  // Modify time.
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.set_time(context_.get_time() + 1);  // Ensure this is a change.
+  CheckAllCacheValuesUpToDateExcept(cache,
+      {depends[internal::kTimeTicket],
+       depends[internal::kAllSourcesTicket]});
+
+  // Accuracy.
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.set_accuracy(7.123e-4);  // Ensure this is a change.
+  CheckAllCacheValuesUpToDateExcept(cache,
+      {depends[internal::kAccuracyTicket],
+       depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket],
+       depends[internal::kKinematicsTicket],
+       depends[internal::kAllSourcesTicket]});
+
+  // This is everything that depends on continuous state.
+  const std::set<CacheIndex> xc_dependent
+      {depends[internal::kQTicket], depends[internal::kVTicket],
+       depends[internal::kZTicket], depends[internal::kXcTicket],
+       depends[internal::kXTicket], depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket], depends[internal::kKinematicsTicket],
+       depends[internal::kAllSourcesTicket]};
+
+  // This is everything depends on continuous, discrete, or abstract state.
+  std::set<CacheIndex> x_dependent(xc_dependent);
+  x_dependent.insert(depends[internal::kXdTicket]);
+  x_dependent.insert(depends[internal::kXaTicket]);
+
+  // Modify all of state.
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_state();
+  CheckAllCacheValuesUpToDateExcept(cache, x_dependent);
+
+  // Modify just continuous state.
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_continuous_state();
+  CheckAllCacheValuesUpToDateExcept(cache, xc_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_continuous_state_vector();
+  CheckAllCacheValuesUpToDateExcept(cache, xc_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetContinuousState(
+      context_.get_continuous_state_vector().CopyToVector());
+  CheckAllCacheValuesUpToDateExcept(cache, xc_dependent);
+
+  // Modify time and continuous state together.
+  std::set<CacheIndex> t_and_xc_dependent(xc_dependent);
+  t_and_xc_dependent.insert(depends[internal::kTimeTicket]);
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetTimeAndContinuousState(
+      context_.get_time() + 1.,
+      context_.get_continuous_state_vector().CopyToVector());
+  CheckAllCacheValuesUpToDateExcept(cache, t_and_xc_dependent);
+
+  // Modify discrete state).
+  const std::set<CacheIndex> xd_dependent
+      {depends[internal::kXdTicket],
+       depends[internal::kXTicket],
+       depends[internal::kAllSourcesTicket]};
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_discrete_state();
+  CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_discrete_state(DiscreteStateIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
+
+  // Modify abstract state.
+  const std::set<CacheIndex> xa_dependent
+      {depends[internal::kXaTicket],
+       depends[internal::kXTicket],
+       depends[internal::kAllSourcesTicket]};
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_abstract_state();
+  CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_abstract_state<int>(AbstractStateIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
+
+  // Modify parameters.
+  const std::set<CacheIndex> p_dependent
+      {depends[internal::kConfigurationTicket],
+       depends[internal::kVelocityTicket],
+       depends[internal::kKinematicsTicket],
+       depends[internal::kAllParametersTicket],
+       depends[internal::kAllSourcesTicket]};
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_parameters();
+  CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_numeric_parameter(NumericParameterIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.get_mutable_abstract_parameter(AbstractParameterIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, p_dependent);
+
+  // Modify an input port.
+  FixedInputPortValue* port_value =
+      context_.MaybeGetMutableFixedInputPortValue(InputPortIndex(0));
+  ASSERT_NE(port_value, nullptr);
+  MarkAllCacheValuesUpToDate(&cache);
+  port_value->GetMutableData();
+  CheckAllCacheValuesUpToDateExcept(cache,
+      {depends[internal::kAllInputPortsTicket],
+       depends[internal::kAllSourcesTicket]});
 }
 
 }  // namespace
