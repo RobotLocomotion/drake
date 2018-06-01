@@ -1034,6 +1034,25 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   EXPECT_EQ(1249, output_->get_vector_data(0)->get_value().x());
   EXPECT_EQ(2489, output_->get_vector_data(1)->get_value().x());
   EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
+
+  // Check that invalidation flows through input ports properly. We'll change
+  // the fixed input value for input port 0 from 8 to 10. That should cause
+  // everything to get recalculated.
+  // The outputs of subsystem0_ are now:
+  //   output0 = 10 + 64 + 512 = 586
+  //   output1 = output0 + 10 + 64 = 660
+  //   output2 = 9 (state of integrator1_)
+
+  // So, the outputs of subsystem1_, and thus of the whole diagram, are:
+  //   output0 = 586 + 660 + 9 = 1255
+  //   output1 = output0 + 586 + 660 = 2501
+  //   output2 = 81 (state of integrator1_)
+  auto value10 = BasicVector<double>::Make({10});
+  context_->FixInputPort(0, std::move(value10));
+  diagram_->CalcOutput(*context_, output_.get());
+  EXPECT_EQ(1255, output_->get_vector_data(0)->get_value().x());
+  EXPECT_EQ(2501, output_->get_vector_data(1)->get_value().x());
+  EXPECT_EQ(81, output_->get_vector_data(2)->get_value().x());
 }
 
 TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
