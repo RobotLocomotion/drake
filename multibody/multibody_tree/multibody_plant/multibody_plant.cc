@@ -204,6 +204,9 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
+  for (auto& model_instance : model_instances_) {
+    model_instance->Finalize(*model_);
+  }
 }
 
 template <typename T>
@@ -425,6 +428,16 @@ void MultibodyPlant<T>::set_penetration_allowance(
   penalty_method_contact_parameters_.damping = damping;
   // The time scale can be requested to hint the integrator's time step.
   penalty_method_contact_parameters_.time_scale = time_scale;
+}
+
+template <typename T>
+int MultibodyPlant<T>::AddModelInstance(
+      const std::vector<BodyIndex>& bodies,
+      const std::vector<JointActuatorIndex>& joint_actuators) {
+  std::unique_ptr<ModelInstance<T>> model_instance =
+      std::make_unique<ModelInstance<T>>(bodies, joint_actuators);
+  model_instances_.push_back(std::move(model_instance));
+  return model_instances_.size() - 1;
 }
 
 template<>

@@ -958,6 +958,8 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+  EXPECT_EQ(plant_autodiff.num_model_instances(),
+            plant.num_model_instances());
 }
 
 // This test is used to verify the correctness of the methods to compute the
@@ -1299,4 +1301,3 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
-

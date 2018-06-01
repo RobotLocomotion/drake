@@ -276,6 +276,33 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
           CoulombFriction<double>(0.5, 0.5)));
 }
 
+// Verifies model instances are correctly created in the plant.
+TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
+  int instance1_idx = AddModelFromSdfFile(full_name_, &plant_);
+
+  const std::string acrobot_sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  int instance2_idx = AddModelFromSdfFile(acrobot_sdf_name, &plant_);
+  // We are done adding models.
+  plant_.Finalize();
+
+  ASSERT_EQ(plant_.num_model_instances(), 2);
+
+  // The first instance is just a collection of free bodies.
+  const ModelInstance<double>& instance1 =
+      plant_.get_model_instance(instance1_idx);
+  EXPECT_EQ(instance1.num_positions(), 21);
+  EXPECT_EQ(instance1.num_velocities(), 18);
+  EXPECT_EQ(instance1.num_actuated_dofs(), 0);
+
+  // The second instance is an acrobot.
+  const ModelInstance<double>& instance2 =
+      plant_.get_model_instance(instance2_idx);
+  EXPECT_EQ(instance2.num_positions(), 2);
+  EXPECT_EQ(instance2.num_velocities(), 2);
+  EXPECT_EQ(instance2.num_actuated_dofs(), 1);
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody
