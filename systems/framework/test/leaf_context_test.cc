@@ -337,6 +337,46 @@ TEST_F(LeafContextTest, GetAbstractInput) {
   EXPECT_EQ(nullptr, ReadAbstractInputPort(context, 1));
 }
 
+// Tests that items can be stored and retrieved in the cache, even when
+// the LeafContext is const.
+TEST_F(LeafContextTest, SetAndGetCache) {
+  CacheIndex index = context_.get_mutable_cache()
+                         .CreateNewCacheEntryValue(
+                             CacheIndex(0), ++next_ticket_, "entry",
+                             {DependencyTicket(internal::kNothingTicket)},
+                             &context_.get_mutable_dependency_graph())
+                         .cache_index();
+  CacheEntryValue& entry =
+      context_.get_mutable_cache().get_mutable_cache_entry_value(index);
+  entry.SetInitialValue(PackValue(42));
+  EXPECT_EQ(entry.cache_index(), index);
+  EXPECT_TRUE(entry.ticket().is_valid());
+  EXPECT_EQ(entry.description(), "entry");
+
+  EXPECT_TRUE(entry.is_out_of_date());  // Initial value is not up to date.
+  EXPECT_THROW(entry.GetValueOrThrow<int>(), std::logic_error);
+  entry.mark_up_to_date();
+  EXPECT_NO_THROW(entry.GetValueOrThrow<int>());
+
+  const AbstractValue& value = entry.GetAbstractValueOrThrow();
+  EXPECT_EQ(42, UnpackIntValue(value));
+  EXPECT_EQ(42, entry.GetValueOrThrow<int>());
+  EXPECT_EQ(42, entry.get_value<int>());
+
+  // Already up to date.
+  EXPECT_THROW(entry.SetValueOrThrow<int>(43), std::logic_error);
+  entry.mark_out_of_date();
+
+  EXPECT_NO_THROW(entry.SetValueOrThrow<int>(43));
+  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(43, UnpackIntValue(entry.GetAbstractValueOrThrow()));
+
+  entry.mark_out_of_date();
+  entry.set_value<int>(99);
+  EXPECT_FALSE(entry.is_out_of_date());  // Set marked it up to date.
+  EXPECT_EQ(99, entry.get_value<int>());
+}
+
 TEST_F(LeafContextTest, FixInputPort) {
   const InputPortIndex index{0};
   const int size = kInputSize[index];
