@@ -102,6 +102,13 @@ class LeafSystem : public System<T> {
         System<T>::AllocateContext());
   }
 
+  /// Shadows System<T>::CreateDefaultContext to provide a more concrete return
+  /// type LeafContext<T>.
+  std::unique_ptr<LeafContext<T>> CreateDefaultContext() const {
+    return dynamic_pointer_cast_or_throw<LeafContext<T>>(
+        System<T>::CreateDefaultContext());
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -128,16 +135,23 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
+    return std::move(context);
+  }
+
+  // Caller contract guarantees non null, compatible Context.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto& context = dynamic_cast<LeafContext<T>&>(*context_base);
     // Reserve continuous state via delegation to subclass.
-    context->set_continuous_state(this->AllocateContinuousState());
+    context.init_continuous_state(this->AllocateContinuousState());
     // Reserve discrete state via delegation to subclass.
-    context->set_discrete_state(this->AllocateDiscreteState());
-    context->set_abstract_state(this->AllocateAbstractState());
+    context.init_discrete_state(this->AllocateDiscreteState());
+    context.init_abstract_state(this->AllocateAbstractState());
 
     // Reserve parameters via delegation to subclass.
-    context->init_parameters(this->AllocateParameters());
+    context.init_parameters(this->AllocateParameters());
 
-    return context;
+    // Allow derived LeafSystem to acquire Context resources.
+    DoAcquireLeafContextResources(&context);
   }
 
   // Enforce some requirements on the fully-assembled Context.
@@ -308,6 +322,13 @@ class LeafSystem : public System<T> {
   /// implementation provides a default-constructed `LeafContext<T>`.
   virtual std::unique_ptr<LeafContext<T>> DoMakeLeafContext() const {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  /// Derived classes that need their own resource allocation beyond the
+  /// SystemBase- and LeafSystem-acquired ones should implement this. The
+  /// default implementation does nothing.
+  virtual void DoAcquireLeafContextResources(LeafContext<T>* context) const {
+    unused(context);
   }
 
   /// Derived classes that impose restrictions on what resources are permitted
@@ -1591,6 +1612,7 @@ class LeafSystem : public System<T> {
     };
 
     // The allocator function is identical between output port and cache.
+    // TODO(sherm1) Use the same declaration for both function types.
     return CreateCachedLeafOutputPort(fixed_size, std::move(vector_allocator),
                                       std::move(cache_calc_function),
                                       std::move(calc_prerequisites));

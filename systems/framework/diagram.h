@@ -824,13 +824,31 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       context->AddSystem(i, std::move(subcontext));
     }
 
-    // TODO(sherm1) Move to separate interconnection phase.
-    // Wire up the Diagram-internal inputs and outputs.
+    return std::move(context);
+  }
+
+  // Given a fully-populated diagram context created by MakeContext(), set up
+  // the inter-subcontext dependencies for input and output ports.
+  void DoMakeInterSubcontextConnections(ContextBase* context_base) const final {
+    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
+
+    // Give all our subsystems a chance to set up their inter-subcontext
+    // dependencies if they are diagrams. Traversal order doesn't matter here.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
+      SystemBase::MakeInterSubcontextConnections(sys, &subcontext);
+    }
+
+    // Connect child subsystem input ports to the child subsystem output ports
+    // on which they depend. Declares dependency of each input port on its
+    // connected output port.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
       const InputPortLocator& dest = connection.first;
-      context->Connect(ConvertToContextPortIdentifier(src),
-                       ConvertToContextPortIdentifier(dest));
+      context->SubscribeInputPortToOutputPort(
+          ConvertToContextPortIdentifier(src),
+          ConvertToContextPortIdentifier(dest));
     }
 
     // Diagram-external input ports are exported from child subsystems. Inform
@@ -838,7 +856,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // child subsystem's input port on its parent Diagram's input port.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
-      context->ExportInput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeExportedInputPortToDiagramPort(
+          i, ConvertToContextPortIdentifier(id));
     }
 
     // Connect exported child subsystem output ports to the Diagram-level output
@@ -846,14 +865,26 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // Diagram-level output on its child-level output.
     for (OutputPortIndex i(0); i < this->get_num_output_ports(); ++i) {
       const OutputPortLocator& id = output_port_ids_[i];
-      context->ExportOutput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeDiagramPortToExportedOutputPort(
+          i, ConvertToContextPortIdentifier(id));
+    }
+  }
+
+  // Creates the diagram's composite data structures that collect its
+  // subsystems' resources.
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
+
+    // Depth-first acquisition of resources to make sure leaf resources are
+    // there before we collect them.
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const System<T>& sys = *registered_systems_[i];
+      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
+      SystemBase::AcquireContextResources(sys, &subcontext);
     }
 
-    // TODO(sherm1) Move to final resource allocation phase.
     context->MakeState();
     context->MakeParameters();
-
-    return context;
   }
 
   // Permits child Systems to take a look at the completed Context to see

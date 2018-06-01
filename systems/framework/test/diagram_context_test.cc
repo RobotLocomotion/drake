@@ -245,9 +245,9 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(
-      context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
+  EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }
 
 // Tests that input ports can be assigned to the DiagramContext and then
@@ -260,8 +260,9 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
 }
 
 TEST_F(DiagramContextTest, Clone) {
-  context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                    {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
+  context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
   AttachInputPorts();
 
   auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());

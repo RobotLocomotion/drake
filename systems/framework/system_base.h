@@ -82,8 +82,12 @@ class SystemBase : public internal::SystemMessageInterface {
   are allocated based on resource requests that were made during System
   construction. */
   std::unique_ptr<ContextBase> AllocateContext() const {
-    // Get a concrete Context of the right type and make connections.
+    // Get a concrete Context of the right type and make internal connections.
     std::unique_ptr<ContextBase> context = MakeContext();
+    // Make inter-subsystem connections (input and output port wiring).
+    MakeInterSubcontextConnections(&*context);
+    // Allocate resources, possibly dependent on interconnection details.
+    AcquireContextResources(&*context);
     // Validate that restrictions imposed by subsystems are satisfied.
     ValidateAllocatedContext(*context);
     return context;
@@ -520,23 +524,32 @@ class SystemBase : public internal::SystemMessageInterface {
   variables for this System. By default this is set to the continuous
   second-order state variables q, but configuration may be represented
   differently in some systems (discrete ones, for example), in which case this
-  ticket should have been set to depend on that representation. */
+  ticket should have been set to depend on that representation. This ticket
+  also assumes that configuration computations may depend on any parameter and
+  on the accuracy setting (which don't change often), but not on time. */
   static DependencyTicket configuration_ticket() {
     return DependencyTicket(internal::kConfigurationTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the velocity variables
-  for this System. By default this is set to the continuous state variables v,
-  but velocity may be represented differently in some systems (discrete ones,
-  for example), in which case this ticket should have been set to depend on that
-  representation. */
+  /** (Advanced) Returns a ticket indicating dependence on all of the velocity
+  variables, but _not_ the configuration variables for this System. By default
+  this is set to the continuous state variables v, but velocity may be
+  represented differently in some systems (discrete ones, for example), in which
+  case this ticket should have been set to depend on that representation. This
+  ticket also assumes that velocity calculations may depend on any parameter and
+  on the accuracy setting (which don't change often), but not on time.
+
+  @warning This _does not_ include dependence on configuration, although
+  most velocity calculations do depend on configuration. If you want to
+  register dependence on both (more common), use kinematics_ticket(). */
   static DependencyTicket velocity_ticket() {
     return DependencyTicket(internal::kVelocityTicket);
   }
 
   /** Returns a ticket indicating dependence on all of the configuration
   and velocity state variables of this System. This ticket depends on the
-  configuration_ticket and the velocity_ticket.
+  configuration_ticket and the velocity_ticket. Note that this includes
+  dependence on all parameters and the accuracy setting, but not on time.
   @see configuration_ticket(), velocity_ticket() */
   static DependencyTicket kinematics_ticket() {
     return DependencyTicket(internal::kKinematicsTicket);
@@ -572,12 +585,69 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns a ticket indicating dependence on the cache entry indicated
   by `index`.
-  @pre `index` selects an existing cache entry in this System. */
-  DependencyTicket cache_entry_ticket(CacheIndex index) {
+  @pre `index` selects an existing cache entry in this System. */  DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
   }
+
+  /** Returns a ticket indicating dependence on a particular discrete state
+  variable (may be a vector). (We sometimes refer to this as a "discrete
+  variable group".) */
+  DependencyTicket discrete_state_ticket(DiscreteStateIndex index) const {
+    return discrete_state_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular abstract state
+  variable. */
+  DependencyTicket abstract_state_ticket(AbstractStateIndex index) const {
+    return abstract_state_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular numeric parameter
+  (may be a vector). */
+  DependencyTicket numeric_parameter_ticket(NumericParameterIndex index) const {
+    return numeric_parameter_tracker_info(index).ticket;
+  }
+
+  /** Returns a ticket indicating dependence on a particular abstract
+  parameter. */
+  DependencyTicket abstract_parameter_ticket(
+      AbstractParameterIndex index) const {
+    return abstract_parameter_tracker_info(index).ticket;
+  }
   //@}
+
+  #ifndef DRAKE_DOXYGEN_CXX
+  // Used to create trackers for variable-number System-allocated objects.
+  struct TrackerInfo {
+    DependencyTicket ticket;
+    std::string description;
+  };
+
+  const TrackerInfo& discrete_state_tracker_info(
+      DiscreteStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_discrete_state_tickets());
+    return discrete_state_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_state_tracker_info(
+      AbstractStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_state_tickets());
+    return abstract_state_tickets_[index];
+  }
+
+  const TrackerInfo& numeric_parameter_tracker_info(
+      NumericParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_tickets());
+    return numeric_parameter_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_parameter_tracker_info(
+      AbstractParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_parameter_tickets());
+    return abstract_parameter_tickets_[index];
+  }
+  #endif  // DRAKE_DOXYGEN_CXX
 
  protected:
   /** (Internal use only) Default constructor. */
@@ -609,8 +679,19 @@ class SystemBase : public internal::SystemMessageInterface {
     output_ports_.push_back(std::move(port));
   }
 
-  /** (Internal use only) Returns a pointer to the service interface of the
-  immediately enclosing Diagram if one has been set, otherwise nullptr. */
+  /** (Internal use only) This is for cache entries associated with pre-defined
+  tickets, for example the cache entry for time derivatives. See the public API
+  for the most-general DeclareCacheEntry() signature for the meanings of the
+  other parameters here. */
+  const CacheEntry& DeclareCacheEntryWithKnownTicket(
+      DependencyTicket known_ticket,
+      std::string description, CacheEntry::AllocCallback alloc_function,
+      CacheEntry::CalcCallback calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /** Returns a pointer to the service interface of the immediately enclosing
+  Diagram if one has been set, otherwise nullptr. */
   const internal::SystemParentServiceInterface* get_parent_service() const {
     return parent_service_;
   }
@@ -639,6 +720,20 @@ class SystemBase : public internal::SystemMessageInterface {
   the same method on its children. */
   static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
     return system.MakeContext();
+  }
+
+  /** Allows Diagram to use its private MakeInterSubcontextConnections() to
+  invoke the same method on its children. */
+  static void MakeInterSubcontextConnections(const SystemBase& system,
+                                             ContextBase* context) {
+    system.MakeInterSubcontextConnections(&*context);
+  }
+
+  /** Allows Diagram to use its private AcquireContextResources() to invoke the
+  same method on its children. */
+  static void AcquireContextResources(const SystemBase& system,
+                                      ContextBase* context) {
+    system.AcquireContextResources(&*context);
   }
 
   /** (Internal use only) Allows Diagram to use its private
@@ -722,8 +817,26 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Derived class implementations should allocate a suitable
   default-constructed Context, with default-constructed subcontexts for
   diagrams. The base class allocates trackers for known resources and
-  intra-subcontext dependencies. */
+  intra-subcontext dependencies. No inter-subcontext dependencies should be
+  made in this step. */
   virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
+
+  /** If the derived class is a diagram it should implement this method to
+  set up the inter-subcontext dependencies. The given `context` already has
+  the right structure and each subcontext has trackers available for each of
+  its resources. The supplied context is guaranteed to be non-null; you don't
+  need to error-check that. The default implementation does nothing, which is
+  suitable for leaf systems. */
+  virtual void DoMakeInterSubcontextConnections(ContextBase* context) const {
+    unused(context);
+  }
+
+  /** Derived classes should override to complete resource allocation. The
+  supplied Context is the one returned earlier from DoMakeContext(), with all
+  intra- and inter-subsystem connections made. The supplied context is
+  guaranteed to have come from this System and to be non-null; you don't need to
+  error-check that. */
+  virtual void DoAcquireContextResources(ContextBase* context) const = 0;
 
   /** Any derived class that imposes restrictions on the structure or content
   of an acceptable Context should enforce those restrictions by overriding
@@ -748,6 +861,15 @@ class SystemBase : public internal::SystemMessageInterface {
   // allocated and internal wiring set up.
   std::unique_ptr<ContextBase> MakeContext() const;
 
+  // Sets up the inter-subsystem wiring in the context.
+  void MakeInterSubcontextConnections(ContextBase* context) const {
+    DRAKE_DEMAND(context != nullptr);
+    DoMakeInterSubcontextConnections(&*context);
+  }
+
+  // Allocates additional context resources if needed.
+  void AcquireContextResources(ContextBase* context) const;
+
   // Check that all subsystems are prepared to deal with a context like this.
   void ValidateAllocatedContext(const ContextBase& context) const {
     DoValidateAllocatedContext(context);
@@ -765,6 +887,22 @@ class SystemBase : public internal::SystemMessageInterface {
 
   void CreateSourceTrackers(ContextBase*) const;
 
+  int num_discrete_state_tickets() const {
+    return static_cast<int>(discrete_state_tickets_.size());
+  }
+
+  int num_abstract_state_tickets() const {
+    return static_cast<int>(abstract_state_tickets_.size());
+  }
+
+  int num_numeric_parameter_tickets() const {
+    return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  int num_abstract_parameter_tickets() const {
+    return static_cast<int>(abstract_parameter_tickets_.size());
+  }
+
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 
@@ -776,7 +914,15 @@ class SystemBase : public internal::SystemMessageInterface {
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
 
   // States and parameters don't hold their own tickets so we track them here.
-  // TODO(sherm1) Add state & parameter trackers here.
+
+  // Indexed by DiscreteStateIndex.
+  std::vector<TrackerInfo> discrete_state_tickets_;
+  // Indexed by AbstractStateIndex.
+  std::vector<TrackerInfo> abstract_state_tickets_;
+  // Indexed by NumericParameterIndex.
+  std::vector<TrackerInfo> numeric_parameter_tickets_;
+  // Indexed by AbstractParameterIndex.
+  std::vector<TrackerInfo> abstract_parameter_tickets_;
 
   // Initialize to the first ticket number available after all the well-known
   // ones. This gets incremented as tickets are handed out for the optional

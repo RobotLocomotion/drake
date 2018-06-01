@@ -222,6 +222,8 @@ class TestSystem : public System<double> {
     return std::make_unique<LeafContext<double>>();
   }
 
+  void DoAcquireContextResources(ContextBase*) const final {}
+
   void DoValidateAllocatedContext(const ContextBase&) const final {}
 
   mutable int publish_count_ = 0;
@@ -485,8 +487,14 @@ class ValueIOTestSystem : public System<T> {
     return std::make_unique<ContinuousState<T>>();
   }
 
+
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<T>>();
+  }
+
+  void DoAcquireContextResources(ContextBase* context_base) const final {
+    auto context = dynamic_cast<LeafContext<T>*>(context_base);
+    EXPECT_TRUE(context != nullptr);
   }
 
   void DoValidateAllocatedContext(const ContextBase& context) const final {}
