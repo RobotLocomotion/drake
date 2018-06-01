@@ -25,11 +25,14 @@ std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
 }
 
 Builder::Builder(double lane_width, const api::HBounds& elevation_bounds,
-                 double linear_tolerance, double angular_tolerance)
+                 double linear_tolerance, double angular_tolerance,
+                 double scale_length, ComputationPolicy computation_policy)
     : lane_width_(lane_width),
       elevation_bounds_(elevation_bounds),
       linear_tolerance_(linear_tolerance),
-      angular_tolerance_(angular_tolerance) {
+      angular_tolerance_(angular_tolerance),
+      scale_length_(scale_length),
+      computation_policy_(computation_policy) {
   DRAKE_DEMAND(lane_width_ >= 0.);
   DRAKE_DEMAND(linear_tolerance_ >= 0.);
   DRAKE_DEMAND(angular_tolerance_ >= 0.);
@@ -48,7 +51,8 @@ const Connection* Builder::Connect(const std::string& id,
   connections_.push_back(std::make_unique<Connection>(
       id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
-      lane_layout.right_shoulder(), line_offset.length()));
+      lane_layout.right_shoulder(), line_offset.length(), linear_tolerance_,
+      scale_length_, computation_policy_));
   return connections_.back().get();
 }
 
@@ -65,7 +69,8 @@ const Connection* Builder::Connect(const std::string& id,
   connections_.push_back(std::make_unique<Connection>(
       id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
-      lane_layout.right_shoulder(), arc_offset));
+      lane_layout.right_shoulder(), arc_offset, linear_tolerance_,
+      scale_length_, computation_policy_));
   return connections_.back().get();
 }
 

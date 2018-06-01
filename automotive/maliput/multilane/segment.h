@@ -6,6 +6,7 @@
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/multilane/cubic_polynomial.h"
 #include "drake/automotive/maliput/multilane/lane.h"
@@ -53,6 +54,8 @@ class Segment : public api::Segment {
     DRAKE_DEMAND(road_curve_.get() != nullptr);
     DRAKE_DEMAND(r_min <= r_max);
     DRAKE_DEMAND(road_curve_->IsValid(r_min_, r_max_, elevation_bounds_));
+    DRAKE_DEMAND(junction_->road_geometry()->linear_tolerance() ==
+                 road_curve_->linear_tolerance());
   }
 
   /// Creates a new Lane object.

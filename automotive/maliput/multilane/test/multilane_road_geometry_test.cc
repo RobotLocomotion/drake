@@ -55,9 +55,14 @@ const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
 
 GTEST_TEST(MultilaneLanesTest, DoToRoadPosition) {
   // Define a serpentine road with multiple segments and branches.
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   auto rb = multilane::BuilderFactory().Make(
-      2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */);
+      2. * kWidth, HBounds(0., kHeight), kLinearTolerance,
+      kAngularTolerance, kScaleLength, kComputationPolicy);
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy{0., 0., 0.};
@@ -251,9 +256,14 @@ GTEST_TEST(MultilaneLanesTest, HintWithDisconnectedLanes) {
   // ongoing lanes.  This tests the pathological case when a `hint` is provided
   // in a topologically isolated lane, so the code returns the default road
   // position given by the hint.
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   auto rb = multilane::BuilderFactory().Make(
-      2. * kWidth, HBounds(0., kHeight), 0.01, /* linear tolerance */
-      0.01 * M_PI /* angular tolerance */);
+      2. * kWidth, HBounds(0., kHeight), kLinearTolerance,
+      kAngularTolerance, kScaleLength, kComputationPolicy);
 
   // Initialize the road from the origin.
   const multilane::EndpointXy kOriginXy0{0., 0., 0.};
@@ -328,9 +338,12 @@ GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
   const double kLinearTolerance{kVeryExact};
   const double kAngularTolerance{0.01 * M_PI};
   const double kLaneWidth{2. * kWidth};
-
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   auto builder = multilane::BuilderFactory().Make(
-      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+      kLaneWidth, kElevationBounds, kLinearTolerance,
+      kAngularTolerance, kScaleLength, kComputationPolicy);
 
   // Initialize the road from the origin.
   const EndpointZ kFlatZ{0., 0., 0., 0.};

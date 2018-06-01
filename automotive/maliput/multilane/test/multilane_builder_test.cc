@@ -42,10 +42,16 @@ GTEST_TEST(StartReferenceSpecTest, Endpoint) {
 
 // StartReferenceSpec using a connection's reference curve.
 GTEST_TEST(StartReferenceSpecTest, Connection) {
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
   const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
   const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
-                        1.5, 10.);
+                        1.5, 10., kLinearTolerance, kScaleLength,
+                        kComputationPolicy);
+
   const double kVeryExact{1e-15};
 
   const StartReference::Spec forward_start_dut =
@@ -107,13 +113,80 @@ GTEST_TEST(MultilaneBuilderTest, ParameterConstructor) {
   const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
-                  kAngularTolerance);
+                  kAngularTolerance, kScaleLength, kComputationPolicy);
   EXPECT_EQ(builder.get_lane_width(), kLaneWidth);
   EXPECT_TRUE(api::test::IsHBoundsClose(builder.get_elevation_bounds(),
                                         kElevationBounds, 0.));
   EXPECT_EQ(builder.get_linear_tolerance(), kLinearTolerance);
   EXPECT_EQ(builder.get_angular_tolerance(), kAngularTolerance);
+  EXPECT_EQ(builder.get_scale_length(), kScaleLength);
+  EXPECT_EQ(builder.get_computation_policy(), kComputationPolicy);
+}
+
+// Checks that Connection instances are properly built by the Builder.
+GTEST_TEST(MultilaneBuilderTest, ProperConnections) {
+  const double kVeryExact = 1e-15;
+  const double kLaneWidth = 4.;
+  const api::HBounds kElevationBounds(0., 5.);
+  const double kLinearTolerance = 0.01;
+  const double kAngularTolerance = 0.01 * M_PI;
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
+  Builder builder(kLaneWidth, kElevationBounds, kLinearTolerance,
+                  kAngularTolerance, kScaleLength, kComputationPolicy);
+
+  const double kLeftShoulder = 2.;
+  const double kRightShoulder = 2.;
+  const int kOneLane = 1;
+  const int kRefLane = 0;
+  const double kRefR0 = 0.;
+  const LaneLayout kLaneLayout(kLeftShoulder, kRightShoulder,
+                               kOneLane, kRefLane, kRefR0);
+  const LineOffset kLineOffset(50.);
+  const ArcOffset kArcOffset(50., -0.5 * M_PI);  // 90deg, 50m radius
+  const EndpointZ kFlatZ(0., 0., 0., 0.);
+  const Endpoint kStartEndpoint{{0., 0., 0.}, kFlatZ};
+
+  const Connection* line_connection = builder.Connect(
+      "line", kLaneLayout,
+      StartReference().at(kStartEndpoint, Direction::kForward),
+      kLineOffset, EndReference().z_at(kFlatZ, Direction::kForward));
+  ASSERT_EQ(line_connection->type(), Connection::kLine);
+  EXPECT_EQ(line_connection->id(), "line");
+  EXPECT_EQ(line_connection->r0(), kRefR0);
+  EXPECT_TRUE(test::IsEndpointClose(line_connection->start(),
+                                    kStartEndpoint, kVeryExact));
+  EXPECT_EQ(line_connection->lane_width(), kLaneWidth);
+  EXPECT_EQ(line_connection->left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(line_connection->right_shoulder(), kRightShoulder);
+  EXPECT_EQ(line_connection->line_length(), kLineOffset.length());
+  EXPECT_EQ(line_connection->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(line_connection->scale_length(), kScaleLength);
+  EXPECT_EQ(line_connection->computation_policy(), kComputationPolicy);
+
+  const Connection* arc_connection = builder.Connect(
+      "arc", kLaneLayout, StartReference().at(
+          *line_connection, Which::kFinish, Direction::kForward),
+      kArcOffset, EndReference().z_at(kFlatZ, Direction::kForward));
+  ASSERT_EQ(arc_connection->type(), Connection::kArc);
+  EXPECT_EQ(arc_connection->id(), "arc");
+  EXPECT_EQ(arc_connection->r0(), kRefR0);
+  EXPECT_TRUE(test::IsEndpointClose(arc_connection->start(),
+                                    line_connection->end(),
+                                    kVeryExact));
+  EXPECT_EQ(arc_connection->lane_width(), kLaneWidth);
+  EXPECT_EQ(arc_connection->left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(arc_connection->right_shoulder(), kRightShoulder);
+  EXPECT_EQ(arc_connection->radius(), kArcOffset.radius());
+  EXPECT_EQ(arc_connection->d_theta(), kArcOffset.d_theta());
+  EXPECT_EQ(arc_connection->linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(arc_connection->scale_length(), kScaleLength);
+  EXPECT_EQ(arc_connection->computation_policy(), kComputationPolicy);
 }
 
 GTEST_TEST(MultilaneBuilderTest, Fig8) {
@@ -121,7 +194,12 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
   const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
+  Builder b(kLaneWidth, kElevationBounds,
+            kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
 
   const double kLeftShoulder = 2.;
   const double kRightShoulder = 2.;
@@ -240,7 +318,12 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
   const api::HBounds kElevationBounds(0., 5.);
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
+  Builder b(kLaneWidth, kElevationBounds,
+            kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
 
   const double kLeftShoulder = 2.;
   const double kRightShoulder = 2.;
@@ -268,11 +351,13 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
                          StartReference().at(kNorthbound, Direction::kForward),
                          kSmallCounterClockwiseLoop,
                          EndReference().z_at(kFlatZ, Direction::kForward));
+
   // This heads +y, loops to +x, clockwise, back to origin.
   auto right0 = b.Connect("right0", kLaneLayout,
                           StartReference().at(kNorthbound, Direction::kForward),
                           kSmallClockwiseLoop,
                           EndReference().z_at(kFlatZ, Direction::kForward));
+
   // This heads -y, loops to +x, counterclockwise, back to origin.
   auto right1 = b.Connect("right1", kLaneLayout,
                           StartReference().at(kNorthbound, Direction::kReverse),
@@ -394,6 +479,9 @@ class MultilaneBuilderPrimitivesTest : public ::testing::Test {
   const api::HBounds kElevationBounds{0., 5.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const EndpointZ kLowFlatZ{0., 0., 0., 0.};
   const double kStartHeading{-M_PI / 4.};
   const Endpoint start{{0., 0., kStartHeading}, kLowFlatZ};
@@ -401,7 +489,8 @@ class MultilaneBuilderPrimitivesTest : public ::testing::Test {
 
 // Checks that a multi-lane line segment is correctly created.
 TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
 
   const LineOffset kLineOffset(50.);
   b.Connect("c0", kLaneLayout, StartReference().at(start, Direction::kForward),
@@ -453,7 +542,8 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneLineSegment) {
 
 // Checks that a multi-lane arc segment is correctly created.
 TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
 
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
@@ -546,6 +636,9 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const api::HBounds kElevationBounds{0., 5.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const int kTwoLanes{2};
   const int kThreeLanes{3};
   const int kRefLane{0};
@@ -559,7 +652,8 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
   const Endpoint endpoint_f{{60., 14., -M_PI / 2.}, kLowFlatZ};
   const Endpoint endpoint_g{{50., -6., -M_PI / 2.}, kLowFlatZ};
 
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
 
   // Creates connections.
   b.Connect(
