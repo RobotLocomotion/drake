@@ -213,6 +213,12 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
+  // Make contact solver when the plant is discrete.
+  if (is_discrete()) {
+    implicit_stribeck_solver_ =
+        std::make_unique<ImplicitStribeckSolver<T>>(
+            num_velocities(), stribeck_model_.stiction_tolerance());
+  }
 }
 
 template<typename T>
@@ -779,307 +785,22 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
                    return coulomb_friction.static_friction();
                  });
 
-  int iter(0);
-  T residual(0);
-  T alpha_min(1);
-  const int num_unknowns = 2 * num_contacts;
+  // Update the solver with the new data defining the problem for this update.
+  implicit_stribeck_solver_->SetProblemData(&M0, &D, &p_star, &fn, &mu);
 
-  VectorX<T> ftk(num_unknowns);
-  if (num_contacts > 0) {
+  // Solver for the generalized contact forces.
+  const VectorX<T> tau_f = implicit_stribeck_solver_->SolveWithGuess(dt, v0);
 
-    const int max_iterations = 200;
-    const T tolerance = 1.0e-6;
-    residual = 2 * tolerance;
-
-    VectorX<T> vtk(num_unknowns);
-    VectorX<T> vk(nv);
-    VectorX<T> Rk(nv);
-    MatrixX<T> Jk(nv, nv);
-    VectorX<T> Delta_vk(nv);
-    VectorX<T> Delta_vtk(vtk.size());
-    VectorX<T> that(vtk.size());
-    VectorX<T> v_slip(num_contacts);
-    VectorX<T> mus(num_contacts); // Stribeck friction.
-    VectorX<T> dmudv(num_contacts);
-    std::vector<Matrix2<T>> dft_dv(num_contacts);
-    vk = v0;  // Initial guess with zero friction forces0. Consider using vk = v0
-    vtk = D * vk;
-
-    // The stiction tolerance.
-    const double v_stribeck = stribeck_model_.stiction_tolerance();
-
-    // We use the stiction tolerance as a reference scale to estimate a small
-    // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
-    // use to compute a "soft" tangent vector to avoid the singularity at
-    // vt = 0.
-    const double epsilon_v = v_stribeck * 1.0e-4;
-    const double epsilon_v2 = epsilon_v * epsilon_v;
-
-    for (iter = 0; iter < max_iterations; ++iter) {
-      // Compute 2D tangent vectors.
-      // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
-      // idea is to replace the norm in the definition of slip velocity by a
-      // "soft norm":
-      //    ‖v‖ ≜ sqrt(vᵀv + εᵥ²)
-      // We use this to redefine the slip velocity:
-      //   v_slip = sqrt(vtᵀvt + v_epsilon)
-      // and a "soft" tangent vector:
-      //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
-      // which now is not only well defined but it has well defined derivatives.
-      // We use these softened quantities all throuout our derivations for
-      // consistency.
-      for (int ic = 0; ic < num_contacts; ++ic) {
-        const int ik = 2 * ic;
-        const auto vt_ic = vtk.template segment<2>(ik);
-        // "soft norm":
-        v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
-        // "soft" tangent vector:
-        const Vector2<T> that_ic =  vt_ic / v_slip(ic);
-        that.template segment<2>(ik) = that_ic;
-        mus(ic) =
-            stribeck_model_.ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
-        // Friction force.
-        // Note: minus sign not included in this definition.
-        ftk.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
-      }
-
-      // After the previous iteration, we allow updating ftk above to have its
-      // latest value before leaving.
-      if (residual < tolerance) {
-        break;
-      }
-
-      // Newton-Raphson residual
-      Rk = M0 * vk - p_star + dt * D.transpose() * ftk;
-
-      // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
-      // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
-      for (int ic = 0; ic < num_contacts; ++ic) {
-        const int ik = 2 * ic;
-
-        // Compute dmu/dv = (1/v_stribeck) * dmu/dx
-        // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-        dmudv(ic) = stribeck_model_.ModifiedStribeckPrime(
-            v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
-
-        const auto that_ic = that.template segment<2>(ik);
-
-        // Projection matrix. It projects in the direction of that.
-        // Notice it is a symmetric 2x2 matrix.
-        const Matrix2<T> P_ic = that_ic * that_ic.transpose();
-
-        // Removes the projected direction along that.
-        // This is also a symmetric 2x2 matrix.
-        const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
-
-        // Some notes about projection matrices P:
-        //  - They are symmetric, positive semi-definite.
-        //  - All their eigenvalues are either one or zero.
-        //  - Their rank equals the number of non-zero eigenvales.
-        //  - From the previous item we have rank(P) = trace(P).
-        //  - If P is a projection matrix, so is (I - P).
-        // From the above we then know that P and Pperp are both projection
-        // matrices of rank one (i.e. rank deficient) and are symmetric
-        // semi-positive definite. This has very important consequences for the
-        // Jacobian of the residual.
-
-        // We now compute dft/dvt as:
-        //   dft/dvt = fn * (
-        //     mu_stribeck(‖vₜ‖) / ‖vₜ‖ * Pperp(t̂) +
-        //     dmu_stribeck/dx * P(t̂) / v_stribeck )
-        // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-        // Therefore dft/dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
-        // (P and Pperp) where the coefficients of the combination are positive
-        // scalars. Therefore,
-        // IMPORTANT NOTE: dft/dvt also PSD.
-        // IMPORTANT NOTE 2: The derivation for dft/dvt leads to exactly the
-        // same result when using the "softened" definitions for v_slip and
-        // that where each occurrence of these quantities is replaced by their
-        // softened counterpart.
-
-        // Compute dft/dv:
-        // Changes of vt in the direction perpendicular to that.
-        dft_dv[ic] = Pperp_ic * mus(ic) / v_slip(ic);
-
-        // Changes in the magnitude of vt (which in turns makes mu_stribeck
-        // change), in the direction of that.
-        dft_dv[ic] += P_ic * dmudv(ic);
-
-        // Note: dft_dv is a symmetric 2x2 matrix.
-        dft_dv[ic] *= fn(ic);
-
-        //PRINT_VARn(dft_dv[ic]);
-      }
-
-      // Newton-Raphson Jacobian:
-      //  J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D
-      // J is an (nv x nv) symmetric positive definite matrix.
-      // diag(dfₜ/dvₜ) is the (2nc x 2nc) block diagonal matrix with dfₜ/dvₜ in
-      // each 2x2 diagonal entry.
-
-      // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that diag(dfₜ/dvₜ)
-      // is block diagonal.
-      MatrixX<T> diag_dftdv_times_D(2 * num_contacts, nv);
-      // TODO(amcastro-tri): Only build half of the matrix since it is
-      // symmetric.
-      for (int ic = 0; ic < num_contacts; ++ic) {
-        const int ik = 2 * ic;
-        diag_dftdv_times_D.block(ik, 0, 2, nv) =
-            dft_dv[ic] * D.block(ik, 0, 2, nv);
-      }
-      // Form J = M + dt Dᵀdiag(dfₜ/dvₜ)D:
-      Jk = M0 + dt * D.transpose() * diag_dftdv_times_D;
-
-      //PRINT_VARn(Jk);
-      //PRINT_VARn(Rk.transpose());
-      //PRINT_VARn(Minv_times_Dtrans);
-      //PRINT_VARn((Minv_times_Dtrans * D).eval());
-      //PRINT_VARn((D.transpose() * D).eval());
-
-      // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
-      // Since we are in a non-linear iteration, an approximate cheap solution
-      // is probably best.
-      // TODO(amcastro-tri): Consider using a matrix-free iterative method to
-      // avoid computing M and J. CG and the Krylov family can be matrix-free.
-      //Delta_vk = Jk.llt().solve(-Rk);
-      Eigen::ConjugateGradient<MatrixX<T>, Eigen::Lower|Eigen::Upper> cg;
-      cg.compute(Jk);
-      cg.setTolerance(100 * tolerance);
-      cg.setMaxIterations(nv);
-      Delta_vk = cg.solve(-Rk);
-      // cg.iterations()
-      // cg.error()
-
-      // Since we keep D constant we have that:
-      // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
-      //                = vₜᵏ + α D⋅Δvᵏ
-      //                = vₜᵏ + α Δvₜᵏ
-      // where we defined Δvₜᵏ = D⋅Δvᵏ and 0 < α < 1 is a constant that we'll
-      // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
-      // For multiple contact points, we choose the minimum α amongs all contact
-      // points.
-      Delta_vtk = D * Delta_vk;
-
-      residual = Delta_vk.norm();
-
-      // Limit the angle change
-      const  T theta_max = 0.25;  // about 15 degs
-      const T cmin = cos(theta_max);
-      alpha_min = 1.0;
-      for (int ic = 0; ic < num_contacts; ++ic) {
-        const int ik = 2 * ic;
-        auto v = vtk.template segment<2>(ik);
-        const auto dv = Delta_vtk.template segment<2>(ik);
-
-        T A = v.norm();
-        T B = v.dot(dv);
-        T DD = dv.norm();
-
-        //if (A < 1e-14 && D < 1e-14) continue;
-
-        Vector2<T> v1 = v+dv;  // for alpha = 1
-        const T v1_norm = v1.norm();
-        const T v_norm = v.norm();
-        const T cos_init = v1.dot(v) / (v1_norm+1e-10) / (v_norm+1e-10);
-
-        Vector2<T> valpha;
-        T alpha;
-
-        if (istep==598){
-          PRINT_VAR(iter);
-          PRINT_VAR(cos_init);
-          PRINT_VAR(v.transpose());
-          PRINT_VAR(v1.transpose());
-          PRINT_VAR(dv.transpose());
-        }
-
-        const T x = v_norm / v_stribeck;
-        const T x1 = v1_norm / v_stribeck;
-
-        // 180 degrees direction change.
-        if ( abs(1.0+cos_init) < 1.0e-10 ) {
-          // Clip to near the origin since we know for sure we crossed it.
-          valpha = v / (v.norm()+1e-14) * v_stribeck / 2.0;
-          alpha = dv.dot(valpha - v) / dv.squaredNorm();
-        } else if (cos_init > cmin || (v1_norm*v_norm) < 1.0e-14 || x < 1.0 || x1 < 1.0) {  // the angle change is small enough
-          alpha = 1.0;
-          valpha = v1;
-        } else { // Limit the angle change
-          T A2 = A * A;
-          T A4 = A2 * A2;
-          T cmin2 = cmin * cmin;
-
-          T a = A2 * DD * DD * cmin2 - B * B;
-          T b = 2 * A2 * B * (cmin2 - 1.0);
-          T c = A4 * (cmin2 - 1.0);
-
-          T delta = b * b - 4 * a * c;
-          if ( delta <  0 || istep == 598) {
-            PRINT_VAR(iter);
-            PRINT_VAR(istep);
-            PRINT_VAR(delta);
-            PRINT_VAR(A);
-            PRINT_VAR(B);
-            PRINT_VAR(cmin);
-            PRINT_VAR(DD);
-            PRINT_VAR(cos_init);
-            PRINT_VAR(abs(1.0+cos_init));
-            PRINT_VAR(v.transpose());
-            PRINT_VAR(v1.transpose());
-            PRINT_VAR(dv.transpose());
-            DRAKE_DEMAND(delta > -1e-16);
-          }
-
-          T sqrt_delta = sqrt(max(delta, 0.0));
-
-          // There should be a positive and a negative root.
-          alpha = (-b + sqrt_delta) / a / 2.0;
-          //double alpha2 = (-b - sqrt_delta)/a/2.0;
-          if (alpha <= 0) {
-            PRINT_VAR(alpha);
-            PRINT_VAR(iter);
-            PRINT_VAR(istep);
-            PRINT_VAR(delta);
-            PRINT_VAR(A);
-            PRINT_VAR(B);
-            PRINT_VAR(cmin);
-            PRINT_VAR(DD);
-            PRINT_VAR(cos_init);
-            PRINT_VAR(abs(1.0+cos_init));
-            PRINT_VAR(a);
-            PRINT_VAR(b);
-            PRINT_VAR(c);
-            PRINT_VAR(v.transpose());
-            PRINT_VAR(v1.transpose());
-            PRINT_VAR(dv.transpose());
-          }
-
-          DRAKE_DEMAND(alpha > 0);
-
-          valpha = v + alpha * dv;
-        }
-
-        // clip v
-        v = valpha;
-        alpha_min = min(alpha_min, alpha);
-      }
-
-      // Limit vk update:
-      vk = vk + alpha_min * Delta_vk;
-      vtk = D * vk;
-
-      // See if worth detection crosses about the line perpendicular to the
-      // velocity change, ala Sherm.
-      //vtk += Delta_vtk;
-    }
-  }
+  const typename ImplicitStribeckSolver<T>::IterationStats& stats =
+      implicit_stribeck_solver_->get_iteration_statistics();
 
   std::ofstream outfile;
   outfile.open("nr_iteration.dat", std::ios_base::app);
   outfile <<
           fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e} {5:14.6e}\n",
-                      context0.get_time(), istep, iter, num_contacts,residual,
-                      alpha_min);
+                      context0.get_time(), istep, stats.num_iterations,
+                      num_contacts, stats.vt_residual,
+                      stats.alphas.back());
   outfile.close();
 
   // Compute velocity at next time step.
@@ -1087,7 +808,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Compute p_next into p_star.
   //   p_next = p_star - dt⋅Dᵀ⋅ft
   if (num_contacts > 0) {
-    p_star -= time_step_ * D.transpose() * ftk;
+    p_star -= time_step_ * tau_f;
   }
   v_next = M0_llt.solve(p_star);
 

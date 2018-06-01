@@ -36,6 +36,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:scene_graph",
         "//math:orthonormal_basis",
+        "//multibody/contact_solvers",
         "//multibody/multibody_tree",
         "//systems/framework:leaf_system",
     ],

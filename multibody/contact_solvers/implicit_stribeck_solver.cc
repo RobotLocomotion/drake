@@ -37,8 +37,8 @@ void ImplicitStribeckSolver<T>::SetProblemData(
     const VectorX<T>* fn, const VectorX<T>* mu) {
   nv_ = p_star->size();
   nc_ = fn->size();
-  DRAKE_THROW_UNLESS(M->rows() == nv_ && M_->cols() == nv_);
-  DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D_->cols() == nv_);
+  DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
+  DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   M_ = M;
   D_ = D;
@@ -56,7 +56,6 @@ void ImplicitStribeckSolver<T>::ResizeSolverWorkspaceAsNeeded(int nc) {
   if (vtk.size() < nf) vtk.resize(nf);
   if (ftk.size() < nf) ftk.resize(nf);
   if (Delta_vtk.size() < nf) Delta_vtk.resize(nf);
-  if (vtk.size() < nf) vtk.resize(nf);
   if (that.size() < nf) that.resize(nf);
   if (v_slip.size() < nc) v_slip.resize(nc);
   if (mus.size() < nc) mus.resize(nc);
@@ -355,10 +354,14 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     vtk = D * vk;
 
     // Save iteration statistics.
-    statistics_.iteration_residuals.push_back(ExtractDoubleOrThrow(residual));
-    statistics_.iteration_alpha.push_back(ExtractDoubleOrThrow(alpha_min));
-    statistics_.linear_iterations.push_back(cg.iterations());
-    statistics_.linear_residuals.push_back(ExtractDoubleOrThrow(cg.error()));
+    statistics_.Update(
+        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha_min),
+        cg.iterations(), ExtractDoubleOrThrow(cg.error()));
+
+    //statistics_.residuals.push_back(ExtractDoubleOrThrow(residual));
+    //statistics_.alphas.push_back(ExtractDoubleOrThrow(alpha_min));
+    //statistics_.linear_iterations.push_back(cg.iterations());
+    //statistics_.linear_residuals.push_back(ExtractDoubleOrThrow(cg.error()));
   }
 
   // Returns vector of generalized friction forces.

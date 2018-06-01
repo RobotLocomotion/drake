@@ -43,13 +43,13 @@ class ImplicitStribeckSolver {
     int num_iterations{0};
     double vt_residual{0.0};
     /// vt residual at each i-th iteration.
-    std::vector<double> iteration_residuals;
+    std::vector<double> residuals;
     // At each iteration a velocity direction Δv is computed so that the
     // velocity at the next iteration is vᵏ⁺¹ = vᵏ + αΔv, where 0 < α < 1
     // (alpha) is a coefficient used to limit maximum angle change between
     // vₜᵏ⁺¹ and vₜᵏ, see ImplicitStribeckSolver::LimitDirectionChange().
     // This vector stores alpha for each iteration.
-    std::vector<double> iteration_alpha{128};
+    std::vector<double> alphas{128};
 
     // The number of linear iterations performed by the linear solver at each
     // Newton-Raphsone iteration.
@@ -59,11 +59,25 @@ class ImplicitStribeckSolver {
     std::vector<double> linear_residuals{128};
 
     void Reset() {
+      num_iterations = 0;
+      vt_residual = -1.0;  // an invalid value.
       // Clear does not change a std::vector "capacity", and therefore there's
       // no reallocation (or deallocation) that could affect peformance.
-      iteration_alpha.clear();
+      alphas.clear();
       linear_iterations.clear();
       linear_residuals.clear();
+    }
+
+    void Update(
+        double iteration_residual, double iteration_alpha,
+        int lin_iterations, double lin_residuals) {
+      ++num_iterations;
+      vt_residual = iteration_residual;
+
+      residuals.push_back(iteration_residual);
+      alphas.push_back(iteration_alpha);
+      linear_iterations.push_back(lin_iterations);
+      linear_residuals.push_back(lin_residuals);
     }
   };
 
@@ -93,6 +107,10 @@ class ImplicitStribeckSolver {
   /// @throws std::logic_error if v_guess is not of size `nv`, the number of
   /// generalized velocities specified at construction.
   VectorX<T> SolveWithGuess(double dt, const VectorX<T>& v_guess);
+
+  const IterationStats& get_iteration_statistics() const {
+    return statistics_;
+  }
 
  private:
   // For scalar-converting copy constructor.
