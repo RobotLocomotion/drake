@@ -699,7 +699,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
-  auto M0_llt = M0.llt();
+  auto M0_llt = M0.ldlt();
 
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
@@ -790,6 +790,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   int iter(0);
   T residual(0);
+  T alpha_min(1);
   const int num_unknowns = 2 * num_contacts;
 
   VectorX<T> ftk(num_unknowns);
@@ -858,7 +859,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       }
 
       // Newton-Raphson residual
-      Rk = vk - v_star + dt * Minv_times_Dtrans * ftk;
+      Rk = M0 * (vk - v_star) + dt * D.transpose() * ftk;
 
       // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
       // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
@@ -915,6 +916,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
         // Note: dft_dv is a symmetric 2x2 matrix.
         dft_dv[ic] *= fn(ic);
+
+        //PRINT_VARn(dft_dv[ic]);
       }
 
       // Newton-Raphson Jacobian:
@@ -926,13 +929,21 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that diag(dfₜ/dvₜ)
       // is block diagonal.
       MatrixX<T> diag_dftdv_times_D(2 * num_contacts, nv);
+      // TODO(amcastro-tri): Only build half of the matrix since it is
+      // symmetric.
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
         diag_dftdv_times_D.block(ik, 0, 2, nv) =
             dft_dv[ic] * D.block(ik, 0, 2, nv);
       }
       // Form J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D:
-      Jk.setIdentity() += dt * Minv_times_Dtrans * diag_dftdv_times_D;
+      Jk = M0 + dt * D.transpose() * diag_dftdv_times_D;
+
+      //PRINT_VARn(Jk);
+      //PRINT_VARn(Rk.transpose());
+      //PRINT_VARn(Minv_times_Dtrans);
+      //PRINT_VARn((Minv_times_Dtrans * D).eval());
+      //PRINT_VARn((D.transpose() * D).eval());
 
       // TODO(amcastro-tri): Considere using a cheap step like CG.
       // Since we are in a non-linear iteration, an approximate cheap solution
@@ -954,7 +965,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       // Limit the angle change
       const  T theta_max = 0.25;  // about 15 degs
       const T cmin = cos(theta_max);
-      T alpha_min = 1.0;
+      alpha_min = 1.0;
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
         auto v = vtk.template segment<2>(ik);
@@ -1066,8 +1077,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   std::ofstream outfile;
   outfile.open("nr_iteration.dat", std::ios_base::app);
   outfile <<
-          fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e}\n",
-                      context0.get_time(), istep, iter, num_contacts,residual);
+          fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e} {5:14.6e}\n",
+                      context0.get_time(), istep, iter, num_contacts,residual,
+                      alpha_min);
   outfile.close();
 
   // Compute velocity at next time step.
