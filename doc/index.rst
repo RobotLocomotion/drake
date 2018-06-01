@@ -123,6 +123,7 @@ Next steps
    :maxdepth: 1
 
    installation
+   gallery
    getting_help
    Doxygen (C++) <doxygen_cxx/index.html#://>
    GitHub <https://github.com/RobotLocomotion/drake>
@@ -145,7 +146,6 @@ Using Drake from other Programming Languages
 Documentation that may be useful but needs updating
 ***************************************************
 
-* :doc:`gallery`
 * `Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>`_
 * :doc:`design`
 * :doc:`video_tutorials`
