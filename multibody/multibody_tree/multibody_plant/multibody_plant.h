@@ -12,6 +12,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/multibody_tree/multibody_plant/model_instance.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
@@ -181,6 +182,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
     visual_geometries_ = other.visual_geometries_;
     collision_geometries_ = other.collision_geometries_;
+    for (int i = 0; i < other.num_model_instances(); ++i) {
+      model_instances_.push_back(
+          std::make_unique<ModelInstance<T>>(other.get_model_instance(i)));
+    }
+
     // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
     // on the new MultibodyTree on U. Therefore we only Finalize the plant's
     // internals (and not the MultibodyTree).
@@ -918,6 +924,32 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     model_->SetDefaultState(context, state);
   }
 
+  /// @anchor model_instances
+  /// @name Model Instances
+  ///
+  /// Model instances are collections of bodies and actuated joints
+  /// which are grouped for convenience when accessing state vectors.
+
+  /// Add a description of a particular model instance consisting of
+  /// a collection of bodies and actuated joints.
+  ///
+  /// @return an index for this model instance
+  int AddModelInstance(
+      const std::vector<BodyIndex>& bodies,
+      const std::vector<JointActuatorIndex>& joint_actuators);
+
+  /// Get a reference to a particular model instance.
+  const ModelInstance<T>& get_model_instance(int id) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(id >= 0 &&
+                 id <= static_cast<int>(model_instances_.size()));
+    return *model_instances_[id];
+  }
+
+  int num_model_instances() const {
+    return static_cast<int>(model_instances_.size());
+  }
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -1243,6 +1275,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // TODO(amcastro-tri): Remove these when caching lands.
   std::unique_ptr<PositionKinematicsCache<T>> pc_;
   std::unique_ptr<VelocityKinematicsCache<T>> vc_;
+
+  std::vector<std::unique_ptr<ModelInstance<T>>> model_instances_;
 };
 
 /// @cond

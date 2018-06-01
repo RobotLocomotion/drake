@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
 #include <memory>
+#include <vector>
 
 #include <sdf/sdf.hh>
 
@@ -146,7 +147,8 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
 // Only available for "revolute" and "prismatic" joints.
 void AddJointActuatorFromSpecification(
     const sdf::Joint &joint_spec, const Joint<double>& joint,
-    MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant,
+    std::vector<JointActuatorIndex>* actuators) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -167,7 +169,9 @@ void AddJointActuatorFromSpecification(
   if (max_effort != 0) {
     // TODO(amcastro-tri): For positive max_effort values, store it and use it
     // to limit input actuation.
-    plant->AddJointActuator(joint_spec.Name(), joint);
+    const JointActuator<double>& actuator =
+        plant->AddJointActuator(joint_spec.Name(), joint);
+    actuators->push_back(actuator.index());
   }
 }
 
@@ -175,7 +179,8 @@ void AddJointActuatorFromSpecification(
 // specification object.
 void AddJointFromSpecification(
     const sdf::Model& model_spec, const sdf::Joint& joint_spec,
-    MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant,
+    std::vector<JointActuatorIndex>* actuators) {
   // Pose of the model frame M in the world frame W.
   const Isometry3d X_WM = ToIsometry3(model_spec.Pose());
 
@@ -238,7 +243,7 @@ void AddJointFromSpecification(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
-      AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant, actuators);
       break;
     }
     case sdf::JointType::REVOLUTE: {
@@ -247,7 +252,7 @@ void AddJointFromSpecification(
           joint_spec.Name(),
           parent_body, X_PJ,
           child_body, X_CJ, axis_J);
-      AddJointActuatorFromSpecification(joint_spec, joint, plant);
+      AddJointActuatorFromSpecification(joint_spec, joint, plant, actuators);
       break;
     }
     default: {
@@ -258,7 +263,7 @@ void AddJointFromSpecification(
 }
 }  // namespace
 
-void AddModelFromSdfFile(
+int AddModelFromSdfFile(
     const std::string& file_name,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
@@ -302,7 +307,9 @@ void AddModelFromSdfFile(
   parsers::PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_path);
 
-  // Add all the links
+  // Add all the links.
+  std::vector<BodyIndex> bodies;
+  std::vector<JointActuatorIndex> joint_actuators;
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
@@ -319,6 +326,7 @@ void AddModelFromSdfFile(
 
     // Add a rigid body to model each link.
     const RigidBody<double>& body = plant->AddRigidBody(link.Name(), M_BBo_B);
+    bodies.push_back(body.index());
 
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -360,8 +368,10 @@ void AddModelFromSdfFile(
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(model, joint, plant);
+    AddJointFromSpecification(model, joint, plant, &joint_actuators);
   }
+
+  return plant->AddModelInstance(bodies, joint_actuators);
 }
 
 }  // namespace parsing
