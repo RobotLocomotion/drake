@@ -65,20 +65,24 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   Cache& cache = context.get_mutable_cache();
   for (CacheIndex index(0); index < num_cache_entries(); ++index) {
     const CacheEntry& entry = get_cache_entry(index);
-    cache.CreateNewCacheEntryValue(entry.cache_index(), entry.ticket(),
-                                   entry.description(), entry.prerequisites(),
-                                   &graph);
+    CacheEntryValue& cache_value = cache.CreateNewCacheEntryValue(
+        entry.cache_index(), entry.ticket(), entry.description(),
+        entry.prerequisites(), &graph);
+    // TODO(sherm1) Supply initial value on creation instead and get rid of
+    // this separate call.
+    cache_value.SetInitialValue(entry.Allocate());
   }
 
-  // TODO(sherm1) Create the output port trackers yᵢ here.
-
-  // TODO(sherm1) Move this to the AcquireContextResources phase.
-  // We now have a complete Context. We can allocate space for cache entry
-  // values using the allocators, which require a context.
-  for (CacheIndex index(0); index < num_cache_entries(); ++index) {
-    const CacheEntry& entry = get_cache_entry(index);
-    CacheEntryValue& cache_value = cache.get_mutable_cache_entry_value(index);
-    cache_value.SetInitialValue(entry.Allocate());
+  // Create the output port trackers yᵢ here. Nothing in this System may
+  // depend on them; subscribers will be input ports from peer subsystems or
+  // an exported output port in the parent Diagram. The associated cache entries
+  // were just created above. If the output port's prerequisite is just a
+  // cache entry in this subsystem, set up that dependency here. For output
+  // ports that have been exported from a child subsystem, defer setting up the
+  // dependency until we're doing inter-subsystem dependencies later.
+  for (const auto& oport : output_ports_) {
+    context.AddOutputPort(oport->get_index(), oport->ticket(),
+                          oport->GetPrerequisite());
   }
 
   return context_ptr;
@@ -137,6 +141,14 @@ void SystemBase::ThrowNegativeInputPortIndex(const char* func,
                   FmtFunc(func), port_index, GetSystemPathname()));
 }
 
+void SystemBase::ThrowNegativeOutputPortIndex(const char* func,
+                                              int port_index) const {
+  DRAKE_DEMAND(port_index < 0);
+  throw std::out_of_range(
+      fmt::format("{}: negative port index {} is illegal. (Subsystem {})",
+                  FmtFunc(func), port_index, GetSystemPathname()));
+}
+
 void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
                                                InputPortIndex port,
                                                int num_input_ports) const {
@@ -145,6 +157,16 @@ void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
       fmt::format("{}: there is no input port with index {} because there "
                       "are only {} input ports in subsystem {}.",
                   FmtFunc(func), port, num_input_ports, GetSystemPathname()));
+}
+
+void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
+                                                OutputPortIndex port,
+                                                int num_output_ports) const {
+  DRAKE_DEMAND(num_output_ports >= 0);
+  throw std::out_of_range(
+      fmt::format("{}: there is no output port with index {} because there "
+                      "are only {} output ports in subsystem {}.",
+                  FmtFunc(func), port, num_output_ports, GetSystemPathname()));
 }
 
 void SystemBase::ThrowNotAVectorInputPort(const char* func,
@@ -167,7 +189,7 @@ void SystemBase::ThrowInputPortHasWrongType(
 }
 
 void SystemBase::ThrowCantEvaluateInputPort(const char* func,
-                                           InputPortIndex port) const {
+                                            InputPortIndex port) const {
   throw std::logic_error(
       fmt::format("{}: input port[{}] is neither connected nor fixed so "
                       "cannot be evaluated. (Subsystem {})",

@@ -19,7 +19,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/primitives/constant_vector_source.h"
 
 namespace drake {
 namespace systems {
@@ -35,6 +34,7 @@ class DummySystem : public LeafSystem<double> {
  public:
   DummySystem() {}
   ~DummySystem() override {}
+  using SystemBase::assign_next_dependency_ticket;
 };
 
 // These functions match the signatures required by LeafOutputPort.
@@ -91,17 +91,24 @@ class LeafOutputPortTest : public ::testing::Test {
   }
 
  protected:
-  systems::ConstantVectorSource<double> source_{Vector3d(3., -3., 0.)};
-  unique_ptr<Context<double>> context_{source_.CreateDefaultContext()};
-
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
   LeafOutputPort<double> absport_general_{
-    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
-    alloc_string, calc_string};
+      &dummy_, static_cast<SystemBase*>(&dummy_),
+      OutputPortIndex(dummy_.get_num_output_ports()),
+      dummy_.assign_next_dependency_ticket(),
+      alloc_string,
+      calc_string,
+      std::vector<DependencyTicket>{}};
   LeafOutputPort<double> vecport_general_{
-    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
-    3, alloc_myvector3, calc_vector3};
+      &dummy_, static_cast<SystemBase*>(&dummy_),
+      OutputPortIndex(dummy_.get_num_output_ports()),
+      dummy_.assign_next_dependency_ticket(),
+      3,
+      alloc_myvector3,
+      calc_vector3,
+      std::vector<DependencyTicket>{}};
+  unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
 };
 
 // Helper function for testing an abstract-valued port.
@@ -112,8 +119,7 @@ void AbstractPortCheck(const Context<double>& context,
   EXPECT_EQ(val->GetValueOrThrow<string>(), alloc_string);
   port.Calc(context, val.get());
   EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
-  const AbstractValue& val_cached = port.Eval(context);
-  EXPECT_EQ(val_cached.GetValueOrThrow<string>(), string("from eval_string"));
+  EXPECT_EQ(port.Eval<string>(context), string("from eval_string"));
 }
 
 // Check for proper construction and functioning of abstract LeafOutputPorts.
@@ -154,9 +160,15 @@ unique_ptr<AbstractValue> alloc_null() {
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
   LeafOutputPort<double> null_port{
-    dummy_, dummy_, OutputPortIndex{dummy_.get_num_output_ports()},
-    alloc_null, calc_string};
-  EXPECT_THROW(null_port.Allocate(), std::logic_error);
+      &dummy_, static_cast<SystemBase*>(&dummy_),
+      OutputPortIndex(dummy_.get_num_output_ports()),
+      dummy_.assign_next_dependency_ticket(),
+      alloc_null,
+      calc_string,
+      std::vector<DependencyTicket>{}};
+  // Creating a context for this system should fail when it tries to allocate
+  // a cache entry for null_port.
+  EXPECT_THROW(dummy_.CreateDefaultContext(), std::logic_error);
 }
 
 // Check that Debug builds catch bad output types. We can't run these tests
