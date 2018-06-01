@@ -93,8 +93,9 @@ class ImplicitStribeckSolver {
   ///      solver. In such a case, SetProblemData() and SolveWithGuess() must be
   ///      invoked again.
   void SetProblemData(
-      const MatrixX<T>* M, const MatrixX<T>* D, const VectorX<T>* p_star,
-      const VectorX<T>* fn, const VectorX<T>* mu);
+      EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+      EigenPtr<const VectorX<T>> p_star,
+      EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -110,6 +111,20 @@ class ImplicitStribeckSolver {
 
   const IterationStats& get_iteration_statistics() const {
     return statistics_;
+  }
+
+  const IterationParameters& get_solver_parameters() const {
+    return parameters_;
+  }
+
+  /// This method must be called after SolveWithGuess() to retrieve the vector
+  /// of tangential velocities.
+  const VectorX<T>& get_tangential_velocities() const {
+    return vtk;
+  }
+
+  const VectorX<T>& get_generalized_velocities() const {
+    return vk;
   }
 
  private:
@@ -143,18 +158,18 @@ class ImplicitStribeckSolver {
   IterationParameters parameters_;
 
   // The solver keeps references to the problem data but does not own it.
-  const MatrixX<T>* M_{nullptr};  // The mass matrix of the system.
-  const MatrixX<T>* D_{nullptr};  // The tangential velocities Jacobian.
+  EigenPtr<const MatrixX<T>> M_{nullptr};  // The mass matrix of the system.
+  EigenPtr<const MatrixX<T>> D_{nullptr};  // The tangential velocities Jacobian.
   // The generalized momementum vector **before** friction is applied. For a
   // generalized velocity vector v, the generalized momentum vector is defined
   // as p = M ⋅ v.
-  const VectorX<T>* p_star_{nullptr};
+  EigenPtr<const VectorX<T>> p_star_{nullptr};
 
   // At each contact point ic, fn_(ic) and mu_(ic) store the normal contact
   // force and friction coefficient, respectively. Both have size nc, the number
   // of contact points.
-  const VectorX<T>* fn_{nullptr};
-  const VectorX<T>* mu_{nullptr};
+  EigenPtr<const VectorX<T>> fn_{nullptr};
+  EigenPtr<const VectorX<T>> mu_{nullptr};
 
   // The solver's workspace allocated at construction time:
   VectorX<T> vk;

@@ -33,8 +33,9 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(
 
 template <typename T>
 void ImplicitStribeckSolver<T>::SetProblemData(
-    const MatrixX<T>* M, const MatrixX<T>* D, const VectorX<T>* p_star,
-    const VectorX<T>* fn, const VectorX<T>* mu) {
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+    EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
   nv_ = p_star->size();
   nc_ = fn->size();
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
