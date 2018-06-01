@@ -103,7 +103,6 @@ class ConstraintSolver {
   // TODO(edrumwri): Describe conditions under which it is safe to replace
   // A⁻¹ by a pseudo-inverse.
 
-  // TODO(edrumwri): fill in variables below.
   /// @name Velocity-level constraint problems formulated as MLCPs.
   /// @anchor Velocity-level-MLCPs
   /// Constraint problems can be posed as mixed linear complementarity problems
@@ -128,9 +127,10 @@ class ConstraintSolver {
   /// (i)            y ≥ 0
   /// (j) yᵀ(MMv + qq) = 0
   /// </pre>
-  /// and this `y` can be substituted into (e) to obtain `u`.
+  /// and this value for `y` can be substituted into (e) to obtain the value
+  /// for `u`.
   ///
-  /// Consider the following problem formulation of a multibody dynamics system
+  /// Consider the following problem formulation of a multibody dynamics
   /// impact model (taken from [Anitescu 1997]).
   /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-Mv⁻ | = | 0  |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0  |
@@ -145,21 +145,22 @@ class ConstraintSolver {
   /// </pre>
   /// Here, the velocity variables
   /// v⁻ and v⁺ correspond to the velocity of the system before and after
-  /// impulses are applied, respectively. Details will be forthcoming later,
-  /// but key variables are `M`, which is a generalized inertia matrix; `G`,
+  /// impulses are applied, respectively. More details will be forthcoming,
+  /// but key variables are `M`, the generalized inertia matrix; `G`,
   /// `N`, `D`, and `L` correspond to Jacobian matrices for various constraints
   /// (joints, contact, friction, generic unilateral constraints); `μ` is a
   /// diagonal matrix comprised of Coulomb friction coefficients; `E` is a
-  /// matrix used to linearize the friction cone (necessary to make this is a
-  /// *linear* complementarity problem); `fG`, `fN`, `fD`, and `fL` are
+  /// bnary matrix used to linearize the friction cone (necessary to make this
+  /// into a *linear* complementarity problem); `fG`, `fN`, `fD`, and `fL` are
   /// constraint impulses; `λ`, `x₅`, `x₆`, `x₇`, and `x₈` can be viewed as
   /// mathematical programming "slack" variables; and `kᴳ`, `kᴺ`, `kᴰ`, `kᴸ`
   /// allow customizing the problem to, e.g., correct constraint violations and
-  /// even simulate restitution.
+  /// simulate restitution.
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
-  /// solve with active-set-type mathematical programming approaches:<pre>
+  /// solve, at least for active-set-type mathematical programming
+  /// approaches:<pre>
   ///  A ≡ | M  -Ĝᵀ|   a ≡ |-Mv⁻ |   X₁ ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
   ///      | Ĝ   0 |       |  kᴳ |        | 0    0   0   0  |
   ///
@@ -199,10 +200,10 @@ class ConstraintSolver {
   /// constructs (and returns) functions for solving `AX=B`, where `B` is a
   /// given matrix and `X` is an unknown matrix. UpdateDiscretizedTimeLCP()
   /// computes and returns `a` during its operation.
-  /// 
+  ///
   /// Another use of the MLCP formulation:
   ///
-  /// Without setting up the entire MLCP again, we now show how a very similar
+  /// Without reconstructing the entire MLCP, we now show a very similar
   /// formulation to solve the problem of discretizing
   /// the multi-body dynamics equations with contact and friction. This
   /// particular formulation provides several nice features: 1) the formulation
@@ -210,21 +211,61 @@ class ConstraintSolver {
   /// sticking contact and contact between very stiff surfaces; 2) all
   /// constraint forces are computed in Newtons (typical "time stepping
   /// methods" require considerable care to correctly compare constraint forces,
-  /// which are impulsive, and non-constraint forces (which are non-impulsive);
+  /// which are impulsive, and non-constraint forces, which are non-impulsive);
   /// and 3) can be made almost symplectic by choosing a
-  /// representation/computational coordinate frame that minimizes
+  /// representation and computational coordinate frame that minimize
   /// velocity-dependent forces (thereby explaining the extreme stability of
   /// software like ODE and Bullet that computes dynamics in body frames
-  /// (minimizing the magnitudes of velocity-dependent forces). 
+  /// (minimizing the magnitudes of velocity-dependent forces) and provides
+  /// the ability to disable gyroscopic forces.
+  ///
+  /// The discretization problem replaces the meaning of v⁻ and v⁺ in the MLCP
+  /// to mean the generalized velocity at time t and the generalized velocity
+  /// at time t+h, respectively, for discretization quantum h (or, equivalently,
+  /// integration step size h).  The LCP is adjusted to the form:<pre>
+  /// MM ≡ | hNCNᵀ  hNCDᵀ   0   hNCLᵀ |
+  ///      | hDCNᵀ  hDCDᵀ   E   hDCLᵀ |
+  ///      | μ      -Eᵀ     0   0     |
+  ///      | hLCNᵀ  hLCDᵀ   0   hLCLᵀ |
+  ///
+  /// qq ≡ | kᴺ - |N 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      | kᴰ - |D 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
+  ///      |       0             |
+  ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |</pre>
+  /// where `kᴺ`, `kᴸ`, and `a` are all functions of `h`; documentation that
+  /// describes how to compute `kᴺ` and `kᴸ` to realize a desired stiffness
+  /// and damping behavior is forthcoming.
+  ///
+  /// The procedure one uses to formulate and solve this discretization problem
+  /// is: (1) Call ConstructBaseDiscretizedTimeLCP(); (2) Select an integration
+  /// step size, dt; (3) Compute `kᴺ' and `kᴸ` in the problem data, accounting
+  /// for dt as necessary; (4) Call UpdateDiscretizedTimeLCP(), obtaining MM and
+  /// qq that encode the linear complementarity problem; (5) Solve the linear
+  /// complementarity problem, if possible; if not, (6) reduce dt and repeat the
+  /// process from (3) until success. The solution to the LCP can be used to
+  /// obtain the constraint forces via
+  /// PopulatePackedConstraintForcesFromLCPSolution().
+  ///
+  /// Obtaining the generalized constraint forces:
+  ///
+  /// Given the constraint forces, which have been obtained either through
+  /// SolveImpactProblem() (in which case the forces are impulsive) or through
+  /// direct solution of the LCP followed by
+  /// PopulatePackedConstraintForcesFromLCPSolution() (in which cases the forces
+  /// are non-impulsive), the generalized forces/impulses due to the constraints
+  /// can then be acquired via ComputeGeneralizedForceFromConstraintForces().
   // @{
   /// Computes the base time-discretization of the system using the problem
-  /// data, resulting in the `MM` and `qq` shown above; if `MM` and `qq` are
-  /// modified no further, the LCP corresponds to an impact problem (i.e., the
-  /// multibody dynamics problem would not be discretized). The data
-  /// output (`mlcp_to_lcp_data`, `MM`, and `qq`) can be updated using a
-  /// particular time step in UpdateDiscretizedTimeLCP(), resulting in a
-  /// non-impulsive problem formulation. In that case, the multibody dynamics
-  /// equations *are* discretized, as described in UpdateDiscretizedTimeLCP().
+  /// data, resulting in the `MM` and `qq` described in the "impact model",
+  /// above; if `MM` and `qq` are modified no further, the LCP corresponds to
+  /// an impact problem (i.e., the multibody dynamics problem would not be
+  /// discretized). The data output (`mlcp_to_lcp_data`, `MM`, and `qq`) can be
+  /// updated using a particular time step in UpdateDiscretizedTimeLCP(),
+  /// resulting in a non-impulsive problem formulation. In that case, the
+  /// multibody dynamics equations *are* discretized, as described in
+  /// UpdateDiscretizedTimeLCP().
+  /// @note If you really do wish to solve an impact problem, you should use
+  ///       SolveImpactProblem() instead.
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -243,20 +284,8 @@ class ConstraintSolver {
 
   /// Updates the time-discretization of the LCP initially computed in
   /// ConstructBaseDiscretizedTimeLCP() using the problem data and time step
-  /// `h`. The resulting problem will modify the LCP to the form:<pre>
-  /// MM ≡ | hNCNᵀ  hNCDᵀ   0   hNCLᵀ |
-  ///      | hDCNᵀ  hDCDᵀ   E   hDCLᵀ |
-  ///      | μ      -Eᵀ     0   0     |
-  ///      | hLCNᵀ  hLCDᵀ   0   hLCLᵀ |
-  ///
-  /// qq ≡ | kᴺ - |N 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
-  ///      | kᴰ - |D 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
-  ///      |       0             |
-  ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
-  /// </pre>which yields a problem with non-impulsive forces. `kᴺ`, `kᴸ`, and
-  /// `a` are all functions of `h`. Solving the resulting pure LCP yields
-  /// non-impulsive constraint forces that can be obtained from
-  /// PopulatePackedConstraintForcesFromLCPSolution().
+  /// `h`. Solving the resulting pure LCP yields non-impulsive constraint forces
+  /// that can be obtained from PopulatePackedConstraintForcesFromLCPSolution().
   /// @param problem_data the constraint problem data.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
@@ -306,7 +335,7 @@ class ConstraintSolver {
   /// linear complementarity problem (LCP) constructed using
   /// ConstructBaseDiscretizedTimeLCP() and UpdateDiscretizedTimeLCP().
   /// @param problem_data the constraint problem data.
-  /// @param a reference to a MlcpToLcpData object.
+  /// @param mlcp_to_lcp_data a reference to a MlcpToLcpData object.
   /// @param a the vector `a` output from UpdateDiscretizedTimeLCP().
   /// @param dt the time step used to discretize the problem.
   /// @param[out] cf the constraint forces, on return.
@@ -319,21 +348,6 @@ class ConstraintSolver {
       double dt,
       VectorX<T>* cf);
   //@}
-
-  /// Populates the packed constraint force vector from the solution to the
-  /// linear complementarity problem (LCP) constructed using
-  /// ConstructBaseDiscretizedTimeLCP() and UpdateDiscretizedTimeLCP().
-  /// @param problem_data the constraint problem data.
-  /// @param a reference to a MlcpToLcpData object.
-  /// @param a the vector `a` output from UpdateDiscretizedTimeLCP().
-  /// @param[out] cf the constraint forces, on return.
-  /// @pre cf is non-null.
-  static void PopulatePackedConstraintForcesFromLCPSolution(
-      const ConstraintVelProblemData<T>& problem_data,
-      const MlcpToLcpData& mlcp_to_lcp_data,
-      const VectorX<T>& zz,
-      const VectorX<T>& a,
-      VectorX<T>* cf);
 
   /// Solves the appropriate constraint problem at the acceleration level.
   /// @param problem_data The data used to compute the constraint forces.
@@ -518,6 +532,12 @@ class ConstraintSolver {
       std::vector<Vector2<T>>* contact_forces);
 
  private:
+  static void PopulatePackedConstraintForcesFromLCPSolution(
+      const ConstraintVelProblemData<T>& problem_data,
+      const MlcpToLcpData& mlcp_to_lcp_data,
+      const VectorX<T>& zz,
+      const VectorX<T>& a,
+      VectorX<T>* cf);
   static void ConstructLinearEquationSolversForMLCP(
       const ConstraintVelProblemData<T>& problem_data,
       MlcpToLcpData* mlcp_to_lcp_data);
@@ -1346,6 +1366,13 @@ void ConstraintSolver<T>::ConstructLinearEquationSolversForMLCP(
   }
 }
 
+// Populates the packed constraint force vector from the solution to the
+// linear complementarity problem (LCP).
+// @param problem_data the constraint problem data.
+// @param a reference to a MlcpToLcpData object.
+// @param a the vector `a` output from UpdateDiscretizedTimeLCP().
+// @param[out] cf the constraint forces, on return.
+// @pre cf is non-null.
 template <typename T>
 void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLCPSolution(
     const ConstraintVelProblemData<T>& problem_data,
