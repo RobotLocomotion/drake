@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include<Eigen/IterativeLinearSolvers>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/extract_double.h"
@@ -945,10 +947,17 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       //PRINT_VARn((Minv_times_Dtrans * D).eval());
       //PRINT_VARn((D.transpose() * D).eval());
 
-      // TODO(amcastro-tri): Considere using a cheap step like CG.
+      // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
       // Since we are in a non-linear iteration, an approximate cheap solution
       // is probably best.
-      Delta_vk = Jk.llt().solve(-Rk);
+      //Delta_vk = Jk.llt().solve(-Rk);
+      Eigen::ConjugateGradient<MatrixX<T>, Eigen::Lower|Eigen::Upper> cg;
+      cg.compute(Jk);
+      cg.setTolerance(100 * tolerance);
+      cg.setMaxIterations(nv);
+      Delta_vk = cg.solve(-Rk);
+      // cg.iterations()
+      // cg.error()
 
       // Since we keep D constant we have that:
       // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
