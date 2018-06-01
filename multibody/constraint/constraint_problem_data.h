@@ -187,14 +187,15 @@ struct ConstraintAccelProblemData {
   /// @name Data for non-sliding contact friction constraints
   /// Problem data for constraining the tangential acceleration of two bodies
   /// projected along the contact surface tangents, for nc point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿˢʳˣⁿᵛ, that
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
   /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
   /// along the nr vectors that span the contact tangents at the nns
-  /// *non-sliding* point contacts (these nns * nr vectors are denoted `nnsr`
-  /// for brevity). For contact problems in two dimensions, nr will be
-  /// one. For a friction pyramid in three dimensions, nr would be two. While
-  /// the definition of nnsr above indicates that every one of the nnsr
-  /// non-sliding contacts uses the same "nr", the code imposes no such
+  /// *non-sliding* point contacts (these nns * nr vectors are denoted `nnr`,
+  /// like "total number of nr", for brevity). For contact problems in two
+  /// dimensions, nr will be one and nnr would equal nns. For friction pyramids
+  /// at each contact in three dimensions, nr would be two and nnr would equal
+  /// 2nns. While the definition of nnr above indicates that every one of the
+  /// nns non-sliding contacts uses the same "nr", the code imposes no such
   /// requirement. Finally, the Jacobian matrix F allows formulating the
   /// non-sliding friction force constraints as:<pre>
   /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + λe  ⊥  fᶜ ≥ 0
@@ -400,12 +401,13 @@ struct ConstraintVelProblemData {
   /// @name Data for constraints on contact friction
   /// Problem data for constraining the tangential velocity of two bodies
   /// projected along the contact surface tangents, for n point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿˢʳˣⁿᵛ, that
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
   /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
   /// along the nr vectors that span the contact tangents at the nc
-  /// point contacts (these nc * nr vectors are denoted `ncr` for brevity). For
-  /// contact problems in two dimensions, nr will be one. For a friction pyramid
-  /// in three dimensions, nr would be two. While the definition of the
+  /// point contacts (these nc * nr vectors are denoted nnr for brevity). For
+  /// contact problems in two dimensions, nr will be one and nnr would equal nc.
+  /// For a friction pyramid at each point contact in in three dimensions, nr
+  /// would be two and nnr would equation 2nc. While the definition of the
   /// dimension of the Jacobian matrix above indicates that every one of the nc
   /// contacts uses the same "nr", the code imposes no such requirement.
   /// Constraint error (F⋅v < 0) can be reduced through the constraint solution
