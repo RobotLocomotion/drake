@@ -803,24 +803,47 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     MatrixX<T> Jk(vtk.size(), vtk.size());
     VectorX<T> Delta_vtk(vtk.size());
     VectorX<T> that(vtk.size());
-    VectorX<T> vsk(num_contacts);
+    VectorX<T> v_slip(num_contacts);
     VectorX<T> mus(num_contacts); // Stribeck friction.
     VectorX<T> dmudv(num_contacts);
     std::vector<Matrix2<T>> dft_dv(num_contacts);
     vtk = vt_star;  // Initial guess with zero friction forces0.
+
+    // The stiction tolerance.
     const double v_stribeck = stribeck_model_.stiction_tolerance();
+
+    // We use the stiction tolerance as a reference scale to estimate a small
+    // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
+    // use to compute a "soft" tangent vector to avoid the singularity at
+    // vt = 0.
+    const double epsilon_v = v_stribeck * 1.0e-4;
+    const double epsilon_v2 = epsilon_v * epsilon_v;
+
     for (iter = 0; iter < max_iterations; ++iter) {
       // Compute 2D tangent vectors.
+      // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
+      // idea is to replace the norm in the definition of slip velocity by a
+      // "soft norm":
+      //    ‖v‖ ≜ sqrt(vᵀv + εᵥ²)
+      // We use this to redefine the slip velocity:
+      //   v_slip = sqrt(vtᵀvt + v_epsilon)
+      // and a "soft" tangent vector:
+      //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
+      // which now is not only well defined but it has well defined derivatives.
+      // We use these softened quantities all throuout our derivations for
+      // consistency.
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
         const auto vt_ic = vtk.template segment<2>(ik);
-        const T vs_ic = vt_ic.norm() + 1.0e-14;  // Sliding speed.
-        const Vector2<T> that_ic =  vt_ic / vs_ic;
+        // "soft norm":
+        v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
+        // "soft" tangent vector:
+        const Vector2<T> that_ic =  vt_ic / v_slip(ic);
         that.template segment<2>(ik) = that_ic;
-        vsk(ic) = vs_ic;
-        mus(ic) = stribeck_model_.ModifiedStribeck(
-            vsk(ic) / v_stribeck, mu(ic));
-        // Note: minus sign not included.
+        mus(ic) =
+            stribeck_model_.ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+        // Friction force.
+        // Note: minus sign not included in this definition.
         ftk.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
       }
 
@@ -843,9 +866,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
           Rk_ic += time_step_ * Wij * ft_jc;
         }
 
-        // Compute dmudv needed for Jacobian computation.
+        // Compute dmu/dv = (1/v_stribeck) * dmu/dx
+        // where x = v_slip / v_stribeck is the dimensionless slip velocity.
         dmudv(ic) = stribeck_model_.ModifiedStribeckPrime(
-            vsk(ic) / v_stribeck, mu(ic)) / v_stribeck;
+            v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
 
         const auto that_ic = that.template segment<2>(ik);
 
@@ -870,15 +894,21 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
         // We now compute dft/dvt as:
         //   dft/dvt = fn * (
-        //     Pperp(t̂) * mu_stribeck(‖vₜ‖) / ‖vₜ‖ + P(t̂) * dmu_stribeck/d‖vₜ‖)
+        //     mu_stribeck(‖vₜ‖) / ‖vₜ‖ * Pperp(t̂) +
+        //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+        // where x = v_slip / v_stribeck is the dimensionless slip velocity.
         // Therefore dft/dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
         // (P and Pperp) where the coefficients of the combination are positive
         // scalars. Therefore,
         // IMPORTANT NOTE: dft/dvt also PSD.
+        // IMPORTANT NOTE 2: The derivation for dft/dvt leads to exactly the
+        // same result when using the "softened" definitions for v_slip and
+        // that where each occurrence of these quantities is replaced by their
+        // softened counterpart.
 
         // Compute dft/dv:
         // Changes of vt in the direction perpendicular to that.
-        dft_dv[ic] = Pperp_ic * mus(ic) / vsk(ic);
+        dft_dv[ic] = Pperp_ic * mus(ic) / v_slip(ic);
 
         // Changes in the magnitude of vt (which in turns makes mu_stribeck
         // change), in the direction of that.
