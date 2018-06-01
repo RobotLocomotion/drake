@@ -32,7 +32,7 @@ using api::rules::SRange;
 namespace {
 
 // [LANE_ID, S0, S1]
-LaneSRange UnpackLaneSRange(YAML::Node node) {
+LaneSRange UnpackLaneSRange(const YAML::Node& node) {
   DRAKE_THROW_UNLESS(node.IsSequence());
   DRAKE_THROW_UNLESS(node.size() == 3);
   const LaneId lane_id(node[0].as<std::string>());
@@ -46,17 +46,17 @@ LaneSRange UnpackLaneSRange(YAML::Node node) {
 // - [LANE_ID, S0, S1]
 // - [LANE_ID, S0, S1]
 // ...
-LaneSRoute UnpackLaneSRoute(YAML::Node node) {
+LaneSRoute UnpackLaneSRoute(const YAML::Node& node) {
   DRAKE_THROW_UNLESS(node.IsSequence());
   std::vector<LaneSRange> ranges;
-  for (const YAML::Node element : node) {
+  for (const YAML::Node& element : node) {
     ranges.emplace_back(UnpackLaneSRange(element));
   }
   return LaneSRoute(ranges);
 }
 
 
-SpeedLimitRule::Severity UnpackSeverity(YAML::Node node) {
+SpeedLimitRule::Severity UnpackSeverity(const YAML::Node& node) {
   DRAKE_THROW_UNLESS(node.IsScalar());
   static const std::unordered_map<std::string, SpeedLimitRule::Severity> map{
     {"Strict",    SpeedLimitRule::Severity::kStrict},
@@ -72,7 +72,7 @@ SpeedLimitRule::Severity UnpackSeverity(YAML::Node node) {
 
 
 // MAX or [MIN, MAX]
-std::tuple<double, double> UnpackSpeedLimitLimit(YAML::Node node) {
+std::tuple<double, double> UnpackSpeedLimitLimit(const YAML::Node& node) {
   DRAKE_THROW_UNLESS(node.IsScalar() || node.IsSequence());
   if (node.IsScalar()) {
     return std::make_tuple(0., node.as<double>());
@@ -83,7 +83,7 @@ std::tuple<double, double> UnpackSpeedLimitLimit(YAML::Node node) {
 
 
 SpeedLimitRule UnpackSpeedLimitRule(
-    YAML::Node id_node, YAML::Node content_node) {
+    const YAML::Node& id_node, const YAML::Node& content_node) {
   DRAKE_THROW_UNLESS(id_node.IsScalar());
   DRAKE_THROW_UNLESS(content_node.IsMap());
   const SpeedLimitRule::Id id(id_node.as<std::string>());
@@ -96,32 +96,82 @@ SpeedLimitRule UnpackSpeedLimitRule(
 }
 
 
-RightOfWayRule::Type UnpackRightOfWayType(YAML::Node node) {
+RightOfWayRule::State::Type UnpackRightOfWayStateType(const YAML::Node& node) {
   DRAKE_THROW_UNLESS(node.IsScalar());
-  static const std::unordered_map<std::string, RightOfWayRule::Type> map{
-    {"Proceed",    RightOfWayRule::Type::kProceed},
-    {"Yield",      RightOfWayRule::Type::kYield},
-    {"StopThenGo", RightOfWayRule::Type::kStopThenGo},
-    {"Dynamic",    RightOfWayRule::Type::kDynamic},
+  static const std::unordered_map<std::string, RightOfWayRule::State::Type> map{
+    {"Go",         RightOfWayRule::State::Type::kGo},
+    {"Stop",       RightOfWayRule::State::Type::kStop},
+    {"StopThenGo", RightOfWayRule::State::Type::kStopThenGo},
         };
   const std::string s = node.as<std::string>();
   const auto it = map.find(s);
   if (it == map.end()) {
-    throw std::runtime_error("Unknown RightOfWayRule::Type: " + s);
+    throw std::runtime_error("Unknown RightOfWayRule::State::Type: " + s);
   }
   return it->second;
 }
 
 
+// TODO(maddog@tri.global)  Consider adding a structure-checking method to
+//     SimpleRulebook that checks validity of yield_to ID references.
+RightOfWayRule::State::YieldGroup UnpackRightOfWayStateYieldGroup(
+    const YAML::Node& node) {
+  DRAKE_THROW_UNLESS(node.IsSequence());
+  RightOfWayRule::State::YieldGroup group;
+  for (const YAML::Node& element : node) {
+    group.emplace_back(element.as<std::string>());
+  }
+  return group;
+}
+
+RightOfWayRule::State UnpackRightOfWayState(
+    const YAML::Node& id_node, const YAML::Node& content_node) {
+  DRAKE_THROW_UNLESS(id_node.IsScalar());
+  DRAKE_THROW_UNLESS(content_node.IsMap());
+  const RightOfWayRule::State::Id id(id_node.as<std::string>());
+  const auto type = UnpackRightOfWayStateType(content_node["type"]);
+  const auto yield_to = UnpackRightOfWayStateYieldGroup(
+      content_node["yield_to"]);
+  return RightOfWayRule::State(id, type, yield_to);
+}
+
+
+RightOfWayRule::ZoneType UnpackRightOfWayZoneType(const YAML::Node& node) {
+  DRAKE_THROW_UNLESS(node.IsScalar());
+  static const std::unordered_map<std::string, RightOfWayRule::ZoneType> map{
+    {"StopExcluded", RightOfWayRule::ZoneType::kStopExcluded},
+    {"StopAllowed",  RightOfWayRule::ZoneType::kStopAllowed},
+        };
+  const std::string s = node.as<std::string>();
+  const auto it = map.find(s);
+  if (it == map.end()) {
+    throw std::runtime_error("Unknown RightOfWayRule::ZoneType: " + s);
+  }
+  return it->second;
+}
+
+
+std::vector<RightOfWayRule::State> UnpackRightOfWayStates(
+    const YAML::Node& node) {
+  DRAKE_THROW_UNLESS(node.IsMap());
+  std::vector<RightOfWayRule::State> states;
+  for (const auto& entry : node) {
+    states.push_back(UnpackRightOfWayState(entry.first, entry.second));
+  }
+  return states;
+}
+
+
 RightOfWayRule UnpackRightOfWayRule(
-    YAML::Node id_node, YAML::Node content_node) {
+    const YAML::Node& id_node, const YAML::Node& content_node) {
   DRAKE_THROW_UNLESS(id_node.IsScalar());
   DRAKE_THROW_UNLESS(content_node.IsMap());
   const RightOfWayRule::Id id(id_node.as<std::string>());
-  const auto controlled_zone =
-      UnpackLaneSRoute(content_node["controlled_zone"]);
-  const auto type = UnpackRightOfWayType(content_node["type"]);
-  return RightOfWayRule(id, controlled_zone, type);
+  const auto zone = UnpackLaneSRoute(content_node["zone"]);
+  const auto zone_type = UnpackRightOfWayZoneType(
+      content_node["zone_type"]);
+  const auto states = UnpackRightOfWayStates(content_node["states"]);
+  return RightOfWayRule(id, zone, zone_type, states);
 }
 
 
