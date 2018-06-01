@@ -154,7 +154,7 @@ a VTM texture by running this `Python script
 Save the script to the place where your DAE file is stored. Then run the
 following commands, and the script will create VTM and VTP files::
 
-    $ sudo apt-get install python-collada
+    $ sudo apt install python-collada
     $ python convertCollada.py my_file.dae
 
 .. _models_contents:

@@ -116,7 +116,10 @@ class RigidBody {
    *
    * @return The parent joint of this rigid body.
    */
-  const DrakeJoint& getJoint() const;
+  const DrakeJoint& getJoint() const {
+    DRAKE_DEMAND(joint_ != nullptr);
+    return *joint_;
+  }
 
   /**
    * Reports if the body has a parent joint.
@@ -134,7 +137,7 @@ class RigidBody {
   /**
    * Returns a const pointer to this rigid body's parent rigid body.
    */
-  const RigidBody* get_parent() const;
+  const RigidBody* get_parent() const { return parent_; }
 
   /**
    * Returns whether this RigidBody has a "parent", which is a RigidBody that is
@@ -144,7 +147,7 @@ class RigidBody {
    * the RigidBodyTree. Thus, by definition, all RigidBody objects should have a
    * parent RigidBody except for the RigidBodyTree's root, which is the world.
    */
-  bool has_parent_body() const;
+  bool has_parent_body() const { return parent_ != nullptr; }
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
   DRAKE_DEPRECATED("Please use has_parent_body().")
@@ -173,7 +176,7 @@ class RigidBody {
    * Returns the "body index" of this `RigidBody`. This is the index within the
    * vector of `RigidBody` objects within the `RigidBodyTree`.
    */
-  int get_body_index() const;
+  int get_body_index() const { return body_index_; }
 
   /**
    * Sets the start index of this rigid body's mobilizer joint's contiguous
@@ -189,7 +192,7 @@ class RigidBody {
    * Returns the start index of this body's parent jont's position states; see
    * RigidBody::set_position_start_index() for more information.
    */
-  int get_position_start_index() const;
+  int get_position_start_index() const { return position_start_index_; }
 
   /**
    * Sets the start index of this rigid body's mobilizer joint's contiguous
@@ -205,7 +208,7 @@ class RigidBody {
    * Returns the start index of this body's parent jont's velocity states; see
    * RigidBody::set_velocity_start_index() for more information.
    */
-  int get_velocity_start_index() const;
+  int get_velocity_start_index() const { return velocity_start_index_; }
 
   void AddVisualElement(const DrakeShapes::VisualElement& elements);
 
@@ -229,7 +232,7 @@ class RigidBody {
    * represent the collision geometry of this rigid body.
    */
   const std::vector<drake::multibody::collision::ElementId>&
-  get_collision_element_ids() const;
+  get_collision_element_ids() const { return collision_element_ids_; }
 
   /**
    * Returns a reference to an `std::vector` of collision elements that
@@ -376,8 +379,9 @@ class RigidBody {
   /**
    * Returns the spatial inertia of this rigid body.
    */
-  const drake::SquareTwistMatrix<double>& get_spatial_inertia()
-      const;
+  const drake::SquareTwistMatrix<double>& get_spatial_inertia() const {
+    return spatial_inertia_;
+  }
 
   /**
    * Transforms all of the visual, collision, and inertial elements associated

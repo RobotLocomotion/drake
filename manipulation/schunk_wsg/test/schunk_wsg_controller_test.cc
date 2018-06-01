@@ -7,7 +7,7 @@
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/output_port_value.h"
 
 namespace drake {

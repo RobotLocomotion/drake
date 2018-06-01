@@ -1,12 +1,25 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+    "drake_cc_googletest",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "acrobot",
+    deps = [
+        ":analytical_acrobot",
+        ":make_acrobot_plant",
+    ],
+)
+
+drake_cc_library(
+    name = "analytical_acrobot",
     srcs = ["acrobot.cc"],
     hdrs = ["acrobot.h"],
     deps = [
@@ -17,7 +30,6 @@ drake_cc_library(
 
 filegroup(
     name = "models",
-    testonly = 1,
     srcs = glob([
         "**/*.obj",
         "**/*.sdf",
@@ -30,18 +42,25 @@ drake_cc_library(
     name = "make_acrobot_plant",
     srcs = [
         "make_acrobot_plant.cc",
+        "make_acrobot_plant_sdf.cc",
     ],
     hdrs = [
         "make_acrobot_plant.h",
+        "make_acrobot_plant_sdf.h",
     ],
     deps = [
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant",
+        "@sdformat",
     ],
 )
 
-add_lint_tests(
-    # We need to more seriously refactor and deprecate some names here before
-    # we can start following package_library conventions.
-    enable_library_lint = False,
+drake_cc_googletest(
+    name = "multibody_plant_sdf_test",
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
 )
+
+add_lint_tests()

@@ -87,7 +87,8 @@ drake_cc_library(
     srcs = ["constant_vector_source.cc"],
     hdrs = ["constant_vector_source.h"],
     deps = [
-        "//common:symbolic",
+        "//common:default_scalars",
+        "//common:extract_double",
         "//systems/framework",
     ],
 )
@@ -359,7 +360,7 @@ drake_cc_googletest(
         ":constant_vector_source",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
-        "//systems/framework/test_utilities:my_vector",
+        "//systems/framework/test_utilities",
     ],
 )
 

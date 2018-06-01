@@ -126,6 +126,7 @@ drake_cc_library(
         "kinematics_cache-inl.h",
     ],
     deps = [
+        ":rigid_body_tree_datatypes",
         "//common:autodiff",
         "//common:essential",
         "//multibody/joints",
@@ -466,7 +467,7 @@ drake_cc_googletest(
         ":rigid_body_tree",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
         "//multibody/parsers",
     ],
 )

@@ -232,8 +232,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // and gammaE.
     data->kF.setZero(data->non_sliding_contacts.size() *
                                new_friction_directions);
-    data->gammaF.setZero(data->kF.size());
-    data->gammaE.setZero(data->non_sliding_contacts.size());
 
     // Add in empty rows to G, by default, allowing us to verify that no
     // constraint forces are added (and that solution method is robust to
@@ -265,34 +263,10 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       double dt,
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
-      int friction_directions_dup,
-      VectorX<double>* v) {
-    DRAKE_DEMAND(contact_points_dup >= 0);
-    DRAKE_DEMAND(friction_directions_dup >= 0);
-    DRAKE_DEMAND(v);
-
-    // Reset the constraint velocity data.
-    const int num_velocities = 3;
-    *data = ConstraintVelProblemData<double>(num_velocities);
-
-    // Get the points of contact from Rod2D.
-    std::vector<Vector2d> contacts;
-    std::vector<double> tangent_vels;
-    rod_->GetContactPoints(*context_, &contacts);
-
-    // Duplicate the contact points.
-    std::vector<Vector2d> contacts_dup;
-    for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-      for (int j = 0; j < contact_points_dup; ++j)
-        contacts_dup.push_back(contacts[i]);
-    }
-    contacts.insert(contacts.end(), contacts_dup.begin(), contacts_dup.end());
-
-    // Compute the problem data.
-    rod_->CalcImpactProblemData(*context_, contacts, data);
-
-    // Get the system velocity.
-    *v = data->solve_inertia(data->Mv);
+      int friction_directions_dup) {
+    // Use the constraint velocity data to do most of the work.
+    CalcConstraintProblemDataForImpact(data, contact_points_dup,
+                                       friction_directions_dup);
 
     // Set the normal compliance and damping to yield truly rigid contact.
     const double stiffness = std::numeric_limits<double>::infinity();
@@ -303,65 +277,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     const double cfm = 1.0 / denom;
     data->gammaN.setOnes() *= cfm;
 
-    // Get old F.
-    const int num_fdir = std::accumulate(data->r.begin(), data->r.end(), 0);
-    const int ngc = get_rod_num_coordinates();
-    MatrixX<double> Fold = MatrixX<double>::Zero(num_fdir, ngc);
-    for (int j = 0; j < ngc; ++j)
-      Fold.col(j) = data->F_mult(VectorX<double>::Unit(ngc, j));
-
-    // Determine new F by duplicating each row the specified number of times.
-    const int new_friction_directions = friction_directions_dup + 1;
-    MatrixX<double> F(new_friction_directions * contacts.size(), ngc);
-    for (int i = 0, k = 0; i < Fold.rows(); ++i)
-      for (int j = 0; j < new_friction_directions; ++j)
-        F.row(k++) = Fold.row(i);
-
-    // Redetermine F_mult and F_transpose_mult operator lambdas.
-    data->F_mult = [F](const VectorX<double>& w) -> VectorX<double> {
-      return F * w;
-    };
-    data->F_transpose_mult = [F](const VectorX<double>& w) -> VectorX<double> {
-      return F.transpose() * w;
-    };
-
-    // Update r with the new friction directions.
-    for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
-      data->r[i] = new_friction_directions;
-
-    // Resize kF (recall the vector always is zero for this 2D problem), gammaF,
-    // and gammaE.
-    data->kF.setZero(contacts.size() * new_friction_directions);
-    data->gammaF.setZero(data->kF.size());
-    data->gammaE.setZero(contacts.size());
-
-    // Add in empty rows to G, by default, allowing us to verify that no
-    // constraint forces are added (and that solution method is robust to
-    // unnecessary constraints).
-    data->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
-      return VectorX<double>::Zero(1);
-    };
-    data->G_transpose_mult = [ngc](const VectorX<double>& w)
-        -> VectorX<double> {
-      return VectorX<double>::Zero(ngc);
-    };
-    data->kG.setZero(0);
-
     // Add in gravitational forces.
     const double grav_accel = rod_->get_gravitational_acceleration();
     data->Mv += Vector3<double>(0, grav_accel * rod_->get_rod_mass(), 0) * dt;
-
-    // Check the consistency of the data.
-    CheckProblemConsistency(*data, contacts.size());
-  }
-
-  // Function for computing constraint data without duplicate contacts or
-  // friction directions.
-  void CalcConstraintAccelProblemData(
-      double dt,
-      ConstraintVelProblemData<double>* data,
-      VectorX<double>* v) {
-    CalcConstraintAccelProblemData(dt, data, 0, 0, v);
   }
 
   void SolveDiscretizationProblem(
@@ -384,7 +302,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Attempt to solve the linear complementarity problem.
     int num_pivots;
     VectorX<double> zz;
-    bool success = lcp.SolveLcpLemke(MM, qq, &zz, &num_pivots);
+    const bool success = lcp.SolveLcpLemke(MM, qq, &zz, &num_pivots);
     VectorX<double> ww = MM*zz + qq;
     double max_dot = (zz.size() > 0) ?
                      (zz.array() * ww.array()).abs().maxCoeff() : 0.0;
@@ -419,7 +337,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
   //        friction basis direction should be duplicated. Since the 2D tests
   //        only use one friction direction, duplication ensures that the
   //        algorithms are able to handle duplicated directions without error.
-  void CalcConstraintVelProblemData(
+  void CalcConstraintProblemDataForImpact(
       ConstraintVelProblemData<double>* data,
       int contact_points_dup,
       int friction_directions_dup) {
@@ -495,9 +413,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
   // Computes rigid impacting contact data with no duplication of contact points
   // or friction directions.
-  void CalcConstraintVelProblemData(
+  void CalcConstraintProblemDataForImpact(
       ConstraintVelProblemData<double>* data) {
-    CalcConstraintVelProblemData(
+    CalcConstraintProblemDataForImpact(
         data,
         0,    // no contact points duplicated
         0);   // no friction directions duplicated
@@ -536,11 +454,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     CheckTransOperatorDim(data.L_transpose_mult, data.kL.size());
     EXPECT_EQ(data.tau.size(), ngc);
     EXPECT_EQ(data.kN.size(), num_contacts);
-    EXPECT_EQ(data.gammaN.size(), num_contacts);
     EXPECT_EQ(data.kF.size(), num_fdir);
-    EXPECT_EQ(data.gammaF.size(), num_fdir);
-    EXPECT_EQ(data.gammaE.size(), data.non_sliding_contacts.size());
-    EXPECT_EQ(data.gammaL.size(), data.kL.size());
     EXPECT_EQ(data.mu_non_sliding.size(), data.non_sliding_contacts.size());
     EXPECT_EQ(data.mu_sliding.size(), data.sliding_contacts.size());
     EXPECT_EQ(data.r.size(), data.non_sliding_contacts.size());
@@ -715,20 +629,19 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Get the acceleration due to gravity.
     const double grav_accel = rod_->get_gravitational_acceleration();
 
+    // Set the state of the rod to resting vertically with no velocity.
+    SetRodToRestingVerticalConfig();
+
     // Duplicate contact points up to two times and the friction directions up
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
-        // Set the state of the rod to resting vertically with no velocity.
-        SetRodToRestingVerticalConfig();
-
         // Compute the problem data.
-        VectorX<double> v;
         CalcConstraintAccelProblemData(
-          dt, vel_data_.get(), contact_dup, friction_dir_dup, &v);
+          dt, vel_data_.get(), contact_dup, friction_dir_dup);
 
-        // Add a force, acting at the point of contact, that pulls the rod
-        // horizontally.
+        // Add a force applied at the point of contact that results in a torque
+        // at the rod center-of-mass.
         const double horz_f = (force_applied_to_right) ? 100 : -100;
         vel_data_->Mv += Vector3<double>(horz_f, 0,
             horz_f * rod_->get_rod_half_length()) * dt;
@@ -1030,7 +943,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
             CopyToVector()[4];
 
         // Compute the problem data.
-        CalcConstraintVelProblemData(
+        CalcConstraintProblemDataForImpact(
            vel_data_.get(), contact_dup, friction_dir_dup);
 
         // Get the generalized velocity of the rod.
@@ -1151,7 +1064,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
             CopyToVector()[4];
 
         // Compute the impact problem data.
-        CalcConstraintVelProblemData(
+        CalcConstraintProblemDataForImpact(
             vel_data_.get(), contact_dup, friction_dir_dup);
 
         // Get the generalized velocity of the rod.
@@ -1425,7 +1338,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     rod_->set_mu_coulomb(0.1);
 
     // Compute the problem data.
-    CalcConstraintVelProblemData(vel_data_.get());
+    CalcConstraintProblemDataForImpact(vel_data_.get());
 
     // Compute the generalized velocity.
     const VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
@@ -1544,9 +1457,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return N.row(0) * v;
     };
     accel_data_->kN.setZero(1);
-    accel_data_->gammaN.setZero(1);
     accel_data_->kL.setZero(1);
-    accel_data_->gammaL.setZero(1);
     accel_data_->N_minus_muQ_transpose_mult =
         [&N_minus_muQ_transpose](const VectorX<double>& l) {
       return N_minus_muQ_transpose.col(0) * l;
@@ -1681,7 +1592,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     const int ngc = get_rod_num_coordinates();
     const int num_generic_unilateral_constraints = 1;
     accel_data_->kL.resize(num_generic_unilateral_constraints);
-    accel_data_->gammaL.setZero(num_generic_unilateral_constraints);
 
     // Set the Jacobian entry- in this case, the limit is an upper limit on the
     // second coordinate (vertical position). The constraint is: v̇₂ ≤ 0, which
@@ -1743,7 +1653,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return VectorX<double>(0);
     };
     accel_data_->kN.resize(0);
-    accel_data_->gammaN.resize(0);
     accel_data_->F_mult = [](const VectorX<double>&) {
       return VectorX<double>(0);
     };
@@ -1751,10 +1660,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
       return VectorX<double>::Zero(ngc);
     };
     accel_data_->kF.resize(0);
-    accel_data_->gammaF.resize(0);
-    accel_data_->gammaE.resize(0);
     accel_data_->kL.resize(1);
-    accel_data_->gammaL.setZero(1);
     accel_data_->N_minus_muQ_transpose_mult = [ngc](const VectorX<double>&) {
       return VectorX<double>::Zero(ngc);
     };
@@ -1961,7 +1867,7 @@ TEST_P(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
       SetRodToUpwardMovingHorizontalConfig();
 
       // Compute the problem data.
-      CalcConstraintVelProblemData(
+      CalcConstraintProblemDataForImpact(
           vel_data_.get(), contact_dup, friction_dir_dup);
 
       // Compute the contact forces.
@@ -2057,7 +1963,7 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 
   // First, construct the velocity-level problem data as normal to set
   // inertia solver and external forces.
-  CalcConstraintVelProblemData(vel_data_.get());
+  CalcConstraintProblemDataForImpact(vel_data_.get());
 
   // Compute v.
   VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);

@@ -22,8 +22,9 @@ typename Generator::result_type generate_unique_seed();
 template <typename Distribution, typename Generator = std::mt19937>
 class RandomState {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomState)
+
   typedef typename Generator::result_type Seed;
-  static constexpr Seed default_seed = Generator::default_seed;
 
   explicit RandomState(Seed seed) : generator_(seed) {}
 
@@ -81,10 +82,6 @@ class RandomSource : public LeafSystem<double> {
     this->DeclareAbstractState(AbstractValue::Make(RandomState(seed_)));
   }
 
-  /// Initializes the random number generator.  This must be set before
-  /// the (abstract) state is allocated to take effect.
-  void set_random_seed(Seed seed) { seed_ = seed; }
-
  private:
   // Computes a random number and stores it in the discrete state.
   void DoCalcUnrestrictedUpdate(
@@ -94,8 +91,7 @@ class RandomSource : public LeafSystem<double> {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto& updates = state->get_mutable_discrete_state();
-    const int N = updates.size();
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < updates.size(); i++) {
       updates[i] = random_state.GetNextValue();
     }
   }
@@ -105,13 +101,37 @@ class RandomSource : public LeafSystem<double> {
         AbstractValue::Make(RandomState(seed_)));
   }
 
+  void SetDefaultState(const Context<double>& context,
+                       State<double>* state) const override {
+    unused(context);
+    auto& random_state =
+        state->template get_mutable_abstract_state<RandomState>(0);
+    random_state = RandomState(seed_);
+    auto& values = state->get_mutable_discrete_state();
+    for (int i = 0; i < values.size(); i++) {
+      values[i] = random_state.GetNextValue();
+    }
+  }
+
+  void SetRandomState(const Context<double>& context, State<double>* state,
+                      RandomGenerator* generator) const override {
+    unused(context);
+    auto& random_state =
+        state->template get_mutable_abstract_state<RandomState>(0);
+    random_state = RandomState((*generator)());
+    auto& values = state->get_mutable_discrete_state();
+    for (int i = 0; i < values.size(); i++) {
+      values[i] = random_state.GetNextValue();
+    }
+  }
+
   // Output is the zero-order hold of the discrete state.
   void CopyStateToOutput(const Context<double>& context,
                          BasicVector<double>* output) const {
     output->SetFromVector(context.get_discrete_state(0).CopyToVector());
   }
 
-  Seed seed_{RandomState::default_seed};
+  const Seed seed_;
 };
 
 }  // namespace internal

@@ -114,6 +114,10 @@ class SystemScalarConverter {
     AddIfSupported<S, AutoDiffXd, Expression>(subtype_preservation);
   }
 
+  /// Returns true iff no conversions are supported.  (In other words, whether
+  /// this is a default-constructed object.)
+  bool empty() const { return funcs_.empty(); }
+
   /// A std::function used to convert a System<U> into a System<T>.
   template <typename T, typename U>
   using ConverterFunction =

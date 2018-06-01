@@ -268,18 +268,46 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure4) {
   EXPECT_PRED2(ExprEqual, rewriter(e), e /* no change */);
 }
 
+// https://github.com/google/googletest/issues/1610
+enum UnaryTestOp {
+  Abs, Log, Exp, Sqrt, Sin, Cos, Tan, Asin, Acos, Atan, Sinh, Cosh, Tanh, Ceil,
+  Floor
+};
+
+std::function<Expression(const Variable& x)>UnaryOpToFunction(UnaryTestOp op) {
+  switch (op) {
+    case Abs:   return [](const Variable& x) { return abs(x); };
+    case Log:   return [](const Variable& x) { return log(x); };
+    case Exp:   return [](const Variable& x) { return exp(x); };
+    case Sqrt:  return [](const Variable& x) { return sqrt(x); };
+    case Sin:   return [](const Variable& x) { return sin(x); };
+    case Cos:   return [](const Variable& x) { return cos(x); };
+    case Tan:   return [](const Variable& x) { return tan(x); };
+    case Asin:  return [](const Variable& x) { return asin(x); };
+    case Acos:  return [](const Variable& x) { return acos(x); };
+    case Atan:  return [](const Variable& x) { return atan(x); };
+    case Sinh:  return [](const Variable& x) { return sinh(x); };
+    case Cosh:  return [](const Variable& x) { return cosh(x); };
+    case Tanh:  return [](const Variable& x) { return tanh(x); };
+    case Ceil:  return [](const Variable& x) { return ceil(x); };
+    case Floor: return [](const Variable& x) { return floor(x); };
+  }
+  // Should not be reachable.
+  DRAKE_ABORT();
+}
+
 class SymbolicUnificationTestUnary
-    : public ::testing::TestWithParam<function<Expression(Variable)>> {
+    : public ::testing::TestWithParam<UnaryTestOp> {
  protected:
   const Variable x_{"x"};
   const Variable a_{"a"};
 };
 
 TEST_P(SymbolicUnificationTestUnary, Check) {
-  const Expression& lhs = GetParam()(x_);
+  const Expression& lhs = UnaryOpToFunction(GetParam())(x_);
   const RewritingRule rule{lhs, x_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  const Expression& e1 = GetParam()(a_);
+  const Expression& e1 = UnaryOpToFunction(GetParam())(a_);
   EXPECT_PRED2(ExprEqual, rewriter(e1), a_);
   const Expression e2{a_ * a_};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
@@ -287,25 +315,40 @@ TEST_P(SymbolicUnificationTestUnary, Check) {
 
 INSTANTIATE_TEST_CASE_P(
     UnaryCases, SymbolicUnificationTestUnary,
-    ::testing::Values([](const Variable& x) { return abs(x); },
-                      [](const Variable& x) { return log(x); },
-                      [](const Variable& x) { return exp(x); },
-                      [](const Variable& x) { return sqrt(x); },
-                      [](const Variable& x) { return sin(x); },
-                      [](const Variable& x) { return cos(x); },
-                      [](const Variable& x) { return tan(x); },
-                      [](const Variable& x) { return asin(x); },
-                      [](const Variable& x) { return acos(x); },
-                      [](const Variable& x) { return atan(x); },
-                      [](const Variable& x) { return sinh(x); },
-                      [](const Variable& x) { return cosh(x); },
-                      [](const Variable& x) { return tanh(x); },
-                      [](const Variable& x) { return ceil(x); },
-                      [](const Variable& x) { return floor(x); }));
+    ::testing::Values(
+    Abs, Log, Exp, Sqrt, Sin, Cos, Tan, Asin, Acos, Atan, Sinh, Cosh, Tanh,
+    Ceil, Floor
+));
+
+// https://github.com/google/googletest/issues/1610
+enum BinaryTestOp {
+  Pow, Div, Min, Max, Atan2
+};
+
+std::function<Expression(const Variable&, const Variable&)>
+    BinaryOpToFunction(BinaryTestOp op) {
+  switch (op) {
+    case Pow:
+      return [](const Variable& x, const Variable& y) { return pow(x, y); };
+
+    case Div:
+      return [](const Variable& x, const Variable& y) { return x / y; };
+
+    case Min:
+      return [](const Variable& x, const Variable& y) { return min(x, y); };
+
+    case Max:
+      return [](const Variable& x, const Variable& y) { return max(x, y); };
+
+    case Atan2:
+      return [](const Variable& x, const Variable& y) { return atan2(x, y); };
+  }
+  // Should not be reachable.
+  DRAKE_ABORT();
+}
 
 class SymbolicUnificationTestBinary
-    : public ::testing::TestWithParam<
-          function<Expression(Variable, Variable)>> {
+    : public ::testing::TestWithParam<BinaryTestOp> {
  protected:
   const Variable x_{"x"};
   const Variable y_{"y"};
@@ -314,10 +357,10 @@ class SymbolicUnificationTestBinary
 };
 
 TEST_P(SymbolicUnificationTestBinary, Check) {
-  const Expression& lhs = GetParam()(x_, y_);
+  const Expression& lhs = BinaryOpToFunction(GetParam())(x_, y_);
   const RewritingRule rule{lhs, x_ + y_};
   const Rewriter rewriter = MakeRuleRewriter(rule);
-  const Expression& e1 = GetParam()(a_, b_);
+  const Expression& e1 = BinaryOpToFunction(GetParam())(a_, b_);
   EXPECT_PRED2(ExprEqual, rewriter(e1), a_ + b_);
   const Expression e2{a_ + b_};
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
@@ -325,13 +368,7 @@ TEST_P(SymbolicUnificationTestBinary, Check) {
 
 INSTANTIATE_TEST_CASE_P(
     BinaryCases, SymbolicUnificationTestBinary,
-    ::testing::Values(
-        [](const Variable& x, const Variable& y) { return pow(x, y); },
-        [](const Variable& x, const Variable& y) { return x / y; },
-        [](const Variable& x, const Variable& y) { return pow(x, y); },
-        [](const Variable& x, const Variable& y) { return min(x, y); },
-        [](const Variable& x, const Variable& y) { return max(x, y); },
-        [](const Variable& x, const Variable& y) { return atan2(x, y); }));
+    ::testing::Values(Pow, Div, Min, Max, Atan2));
 
 TEST_F(SymbolicUnificationTest, IfThenElse) {
   // Not supported.

@@ -18,7 +18,7 @@ struct ConstraintAccelProblemData {
   /// dimensional generalized velocity.
   explicit ConstraintAccelProblemData(int gv_dim) {
     // Set default for non-transpose operators- returns an empty vector.
-    zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
       return VectorX<T>(0);
     };
     N_mult = zero_fn;
@@ -28,13 +28,13 @@ struct ConstraintAccelProblemData {
 
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
-    gv_dim_zero_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
       return VectorX<T>::Zero(gv_dim);
     };
-    N_minus_muQ_transpose_mult = gv_dim_zero_fn;
-    F_transpose_mult = gv_dim_zero_fn;
-    L_transpose_mult = gv_dim_zero_fn;
-    G_transpose_mult = gv_dim_zero_fn;
+    N_minus_muQ_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+    G_transpose_mult = zero_gv_dim_fn;
   }
 
   /// Flag for whether the complementarity problem solver should be used to
@@ -164,10 +164,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
-
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
-  VectorX<T> gammaN;
   /// @}
 
   /// @name Data for non-sliding contact friction constraints
@@ -211,14 +207,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
-
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
-  VectorX<T> gammaF;
-
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝᴺ vector represents the diagonal matrix γᴱ.
-  VectorX<T> gammaE;
   /// @}
 
   /// @name Data for unilateral constraints at the acceleration level
@@ -261,10 +249,6 @@ struct ConstraintAccelProblemData {
 
   /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
-
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝˢ vector represents the diagonal matrix γᴸ.
-  VectorX<T> gammaL;
   /// @}
 
   /// The ℝᵐ vector tau, the generalized external force vector that
@@ -278,12 +262,6 @@ struct ConstraintAccelProblemData {
   /// matrix B, where M is the generalized inertia matrix for the rigid body
   /// system.
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
-
-  /// The default "zero" function that forward operators are assigned to.
-  std::function<VectorX<T>(const VectorX<T>&)> zero_fn;
-
-  /// The default "zero" function that transpose operators are assigned to.
-  std::function<VectorX<T>(const VectorX<T>&)> gv_dim_zero_fn;
 };
 
 /// Structure for holding constraint data for computing constraint forces
@@ -300,7 +278,7 @@ struct ConstraintVelProblemData {
   /// of the generalized velocities.
   void Reinitialize(int gv_dim) {
     // Set default for non-transpose operators- returns an empty vector.
-    zero_fn = [](const VectorX<T>&) -> VectorX<T> {
+    auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
       return VectorX<T>(0);
     };
     N_mult = zero_fn;
@@ -310,12 +288,12 @@ struct ConstraintVelProblemData {
 
     // Set default for transpose operators - returns the appropriately sized
     // zero vector.
-    gv_dim_zero_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
+    auto zero_gv_dim_fn = [gv_dim](const VectorX<T>&) -> VectorX<T> {
       return VectorX<T>::Zero(gv_dim); };
-    N_transpose_mult = gv_dim_zero_fn;
-    F_transpose_mult = gv_dim_zero_fn;
-    L_transpose_mult = gv_dim_zero_fn;
-    G_transpose_mult = gv_dim_zero_fn;
+    N_transpose_mult = zero_gv_dim_fn;
+    F_transpose_mult = zero_gv_dim_fn;
+    L_transpose_mult = zero_gv_dim_fn;
+    G_transpose_mult = zero_gv_dim_fn;
   }
 
   /// The number of spanning vectors in the contact tangents (used to linearize
@@ -513,12 +491,6 @@ struct ConstraintVelProblemData {
   /// matrix B, where M is the generalized inertia matrix for the rigid body
   /// system.
   std::function<MatrixX<T>(const MatrixX<T>&)> solve_inertia;
-
-  /// The default "zero" function that forward operators are assigned to.
-  std::function<VectorX<T>(const VectorX<T>&)> zero_fn;
-
-  /// The default "zero" function that transpose operators are assigned to.
-  std::function<VectorX<T>(const VectorX<T>&)> gv_dim_zero_fn;
 };
 
 }  // namespace constraint

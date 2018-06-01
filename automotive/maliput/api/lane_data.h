@@ -102,13 +102,13 @@ class Rotation {
   //                          most call-sites should probably be using something
   //                          else (e.g., quaternion) anyway.
   /// Returns the roll component of the Rotation (in radians).
-  double roll() const { return rpy().get_roll_angle(); }
+  double roll() const { return rpy().roll_angle(); }
 
   /// Returns the pitch component of the Rotation (in radians).
-  double pitch() const { return rpy().get_pitch_angle(); }
+  double pitch() const { return rpy().pitch_angle(); }
 
   /// Returns the yaw component of the Rotation (in radians).
-  double yaw() const { return rpy().get_yaw_angle(); }
+  double yaw() const { return rpy().yaw_angle(); }
 
  private:
   explicit Rotation(const Quaternion<double>& quat) : quaternion_(quat) {}

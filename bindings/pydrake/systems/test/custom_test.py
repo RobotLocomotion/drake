@@ -140,6 +140,7 @@ class TestCustom(unittest.TestCase):
                 LeafSystem.__init__(self)
                 self.called_publish = False
                 self.called_feedthrough = False
+                self.called_continuous = False
                 self.called_discrete = False
                 # Ensure we have desired overloads.
                 self._DeclarePeriodicPublish(0.1)
@@ -147,6 +148,7 @@ class TestCustom(unittest.TestCase):
                 self._DeclarePeriodicPublish(period_sec=0.1, offset_sec=0.)
                 self._DeclarePeriodicDiscreteUpdate(
                     period_sec=0.1, offset_sec=0.)
+                self._DeclareContinuousState(2)
                 self._DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
                 # feedthrough.
@@ -170,6 +172,12 @@ class TestCustom(unittest.TestCase):
                 self.called_feedthrough = True
                 return False
 
+            def _DoCalcTimeDerivatives(self, context, derivatives):
+                # Note:  Don't call base method here; it would abort because
+                # derivatives.size() != 0.
+                test.assertEqual(derivatives.get_vector().size(), 2)
+                self.called_continuous = True
+
             def _DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
                 # Call base method to ensure we do not get recursion.
@@ -180,11 +188,13 @@ class TestCustom(unittest.TestCase):
         system = TrivialSystem()
         self.assertFalse(system.called_publish)
         self.assertFalse(system.called_feedthrough)
+        self.assertFalse(system.called_continuous)
         self.assertFalse(system.called_discrete)
         results = call_leaf_system_overrides(system)
         self.assertTrue(system.called_publish)
         self.assertTrue(system.called_feedthrough)
         self.assertFalse(results["has_direct_feedthrough"])
+        self.assertTrue(system.called_continuous)
         self.assertTrue(system.called_discrete)
         self.assertEquals(results["discrete_next_t"], 0.1)
 

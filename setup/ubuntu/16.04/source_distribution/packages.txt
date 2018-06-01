@@ -5,10 +5,11 @@ coinor-libclp-dev
 coinor-libipopt-dev
 diffstat
 doxygen
+file
 gdb
 git
 graphviz
-kcov-34
+kcov-35
 libblas-dev
 libbz2-dev
 libexpat1-dev

@@ -52,7 +52,7 @@ class PoseVelocity final {
   /// translation and the z-component of rotation.
   Eigen::Vector3d pose3() const {
     const math::RollPitchYaw<double> rpy(rotation_);
-    const double w_z = rpy.get_yaw_angle();
+    const double w_z = rpy.yaw_angle();
     return Eigen::Vector3d{translation_.x(), translation_.y(), w_z};
   }
 
@@ -82,17 +82,17 @@ class PoseVelocity final {
 /// PoseVelocity instance is therefore well-defined when evaluated at a given
 /// time and, additionally, the translaton and rotation components of PoseVector
 /// match the input pose data exactly.
-class AgentTrajectory final {
+class Trajectory final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AgentTrajectory)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Trajectory)
 
   /// An identifier for the type of valid types of interpolation used in
-  /// evaluating the translational component of an AgentTrajectory.  These types
+  /// evaluating the translational component of a Trajectory.  These types
   /// mirror the associated constructors for PiecewisePolynomial (see
   /// common/trajectories/piecewise_polynomial.h for further details).
   enum class InterpolationType { kFirstOrderHold, kCubic, kPchip };
 
-  /// Makes an AgentTrajectory from a discrete set of time-indexed pose data
+  /// Makes a Trajectory from a discrete set of time-indexed pose data
   /// under the specified interpolation scheme.
   ///
   /// @param times a vector of time indices representing the break points of the
@@ -109,14 +109,14 @@ class AgentTrajectory final {
   /// @throws std::runtime_error if `times` and `knots` have different lengths,
   /// `times` is not strictly increasing, and the inputs are otherwise
   /// inconsistent with the given `interp_type` (see piecewise_polynomial.h).
-  static AgentTrajectory Make(
+  static Trajectory Make(
       const std::vector<double>& times,
       const std::vector<Eigen::Quaternion<double>>& knots_rotation,
       const std::vector<Eigen::Vector3d>& knots_translation,
       const InterpolationType& interp_type =
           InterpolationType::kFirstOrderHold);
 
-  /// Makes an AgentTrajectory from a discrete set of (time-independent)
+  /// Makes a Trajectory from a discrete set of (time-independent)
   /// waypoints and a vector of speeds.  The resulting trajectory is assumed to
   /// start at time time t = 0 and follow a cubic-spline profile
   /// (InterpolationType::kCubic) for the translation elements, rendering speed
@@ -142,12 +142,12 @@ class AgentTrajectory final {
   //
   // TODO(jadecastro) Compute the break points as the solution to an
   // optimization problem or from additional user inputs.
-  static AgentTrajectory MakeCubicFromWaypoints(
+  static Trajectory MakeCubicFromWaypoints(
       const std::vector<Eigen::Quaternion<double>>& waypoints_rotation,
       const std::vector<Eigen::Vector3d>& waypoints_translation,
       const std::vector<double>& speeds);
 
-  /// Makes an AgentTrajectory from a discrete set of (time-independent)
+  /// Makes a Trajectory from a discrete set of (time-independent)
   /// waypoints, based on a constant speed, using cubic-polynomial
   /// interpolation.
   ///
@@ -159,18 +159,18 @@ class AgentTrajectory final {
   /// trajectory.
   /// @throws std::exception if `speed` is non-positive or if either of the
   /// input vectors is empty.
-  static AgentTrajectory MakeCubicFromWaypoints(
+  static Trajectory MakeCubicFromWaypoints(
       const std::vector<Eigen::Quaternion<double>>& waypoints_rotation,
       const std::vector<Eigen::Vector3d>& waypoints_translation, double speed);
 
-  /// Evaluates the AgentTrajectory at a given @p time, returning a packed
+  /// Evaluates the Trajectory at a given @p time, returning a packed
   /// PoseVelocity.
   PoseVelocity value(double time) const;
 
  private:
-  // Constructs an AgentTrajectory from a translation PiecewisePolynomial, @p
+  // Constructs a Trajectory from a translation PiecewisePolynomial, @p
   // translation, and a rotation PiecewiseQuaternionSlerp, @p rotation.
-  explicit AgentTrajectory(
+  explicit Trajectory(
       const trajectories::PiecewisePolynomial<double>& translation,
       const trajectories::PiecewiseQuaternionSlerp<double>& rotation);
 

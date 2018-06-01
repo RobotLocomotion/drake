@@ -1,4 +1,4 @@
-#include "drake/automotive/agent_trajectory.h"
+#include "drake/automotive/trajectory.h"
 
 #include <algorithm>
 #include <vector>
@@ -55,7 +55,7 @@ GTEST_TEST(PoseVelocityTest, Accessors) {
   EXPECT_TRUE(CompareMatrices(actual.velocity().rotational(), w));
   EXPECT_TRUE(CompareMatrices(actual.velocity().translational(), v));
   const Vector3d expected_pose3{translation.x(), translation.y(),
-                                rpy.get_yaw_angle()};
+                                rpy.yaw_angle()};
   EXPECT_TRUE(CompareMatrices(actual.pose3(), expected_pose3));
   EXPECT_EQ(actual.speed(), sqrt(pow(v(0), 2) + pow(v(1), 2) + pow(v(2), 2)));
 }
@@ -64,18 +64,18 @@ void CheckAllConstructors(const std::vector<double>& times,
                           const std::vector<Quaternion<double>>& rotations,
                           const std::vector<Vector3d>& translations,
                           const std::vector<double> speeds) {
-  EXPECT_THROW(AgentTrajectory::Make(times, rotations, translations),
+  EXPECT_THROW(Trajectory::Make(times, rotations, translations),
                std::exception);
   EXPECT_THROW(
-      AgentTrajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
+      Trajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
       std::exception);
-  EXPECT_THROW(AgentTrajectory::MakeCubicFromWaypoints(rotations, translations,
+  EXPECT_THROW(Trajectory::MakeCubicFromWaypoints(rotations, translations,
                                                        speeds[0]),
                std::exception);
 }
 
 // Empty or mismatched-sized vectors are rejected.
-GTEST_TEST(AgentTrajectoryTest, InvalidSizes) {
+GTEST_TEST(TrajectoryTest, InvalidSizes) {
   const std::vector<double> times_3d{0., 1., 2.};
   const Quaternion<double> dummy_rotation = Quaternion<double>::Identity();
   const Vector3d dummy_translation = Vector3d::Zero();
@@ -97,8 +97,8 @@ GTEST_TEST(AgentTrajectoryTest, InvalidSizes) {
 }
 
 // Accepts all interpolation types.
-GTEST_TEST(AgentTrajectoryTest, InterpolationType) {
-  using Type = AgentTrajectory::InterpolationType;
+GTEST_TEST(TrajectoryTest, InterpolationType) {
+  using Type = Trajectory::InterpolationType;
 
   const std::vector<double> times{0., 1., 2.};
   const Quaternion<double> dummy_rotation = Quaternion<double>::Identity();
@@ -109,14 +109,14 @@ GTEST_TEST(AgentTrajectoryTest, InterpolationType) {
                                      dummy_translation};
   for (const auto& type : {Type::kFirstOrderHold, Type::kCubic, Type::kPchip}) {
     EXPECT_NO_THROW(
-        AgentTrajectory::Make(times, rotations, translations, type));
+        Trajectory::Make(times, rotations, translations, type));
   }
 }
 
 // Checks that all data fields agree with the input data vectors at the knot
 // points, and checks that the velocity components are correctly inferred.
-GTEST_TEST(AgentTrajectoryTest, AgentTrajectory) {
-  using Type = AgentTrajectory::InterpolationType;
+GTEST_TEST(TrajectoryTest, Trajectory) {
+  using Type = Trajectory::InterpolationType;
 
   const std::vector<double> times{0., kDeltaT, 2 * kDeltaT};
   std::vector<Vector3d> translations{};
@@ -131,7 +131,7 @@ GTEST_TEST(AgentTrajectoryTest, AgentTrajectory) {
     rotations.back().normalize();
   }
 
-  const AgentTrajectory trajectory = AgentTrajectory::Make(
+  const Trajectory trajectory = Trajectory::Make(
       times, rotations, translations, Type::kFirstOrderHold);
 
   for (int i{0}; i < static_cast<int>(times.size()); i++) {
@@ -188,29 +188,29 @@ void MakePoses(const std::vector<double>& speeds,
 }
 
 // Negative speeds are rejected.
-GTEST_TEST(AgentTrajectoryTest, NegativeSpeeds) {
+GTEST_TEST(TrajectoryTest, NegativeSpeeds) {
   const std::vector<double> speeds{-1, 5.};
   std::vector<Quaternion<double>> rotations{};
   std::vector<Vector3d> translations{};
   MakePoses(speeds, &rotations, &translations);
 
   EXPECT_THROW(
-      AgentTrajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
+      Trajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
       std::exception);
   EXPECT_THROW(
-      AgentTrajectory::MakeCubicFromWaypoints(rotations, translations, -1.),
+      Trajectory::MakeCubicFromWaypoints(rotations, translations, -1.),
       std::exception);
 }
 
 // Deadlock detection rejects unreachable waypoints.
-GTEST_TEST(AgentTrajectoryTest, UnreachableCubicWaypoints) {
+GTEST_TEST(TrajectoryTest, UnreachableCubicWaypoints) {
   const std::vector<double> speeds{0., 0., 1.};
   std::vector<Quaternion<double>> rotations{};
   std::vector<Vector3d> translations{};
   MakePoses(speeds, &rotations, &translations);
 
   EXPECT_THROW(
-      AgentTrajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
+      Trajectory::MakeCubicFromWaypoints(rotations, translations, speeds),
       std::exception);
 }
 
@@ -224,7 +224,7 @@ struct RpyCase {
 
 // Checks that the provided speeds and waypoints yield correctly-formed
 // trajectories using InterpolationType::kCubic on the linear quantities.
-GTEST_TEST(AgentTrajectoryTest, MakeCubicFromWaypoints) {
+GTEST_TEST(TrajectoryTest, MakeCubicFromWaypoints) {
   using std::max_element;
   using std::min_element;
 
@@ -240,7 +240,7 @@ GTEST_TEST(AgentTrajectoryTest, MakeCubicFromWaypoints) {
     std::vector<Vector3d> translations{};
     MakePoses(speeds, &rotations, &translations, rpy_case.rpy_value);
 
-    const AgentTrajectory trajectory = AgentTrajectory::MakeCubicFromWaypoints(
+    const Trajectory trajectory = Trajectory::MakeCubicFromWaypoints(
         rotations, translations, speeds);
 
     double time{0.};
@@ -278,15 +278,15 @@ GTEST_TEST(AgentTrajectoryTest, MakeCubicFromWaypoints) {
 
 // Checks that the provided waypoints yield correctly-formed trajectories with
 // the constant-speed constructor.
-GTEST_TEST(AgentTrajectoryTest, MakeCubicFromWaypointsWithConstantSpeed) {
+GTEST_TEST(TrajectoryTest, MakeCubicFromWaypointsWithConstantSpeed) {
   const double speed = 5.;
   const std::vector<double> speeds{speed, speed};  // Only for sizing `poses`.
   std::vector<Quaternion<double>> rotations{};
   std::vector<Vector3d> translations{};
   MakePoses(speeds, &rotations, &translations);
 
-  const AgentTrajectory trajectory =
-      AgentTrajectory::MakeCubicFromWaypoints(rotations, translations, speed);
+  const Trajectory trajectory =
+      Trajectory::MakeCubicFromWaypoints(rotations, translations, speed);
 
   const std::vector<double> expected_times{0., kDeltaT};
   for (int i{0}; i < static_cast<int>(expected_times.size()); i++) {

@@ -227,7 +227,6 @@ drake_cc_library(
         ":create_constraint",
         ":create_cost",
         ":decision_variable",
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":indeterminate",

@@ -8,7 +8,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/parameters.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/vector_base.h"
@@ -36,21 +36,6 @@ class LeafContext : public Context<T> {
       : state_(std::make_unique<State<T>>()),
         parameters_(std::make_unique<Parameters<T>>()) {}
   ~LeafContext() override {}
-
-  /// Removes all the input ports, and deregisters them from the output ports
-  /// on which they depend.
-  void ClearInputPorts() { input_values_.clear(); }
-
-  /// Clears the input ports and allocates @p n new input ports, not connected
-  /// to anything.
-  void SetNumInputPorts(int n) {
-    ClearInputPorts();
-    input_values_.resize(n);
-  }
-
-  int get_num_input_ports() const override {
-    return static_cast<int>(input_values_.size());
-  }
 
   const State<T>& get_state() const final {
     DRAKE_ASSERT(state_ != nullptr);
@@ -91,17 +76,6 @@ class LeafContext : public Context<T> {
     // Make deep copies of the parameters.
     set_parameters(source.parameters_->Clone());
 
-    // Make deep copies of the inputs into FreestandingInputPortValues.
-    // TODO(david-german-tri): Preserve version numbers as well.
-    for (const auto& port : source.input_values_) {
-      if (port == nullptr) {
-        input_values_.emplace_back(nullptr);
-      } else {
-        input_values_.emplace_back(new FreestandingInputPortValue(
-            port->get_abstract_data()->Clone()));
-      }
-    }
-
     // Everything else was handled by the Context<T> copy constructor.
   }
 
@@ -131,21 +105,7 @@ class LeafContext : public Context<T> {
     return clone;
   }
 
-  const InputPortValue* GetInputPortValue(int index) const override {
-    DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
-    return input_values_[index].get();
-  }
-
  private:
-  void SetInputPortValue(int index,
-                         std::unique_ptr<InputPortValue> port) final {
-    DRAKE_DEMAND(index >= 0 && index < get_num_input_ports());
-    input_values_[index] = std::move(port);
-  }
-
-  // The external inputs to the System.
-  std::vector<std::unique_ptr<InputPortValue>> input_values_;
-
   // The internal state of the System.
   std::unique_ptr<State<T>> state_;
 
