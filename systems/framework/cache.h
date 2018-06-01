@@ -6,6 +6,7 @@ values. */
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -619,7 +620,7 @@ class Cache {
   CacheEntryValue& CreateNewCacheEntryValue(
       CacheIndex index, DependencyTicket ticket,
       const std::string& description,
-      const std::vector<DependencyTicket>& prerequisites,
+      const std::set<DependencyTicket>& prerequisites,
       DependencyGraph* graph);
 
   /** Returns true if there is a CacheEntryValue in this cache that has the
