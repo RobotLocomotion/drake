@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_optional.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"
@@ -145,6 +146,11 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(input_port_tickets_.size());
   }
 
+  /** Returns the number of output ports represented in this context. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_port_tickets_.size());
+  }
+
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
@@ -190,6 +196,11 @@ class ContextBase : public internal::ContextMessageInterface {
   // assigned ticket. Subscribe the "all input ports" tracker to this one.
   void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
 
+  // Add the next output port. Expected index is supplied along with the
+  // assigned ticket.
+  void AddOutputPort(OutputPortIndex expected_index, DependencyTicket ticket,
+                     const std::pair<optional<SubsystemIndex>,
+                                     DependencyTicket>& prerequisite);
 #endif
 
  protected:
@@ -284,8 +295,10 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
+  // Index by OutputPortIndex.
+  std::vector<DependencyTicket> output_port_tickets_;
 
-  // TODO(sherm1) Output port, state, and parameter tickets go here.
+  // TODO(sherm1) State and parameter tickets go here.
 
   // For each input port, the fixed value or null if the port is connected to
   // something else (in which case we need System help to get the value).

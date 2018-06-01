@@ -68,9 +68,12 @@ class TestSystem : public System<double> {
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
     auto port = std::make_unique<LeafOutputPort<double>>(
-        *this, *this, OutputPortIndex(get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        assign_next_dependency_ticket(),
         typename LeafOutputPort<double>::AllocCallback(nullptr),
-        typename LeafOutputPort<double>::CalcCallback(nullptr));
+        typename LeafOutputPort<double>::CalcCallback(nullptr),
+        std::vector<DependencyTicket>{});
     LeafOutputPort<double>* const port_ptr = port.get();
     this->CreateOutputPort(std::move(port));
     return *port_ptr;
@@ -414,26 +417,28 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareAbstractInputPort();
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
         []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
-        }));
+        },
+        std::vector<DependencyTicket>{}));
 
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kGaussian);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        this, static_cast<SystemBase*>(this),
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
         1,  // Vector size.
-        []() {
-          return std::make_unique<Value<BasicVector<T>>>(1);
-        },
+        []() { return std::make_unique<Value<BasicVector<T>>>(1); },
         [this](const Context<T>& context, BasicVector<T>* output) {
           this->CalcVectorOutput(context, output);
-        }));
+        },
+        std::vector<DependencyTicket>{}));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -468,8 +473,9 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    return nullptr;
+    return std::make_unique<ContinuousState<T>>();
   }
+
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<T>>();
