@@ -701,7 +701,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
-  auto M0_llt = M0.ldlt();
+  auto M0_llt = M0.llt();
 
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
@@ -760,24 +760,13 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute discrete update before applying friction forces.
   // We denote this state x* = [q*, v*], the "star" state.
-  VectorX<T> v_star = v0 + dt * M0_llt.solve(-minus_tau);
-  VectorX<T> qdot_star(this->num_positions());
-  model_->MapVelocityToQDot(context0, v_star, &qdot_star);
-  VectorX<T> q_star = q0 + dt * qdot_star;
+  // Generalized momentum "star", before friction forces are applied.
+  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
 
   // Compute normal and tangential velocity Jacobians at t0.
   MatrixX<T> D(2 * num_contacts, nv);
-  MatrixX<T> Minv_times_Dtrans(nv, 2 * num_contacts);
-  MatrixX<T> Wtt(2 * num_contacts, 2 * num_contacts);
-  VectorX<T> vt_star(2 * num_contacts);
   if (num_contacts > 0) {
     D = CalcTangentVelocitiesJacobian(context0, point_pairs0);
-    vt_star = D * v_star;
-    // M⁻¹Dᵀ
-    Minv_times_Dtrans = M0_llt.solve(D.transpose());
-    // Delassus operator coupling tangential velocities with (tangential)
-    // friction forces: Wtt = DM⁻¹Dᵀ
-    Wtt = D * Minv_times_Dtrans;
   }
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored.
@@ -813,7 +802,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     VectorX<T> mus(num_contacts); // Stribeck friction.
     VectorX<T> dmudv(num_contacts);
     std::vector<Matrix2<T>> dft_dv(num_contacts);
-    vk = v_star;  // Initial guess with zero friction forces0. Consider using vk = v0
+    vk = v0;  // Initial guess with zero friction forces0. Consider using vk = v0
     vtk = D * vk;
 
     // The stiction tolerance.
@@ -861,7 +850,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       }
 
       // Newton-Raphson residual
-      Rk = M0 * (vk - v_star) + dt * D.transpose() * ftk;
+      Rk = M0 * vk - p_star + dt * D.transpose() * ftk;
 
       // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
       // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
@@ -1095,10 +1084,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute velocity at next time step.
   VectorX<T> v_next(this->num_velocities());
-  v_next = v_star;
+  // Compute p_next into p_star.
+  //   p_next = p_star - dt⋅Dᵀ⋅ft
   if (num_contacts > 0) {
-    v_next -= time_step_ * Minv_times_Dtrans * ftk;
+    p_star -= time_step_ * D.transpose() * ftk;
   }
+  v_next = M0_llt.solve(p_star);
 
   VectorX<T> qdot_next(this->num_positions());
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
