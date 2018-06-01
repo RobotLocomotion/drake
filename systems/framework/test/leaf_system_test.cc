@@ -875,6 +875,42 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
     out.Calc(*context, values.back().get());
   }
 
+  const auto& port2 = dut.get_output_port(OutputPortIndex(2));
+  const auto& cache2 =
+      dynamic_cast<const LeafOutputPort<double>&>(port2).cache_entry();
+  const auto& cacheval2 = cache2.get_cache_entry_value(*context);
+  EXPECT_EQ(cacheval2.serial_number(), 1);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_THROW(cache2.GetKnownUpToDate<std::string>(*context),
+               std::logic_error);
+  const std::string& str2_cached = port2.Eval<std::string>(*context);
+  EXPECT_EQ(str2_cached, "concrete string");
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);
+
+  // Check that setting time invalidates correctly.
+  context->set_time(1.);  // Should invalidate time- and everything-dependents.
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  context->set_time(1.);  // Same time; no invalidation.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+
+  // Should invalidate accuracy- and everything-dependents.
+  context->set_accuracy(.000025);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  (void)port2.EvalAbstract(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
+  context->set_accuracy(.000025);  // Same accuracy; no invalidation.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
+
   // Downcast to concrete types.
   const BasicVector<double>* vec0{};
   const MyVector4d* vec1{};
@@ -1088,10 +1124,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(out0.Eval<BasicVector<double>>(*context).get_value(),
             out0_dummy->get_value());
   EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out0.Eval<BasicVector<double>>(*context);
-  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);  // Should have been cached.
 
   // Check that Value<string>() came out, default initialized to empty.
   auto output1 = system_output->GetMutableData(1);
@@ -1105,10 +1139,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(dut.calc_string_calls(), 1);
   EXPECT_EQ(out1.Eval<std::string>(*context), *downcast_output1);
   EXPECT_EQ(dut.calc_string_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out1.Eval<std::string>(*context);
-  EXPECT_EQ(dut.calc_string_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_string_calls(), 2);  // Should have been cached.
 
   // Check that Value<int> came out, default initialized to -2.
   auto output2 = system_output->GetMutableData(2);
@@ -1146,10 +1178,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(eval_out.some_int, -10);
   EXPECT_EQ(eval_out.some_double, 3.25);
   EXPECT_EQ(dut.calc_POD_calls(), 2);
-  // Verify that caching is currently disabled.
-  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
   out4.Eval<SomePOD>(*context);
-  EXPECT_EQ(dut.calc_POD_calls(), 3);  // Will be 2 with caching.
+  EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
 }
 
 // Tests both that an unrestricted update callback is called and that
