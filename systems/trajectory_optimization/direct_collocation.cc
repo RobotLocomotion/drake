@@ -170,18 +170,18 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   // g_0*h_0/2.0 + [sum_{i=1...N-2} g_i*(h_{i-1} + h_i)/2.0] +
   // g_{N-1}*h_{N-2}/2.0.
 
-  AddCost(0.5 * SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
-  for (int i = 1; i < N() - 2; i++) {
+  AddCost(SubstitutePlaceholderVariables(g * h_vars()(0) / 2, 0));
+  for (int i = 1; i <= N() - 2; i++) {
     AddCost(SubstitutePlaceholderVariables(
         g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  AddCost(0.5 *
-          SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
+  AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructInputTrajectory()
     const {
+  DRAKE_DEMAND(context_->get_num_input_ports() > 0);
   Eigen::VectorXd times = GetSampleTimes();
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> inputs(N());
@@ -204,8 +204,10 @@ DirectCollocation::ReconstructStateTrajectory()
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
     states[i] = GetSolution(state(i));
-    input_port_value_->GetMutableVectorData<double>()->SetFromVector(
-        GetSolution(input(i)));
+    if (context_->get_num_input_ports() > 0) {
+      input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+          GetSolution(input(i)));
+    }
     context_->get_mutable_continuous_state().SetFromVector(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());
     derivatives[i] = continuous_state_->CopyToVector();

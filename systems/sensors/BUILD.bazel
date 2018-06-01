@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -14,18 +15,24 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-drake_cc_library(
+drake_cc_package_library(
     name = "sensors",
-    srcs = [],
-    hdrs = [],
     deps = [
         ":accelerometer",
         ":beam_model",
+        ":beam_model_params",
         ":camera_info",
         ":depth_sensor",
+        ":depth_sensor_to_lcm_point_cloud_message",
+        ":gyroscope",
+        ":image",
+        ":image_to_lcm_image_array_t",
+        ":optitrack_encoder",
+        ":optitrack_sender",
         ":rgbd_camera",
         ":rgbd_renderer",
         ":rotary_encoders",
+        ":vtk_util",
     ],
 )
 
@@ -249,7 +256,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant",
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:pose_stamped_t_pose_vector_translator",
         "@gflags",
     ],
@@ -422,14 +429,14 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    # Mitigates driver-related issues when running under `bazel test`. For more
-    # information, see #7004.
-    local = 1,
-    # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
-    # leaks. For more information, see #7520.
     tags = [
+        # Disable under LeakSanitizer and Valgrind Memcheck due to
+        # driver-related leaks. For more information, see #7520.
         "no_lsan",
         "no_memcheck",
+        # Mitigates driver-related issues when running under `bazel test`. For
+        # more information, see #7004.
+        "no-sandbox",
     ],
     deps = [
         ":rgbd_camera",
@@ -452,14 +459,14 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    # Mitigates driver-related issues when running under `bazel test`. For more
-    # information, see #7004.
-    local = 1,
-    # Disable under LeakSanitizer and Valgrind Memcheck due to driver-related
-    # leaks. For more information, see #7520.
     tags = [
+        # Disable under LeakSanitizer and Valgrind Memcheck due to
+        # driver-related leaks. For more information, see #7520.
         "no_lsan",
         "no_memcheck",
+        # Mitigates driver-related issues when running under `bazel test`. For
+        # more information, see #7004.
+        "no-sandbox",
     ],
     deps = [
         ":rgbd_renderer",
@@ -472,6 +479,7 @@ drake_cc_googletest(
 
 sh_test(
     name = "rgbd_camera_publish_lcm_test",
+    size = "small",
     srcs = ["rgbd_camera_publish_lcm_example"],
     args = [
         "--sdf_dir=" + native.package_name() + "/test/models",
@@ -480,18 +488,19 @@ sh_test(
     data = [
         ":test_models",
     ],
-    # Mitigates driver-related issues when running under `bazel test`. For more
-    # information, see #7004.
-    local = 1,
-    # TODO(mitiguy) Issue #8368: Test rgbd_camera_publish_lcm_test in the
-    # BUILD.bazel file in directory drake/systems/sensors cannot be run anymore
-    # due to the new RotationMatrix class which insists on being a proper
-    # orthogonal rotation matrix.  This test produces a quaternion with NANs
-    # which causes the RotationMatrix class to throw an exception in debug
-    # builds. This test is labeled with tags = "manual" so CI does not run it.
-    # This test is defective and should never have passed earlier code review.
     tags = [
+        # TODO(mitiguy) Issue #8368: Test rgbd_camera_publish_lcm_test in the
+        # BUILD.bazel file in directory drake/systems/sensors cannot be run
+        # anymore due to the new RotationMatrix class which insists on being a
+        # proper orthogonal rotation matrix.  This test produces a quaternion
+        # with NANs which causes the RotationMatrix class to throw an exception
+        # in debug builds. This test is labeled with tags = "manual" so CI does
+        # not run it. This test is defective and should never have passed
+        # earlier code review.
         "manual",
+        # Mitigates driver-related issues when running under `bazel test`. For
+        # more information, see #7004.
+        "no-sandbox",
     ],
 )
 

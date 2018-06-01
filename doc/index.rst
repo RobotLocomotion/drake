@@ -88,7 +88,8 @@ Here is a quick summary of capabilities:
 
 Most of these models/tools are described in `the companion textbook from an MIT course/MOOC <https://people.csail.mit.edu/russt/underactuated/underactuated.html?chapter=drake>`_.  We've also recently started populating the :doc:`gallery` (contributions welcome!).
 
-We hope you find this tool useful.   Please engage us `via github issues <https://github.com/RobotLocomotion/drake/issues>`_ with comments, questions, success stories, and frustrations.  And please contribute your best bug fixes, features, and examples!
+We hope you find this tool useful.  Please see :ref:`getting_help` if you wish
+to share your comments, questions, success stories, or frustrations.  And please contribute your best bug fixes, features, and examples!
 
 
 ************
@@ -122,13 +123,11 @@ Next steps
    :maxdepth: 1
 
    installation
-   developers
+   getting_help
    Doxygen (C++) <doxygen_cxx/index.html#://>
-   faq
-   issues
-   Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
-   credits
    GitHub <https://github.com/RobotLocomotion/drake>
+   developers
+   credits
 
 
 ********************************************

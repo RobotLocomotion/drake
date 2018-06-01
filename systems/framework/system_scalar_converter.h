@@ -100,6 +100,8 @@ class SystemScalarConverter {
   SystemScalarConverter(
       SystemTypeTag<S>, GuaranteedSubtypePreservation subtype_preservation)
       : SystemScalarConverter() {
+    // N.B. When changing the pairs of supported types below, be sure to also
+    // change the `ConversionPairs` type pack in `DefineFrameworkPySystems`.
     using Expression = symbolic::Expression;
     // From double to all other types.
     AddIfSupported<S, AutoDiffXd, double>(subtype_preservation);
@@ -111,6 +113,10 @@ class SystemScalarConverter {
     AddIfSupported<S, double,     Expression>(subtype_preservation);
     AddIfSupported<S, AutoDiffXd, Expression>(subtype_preservation);
   }
+
+  /// Returns true iff no conversions are supported.  (In other words, whether
+  /// this is a default-constructed object.)
+  bool empty() const { return funcs_.empty(); }
 
   /// A std::function used to convert a System<U> into a System<T>.
   template <typename T, typename U>

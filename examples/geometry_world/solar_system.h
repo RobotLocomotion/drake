@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -36,8 +36,7 @@ namespace solar_system {
 
  1. Registering anchored geometry.
  2. Registering frames as children of other frames.
- 3. Creating a fixed FrameIdVector output.
- 4. Updating the context-dependent FramePoseVector output.
+ 3. Allocating and calculating the FramePoseVector output for visualization.
 
  Illustration of the orrery:
 
@@ -94,7 +93,7 @@ class SolarSystem : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolarSystem)
 
-  explicit SolarSystem(geometry::GeometrySystem<T>* geometry_system);
+  explicit SolarSystem(geometry::SceneGraph<T>* scene_graph);
   ~SolarSystem() override = default;
 
   using MyContext = systems::Context<T>;
@@ -102,7 +101,6 @@ class SolarSystem : public systems::LeafSystem<T> {
 
   geometry::SourceId source_id() const { return source_id_; }
 
-  const systems::OutputPort<T>& get_geometry_id_output_port() const;
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
   // The default leaf system zeros out all of the state as "default" behavior.
@@ -122,21 +120,11 @@ class SolarSystem : public systems::LeafSystem<T> {
 
  private:
   // Allocate all of the geometry.
-  void AllocateGeometry(geometry::GeometrySystem<T>* geometry_system);
-
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const MyContext& context) const;
+  void AllocateGeometry(geometry::SceneGraph<T>* scene_graph);
 
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const MyContext& context,
                            geometry::FramePoseVector<T>* poses) const;
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(const MyContext& context) const;
-  // Calculate the id output.
-  void CalcFrameIdOutput(const MyContext& context,
-                         geometry::FrameIdVector* id_set) const;
 
   void DoCalcTimeDerivatives(const MyContext& context,
                              MyContinuousState* derivatives) const override;
@@ -158,7 +146,6 @@ class SolarSystem : public systems::LeafSystem<T> {
   geometry::SourceId source_id_{};
 
   // Port handles
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
 
   // Solar system specification

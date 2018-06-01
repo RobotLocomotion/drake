@@ -6,7 +6,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using Eigen::AutoDiffScalar;
@@ -23,7 +23,7 @@ class DemultiplexerTest : public ::testing::Test {
   void SetUp() override {
     demux_ = make_unique<Demultiplexer<double>>(3 /* size */);
     context_ = demux_->CreateDefaultContext();
-    output_ = demux_->get_output_port(0).Allocate(*context_);
+    output_ = demux_->get_output_port(0).Allocate();
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }
 
@@ -69,7 +69,7 @@ GTEST_TEST(OutputSize, SizeDifferentFromOne) {
   auto demux = make_unique<Demultiplexer<double>>(
       kInputSize /* size */, kOutputSize /* output_ports_sizes */);
   auto context = demux->CreateDefaultContext();
-  auto output = demux->get_output_port(0).Allocate(*context);
+  auto output = demux->get_output_port(0).Allocate();
   auto input = make_unique<BasicVector<double>>(kInputSize /* size */);
 
   // Checks that the number of input ports in the system and in the context

@@ -12,6 +12,8 @@ ARGS_DEFAULT = [
 
 def workspace_test(
         name,
+        size = None,
+        timeout = None,
         args = ARGS_DEFAULT,
         data = []):
     """
@@ -25,8 +27,12 @@ def workspace_test(
     @param data
         Data required for the workspace test.
     """
+    if size == None:
+        size = "small"
     native.sh_test(
         name = name,
+        size = size,
+        timeout = timeout,
         srcs = ["@drake//tools/external_data/test:workspace_test.sh"],
         args = args,
         data = data,

@@ -228,8 +228,7 @@ class Event {
 
     /**
      * This trigger indicates that an associated event is triggered by the zero
-     * crossing of a witness function. Witness events are commonly created by
-     * WitnessFunction::AddEvent().
+     * crossing of a witness function.
      */
     kWitness,
   };

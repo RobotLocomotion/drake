@@ -9,7 +9,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mixed_integer_optimization_util.h"
 
 /// @file Functions for reasoning about 3D rotations in a @MathematicalProgram.
 ///
@@ -93,120 +92,5 @@ void AddRotationMatrixOrthonormalSocpConstraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R);
 
-using AddRotationMatrixMcCormickEnvelopeReturnType =
-std::tuple<std::vector<Matrix3<symbolic::Expression>>,
-           std::vector<Matrix3<symbolic::Expression>>,
-           std::vector<MatrixDecisionVariable<3, 3>>,
-           std::vector<MatrixDecisionVariable<3, 3>>>;
-/**
- * Adds binary variables that constrain the value of the column *and* row
- * vectors of R, in order to add the following (in some cases non-convex)
- * constraints as an MILP.  Specifically, for column vectors Ri, we constrain:
- * - forall i, |Ri| = 1 ± envelope,
- * - forall i,j. i ≠ j, Ri.dot(Rj) = 0 ± envelope,
- * - R2 = R0.cross(R1) ± envelope,
- *      and again for R0=R1.cross(R2), and R1=R2.cross(R0).
- * Then all of the same constraints are also added to R^T.  The size of the
- * envelope decreases quickly as num_binary_variables_per_half_axis is
- * is increased.
- *
- * Note: Creates `9*2*num_binary_variables_per_half_axis binary` variables named
- * "BRpos*(*,*)" and "BRneg*(*,*)", and the same number of continuous variables
- * named "CRpos*(*,*)" and "CRneg*(*,*)".
- *
- * Note: The particular representation/algorithm here was developed in an
- * attempt:
- *  - to enable efficient reuse of the variables between the constraints
- *    between multiple rows/columns (e.g. the constraints on R^T use the same
- *    variables as the constraints on R), and
- *  - to facilitate branch-and-bound solution techniques -- binary regions are
- *    layered so that constraining one region establishes constraints
- *    on large portions of SO(3), and confers hopefully "useful" constraints
- *    the on other binary variables.
- * @param prog The mathematical program to which the constraints are added.
- * @param R The rotation matrix
- * @param num_binary_vars_per_half_axis number of binary variables for a half
- * axis.
- * @param limits The angle joints for space fixed z-y-x representation of the
- * rotation. @default is no constraint. @see RollPitchYawLimitOptions
- * @retval NewVars  Included the newly added variables
- * <CRpos, CRneg, BRpos, BRneg>. All new variables can only take values either
- * 0 or 1. `CRpos` and `CRneg` are declared as continuous variables, while
- * `BRpos` and `BRneg` are declared as binary variables.
- * The definition for these variables are
- * <pre>
- *   CRpos[k](i, j) = 1 => k / N <= R(i, j) <= (k+1) / N
- *   CRneg[k](i, j) = 1 => -(k+1) / N <= R(i, j) <= -k / N
- *   BRpos[k](i, j) = 1 => R(i, j) >= k / N
- *   BRneg[k](i, j) = 1 => R(i, j) <= -k / N
- * </pre>
- * where `N` is `num_binary_vars_per_half_axis`.
- */
-
-AddRotationMatrixMcCormickEnvelopeReturnType
-AddRotationMatrixMcCormickEnvelopeMilpConstraints(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_binary_vars_per_half_axis = 2,
-    RollPitchYawLimits limits = kNoLimits);
-
-/**
- * The return types from AddRotationMatrixBilinearMcComickMilpConstraints.
- * We return both the newly added binary variables, and the vector φ.
- * @see AddRotationMatrixBilinearMcCormickMilpConstraints for more details.
- * @tparam kNumIntervalsPerHalfAxis Number of intervals per half axis in the
- * compile time.
- */
-template <int kNumIntervalsPerHalfAxis>
-struct AddRotationMatrixBilinearMcCormickMilpConstraintsReturn {
-  static constexpr int kPhiRows = kNumIntervalsPerHalfAxis == Eigen::Dynamic
-                                     ? Eigen::Dynamic
-                                     : 1 + 2 * kNumIntervalsPerHalfAxis;
-  static constexpr int kNumBinaryVars =
-      kPhiRows == Eigen::Dynamic ? Eigen::Dynamic : CeilLog2(kPhiRows - 1);
-  typedef std::array<std::array<VectorDecisionVariable<kNumBinaryVars>, 3>, 3>
-      BinaryVarType;
-  typedef Eigen::Matrix<double, kPhiRows, 1> PhiType;
-  typedef std::pair<BinaryVarType, PhiType> type;
-};
-
-/**
- * Relax the SO(3) constraint on a rotation matrix R = [R₀ R₁ R₂]
- * <pre>
- * Rᵢᵀ * Rᵢ = 1
- * Rᵢᵀ * Rⱼ = 0
- * Rᵢ x Rⱼ = Rₖ
- * </pre>
- * to a set of mixed-integer linear constraints. This is achieved by replacing
- * the bilinear product terms in the SO(3) constraint, with a new auxiliary
- * variable in the McCormick envelope of bilinear product. For more details,
- * please refer to
- * Global Inverse Kinematics via Mixed-Integer Convex Optimization
- * by Hongkai Dai, Gregory Izatt and Russ Tedrake, 2017.
- * @tparam kNumIntervalsPerHalfAxis We cut the interval [-1, 1] evenly into
- * KNumIntervalsPerHalfAxis * 2 intervals. Then depending on in which interval
- * R(i, j) is, we impose corresponding linear constraints. Currently only
- * certain kNumIntervalsPerHalfAxis are accepted, including Eigen::Dynamic, and
- * integer 1 to 4. If the user wants to support more kNumIntervalsPerHalfAxis,
- * please instantiate them explicitly in rotation_constraint.cc.
- * @param prog The optimization program to which the SO(3) relaxation is added.
- * @param R The rotation matrix.
- * @param num_intervals_per_half_axis Same as NumIntervalsPerHalfAxis, use this
- * variable when NumIntervalsPerHalfAxis is dynamic.
- * @return pair. pair = (B, φ). B[i][j] is a column vector. If B[i][j]
- * represents integer M in the reflected Gray code, then R(i, j) is in the
- * interval [φ(M), φ(M+1)]. φ contains the end points of the all the intervals,
- * namely φ(i) = -1 + 1 / num_intervals_per_half_axis * i.
- */
-template <int kNumIntervalsPerHalfAxis = Eigen::Dynamic>
-typename std::enable_if<
-    kNumIntervalsPerHalfAxis == Eigen::Dynamic ||
-        (kNumIntervalsPerHalfAxis >= 1 && kNumIntervalsPerHalfAxis <= 4),
-    typename AddRotationMatrixBilinearMcCormickMilpConstraintsReturn<
-        kNumIntervalsPerHalfAxis>::type>::type
-AddRotationMatrixBilinearMcCormickMilpConstraints(
-    MathematicalProgram* prog,
-    const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,
-    int num_intervals_per_half_axis = kNumIntervalsPerHalfAxis);
 }  // namespace solvers
 }  // namespace drake

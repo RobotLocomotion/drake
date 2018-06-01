@@ -9,6 +9,7 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
@@ -21,7 +22,7 @@ load(
 )
 
 package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
+    "//bindings:__subpackages__",
 ])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
@@ -42,6 +43,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/util:deprecation_py",
+        "//bindings:bazel_workaround_4594_libdrake_py",
     ],
     py_srcs = [
         "__init__.py",
@@ -65,6 +67,7 @@ drake_pybind_library(
     py_deps = [
         ":common_py",
         ":math_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = [
         "autodiffutils.py",
@@ -76,6 +79,7 @@ drake_pybind_library(
     name = "automotive_py",
     cc_deps = [
         "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_so_name = "automotive",
     cc_srcs = ["automotive_py.cc"],
@@ -111,6 +115,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":common_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 
@@ -132,6 +137,8 @@ drake_pybind_library(
     py_deps = [
         ":common_py",
         ":math_py",
+        "//bindings/pydrake/util:compatibility_py",
+        "//bindings/pydrake/util:deprecation_py",
     ],
     py_srcs = ["symbolic.py"],
 )
@@ -205,11 +212,25 @@ drake_py_library(
     srcs = ["test/algebra_test_util.py"],
 )
 
+# Test ODR (One Definition Rule).
+drake_pybind_library(
+    name = "autodiffutils_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_deps = [
+        ":autodiff_types_pybind",
+    ],
+    cc_so_name = "test/autodiffutils_test_util",
+    cc_srcs = ["test/autodiffutils_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
 drake_py_unittest(
     name = "autodiffutils_test",
     deps = [
         ":algebra_test_util_py",
         ":autodiffutils_py",
+        ":autodiffutils_test_util_py",
     ],
 )
 
@@ -228,7 +249,6 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "odr_test",
-    size = "small",
     deps = [
         ":odr_test_module_py",
         ":symbolic_py",
@@ -237,20 +257,17 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "common_test",
-    size = "small",
     data = ["//examples/atlas:models"],
     deps = [":common_py"],
 )
 
 drake_py_unittest(
     name = "forward_diff_test",
-    size = "small",
     deps = [":autodiffutils_py"],
 )
 
 drake_py_unittest(
     name = "lcm_test",
-    size = "small",
     deps = [
         ":lcm_py",
     ],
@@ -258,7 +275,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_test",
-    size = "small",
     deps = [
         ":math_py",
     ],
@@ -266,7 +282,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "math_overloads_test",
-    size = "small",
     deps = [
         ":autodiffutils_py",
         ":math_py",
@@ -276,22 +291,20 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "symbolic_test",
-    size = "small",
     deps = [
         ":algebra_test_util_py",
         ":symbolic_py",
+        "//bindings/pydrake/util:containers_py",
     ],
 )
 
 drake_py_unittest(
     name = "trajectories_test",
-    size = "small",
     deps = [":trajectories_py"],
 )
 
 drake_py_unittest(
     name = "automotive_test",
-    size = "small",
     deps = [
         ":automotive_py",
         "//bindings/pydrake/maliput:api_py",
@@ -312,5 +325,14 @@ add_lint_tests(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
         ":test/common_install_test.py",
+    ],
+)
+
+drake_py_binary(
+    name = "math_example",
+    srcs = ["math_example.py"],
+    isolate = 1,
+    deps = [
+        ":math_py",
     ],
 )

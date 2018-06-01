@@ -15,6 +15,7 @@ Build configuration:
     DD_QT_VERSION=5
     USE_EXTERNAL_INSTALL=ON
     USE_LCM=ON
+    USE_SYSTEM_LCM=ON
     USE_SYSTEM_VTK=ON
 
 Example:
@@ -46,11 +47,14 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-286-g10f57e8-qt-5.10.1-vtk-8.0.1-mac-x86_64.tar.gz"
-        sha256 = "daf55d0966bb1b82fa6214214c203c20da61a5a97d1beb2d449e433141553dee"  # noqa
+        archive = "dv-0.1.0-310-g37b8e23-qt-5.10.1-vtk-8.1.1-mac-x86_64.tar.gz"
+        sha256 = "72c613c2a9d6717f912640d1c51a68297367d5c7241c7d24b22848d0fbfe9b8b"  # noqa
     elif os_result.ubuntu_release == "16.04":
-        archive = "dv-0.1.0-286-g10f57e8-qt-5.5.1-vtk-8.0.1-xenial-x86_64.tar.gz"  # noqa
-        sha256 = "66fb82efa163ce10e665319c2628dbce2aac7698e0bd53965bdc05bbc5abe7b5"  # noqa
+        archive = "dv-0.1.0-310-g37b8e23-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "c770a1da2147274ecaa715292223f7f065e51a905a65cbc4a18589eee396a171"  # noqa
+    elif os_result.ubuntu_release == "18.04":
+        archive = "dv-0.1.0-310-g37b8e23-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
+        sha256 = "023ada72358f1c6e8c690ebdf3f98decbb15a7623bba743a010e221ff4b93b05"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 
@@ -108,6 +112,7 @@ filegroup(
     ],
     data = [
         ":drake_visualizer_python_deps",
+        "@lcm//:libdrake_lcm.so",
         "@vtk",
     ],
     visibility = ["//visibility:public"],

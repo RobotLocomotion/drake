@@ -12,6 +12,34 @@ def drake_py_library(
         deps = deps,
         **kwargs)
 
+def _disable_test_impl(ctx):
+    info = dict(
+        bad_target = ctx.attr.bad_target,
+        good_target = ctx.attr.good_target,
+    )
+    content = """#!/bin/bash
+echo "ERROR: Please use '{good_target}'; the label '{bad_target}'" \
+     "has been removed." >&2
+exit 1
+""".format(**info)
+    ctx.actions.write(
+        output = ctx.outputs.executable,
+        content = content,
+    )
+    return [DefaultInfo()]
+
+# Defines a test which will fail when run via `bazel run` or `bazel test`,
+# pointing the user to the correct binary to use. This should typically have
+# a "manual" tag.
+_disable_test = rule(
+    attrs = {
+        "bad_target": attr.string(mandatory = True),
+        "good_target": attr.string(mandatory = True),
+    },
+    test = True,
+    implementation = _disable_test_impl,
+)
+
 def _py_target_isolated(
         name,
         py_target = None,
@@ -26,8 +54,8 @@ def _py_target_isolated(
     # Do not isolate targets that are already isolated. This generally happens
     # when linting tests (which are isolated) are invoked for isolated Python
     # targets. Without this check, the actual test turns into
-    # `_isolated/_isolated/{name}`.
-    prefix = "_isolated/"
+    # `py/py/{name}`.
+    prefix = "py/"
     if isolate and not name.startswith(prefix):
         actual = prefix + name
         # Preserve original functionality.
@@ -39,11 +67,18 @@ def _py_target_isolated(
             name = actual,
             srcs = srcs,
             main = main,
-            visibility = ["//visibility:private"],
+            visibility = visibility,
             **kwargs)
-        native.alias(
+        # Disable and redirect original name.
+        package_prefix = "//" + native.package_name() + ":"
+        # N.B. We make the disabled rule a test, even if the original was not.
+        # This ensures that developers will see the redirect using both
+        # `bazel run` or `bazel test`.
+        _disable_test(
             name = name,
-            actual = actual,
+            good_target = package_prefix + actual,
+            bad_target = package_prefix + name,
+            tags = ["manual"],
             visibility = visibility,
         )
     else:
@@ -85,7 +120,8 @@ def drake_py_unittest(
 
     This macro should be preferred instead of the basic drake_py_test for tests
     that use the `unittest` framework.  Tests that use this macro should *not*
-    contain a __main__ handler nor a shebang line.
+    contain a __main__ handler nor a shebang line.  By default, sets test size
+    to "small" to indicate a unit test.
     """
     helper = "//common/test_utilities:drake_py_unittest_main.py"
     if not srcs:
@@ -99,6 +135,7 @@ def drake_py_unittest(
 
 def drake_py_test(
         name,
+        size = None,
         srcs = None,
         deps = None,
         isolate = True,
@@ -118,7 +155,11 @@ def drake_py_test(
         tests should use the `drake_py_unittest` macro instead of this one
         (thus disabling this interlock), but can override this parameter in
         case something unique is happening and the other macro can't be used.
+
+    By default, sets test size to "small" to indicate a unit test.
     """
+    if size == None:
+        size = "small"
     if srcs == None:
         srcs = ["test/%s.py" % name]
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
@@ -129,6 +170,7 @@ def drake_py_test(
         name = name,
         py_target = native.py_test,
         isolate = isolate,
+        size = size,
         srcs = srcs,
         deps = deps,
         **kwargs)

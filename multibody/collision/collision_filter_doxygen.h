@@ -51,7 +51,7 @@ are @ref collision_filter_mapping "related but complementary".
 Before looking at the details of the collision filter mechanisms, there are a
 few key principles to make note of.
 
- <!-- TODO(SeanCurtis-TRI): Change this with the advent of GeometrySystem to
+ <!-- TODO(SeanCurtis-TRI): Change this with the advent of SceneGraph to
  reflect current state -->
 \section collision_elements Collision Elements
 
@@ -170,8 +170,8 @@ There are several implications of this:
 being filtered. There is currently no interface for manipulating cliques
 programmatically. This will be implemented when the use case becomes clear.
 However, there is a workaround. As an example, consider two adjacent bodies, `A`
-and `B`. Their collision elements will automatically be put into a common clique.
-However, we may want collisions between element `E` on `B` and collision
+and `B`. Their collision elements will automatically be put into a common
+clique. However, we may want collisions between element `E` on `B` and collision
 elements on `A` to _not_ be filtered. We can create a massless body `Z` to
 hold `E` and use a weld (fixed) joint to attach `Z` to `B`. `Z` will not be
 adjacent to A, so `E` will interact with `A`'s elements.
@@ -267,19 +267,38 @@ is constrained. The workflow is as follows:
  - Add groups to the "ignore set" of the created groups
  - Compile the tree
 
-Once a body in the tree has been through the compilation process, it _cannot_
-have its collision filters modified. In the historical workflow, the act of
-parsing a URDF/SDF file implicitly ends with compiling the tree. So, using the
-standard parsing API means that the bodies parsed from a file cannot be
-programmatically altered.
+The API only supports _building up_ collision filter groups and _adding_ bodies
+to groups. There is no API for removing bodies from previously declared groups
+or removing groups from another group's ignore list. The API is strictly
+additive.
 
-There is a _second_ parsing API that allows for suppressing the automatic
-tree compilation. If there is a need to augment or modify the collision filter
-groups declared in a parsed file, pass `false` into this alternate API.
-By doing so, you can invoke methods to create and modify collision filter groups
-for those bodies that have not been compiled yet. However, the caller has the
-responsibility to make sure that RigidBodyTree::compile() is invoked before
-doing any work on the tree. For example:
+Furthermore, once declared collision filter groups have been compiled (via
+invocation of RigidBodyTree::compile()) the _names_ can no longer be referenced.
+This is what allows the same urdf/sdf file to be read multiple times but not
+have the named collision filter groups in the file end up spanning all of the
+models.
+
+However, Drake _does_ support some post-compile filtering modifications.
+These include:
+  - Adding a new collision filter group. The previously compiled bodies and
+    newly added, uncompiled bodies can all be assigned to the group. However,
+    it can't ignore previously compiled groups (as those names no longer exist).
+  - Attaching a new body with collision elements to a previously compiled
+    body (via a joint). If both bodies have collision elements, collisions
+    between elements on the new and old body will be appropriately filtered.
+  - Compiled bodies can have _new_ collision elements added. They will inherit
+    the same filter behavior as the other elements on the compiled body. (And
+    pick up any new filter behavior after compilation as appropriate.)
+
+In _typical_ use, parsing a model from a file calls RigidBodyTree::compile() and
+any named collision filter groups in that file cannot be subsequently
+referenced. The parsing API provides a mechanism for suppressing the automatic
+tree compilation. There is a parallel set of parse functions which take an
+additional `bool`, indicating if the tree should be compiled (`true`) or not
+upon parse completion. By passing `false`, the parsing process will _not_
+compile the tree, but it becomes the caller's responsibility to make sure that
+RigidBodyTree::compile() is invoked before doing any work on the tree. For
+example:
 
 ```
  const bool do_compile = false;

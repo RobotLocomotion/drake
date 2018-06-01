@@ -2006,9 +2006,9 @@ void MinDistanceConstraint::eval(const double* t,
   // std::cout << "MinDistanceConstraint::eval: START" << std::endl;
   // END_DEBUG
   if (isTimeValid(t)) {
-    VectorXd dist, scaled_dist, pairwise_costs;
+    VectorXd dist, pairwise_costs, dpairwise_costs_ddist;
     Matrix3Xd xA, xB, normal;
-    MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
+    MatrixXd ddist_dq;
     std::vector<int> idxA;
     std::vector<int> idxB;
 
@@ -2036,8 +2036,7 @@ void MinDistanceConstraint::eval(const double* t,
         MatrixXd::Zero(num_pts, getRobotPointer()->get_num_positions());
 
     // Compute Jacobian of closest distance vector
-    scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
-    penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
+    Penalty(dist, min_distance_, &pairwise_costs, &dpairwise_costs_ddist);
 
     std::vector<std::vector<int>> orig_idx_of_pt_on_bodyA(
         getRobotPointer()->get_bodies().size());
@@ -2081,36 +2080,36 @@ void MinDistanceConstraint::eval(const double* t,
             J_k.block(3 * l, 0, 3, getRobotPointer()->get_num_positions());
       }
     }
-    MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
+    auto dcost_ddist = dpairwise_costs_ddist.transpose();
     c.resize(1);
     c(0) = pairwise_costs.sum();
-    dc = dcost_dscaled_dist * dscaled_dist_ddist * ddist_dq;
+    dc = dcost_ddist * ddist_dq;
   } else {
     c.resize(0);
     dc.resize(0, 0);
   }
 }
 
-void MinDistanceConstraint::scaleDistance(
-    const Eigen::VectorXd& dist, Eigen::VectorXd& scaled_dist,
-    Eigen::MatrixXd& dscaled_dist_ddist) const {
-  int nd = static_cast<int>(dist.size());
-  double recip_min_dist = 1 / min_distance_;
-  scaled_dist = recip_min_dist * dist - VectorXd::Ones(nd, 1);
-  dscaled_dist_ddist = recip_min_dist * MatrixXd::Identity(nd, nd);
-}
-
-void MinDistanceConstraint::penalty(const Eigen::VectorXd& dist,
-                                    Eigen::VectorXd& cost,
-                                    Eigen::MatrixXd& dcost_ddist) const {
-  int nd = static_cast<int>(dist.size());
-  cost = VectorXd::Zero(nd, 1);
-  dcost_ddist = MatrixXd::Zero(nd, nd);
+void MinDistanceConstraint::Penalty(const Eigen::VectorXd& distance,
+                                    double distance_threshold,
+                                    Eigen::VectorXd* penalty,
+                                    Eigen::VectorXd* dpenalty_ddistance) {
+  DRAKE_ASSERT(penalty != nullptr);
+  DRAKE_ASSERT(penalty != dpenalty_ddistance);
+  int nd = static_cast<int>(distance.size());
+  penalty->resize(nd);
+  dpenalty_ddistance->resize(nd);
   for (int i = 0; i < nd; ++i) {
-    if (dist(i) < 0) {
-      double exp_recip_dist = exp(1 / dist(i));
-      cost(i) = -dist(i) * exp_recip_dist;
-      dcost_ddist(i, i) = exp_recip_dist * (1 / dist(i) - 1);
+    if (distance(i) < distance_threshold) {
+      double transformed_distance = (distance(i) / distance_threshold - 1.);
+      double exp_recip_distance = exp(1. / transformed_distance);
+      (*penalty)(i) = -transformed_distance * exp_recip_distance;
+      (*dpenalty_ddistance)(i) = exp_recip_distance *
+                                 (1. / transformed_distance - 1.) /
+                                 distance_threshold;
+    } else {
+      (*penalty)(i) = 0.;
+      (*dpenalty_ddistance)(i) = 0.;
     }
   }
 }

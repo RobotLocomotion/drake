@@ -27,6 +27,7 @@ drake_cc_library(
     deps = [
         ":rigid_body_tree",
         "//solvers:mathematical_program",
+        "//solvers:mixed_integer_rotation_constraint",
         "//solvers:rotation_constraint",
     ],
 )
@@ -125,6 +126,7 @@ drake_cc_library(
         "kinematics_cache-inl.h",
     ],
     deps = [
+        ":rigid_body_tree_datatypes",
         "//common:autodiff",
         "//common:essential",
         "//multibody/joints",
@@ -192,29 +194,47 @@ drake_cc_library(
     ],
 )
 
+# We compile rigid_body_tree.cc in shards (only a portion of the source code in
+# the file is compiled at a time).  See comments in the .cc file for details.
+_RBT_SHARD_COUNT = 2
+
+# Define a library for each shard.
+[
+    drake_cc_library(
+        name = "rigid_body_tree_cc_{}".format(i),
+        srcs = ["rigid_body_tree.cc".format(i)],
+        hdrs = ["rigid_body_tree.h"],
+        copts = ["-DDRAKE_RBT_SHARD={}".format(i)],
+        visibility = [],
+        deps = [
+            ":kinematics_cache",
+            ":resolve_center_of_pressure",
+            ":rigid_body",
+            ":rigid_body_actuator",
+            ":rigid_body_frame",
+            ":rigid_body_loop",
+            ":rigid_body_tree_datatypes",
+            "//common:autodiff",
+            "//common:essential",
+            "//math:geometric_transform",
+            "//math:gradient",
+            "//multibody/collision",
+            "//multibody/joints",
+            "//multibody/shapes",
+            "//util",
+        ],
+    )
+    for i in range(_RBT_SHARD_COUNT)
+]
+
 # The rigid_body_tree.h implementation is in two files: rigid_body_tree.cc and
 # rigid_body_tree_contact.cc.  This is the rule for the first file.
 drake_cc_library(
     name = "rigid_body_tree_cc",
-    srcs = ["rigid_body_tree.cc"],
-    hdrs = ["rigid_body_tree.h"],
     visibility = [],
     deps = [
-        ":kinematics_cache",
-        ":resolve_center_of_pressure",
-        ":rigid_body",
-        ":rigid_body_actuator",
-        ":rigid_body_frame",
-        ":rigid_body_loop",
-        ":rigid_body_tree_datatypes",
-        "//common:autodiff",
-        "//common:essential",
-        "//math:geometric_transform",
-        "//math:gradient",
-        "//multibody/collision",
-        "//multibody/joints",
-        "//multibody/shapes",
-        "//util",
+        ":rigid_body_tree_cc_{}".format(i)  # N.B. Defined immediately above.
+        for i in range(_RBT_SHARD_COUNT)
     ],
 )
 
@@ -339,8 +359,10 @@ drake_cc_binary(
     name = "benchmark_rigid_body_tree",
     testonly = 1,
     srcs = ["test/benchmark_rigid_body_tree.cc"],
+    data = ["//examples/atlas:models"],
     deps = [
         ":rigid_body_tree",
+        "//common:find_resource",
         "//common/test_utilities:measure_execution",
         "//multibody/parsers",
     ],
@@ -445,7 +467,7 @@ drake_cc_googletest(
         ":rigid_body_tree",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:analytical_acrobot",
         "//multibody/parsers",
     ],
 )
@@ -567,8 +589,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "test_ik_traj",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
     data = ["//examples/atlas:models"],
     tags = ["snopt"],
     deps = [

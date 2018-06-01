@@ -191,11 +191,13 @@ PYBIND11_MODULE(sensors, m) {
     .def(
       py::init<
         string, const RigidBodyTree<T>&, const RigidBodyFrame<T>&,
-        double, double, double, bool>(),
+        double, double, double, bool, int, int>(),
       py::arg("name"), py::arg("tree"), py::arg("frame"),
       py::arg("z_near") = 0.5, py::arg("z_far") = 5.0,
       py::arg("fov_y") = M_PI_4,
       py::arg("show_window") = bool{RenderingConfig::kDefaultShowWindow},
+      py::arg("width") = int{RenderingConfig::kDefaultWidth},
+      py::arg("height") = int{RenderingConfig::kDefaultHeight},
       // Keep alive, reference: `this` keeps  `RigidBodyTree` alive.
       py::keep_alive<1, 3>())
     .def("color_camera_info", &RgbdCamera::color_camera_info,

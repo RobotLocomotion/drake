@@ -1,9 +1,31 @@
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
 #include "drake/math/gray_code.h"
+#include "drake/solvers/integer_optimization_util.h"
+
+using drake::symbolic::Expression;
 
 namespace drake {
 namespace solvers {
+std::string to_string(IntervalBinning binning) {
+  switch (binning) {
+    case IntervalBinning::kLinear: {
+      return "linear_binning";
+    }
+    case IntervalBinning::kLogarithmic: {
+      return "logarithmic_binning";
+    }
+  }
+  // The following line should not be reached. We add it due to a compiler
+  // defect.
+  DRAKE_ABORT_MSG("Should not reach this part of the code.");
+}
+
+std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning) {
+  os << to_string(binning);
+  return os;
+}
+
 void AddLogarithmicSos2Constraint(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorX<symbolic::Expression>>& lambda,
@@ -86,6 +108,73 @@ void AddLogarithmicSos1Constraint(
     prog->AddLinearConstraint(lambda_sum1 <= y(j));
     prog->AddLinearConstraint(lambda_sum2 <= 1 - y(j));
   }
+}
+
+void AddBilinearProductMcCormickEnvelopeMultipleChoice(
+    MathematicalProgram* prog, const symbolic::Variable& x,
+    const symbolic::Variable& y, const symbolic::Expression& w,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_x,
+    const Eigen::Ref<const Eigen::VectorXd>& phi_y,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& Bx,
+    const Eigen::Ref<const VectorX<symbolic::Expression>>& By) {
+  const int m = phi_x.rows() - 1;
+  const int n = phi_y.rows() - 1;
+  DRAKE_ASSERT(Bx.rows() == m);
+  DRAKE_ASSERT(By.rows() == n);
+  const auto x_bar = prog->NewContinuousVariables(n, x.get_name() + "_x_bar");
+  const auto y_bar = prog->NewContinuousVariables(m, y.get_name() + "_y_bar");
+  prog->AddLinearEqualityConstraint(x_bar.cast<Expression>().sum() - x, 0);
+  prog->AddLinearEqualityConstraint(y_bar.cast<Expression>().sum() - y, 0);
+
+  const auto Bxy = prog->NewContinuousVariables(
+      m, n, x.get_name() + "_" + y.get_name() + "_Bxy");
+  prog->AddLinearEqualityConstraint(
+      Bxy.cast<Expression>().rowwise().sum().sum(), 1);
+
+  for (int i = 0; i < m; ++i) {
+    prog->AddLinearConstraint(
+        y_bar(i) >=
+        phi_y.head(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+    prog->AddLinearConstraint(
+        y_bar(i) <=
+        phi_y.tail(n).dot(Bxy.row(i).transpose().cast<Expression>()));
+  }
+  for (int j = 0; j < n; ++j) {
+    prog->AddLinearConstraint(x_bar(j) >=
+                              phi_x.head(m).dot(Bxy.col(j).cast<Expression>()));
+    prog->AddLinearConstraint(x_bar(j) <=
+                              phi_x.tail(m).dot(Bxy.col(j).cast<Expression>()));
+  }
+  // The right-hand side of the constraint on w, we will implement
+  // w >= w_constraint_rhs(0)
+  // w >= w_constraint_rhs(1)
+  // w <= w_constraint_rhs(2)
+  // w <= w_constraint_rhs(3)
+  Vector4<symbolic::Expression> w_constraint_rhs(0, 0, 0, 0);
+  w_constraint_rhs(0) = x_bar.cast<Expression>().dot(phi_y.head(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.head(m));
+  w_constraint_rhs(1) = x_bar.cast<Expression>().dot(phi_y.tail(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(2) = x_bar.cast<Expression>().dot(phi_y.head(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.tail(m));
+  w_constraint_rhs(3) = x_bar.cast<Expression>().dot(phi_y.tail(n)) +
+                        y_bar.cast<Expression>().dot(phi_x.head(m));
+  for (int i = 0; i < m; ++i) {
+    for (int j = 0; j < n; ++j) {
+      prog->AddConstraint(
+          // +v converts a symbolic variable v to a symbolic expression.
+          CreateLogicalAndConstraint(+Bx(i), +By(j), +Bxy(i, j)));
+
+      w_constraint_rhs(0) -= phi_x(i) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(1) -= phi_x(i + 1) * phi_y(j + 1) * Bxy(i, j);
+      w_constraint_rhs(2) -= phi_x(i + 1) * phi_y(j) * Bxy(i, j);
+      w_constraint_rhs(3) -= phi_x(i) * phi_y(j + 1) * Bxy(i, j);
+    }
+  }
+  prog->AddLinearConstraint(w >= w_constraint_rhs(0));
+  prog->AddLinearConstraint(w >= w_constraint_rhs(1));
+  prog->AddLinearConstraint(w <= w_constraint_rhs(2));
+  prog->AddLinearConstraint(w <= w_constraint_rhs(3));
 }
 }  // namespace solvers
 }  // namespace drake

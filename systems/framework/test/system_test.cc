@@ -8,6 +8,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -44,10 +45,6 @@ class TestSystem : public System<double> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<double>> AllocateContext() const override {
-    return nullptr;
-  }
-
   std::unique_ptr<CompositeEventCollection<double>>
   AllocateCompositeEventCollection() const override {
     return std::make_unique<LeafCompositeEventCollection<double>>();
@@ -70,7 +67,8 @@ class TestSystem : public System<double> {
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with no allocator or calculator.
-    auto port = std::make_unique<LeafOutputPort<double>>(*this,
+    auto port = std::make_unique<LeafOutputPort<double>>(
+        *this, *this, OutputPortIndex(get_num_output_ports()),
         typename LeafOutputPort<double>::AllocCallback(nullptr),
         typename LeafOutputPort<double>::CalcCallback(nullptr));
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -212,6 +210,12 @@ class TestSystem : public System<double> {
   }
 
  private:
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    return std::make_unique<LeafContext<double>>();
+  }
+
+  void DoValidateAllocatedContext(const ContextBase&) const final {}
+
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
   mutable std::vector<int> published_numbers_;
@@ -395,10 +399,11 @@ using TestTypedVector = MyVector<1, T>;
 template <typename T>
 class ValueIOTestSystem : public System<T> {
  public:
-  // Has 2 input and 2 output ports.
+  // Has 4 input and 2 output ports.
   // The first input / output pair are abstract type, but assumed to be
   // std::string.
   // The second input / output pair are vector type with length 1.
+  // There are two other vector-valued random input ports.
   ValueIOTestSystem() : System<T>(SystemScalarConverter{}) {
     this->set_forced_publish_events(
         this->AllocateForcedPublishEventCollection());
@@ -408,8 +413,9 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(*this,
-        [](const Context<T>&) { return AbstractValue::Make(std::string()); },
+    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        []() { return AbstractValue::Make(std::string()); },
         [this](const Context<T>& context, AbstractValue* output) {
           this->CalcStringOutput(context, output);
         }));
@@ -420,9 +426,9 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1,
                            RandomDistribution::kGaussian);
     this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this,
+        *this, *this, OutputPortIndex(this->get_num_output_ports()),
         1,  // Vector size.
-        [](const Context<T>&) {
+        []() {
           return std::make_unique<Value<BasicVector<T>>>(1);
         },
         [this](const Context<T>& context, BasicVector<T>* output) {
@@ -465,11 +471,11 @@ class ValueIOTestSystem : public System<T> {
     return nullptr;
   }
 
-  std::unique_ptr<Context<T>> AllocateContext() const override {
-    std::unique_ptr<LeafContext<T>> context(new LeafContext<T>);
-    context->SetNumInputPorts(this->get_num_input_ports());
-    return std::move(context);
+  std::unique_ptr<ContextBase> DoMakeContext() const final {
+    return std::make_unique<LeafContext<T>>();
   }
+
+  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
@@ -514,8 +520,8 @@ class ValueIOTestSystem : public System<T> {
       const Context<T>& context) const override {
     std::unique_ptr<LeafSystemOutput<T>> output(
         new LeafSystemOutput<T>);
-    output->add_port(this->get_output_port(0).Allocate(context));
-    output->add_port(this->get_output_port(1).Allocate(context));
+    output->add_port(this->get_output_port(0).Allocate());
+    output->add_port(this->get_output_port(1).Allocate());
     return std::move(output);
   }
 
@@ -557,11 +563,118 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
-      PeriodicEventDataComparator> DoGetPeriodicEvents() const override {
+           PeriodicEventDataComparator>
+  DoGetPeriodicEvents() const override {
     return {};
   }
 };
 
+// Just creates System and Context without providing values for inputs, to
+// allow for lots of error conditions.
+class SystemInputErrorTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    context_ = system_.CreateDefaultContext();
+  }
+
+  ValueIOTestSystem<double> system_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// A BasicVector-derived type we can complain about in the next test.
+template <typename T>
+class WrongVector : public MyVector<2, T> {
+ public:
+  using MyVector<2, T>::MyVector;
+};
+
+// Test error messages from the EvalInput methods.
+TEST_F(SystemInputErrorTest, CheckMessages) {
+  ASSERT_EQ(system_.get_num_input_ports(), 4);
+
+  // Sanity check that this works with a good port number.
+  EXPECT_NO_THROW(system_.get_input_port(1));
+
+  // Try some illegal port numbers.
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.get_input_port(-1), std::out_of_range,
+      ".*get_input_port.*negative.*-1.*illegal.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalVectorInput(*context_, -1), std::out_of_range,
+      ".*EvalVectorInput.*negative.*-1.*illegal.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalAbstractInput(*context_, -2), std::out_of_range,
+      ".*EvalAbstractInput.*negative.*-2.*illegal.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalInputValue<int>(*context_, -3), std::out_of_range,
+      ".*EvalInputValue.*negative.*-3.*illegal.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, -4), std::out_of_range,
+      ".*EvalEigenVectorInput.*negative.*-4.*illegal.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.get_input_port(9), std::out_of_range,
+      ".*get_input_port.*no input port.*9.*only.*4.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalVectorInput(*context_, 9), std::out_of_range,
+      ".*EvalVectorInput.*no input port.*9.*only.*4.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalAbstractInput(*context_, 10), std::out_of_range,
+      ".*EvalAbstractInput.*no input port.*10.*only.*4.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalInputValue<int>(*context_, 11), std::out_of_range,
+      ".*EvalInputValue.*no input port.*11.*only.*4.*");
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, 12), std::out_of_range,
+      ".*EvalEigenVectorInput.*no input port.*12.*only.*4.*");
+
+  // No ports have values yet. EvalEigenVectorInput() requires a value, but
+  // the others should return nullptr.
+  EXPECT_EQ(system_.EvalVectorInput(*context_, 1), nullptr);
+  EXPECT_EQ(system_.EvalAbstractInput(*context_, 1), nullptr);
+  EXPECT_EQ(system_.EvalInputValue<int>(*context_, 1), nullptr);
+
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
+      ".*EvalEigenVectorInput.*input port\\[1\\].*neither connected nor "
+          "fixed.*");
+
+  // Assign values to all ports. All but port 0 are BasicVector ports.
+  system_.AllocateFixedInputs(context_.get());
+
+  EXPECT_NO_THROW(system_.EvalVectorInput(*context_, 2));  // BasicVector OK.
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalVectorInput<WrongVector>(*context_, 2), std::logic_error,
+      ".*EvalVectorInput.*expected.*WrongVector"
+          ".*input port.*2.*actual.*MyVector.*");
+
+  EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalInputValue<int>(*context_, 1), std::logic_error,
+      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*BasicVector.*");
+
+  // Now induce errors that only apply to abstract-valued input ports.
+
+  EXPECT_EQ(*system_.EvalInputValue<std::string>(*context_, 0), "");
+  EXPECT_NO_THROW(system_.EvalAbstractInput(*context_, 0));
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalVectorInput(*context_, 0), std::logic_error,
+      ".*EvalVectorInput.*vector port required.*input port.*0.*"
+          "was declared abstract.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalEigenVectorInput(*context_, 0),
+      std::logic_error,
+      ".*EvalEigenVectorInput.*vector port required.*input port.*0.*"
+          "was declared abstract.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
+      system_.EvalInputValue<double>(*context_, 0),
+      std::logic_error,
+      ".*EvalInputValue.*expected.*double.*input port.*0.*actual.*string.*");
+}
+
+// Provides values for some of the inputs and sets up for outputs.
 class SystemIOTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -569,15 +682,10 @@ class SystemIOTest : public ::testing::Test {
     output_ = test_sys_.AllocateOutput(*context_);
 
     // make string input
-    std::unique_ptr<Value<std::string>> str_input =
-        std::make_unique<Value<std::string>>("input");
-    context_->FixInputPort(0, std::move(str_input));
+    context_->FixInputPort(0, Value<std::string>("input"));
 
     // make vector input
-    std::unique_ptr<BasicVector<double>> vec_input =
-        std::make_unique<BasicVector<double>>(1);
-    vec_input->SetAtIndex(0, 2);
-    context_->FixInputPort(1, std::move(vec_input));
+    context_->FixInputPort(1, {2.0});
   }
 
   ValueIOTestSystem<double> test_sys_;
@@ -611,7 +719,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
-  test_sys_.AllocateFreestandingInputs(context_.get());
+  test_sys_.AllocateFixedInputs(context_.get());
   // First input should have been re-allocated to the empty string.
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
             "");

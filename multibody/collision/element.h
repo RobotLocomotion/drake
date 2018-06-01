@@ -114,6 +114,13 @@ class Element : public DrakeShapes::Element {
   void AddToCollisionClique(int clique_id);
 
   /**
+   * Adds the cliques of the given `element` to `this` element's cliques.
+   *
+   * @param[in] element  The element whose cliques will be copied.
+   */
+  void AddCliquesFromElement(const Element& element);
+
+  /**
    * Reports the number of cliques to which this element belongs.
    * @returns The number of cliques.
    */
@@ -121,7 +128,7 @@ class Element : public DrakeShapes::Element {
 
   /**
    * Provides access to the set of cliques to which this element belongs.
-   * @returns A reference to the clique set (as a montonically increasing
+   * @returns A reference to the clique set (as a monotonically increasing
    * ordered list).
    */
   const std::vector<int>& collision_cliques() const;
@@ -132,13 +139,16 @@ class Element : public DrakeShapes::Element {
   const ::RigidBody<double>* get_body() const;
 
   /** Sets the `RigidBody` this collision element is attached to. */
-  void set_body(const ::RigidBody<double> *body);
+  void set_body(const ::RigidBody<double>* body);
 
   /** Sets the collision filter state of the element: the groups to which this
    * element belongs and the groups that it should ignore.
    */
-  void set_collision_filter(const bitmask &group,
-                            const bitmask &ignores);
+  void set_collision_filter(const bitmask& group, const bitmask& ignores);
+
+  /** Updates the collision filter state of the element; *adds* the groups to
+   which this element belongs and the groups it ignores. */
+  void merge_collision_filter(const bitmask& group, const bitmask& ignores);
 
   const bitmask& get_collision_filter_group() const {
     return collision_filter_group_;
@@ -195,12 +205,12 @@ class Element : public DrakeShapes::Element {
   // A bitmask that determines the collision groups that this element is part
   // of. If the i-th bit is set this rigid body belongs to the i-th collision
   // group. An element can belong to multiple collision groups.
-  drake::multibody::collision::bitmask collision_filter_group_{kDefaultGroup};
+  bitmask collision_filter_group_{kDefaultGroup};
 
   // A bitmask that determines which collision groups this element can *not*
   // collide with. Thus, if the i-th bit is set this element is not checked
   // for collisions with elements in the i-th group.
-  drake::multibody::collision::bitmask collision_filter_ignores_{kNoneMask};
+  bitmask collision_filter_ignores_{kNoneMask};
 
   // The compliant contact model parameters for this element.
   systems::CompliantMaterial compliant_material_;

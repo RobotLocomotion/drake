@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
@@ -18,6 +18,10 @@ namespace acrobot {
 /// an acrobot with the method MakeAcrobotPlant().
 /// Refer to this the documentation of this class's constructor for further
 /// details on the parameters stored by this class and their default values.
+///
+/// @note The default constructor initializes the parameters in accordance to
+/// the `acrobot.sdf` file in this same directory. Therefore this file and
+/// `acrobot.sdf` MUST be kept in sync.
 class AcrobotParameters {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AcrobotParameters)
@@ -139,15 +143,14 @@ class AcrobotParameters {
 ///   documentation of AcrobotParameters for further details.
 /// @param[in] finalize
 ///   If `true`, MultibodyPlant::Finalize() gets called on the new plant.
-/// @param geometry_system
-///   If a GeometrySystem is provided with this argument, this factory method
+/// @param scene_graph
+///   If a SceneGraph is provided with this argument, this factory method
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
 std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
-MakeAcrobotPlant(
-    const AcrobotParameters& default_parameters, bool finalize,
-    geometry::GeometrySystem<double>* geometry_system = nullptr);
+MakeAcrobotPlant(const AcrobotParameters& default_parameters, bool finalize,
+                 geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace acrobot
 }  // namespace benchmarks

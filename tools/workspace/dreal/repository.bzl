@@ -37,31 +37,34 @@ def _impl(repo_ctx):
         fail(os_result.error)
     if os_result.is_macos:
         result = setup_pkg_config_repository(repo_ctx)
-    else:
-        result = setup_new_deb_archive(repo_ctx)
-        # Avoid using upstream library names for our custom build.
-        _rename_so(
-            repo_ctx,
-            "opt/libibex/{}/lib".format(IBEX_VERSION),
-            "libibex.so",
-        )
-        _rename_so(
-            repo_ctx,
-            "opt/dreal/{}/lib".format(DREAL_VERSION),
-            "libdreal.so",
-        )
-        execute_or_fail(repo_ctx, [
-            "chmod", "a+w",
-            "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
-        ])
-        # Our BUILD file declares this dependency with the revised spelling.
-        execute_or_fail(repo_ctx, [
-            "patchelf", "--remove-needed", "libibex.so",
-            "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
-        ])
+        if result.error != None:
+            fail("Unable to complete setup for @{} repository: {}".
+                 format(repo_ctx.name, result.error))
+        return
+    result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
         fail("Unable to complete setup for @{} repository: {}".
              format(repo_ctx.name, result.error))
+    # Avoid using upstream library names for our custom build.
+    _rename_so(
+        repo_ctx,
+        "opt/libibex/{}/lib".format(IBEX_VERSION),
+        "libibex.so",
+    )
+    _rename_so(
+        repo_ctx,
+        "opt/dreal/{}/lib".format(DREAL_VERSION),
+        "libdreal.so",
+    )
+    execute_or_fail(repo_ctx, [
+        "chmod", "a+w",
+        "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
+    ])
+    # Our BUILD file declares this dependency with the revised spelling.
+    execute_or_fail(repo_ctx, [
+        "patchelf", "--remove-needed", "libibex.so",
+        "opt/dreal/{}/lib/libdrake_dreal.so".format(DREAL_VERSION),
+    ])
 
 dreal_repository = repository_rule(
     # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
@@ -82,7 +85,7 @@ dreal_repository = repository_rule(
         # documented in the new_deb_archive rule.
         "mirrors": attr.string_list(
             default = [
-                "https://drake-apt.csail.mit.edu/pool/main",
+                "https://drake-apt.csail.mit.edu/xenial/pool/main",
             ],
         ),
         "filenames": attr.string_list(
@@ -93,7 +96,7 @@ dreal_repository = repository_rule(
         ),
         "sha256s": attr.string_list(
             default = [
-                "53e530a7df9efe1afe5222e025a4339b9a33508f1b4f4434f7bd7763d44a6c11",  # noqa
+                "4df7f27effe990618efbf68be67a484a44695a469113ffcb67b9a6d163299474",  # noqa
                 "1285a64aa5c7ddbefa650232dbd5b309414fce94fd25b160689336f20672494b",  # noqa
             ],
         ),

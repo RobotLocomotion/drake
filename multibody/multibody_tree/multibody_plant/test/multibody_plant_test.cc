@@ -3,16 +3,24 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_autodiff_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/geometry/geometry_system.h"
+#include "drake/geometry/scene_graph.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -29,14 +37,20 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::FrameId;
-using geometry::FrameIdVector;
 using geometry::FramePoseVector;
-using geometry::GeometrySystem;
+using geometry::GeometryId;
+using geometry::PenetrationAsPointPair;
+using geometry::SceneGraph;
+using math::RollPitchYaw;
+using math::RotationMatrix;
+using math::Transform;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
+using multibody::multibody_plant::MultibodyPlant;
+using multibody::parsing::AddModelFromSdfFile;
 using systems::AbstractValue;
 using systems::BasicVector;
 using systems::Context;
@@ -46,9 +60,38 @@ using systems::Diagram;
 using systems::LinearSystem;
 using systems::Linearize;
 using systems::VectorBase;
+using std::pair;
+using std::make_pair;
+using std::tie;
+using std::unique_ptr;
 
 namespace multibody {
 namespace multibody_plant {
+
+class MultibodyPlantTester {
+ public:
+  MultibodyPlantTester() = delete;
+
+  template <typename T>
+  static BodyIndex geometry_id_to_body_index(
+      const MultibodyPlant<T>& plant, GeometryId id) {
+    return plant.geometry_id_to_body_index_.at(id);
+  }
+
+  static MatrixX<double> CalcNormalSeparationVelocitiesJacobian(
+      const MultibodyPlant<double>& plant, const Context<double>& context,
+      const std::vector<PenetrationAsPointPair<double>>& point_pairs) {
+    return plant.CalcNormalSeparationVelocitiesJacobian(context, point_pairs);
+  }
+
+  static MatrixX<double> CalcTangentVelocitiesJacobian(
+      const MultibodyPlant<double>& plant, const Context<double>& context,
+      const std::vector<PenetrationAsPointPair<double>>& point_pairs,
+      std::vector<Matrix3<double>>* R_WC_set) {
+    return plant.CalcTangentVelocitiesJacobian(context, point_pairs, R_WC_set);
+  }
+};
+
 namespace {
 
 // This test creates a simple model for an acrobot using MultibodyPlant and
@@ -58,7 +101,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const std::string kInvalidName = "InvalidName";
 
   const AcrobotParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> plant =
+  unique_ptr<MultibodyPlant<double>> plant =
       MakeAcrobotPlant(parameters, true /* Make a finalized plant. */);
 
   // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
@@ -142,23 +185,21 @@ class AcrobotPlantTests : public ::testing::Test {
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    geometry_system_ = builder.AddSystem<GeometrySystem>();
+    scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
-    plant_ = builder.AddSystem(
-        MakeAcrobotPlant(parameters_, false, geometry_system_));
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    plant_ = builder.AddSystem<MultibodyPlant>();
+    AddModelFromSdfFile(full_name, plant_, scene_graph_);
+    // Add gravity to the model.
+    plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != nullopt);
 
     // Verify that methods with pre-Finalize() conditions throw accordingly.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_->get_geometry_ids_output_port(),
-        std::logic_error,
-        /* Verify this method is throwing for the right reasons. */
-        "Pre-finalize calls to '.*' are not allowed; "
-        "you must call Finalize\\(\\) first.");
-
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_geometry_poses_output_port(),
         std::logic_error,
@@ -174,17 +215,12 @@ class AcrobotPlantTests : public ::testing::Test {
         "you must call Finalize\\(\\) first.");
 
     // Finalize() the plant before accessing its ports for communicating with
-    // GeometrySystem.
+    // SceneGraph.
     plant_->Finalize();
 
     builder.Connect(
-        plant_->get_geometry_ids_output_port(),
-        geometry_system_->get_source_frame_id_port(
-            plant_->get_source_id().value()));
-    builder.Connect(
         plant_->get_geometry_poses_output_port(),
-        geometry_system_->get_source_pose_port(
-            plant_->get_source_id().value()));
+        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
     // And build the Diagram:
     diagram_ = builder.Build();
 
@@ -201,6 +237,24 @@ class AcrobotPlantTests : public ::testing::Test {
     ASSERT_GT(plant_->num_actuators(), 0);
     input_port_ = &context_->FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
+  }
+
+  void SetUpDiscreteAcrobotPlant(double time_step) {
+    systems::DiagramBuilder<double> builder;
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+    discrete_plant_ = std::make_unique<MultibodyPlant<double>>(time_step);
+    AddModelFromSdfFile(full_name, discrete_plant_.get());
+    // Add gravity to the model.
+    discrete_plant_->AddForceElement<UniformGravityFieldElement>(
+        -9.81 * Vector3<double>::UnitZ());
+    discrete_plant_->Finalize();
+
+    discrete_context_ = discrete_plant_->CreateDefaultContext();
+    ASSERT_EQ(discrete_plant_->num_actuators(), 1);
+    discrete_context_->FixInputPort(
+        discrete_plant_->get_actuation_input_port().get_index(),
+        Vector1<double>(0.0));
   }
 
   // Verifies the computation performed by MultibodyPlant::CalcTimeDerivatives()
@@ -239,25 +293,85 @@ class AcrobotPlantTests : public ::testing::Test {
         xdot, xdot_expected, kTolerance, MatrixCompareType::relative));
   }
 
+  // Verifies the computation performed by
+  // MultibodyPlant::CalcDiscreteVariableUpdates(). For this simple model
+  // without contact, we verify that this method performs the periodic update
+  // of the state using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // To perform this verification, we compute v̇ⁿ using
+  // MultibodyPlant::CalcTimeDerivatives().
+  void VerifyDoCalcDiscreteVariableUpdates(double theta1, double theta2,
+                                           double theta1dot, double theta2dot) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    DRAKE_DEMAND(discrete_plant_ != nullptr);
+    const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+    const double time_step = discrete_plant_->time_step();
+
+    // Set the state for the continuous model:
+    shoulder_->set_angle(context_.get(), theta1);
+    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angular_rate(context_.get(), theta1dot);
+    elbow_->set_angular_rate(context_.get(), theta2dot);
+
+    // Set the state for the discrete model:
+    // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
+    // to whether the state is discrete or continuous. Therefore, we are allowed
+    // to using the same modeling elements to set both `context` and
+    // `discrete_context`.
+    shoulder_->set_angle(discrete_context_.get(), theta1);
+    elbow_->set_angle(discrete_context_.get(), theta2);
+    shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
+    elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
+
+    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    auto updates = discrete_plant_->AllocateDiscreteVariables();
+    discrete_plant_->CalcDiscreteVariableUpdates(
+        *discrete_context_, updates.get());
+
+    // Copies to plain Eigen vectors to verify the math.
+    const VectorXd x0 = context_->get_continuous_state_vector().CopyToVector();
+    const VectorXd xdot = derivatives_->CopyToVector();
+    const VectorXd xnext = updates->get_vector().CopyToVector();
+
+    // Verify that xnext is updated using a semi-explicit strategy, that is:
+    //   vnext = v0 + dt * vdot
+    //   qnext = q0 + dt * vnext
+    VectorXd xnext_expected(plant_->num_multibody_states());
+    const int nv = plant_->num_velocities();
+    const int nq = plant_->num_positions();
+    xnext_expected.segment(nq, nv) =
+        x0.segment(nq, nv) + time_step * xdot.segment(nq, nv);
+    // We use the fact that nq = nv for this case.
+    xnext_expected.segment(0, nq) =
+        x0.segment(0, nq) + time_step * xnext_expected.segment(nq, nv);
+
+    EXPECT_TRUE(CompareMatrices(
+        xnext, xnext_expected, kTolerance, MatrixCompareType::relative));
+  }
+
  protected:
   // The parameters of the model:
   const AcrobotParameters parameters_;
   // The model plant:
-  MultibodyPlant<double>* plant_{nullptr};
-  // A GeometrySystem so that we can test geometry registration.
-  GeometrySystem<double>* geometry_system_{nullptr};
-  // The Diagram containing both the MultibodyPlant and the GeometrySystem.
-  std::unique_ptr<Diagram<double>> diagram_;
+  MultibodyPlant<double>* plant_{nullptr};  // Owned by diagram_ below.
+  std::unique_ptr<MultibodyPlant<double>> discrete_plant_;
+  // A SceneGraph so that we can test geometry registration.
+  SceneGraph<double>* scene_graph_{nullptr};
+  // The Diagram containing both the MultibodyPlant and the SceneGraph.
+  unique_ptr<Diagram<double>> diagram_;
   // Workspace including context and derivatives vector:
-  std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<ContinuousState<double>> derivatives_;
+  unique_ptr<Context<double>> context_;
+  unique_ptr<Context<double>> discrete_context_;
+  unique_ptr<ContinuousState<double>> derivatives_;
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
   const RevoluteJoint<double>* shoulder_{nullptr};
   const RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
-  systems::FreestandingInputPortValue* input_port_{nullptr};
+  systems::FixedInputPortValue* input_port_{nullptr};
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
@@ -292,33 +406,47 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
       2.0);                     /* Actuation torque */
 }
 
-// Verifies the process of visual geometry registration with a GeometrySystem
+// Verifies the correctness of MultibodyPlant::DoCalcDiscreteVariableUpdates()
+// on a model of an acrobot.
+TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
+  // Set up an additional discrete state model of the same acrobot model.
+  SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
+
+  // Verify the implementation for a number of arbitrarily chosen states.
+  VerifyDoCalcDiscreteVariableUpdates(
+      -M_PI / 5.0, M_PI / 2.0,  /* joint's angles */
+      0.5, 1.0);                /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      M_PI / 3.0, -M_PI / 5.0,  /* joint's angles */
+      0.7, -1.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      M_PI / 4.0, -M_PI / 3.0,  /* joint's angles */
+      -0.5, 2.0);               /* joint's angular rates */
+  VerifyDoCalcDiscreteVariableUpdates(
+      -M_PI, -M_PI / 2.0,       /* joint's angles */
+      -1.5, -2.5);              /* joint's angular rates */
+}
+
+// Verifies the process of visual geometry registration with a SceneGraph
 // for the acrobot model.
 TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
-  EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
+  EXPECT_EQ(plant_->num_visual_geometries(), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
 
   // The default context gets initialized by a call to SetDefaultState(), which
   // for a MultibodyPlant sets all revolute joints to have zero angles and zero
   // angular velocity.
-  std::unique_ptr<systems::Context<double>> context =
+  unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant_->get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
-  std::unique_ptr<AbstractValue> poses_value =
-      plant_->get_geometry_poses_output_port().Allocate(*context);
+  unique_ptr<AbstractValue> poses_value =
+      plant_->get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant_->get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(poses.source_id(), plant_->get_source_id());
+  EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -330,14 +458,13 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
     const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = poses.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
 
-  // GeometrySystem does not register a FrameId for the world. We use this fact
+  // SceneGraph does not register a FrameId for the world. We use this fact
   // to test that GetBodyFrameIdOrThrow() throws an assertion for a body with no
   // FrameId, even though in this model we register an anchored geometry to the
   // world.
@@ -349,7 +476,7 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 }
 
 // Verifies the process of collision geometry registration with a
-// GeometrySystem.
+// SceneGraph.
 // We build a model with two spheres and a ground plane. The ground plane is
 // located at y = 0 with normal in the y-axis direction.
 // For testing the output port computation we place the spheres on the ground
@@ -359,35 +486,41 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   const double radius = 0.5;
   const double x_offset = 0.6;
 
-  GeometrySystem<double> geometry_system;
+  SceneGraph<double> scene_graph;
   MultibodyPlant<double> plant;
-  plant.RegisterAsSourceForGeometrySystem(&geometry_system);
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
 
   // A half-space for the ground geometry.
-  plant.RegisterCollisionGeometry(
+  CoulombFriction<double> ground_friction(0.5, 0.3);
+  GeometryId ground_id = plant.RegisterCollisionGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
-      geometry::HalfSpace(), &geometry_system);
+      geometry::HalfSpace(), ground_friction, &scene_graph);
 
   // Add two spherical bodies.
   const RigidBody<double>& sphere1 =
       plant.AddRigidBody("Sphere1", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere1, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere1_friction(0.8, 0.5);
+  GeometryId sphere1_id = plant.RegisterCollisionGeometry(
+      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere1_friction, &scene_graph);
   const RigidBody<double>& sphere2 =
       plant.AddRigidBody("Sphere2", SpatialInertia<double>());
-  plant.RegisterCollisionGeometry(sphere2, Isometry3d::Identity(),
-                                  geometry::Sphere(radius), &geometry_system);
+  CoulombFriction<double> sphere2_friction(0.7, 0.6);
+  GeometryId sphere2_id = plant.RegisterCollisionGeometry(
+      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      sphere2_friction, &scene_graph);
+
   // We are done defining the model.
   plant.Finalize();
 
-  EXPECT_EQ(plant.get_num_visual_geometries(), 0);
-  EXPECT_EQ(plant.get_num_collision_geometries(), 3);
+  EXPECT_EQ(plant.num_visual_geometries(), 0);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
 
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.model().SetFreeBodyPoseOrThrow(
@@ -398,20 +531,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
       context.get());
 
-  std::unique_ptr<AbstractValue> ids_value =
-      plant.get_geometry_ids_output_port().Allocate(*context);
-  EXPECT_NO_THROW(ids_value->GetValueOrThrow<FrameIdVector>());
-  const FrameIdVector& ids = ids_value->GetValueOrThrow<FrameIdVector>();
-  EXPECT_EQ(ids.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(ids.size(), 2);  // Only two frames move.
-
-  std::unique_ptr<AbstractValue> poses_value =
-      plant.get_geometry_poses_output_port().Allocate(*context);
+  unique_ptr<AbstractValue> poses_value =
+      plant.get_geometry_poses_output_port().Allocate();
   EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
-  const FramePoseVector<double>& poses =
+  const FramePoseVector<double>& pose_data =
       poses_value->GetValueOrThrow<FramePoseVector<double>>();
-  EXPECT_EQ(poses.get_source_id(), plant.get_source_id());
-  EXPECT_EQ(poses.vector().size(), 2);  // Only two frames move.
+  EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
+  EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
@@ -423,23 +549,30 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
-    const int id_index = ids.GetIndex(frame_id);
-    const Isometry3<double>& X_WB = poses.vector()[id_index];
+    const Isometry3<double>& X_WB = pose_data.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
+
+  // Verify we can retrieve friction coefficients.
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(ground_id) == ground_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere1_id) == sphere1_friction));
+  EXPECT_TRUE(ExtractBoolOrThrow(
+      plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
   PendulumParameters parameters;
-  std::unique_ptr<MultibodyPlant<double>> pendulum =
+  unique_ptr<MultibodyPlant<double>> pendulum =
       MakePendulumPlant(parameters);
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
-  std::unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
+  unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
   context->FixInputPort(0, Vector1d{0.0});
 
   // First we will linearize about the unstable fixed point with the pendulum
@@ -447,7 +580,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   pin.set_angle(context.get(), M_PI);
   pin.set_angular_rate(context.get(), 0.0);
 
-  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+  unique_ptr<LinearSystem<double>> linearized_pendulum =
       Linearize(*pendulum, *context,
                 pendulum->get_actuation_input_port().get_index(),
                 systems::kNoOutput);
@@ -477,14 +610,14 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
 }
 
 TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
-  EXPECT_EQ(plant_->get_num_visual_geometries(), 3);
+  EXPECT_EQ(plant_->num_visual_geometries(), 3);
   EXPECT_TRUE(plant_->geometry_source_is_registered());
   EXPECT_TRUE(plant_->get_source_id());
 
   // The default context gets initialized by a call to SetDefaultState(), which
   // for a MultibodyPlant sets all revolute joints to have zero angles and zero
   // angular velocity.
-  std::unique_ptr<systems::Context<double>> context =
+  unique_ptr<systems::Context<double>> context =
       plant_->CreateDefaultContext();
 
   // Set some non-zero state:
@@ -493,8 +626,8 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   shoulder_->set_angular_rate(context.get(), -0.5);
   elbow_->set_angular_rate(context.get(), 2.5);
 
-  std::unique_ptr<AbstractValue> state_value =
-      plant_->get_continuous_state_output_port().Allocate(*context);
+  unique_ptr<AbstractValue> state_value =
+      plant_->get_continuous_state_output_port().Allocate();
   EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
   const BasicVector<double>& state_out =
       state_value->GetValueOrThrow<BasicVector<double>>();
@@ -517,7 +650,7 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   const RigidBody<double>& body =
       plant.AddRigidBody("FreeBody", SpatialInertia<double>());
   plant.Finalize();
-  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Set an arbitrary pose of the body in the world.
   const Vector3d p_WB(1, 2, 3);  // Position in world.
@@ -552,6 +685,447 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
+}
+
+// Test to verify we can still do dynamics even when there are weld joints
+// within the model. This test builds a model from split_pendulum.sdf and
+// therefore it must be kept in sync with that file. The model consists of a
+// simple pendulum but built with two bodies and a WeldJoint joining them
+// together into a single body. For details, refer to split_pendulum.sdf.
+class SplitPendulum : public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Make the cart_pole model.
+    const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/multibody_tree/"
+            "multibody_plant/test/split_pendulum.sdf");
+    AddModelFromSdfFile(full_name, &plant_);
+    plant_.Finalize();
+
+    // Get pin joint so that we can set the state.
+    pin_ = &plant_.GetJointByName<RevoluteJoint>("pin");
+
+    // Create a context to store the state for this model:
+    context_ = plant_.CreateDefaultContext();
+  }
+
+ protected:
+  MultibodyPlant<double> plant_;
+  const RevoluteJoint<double>* pin_{nullptr};
+  unique_ptr<Context<double>> context_;
+};
+
+// Verify the computation of the mass matrix against the analytical solution.
+TEST_F(SplitPendulum, MassMatrix) {
+  EXPECT_EQ(plant_.num_bodies(), 3);
+  EXPECT_EQ(plant_.num_joints(), 2);
+  EXPECT_EQ(plant_.num_positions(), 1);
+  EXPECT_EQ(plant_.num_velocities(), 1);
+
+  // Problem parameters. These must be kept in sync with split_pendulum.sdf.
+  const double mass = 1.0;     // rod's mass.
+  const double length = 12.0;  // rod's length.
+
+  // Inertia of the entire rod of length 12.0 about the pivot point.
+  const double Io = mass * length * length / 3.0;
+
+  // We choose an arbitrary angle since the mass matrix is independent of the
+  // state.
+  const double theta = M_PI / 3;
+
+  MatrixX<double> M(1, 1);
+  pin_->set_angle(context_.get(), theta);
+  plant_.model().CalcMassMatrixViaInverseDynamics(*context_, &M);
+
+  // We can only expect values within the precision specified in the sdf file.
+  EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
+}
+
+// Verifies we can parse link collision geometries and surface friction.
+GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
+  const std::string full_name = drake::FindResourceOrThrow(
+      "drake/multibody/multibody_tree/parsing/test/"
+          "links_with_visuals_and_collisions.sdf");
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  plant.Finalize();
+
+  EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
+  EXPECT_EQ(plant.num_visual_geometries(), 5);
+  EXPECT_EQ(plant.num_collision_geometries(), 3);
+
+  const int link1_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_collisions =
+      plant.GetCollisionGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_collisions, 2);
+  ASSERT_EQ(link2_num_collisions, 0);
+  ASSERT_EQ(link3_num_collisions, 1);
+
+  const int link1_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link1")).size();
+  const int link2_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link2")).size();
+  const int link3_num_visuals =
+      plant.GetVisualGeometriesForBody(plant.GetBodyByName("link3")).size();
+  ASSERT_EQ(link1_num_visuals, 2);
+  ASSERT_EQ(link2_num_visuals, 3);
+  ASSERT_EQ(link3_num_visuals, 0);
+
+  // Scalar convert the plant and verify invariants.
+  MultibodyPlant<AutoDiffXd> plant_autodiff(plant);
+  EXPECT_EQ(plant_autodiff.num_collision_geometries(),
+            plant.num_collision_geometries());
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetCollisionGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_collisions);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link1")).size(), link1_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
+  EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
+      plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+}
+
+// This test is used to verify the correctness of the methods to compute the
+// normal Jacobian N and the tangent Jacobian D.
+// We do this for the particular case of a small box sitting on top of a larger
+// box. The boxes interpenetrate by a small depth amount. A multicontact
+// situation is emulated in which the contact engine supplied four point
+// contact pairs corresponding to the four corners of the small box.
+// To make the problem more interesting, and essentially to avoid considering
+// a trivial case with zero translations and identity transformations, the
+// entire setup with the small box on top of the large box is rotated about the
+// z-axis by 45 degrees.
+// We verify the correctness of the Jacobian matrices computed by
+// MultibodyPlant by comparing them against a result obtained using automatic
+// differentiation of the relative contact velocities.
+class MultibodyPlantContactJacobianTests : public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Scene graph is only used to emulate a typical geometry registration.
+    // Later we create the results of a query for the particular scenario in
+    // this test by hand.
+    plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
+
+    // The model simply contains a small and a large box.
+    const RigidBody<double>& large_box =
+        plant_.AddRigidBody("LargeBox", SpatialInertia<double>());
+    large_box_id_ = plant_.RegisterCollisionGeometry(
+        large_box, Isometry3d::Identity(),
+        geometry::Box(large_box_size_, large_box_size_, large_box_size_),
+        CoulombFriction<double>(), &scene_graph_);
+
+    const RigidBody<double>& small_box =
+        plant_.AddRigidBody("SmallBox", SpatialInertia<double>());
+    small_box_id_ = plant_.RegisterCollisionGeometry(
+        small_box, Isometry3d::Identity(),
+        geometry::Box(small_box_size_, small_box_size_, small_box_size_),
+        CoulombFriction<double>(), &scene_graph_);
+
+    // We are done defining the model.
+    plant_.Finalize();
+
+    // Some sanity checks before proceeding.
+    ASSERT_EQ(plant_.num_collision_geometries(), 2);
+    ASSERT_TRUE(plant_.geometry_source_is_registered());
+    ASSERT_TRUE(plant_.get_source_id());
+
+    // Create the plant's context and set its state.
+    context_ = plant_.CreateDefaultContext();
+    SetBoxesOnSlantedConfiguration(context_.get());
+
+    // Set the penetrations pairs consistent with the plant's state.
+    SetPenetrationPairs(*context_, &penetrations_);
+  }
+
+  // Helper method to set the state of the system so that the small box sits
+  // on top of the large box, with a small penetration depth.
+  // The entire setup is rotated 45 degrees about the z axis into a slanted
+  // configuration.
+  void SetBoxesOnSlantedConfiguration(Context<double>* context) {
+    // Notation for frames:
+    //  - W: the world frame.
+    //  - Lb: the frame of the large box, with its origin at the box's center.
+    //  - Sb: the frame of the small box, with its origin at the box's center.
+
+    const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
+    const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
+
+    const Transform<double> X_WLb =
+        // Pure rotation.
+        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                          Vector3<double>::Zero()) *
+        // Pure translation.
+        Transform<double>(RotationMatrix<double>::Identity(),
+                          Vector3<double>(0, -large_box_size_ / 2.0, 0));
+    const Transform<double> X_WSb =
+        // Pure rotation.
+        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                          Vector3<double>::Zero()) *
+        // Pure translation.
+        Transform<double>(RotationMatrix<double>::Identity(),
+                          Vector3<double>(
+                              0, small_box_size_ / 2.0 - penetration_, 0));
+
+    plant_.model().SetFreeBodyPoseOrThrow(
+        large_box, X_WLb.GetAsIsometry3(), context);
+    plant_.model().SetFreeBodyPoseOrThrow(
+        small_box, X_WSb.GetAsIsometry3(), context);
+  }
+
+  // Generate a valid set of penetrations for this particular setup that
+  // emulates a multicontact scenario.
+  void SetPenetrationPairs(
+      const Context<double>& context,
+      std::vector<PenetrationAsPointPair<double>>* penetrations) {
+    const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
+    const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
+
+    std::vector<Isometry3<double>> X_WB_set;
+    plant_.model().CalcAllBodyPosesInWorld(context, &X_WB_set);
+
+    // Pose of the boxes in the world frame.
+    const Isometry3<double>& X_WLb = X_WB_set[large_box.index()];
+    const Isometry3<double>& X_WSb = X_WB_set[small_box.index()];
+
+    // Normal pointing outwards from the top surface of the large box.
+    const Vector3<double> nhat_large_box_W =
+        X_WLb.rotation() * Vector3<double>::UnitY();
+
+    for (double x : {-small_box_size_ / 2.0, small_box_size_ / 2.0}) {
+      for (double z : {-small_box_size_ / 2.0, small_box_size_ / 2.0}) {
+        PenetrationAsPointPair<double> point_pair;
+        point_pair.id_A = large_box_id_;
+        point_pair.id_B = small_box_id_;
+        // Collision point on A (Large box).
+        const Vector3<double> p_LbC(x, large_box_size_ / 2.0, z);
+        point_pair.p_WCa = X_WLb * p_LbC;
+        // Collision point on B (Small box).
+        const Vector3<double> p_SbC(x, -small_box_size_ / 2.0, z);
+        point_pair.p_WCb = X_WSb * p_SbC;
+        point_pair.nhat_BA_W = -nhat_large_box_W;
+        point_pair.depth = penetration_;
+        penetrations->push_back(point_pair);
+      }
+    }
+  }
+
+  // Helper method to scalar convert the model and its context to AutoDiffXd.
+  // The newly scalar converted context is set from the original context
+  // templated on double such that we can take gradients with respect to the
+  // generalized velocities.
+  pair<unique_ptr<MultibodyPlant<AutoDiffXd>>,
+       unique_ptr<Context<AutoDiffXd>>> ConvertPlantAndContextToAutoDiffXd() {
+    // Scalar convert the plant and its context_.
+    unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff =
+        systems::System<double>::ToAutoDiffXd(plant_);
+    unique_ptr<Context<AutoDiffXd>> context_autodiff =
+        plant_autodiff->CreateDefaultContext();
+    context_autodiff->SetTimeStateAndParametersFrom(*context_);
+
+    // Initialize v_autodiff to have values v and so that it is the independent
+    // variable of the problem.
+    const VectorX<double> v =
+        context_->get_continuous_state().get_generalized_velocity().
+            CopyToVector();
+    VectorX<AutoDiffXd> v_autodiff(plant_.num_velocities());
+    math::initializeAutoDiff(v, v_autodiff);
+    context_autodiff->get_mutable_continuous_state().
+        get_mutable_generalized_velocity().SetFromVector(v_autodiff);
+
+    return make_pair(std::move(plant_autodiff),
+                          std::move(context_autodiff));
+  }
+
+  // Helper method to compute the separation velocity in the direction defined
+  // by the normal nhat_BA for each contact pair in pairs_set. The i-th entry in
+  // the output vector contains the separation velocity for the i-th pair in
+  // pairs_set.
+  // This method is templated to facilitate automatic differentiation for this
+  // test.
+  template <typename T>
+  VectorX<T> CalcNormalVelocities(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T,
+      const std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
+    std::vector<SpatialVelocity<T>> V_WB_set;
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
+        context_on_T, &V_WB_set);
+
+    std::vector<Isometry3<T>> X_WB_set;
+    plant_on_T.model().CalcAllBodyPosesInWorld(
+        context_on_T, &X_WB_set);
+
+    VectorX<T> vn(pairs_set.size());
+    int icontact = 0;
+    for (const auto& pair : pairs_set) {
+      PenetrationAsPointPair<T> pair_on_T;
+      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_A);
+      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_B);
+      const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
+      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
+
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
+      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+
+      // From the relative velocity of B in A, compute the normal separation
+      // velocity vn (vn > 0 if bodies are moving apart)
+      const Vector3<T> nhat_BA_W = pair.nhat_BA_W.cast<T>();
+      vn(icontact++) = -nhat_BA_W.dot(v_WCb - v_WCa);
+    }
+    return vn;
+  }
+
+  // Helper method to compute the tangential velocities in a pair of directions
+  // defined orthogonal to the normal nhat_BA for each contact pair in
+  // pairs_set. Entries i and i+1 in the output vector contain the tangential
+  // components of the relative velocity for the i-th pair in pairs_set.
+  // This method is templated to facilitate automatic differentiation for this
+  // test.
+  template <typename T>
+  VectorX<T> CalcTangentVelocities(
+      const MultibodyPlant<T>& plant_on_T,
+      const Context<T>& context_on_T,
+      const std::vector<PenetrationAsPointPair<double>>& pairs_set,
+      const std::vector<Matrix3<double>>& R_WC_set) const {
+    std::vector<SpatialVelocity<T>> V_WB_set;
+    plant_on_T.model().CalcAllBodySpatialVelocitiesInWorld(
+        context_on_T, &V_WB_set);
+
+    std::vector<Isometry3<T>> X_WB_set;
+    plant_on_T.model().CalcAllBodyPosesInWorld(
+        context_on_T, &X_WB_set);
+
+    VectorX<T> vt(2 * pairs_set.size());
+    int icontact = 0;
+    for (const auto& pair : pairs_set) {
+      PenetrationAsPointPair<T> pair_on_T;
+      BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_A);
+      BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
+          plant_on_T, pair.id_B);
+      const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
+      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+      const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
+      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
+      const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
+
+      const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
+      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
+      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
+      const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
+
+      // The columns of R_WC (the orientation of contact frame C in the world),
+      // contains the versors of C's basis, expressed in the world frame.
+      // In particular, the first two columns corresponds to the versors tangent
+      // to the contact plane.
+      const Vector3<T> that1_W = R_WC_set[icontact].col(0).cast<T>();
+      const Vector3<T> that2_W = R_WC_set[icontact].col(1).cast<T>();
+
+      // Compute the relative velocity of B in A and obtain its components
+      // in the contact frame C. The tangential velocities correspond to the
+      // x and y components in this frame.
+      vt(2 * icontact)     = that1_W.dot(v_WCb - v_WCa);
+      vt(2 * icontact + 1) = that2_W.dot(v_WCb - v_WCa);
+
+      icontact++;
+    }
+    return vt;
+  }
+
+ protected:
+  MultibodyPlant<double> plant_;
+  SceneGraph<double> scene_graph_;
+  unique_ptr<Context<double>> context_;
+  std::vector<PenetrationAsPointPair<double>> penetrations_;
+  GeometryId small_box_id_;
+  GeometryId large_box_id_;
+  // Parameters of the setup.
+  const double small_box_size_{1.0};
+  const double large_box_size_{5.0};
+  const double penetration_{0.01};
+};
+
+TEST_F(MultibodyPlantContactJacobianTests, NormalJacobian) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+  // Compute separation velocities Jacobian.
+  const MatrixX<double> N =
+      MultibodyPlantTester::CalcNormalSeparationVelocitiesJacobian(
+          plant_, *context_, penetrations_);
+
+  // Assert N has the right sizes.
+  const int nv = plant_.num_velocities();
+  const int nc = penetrations_.size();
+  ASSERT_EQ(N.rows(), nc);
+  ASSERT_EQ(N.cols(), nv);
+
+  // Scalar convert the plant and its context_.
+  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
+  unique_ptr<Context<AutoDiffXd>> context_autodiff;
+  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
+
+  // Automatically differentiate vn (with respect to v) to get the normal
+  // separation velocities Jacobian N.
+  VectorX<AutoDiffXd> vn_autodiff = CalcNormalVelocities(
+      *plant_autodiff, *context_autodiff, penetrations_);
+  const MatrixX<double> vn_derivs =
+      math::autoDiffToGradientMatrix(vn_autodiff);
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      N, vn_derivs, kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+
+  // Store the orientation of the contact frames so that we can use them later
+  // to compute the same Jacobian using autodifferentiation.
+  std::vector<Matrix3<double>> R_WC_set;
+
+  // Compute separation velocities Jacobian.
+  const MatrixX<double> D =
+      MultibodyPlantTester::CalcTangentVelocitiesJacobian(
+          plant_, *context_, penetrations_, &R_WC_set);
+
+  // Assert D has the right sizes.
+  const int nv = plant_.num_velocities();
+  const int nc = penetrations_.size();
+  ASSERT_EQ(D.rows(), 2 * nc);
+  ASSERT_EQ(D.cols(), nv);
+
+  // Scalar convert the plant and its context_.
+  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
+  unique_ptr<Context<AutoDiffXd>> context_autodiff;
+  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
+
+  // Automatically differentiate vt (with respect to v) to get the tangent
+  // velocities Jacobian D.
+  VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
+      *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
+  const MatrixX<double> vt_derivs =
+      math::autoDiffToGradientMatrix(vt_autodiff);
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

@@ -72,6 +72,13 @@ Endpoint endpoint(const YAML::Node& node) {
   return Endpoint(endpoint_xy(node["xypoint"]), endpoint_z(node["zpoint"]));
 }
 
+// Parses a yaml `node` and returns a LineOffset object from it.
+// `node` must be a double scalar.
+LineOffset line_offset(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsScalar());
+  return LineOffset(node.as<double>());
+}
+
 // Parses a yaml `node` and returns an ArcOffset object from it.
 // `node` must be a sequence of two doubles. The first item will be the radius
 // and the second item will be the angle span in degrees.
@@ -157,13 +164,34 @@ EndpointZ ResolveEndpointZReference(const YAML::Node& end_node) {
   return endpoint_z(end_node[1]);
 }
 
+// Builds a LaneLayout based `node`'s lane node, the left and right
+// shoulders.
+LaneLayout ResolveLaneLayout(const YAML::Node& node,
+                             double default_left_shoulder,
+                             double default_right_shoulder) {
+  int num_lanes{0};
+  int ref_lane{0};
+  double r_ref{0.};
+  std::tie(num_lanes, ref_lane, r_ref) = lanes(node["lanes"]);
+
+  // Left and right shoulders are not required, if any of them is present it
+  // will override the default value.
+  const double left_shoulder = node["left_shoulder"]
+                                   ? node["left_shoulder"].as<double>()
+                                   : default_left_shoulder;
+  const double right_shoulder = node["right_shoulder"]
+                                    ? node["right_shoulder"].as<double>()
+                                    : default_right_shoulder;
+  // Create lane layout.
+  return LaneLayout(left_shoulder, right_shoulder, num_lanes, ref_lane, r_ref);
+}
 
 // Make a Connection, if all the references in the yaml node can be resolved.
 // Otherwise, return a nullptr (meaning, "try again after making some other
 // connections").
 const Connection* MaybeMakeConnection(
     std::string id, const YAML::Node& node,
-    const std::map<std::string, Endpoint>& xyz_catalog, Builder* builder,
+    const std::map<std::string, Endpoint>& xyz_catalog, BuilderBase* builder,
     double default_left_shoulder, double default_right_shoulder) {
   DRAKE_DEMAND(node.IsMap());
   // "lanes" is required.
@@ -177,32 +205,22 @@ const Connection* MaybeMakeConnection(
   DRAKE_DEMAND(node["z_end"] || node["explicit_end"]);
   DRAKE_DEMAND(!(node["z_end"] && node["explicit_end"]));
 
-  int num_lanes{0}, ref_lane{0};
-  double r_ref{0.};
-  std::tie(num_lanes, ref_lane, r_ref) = lanes(node["lanes"]);
-  // TODO(agalbachicar)    Once the API supports referencing to lanes, this
-  //                       should be used to call the appropriate Builder
-  //                       methods, r_ref will refer to any lane and will not be
-  //                       r0.
-  DRAKE_DEMAND(ref_lane == 0);
+  // Define which type of connection is going to be built.
+  const Connection::Type segment_type =
+      node["length"] ? Connection::kLine : Connection::kArc;
 
-  // Left and right shoulders are not required, if any of them is present it
-  // will override the default value.
-  const double left_shoulder = node["left_shoulder"]
-                                   ? node["left_shoulder"].as<double>()
-                                   : default_left_shoulder;
-  const double right_shoulder = node["right_shoulder"]
-                                    ? node["right_shoulder"].as<double>()
-                                    : default_right_shoulder;
+  // Create lane layout.
+  const LaneLayout lane_layout =
+      ResolveLaneLayout(node, default_left_shoulder, default_right_shoulder);
 
+  // Get the start point and build the start spec.
   const drake::optional<Endpoint> start_point =
       ResolveEndpoint(node["start"], xyz_catalog);
   if (!start_point) {
     return nullptr;
   }  // "Try to resolve later."
-  const Connection::Type segment_type =
-      node["length"] ? Connection::kLine : Connection::kArc;
-  // Optional explicit endpoint.
+
+  // Obtains the end-point information and build the end spec.
   drake::optional<Endpoint> ee_point;
   if (node["explicit_end"]) {
     ee_point = ResolveEndpoint(node["explicit_end"], xyz_catalog);
@@ -221,14 +239,18 @@ const Connection* MaybeMakeConnection(
   //                       code covers Builder's reference-curve API.
   switch (segment_type) {
     case Connection::kLine: {
-      return builder->Connect(id, num_lanes, r_ref, left_shoulder,
-                              right_shoulder, *start_point,
-                              node["length"].as<double>(), ez_point);
+      return builder->Connect(
+          id, lane_layout,
+          StartReference().at(*start_point, Direction::kForward),
+          line_offset(node["length"]),
+          EndReference().z_at(ez_point, Direction::kForward));
     }
     case Connection::kArc: {
-      return builder->Connect(id, num_lanes, r_ref, left_shoulder,
-                              right_shoulder, *start_point,
-                              arc_offset(node["arc"]), ez_point);
+      return builder->Connect(
+          id, lane_layout,
+          StartReference().at(*start_point, Direction::kForward),
+          arc_offset(node["arc"]),
+          EndReference().z_at(ez_point, Direction::kForward));
     }
     default: {
       DRAKE_ABORT();
@@ -244,21 +266,29 @@ const Connection* MaybeMakeConnection(
 // "connections" node. "points" map node contains the description of reference
 // Endpoints and "connections" describes the Connections. If provided, "groups"
 // map node will contain sequences of Groups to join Connections.
-std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
+std::unique_ptr<const api::RoadGeometry> BuildFrom(
+    const BuilderFactoryBase& builder_factory, const YAML::Node& node) {
   DRAKE_DEMAND(node.IsMap());
   YAML::Node mmb = node["maliput_multilane_builder"];
   DRAKE_DEMAND(mmb.IsMap());
 
-  const double lane_width = mmb["lane_width"].as<double>();
-  DRAKE_DEMAND(lane_width >= 0.);
   const double default_left_shoulder = mmb["left_shoulder"].as<double>();
   DRAKE_DEMAND(default_left_shoulder >= 0.);
   const double default_right_shoulder = mmb["right_shoulder"].as<double>();
   DRAKE_DEMAND(default_right_shoulder >= 0.);
 
-  Builder builder(lane_width, h_bounds(mmb["elevation_bounds"]),
-                  mmb["linear_tolerance"].as<double>(),
-                  deg_to_rad(mmb["angular_tolerance"].as<double>()));
+  const double lane_width = mmb["lane_width"].as<double>();
+  DRAKE_DEMAND(lane_width >= 0.);
+  const double linear_tolerance = mmb["linear_tolerance"].as<double>();
+  DRAKE_DEMAND(linear_tolerance >= 0.);
+  const double angular_tolerance =
+      deg_to_rad(mmb["angular_tolerance"].as<double>());
+  DRAKE_DEMAND(angular_tolerance >= 0.);
+
+  auto builder =
+      builder_factory.Make(lane_width, h_bounds(mmb["elevation_bounds"]),
+                           linear_tolerance, angular_tolerance);
+  DRAKE_DEMAND(builder != nullptr);
 
   drake::log()->debug("loading points !");
   YAML::Node points = mmb["points"];
@@ -296,7 +326,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     for (const auto& r : raw_connections) {
       std::string id = r.first;
       const Connection* conn =
-          MaybeMakeConnection(id, r.second, xyz_catalog, &builder,
+          MaybeMakeConnection(id, r.second, xyz_catalog, builder.get(),
                               default_left_shoulder, default_right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);
@@ -327,8 +357,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     for (const auto& g : groups) {
       const std::string gid = g.first.as<std::string>();
       drake::log()->debug("   create group '{}'", gid);
-      Group* group = builder.MakeGroup(gid);
-
+      Group* group = builder->MakeGroup(gid);
       YAML::Node cids_node = g.second;
       DRAKE_DEMAND(cids_node.IsSequence());
       for (const YAML::Node& cid_node : cids_node) {
@@ -339,19 +368,19 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(const YAML::Node& node) {
     }
   }
   drake::log()->debug("building road geometry {}", mmb["id"].Scalar());
-  return builder.Build(api::RoadGeometryId{mmb["id"].Scalar()});
+  return builder->Build(api::RoadGeometryId{mmb["id"].Scalar()});
 }
 
 }  // namespace
 
-
-std::unique_ptr<const api::RoadGeometry> Load(const std::string& input) {
-  return BuildFrom(YAML::Load(input));
+std::unique_ptr<const api::RoadGeometry> Load(
+    const BuilderFactoryBase& builder_factory, const std::string& input) {
+  return BuildFrom(builder_factory, YAML::Load(input));
 }
 
-
-std::unique_ptr<const api::RoadGeometry> LoadFile(const std::string& filename) {
-  return BuildFrom(YAML::LoadFile(filename));
+std::unique_ptr<const api::RoadGeometry> LoadFile(
+    const BuilderFactoryBase& builder_factory, const std::string& filename) {
+  return BuildFrom(builder_factory, YAML::LoadFile(filename));
 }
 
 }  // namespace multilane

@@ -13,11 +13,8 @@ namespace systems {
 
 using std::runtime_error;
 
-ViewerDrawTranslator::ViewerDrawTranslator(
-    const RigidBodyTree<double>& tree) :
-    LcmAndVectorBaseTranslator(
-        tree.get_num_positions() + tree.get_num_velocities()),
-    tree_(tree) {
+ViewerDrawTranslator::ViewerDrawTranslator(const RigidBodyTree<double>& tree)
+    : LcmAndVectorBaseTranslator(tree.get_num_positions()), tree_(tree) {
   // Initializes the draw message.
   draw_message_.num_links = tree_.get_bodies().size();
   std::vector<float> position = {0, 0, 0};
@@ -41,7 +38,9 @@ void ViewerDrawTranslator::Deserialize(
 void ViewerDrawTranslator::Serialize(double time,
     const VectorBase<double>& vector_base,
     std::vector<uint8_t>* lcm_message_bytes) const {
-  DRAKE_DEMAND(vector_base.size() == get_vector_size());
+  DRAKE_DEMAND(vector_base.size() == get_vector_size() ||
+               vector_base.size() ==
+                   tree_.get_num_positions() + tree_.get_num_velocities());
   DRAKE_DEMAND(lcm_message_bytes != nullptr);
 
   // Creates a copy of the partially-initialized lcmt_viewer_draw message.
@@ -52,8 +51,7 @@ void ViewerDrawTranslator::Serialize(double time,
   message.timestamp = static_cast<int64_t>(time * 1000);
 
   // Obtains the generalized positions from vector_base.
-  const Eigen::VectorXd q = vector_base.CopyToVector().head(
-      tree_.get_num_positions());
+  const Eigen::VectorXd q = vector_base.CopyToVector().head(get_vector_size());
 
   // Computes the poses of each body.
   KinematicsCache<double> cache = tree_.doKinematics(q);
@@ -61,7 +59,9 @@ void ViewerDrawTranslator::Serialize(double time,
   // Saves the poses of each body in the lcmt_viewer_draw message.
   for (size_t i = 0; i < tree_.get_bodies().size(); ++i) {
     auto transform = tree_.relativeTransform(cache, 0, i);
-    auto quat = drake::math::rotmat2quat(transform.linear());
+
+    const Eigen::Vector4d quat =
+        math::RotationMatrix<double>::ToQuaternionAsVector4(transform.linear());
     std::vector<float>& position = message.position[i];
 
     auto translation = transform.translation();

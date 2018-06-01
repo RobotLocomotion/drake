@@ -267,6 +267,90 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   }
 }
 
+/* This Diagram contains a sub-Diagram with one of its input ports unconnected.
+This is a specialized test to cover a case that was otherwise missed -- a
+Diagram has an input port that is neither exported nor fixed.
+
+         +--------------------------+
+         |                          |
+         |   +------------------+   |
+         |   |                  |   |
+         |   |  +-----------+   |   |
+      ----------> u0        |   |   |
+         |   |  |           |   |   |
+         |   |  | Adder1    |   |   |
+         |   |  |           +----------> y0
+         |   |  |           |   |   |
+         | X----> u1        |   |   |
+         |   |  +-----------+   |   |   X = forgot to export
+         |   |                  |   |
+         |   +------------------+   |
+         |     InsideBadDiagram     |
+         |                          |
+         +--------------------------+
+                  BadDiagram
+
+*/
+class InsideBadDiagram : public Diagram<double> {
+ public:
+  InsideBadDiagram() {
+    const int kSize = 1;
+    DiagramBuilder<double> builder;
+    adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, kSize);
+    adder0_->set_name("adder0");
+    builder.ExportInput(adder0().get_input_port(0));
+    builder.ExportInput(adder0().get_input_port(1));
+    builder.ExportOutput(adder0().get_output_port());
+    builder.BuildInto(this);
+  }
+
+  const Adder<double>& adder0() { return *adder0_; }
+
+ private:
+  Adder<double>* adder0_{};
+};
+
+class BadDiagram : public Diagram<double> {
+ public:
+  BadDiagram() {
+    DiagramBuilder<double> builder;
+    inside_ = builder.AddSystem<InsideBadDiagram>();
+    inside_->set_name("inside");
+    builder.ExportInput(inside().get_input_port(0));
+    // Oops -- "forgot" to export this.
+    // builder.ExportInput(inside().get_input_port(1));
+    builder.ExportOutput(inside().get_output_port(0));
+    builder.BuildInto(this);
+  }
+
+  const InsideBadDiagram& inside() { return *inside_; }
+
+ private:
+  InsideBadDiagram* inside_{};
+};
+
+GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
+  BadDiagram diagram;
+  auto context = diagram.AllocateContext();
+
+  context->FixInputPort(0, {1});
+
+  const Context<double>& inside_context =
+      diagram.GetSubsystemContext(diagram.inside(), *context);
+
+  // This should get the value we just fixed above.
+  const AbstractValue* value0 =
+      diagram.inside().EvalAbstractInput(inside_context, 0);
+
+  // This is neither exported, connected, nor fixed so should be null.
+  const AbstractValue* value1 =
+      diagram.inside().EvalAbstractInput(inside_context, 1);
+
+  ASSERT_NE(value0, nullptr);
+  EXPECT_EQ(value0->GetValue<BasicVector<double>>()[0], 1);
+  EXPECT_EQ(value1, nullptr);
+}
+
 /* ExampleDiagram has the following structure:
 adder0_: (input0_ + input1_) -> A
 adder1_: (A + input2_)       -> B, output 0
@@ -385,10 +469,6 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_ = BasicVector<double>::Make({1, 2, 4});
-    input1_ = BasicVector<double>::Make({8, 16, 32});
-    input2_ = BasicVector<double>::Make({64, 128, 256});
-
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
     integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
@@ -444,9 +524,9 @@ class DiagramTest : public ::testing::Test {
   }
 
   void AttachInputs() {
-    context_->FixInputPort(0, std::move(input0_));
-    context_->FixInputPort(1, std::move(input1_));
-    context_->FixInputPort(2, std::move(input2_));
+    context_->FixInputPort(0, input0_);
+    context_->FixInputPort(1, input1_);
+    context_->FixInputPort(2, input2_);
   }
 
   Adder<double>* adder0() { return diagram_->adder0(); }
@@ -457,9 +537,9 @@ class DiagramTest : public ::testing::Test {
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
-  std::unique_ptr<BasicVector<double>> input2_;
+  const BasicVector<double> input0_{1, 2, 4};
+  const BasicVector<double> input1_{8, 16, 32};
+  const BasicVector<double> input2_{64, 128, 256};
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -509,8 +589,12 @@ TEST_F(DiagramTest, Topology) {
 }
 
 TEST_F(DiagramTest, Path) {
-  const std::string path = adder0()->GetPath();
+  const std::string path = adder0()->GetSystemPathname();
   EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!::adder0", path);
+
+  // Just the root.
+  EXPECT_EQ("::Unicode Snowman's Favorite Diagram!!1!☃!",
+            diagram_->GetSystemPathname());
 }
 
 TEST_F(DiagramTest, Graphviz) {
@@ -606,7 +690,11 @@ TEST_F(DiagramTest, AllocateInputs) {
     EXPECT_EQ(vec, nullptr);
   }
 
-  diagram_->AllocateFreestandingInputs(context.get());
+  // Also check that abstract evaluation returns nullptr.
+  const AbstractValue* value = diagram_->EvalAbstractInput(*context, 0);
+  EXPECT_EQ(value, nullptr);
+
+  diagram_->AllocateFixedInputs(context.get());
 
   for (int port = 0; port < 3; port++) {
     const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
@@ -615,7 +703,7 @@ TEST_F(DiagramTest, AllocateInputs) {
   }
 }
 
-/// Tests that a diagram can be transmogrified to AutoDiffXd.
+// Tests that a diagram can be transmogrified to AutoDiffXd.
 TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<System<AutoDiffXd>> ad_diagram =
       diagram_->ToAutoDiffXd();
@@ -633,20 +721,20 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   /// adder2_: (A + B)             -> output 1
   /// integrator1_: A              -> C
   /// integrator2_: C              -> output 2
-  auto input0 = std::make_unique<BasicVector<AutoDiffXd>>(3);
-  auto input1 = std::make_unique<BasicVector<AutoDiffXd>>(3);
-  auto input2 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  BasicVector<AutoDiffXd> input0(3);
+  BasicVector<AutoDiffXd> input1(3);
+  BasicVector<AutoDiffXd> input2(3);
   for (int i = 0; i < 3; ++i) {
-    (*input0)[i].value() = 1 + 0.1 * i;
-    (*input0)[i].derivatives() = Eigen::VectorXd::Unit(9, i);
-    (*input1)[i].value() = 2 + 0.2 * i;
-    (*input1)[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
-    (*input2)[i].value() = 3 + 0.3 * i;
-    (*input2)[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+    input0[i].value() = 1 + 0.1 * i;
+    input0[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    input1[i].value() = 2 + 0.2 * i;
+    input1[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    input2[i].value() = 3 + 0.3 * i;
+    input2[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
   }
-  context->FixInputPort(0, std::move(input0));
-  context->FixInputPort(1, std::move(input1));
-  context->FixInputPort(2, std::move(input2));
+  context->FixInputPort(0, input0);
+  context->FixInputPort(1, input1);
+  context->FixInputPort(2, input2);
 
   ad_diagram->CalcOutput(*context, output.get());
   ASSERT_EQ(kSize, output->get_num_ports());
@@ -704,9 +792,9 @@ TEST_F(DiagramTest, ToSymbolic) {
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
-  context_->FixInputPort(0, std::move(input0_));
-  context_->FixInputPort(1, std::move(input1_));
-  context_->FixInputPort(2, std::move(input2_));
+  context_->FixInputPort(0, input0_);
+  context_->FixInputPort(1, input1_);
+  context_->FixInputPort(2, input2_);
 
   // Compute the output with the default inputs and sanity-check it.
   diagram_->CalcOutput(*context_, output_.get());
@@ -715,9 +803,8 @@ TEST_F(DiagramTest, Clone) {
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
-  auto next_input_0 = std::make_unique<BasicVector<double>>(kSize);
-  next_input_0->get_mutable_value() << 3, 6, 9;
-  clone->FixInputPort(0, std::move(next_input_0));
+  DRAKE_DEMAND(kSize == 3);
+  clone->FixInputPort(0, {3, 6, 9});
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
@@ -779,13 +866,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_ = BasicVector<double>::Make({8});
-    input1_ = BasicVector<double>::Make({64});
-    input2_ = BasicVector<double>::Make({512});
-
-    context_->FixInputPort(0, std::move(input0_));
-    context_->FixInputPort(1, std::move(input1_));
-    context_->FixInputPort(2, std::move(input2_));
+    context_->FixInputPort(0, {8});
+    context_->FixInputPort(1, {64});
+    context_->FixInputPort(2, {512});
 
     // Initialize the integrator states.
     Context<double>& d0_context =
@@ -819,10 +902,6 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_ = nullptr;
   ExampleDiagram* subdiagram0_ = nullptr;
   ExampleDiagram* subdiagram1_ = nullptr;
-
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
-  std::unique_ptr<BasicVector<double>> input2_;
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -902,10 +981,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  auto vec = std::make_unique<BasicVector<double>>(1 /* size */);
-  vec->get_mutable_value() << 12.0;
-  context->FixInputPort(0, std::move(vec));
-
+  context->FixInputPort(0, {12.0});
   plus_seven.CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
@@ -1368,8 +1444,8 @@ class DiscreteStateTest : public ::testing::Test {
  public:
   void SetUp() override {
     context_ = diagram_.CreateDefaultContext();
-    context_->FixInputPort(0, BasicVector<double>::Make({17.0}));
-    context_->FixInputPort(1, BasicVector<double>::Make({23.0}));
+    context_->FixInputPort(0, {17.0});
+    context_->FixInputPort(1, {23.0});
   }
 
  protected:

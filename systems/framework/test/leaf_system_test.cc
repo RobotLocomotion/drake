@@ -28,7 +28,7 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
-    this->DeclareNumericParameter(BasicVector<T>(Vector2<T>(13.0, 7.0)));
+    this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
   }
   ~TestSystem() override {}
@@ -123,6 +123,22 @@ class TestSystem : public LeafSystem<T> {
         "dummy5", WitnessFunctionDirection::kNone,
         &TestSystem<double>::DummyWitnessFunction,
         &TestSystem<double>::UnrestrictedUpdateCallback);
+  }
+
+  // Sixth testing type: lambda function with no event specified.
+  std::unique_ptr<WitnessFunction<T>> DeclareLambdaWitnessWithoutEvent() const {
+    return this->DeclareWitnessFunction(
+        "dummy6", WitnessFunctionDirection::kCrossesZero,
+        [](const Context<double>&) -> double { return 7.0; });
+  }
+
+  // Seventh testing type: lambda function with event specified.
+  std::unique_ptr<WitnessFunction<T>>
+      DeclareLambdaWitnessWithUnrestrictedUpdate() const {
+    return this->DeclareWitnessFunction(
+        "dummy7", WitnessFunctionDirection::kPositiveThenNonPositive,
+        [](const Context<double>&) -> double { return 11.0; },
+        UnrestrictedUpdateEvent<double>());
   }
 
   // Indicates whether various callbacks have been called.
@@ -243,6 +259,24 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
   ASSERT_TRUE(ue);
   ue->handle(context_, nullptr);
   EXPECT_TRUE(system_.unrestricted_update_callback_called());
+
+  auto witness6 = system_.DeclareLambdaWitnessWithoutEvent();
+  ASSERT_TRUE(witness6);
+  EXPECT_EQ(witness6->description(), "dummy6");
+  EXPECT_EQ(witness6->direction_type(),
+            WitnessFunctionDirection::kCrossesZero);
+  EXPECT_EQ(witness6->CalcWitnessValue(context_), 7.0);
+
+  auto witness7 = system_.DeclareLambdaWitnessWithUnrestrictedUpdate();
+  ASSERT_TRUE(witness7);
+  EXPECT_EQ(witness7->description(), "dummy7");
+  EXPECT_EQ(witness7->direction_type(),
+            WitnessFunctionDirection::kPositiveThenNonPositive);
+  EXPECT_TRUE(witness7->get_event());
+  EXPECT_EQ(witness7->CalcWitnessValue(context_), 11.0);
+  ue = dynamic_cast<const UnrestrictedUpdateEvent<double>*>(
+      witness7->get_event());
+  ASSERT_TRUE(ue);
 }
 
 // Tests that if no update events are configured, none are reported.
@@ -597,7 +631,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
 
-  const BasicVector<double>& expected_basic() const { return *expected_basic_; }
+  const BasicVector<double>& expected_basic() const { return expected_basic_; }
   const MyVector4d& expected_myvector() const { return *expected_myvector_; }
 
  private:
@@ -623,8 +657,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     *out = "concrete string";
   }
 
-  std::unique_ptr<BasicVector<double>> expected_basic_{
-      BasicVector<double>::Make(1., .5, .25)};
+  const BasicVector<double> expected_basic_{1., .5, .25};
   std::unique_ptr<MyVector4d> expected_myvector_{
       MyVector4d::Make(4., 3., 2., 1.)};
 };
@@ -746,7 +779,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   std::vector<std::unique_ptr<AbstractValue>> values;
   for (int i = 0; i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
-    values.emplace_back(out.Allocate(*context));
+    values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
   }
 
@@ -841,7 +874,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     // Output port 2 uses the "Advanced" method for abstract ports, providing
     // explicit non-member functors for allocator and calculator.
     this->DeclareAbstractOutputPort(
-        [](const Context<double>&) {
+        []() {
           return AbstractValue::Make<int>(-2);
         },
         [](const Context<double>&, AbstractValue* out) {
@@ -869,7 +902,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   }
 
   // Explicit allocator method.
-  std::string MakeString(const Context<double>&) const {
+  std::string MakeString() const {
     return std::string("freshly made");
   }
 
@@ -1704,9 +1737,9 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
-  auto input = std::make_unique<InputVector>();
-  input->SetAtIndex(0, 3.0);
-  context->FixInputPort(0, std::move(input));
+  InputVector input;
+  input.SetAtIndex(0, 3.0);
+  context->FixInputPort(0, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));

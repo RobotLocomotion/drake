@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
@@ -149,7 +150,9 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      auto quat = math::rotmat2quat(X_JB.linear());
+      const Eigen::Vector4d quat =
+          drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
+              X_JB.linear());
       q.segment<4>(position_start + 3) = quat;
 
       // Transform V_WB to the floating base's body frame (V_WB_B).

@@ -581,6 +581,10 @@ bool is_tanh(const Expression& e);
 bool is_min(const Expression& e);
 /** Checks if @p e is a max expression. */
 bool is_max(const Expression& e);
+/** Checks if @p e is a ceil expression. */
+bool is_ceil(const Expression& e);
+/** Checks if @p e is a floor expression. */
+bool is_floor(const Expression& e);
 /** Checks if @p e is an if-then-else expression. */
 bool is_if_then_else(const Expression& e);
 /** Checks if @p e is an uninterpreted-function expression. */
@@ -877,6 +881,13 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 namespace drake {
 namespace symbolic {
+
+/// Constructs a vector of variables from the vector of variable expressions.
+/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// variable.
+VectorX<Variable> GetVariableVector(
+    const Eigen::Ref<const VectorX<Expression>>& evec);
+
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
 ///

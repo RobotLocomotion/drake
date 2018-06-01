@@ -10,7 +10,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/pendulum/gen/pendulum_params.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
@@ -383,15 +383,10 @@ TEST_P(KukaArmTest, EvalOutput) {
   auto cache = tree.doKinematics(q, v);
 
   for (int ibody = 0; ibody < kuka_plant_->get_num_bodies(); ++ibody) {
-    Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
-    Vector4d quat_vector = drake::math::rotmat2quat(pose.linear());
-    // Note that Eigen quaternion elements are not laid out in memory in the
-    // same way Drake currently aligns them. See issue #3470.
-    // When solved we will not need to instantiate a temporary Quaternion below
-    // just to perform a comparison.
-    Quaterniond quat(quat_vector[0], quat_vector[1], quat_vector[2],
-                     quat_vector[3]);
-    Vector3d position = pose.translation();
+    const Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
+    const math::RotationMatrix<double> R(pose.linear());
+    const Eigen::Quaterniond quat = R.ToQuaternion();
+    const Vector3d position = pose.translation();
     EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
     EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
   }

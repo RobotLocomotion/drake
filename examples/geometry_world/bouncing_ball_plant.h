@@ -6,8 +6,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/examples/geometry_world/gen/bouncing_ball_vector.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/query_object.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -30,7 +30,7 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   /** Constructor
    @param source_id             The source id for this plant to interact with
                                 GeoemtrySystem.
-   @param geometry_system       Pointer to the geometry system instance on which
+   @param scene_graph           Pointer to the geometry system instance on which
                                 this plant's geometry will be registered. It
                                 must be the same system the source id was
                                 extracted from.
@@ -38,14 +38,13 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
                                 onto the ground plane relative to the world.
    */
   BouncingBallPlant(geometry::SourceId source_id,
-                    geometry::GeometrySystem<T>* geometry_system,
+                    geometry::SceneGraph<T>* scene_graph,
                     const Vector2<double>& p_WB);
   ~BouncingBallPlant() override;
 
   const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
   /** Returns the port to output state. */
   const systems::OutputPort<T>& get_state_output_port() const;
-  const systems::OutputPort<T>& get_geometry_id_output_port() const;
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
   void set_z(systems::Context<T>* context, const T& z) const {
@@ -82,21 +81,9 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   void CopyStateToOutput(const systems::Context<T>& context,
                          BouncingBallVector<T>* state_output_vector) const;
 
-  // Allocate the frame pose set output port value.
-  geometry::FramePoseVector<T> AllocateFramePoseOutput(
-      const systems::Context<T>& context) const;
-
   // Calculate the frame pose set output port value.
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
-
-  // Allocate the id output.
-  geometry::FrameIdVector AllocateFrameIdOutput(
-      const systems::Context<T>& context) const;
-
-  // Calculate the id output.
-  void CalcFrameIdOutput(const systems::Context<T>& context,
-                         geometry::FrameIdVector* frame_ids) const;
 
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
@@ -128,7 +115,7 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
     return get_mutable_state(&context->get_mutable_continuous_state());
   }
 
-  // This plant's source id in GeometrySystem.
+  // This plant's source id in SceneGraph.
   geometry::SourceId source_id_;
   // The projected position of the ball onto the ground plane. I.e., it's
   // "where the ball bounces".
@@ -138,7 +125,6 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
   // The id for the ball's geometry.
   geometry::GeometryId ball_id_;
 
-  int geometry_id_port_{-1};
   int geometry_pose_port_{-1};
   int state_port_{-1};
   int geometry_query_port_{-1};

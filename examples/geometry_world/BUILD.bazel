@@ -24,7 +24,7 @@ drake_cc_library(
     deps = [
         ":bouncing_ball_vector",
         "//geometry:geometry_ids",
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//systems/framework:leaf_system",
     ],
 )
@@ -34,11 +34,11 @@ drake_cc_binary(
     srcs = ["bouncing_ball_run_dynamics.cc"],
     deps = [
         ":bouncing_ball_plant",
-        "//geometry:geometry_system",
         "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
         "//systems/rendering:pose_bundle_to_draw_message",
@@ -53,7 +53,7 @@ drake_cc_library(
     deps = [
         "//common",
         "//geometry:geometry_ids",
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//math:geometric_transform",
         "//systems/framework:leaf_system",
     ],
@@ -64,11 +64,11 @@ drake_cc_binary(
     srcs = ["solar_system_run_dynamics.cc"],
     deps = [
         ":solar_system",
-        "//geometry:geometry_system",
         "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:signal_logger",
         "//systems/rendering:pose_bundle_to_draw_message",

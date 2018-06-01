@@ -30,10 +30,11 @@ Arguments:
     to be found.
 """
 
+load("@drake//tools/workspace:execute.bzl", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
-    python_config = repository_ctx.which("python{}-config".format(
+    python_config = which(repository_ctx, "python{}-config".format(
         repository_ctx.attr.version))
 
     if not python_config:
@@ -95,9 +96,18 @@ def _impl(repository_ctx):
 
 licenses(["notice"])  # Python-2.0
 
+# Only include first level of headers included from `python_repository`
+# (`include/<destination>/*`). This should exclude third party C headers which
+# may be nested within `/usr/include/python2.7`, such as `numpy` when installed
+# via `apt` on Ubuntu.
+headers = glob(
+    ["include/*/*"],
+    exclude_directories = 1,
+)
+
 cc_library(
     name = "python_headers",
-    hdrs = glob(["include/**"]),
+    hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
 )

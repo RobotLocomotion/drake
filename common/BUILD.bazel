@@ -1,10 +1,11 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -16,16 +17,14 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-# This should encompass every non-testonly cc_library in this package,
-# except for items that should only ever be linked into main() programs.
-drake_cc_library(
+drake_cc_package_library(
     name = "common",
-    srcs = [],
     deps = [
         ":autodiff",
         ":autodiffxd_make_coherent",
         ":cond",
         ":copyable_unique_ptr",
+        ":default_scalars",
         ":double",
         ":drake_bool",
         ":drake_path",
@@ -36,12 +35,15 @@ drake_cc_library(
         ":hash",
         ":is_approx_equal_abstol",
         ":is_cloneable",
+        ":is_less_than_comparable",
         ":nice_type_name",
         ":number_traits",
+        ":pointer_cast",
         ":polynomial",
         ":reset_after_move",
         ":reset_on_copy",
         ":scoped_singleton",
+        ":sorted_pair",
         ":sorted_vectors_have_intersection",
         ":symbolic",
         ":symbolic_decompose",
@@ -49,9 +51,6 @@ drake_cc_library(
         ":type_safe_index",
         ":unused",
     ],
-    # Intentionally excluded items:
-    # - text_logging_gflags
-    # - text_logging_gflags_h
 )
 
 # A library of things that EVERYONE should want and MUST EAT.
@@ -199,6 +198,8 @@ drake_cc_library(
         "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
         "symbolic_polynomial.h",
+        "symbolic_simplification.cc",
+        "symbolic_simplification.h",
         "symbolic_variable.cc",
         "symbolic_variable.h",
         "symbolic_variables.cc",
@@ -217,6 +218,7 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         "//math:matrix_util",
+        "@fmt",
     ],
 )
 
@@ -349,6 +351,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "pointer_cast",
+    srcs = ["pointer_cast.cc"],
+    hdrs = ["pointer_cast.h"],
+    deps = [
+        ":nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "sorted_vectors_have_intersection",
     hdrs = ["sorted_vectors_have_intersection.h"],
     deps = [
@@ -376,6 +387,18 @@ drake_cc_library(
         "//tools/cc_toolchain:linux": ["-pthread"],
         "//conditions:default": [],
     }),
+    tags = [
+        # Don't add this library into the ":common" package library.
+        # Only programs with a main() function should ever use this header.
+        "exclude_from_package",
+        # Don't install this header via this cc_library, because that would
+        # introduce a dependency from libdrake onto gflags.  Similarly, we
+        # can't use `install_hdrs_exclude` for this because the @gflags
+        # dependency should not be part of the install.  Instead, we exclude
+        # this cc_library entirely, and use a separate rule below for the
+        # installation.
+        "exclude_from_libdrake",
+    ],
     deps = [
         ":essential",
         "@gflags",
@@ -388,6 +411,13 @@ drake_cc_library(
 drake_cc_library(
     name = "text_logging_gflags_h",
     hdrs = ["text_logging_gflags.h"],
+    tags = [
+        # Don't add this library into the ":common" package library.
+        # This rule should only be used for install purposes.
+        "exclude_from_package",
+    ],
+    # This rule should only be used for install purposes, not within the
+    # in-source bazel build.  We limit its visibility to enforce that.
     visibility = ["//tools/install/libdrake:__pkg__"],
 )
 
@@ -524,6 +554,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "pointer_cast_test",
+    deps = [
+        ":pointer_cast",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "cond_test",
     deps = [
         ":cond",
@@ -593,6 +631,7 @@ genrule(
 # Functional test that mistyped DRAKE_ASSERTs will failt to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
+    size = "small",
     srcs = ["test/drake_assert_test_compile_variants.sh"],
     args = [
         "$(location :capture_cc.env)",
@@ -757,6 +796,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_simplification_test",
+    deps = [
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "never_destroyed_test",
     deps = [
         ":essential",
@@ -881,8 +928,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
     deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",

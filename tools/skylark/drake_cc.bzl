@@ -42,9 +42,9 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
-def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
-    """Returns both the rule_copts (plus rule_gcc_copts iff under GCC), and
-    platform-specific copts.
+def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
+    """Returns both the rule_copts (plus rule_{cc}_copts iff under the
+    specified compiler), and platform-specific copts.
 
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
     to 1 from cc_test rules or rules that are boil down to cc_test rules.
@@ -53,8 +53,10 @@ def _platform_copts(rule_copts, rule_gcc_copts, cc_test = 0):
     if cc_test:
         extra_gcc_flags = GCC_CC_TEST_FLAGS
     return select({
-        "//tools/cc_toolchain:apple": CLANG_FLAGS + rule_copts,
-        "//tools/cc_toolchain:clang4.0-linux": CLANG_FLAGS + rule_copts,
+        "//tools/cc_toolchain:apple":
+            CLANG_FLAGS + rule_copts + rule_clang_copts,
+        "//tools/cc_toolchain:clang4.0-linux":
+            CLANG_FLAGS + rule_copts + rule_clang_copts,
         "//tools/cc_toolchain:gcc5-linux":
             GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts,
         "//tools/cc_toolchain:gcc6-linux":
@@ -299,6 +301,7 @@ def drake_cc_library(
         srcs = [],
         deps = [],
         copts = [],
+        clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
         install_hdrs_exclude = [],
@@ -314,7 +317,7 @@ def drake_cc_library(
     of Drake).  In other words, all of Drake's C++ libraries must be declared
     using the drake_cc_library macro.
     """
-    new_copts = _platform_copts(copts, gcc_copts)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     # We install private_hdrs by default, because Bazel's visibility denotes
     # whether headers can be *directly* included when using cc_library; it does
     # not precisely relate to which headers should appear in the install tree.
@@ -339,6 +342,45 @@ def drake_cc_library(
         install_hdrs_exclude = install_hdrs_exclude,
         **kwargs)
 
+def _check_package_library_name(name):
+    # Assert that :name is the default library for native.package_name().
+    expected_name = native.package_name().split("/")[-1]
+    if name != expected_name:
+        fail(("The drake_cc_package_library(name = \"{}\", ...) " +
+              "should be named \"{}\"").format(name, expected_name))
+
+def drake_cc_package_library(
+        name,
+        deps = [],
+        testonly = 0,
+        visibility = ["//visibility:public"]):
+    """Creates a rule to declare a C++ "package" library -- a library whose
+    name matches the current Bazel package name (i.e., directory name) and
+    whose dependencies are (usually) all of the other drake_cc_library targets
+    in the current package.  In short, e.g., creates a library named
+    //foo/bar:bar that conveniently provides all of the C++ code from the
+    //foo/bar package in one place.
+
+    Using this macro documents the intent that the library is a summation of
+    everything in the current package and enables Drake's linter rules to
+    confirm that all of the drake_cc_library targets have been listed as deps.
+
+    Within Drake, by convention, every package (i.e., directory) that has any
+    C++ code should call this macro to create a library for its package.
+
+    The name must be the same as the final element of the current package.
+    This rule does not accept srcs, hdrs, etc. -- only deps.
+    The testonly argument has the same meaning as the native cc_library.
+    By default, this target has public visibility, but that may be overridden.
+    """
+    _check_package_library_name(name)
+    drake_cc_library(
+        name = name,
+        testonly = testonly,
+        tags = ["drake_cc_package_library"],
+        visibility = visibility,
+        deps = deps)
+
 def drake_cc_binary(
         name,
         srcs = [],
@@ -347,6 +389,7 @@ def drake_cc_binary(
         copts = [],
         linkopts = [],
         gcc_copts = [],
+        clang_copts = [],
         linkshared = 0,
         linkstatic = 1,
         testonly = 0,
@@ -354,6 +397,7 @@ def drake_cc_binary(
         test_rule_args = [],
         test_rule_data = [],
         test_rule_size = None,
+        test_rule_timeout = None,
         test_rule_flaky = 0,
         **kwargs):
     """Creates a rule to declare a C++ binary.
@@ -367,7 +411,7 @@ def drake_cc_binary(
     tests. The smoke-test will be named <name>_test. You may override cc_test
     defaults using test_rule_args=["-f", "--bar=42"] or test_rule_size="baz".
     """
-    new_copts = _platform_copts(copts, gcc_copts)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
         srcs = srcs,
@@ -428,6 +472,7 @@ def drake_cc_binary(
             copts = copts,
             gcc_copts = gcc_copts,
             size = test_rule_size,
+            timeout = test_rule_timeout,
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
@@ -441,6 +486,7 @@ def drake_cc_test(
         deps = [],
         copts = [],
         gcc_copts = [],
+        clang_copts = [],
         disable_in_compilation_mode_dbg = False,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
@@ -459,7 +505,7 @@ def drake_cc_test(
     if not srcs:
         srcs = ["test/%s.cc" % name]
     kwargs['testonly'] = 1
-    new_copts = _platform_copts(copts, gcc_copts, cc_test = 1)
+    new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_srcs, new_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
         srcs = srcs,

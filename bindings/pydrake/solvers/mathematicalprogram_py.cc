@@ -26,6 +26,7 @@ using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::LinearConstraint;
+using solvers::LorentzConeConstraint;
 using solvers::LinearCost;
 using solvers::LinearComplementarityConstraint;
 using solvers::LinearEqualityConstraint;
@@ -42,6 +43,7 @@ using solvers::SolverTypeConverter;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::VectorXIndeterminate;
+using solvers::VisualizationCallback;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Monomial;
@@ -257,7 +259,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                &MathematicalProgram::AddBoundingBoxConstraint))
       .def("AddBoundingBoxConstraint",
            [](MathematicalProgram* self, double lb, double ub,
-              const Eigen::Ref<MatrixX<symbolic::Variable>>& vars) {
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>& vars) {
              return self->AddBoundingBoxConstraint(lb, ub, vars);
            })
       .def("AddConstraint",
@@ -286,6 +288,10 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Formula&)>(&MathematicalProgram::AddLinearConstraint))
+      .def("AddLorentzConeConstraint",
+           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
+               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
+               &MathematicalProgram::AddLorentzConeConstraint))
       .def("AddPositiveSemidefiniteConstraint",
            [](MathematicalProgram* self,
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
@@ -312,6 +318,9 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                   vars);
            },
            py::arg("func"), py::arg("vars"), py::arg("description") = "")
+      .def("AddCost",
+          static_cast<Binding<Cost> (MathematicalProgram::*)(
+          const Expression&)>(&MathematicalProgram::AddCost))
       .def("AddLinearCost",
            static_cast<Binding<LinearCost> (MathematicalProgram::*)(
                const Expression&)>(&MathematicalProgram::AddLinearCost))
@@ -353,6 +362,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                                  Binding<LinearEqualityConstraint>> (
                MathematicalProgram::*)(const Expression&)>(
                &MathematicalProgram::AddSosConstraint))
+      .def("AddVisualizationCallback",
+          static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
+              const VisualizationCallback::CallbackFunction&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddVisualizationCallback))
       .def("Solve", &MathematicalProgram::Solve)
       .def("GetSolverId", &MathematicalProgram::GetSolverId)
       .def("linear_constraints", &MathematicalProgram::linear_constraints)
@@ -379,6 +393,48 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
               const MatrixXDecisionVariable& var) {
              return prog.GetSolution(var);
            })
+      .def("SubstituteSolution",
+          [](const MathematicalProgram& prog,
+            const symbolic::Expression& e) {
+          return prog.SubstituteSolution(e);
+          })
+      .def("SubstituteSolution",
+          [](const MathematicalProgram& prog,
+            const symbolic::Polynomial& p) {
+          return prog.SubstituteSolution(p);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const symbolic::Variable& decision_variable) {
+            return prog.GetInitialGuess(decision_variable);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const VectorXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
+          })
+      .def("GetInitialGuess",
+          [](MathematicalProgram& prog,
+             const MatrixXDecisionVariable& decision_variables) {
+            return prog.GetInitialGuess(decision_variables);
+          })
+      .def("SetInitialGuess",
+          [](MathematicalProgram& prog,
+             const symbolic::Variable& decision_variable,
+             double variable_guess_value) {
+            prog.SetInitialGuess(decision_variable, variable_guess_value);
+          })
+      .def("SetInitialGuess",
+          [](MathematicalProgram& prog,
+             const MatrixXDecisionVariable& decision_variable_mat,
+             const Eigen::MatrixXd& x0) {
+            prog.SetInitialGuess(decision_variable_mat, x0);
+          })
+      .def("SetInitialGuessForAllVariables",
+          [](MathematicalProgram& prog,
+             const Eigen::VectorXd& x0) {
+            prog.SetInitialGuessForAllVariables(x0);
+          })
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>);
@@ -409,6 +465,11 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       m, "LinearConstraint")
       .def("A", &LinearConstraint::A);
 
+  py::class_<LorentzConeConstraint, Constraint,
+             std::shared_ptr<LorentzConeConstraint>>(
+    m, "LorentzConeConstraint")
+    .def("A", &LorentzConeConstraint::A);
+
   py::class_<LinearEqualityConstraint, LinearConstraint,
              std::shared_ptr<LinearEqualityConstraint>>(
       m, "LinearEqualityConstraint");
@@ -427,6 +488,8 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
   RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
+  RegisterBinding<LorentzConeConstraint>(&m, &prog_cls,
+                                         "LorentzConeConstraint");
   RegisterBinding<LinearEqualityConstraint>(&m, &prog_cls,
                                             "LinearEqualityConstraint");
   RegisterBinding<BoundingBoxConstraint>(&m, &prog_cls,
@@ -452,6 +515,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
   RegisterBinding<Cost>(&m, &prog_cls, "Cost");
   RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
   RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
+
+  py::class_<VisualizationCallback, EvaluatorBase,
+             std::shared_ptr<VisualizationCallback>>(m,
+                                                     "VisualizationCallback");
+
+  RegisterBinding<VisualizationCallback>(&m, &prog_cls,
+                                         "VisualizationCallback");
 }
 
 }  // namespace pydrake

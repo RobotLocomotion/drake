@@ -51,13 +51,9 @@ class DirectCollocation : public MultipleShooting {
 
   ~DirectCollocation() override {}
 
-  /// Get the input trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
-  /// Get the state trajectory at the solution as a
-  /// %PiecewisePolynomialTrajectory%.
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
 
@@ -70,7 +66,7 @@ class DirectCollocation : public MultipleShooting {
   const System<double>* system_{nullptr};
   const std::unique_ptr<Context<double>> context_{nullptr};
   const std::unique_ptr<ContinuousState<double>> continuous_state_{nullptr};
-  FreestandingInputPortValue* input_port_value_{nullptr};
+  FixedInputPortValue* input_port_value_{nullptr};
 };
 
 /// Implements the direct collocation constraints for a first-order hold on
@@ -110,7 +106,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
   std::unique_ptr<System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
-  FreestandingInputPortValue* input_port_value_{nullptr};
+  FixedInputPortValue* input_port_value_{nullptr};
   std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
 
   const int num_states_{0};

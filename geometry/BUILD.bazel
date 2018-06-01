@@ -1,13 +1,35 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
+    "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "geometry",
+    deps = [
+        ":frame_kinematics",
+        ":geometry_context",
+        ":geometry_frame",
+        ":geometry_ids",
+        ":geometry_index",
+        ":geometry_instance",
+        ":geometry_state",
+        ":geometry_visualization",
+        ":identifier",
+        ":internal_frame",
+        ":internal_geometry",
+        ":materials",
+        ":proximity_engine",
+        ":scene_graph",
+        ":shape_specification",
+    ],
+)
 
 drake_cc_library(
     name = "proximity_engine",
@@ -31,11 +53,9 @@ drake_cc_library(
 drake_cc_library(
     name = "frame_kinematics",
     srcs = [
-        "frame_id_vector.cc",
         "frame_kinematics_vector.cc",
     ],
     hdrs = [
-        "frame_id_vector.h",
         "frame_kinematics_vector.h",
     ],
     deps = [
@@ -85,10 +105,21 @@ drake_cc_library(
     hdrs = ["geometry_instance.h"],
     deps = [
         ":geometry_ids",
+        ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
     ],
+)
+
+drake_cc_library(
+    # NOTE: The material library and file name don't appear to match. This
+    # library will eventually contain multiple types of materials (e.g.,
+    # contact, rendering, depth, etc.)
+    name = "materials",
+    srcs = ["visual_material.cc"],
+    hdrs = ["visual_material.h"],
+    deps = ["//common"],
 )
 
 drake_cc_library(
@@ -108,14 +139,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "geometry_system",
+    name = "scene_graph",
     srcs = [
-        "geometry_system.cc",
         "query_object.cc",
+        "scene_graph.cc",
     ],
     hdrs = [
-        "geometry_system.h",
         "query_object.h",
+        "scene_graph.h",
     ],
     deps = [
         ":geometry_context",
@@ -133,7 +164,7 @@ drake_cc_library(
     hdrs = ["geometry_visualization.h"],
     deps = [
         ":geometry_state",
-        ":geometry_system",
+        ":scene_graph",
         "//lcm",
         "//lcmtypes:viewer",
         "//math:geometric_transform",
@@ -158,6 +189,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
+        ":materials",
         ":shape_specification",
         "//common:copyable_unique_ptr",
         "//common:essential",
@@ -184,15 +216,8 @@ drake_cc_googletest(
     name = "proximity_engine_test",
     deps = [
         ":proximity_engine",
+        ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frame_id_vector_test",
-    deps = [
-        ":frame_kinematics",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -226,9 +251,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "geometry_system_test",
+    name = "scene_graph_test",
     deps = [
-        ":geometry_system",
+        ":geometry_visualization",
+        ":scene_graph",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geometry_visualization_test",
+    deps = [
         ":geometry_visualization",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -242,7 +275,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "query_object_test",
     deps = [
-        ":geometry_system",
+        ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -252,6 +285,13 @@ drake_cc_googletest(
     deps = [
         ":shape_specification",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "visual_material_test",
+    deps = [
+        ":materials",
     ],
 )
 

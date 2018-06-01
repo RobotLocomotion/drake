@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/input_port_value.h"
+#include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 using std::make_unique;
@@ -21,7 +21,7 @@ class AdderTest : public ::testing::Test {
   void SetUp() override {
     adder_.reset(new Adder<double>(2 /* inputs */, 3 /* size */));
     context_ = adder_->CreateDefaultContext();
-    output_ = adder_->get_output_port().Allocate(*context_);
+    output_ = adder_->get_output_port().Allocate();
     input0_.reset(new BasicVector<double>(3 /* size */));
     input1_.reset(new BasicVector<double>(3 /* size */));
   }

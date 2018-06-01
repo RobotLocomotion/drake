@@ -16,8 +16,8 @@ namespace internal {
  data, and then includes topology data.
 
  It is not intended to be used outside of the geometry library. To instantiate
- frames in GeometrySystem, use the drake::geometry::GeometryFrame class in
- conjunction with the GeometrySystem::RegisterFrame() methods. */
+ frames in SceneGraph, use the drake::geometry::GeometryFrame class in
+ conjunction with the SceneGraph::RegisterFrame() methods. */
 class InternalFrame {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InternalFrame)

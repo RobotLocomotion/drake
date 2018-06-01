@@ -14,7 +14,13 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-find_package(Bazel 0.10.1 MODULE REQUIRED)
+if(APPLE)
+  set(MINIMUM_BAZEL_VERSION 0.12.0)
+else()
+  set(MINIMUM_BAZEL_VERSION 0.12.0)
+endif()
+
+find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
@@ -117,7 +123,7 @@ endif()
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 7.5.2 MODULE REQUIRED)
+  find_package(Gurobi 8.0.0 MODULE REQUIRED)
 
   list(APPEND BAZEL_ARGS --config=gurobi)
 

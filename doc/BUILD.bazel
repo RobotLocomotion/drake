@@ -16,11 +16,12 @@ genrule(
         "conf.py",
         "images/logo_w_text.jpg",
         "images/doxygen_instructions/visual_studio_build_targets.png",
+        "sample_vimrc",
     ],
     outs = ["sphinx.zip"],
     cmd = " ".join([
         # Run sphinx-build.
-        "sphinx-build -b html",  # HTML output.
+        "$(location @sphinx//:sphinx-build) -b html",  # HTML output.
         "-a -E -d $(@D)/.doctrees/",  # Don't use caching.
         "-W -N -q",  # Turn warnings into errors; else be quiet.
         "$$(dirname $(location conf.py))",  # Source dir.
@@ -35,6 +36,7 @@ genrule(
     # Some (currently disabled) Sphinx extentions try to reach out to the
     # network; we should fail-fast if someone tries to turn them on.
     tags = ["block-network"],
+    tools = ["@sphinx//:sphinx-build"],
 )
 
 drake_py_binary(

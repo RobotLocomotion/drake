@@ -5,7 +5,6 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
-#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
@@ -62,9 +61,9 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, const Vector3<T>& w_FM,
+    const systems::Context<T>& context, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;

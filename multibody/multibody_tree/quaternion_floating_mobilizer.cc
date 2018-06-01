@@ -52,10 +52,10 @@ QuaternionFloatingMobilizer<T>::set_quaternion(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_quaternion(
-    const systems::Context<T>&, const Quaternion<T>& q_FM,
+    const systems::Context<T>& context, const Quaternion<T>& q_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  auto q = this->get_mutable_positions(state);
+  auto q = this->get_mutable_positions(context, state);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: see storage order notes in get_quaternion().
   q[0] = q_FM.w();
@@ -75,10 +75,10 @@ QuaternionFloatingMobilizer<T>::set_position(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_position(
-    const systems::Context<T>&, const Vector3<T>& p_FM,
+    const systems::Context<T>& context, const Vector3<T>& p_FM,
     systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  auto q = this->get_mutable_positions(state);
+  auto q = this->get_mutable_positions(context, state);
   DRAKE_ASSERT(q.size() == kNq);
   // Note: see storage order notes in get_position().
   q.template tail<3>() = p_FM;
@@ -93,10 +93,9 @@ QuaternionFloatingMobilizer<T>::SetFromRotationMatrix(
       this->GetMutableMultibodyTreeContextOrThrow(context);
   auto q = this->get_mutable_positions(&mbt_context);
   DRAKE_ASSERT(q.size() == kNq);
-  Vector4<T> v4 = math::rotmat2quat(R_FM);
-  // Note: Notice that the storage order documented in get_quaternion() is
-  // consistent with the ordering used in the vector return by rotmat2quat, i.e.
-  // q[0] is the "scalar" part and q[1:3] is the "vector" part.
+  const Vector4<T> v4 = math::RotationMatrix<T>::ToQuaternionAsVector4(R_FM);
+  // Note: The storage order documented in get_quaternion() is consistent with
+  // the order below, q[0] is the "scalar" part and q[1:3] is the "vector" part.
   q.template head<4>() = v4;
   return *this;
 }
@@ -121,10 +120,10 @@ QuaternionFloatingMobilizer<T>::set_angular_velocity(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>&, const Vector3<T>& w_FM,
+    const systems::Context<T>& context, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
   // Note: See storage order notes in get_angular_velocity().
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   v.template head<3>() = w_FM;
   return *this;
@@ -151,9 +150,9 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
 template <typename T>
 const QuaternionFloatingMobilizer<T>&
 QuaternionFloatingMobilizer<T>::set_translational_velocity(
-    const systems::Context<T>&, const Vector3<T>& v_FM,
+    const systems::Context<T>& context, const Vector3<T>& v_FM,
     systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(state);
+  auto v = this->get_mutable_velocities(context, state);
   DRAKE_ASSERT(v.size() == kNv);
   // Note: See storage order notes in get_translational_velocity().
   v.template tail<3>() = v_FM;

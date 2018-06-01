@@ -1,9 +1,26 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "lcm",
+    deps = [
+        ":lcm_driven_loop",
+        ":lcm_log_playback_system",
+        ":lcm_pubsub_system",
+        ":lcmt_drake_signal_translator",
+        ":translator",
+        ":translator_system",
+    ],
+)
 
 drake_cc_library(
     name = "translator",
@@ -33,7 +50,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "lcm",
+    name = "lcm_pubsub_system",
     srcs = [
         "lcm_publisher_system.cc",
         "lcm_subscriber_system.cc",
@@ -60,7 +77,7 @@ drake_cc_library(
         "lcm_log_playback_system.h",
     ],
     deps = [
-        ":lcm",
+        ":lcm_pubsub_system",
         "//lcm:lcm_log",
         "//systems/framework",
     ],
@@ -75,7 +92,7 @@ drake_cc_library(
         "lcm_driven_loop.h",
     ],
     deps = [
-        ":lcm",
+        ":lcm_pubsub_system",
         "//lcm",
         "//systems/analysis",
     ],
@@ -115,7 +132,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcm_publisher_system_test",
     deps = [
-        ":lcm",
+        ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
@@ -135,7 +152,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcm_subscriber_system_test",
     deps = [
-        ":lcm",
+        ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
@@ -156,7 +173,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "serializer_test",
     deps = [
-        ":lcm",
+        ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",

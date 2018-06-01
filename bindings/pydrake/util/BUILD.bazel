@@ -156,16 +156,34 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "containers_py",
+    srcs = ["containers.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
+drake_py_library(
+    name = "compatibility_py",
+    srcs = ["compatibility.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":eigen_geometry_py",
 ]
 
 PY_LIBRARIES = [
+    ":compatibility_py",
+    ":containers_py",
     ":cpp_const_py",
     ":cpp_param_py",
     ":cpp_template_py",
-    ":module_py",
     ":deprecation_py",
+    ":module_py",
     ":pybind11_version_py",
 ]
 
@@ -252,6 +270,7 @@ drake_pybind_cc_googletest(
     cc_deps = [
         ":cpp_template_pybind",
         "//common:nice_type_name",
+        "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
 )
@@ -286,6 +305,35 @@ drake_py_unittest(
     name = "pybind11_version_test",
     deps = [
         ":pybind11_version_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "containers_test",
+    deps = [
+        ":containers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "compatibility_test",
+    deps = [
+        ":compatibility_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "wrap_test_util_py",
+    cc_deps = [":wrap_pybind"],
+    cc_so_name = "wrap_test_util",
+    cc_srcs = ["test/wrap_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+)
+
+drake_py_unittest(
+    name = "wrap_pybind_test",
+    deps = [
+        ":wrap_test_util_py",
     ],
 )
 

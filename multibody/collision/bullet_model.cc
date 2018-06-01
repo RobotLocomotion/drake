@@ -111,21 +111,24 @@ BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
 
 std::unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
     const DrakeShapes::Box& geometry, bool use_margins) {
-  std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
-  btBoxShape bt_box(btVector3(geometry.size(0) / 2, geometry.size(1) / 2,
-                              geometry.size(2) / 2));
   /* Strange things happen to the collision-normals when we use the
    * convex interface to the btBoxShape. Instead, we'll explicitly create
    * a btConvexHullShape.
    */
+  auto bt_shape = std::make_unique<btConvexHullShape>();
   if (use_margins)
     bt_shape->setMargin(kLargeMargin);
   else
     bt_shape->setMargin(kSmallMargin);
-  for (int i = 0; i < 8; ++i) {
-    btVector3 vtx;
-    bt_box.getVertex(i, vtx);
-    dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(vtx);
+
+  for (double z_sign : {1, -1}) {
+    for (double y_sign : {1, -1}) {
+      for (double x_sign : {1, -1}) {
+        bt_shape->addPoint({x_sign * geometry.size(0) / 2,
+                            y_sign * geometry.size(1) / 2,
+                            z_sign * geometry.size(2) / 2});
+      }
+    }
   }
 
   return bt_shape;
@@ -488,6 +491,19 @@ bool BulletModel::UpdateElementWorldTransform(
     }
   }
   return element_exists;
+}
+
+void BulletModel::NotifyFilterCriteriaChanged(ElementId id) {
+  for (BulletCollisionWorldWrapper* world :
+      {&bullet_world_, &bullet_world_no_margin_}) {
+    const auto& itr = world->bt_collision_objects.find(id);
+    if (itr != world->bt_collision_objects.end()) {
+      world->bt_collision_world->getBroadphase()
+          ->getOverlappingPairCache()
+          ->cleanProxyFromPairs(itr->second->getBroadphaseHandle(),
+                                world->bt_collision_world->getDispatcher());
+    }
+  }
 }
 
 void BulletModel::UpdateModel() {

@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 using Eigen::Isometry3d;
@@ -31,8 +31,7 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTrans) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::UniformlyRandomQuat(generator);
-    T = Quaterniond(q(0), q(1), q(2), q(3));
+    T = drake::math::UniformlyRandomQuaternion(&generator);
     //  T.setIdentity();
     //  T = AngleAxisd(M_PI_2, Vector3d(1.0, 0.0, 0.0));
 
@@ -60,10 +59,9 @@ GTEST_TEST(DrakeGeometryUtilTest, DHomogTransInv) {
   Isometry3d T;
   std::default_random_engine generator;
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::UniformlyRandomQuat(generator);
+    T = drake::math::UniformlyRandomQuaternion(&generator);
     //    T = Quaterniond(q(0), q(1), q(2), q(3)) *
     //    Translation3d(Vector3d::Random());
-    T = Quaterniond(q(0), q(1), q(2), q(3));
 
     const int nv = 6;
     const int nq = 7;
@@ -100,8 +98,8 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::UniformlyRandomQuat(generator);
-    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+    const Eigen::Quaterniond quat = math::UniformlyRandomQuaternion(&generator);
+    T = quat * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
@@ -123,8 +121,8 @@ GTEST_TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
   std::default_random_engine generator;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Vector4d q = drake::math::UniformlyRandomQuat(generator);
-    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+    const Eigen::Quaterniond quat = math::UniformlyRandomQuaternion(&generator);
+    T = quat * Translation3d(Vector3d::Random());
     auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
     auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();

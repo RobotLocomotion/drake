@@ -20,7 +20,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//geometry:geometry_ids",
-        "//geometry:geometry_system",
+        "//geometry:scene_graph",
         "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant",
     ],
@@ -44,7 +44,7 @@ drake_cc_binary(
         "//systems/analysis:semi_explicit_euler_integrator",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],

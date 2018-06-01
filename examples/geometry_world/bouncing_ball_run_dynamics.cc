@@ -3,8 +3,8 @@
 
 #include "drake/examples/geometry_world/bouncing_ball_plant.h"
 #include "drake/geometry/geometry_instance.h"
-#include "drake/geometry/geometry_system.h"
 #include "drake/geometry/geometry_visualization.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
@@ -21,7 +21,7 @@ namespace bouncing_ball {
 namespace {
 
 using geometry::GeometryInstance;
-using geometry::GeometrySystem;
+using geometry::SceneGraph;
 using geometry::HalfSpace;
 using geometry::SourceId;
 using lcm::DrakeLcm;
@@ -33,29 +33,29 @@ using std::make_unique;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
-  auto geometry_system = builder.AddSystem<GeometrySystem<double>>();
-  geometry_system->set_name("geometry_system");
+  auto scene_graph = builder.AddSystem<SceneGraph<double>>();
+  scene_graph->set_name("scene_graph");
 
   // Create two bouncing balls --> two plants. Put the balls at positions
   // mirrored over the origin (<0.25, 0.25> and <-0.25, -0.25>, respectively).
   // See below for setting the initial *height*.
-  SourceId ball_source_id1 = geometry_system->RegisterSource("ball1");
+  SourceId ball_source_id1 = scene_graph->RegisterSource("ball1");
   auto bouncing_ball1 = builder.AddSystem<BouncingBallPlant>(
-      ball_source_id1, geometry_system, Vector2<double>(0.25, 0.25));
+      ball_source_id1, scene_graph, Vector2<double>(0.25, 0.25));
   bouncing_ball1->set_name("BouncingBall1");
 
-  SourceId ball_source_id2 = geometry_system->RegisterSource("ball2");
+  SourceId ball_source_id2 = scene_graph->RegisterSource("ball2");
   auto bouncing_ball2 = builder.AddSystem<BouncingBallPlant>(
-      ball_source_id2, geometry_system, Vector2<double>(-0.25, -0.25));
+      ball_source_id2, scene_graph, Vector2<double>(-0.25, -0.25));
   bouncing_ball2->set_name("BouncingBall2");
 
-  SourceId global_source = geometry_system->RegisterSource("anchored");
+  SourceId global_source = scene_graph->RegisterSource("anchored");
   // Add a "ground" halfspace. Define the pose of the half space (H) in the
   // world from its normal (Hz_W) and a point on the plane (p_WH). In this case,
   // X_WH will be the identity.
   Vector3<double> Hz_W(0, 0, 1);
   Vector3<double> p_WH(0, 0, 0);
-  geometry_system->RegisterAnchoredGeometry(
+  scene_graph->RegisterAnchoredGeometry(
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>()));
@@ -68,27 +68,23 @@ int do_main() {
           std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
   publisher->set_publish_period(1 / 60.0);
 
-  builder.Connect(bouncing_ball1->get_geometry_id_output_port(),
-                  geometry_system->get_source_frame_id_port(ball_source_id1));
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
-                  geometry_system->get_source_pose_port(ball_source_id1));
-  builder.Connect(geometry_system->get_query_output_port(),
+                  scene_graph->get_source_pose_port(ball_source_id1));
+  builder.Connect(scene_graph->get_query_output_port(),
                   bouncing_ball1->get_geometry_query_input_port());
 
-  builder.Connect(bouncing_ball2->get_geometry_id_output_port(),
-                  geometry_system->get_source_frame_id_port(ball_source_id2));
   builder.Connect(bouncing_ball2->get_geometry_pose_output_port(),
-                  geometry_system->get_source_pose_port(ball_source_id2));
-  builder.Connect(geometry_system->get_query_output_port(),
+                  scene_graph->get_source_pose_port(ball_source_id2));
+  builder.Connect(scene_graph->get_query_output_port(),
                   bouncing_ball2->get_geometry_query_input_port());
 
-  builder.Connect(geometry_system->get_pose_bundle_output_port(),
+  builder.Connect(scene_graph->get_pose_bundle_output_port(),
                   converter->get_input_port(0));
   builder.Connect(*converter, *publisher);
 
   // Last thing before building the diagram; dispatch the message to load
   // geometry.
-  geometry::DispatchLoadMessage(*geometry_system);
+  geometry::DispatchLoadMessage(*scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

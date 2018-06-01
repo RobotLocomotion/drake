@@ -140,6 +140,76 @@ namespace test {
          << p2 << "\ntolerance = " << tolerance;
 }
 
+::testing::AssertionResult IsArcOffsetClose(const ArcOffset& arc_offset1,
+                                            const ArcOffset& arc_offset2,
+                                            double linear_tolerance,
+                                            double angular_tolerance) {
+  bool fails = false;
+  std::string error_message{};
+  double delta = std::abs(arc_offset1.radius() - arc_offset2.radius());
+  if (delta > linear_tolerance) {
+    fails = true;
+    error_message =
+        error_message + "ArcOffset are different at radius. " +
+        "arc_offset1.radius(): " + std::to_string(arc_offset1.radius()) +
+        " vs. arc_offset2.radius(): " + std::to_string(arc_offset2.radius()) +
+        ", diff = " + std::to_string(delta) +
+        ", tolerance = " + std::to_string(linear_tolerance) + "\n";
+  }
+  delta = std::abs(arc_offset1.d_theta() - arc_offset2.d_theta());
+  if (delta > angular_tolerance) {
+    fails = true;
+    error_message =
+        error_message + "EndpointZ are different at d_theta. " +
+        "arc_offset1.d_theta(): " + std::to_string(arc_offset1.d_theta()) +
+        " vs.  arc_offset2.d_theta(): " +
+        std::to_string(arc_offset2.d_theta()) +
+        ", diff = " + std::to_string(delta) +
+        ", tolerance = " + std::to_string(angular_tolerance) + "\n";
+  }
+  if (fails) {
+    return ::testing::AssertionFailure() << error_message;
+  }
+  return ::testing::AssertionSuccess()
+         << "arc_offset1 =\n"
+         << arc_offset1 << "\nis approximately equal to arc_offset2 =\n"
+         << arc_offset2 << "\nwith linear tolerance = " << linear_tolerance
+         << "\nand angular tolerance =\n"
+         << angular_tolerance;
+}
+
+Matcher<const api::HBounds&> Matches(const api::HBounds& elevation_bounds,
+                                     double tolerance) {
+  return MakeMatcher(new HBoundsMatcher(elevation_bounds, tolerance));
+}
+
+Matcher<const ArcOffset&> Matches(const ArcOffset& arc_offset,
+                                  double linear_tolerance,
+                                  double angular_tolerance) {
+  return MakeMatcher(
+      new ArcOffsetMatcher(arc_offset, linear_tolerance, angular_tolerance));
+}
+
+Matcher<const LineOffset&> Matches(const LineOffset& line_offset,
+                                   double tolerance) {
+  return MakeMatcher(new LineOffsetMatcher(line_offset, tolerance));
+}
+
+Matcher<const LaneLayout&> Matches(const LaneLayout& lane_layout,
+                                   double tolerance) {
+  return MakeMatcher(new LaneLayoutMatcher(lane_layout, tolerance));
+}
+
+Matcher<const StartReference::Spec&> Matches(
+    const StartReference::Spec& start_reference, double tolerance) {
+  return MakeMatcher(new StartReferenceSpecMatcher(start_reference, tolerance));
+}
+
+Matcher<const EndReference::Spec&> Matches(
+    const EndReference::Spec& end_reference, double tolerance) {
+  return MakeMatcher(new EndReferenceSpecMatcher(end_reference, tolerance));
+}
+
 }  // namespace test
 }  // namespace multilane
 }  // namespace maliput

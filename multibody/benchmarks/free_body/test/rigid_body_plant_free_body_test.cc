@@ -13,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -74,7 +75,8 @@ using Eigen::Quaterniond;
   const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(3);
   const Vector3d wDt_NB_B_drake  = stateDt_as_vector.segment<3>(7);
   const Vector3d vDt_NBo_B_drake = stateDt_as_vector.segment<3>(10);
-  const Quaterniond quat_NB_drake = math::quat2eigenQuaternion(quat4_NB_drake);
+  const Quaterniond quat_NB_drake(quat4_NB_drake(0), quat4_NB_drake(1),
+                                  quat4_NB_drake(2), quat4_NB_drake(3));
 
   // Calculate exact analytical rotational solution at time t.
   const double t = context.get_time();
@@ -324,12 +326,8 @@ void  TestDrakeSolutionForVariousInitialValues(
   int test_counter = 0;
   for (double thetaX = 0; thetaX <= 2*M_PI; thetaX += 0.02*M_PI) {
     for (double thetaY = 0; thetaY <= M_PI; thetaY += 0.05*M_PI) {
-      const Vector3<double> spaceXYZ_angles = {thetaX, thetaY, 0};
-      const Vector4d drake_quat_NB_initial = math::rpy2quat(spaceXYZ_angles);
-      quat_NB_initial = Quaterniond(drake_quat_NB_initial(0),
-                                    drake_quat_NB_initial(1),
-                                    drake_quat_NB_initial(2),
-                                    drake_quat_NB_initial(3));
+      const math::RollPitchYaw<double> spaceXYZ_angles(thetaX, thetaY, 0);
+      quat_NB_initial = spaceXYZ_angles.ToQuaternion();
       torque_free_cylinder_exact.set_quat_NB_initial(quat_NB_initial);
 
       // Since there are 100*20 = 2000 total tests of initial conditions, only

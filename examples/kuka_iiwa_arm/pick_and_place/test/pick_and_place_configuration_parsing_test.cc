@@ -10,7 +10,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.pb.h"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace examples {
@@ -18,7 +18,6 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 namespace {
 
-using math::rpy2rotmat;
 using pick_and_place::PlannerConfiguration;
 using pick_and_place::SimulatedPlantConfiguration;
 using pick_and_place::OptitrackConfiguration;

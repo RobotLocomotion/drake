@@ -4,22 +4,45 @@
 
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mixed_integer_rotation_constraint.h"
 
 namespace drake {
 namespace multibody {
 /** Solves the inverse kinematics problem as a mixed integer convex optimization
  * problem.
- * We use a convex relaxation of the rotation matrix. So if this global inverse
- * kinematics problem says the solution is infeasible, then it is guaranteed
- * that the kinematics constraints are not satisfiable.
+ * We use a mixed-integer convex relaxation of the rotation matrix. So if this
+ * global inverse kinematics problem says the solution is infeasible, then it is
+ * guaranteed that the kinematics constraints are not satisfiable.
  * If the global inverse kinematics returns a solution, the posture should
- * satisfy the kinematics constraints, with some error.
+ * approximately satisfy the kinematics constraints, with some error.
+ * The approach is described in Global Inverse Kinematics via Mixed-integer
+ * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake, ISRR,
+ * 2017.
  */
 class GlobalInverseKinematics : public solvers::MathematicalProgram {
 // TODO(hongkai.dai): create a function globalIK, with interface similar to
 // inverseKin(), that accepts RigidBodyConstraint objects and cost function.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GlobalInverseKinematics)
+
+  struct Options {
+    // This constructor is needed, otherwise the compiler complains.
+    Options() {}
+
+    int num_intervals_per_half_axis{2};
+    solvers::MixedIntegerRotationConstraintGenerator::Approach approach{
+        solvers::MixedIntegerRotationConstraintGenerator::Approach::
+            kBilinearMcCormick};
+    solvers::IntervalBinning interval_binning{
+        solvers::IntervalBinning::kLogarithmic};
+    /** If true, add only mixed-integer linear constraints in the
+     * constructor of GlobalInverseKinematics. The mixed-integer relaxation
+     * is tighter with nonlinear constraints (such as Lorentz cone constraint)
+     * than with linear constraints, but the optimization takes more time with
+     * nonlinear constraints.
+     */
+    bool linear_constraint_only{false};
+  };
 
   /**
    * Parses the robot kinematics tree. The decision variables include the
@@ -28,13 +51,12 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * body pose, so that the adjacent bodies are connected correctly by the joint
    * in between the bodies.
    * @param robot The robot on which the inverse kinematics problem is solved.
-   * @param num_binary_vars_per_half_axis The number of binary variables for
-   * each half axis, to segment the unit circle.
-   * @see AddRotationMatrixMcCormickEnvelopeMilpConstraints() for more details
-   * on num_binary_vars_per_half_axis.
+   * @param options The options to relax SO(3) constraint as mixed-integer
+   * convex constraints. Refer to MixedIntegerRotationConstraintGenerator for
+   * more details on the parameters in options.
    */
-  GlobalInverseKinematics(const RigidBodyTreed& robot,
-                          int num_binary_vars_per_half_axis = 2);
+  explicit GlobalInverseKinematics(const RigidBodyTreed& robot,
+                                   const Options& options = Options());
 
   ~GlobalInverseKinematics() override {}
 
@@ -240,9 +262,18 @@ class GlobalInverseKinematics : public solvers::MathematicalProgram {
    * constrained.
    * @param joint_lower_bound The lower bound for the joint.
    * @param joint_upper_bound The upper bound for the joint.
+   * @param linear_constraint_approximation If true, joint limits are
+   * approximated as linear constraints on parent and child link orientations,
+   * otherwise they are imposed as Lorentz cone constraints.
+   * With the Lorentz cone formulation, the joint limit constraint would be
+   * tight if our mixed-integer constraint on SO(3) were tight. By enforcing the
+   * joint limits as linear constraint, the original inverse kinematics problem
+   * is further relaxed, on top of SO(3) relaxation, but potentially with faster
+   * computation. @default is false.
    */
   void AddJointLimitConstraint(int body_index, double joint_lower_bound,
-                               double joint_upper_bound);
+                               double joint_upper_bound,
+                               bool linear_constraint_approximation = false);
 
  private:
   // This is an utility function for `ReconstructGeneralizedPositionSolution`.

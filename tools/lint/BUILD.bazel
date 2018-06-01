@@ -60,7 +60,7 @@ drake_py_binary(
     name = "bzlcodestyle",
     srcs = ["bzlcodestyle.py"],
     main = "bzlcodestyle.py",
-    deps = ["@pycodestyle//:pycodestyle"],
+    deps = ["@pycodestyle"],
 )
 
 drake_py_library(
@@ -74,6 +74,12 @@ drake_py_binary(
     srcs = ["clang_format_includes.py"],
     main = "clang_format_includes.py",
     deps = [":formatter"],
+)
+
+drake_py_binary(
+    name = "library_lint_reporter",
+    testonly = 1,
+    srcs = ["library_lint_reporter.py"],
 )
 
 # === test ===
@@ -92,9 +98,13 @@ drake_py_unittest(
 drake_py_unittest(
     name = "util_test",
     tags = [
-        # This test looks outside the sandbox.
+        # This test's pass/fail result depends on the presence of files in the
+        # source tree beyond what is declared in its `deps`; thus, we need to
+        # re-run the test anytime the source tree might have changed, for which
+        # "external" is the closest semantic match.
         "external",
-        "local",
+        # This test looks outside the sandbox.
+        "no-sandbox",
     ],
     deps = [":util"],
 )
@@ -106,6 +116,7 @@ drake_py_unittest(
 
 sh_test(
     name = "clang_format_includes_test",
+    size = "small",
     srcs = ["test/clang_format_includes_test.sh"],
     data = [
         ":clang-format-includes",

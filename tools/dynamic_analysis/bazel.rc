@@ -22,15 +22,13 @@ build:kcov_everything --define=WITH_SNOPT=ON
 build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
 
-test:kcov_everything --test_env=GRB_LICENSE_FILE
-test:kcov_everything --test_env=HOME
 test:kcov_everything --spawn_strategy=standalone
 test:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 test:kcov_everything --local_test_jobs=1
 test:kcov_everything --test_tag_filters=-cpplint,-pycodestyle,-no_kcov
 test:kcov_everything --nocache_test_results
-# See timeout note above.
-test:kcov_everything --test_timeout=210,1050,3150,12600
+# See timeout note above. Timeouts are 5x default values.
+test:kcov_everything --test_timeout=300,1500,4500,18000
 
 ### ASan build. ###
 build:asan --copt -g
@@ -47,7 +45,7 @@ test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan
 test:asan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan --test_timeout=120,600,1800,7200
+test:asan --test_timeout=150,750,2250,9000  # 2.5x
 
 ### ASan everything build. ###
 build:asan_everything --define=WITH_GUROBI=ON
@@ -59,8 +57,6 @@ build:asan_everything --copt -O1
 build:asan_everything --copt -fno-omit-frame-pointer
 build:asan_everything --linkopt -fsanitize=address
 
-test:asan_everything --test_env=GRB_LICENSE_FILE
-test:asan_everything --test_env=HOME
 # LSan is run with ASan by default
 test:asan_everything --test_tag_filters=-no_asan,-no_lsan
 test:asan_everything --run_under=//tools/dynamic_analysis:asan
@@ -70,7 +66,7 @@ test:asan_everything --test_env=ASAN_SYMBOLIZER_PATH
 test:asan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
-test:asan_everything --test_timeout=120,600,1800,7200
+test:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
 
 ### LSan build. ###
 build:lsan --copt -g
@@ -94,8 +90,6 @@ build:lsan_everything --copt -O1
 build:lsan_everything --copt -fno-omit-frame-pointer
 build:lsan_everything --linkopt -fsanitize=leak
 
-test:lsan_everything --test_env=GRB_LICENSE_FILE
-test:lsan_everything --test_env=HOME
 test:lsan_everything --test_tag_filters=-no_lsan
 test:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 test:lsan_everything --test_env=LSAN_OPTIONS
@@ -129,8 +123,6 @@ build:msan_everything --copt -O1
 build:msan_everything --copt -fno-omit-frame-pointer
 build:msan_everything --linkopt -fsanitize=memory
 
-test:msan_everything --test_env=GRB_LICENSE_FILE
-test:msan_everything --test_env=HOME
 test:msan_everything --test_tag_filters=-no_msan
 test:msan_everything --run_under=//tools/dynamic_analysis:msan
 test:msan_everything --test_lang_filters=-sh,-py
@@ -176,8 +168,6 @@ build:tsan_everything --copt -fno-omit-frame-pointer
 build:tsan_everything --noforce_pic
 build:tsan_everything --linkopt -fsanitize=thread
 
-test:tsan_everything --test_env=GRB_LICENSE_FILE
-test:tsan_everything --test_env=HOME
 test:tsan_everything --test_tag_filters=-no_tsan
 test:tsan_everything --run_under=//tools/dynamic_analysis:tsan
 test:tsan_everything --test_env=TSAN_OPTIONS
@@ -192,10 +182,11 @@ build:ubsan --copt -fsanitize=undefined
 build:ubsan --copt -fno-sanitize=float-divide-by-zero
 build:ubsan --copt -O1
 build:ubsan --copt -fno-omit-frame-pointer
+build:ubsan --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
 build:ubsan --linkopt -fsanitize=undefined
 # https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
-build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
-build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
+build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a
+build:ubsan --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
 test:ubsan --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan --test_env=UBSAN_OPTIONS
 test:ubsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_ubsan
@@ -213,12 +204,11 @@ build:ubsan_everything --copt -fsanitize=undefined
 build:ubsan_everything --copt -fno-sanitize=float-divide-by-zero
 build:ubsan_everything --copt -O1
 build:ubsan_everything --copt -fno-omit-frame-pointer
+build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
 build:ubsan_everything --linkopt -fsanitize=undefined
 # https://groups.google.com/forum/#!topic/bazel-discuss/15h4GPixeGI
-build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a #noqa
-build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a #noqa
-test:ubsan_everything --test_env=GRB_LICENSE_FILE
-test:ubsan_everything --test_env=HOME
+build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone_cxx-x86_64.a
+build:ubsan_everything --linkopt /usr/lib/llvm-4.0/lib/clang/4.0.0/lib/linux/libclang_rt.ubsan_standalone-x86_64.a
 test:ubsan_everything --test_tag_filters=-no_ubsan
 test:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
 test:ubsan_everything --test_env=UBSAN_OPTIONS
@@ -235,7 +225,7 @@ test:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
 test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck --test_timeout=600,3000,10800,36000  # 10x
+test:memcheck --test_timeout=1500,7500,22500,90000  # 25x
 
 ### Memcheck everything build. ###
 build:memcheck_everything --define=WITH_GUROBI=ON
@@ -244,14 +234,12 @@ build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
 build:memcheck_everything --copt -O1
 
-test:memcheck_everything --test_env=GRB_LICENSE_FILE
-test:memcheck_everything --test_env=HOME
 test:memcheck_everything --test_tag_filters=-no_memcheck
 test:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 test:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:memcheck_everything --test_timeout=600,3000,10800,36000  # 10x
+test:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
 
 # Fast memcheck.
 #
@@ -266,4 +254,4 @@ test:fastmemcheck --run_under=//tools/dynamic_analysis:valgrind
 test:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
-test:fastmemcheck --test_timeout=600,3000,10800,36000  # 10x
+test:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x

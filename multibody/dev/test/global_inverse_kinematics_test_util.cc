@@ -36,7 +36,7 @@ std::unique_ptr<RigidBodyTree<double>> ConstructKuka() {
 
 KukaTest::KukaTest()
     : rigid_body_tree_(ConstructKuka()),
-      global_ik_(*rigid_body_tree_, 2),  // Test with 2 binary variables per
+      global_ik_(*rigid_body_tree_),  // Test with default options.
     // half axis.
       ee_idx_(rigid_body_tree_->FindBodyIndex("iiwa_link_ee")) {}
 
@@ -57,10 +57,11 @@ void KukaTest::CheckGlobalIKSolution(double pos_tol, double orient_tol) const {
 
     const Eigen::Matrix3d body_Ri =
         global_ik_.GetSolution(global_ik_.body_rotation_matrix(i));
-    // Use 1E-10 for the error tolerance.
-    EXPECT_TRUE((body_Ri.array().abs() <= 1 + 1E-10).all());
-    EXPECT_LE(body_Ri.trace(), 3 + 1E-10);
-    EXPECT_GE(body_Ri.trace(), -1 - 1E-10);
+    // Tolerance from Gurobi is about 1E-6.
+    const double tol = 1e-6;
+    EXPECT_TRUE((body_Ri.array().abs() <= 1 + tol).all());
+    EXPECT_LE(body_Ri.trace(), 3 + tol);
+    EXPECT_GE(body_Ri.trace(), -1 - tol);
     // TODO(hongkai.dai): We will have a more meaningful bound on the
     // relaxation of rotation matrix. Then clean up this print out with
     // the check on the error bound, and move this file out of dev folder.

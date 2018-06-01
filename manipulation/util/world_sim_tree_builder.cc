@@ -25,7 +25,8 @@ namespace manipulation {
 namespace util {
 
 template <typename T>
-WorldSimTreeBuilder<T>::WorldSimTreeBuilder() {
+WorldSimTreeBuilder<T>::WorldSimTreeBuilder(bool compile_tree)
+    : compile_tree_(compile_tree) {
   // TODO(SeanCurtis-TRI): These values preserve the historical behavior of the
   // compliant contact model. However, it has several issues:
   //  1. Young's modulus is far too small (it does not reflect a reasonable
@@ -108,12 +109,12 @@ int WorldSimTreeBuilder<T>::AddModelInstanceToFrame(
   if (extension == ".urdf") {
     table = drake::parsers::urdf::AddModelInstanceFromUrdfFile(
         model_map_[model_name], floating_base_type, weld_to_frame,
-        rigid_body_tree_.get());
+        compile_tree_, rigid_body_tree_.get());
 
   } else if (extension == ".sdf") {
     table = drake::parsers::sdf::AddModelInstancesFromSdfFile(
         model_map_[model_name], floating_base_type, weld_to_frame,
-        rigid_body_tree_.get());
+        compile_tree_, rigid_body_tree_.get());
   }
   const int model_instance_id = table.begin()->second;
 

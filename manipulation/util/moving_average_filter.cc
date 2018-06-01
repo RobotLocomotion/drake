@@ -39,7 +39,7 @@ T MovingAverageFilter<T>::Update(const T& new_data) {
     sum_ -= window_.front();
     window_.pop();
   }
-  return (1.0 / window_.size()) * sum_;
+  return moving_average();
 }
 
 template class MovingAverageFilter<double>;

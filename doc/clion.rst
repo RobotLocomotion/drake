@@ -45,16 +45,16 @@ Installing CLion
 ----------------
 
 1. Go to https://www.jetbrains.com/clion/download/. Download the latest version
-   of CLion. For macOS, choose the version with bundled custom JDK.
+   of CLion.
 2. Install CLion. Exact steps depend on your platform, but it's
    straightforward. Just using defaults for everything is fine. You now have a
    30-day trial version of CLion. Either try it out as is, or get a free
    academic license `here <https://www.jetbrains.com/shop/eform/students>`_.
 
 The most recent versions that we have tested for compatibility are:
-  - CLion 2017.3.3
-  - Bazel 0.10.1
-  - "CLion with Bazel" plug-in 2018.01.29.0.0.
+  - CLion 2017.3.4
+  - Bazel 0.12.0
+  - "CLion with Bazel" plug-in 2018.03.26.0.5.
 
 Upgrading CLion
 ---------------

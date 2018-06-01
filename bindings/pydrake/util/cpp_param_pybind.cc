@@ -10,7 +10,12 @@ namespace {
 // Creates a Python object that should uniquely hash for a primitive C++
 // type.
 py::object GetPyHash(const std::type_info& tinfo) {
-  return py::make_tuple("cpp_type", tinfo.hash_code());
+  // N.B. Using `::hash_code() for `py::` symbols on Mac may fail depending on
+  // import order. This was encountered in the failure documented by #8704. The
+  // code change introduced was the usage of `GetPyParam()` in
+  // `framework_py*.cc`, which caused a different `py::object` typeid to be
+  // used, making `analysis_py.cc` to fail when it tried to obtain its type.
+  return py::make_tuple("cpp_type", tinfo.name());
 }
 
 // Registers C++ type.

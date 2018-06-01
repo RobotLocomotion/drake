@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"

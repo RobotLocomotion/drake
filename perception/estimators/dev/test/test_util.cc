@@ -9,7 +9,7 @@
 #include "drake/common/test_utilities/eigen_geometry_compare.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_viewer_draw.hpp"
-#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 
 using std::pair;
 using std::string;

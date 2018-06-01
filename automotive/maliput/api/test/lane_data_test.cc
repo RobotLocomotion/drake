@@ -209,7 +209,7 @@ const double kRotationTolerance = 1e-15;
     EXPECT_TRUE(CompareMatrices(dut.quat().coeffs(),                    \
                                 Vector4<double>(_x, _y, _z, _w),        \
                                 kRotationTolerance));                   \
-    EXPECT_TRUE(CompareMatrices(dut.rpy(),                              \
+    EXPECT_TRUE(CompareMatrices(dut.rpy().vector(),                     \
                                 Vector3<double>(_ro, _pi, _ya),         \
                                 kRotationTolerance));                   \
     EXPECT_NEAR(dut.roll(), _ro, kRotationTolerance);                   \

@@ -23,6 +23,16 @@ PYBIND11_MODULE(_symbolic_py, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
 
+  // Install NumPy warning filtres.
+  // N.B. This may interfere with other code, but until that is a confirmed
+  // issue, we should agressively try to avoid these warnings.
+  py::module::import("pydrake.util.deprecation")
+      .attr("install_numpy_warning_filters")();
+
+  // Install NumPy formatters patch.
+  py::module::import("pydrake.util.compatibility")
+      .attr("maybe_patch_numpy_formatters")();
+
   m.doc() =
       "Symbolic variable, variables, monomial, expression, polynomial, and "
       "formula";
@@ -37,10 +47,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
            })
       .def("__hash__",
            [](const Variable& self) { return std::hash<Variable>{}(self); })
-      .def("__copy__",
-           [](const Variable& self) -> Variable {
-             return self;
-           })
+      .def("__copy__", [](const Variable& self) -> Variable { return self; })
       // Addition.
       .def(py::self + py::self)
       .def(py::self + double())
@@ -110,6 +117,7 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def(py::init<>())
       .def(py::init<const Eigen::Ref<const VectorX<Variable>>&>())
       .def("size", &Variables::size)
+      .def("__len__", &Variables::size)
       .def("empty", &Variables::empty)
       .def("__str__", &Variables::to_string)
       .def("__repr__",
@@ -128,12 +136,19 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("erase", [](Variables& self,
                        const Variables& vars) { return self.erase(vars); })
       .def("include", &Variables::include)
+      .def("__contains__", &Variables::include)
       .def("IsSubsetOf", &Variables::IsSubsetOf)
       .def("IsSupersetOf", &Variables::IsSupersetOf)
       .def("IsStrictSubsetOf", &Variables::IsStrictSubsetOf)
       .def("IsStrictSupersetOf", &Variables::IsStrictSupersetOf)
       .def("EqualTo", [](const Variables& self,
                          const Variables& vars) { return self == vars; })
+      .def("__iter__",
+           [](const Variables& vars) {
+             return py::make_iterator(vars.begin(), vars.end());
+           },
+           // Keep alive, reference: `return` keeps `self` alive
+           py::keep_alive<0, 1>())
       .def(py::self == py::self)
       .def(py::self < py::self)
       .def(py::self + py::self)
@@ -163,6 +178,17 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("Evaluate",
            [](const Expression& self, const Environment::map& env) {
              return self.Evaluate(Environment{env});
+           })
+      .def("EvaluatePartial",
+           [](const Expression& self, const Environment::map& env) {
+             return self.EvaluatePartial(Environment{env});
+           })
+      .def("Substitute",
+           [](const Expression& self, const Variable& var,
+              const Expression& e) { return self.Substitute(var, e); })
+      .def("Substitute",
+           [](const Expression& self, const Substitution& s) {
+             return self.Substitute(s);
            })
       .def("EqualTo", &Expression::EqualTo)
       // Addition
@@ -327,7 +353,14 @@ PYBIND11_MODULE(_symbolic_py, m) {
       .def("__hash__",
            [](const Formula& self) { return std::hash<Formula>{}(self); })
       .def_static("True", &Formula::True)
-      .def_static("False", &Formula::False);
+      .def_static("False", &Formula::False)
+      .def("__nonzero__", [](const Formula&) {
+        throw std::runtime_error(
+            "You should not call `__nonzero__` on `Formula`. If you are trying "
+            "to make a map with `Variable`, `Expression`, or `Polynomial` as "
+            "keys and access the keys, please use "
+            "`pydrake.util.containers.EqualToDict`.");
+      });
 
   // Cannot overload logical operators: http://stackoverflow.com/a/471561
   // Defining custom function for clarity.
@@ -441,6 +474,10 @@ PYBIND11_MODULE(_symbolic_py, m) {
         return p.Jacobian(vars);
       });
 
+  // We have this line because pybind11 does not permit transitive
+  // conversions. See
+  // https://github.com/pybind/pybind11/blob/289e5d9cc2a4545d832d3c7fb50066476bce3c1d/include/pybind11/pybind11.h#L1629.
+  py::implicitly_convertible<int, drake::symbolic::Expression>();
   py::implicitly_convertible<double, drake::symbolic::Expression>();
   py::implicitly_convertible<drake::symbolic::Variable,
                              drake::symbolic::Expression>();

@@ -14,6 +14,7 @@ drake_cc_library(
     hdrs = ["simulated_schunk_wsg_system.h"],
     deps = [
         "//common:find_resource",
+        "//manipulation/schunk_wsg",
         "//multibody/parsers",
         "//multibody/rigid_body_plant",
     ],
@@ -40,7 +41,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "@gflags",
     ],
 )
@@ -49,7 +50,7 @@ drake_cc_binary(
 
 drake_cc_googletest(
     name = "schunk_wsg_lift_test",
-    size = "large",
+    timeout = "moderate",
     data = [
         "test/test_lifter.sdf",
         "//manipulation/models/wsg_50_description:models",
@@ -66,7 +67,7 @@ drake_cc_googletest(
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:trajectory",
         "//lcm",
-        "//manipulation/schunk_wsg:schunk_wsg_constants",
+        "//manipulation/schunk_wsg",
         "//multibody:rigid_body_tree",
         "//multibody:rigid_body_tree_construction",
         "//multibody/parsers",
@@ -85,8 +86,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "simulated_schunk_wsg_system_test",
-    # Test size increased to not timeout when run with Valgrind.
-    size = "medium",
+    timeout = "moderate",
     data = [
         "//manipulation/models/wsg_50_description:models",
     ],

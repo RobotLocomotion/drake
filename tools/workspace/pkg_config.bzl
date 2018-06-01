@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@drake//tools/workspace:execute.bzl", "path", "which")
+
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
 _DEFAULT_STATIC = False
@@ -27,11 +29,11 @@ def setup_pkg_config_repository(repository_ctx):
     intended to be called directly from the WORKSPACE file, or from a macro
     that was called by the WORKSPACE file.
     """
-    # First locate pkg-config on the $PATH.
-    tool_path = repository_ctx.which("pkg-config")
+    # First locate pkg-config.
+    tool_path = which(repository_ctx, "pkg-config")
     if not tool_path:
         return struct(error = "Could not find pkg-config on PATH={}".format(
-            repository_ctx.os.environ["PATH"]))
+            path(repository_ctx)))
     args = [tool_path, repository_ctx.attr.modname]
 
     pkg_config_paths = getattr(repository_ctx.attr,
@@ -116,9 +118,6 @@ def setup_pkg_config_repository(repository_ctx):
     if result.error != None:
         return result
     cflags = result.tokens
-    # Placate whiny compilers.
-    if "-pthread" in cflags and "-pthread" in linkopts:
-        cflags.remove("-pthread")
 
     # Split cflags into includes and defines.  The -I paths from pkg-config
     # will be absolute paths; we'll make them relative in a moment.
@@ -135,6 +134,18 @@ def setup_pkg_config_repository(repository_ctx):
             value = cflag[2:]
             if value not in defines:
                 defines.append(value)
+        elif cflag == "-pthread":
+            # The pkg-config output has told us to use -pthread when compiling.
+            # When compiling the typical effect of -pthread is to -D_REENTRANT;
+            # when linking the typical effect of -pthread is to -lpthread.  In
+            # Bazel, we can't pass -pthread in a cc_library's defines (it's not
+            # a preprocessor definition), and we shouldn't pass -pthread only
+            # in a cc_library's copts (i.e., non-transitively), since
+            # respecting transitivity might be important for some toolchains.
+            # Instead, when compiling our code that uses this library, we'll
+            # decide to just ignore pkg-config's advice to use -pthread when
+            # compiling and instead apply -pthread only when linking.
+            linkopts.append("-pthread")
         elif cflag in [
                 "-frounding-math",
                 "-ffloat-store",
@@ -225,9 +236,6 @@ pkg_config_repository = repository_rule(
         "extra_deps": attr.string_list(),
         "pkg_config_paths": attr.string_list(),
     },
-    environ = [
-        "PATH",
-    ],
     local = True,
     implementation = _impl,
 )

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -30,21 +31,31 @@ class LineRoadCurve : public RoadCurve {
   /// @param superelevation CubicPolynomial object that represents the
   /// superelevation polynomial. See RoadCurve class constructor for more
   /// details.
-  explicit LineRoadCurve(const Vector2<double>& xy0, const Vector2<double>& dxy,
-                         const CubicPolynomial& elevation,
-                         const CubicPolynomial& superelevation)
-      : RoadCurve(elevation, superelevation),
-        p0_(xy0),
-        dp_(dxy),
-        heading_(std::atan2(dxy.y(), dxy.x())) {
+  /// @param linear_tolerance The linear tolerance, in meters, for all
+  /// computations. See RoadCurve class constructor for more details.
+  /// @param scale_length The minimum spatial period of variation in the curve,
+  /// in meters. See RoadCurve class constructor for more details.
+  /// @param computation_policy Policy to guide all computations. If geared
+  /// towards speed, computations will make use of analytical expressions even
+  /// if not actually correct for the curve as specified.
+  explicit LineRoadCurve(
+      const Vector2<double>& xy0, const Vector2<double>& dxy,
+      const CubicPolynomial& elevation,
+      const CubicPolynomial& superelevation,
+      double linear_tolerance = 0.01, double scale_length = 1.0,
+      const ComputationPolicy computation_policy =
+         ComputationPolicy::kPreferAccuracy)
+      : RoadCurve(linear_tolerance, scale_length,
+                  elevation, superelevation,
+                  computation_policy),
+        p0_(xy0), dp_(dxy), heading_(std::atan2(dxy.y(), dxy.x())) {
+    // TODO(hidmic): Remove default values in trailing arguments, which were
+    // added in the first place to defer the need to propagate changes upwards
+    // in the class hierarchy.
     DRAKE_DEMAND(dxy.norm() > kMinimumNorm);
   }
 
   ~LineRoadCurve() override = default;
-
-  double p_from_s(double s, double r) const override;
-
-  double s_from_p(double p, double r) const override;
 
   Vector2<double> xy_of_p(double p) const override { return p0_ + p * dp_; }
 
@@ -80,6 +91,15 @@ class LineRoadCurve : public RoadCurve {
   }
 
  private:
+  double FastCalcPFromS(double s, double r) const override;
+
+  double FastCalcSFromP(double p, double r) const override;
+
+  double CalcMinimumRadiusAtOffset(double r) const override {
+    unused(r);
+    return std::numeric_limits<double>::infinity();
+  }
+
   // The first point in world coordinates over the z=0 plane of the reference
   // curve.
   const Vector2<double> p0_{};

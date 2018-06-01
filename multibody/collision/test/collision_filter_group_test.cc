@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
@@ -38,9 +39,11 @@ using drake::FindResourceOrThrow;
 using drake::parsers::sdf::AddModelInstancesFromSdfFileToWorld;
 using drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using Eigen::Isometry3d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
-using std::unique_ptr;
+using std::make_unique;
 using std::move;
+using std::unique_ptr;
 
 // Confirms that adding two groups with the same name causes a *meaningful*
 // message to be thrown.
@@ -48,16 +51,9 @@ GTEST_TEST(CollisionFilterGroupDefinition, DuplicateGroupNames) {
   CollisionFilterGroupManager<double> manager;
   const std::string group_name = "group1";
   manager.DefineCollisionFilterGroup(group_name);
-  try {
-    manager.DefineCollisionFilterGroup(group_name);
-    GTEST_FAIL();
-  } catch (std::runtime_error& e) {
-    std::string expected_msg =
-        "Attempting to create duplicate collision "
-        "filter group: " +
-        group_name + ".";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      manager.DefineCollisionFilterGroup(group_name), std::logic_error,
+      "Attempting to create duplicate collision filter group: .+");
 }
 
 // Confirms that the group ids assigned to the group start at 0 and increase
@@ -130,15 +126,12 @@ GTEST_TEST(CollisionFilterGroupDefinition, RepeatAddBody) {
 GTEST_TEST(CollisionFilterGroupDefinition, AddIgnoreGroupToUndefinedGroup) {
   CollisionFilterGroupManager<double> manager;
   std::string group_name = "group1";
-  try {
-    manager.AddCollisionFilterIgnoreTarget(group_name, group_name);
-  } catch (std::runtime_error& e) {
-    std::string expected_msg =
-        "Attempting to add an ignored collision filter group to an undefined "
-        "collision filter group: Ignoring " +
-        group_name + " by " + group_name + ".";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      manager.AddCollisionFilterIgnoreTarget(group_name, group_name),
+      std::logic_error,
+      "Attempting to add an ignored collision filter group to an undefined "
+          "collision filter group: Ignoring " +
+          group_name + " by " + group_name + ".");
 }
 
 // Confirms that adding a RigidBody to a non-existent group reports failure.
@@ -367,33 +360,59 @@ GTEST_TEST(CollisionFilterGroupElement, ElementCanCollideWithTest) {
 //---------------------------------------------------------------------------
 
 // Tests RBT
-//  - Adding a body with registered collision elements throws an exception.
-// TODO(SeanCurtis-TRI): Still to determine if I allow post-hoc editing. In
-// order to do so, I need to support modifications of the underlying model
-// (a la RBT::updateCollisionTransform.)
+
+// Helper function to create dummy rigid bodies. The body is joined to a parent
+// body. The joint can either be fixed or not. If the body is fixed, the child
+// body gets welded to the parent in the compilation stage. If no parent is
+// specified, the world body is the parent.
+// NOTE: bodies that are fixed to the world are marked as "anchored" and
+// anchored geometries will never collide with other anchored geometries.
+// The new body will be owned by the given tree but a reference to that body
+// will be returned.
+RigidBody<double>& MakeDummyBody(const std::string& name, bool is_fixed,
+                                 RigidBodyTree<double>* tree,
+                                 RigidBody<double>* parent = nullptr) {
+  DRAKE_DEMAND(tree != nullptr);
+  auto body = make_unique<RigidBody<double>>();
+  body->set_name(name);
+  body->set_model_instance_id(27);
+  if (!is_fixed) {
+    // Garbage non-zero inertia to prevent the body from being welded to parent.
+    // Otherwise, the floating joint gets welded to world.
+    body->set_spatial_inertia(drake::SquareTwistMatrix<double>::Constant(1));
+  }
+  unique_ptr<DrakeJoint> unique_joint(new RevoluteJoint(
+      name + "_joint", Isometry3d::Identity(), Vector3d::UnitX()));
+  body->setJoint(move(unique_joint));
+  body->set_parent(parent ? parent : &tree->world());
+  return *tree->add_rigid_body(move(body));
+}
+
+// Performs collision detection on the system where the tree configuration is
+// set to the zero state.
+std::vector<PointPair<double>> CollideAtZero(RigidBodyTree<double>* tree_ptr) {
+  RigidBodyTree<double>& tree = *tree_ptr;
+  // Simply initialize everything to the "zero" position.
+  const int q_size = tree.get_num_positions();
+  const int v_size = tree.get_num_velocities();
+  VectorXd q = VectorXd::Zero(q_size);
+  VectorXd v = VectorXd::Zero(v_size);
+  auto kinematics_cache = tree.doKinematics(q, v);
+  return tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
+}
 
 // This test confirms that when a body is being added to an non-existent
 // group through the RigidBodyTree interface, that a meaningful exception is
 // thrown.
 GTEST_TEST(CollisionFilterGroupRBT, AddBodyToUndefinedGroup) {
   RigidBodyTree<double> tree;
-  RigidBody<double>* body_ref;
-  unique_ptr<RigidBody<double>> body(body_ref = new RigidBody<double>());
-  body->set_name("body");
-  body->set_model_instance_id(27);
-  tree.add_rigid_body(move(body));
+  RigidBody<double>& body = MakeDummyBody("body", true /*is_fixed*/, &tree);
   std::string group_name = "no-such-group";
-  try {
-    tree.AddCollisionFilterGroupMember(group_name, body_ref->get_name(),
-                                       body_ref->get_model_instance_id());
-    GTEST_FAIL();
-  } catch (std::runtime_error& e) {
-    std::string expected_msg =
-        "Attempting to add a link to an undefined collision filter group: "
-        "Adding " +
-        body_ref->get_name() + " to " + group_name + ".";
-    EXPECT_EQ(e.what(), expected_msg);
-  }
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.AddCollisionFilterGroupMember(group_name, body.get_name(),
+                                         body.get_model_instance_id()),
+      std::logic_error,
+      "Attempting to add a link to an undefined collision filter group.*");
 }
 
 // This test confirms that the collision filter groups are set correctly
@@ -401,63 +420,524 @@ GTEST_TEST(CollisionFilterGroupRBT, AddBodyToUndefinedGroup) {
 GTEST_TEST(CollisionFilterGroupRBT, CollisionElementSetFilters) {
   // Builds the tree.
   RigidBodyTree<double> tree;
-
-  RigidBody<double>* body1;
-  unique_ptr<RigidBody<double>> body(body1 = new RigidBody<double>());
-  body->set_name("body1");
-  body->set_model_instance_id(27);
-  unique_ptr<DrakeJoint> unique_joint(
-      new FixedJoint("joint1", Isometry3d::Identity()));
-  body->setJoint(move(unique_joint));
-  body->set_parent(&tree.world());
-  tree.add_rigid_body(move(body));
-
-  RigidBody<double>* body2;
-  body.reset(body2 = new RigidBody<double>());
-  body->set_name("body2");
-  body->set_model_instance_id(27);
-  unique_joint.reset(new FixedJoint("joint2", Isometry3d::Identity()));
-  body->setJoint(move(unique_joint));
-  body->set_parent(&tree.world());
-  tree.add_rigid_body(move(body));
-
-  // Adds collision elements.
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
   Element element(DrakeShapes::Sphere(1.0));
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree);
+
   // This is not a *filter* group.  This is a designation used to select
   // so-called "terrain points".  See RigidBodyTree::getTerrainContactPoints().
   std::string collision_group = "";
-  tree.addCollisionElement(element, *body1, collision_group);
-  tree.addCollisionElement(element, *body2, collision_group);
+  tree.addCollisionElement(element, body1, collision_group);
+  tree.addCollisionElement(element, body2, collision_group);
 
   // Sets up collision filter groups.
   std::string group_name1 = "test-group1";
   std::string group_name2 = "test-group2";
   tree.DefineCollisionFilterGroup(group_name1);
-  tree.AddCollisionFilterGroupMember(group_name1, body1->get_name(),
-                                     body1->get_model_instance_id());
+  tree.AddCollisionFilterGroupMember(group_name1, body1.get_name(),
+                                     body1.get_model_instance_id());
   tree.AddCollisionFilterIgnoreTarget(group_name1, group_name2);
   tree.DefineCollisionFilterGroup(group_name2);
-  tree.AddCollisionFilterGroupMember(group_name2, body2->get_name(),
-                                     body2->get_model_instance_id());
+  tree.AddCollisionFilterGroupMember(group_name2, body2.get_name(),
+                                     body2.get_model_instance_id());
 
   tree.compile();
+
   // Tests the state of the collision filters.
   // See file documentation for explanation of binary value.
   bitmask expected_group1(0b11), expected_ignore1(0b100);
-  for (auto itr = body1->collision_elements_begin();
-       itr != body1->collision_elements_end(); ++itr) {
+  for (auto itr = body1.collision_elements_begin();
+       itr != body1.collision_elements_end(); ++itr) {
     EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group1);
     EXPECT_EQ((*itr)->get_collision_filter_ignores(), expected_ignore1);
   }
 
   bitmask expected_group2(0b101);
-  for (auto itr = body2->collision_elements_begin();
-       itr != body2->collision_elements_end(); ++itr) {
+  for (auto itr = body2.collision_elements_begin();
+       itr != body2.collision_elements_end(); ++itr) {
     EXPECT_EQ((*itr)->get_collision_filter_group(), expected_group2);
     EXPECT_EQ((*itr)->get_collision_filter_ignores(), kNoneMask);
   }
 }
 
+// This confirms that a collision element can be added after compilation.
+// The number of collisions goes from 0 -> 1 -> 2 as colliding elements are
+// added.
+GTEST_TEST(CollisionFilterGroupRBT, AddElementPostCompileNoFilter) {
+  RigidBodyTree<double> tree;
+  const bool is_fixed = true;
+  RigidBody<double>& body = MakeDummyBody("body1", is_fixed, &tree);
+  tree.compile();
+  EXPECT_EQ(body.get_num_collision_elements(), 0);
+
+  // Add to body with *no* collision elements.
+  Element element(DrakeShapes::Sphere(1.0));
+  EXPECT_NO_THROW(tree.addCollisionElement(element, body, ""));
+  tree.compile();
+  EXPECT_EQ(body.get_num_collision_elements(), 1);
+
+  // Add to body with *some* collision elements.
+  EXPECT_NO_THROW(tree.addCollisionElement(element, body, ""));
+  tree.compile();
+  EXPECT_EQ(body.get_num_collision_elements(), 2);
+}
+
+// Tests addition of collision filter group after compilation. No new bodies are
+// added, but compiled bodies' filter groups are modified. The parsed file has
+// no filter groups and one is added.
+GTEST_TEST(CollisionFilterGroupRBT, PostCompileGroupAdded) {
+  RigidBodyTree<double> tree;
+  const bool do_compile = true;
+  const std::string file_name = "drake/multibody/collision/test/"
+      "no_filter_groups.urdf";
+  AddModelInstanceFromUrdfFileToWorld(FindResourceOrThrow(file_name),
+                                      joints::kRollPitchYaw, do_compile, &tree);
+  std::vector<PointPair<double>> pairs = CollideAtZero(&tree);
+  ASSERT_EQ(pairs.size(), 1u);
+
+  // Now put both bodies into a self-ignoring collision filter group.
+  const std::string group_name{"added_group"};
+  tree.DefineCollisionFilterGroup(group_name);
+  tree.AddCollisionFilterIgnoreTarget(group_name, group_name);
+  tree.AddCollisionFilterGroupMember(group_name, "sphereA", 0);
+  tree.AddCollisionFilterGroupMember(group_name, "sphereB", 0);
+  tree.compile();
+  pairs = CollideAtZero(&tree);
+  ASSERT_EQ(pairs.size(), 0u);
+}
+
+// Add three bodies (each with a unit sphere for collision). The spheres are
+// overlapping. However, spheres A & B are in a self-filtering group. A & B
+// can both collide with C. It should report two collisions (pairs (A, C) and
+// (B, C). Adding an additional collision element to B should produce *three*
+// contacts (A, C), (B0, C), (B1, C).
+GTEST_TEST(CollisionFilterGroupRBT, AddedElementInheritsFilter) {
+  RigidBodyTree<double> tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& bodyA = MakeDummyBody("bodyA", is_fixed, &tree);
+  tree.addCollisionElement(element, bodyA, "");
+  RigidBody<double>& bodyB = MakeDummyBody("bodyB", is_fixed, &tree);
+  tree.addCollisionElement(element, bodyB, "");
+  RigidBody<double>& bodyC = MakeDummyBody("bodyC", is_fixed, &tree);
+  tree.addCollisionElement(element, bodyC, "");
+
+  const std::string group_name{"self_filter_group"};
+  tree.DefineCollisionFilterGroup(group_name);
+  tree.AddCollisionFilterIgnoreTarget(group_name, group_name);
+  tree.AddCollisionFilterGroupMember(group_name, "bodyA",
+                                     bodyA.get_model_instance_id());
+  tree.AddCollisionFilterGroupMember(group_name, "bodyB",
+                                     bodyB.get_model_instance_id());
+
+  tree.compile();
+  std::vector<PointPair<double>> pairs = CollideAtZero(&tree);
+  EXPECT_EQ(pairs.size(), 2u);
+  auto expect_pair = [&bodyA, &bodyB, &bodyC](const PointPair<double>& pair) {
+    const RigidBody<double>* body1 = pair.elementA->get_body();
+    const RigidBody<double>* body2 = pair.elementB->get_body();
+    if (body1 == &bodyA || body1 == &bodyB) {
+      EXPECT_EQ(body2, &bodyC) << "Bodies A and B should only collide with C";
+    } else if (body1 == &bodyC) {
+      EXPECT_TRUE(body2 == &bodyA || body2 == &bodyB);
+    } else {
+      GTEST_FAIL() << "Collision included an unknown body: "
+          << body1->get_name() << " and " << body2->get_name();
+    }
+  };
+  expect_pair(pairs[0]);
+  expect_pair(pairs[1]);
+
+  // Now add a new collision element to B.
+  tree.addCollisionElement(element, bodyB, "");
+  tree.compile();
+  pairs = CollideAtZero(&tree);
+  ASSERT_EQ(pairs.size(), 3u);
+  expect_pair(pairs[0]);
+  expect_pair(pairs[1]);
+  expect_pair(pairs[2]);
+}
+
+// Clique testing
+//
+// Post-compilation modifications can affect collision cliques numerous ways.
+// The various *actions* can have a number of effects depending on what the
+// compiled state of the RBT is. The basic principles are:
+//
+// 1. Elements on "adjacent" bodies will always have a common clique.
+// 2. Multiple elements on a single body will always have a common clique.
+//
+//  - Action 1: Adding a single collision element to a single compiled body
+//
+//   - State 1: Body has no adjacent bodies and
+//    - State 1a: Body has no previously compiled elements.
+//    - Result 1a: Body has one compiled element with *no* collision cliques.
+//    - State 1b: Body has *one* compiled element.
+//    - Result 1b: Body has two compiled elements, each with a single common
+//                 collision clique.
+//    - State 1c: Body has *multiple* (N) compiled elements.
+//    - Result 1c: Body has N+1 compiled elements, each with the single clique
+//                 that the original N compiled elements had.
+//
+//   - State 2: Body has an adjacent body with one compiled collision element
+//    - State 2a: Body has no previously compiled elements
+//    - Result 2a: Body has one compiled element with a single clique; that
+//                 clique is _added_ to adjacent collision element.
+//    - State 2b: Body has one or more (N) previously compiled elements
+//    - Result 2b: Body has N+1 compiled elements, each with the same cliques
+//                 as the original N compiled elements had.
+//
+//   - State 3: Add collision elements to two adjacent bodies, A & B. Neither A
+//              nor B are adjacent to any other bodies.
+//    - State 3a: Neither body has previously compiled elements.
+//    - Result 3a: Both bodies have 1 collision element, each with a single,
+//                 common clique.
+//    - State 3b: One body (body A) has one previously compiled element, body B
+//                has none.
+//    - Result 3b: Body A has two compiled elements, body B has one. All three
+//                 elements have a single, common clique.
+//    - State 3c: Body A has multiple (N) previously compiled elements (each
+//                with a single common clique, C). Body B has no elements.
+//    - Result 3c: Body A has N+1 compiled collision elements. Body B has one.
+//                 The N Elements on body A have two cliques, C and C₂. The
+//                 one element on B has a single clique, C₂.
+//    - State 3d: Body A has one or more (N) previously compiled elements. Body
+//                B has one or more (M) previously compiled elements. Elements
+//                of A and B all have a single clique, C.
+//    - Result 3d: Body A and B have N+1 and M+1 compiled elements,
+//                 respectively. All elements have a single clique, C.
+//
+//  - Action 2: Attaching a new body A (with a single uncompiled collision
+//              element) to a previously compiled body B (e.g., putting a
+//              gripper on an arm), with a non-welding joint.
+//    - State 4: Body B has compiled elements.
+//    - Result 4: Body A has a single compiled element with no cliques.
+//    - State 5: Body B has one or more (N) previously compiled elements each
+//               with the set of cliques ℂ.
+//    - Result 5: Body A has one compiled element and body B has N compiled
+//                elements. The element on A has clique C. Each element on B
+//                has the set of cliques ℂ ∪ {C}.
+//
+// The following tests evaluate these conditions.
+
+// Tests the cases where a collision element is added to a previously-compiled
+// body. It accounts for states 1a-1d listed above.
+GTEST_TEST(PostCompileCliqueRBT, AddElementToIsolatedBody) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& bodyA = MakeDummyBody("bodyA", is_fixed, &tree);
+  tree.compile();
+  ASSERT_EQ(bodyA.get_num_collision_elements(), 0);
+
+  // State 1a
+  tree.addCollisionElement(element, bodyA, "");
+  tree.compile();
+  EXPECT_EQ(bodyA.get_num_collision_elements(), 1);
+  Element& elementA = **bodyA.collision_elements_begin();
+  EXPECT_EQ(elementA.get_num_cliques(), 0);
+
+  // State 1b
+  tree.addCollisionElement(element, bodyA, "");
+  tree.compile();
+  EXPECT_EQ(bodyA.get_num_collision_elements(), 2);
+  Element& e1 = **bodyA.collision_elements_begin();
+  Element& e2 = **(bodyA.collision_elements_begin() + 1);
+  EXPECT_EQ(e1.get_num_cliques(), 1);
+  EXPECT_EQ(e2.get_num_cliques(), 1);
+  EXPECT_EQ(e1.collision_cliques()[0], e2.collision_cliques()[0]);
+
+  // State 1c
+  int original_clique = e1.collision_cliques()[0];
+  tree.addCollisionElement(element, bodyA, "");
+  tree.compile();
+  EXPECT_EQ(bodyA.get_num_collision_elements(), 3);
+  for (int i = 0; i < 3; ++i) {
+    Element& test_element = **(bodyA.collision_elements_begin() + i);
+    EXPECT_EQ(test_element.get_num_cliques(), 1);
+    EXPECT_EQ(test_element.collision_cliques()[0], original_clique);
+  }
+}
+// Tests the cases where a collision element is added to a previously-compiled
+// body that has an adjacent body with a compiled element. It accounts for
+// states 2a-2b listed above.
+GTEST_TEST(PostCompileCliqueRBT, AddElementToNeighborBody) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& adjacent_body =
+      MakeDummyBody("adjacent_body", is_fixed, &tree);
+  tree.addCollisionElement(element, adjacent_body,
+                           "");
+  RigidBody<double>& target_body =
+      MakeDummyBody("target_body", is_fixed, &tree, &adjacent_body);
+  tree.compile();
+  ASSERT_EQ(target_body.get_num_collision_elements(), 0);
+  ASSERT_EQ(adjacent_body.get_num_collision_elements(), 1);
+  Element& adjacent_element = **adjacent_body.collision_elements_begin();
+  ASSERT_EQ(adjacent_element.get_num_cliques(), 0);
+
+  // State 2a
+  tree.addCollisionElement(element, target_body, "");
+  tree.compile();
+  EXPECT_EQ(adjacent_body.get_num_collision_elements(), 1);
+  EXPECT_EQ(adjacent_element.get_num_cliques(), 1);
+  ASSERT_EQ(target_body.get_num_collision_elements(), 1);
+  Element& target_element = **target_body.collision_elements_begin();
+  ASSERT_EQ(target_element.get_num_cliques(), 1);
+  ASSERT_EQ(target_element.collision_cliques()[0],
+            adjacent_element.collision_cliques()[0]);
+
+  // State 2b
+  tree.addCollisionElement(element, target_body, "");
+  tree.compile();
+  EXPECT_EQ(adjacent_body.get_num_collision_elements(), 1);
+  EXPECT_EQ(adjacent_element.get_num_cliques(), 1);
+  ASSERT_EQ(target_body.get_num_collision_elements(), 2);
+  Element& target_element_2 = **(target_body.collision_elements_begin() + 1);
+  ASSERT_EQ(target_element.get_num_cliques(), 1);
+  ASSERT_EQ(target_element.collision_cliques()[0],
+            adjacent_element.collision_cliques()[0]);
+  ASSERT_EQ(target_element_2.collision_cliques()[0],
+            adjacent_element.collision_cliques()[0]);
+  ASSERT_EQ(target_element.collision_cliques()[0],
+            target_element_2.collision_cliques()[0]);
+}
+
+// Tests the case where collision elements are added to adjacent bodies.
+// This test accounts for state 3a.
+GTEST_TEST(PostCompileCliqueRBT, AddElementsToEmptyNeighborBodies) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree, &body1);
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 0);
+  ASSERT_EQ(body2.get_num_collision_elements(), 0);
+
+  // State 3a
+  tree.addCollisionElement(element, body1, "");
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 1);
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  Element& element1 = **body1.collision_elements_begin();
+  Element& element2 = **body2.collision_elements_begin();
+  ASSERT_EQ(element1.get_num_cliques(), 1);
+  ASSERT_EQ(element2.get_num_cliques(), 1);
+  ASSERT_EQ(element1.collision_cliques()[0], element2.collision_cliques()[0]);
+}
+
+// Tests the case where collision elements are added to adjacent bodies and
+// one of them already has a compiled collision element. This test accounts for
+// state 3b.
+GTEST_TEST(PostCompileCliqueRBT, AddElementsToSingleNeighborBodies) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  tree.addCollisionElement(element, body1, "");
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree, &body1);
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 1);
+  ASSERT_EQ(body2.get_num_collision_elements(), 0);
+
+  // State 3b
+  tree.addCollisionElement(element, body1, "");
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 2);
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  Element& element1a = **body1.collision_elements_begin();
+  Element& element1b = **(body1.collision_elements_begin() + 1);
+  Element& element2 = **body2.collision_elements_begin();
+  ASSERT_EQ(element1a.get_num_cliques(), 1);
+  ASSERT_EQ(element1b.get_num_cliques(), 1);
+  ASSERT_EQ(element2.get_num_cliques(), 1);
+  ASSERT_EQ(element1a.collision_cliques()[0], element2.collision_cliques()[0]);
+  ASSERT_EQ(element1a.collision_cliques()[0], element1b.collision_cliques()[0]);
+  ASSERT_EQ(element1b.collision_cliques()[0], element2.collision_cliques()[0]);
+}
+
+// Tests the case where collision elements are added to adjacent bodies and
+// one of them already has two compiled collision element. This test accounts
+// for state 3c.
+GTEST_TEST(PostCompileCliqueRBT, AddElementsToMultiNeighborBodies) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  tree.addCollisionElement(element, body1, "");
+  tree.addCollisionElement(element, body1, "");
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree, &body1);
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 2);
+  Element& element1a = **body1.collision_elements_begin();
+  Element& element1b = **(body1.collision_elements_begin() + 1);
+  ASSERT_EQ(body2.get_num_collision_elements(), 0);
+  ASSERT_EQ(element1a.get_num_cliques(), 1);
+  ASSERT_EQ(element1b.get_num_cliques(), 1);
+  ASSERT_EQ(element1a.collision_cliques()[0], element1b.collision_cliques()[0]);
+
+  // State 3c
+  tree.addCollisionElement(element, body1, "");
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 3);
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  Element& element2 = **body2.collision_elements_begin();
+  Element& element1c = **(body1.collision_elements_begin() + 2);
+  ASSERT_EQ(element1a.get_num_cliques(), 2);
+  ASSERT_EQ(element1b.get_num_cliques(), 2);
+  ASSERT_EQ(element1c.get_num_cliques(), 2);
+  ASSERT_EQ(element2.get_num_cliques(), 1);
+  int common_clique = element2.collision_cliques()[0];
+  // These tests rely on the fact that clique ids only get larger and that the
+  // cliques are stored in increasing order.
+  for (auto test_element : {&element1a, &element1b, &element1c}) {
+    ASSERT_NE(test_element->collision_cliques().front(), common_clique);
+    ASSERT_EQ(test_element->collision_cliques().back(), common_clique);
+  }
+}
+
+// Tests the case where collision elements are added to adjacent bodies and
+// both bodies already have compiled collision elements. This test accounts
+// for state 3d.
+GTEST_TEST(PostCompileCliqueRBT, AddElementsToPopulatedNeighborBodies) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  tree.addCollisionElement(element, body1, "");
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree, &body1);
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 1);
+  Element& element1a = **body1.collision_elements_begin();
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  Element& element2a = **body2.collision_elements_begin();
+  ASSERT_EQ(element1a.get_num_cliques(), 1);
+  ASSERT_EQ(element2a.get_num_cliques(), 1);
+  ASSERT_EQ(element1a.collision_cliques()[0], element2a.collision_cliques()[0]);
+  int original_clique = element1a.collision_cliques()[0];
+
+  // State 3d
+  tree.addCollisionElement(element, body1, "");
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 2);
+  ASSERT_EQ(body2.get_num_collision_elements(), 2);
+  Element& element1b = **(body1.collision_elements_begin() + 1);
+  Element& element2b = **(body2.collision_elements_begin() + 1);
+  ASSERT_EQ(element1a.get_num_cliques(), 1);
+  ASSERT_EQ(element1b.get_num_cliques(), 1);
+  ASSERT_EQ(element2a.get_num_cliques(), 1);
+  ASSERT_EQ(element2b.get_num_cliques(), 1);
+  // These tests rely on the fact that clique ids only get larger and that the
+  // cliques are stored in increasing order.
+  for (auto test_element : {&element1a, &element1b, &element2a, &element2b}) {
+    EXPECT_EQ(test_element->collision_cliques().front(), original_clique);
+  }
+}
+
+// Tests the case where a new body is affixed to a compiled body. The first
+// attachment is to a body without a collision element. The second is to a body
+// *with* a compiled element. This accounts for states 4 & 5.
+GTEST_TEST(PostCompileCliqueRBT, AddNeighorToEmptyBody) {
+  RigidBodyTreed tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& body1 = MakeDummyBody("body1", is_fixed, &tree);
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 0);
+
+  // State 4.
+  RigidBody<double>& body2 = MakeDummyBody("body2", is_fixed, &tree, &body1);
+  tree.addCollisionElement(element, body2, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 0);
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  Element& element2 = **body2.collision_elements_begin();
+  ASSERT_EQ(element2.get_num_cliques(), 0);
+
+  // State 5.
+  RigidBody<double>& body3 = MakeDummyBody("body3", is_fixed, &tree, &body2);
+  tree.addCollisionElement(element, body3, "");
+  tree.compile();
+  ASSERT_EQ(body1.get_num_collision_elements(), 0);
+  ASSERT_EQ(body2.get_num_collision_elements(), 1);
+  ASSERT_EQ(body3.get_num_collision_elements(), 1);
+  Element& element3 = **body3.collision_elements_begin();
+  ASSERT_EQ(element2.get_num_cliques(), 1);
+  ASSERT_EQ(element3.get_num_cliques(), 1);
+  ASSERT_EQ(element3.collision_cliques()[0], element2.collision_cliques()[0]);
+}
+
+// Add a chain of two bodies: world -> bodyA -> bodyB and a third, independent
+// bodyC. Each body has a collision sphere and are positioned to be in contact.
+// However, no contact is reported between bodyA and body B because adjacent
+// bodies' collision elements are placed into common cliques. So, it reports
+// two collisions. Adding a new geometry to bodyB should produce a single
+// new contact with bodyC.
+GTEST_TEST(CollisionFilterGroupRBT, AddedElementInheritsCliques) {
+  RigidBodyTree<double> tree;
+  const bool is_fixed = false;
+  // Collision element description -- copied into every body.
+  Element element(DrakeShapes::Sphere(1.0));
+
+  RigidBody<double>& bodyA = MakeDummyBody("bodyA", is_fixed, &tree);
+  tree.addCollisionElement(element, bodyA, "");
+  RigidBody<double>& bodyB = MakeDummyBody("bodyB", is_fixed, &tree, &bodyA);
+  tree.addCollisionElement(element, bodyB, "");
+  RigidBody<double>& bodyC = MakeDummyBody("bodyC", is_fixed, &tree);
+  tree.addCollisionElement(element, bodyC, "");
+
+  tree.compile();
+  std::vector<PointPair<double>> pairs = CollideAtZero(&tree);
+  EXPECT_EQ(pairs.size(), 2u);
+  auto expect_pair = [&bodyA, &bodyB, &bodyC](const PointPair<double>& pair) {
+    const RigidBody<double>* body1 = pair.elementA->get_body();
+    const RigidBody<double>* body2 = pair.elementB->get_body();
+    if (body1 == &bodyA || body1 == &bodyB) {
+      EXPECT_EQ(body2, &bodyC) << "Bodies A and B should only collide with C";
+    } else if (body1 == &bodyC) {
+      EXPECT_TRUE(body2 == &bodyA || body2 == &bodyB);
+    } else {
+      GTEST_FAIL() << "Collision included an unknown body: "
+                   << body1->get_name() << " and " << body2->get_name();
+    }
+  };
+  expect_pair(pairs[0]);
+  expect_pair(pairs[1]);
+
+  // Now add a new collision element to B.
+  tree.addCollisionElement(element, bodyB, "");
+  tree.compile();
+  pairs = CollideAtZero(&tree);
+  ASSERT_EQ(pairs.size(), 3u);
+  expect_pair(pairs[0]);
+  expect_pair(pairs[1]);
+  expect_pair(pairs[2]);
+}
 //---------------------------------------------------------------------------
 
 // Utility function for loading an sdf|urdf file, performing *optional*
@@ -492,14 +972,7 @@ void ExpectNCollisions(
     tree.compile();
   }
 
-  // Simply initialize everything to the "zero" position.
-  const int q_size = tree.get_num_positions();
-  const int v_size = tree.get_num_velocities();
-  VectorXd q = VectorXd::Zero(q_size);
-  VectorXd v = VectorXd::Zero(v_size);
-  auto kinematics_cache = tree.doKinematics(q, v);
-  std::vector<PointPair<double>> pairs =
-      tree.ComputeMaximumDepthCollisionPoints(kinematics_cache, false);
+  std::vector<PointPair<double>> pairs = CollideAtZero(&tree);
   EXPECT_EQ(pairs.size(), collision_count)
             << "Failure for " << file_name << extension;
 }

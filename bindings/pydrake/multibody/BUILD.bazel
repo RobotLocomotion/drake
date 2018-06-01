@@ -58,6 +58,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rigid_body_plant_py",
     cc_deps = [
+        "//bindings/pydrake/systems:systems_pybind",
         "//lcmtypes:viewer",
     ],
     cc_so_name = "rigid_body_plant",
@@ -75,16 +76,57 @@ drake_pybind_library(
     name = "rigid_body_tree_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake/util:type_pack",
     ],
     cc_so_name = "rigid_body_tree",
     cc_srcs = ["rigid_body_tree_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":collision_py",
+        ":joints_py",
         ":module_py",
         ":parsers_py",
+        ":rigid_body_py",
         ":shapes_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "collision_py",
+    cc_so_name = "collision",
+    cc_srcs = ["collision_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":rigid_body_py",
+        ":shapes_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "joints_py",
+    cc_deps = [
+        "//bindings/pydrake/util:eigen_geometry_pybind",
+    ],
+    cc_so_name = "joints",
+    cc_srcs = ["joints_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "rigid_body_py",
+    cc_so_name = "rigid_body",
+    cc_srcs = ["rigid_body_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":shapes_py",
     ],
 )
 
@@ -95,12 +137,16 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/util:eigen_geometry_py",
     ],
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":collision_py",
+    ":joints_py",
     ":multibody_tree_py",
     ":parsers_py",
+    ":rigid_body_py",
     ":rigid_body_plant_py",
     ":rigid_body_tree_py",
     ":shapes_py",
@@ -132,7 +178,6 @@ install(
 
 drake_py_unittest(
     name = "rigid_body_plant_test",
-    size = "small",
     data = ["//examples/pendulum:models"],
     deps = [
         ":rigid_body_plant_py",
@@ -141,7 +186,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "shapes_test",
-    size = "small",
     data = ["//examples/quadrotor:models"],
     deps = [
         ":shapes_py",
@@ -150,7 +194,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "rigid_body_tree_test",
-    size = "small",
     data = [
         "//examples/atlas:models",
         "//examples/pendulum:models",
@@ -160,7 +203,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "parsers_test",
-    size = "small",
     data = [
         "//examples/acrobot:models",
         "//examples/atlas:models",
@@ -174,7 +216,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "multibody_tree_test",
-    size = "small",
     deps = [
         ":multibody_tree_py",
     ],
