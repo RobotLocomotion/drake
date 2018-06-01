@@ -1157,7 +1157,9 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
   void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
 
   void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
+    this->DeclareAbstractOutputPort(
+        []() { return AbstractValue::Make<int>(0); },  // Dummies.
+        [](const ContextBase&, AbstractValue*) {});
   }
 };
 

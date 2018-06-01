@@ -10,6 +10,7 @@
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
+#include "drake/systems/framework/output_port_base.h"
 
 namespace drake {
 namespace systems {
@@ -164,10 +165,22 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(input_ports_.size());
   }
 
+  /** Returns the number ny of output ports currently allocated in this System.
+  These are indexed from 0 to ny-1. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_ports_.size());
+  }
+
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
   const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
     return GetInputPortBaseOrThrow(__func__, port_index);
+  }
+
+  /** Returns a reference to an OutputPort given its `port_index`.
+  @pre `port_index` selects an existing output port of this System. */
+  const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
+    return GetOutputPortBaseOrThrow(__func__, port_index);
   }
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
@@ -175,6 +188,14 @@ class SystemBase : public internal::SystemMessageInterface {
   int get_num_total_inputs() const {
     int count = 0;
     for (const auto& in : input_ports_) count += in->size();
+    return count;
+  }
+
+  /** Returns the total dimension of all of the vector-valued output ports (as
+  if they were muxed). */
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out->size();
     return count;
   }
 
@@ -537,6 +558,14 @@ class SystemBase : public internal::SystemMessageInterface {
     return input_ports_[index]->ticket();
   }
 
+  /** Returns a ticket indicating dependence on the output port indicated
+  by `index`.
+  @pre `index` selects an existing output port of this System. */
+  DependencyTicket output_port_ticket(OutputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
+    return output_ports_[index]->ticket();
+  }
+
   /** Returns a ticket indicating dependence on the cache entry indicated
   by `index`.
   @pre `index` selects an existing cache entry in this System. */
@@ -561,6 +590,17 @@ class SystemBase : public internal::SystemMessageInterface {
     input_ports_.push_back(std::move(port));
   }
 
+  /** Adds an already-constructed output port to this System. Insists that the
+  port already contains a reference to this System, and that the port's index is
+  already set to the next available output port index for this System. */
+  // TODO(sherm1) Add check on suitability of `size` parameter for the port's
+  // data type.
+  void CreateOutputPort(std::unique_ptr<OutputPortBase> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
+    output_ports_.push_back(std::move(port));
+  }
   /** Returns a pointer to the service interface of the immediately enclosing
   Diagram if one has been set, otherwise nullptr. */
   const internal::SystemParentServiceInterface* get_parent_service() const {
@@ -613,11 +653,23 @@ class SystemBase : public internal::SystemMessageInterface {
   [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
                                                 int port_index) const;
 
-  /** Throws std::out_of_range to report bad `port_index` that was passed to
-  API method `func`. */
+  /** Throws std::out_of_range to report a negative output `port_index` that was
+  passed to API method `func`. */
+  // We're taking an int here for the index; OutputPortIndex can't be negative.
+  [[noreturn]] void ThrowNegativeOutputPortIndex(const char* func,
+                                                 int port_index) const;
+
+  /** Throws std::out_of_range to report bad input `port_index` that was passed
+  to API method `func`. */
   [[noreturn]] void ThrowInputPortIndexOutOfRange(const char* func,
                                                   InputPortIndex port_index,
                                                   int num_input_ports) const;
+
+  /** Throws std::out_of_range to report bad output `port_index` that was passed
+  to API method `func`. */
+  [[noreturn]] void ThrowOutputPortIndexOutOfRange(const char* func,
+                                                   OutputPortIndex port_index,
+                                                   int num_output_ports) const;
 
   /** Throws std::logic_error because someone misused API method `func`, that is
   only allowed for declared-vector input ports, on an abstract port whose
@@ -649,6 +701,20 @@ class SystemBase : public internal::SystemMessageInterface {
     if (port_index >= get_num_input_ports())
       ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
     return *input_ports_[port];
+  }
+
+  /** Returns the OutputPortBase at index `port_index`, throwing
+  std::out_of_range we don't like the port index. The name of the public API
+  method that received the bad index is provided in `func` and is included
+  in the error message. */
+  const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
+                                                 int port_index) const {
+    if (port_index < 0)
+      ThrowNegativeOutputPortIndex(func, port_index);
+    const OutputPortIndex port(port_index);
+    if (port_index >= get_num_output_ports())
+      ThrowOutputPortIndexOutOfRange(func, port, get_num_output_ports());
+    return *output_ports_[port_index];
   }
 
   /** Derived class implementations should allocate a suitable
@@ -702,7 +768,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   // Indexed by InputPortIndex.
   std::vector<std::unique_ptr<InputPortBase>> input_ports_;
-  // TODO(sherm1) Output ports go here.
+  // Indexed by OutputPortIndex.
+  std::vector<std::unique_ptr<OutputPortBase>> output_ports_;
   // Indexed by CacheIndex.
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
 
