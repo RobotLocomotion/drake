@@ -159,6 +159,26 @@ class TestMathematicalProgram(unittest.TestCase):
             c = binding.constraint()
             self.assertEqual(len(w), 1)
 
+    def test_constraint_api(self):
+        prog = mp.MathematicalProgram()
+        x0, = prog.NewContinuousVariables(1, "x")
+        c = prog.AddLinearConstraint(x0 >= 2).evaluator()
+
+        def check_bounds(c, A, lb, ub):
+            self.assertTrue(np.allclose(c.A(), A))
+            self.assertTrue(np.allclose(c.lower_bound(), lb))
+            self.assertTrue(np.allclose(c.upper_bound(), ub))
+
+        check_bounds(c, [1.], [2.], [np.inf])
+        c.UpdateLowerBound([3.])
+        check_bounds(c, [1.], [3.], [np.inf])
+        c.UpdateUpperBound([4.])
+        check_bounds(c, [1.], [3.], [4.])
+        c.set_bounds([-10.], [10.])
+        check_bounds(c, [1.], [-10.], [10.])
+        c.UpdateCoefficients([10.], [-20.], [-30.])
+        check_bounds(c, [10.], [-20.], [-30.])
+
     def test_eval_binding(self):
         qp = TestQP()
         prog = qp.prog
