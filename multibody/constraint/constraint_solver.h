@@ -223,18 +223,19 @@ class ConstraintSolver {
   /// to mean the generalized velocity at time t and the generalized velocity
   /// at time t+h, respectively, for discretization quantum h (or, equivalently,
   /// integration step size h).  The LCP is adjusted to the form:<pre>
-  /// MM ≡ | hNCNᵀ  hNCDᵀ   0   hNCLᵀ |
-  ///      | hDCNᵀ  hDCDᵀ   E   hDCLᵀ |
-  ///      | μ      -Eᵀ     0   0     |
-  ///      | hLCNᵀ  hLCDᵀ   0   hLCLᵀ |
+  /// MM ≡ | hNCNᵀ+γᴺ  hNCDᵀ   0   hNCLᵀ    |
+  ///      | hDCNᵀ     hDCDᵀ   E   hDCLᵀ    |
+  ///      | μ         -Eᵀ     0   0        |
+  ///      | hLCNᵀ     hLCDᵀ   0   hLCLᵀ+γᴸ |
   ///
   /// qq ≡ | kᴺ - |N 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
   ///      | kᴰ - |D 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |
   ///      |       0             |
   ///      | kᴸ - |L 0ⁿᵛ⁺ⁿᵇ|A⁻¹a |</pre>
-  /// where `kᴺ`, `kᴸ`, and `a` are all functions of `h`; documentation that
-  /// describes how to compute `kᴺ` and `kᴸ` to realize a desired stiffness
-  /// and damping behavior is forthcoming.
+  /// where `γᴺ`, `γᴸ`, `kᴺ`, `kᴸ`, and `a` are all functions of `h`;
+  /// documentation that describes how to update these (and dependent) problem
+  /// data to attain desired constraint stiffness and dissipation is
+  /// forthcoming.
   ///
   /// The procedure one uses to formulate and solve this discretization problem
   /// is: (1) Call ConstructBaseDiscretizedTimeLCP(); (2) Select an integration
