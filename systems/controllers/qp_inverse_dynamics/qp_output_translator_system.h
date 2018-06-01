@@ -54,7 +54,6 @@ class QpOutputTranslatorSystem : public systems::LeafSystem<double> {
    * selection matrix that maps the actuator indices to the generalized
    * coordinate indices.
    */
-  // TODO(sherm1) This should be cached so it doesn't need to be recomputed.
   void CalcActuationTorques(const systems::Context<double>& context,
                             systems::BasicVector<double>* output) const;
 
