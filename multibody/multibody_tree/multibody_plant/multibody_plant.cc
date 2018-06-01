@@ -677,6 +677,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   using std::sqrt;
   using std::max;
+  using std::min;
   using std::abs;
   // If plant state is continuous, no discrete state to update.
   if (!is_discrete()) return;
@@ -799,15 +800,18 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     residual = 2 * tolerance;
 
     VectorX<T> vtk(num_unknowns);
-    VectorX<T> Rk(vtk.size());
-    MatrixX<T> Jk(vtk.size(), vtk.size());
+    VectorX<T> vk(nv);
+    VectorX<T> Rk(nv);
+    MatrixX<T> Jk(nv, nv);
+    VectorX<T> Delta_vk(nv);
     VectorX<T> Delta_vtk(vtk.size());
     VectorX<T> that(vtk.size());
     VectorX<T> v_slip(num_contacts);
     VectorX<T> mus(num_contacts); // Stribeck friction.
     VectorX<T> dmudv(num_contacts);
     std::vector<Matrix2<T>> dft_dv(num_contacts);
-    vtk = vt_star;  // Initial guess with zero friction forces0.
+    vk = v_star;  // Initial guess with zero friction forces0.
+    vtk = D * vk;
 
     // The stiction tolerance.
     const double v_stribeck = stribeck_model_.stiction_tolerance();
@@ -853,18 +857,13 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         break;
       }
 
-      // NR residual
-      Rk = vtk - vt_star;
+      // Newton-Raphson residual
+      Rk = vk - v_star + dt * Minv_times_Dtrans * ftk;
+
+      // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
+      // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
-        auto Rk_ic = Rk.template segment(ik, 2);
-
-        for (int jc = 0; jc < num_contacts; ++jc) {
-          const int jk = 2 * jc;
-          const auto Wij = Wtt.template block<2, 2>(ik, jk);
-          const auto ft_jc = ftk.template segment<2>(jk);
-          Rk_ic += time_step_ * Wij * ft_jc;
-        }
 
         // Compute dmu/dv = (1/v_stribeck) * dmu/dx
         // where x = v_slip / v_stribeck is the dimensionless slip velocity.
@@ -918,27 +917,44 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         dft_dv[ic] *= fn(ic);
       }
 
-      // NR Jacobian
-      Jk.setIdentity();  // Identity I2 blocks.
+      // Newton-Raphson Jacobian:
+      //  J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D
+      // J is an (nv x nv) symmetric positive definite matrix.
+      // diag(dfₜ/dvₜ) is the (2nc x 2nc) block diagonal matrix with dfₜ/dvₜ in
+      // each 2x2 diagonal entry.
+
+      // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that diag(dfₜ/dvₜ)
+      // is block diagonal.
+      MatrixX<T> diag_dftdv_times_D(2 * num_contacts, nv);
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
-
-        for (int jc = 0; jc < num_contacts; ++jc) {
-          const int jk = 2 * jc;
-
-          const auto Wij = Wtt.template block<2, 2>(ik, jk);
-          auto Jij = Jk.template block<2, 2>(ik, jk);
-
-          Jij += time_step_ * Wij * dft_dv[jc];
-        }
+        diag_dftdv_times_D.block(ik, 0, 2, nv) =
+            dft_dv[ic] * D.block(ik, 0, 2, nv);
       }
+      // Form J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D:
+      Jk.setIdentity() += dt * Minv_times_Dtrans * diag_dftdv_times_D;
 
-      Delta_vtk = Jk.lu().solve(-Rk);
-      residual = Delta_vtk.norm();
+      // TODO(amcastro-tri): Considere using a cheap step like CG.
+      // Since we are in a non-linear iteration, an approximate cheap solution
+      // is probably best.
+      Delta_vk = Jk.llt().solve(-Rk);
+
+      // Since we keep D constant we have that:
+      // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
+      //                = vₜᵏ + α D⋅Δvᵏ
+      //                = vₜᵏ + α Δvₜᵏ
+      // where we defined Δvₜᵏ = D⋅Δvᵏ and 0 < α < 1 is a constant that we'll
+      // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
+      // For multiple contact points, we choose the minimum α amongs all contact
+      // points.
+      Delta_vtk = D * Delta_vk;
+
+      residual = Delta_vk.norm();
 
       // Limit the angle change
       const  T theta_max = 0.25;  // about 15 degs
       const T cmin = cos(theta_max);
+      T alpha_min = 1.0;
       for (int ic = 0; ic < num_contacts; ++ic) {
         const int ik = 2 * ic;
         auto v = vtk.template segment<2>(ik);
@@ -973,6 +989,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         if ( abs(1.0+cos_init) < 1.0e-10 ) {
           // Clip to near the origin since we know for sure we crossed it.
           valpha = v / (v.norm()+1e-14) * v_stribeck / 2.0;
+          alpha = dv.dot(valpha - v) / dv.squaredNorm();
         } else if (cos_init > cmin || (v1_norm*v_norm) < 1.0e-14 || x < 1.0 || x1 < 1.0) {  // the angle change is small enough
           alpha = 1.0;
           valpha = v1;
@@ -1033,8 +1050,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
         // clip v
         v = valpha;
-
+        alpha_min = min(alpha_min, alpha);
       }
+
+      // Limit vk update:
+      vk = vk + alpha_min * Delta_vk;
+      vtk = D * vk;
 
       // See if worth detection crosses about the line perpendicular to the
       // velocity change, ala Sherm.
