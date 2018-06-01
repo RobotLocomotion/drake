@@ -111,6 +111,9 @@ void ContextBase::SetFixedInputPortValue(
   detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
       port_value.get(), this);
   input_port_values_[index] = std::move(port_value);
+
+  // Invalidate anyone who cares about this input port.
+  port_tracker.NoteValueChange(start_new_change_event());
 }
 
 // Set up trackers for independent sources: time, accuracy, state, parameters,
