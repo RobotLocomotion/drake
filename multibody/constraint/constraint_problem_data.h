@@ -27,9 +27,9 @@ namespace constraint {
 /// (See @ref constraint_variable_defs) for the more general set of
 /// definitions).
 /// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
-///            that nc = ns + ny, where nc is the number of points of contact.
-/// - ny ∈ ℕ   The number of contacts at which sliding is not occurring. Note
-///            that nc = ns + ny.
+///            that nc = ns + nns, where nc is the number of points of contact.
+/// - nns ∈ ℕ   The number of contacts at which sliding is not occurring. Note
+///            that nc = ns + nns.
 template <class T>
 struct ConstraintAccelProblemData {
   /// Constructs acceleration problem data for a system with a @p gv_dim
@@ -89,12 +89,12 @@ struct ConstraintAccelProblemData {
   /// approximation.
   std::vector<int> r;
 
-  /// Coefficients of friction for the ns = nc - ny sliding contacts (where `ny`
-  /// is the number of non-sliding contacts). The size of this vector should be
-  /// equal to `sliding_contacts.size()`.
+  /// Coefficients of friction for the ns = nc - nns sliding contacts (where
+  /// `nns` is the number of non-sliding contacts). The size of this vector
+  /// should be equal to `sliding_contacts.size()`.
   VectorX<T> mu_sliding;
 
-  /// Coefficients of friction for the ny = nc - ns non-sliding contacts (where
+  /// Coefficients of friction for the nns = nc - ns non-sliding contacts (where
   /// `ns` is the number of sliding contacts). The size of this vector should be
   /// equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
@@ -187,17 +187,16 @@ struct ConstraintAccelProblemData {
   /// @name Data for non-sliding contact friction constraints
   /// Problem data for constraining the tangential acceleration of two bodies
   /// projected along the contact surface tangents, for nc point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝⁿᶻˣⁿᵛ, that
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿˢʳˣⁿᵛ, that
   /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
-  /// along the nr vectors that span the contact tangents at the ny
-  /// *non-sliding* point contacts (these ny * nr vectors are denoted `nz`
+  /// along the nr vectors that span the contact tangents at the nns
+  /// *non-sliding* point contacts (these nns * nr vectors are denoted `nnsr`
   /// for brevity). For contact problems in two dimensions, nr will be
   /// one. For a friction pyramid in three dimensions, nr would be two. While
-  /// the definition of nz above indicates that every one of the nz non-sliding
-  /// contacts uses the same "nr", the code imposes no such requirement.
-  ///
-  /// Finally, the Jacobian matrix F allows formulating the non-sliding friction
-  /// force constraints as:<pre>
+  /// the definition of nnsr above indicates that every one of the nnsr
+  /// non-sliding contacts uses the same "nr", the code imposes no such
+  /// requirement. Finally, the Jacobian matrix F allows formulating the
+  /// non-sliding friction force constraints as:<pre>
   /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + λe  ⊥  fᶜ ≥ 0
   /// </pre>
   /// which means that the constraint g̈(t,q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) is
@@ -218,12 +217,12 @@ struct ConstraintAccelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶻ
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿⁿˢʳ
   /// corresponds to frictional force magnitudes. The default operator returns
   /// a zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// This ℝⁿᶻ vector is the vector kᶠ(t,q,v) defined above.
+  /// This ℝⁿⁿˢʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
   /// @}
 
@@ -401,10 +400,10 @@ struct ConstraintVelProblemData {
   /// @name Data for constraints on contact friction
   /// Problem data for constraining the tangential velocity of two bodies
   /// projected along the contact surface tangents, for n point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝⁿᶻˣⁿᵛ, that
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿˢʳˣⁿᵛ, that
   /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
   /// along the nr vectors that span the contact tangents at the nc
-  /// point contacts (these nc * nr vectors are denoted `nz` for brevity). For
+  /// point contacts (these nc * nr vectors are denoted `ncr` for brevity). For
   /// contact problems in two dimensions, nr will be one. For a friction pyramid
   /// in three dimensions, nr would be two. While the definition of the
   /// dimension of the Jacobian matrix above indicates that every one of the nc
@@ -431,16 +430,16 @@ struct ConstraintVelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶻ
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶜʳ
   /// corresponds to frictional impulsive force magnitudes. The default
   /// operator returns a zero vector of dimension equal to that of the
   /// generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// This ℝⁿᶻ vector is the vector kᶠ(t,q,v) defined above.
+  /// This ℝⁿᶜʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
 
-  /// This ℝⁿᶻ vector represents the diagonal matrix γᶠ.
+  /// This ℝⁿᶜʳ vector represents the diagonal matrix γᶠ.
   VectorX<T> gammaF;
 
   /// This ℝⁿᶜ vector represents the diagonal matrix γᴱ.

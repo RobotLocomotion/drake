@@ -67,7 +67,7 @@ and will delve into the constraint solver functionality in:
 - β       A non-negative, real valued scalar used to correct position constraint
           errors via the same error feedback process (Baumgarte
           Stabilization) that uses α.
-- γ,γ     Non-negative, real valued scalars used to regularize constraints.
+- γ       Non-negative, real valued scalar used to regularize constraints.
 */
 
 /** @defgroup constraint_types Constraint types
@@ -195,12 +195,12 @@ and damping ratio (ζ) via the following equations:<pre>
 ζ = α/β
 </pre>
 
-To eliminate constraint errors as quickly as possible, one will typically use
-ζ=1, implying *critical damping*, and undamped angular frequency ω₀ that is
-high enough to correct errors rapidly but low enough to avoid computational
-stiffness. Picking that parameter is currently considered to be more art
-than science (see [Ascher 1995]). Given desired ω₀ and ζ, α and β are set using
-the equations above.
+To eliminate constraint errors as quickly as possible, one strategy used in
+commercial software uses ζ=1, implying *critical damping*, and undamped angular
+frequency ω₀ that is high enough to correct errors rapidly but low enough to
+avoid computational stiffness. Picking that parameter is considered to be more
+art than science (see [Ascher 1995]). Given desired ω₀ and ζ, α and β are set
+using the equations above.
 */
 
 /** @defgroup contact_surface_constraints Contact surface constraints
