@@ -24,9 +24,11 @@ drake_cc_package_library(
 drake_cc_library(
     name = "multibody_plant_core",
     srcs = [
+        "model_instance.cc",
         "multibody_plant.cc",
     ],
     hdrs = [
+        "model_instance.h",
         "multibody_plant.h",
     ],
     visibility = ["//visibility:private"],
@@ -75,6 +77,14 @@ drake_cc_googletest(
         "//multibody/benchmarks/pendulum",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "model_instance_test",
+    deps = [
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
