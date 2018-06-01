@@ -145,6 +145,23 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(input_port_tickets_.size());
   }
 
+  /** Returns the number of output ports represented in this context. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_port_tickets_.size());
+  }
+
+  /** Returns the dependency ticket associated with a particular input port. */
+  DependencyTicket input_port_ticket(InputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_input_ports());
+    return input_port_tickets_[port_num];
+  }
+
+  /** Returns the dependency ticket associated with a particular output port. */
+  DependencyTicket output_port_ticket(OutputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_output_ports());
+    return output_port_tickets_[port_num];
+  }
+
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
@@ -190,6 +207,11 @@ class ContextBase : public internal::ContextMessageInterface {
   // assigned ticket. Subscribe the "all input ports" tracker to this one.
   void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
 
+  // Add the next output port. Expected index is supplied along with the
+  // assigned ticket.
+  void AddOutputPort(
+      OutputPortIndex expected_index, DependencyTicket ticket,
+      const internal::OutputPortPrerequisite& prerequisite);
 #endif
 
  protected:
@@ -284,8 +306,10 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
+  // Index by OutputPortIndex.
+  std::vector<DependencyTicket> output_port_tickets_;
 
-  // TODO(sherm1) Output port, state, and parameter tickets go here.
+  // TODO(sherm1) State and parameter tickets go here.
 
   // For each input port, the fixed value or null if the port is connected to
   // something else (in which case we need System help to get the value).

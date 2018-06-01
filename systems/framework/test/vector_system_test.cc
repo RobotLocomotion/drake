@@ -180,7 +180,9 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
   {  // A second output.
     TestVectorSystem dut;
     EXPECT_NO_THROW(dut.CreateDefaultContext());
-    dut.DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
+    dut.DeclareAbstractOutputPort(
+        []() { return AbstractValue::Make<int>(0); },  // Dummies.
+        [](const ContextBase&, AbstractValue*) {});
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
 

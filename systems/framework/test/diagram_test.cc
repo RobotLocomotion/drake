@@ -654,6 +654,24 @@ TEST_F(DiagramTest, CalcOutput) {
   ExpectDefaultOutputs();
 }
 
+// Tests that Diagram output ports are built with the right prerequisites
+// and that Eval caches as expected.
+TEST_F(DiagramTest, EvalOutput) {
+  AttachInputs();
+
+  // Sanity check output port prerequisites. Diagram ports should designate
+  // a subsystem since they are resolved internally. We don't know the right
+  // dependency ticket, but at least it should be valid.
+  ASSERT_EQ(diagram_->get_num_output_ports(), 3);
+  const int expected_subsystem[] = {1, 2, 5};  // From drawing above.
+  for (OutputPortIndex i(0); i < diagram_->get_num_output_ports(); ++i) {
+    internal::OutputPortPrerequisite prereq =
+        diagram_->get_output_port(i).GetPrerequisite();
+    EXPECT_EQ(*prereq.child_subsystem, expected_subsystem[i]);
+    EXPECT_TRUE(prereq.dependency.is_valid());
+  }
+}
+
 TEST_F(DiagramTest, CalcTimeDerivatives) {
   AttachInputs();
   std::unique_ptr<ContinuousState<double>> derivatives =

@@ -49,22 +49,18 @@ void CacheEntryValue::ThrowIfBadOtherValue(
 
   DRAKE_DEMAND(value_ != nullptr);  // Should have been checked already.
 
-  // Extract these outside typeid() to avoid warnings.
-  const AbstractValue& abstract_value = *value_;
-  const AbstractValue& other_abstract_value = *other_value;
-  if (std::type_index(typeid(abstract_value)) !=
-      std::type_index(typeid(other_abstract_value))) {
+  if (value_->type_info() != other_value->type_info()) {
     throw std::logic_error(FormatName(api) +
                            "other_value has wrong concrete type " +
-                           NiceTypeName::Get(*other_value) + ". Expected " +
-                           NiceTypeName::Get(*value_) + ".");
+                           other_value->GetNiceTypeName() + ". Expected " +
+                           value_->GetNiceTypeName() + ".");
   }
 }
 
 CacheEntryValue& Cache::CreateNewCacheEntryValue(
     CacheIndex index, DependencyTicket ticket,
     const std::string& description,
-    const std::vector<DependencyTicket>& prerequisites,
+    const std::set<DependencyTicket>& prerequisites,
     DependencyGraph* trackers) {
   DRAKE_DEMAND(trackers != nullptr);
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());

@@ -118,9 +118,17 @@ class AbstractValue {
   /// Release builds.
   virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
+  /// Returns typeid of the contained object of type T. If T is polymorphic,
+  /// this returns the typeid of the most-derived type of the contained object.
+  virtual const std::type_info& type_info() const = 0;
+
   /// Returns a human-readable name for the underlying type T. This may be
-  /// slow but is useful for error messages.
-  virtual std::string GetNiceTypeName() const = 0;
+  /// slow but is useful for error messages. If T is polymorphic, this returns
+  /// the typeid of the most-derived type of the contained object.
+  std::string GetNiceTypeName() const {
+    return NiceTypeName::Canonicalize(
+        NiceTypeName::Demangle(type_info().name()));
+  }
 
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
@@ -342,8 +350,8 @@ class Value : public AbstractValue {
     value_ = Traits::to_storage(other.GetValueOrThrow<T>());
   }
 
-  std::string GetNiceTypeName() const override {
-    return NiceTypeName::Get<T>();
+  const std::type_info& type_info() const override {
+    return typeid(get_value());
   }
 
   /// Returns a const reference to the stored value.

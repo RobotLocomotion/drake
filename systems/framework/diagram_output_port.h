@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
@@ -34,14 +36,16 @@ class DiagramOutputPort final : public OutputPort<T> {
   output port of one of the diagram's child subsystems.
 
   @param diagram The Diagram that will own this port.
-  @param system_base The same Diagram cast to its messaging interface.
+  @param system_base The same Diagram cast to its base class.
   @param index The output port index to be assigned to the new port.
+  @param ticket The DependencyTicket to be assigned to the new port.
   @param source_output_port An output port of one of this diagram's child
       subsystems that is to be forwarded to the new port.
   @param source_subsystem_index The index of the child subsystem that owns
       `source_output_port`.
 
   @pre The `diagram` System must actually be a Diagram.
+  @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
   @pre `diagram` and `system_base` must be the same object.
   @pre `source_output_port` must be owned by a child of `diagram`.
   @pre `source_subsystem_index` must be the index of that child in `diagram`.
@@ -53,17 +57,19 @@ class DiagramOutputPort final : public OutputPort<T> {
   // doesn't have access to a declaration of Diagram<T> so would not be able
   // to static_cast up to System<T> as is required by OutputPort. We expect
   // the caller to do that cast for us so take a System<T> here.
-  DiagramOutputPort(const System<T>& diagram,
-                    const internal::SystemMessageInterface& system_base,
+  DiagramOutputPort(const System<T>* diagram,
+                    SystemBase* system_base,
                     OutputPortIndex index,
+                    DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
                     SubsystemIndex source_subsystem_index)
-      : OutputPort<T>(diagram, system_base, index,
+      : OutputPort<T>(diagram, system_base, index, ticket,
                       source_output_port->get_data_type(),
                       source_output_port->size()),
         source_output_port_(source_output_port),
         source_subsystem_index_(source_subsystem_index) {
-    DRAKE_DEMAND(index.is_valid() && source_subsystem_index.is_valid());
+    DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
+    DRAKE_DEMAND(source_subsystem_index.is_valid());
     DRAKE_DEMAND(source_output_port != nullptr);
   }
 
@@ -94,8 +100,14 @@ class DiagramOutputPort final : public OutputPort<T> {
   // delegates to the source output port.
   const AbstractValue& DoEval(const Context<T>& diagram_context) const final {
     const Context<T>& subcontext = get_subcontext(diagram_context);
-    return source_output_port_->Eval(subcontext);
+    return source_output_port_->EvalAbstract(subcontext);
   }
+
+  // Returns the source output port's subsystem, and the ticket for that
+  // port's tracker.
+  internal::OutputPortPrerequisite DoGetPrerequisite() const final {
+    return {source_subsystem_index_, source_output_port_->ticket()};
+  };
 
   // Digs out the right subcontext for delegation.
   const Context<T>& get_subcontext(const Context<T>& diagram_context) const {

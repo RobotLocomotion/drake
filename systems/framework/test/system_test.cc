@@ -24,6 +24,11 @@ namespace {
 
 const int kSize = 3;
 
+// Note that Systems in this file are derived directly from drake::System for
+// testing purposes. User Systems should be derived only from LeafSystem which
+// handles much of the bookkeeping you'll see here, and won't need to call
+// methods that are intended only for internal use.
+
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
@@ -66,13 +71,21 @@ class TestSystem : public System<double> {
   }
 
   const LeafOutputPort<double>& AddAbstractOutputPort() {
-    // Create an abstract output port with no allocator or calculator.
+    // Create an abstract output port with dummy alloc and calc.
+    const CacheEntry& cache_entry = this->DeclareCacheEntry(
+        "null output port",
+        [] { return Value<int>::Make(0); },
+        [](const ContextBase&, AbstractValue*) {});
+    // TODO(sherm1) Use implicit_cast when available (from abseil). Several
+    // places in this test.
     auto port = std::make_unique<LeafOutputPort<double>>(
-        *this, *this, OutputPortIndex(get_num_output_ports()),
-        typename LeafOutputPort<double>::AllocCallback(nullptr),
-        typename LeafOutputPort<double>::CalcCallback(nullptr));
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
+        OutputPortIndex(this->get_num_output_ports()),
+        assign_next_dependency_ticket(),
+        kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
-    this->CreateOutputPort(std::move(port));
+    this->AddOutputPort(std::move(port));
     return *port_ptr;
   }
 
@@ -413,27 +426,33 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
-        []() { return AbstractValue::Make(std::string()); },
-        [this](const Context<T>& context, AbstractValue* output) {
-          this->CalcStringOutput(context, output);
-        }));
-
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
+        kAbstractValued, 0 /* size */,
+        &this->DeclareCacheEntry(
+            "absport",
+            []() { return AbstractValue::Make(std::string()); },
+            [this](const ContextBase& context, AbstractValue* output) {
+              this->CalcStringOutput(context, output);
+            })));
     this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kUniform);
-    this->DeclareInputPort(kVectorValued, 1,
-                           RandomDistribution::kGaussian);
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
-        1,  // Vector size.
-        []() {
-          return std::make_unique<Value<BasicVector<T>>>(1);
-        },
-        [this](const Context<T>& context, BasicVector<T>* output) {
-          this->CalcVectorOutput(context, output);
-        }));
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
+    this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
+        kVectorValued, 1 /* size */,
+        &this->DeclareCacheEntry(
+            "vecport",
+            []() { return std::make_unique<Value<BasicVector<T>>>(1); },
+            [this](const ContextBase& context, AbstractValue* output) {
+              this->CalcVectorOutput(context, output);
+            })));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -468,7 +487,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
-    return nullptr;
+    return std::make_unique<ContinuousState<T>>();
   }
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
@@ -500,7 +519,7 @@ class ValueIOTestSystem : public System<T> {
   }
 
   // Appends "output" to input(0) for output(0).
-  void CalcStringOutput(const Context<T>& context,
+  void CalcStringOutput(const ContextBase& context,
                         AbstractValue* output) const {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
@@ -510,10 +529,12 @@ class ValueIOTestSystem : public System<T> {
   }
 
   // Sets output(1) = 2 * input(1).
-  void CalcVectorOutput(const Context<T>& context,
-                        BasicVector<T>* vec_out) const {
+  void CalcVectorOutput(const ContextBase& context_base,
+                        AbstractValue* output) const {
+    const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
-    vec_out->get_mutable_value() = 2 * vec_in->get_value();
+    auto& vec_out = output->template GetMutableValue<BasicVector<T>>();
+    vec_out.get_mutable_value() = 2 * vec_in->get_value();
   }
 
   std::unique_ptr<SystemOutput<T>> AllocateOutput(
@@ -651,7 +672,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 1), std::logic_error,
-      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*BasicVector.*");
+      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
 
   // Now induce errors that only apply to abstract-valued input ports.
 
