@@ -108,19 +108,20 @@ class ConstraintSolver {
   /// @anchor Velocity-level-MLCPs
   /// Constraint problems can be posed as mixed linear complementarity problems
   /// (MLCP), which are problems that take the form:<pre>
-  /// (a)    Au + Xy + a = 0
-  /// (b)    Yu + By + b ≥ 0
-  /// (c)              y ≥ 0
-  /// (d) vᵀ(b + Yu + By) = 0
+  /// (a)    Au + X₁y + a = 0
+  /// (b)  X₂u + X₃y + x₄ ≥ 0
+  /// (c)               y ≥ 0
+  /// (d) vᵀ(x₄ + X₂u + X₃y) = 0
   /// </pre>
-  /// where `u` are "free" variables, `y` are constrained variables, `A`, `X`,
-  /// `Y`, and `B` are given matrices and `a` and `b` are given vectors. If `A`
-  /// is nonsingular, `u` can be solved for:<pre>
-  /// (e) u = -A⁻¹ (a + Xy)
+  /// where `u` are "free" variables, `y` are constrained variables, `A`, `X₁`,
+  /// `X₂`, and `X₃` are given matrices (we label only the most important
+  /// variables without subscripts to make them stand out) and `a` and `x₄` are
+  /// given vectors. If `A` is nonsingular, `u` can be solved for:<pre>
+  /// (e) u = -A⁻¹ (a + X₁y)
   /// </pre>
   /// allowing the mixed LCP to be converted to a "pure" LCP `(qq, MM)` by:<pre>
-  /// (f) qq = b - YA⁻¹a
-  /// (g) MM = B - YA⁻¹X
+  /// (f) qq = x₄ - X₂A⁻¹a
+  /// (g) MM = X₃ - X₂A⁻¹X₁
   /// </pre>
   /// This pure LCP can then be solved for `y` such that:<pre>
   /// (h)     MMv + qq ≥ 0
@@ -129,36 +130,48 @@ class ConstraintSolver {
   /// </pre>
   /// and this `y` can be substituted into (e) to obtain `u`.
   ///
-  /// Consider constrained dynamics problems with velocity-level unknowns,
-  /// which take the specific form:<pre>
-  /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-Mv⁻ | = | 0 |
-  ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0 |
-  ///     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | α |
-  ///     | D   0    0    0   E   0  | | fD | + |  kᴰ | = | β |
-  ///     | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | γ |
-  ///     | L   0    0    0   0   0  | | fL | + |  kᴸ | = | δ |
-  /// (2) 0 ≤ fN  ⊥  α ≥ 0
-  /// (3) 0 ≤ fD  ⊥  β ≥ 0
-  /// (4) 0 ≤ λ   ⊥  γ ≥ 0
-  /// (5) 0 ≤ fL  ⊥  δ ≥ 0
+  /// Consider the following problem formulation of a multibody dynamics system
+  /// impact model (taken from [Anitescu 1997]).
+  /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-Mv⁻ | = | 0  |
+  ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0  |
+  ///     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | x₅ |
+  ///     | D   0    0    0   E   0  | | fD | + |  kᴰ | = | x₆ |
+  ///     | 0   0    μ   -Eᵀ  0   0  | |  λ | + |   0 | = | x₇ |
+  ///     | L   0    0    0   0   0  | | fL | + |  kᴸ | = | x₈ |
+  /// (2) 0 ≤ fN  ⊥  x₅ ≥ 0
+  /// (3) 0 ≤ fD  ⊥  x₆ ≥ 0
+  /// (4) 0 ≤ λ   ⊥  x₇ ≥ 0
+  /// (5) 0 ≤ fL  ⊥  x₈ ≥ 0
   /// </pre>
-  // TODO(edrumwri): fill in variables above.
+  /// Here, the velocity variables
+  /// v⁻ and v⁺ correspond to the velocity of the system before and after
+  /// impulses are applied, respectively. Details will be forthcoming later,
+  /// but key variables are `M`, which is a generalized inertia matrix; `G`,
+  /// `N`, `D`, and `L` correspond to Jacobian matrices for various constraints
+  /// (joints, contact, friction, generic unilateral constraints); `μ` is a
+  /// diagonal matrix comprised of Coulomb friction coefficients; `E` is a
+  /// matrix used to linearize the friction cone (necessary to make this is a
+  /// *linear* complementarity problem); `fG`, `fN`, `fD`, and `fL` are
+  /// constraint impulses; `λ`, `x₅`, `x₆`, `x₇`, and `x₈` can be viewed as
+  /// mathematical programming "slack" variables; and `kᴳ`, `kᴺ`, `kᴰ`, `kᴸ`
+  /// allow customizing the problem to, e.g., correct constraint violations and
+  /// even simulate restitution.
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
   /// solve with active-set-type mathematical programming approaches:<pre>
-  /// A ≡ | M  -Ĝᵀ|   a ≡ |-Mv⁻ |   X ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
-  ///     | Ĝ   0 |       |  kᴳ |       | 0    0   0   0  |
+  ///  A ≡ | M  -Ĝᵀ|   a ≡ |-Mv⁻ |   X₁ ≡ |-Nᵀ  -Dᵀ  0  -Lᵀ |
+  ///      | Ĝ   0 |       |  kᴳ |        | 0    0   0   0  |
   ///
-  /// Y ≡ | N   0 |   b ≡ |  kᴺ |   B ≡ | 0    0   0   0  |
-  ///     | D   0 |       |  kᴰ |       | 0    0   E   0  |
-  ///     | 0   0 |       |  0  |       | μ   -Eᵀ  0   0  |
-  ///     | L   0 |       |  kᴸ |       | 0    0   0   0  |
+  /// X₂ ≡ | N   0 |   b ≡ |  kᴺ |   X₃ ≡ | 0    0   0   0  |
+  ///      | D   0 |       |  kᴰ |        | 0    0   E   0  |
+  ///      | 0   0 |       |  0  |        | μ   -Eᵀ  0   0  |
+  ///      | L   0 |       |  kᴸ |        | 0    0   0   0  |
   ///
-  /// u ≡ | v⁺ |      y ≡ | fN  |
-  ///     | fG |          | fD  |
-  ///                     |  λ  |
-  ///                     | fL  |
+  ///  u ≡ | v⁺ |      y ≡ | fN  |
+  ///      | fG |          | fD  |
+  ///                      |  λ  |
+  ///                      | fL  |
   /// </pre>
   /// Therefore, using Equations (f) and (g) and defining `C` as the
   /// nv × nv-dimensional upper left block of `A⁻¹` (`nv` is the dimension of
@@ -186,6 +199,23 @@ class ConstraintSolver {
   /// constructs (and returns) functions for solving `AX=B`, where `B` is a
   /// given matrix and `X` is an unknown matrix. UpdateDiscretizedTimeLCP()
   /// computes and returns `a` during its operation.
+  /// 
+  /// Another use of the MLCP formulation:
+  ///
+  /// Without setting up the entire MLCP again, we now show how a very similar
+  /// formulation to solve the problem of discretizing
+  /// the multi-body dynamics equations with contact and friction. This
+  /// particular formulation provides several nice features: 1) the formulation
+  /// is semi-implicit and models compliant contact efficiently, including both
+  /// sticking contact and contact between very stiff surfaces; 2) all
+  /// constraint forces are computed in Newtons (typical "time stepping
+  /// methods" require considerable care to correctly compare constraint forces,
+  /// which are impulsive, and non-constraint forces (which are non-impulsive);
+  /// and 3) can be made almost symplectic by choosing a
+  /// representation/computational coordinate frame that minimizes
+  /// velocity-dependent forces (thereby explaining the extreme stability of
+  /// software like ODE and Bullet that computes dynamics in body frames
+  /// (minimizing the magnitudes of velocity-dependent forces). 
   // @{
   /// Computes the base time-discretization of the system using the problem
   /// data, resulting in the `MM` and `qq` shown above; if `MM` and `qq` are
