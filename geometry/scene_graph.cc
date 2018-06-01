@@ -187,6 +187,19 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
+void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet&) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  // TODO(SeanCurtis-TRI): Implemented in the follow-up PR.
+}
+
+template <typename T>
+void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet&,
+                                             const GeometrySet&) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  // TODO(SeanCurtis-TRI): Implemented in the follow-up PR.
+}
+
+template <typename T>
 void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);

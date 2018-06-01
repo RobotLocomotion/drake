@@ -673,6 +673,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
 
   /// If the body with `body_index` has geometry registered with it, it returns
+  /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
+  /// @throws if called pre-finalize.
+  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+      BodyIndex body_index) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    const auto it = body_index_to_frame_id_.find(body_index);
+    if (it == body_index_to_frame_id_.end()) {
+      return {};
+    }
+    return it->second;
+  }
+
+  /// If the body with `body_index` has geometry registered with it, it returns
   /// the geometry::FrameId associated with it. Otherwise this method throws
   /// an exception.
   /// @throws if no geometry has been registered with the body indicated by
@@ -737,11 +750,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// output ports to enable communication with that SceneGraph are declared
   /// as well.
   ///
+  /// If geometry has been registered on a SceneGraph instance, that instance
+  /// must be provided to the Finalize() method so that any geometric
+  /// implications of the finalization process can be appropriately handled.
+  ///
   /// @see is_finalized().
   ///
-  /// @throws std::logic_error if the %MultibodyPlant has already been
-  /// finalized.
-  void Finalize();
+  /// @throws std::logic_error if
+  ///          1. the %MultibodyPlant has already been finalized,
+  ///          2. `scene_graph` isn't provided when required, or
+  ///          3. a different scene_graph instance is provided than the one
+  ///             for which this plant is a geometry source.
+  void Finalize(geometry::SceneGraph<T>* scene_graph = nullptr);
 
   /// Returns `true` if this plant is modeled as a discrete system.
   /// This property of the plant is specified at construction and therefore this
@@ -919,6 +939,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Helper method that is used to finalize the plant's internals after
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
+
+  // Helper method to apply collision filters based on body-adjacency. By
+  // default, we don't consider collisions between geometries affixed to
+  // bodies connected by a joint.
+  void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
