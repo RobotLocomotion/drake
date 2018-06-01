@@ -813,7 +813,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     VectorX<T> mus(num_contacts); // Stribeck friction.
     VectorX<T> dmudv(num_contacts);
     std::vector<Matrix2<T>> dft_dv(num_contacts);
-    vk = v_star;  // Initial guess with zero friction forces0.
+    vk = v_star;  // Initial guess with zero friction forces0. Consider using vk = v0
     vtk = D * vk;
 
     // The stiction tolerance.
@@ -938,7 +938,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
         diag_dftdv_times_D.block(ik, 0, 2, nv) =
             dft_dv[ic] * D.block(ik, 0, 2, nv);
       }
-      // Form J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D:
+      // Form J = M + dt Dᵀdiag(dfₜ/dvₜ)D:
       Jk = M0 + dt * D.transpose() * diag_dftdv_times_D;
 
       //PRINT_VARn(Jk);
@@ -950,6 +950,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
       // Since we are in a non-linear iteration, an approximate cheap solution
       // is probably best.
+      // TODO(amcastro-tri): Consider using a matrix-free iterative method to
+      // avoid computing M and J. CG and the Krylov family can be matrix-free.
       //Delta_vk = Jk.llt().solve(-Rk);
       Eigen::ConjugateGradient<MatrixX<T>, Eigen::Lower|Eigen::Upper> cg;
       cg.compute(Jk);
