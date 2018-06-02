@@ -284,6 +284,58 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_NEAR(v_slipC, R_ * omega, kTolerance);
 }
 
+// This test verifies that the implicit stribeck solver can correctly predict
+// transitions in a problem with impact. This is a 2D problem consisting of a
+// cylinder of radius R, mass m, and rotational inertia I, initially at height
+// z0 = h0 + R from a flat ground.
+// At t = 0, the cylinder is given an initial horizontal velocity vx0 and zero
+// vertical velocity vy0 = 0. The cylinder will undergo a parabolic free flight
+// towards the ground until the moment of impact at which the vertical velocity
+// goes to zero (a purely inelastic collision). Since we know the initial
+// height, we therefore know that the vertical velocity at the time of impact
+// will be vy = sqrt(m⋅g⋅h₀), with g the acceleration of gravity. Therefore the
+// change of momentum, in the vertical direction, at the time of impact will be
+// py = -m * vy.
+// The implicit Stribeck solver needs to know the normal forces in advance. We
+// compute the normal force in order to exactly bring the cylinder to a stop in
+// the vertical direction within a time interval dt. That is, we set the normal
+// force to fn = m * vy / dt + m * g, where the small contribution due to
+// gravity is needed to exactly bring the cylinder's vertical velocity to zero.
+// The equations governing the motion of the cylinder within dt of the time of
+// impact are:
+//   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
+//   (2)  m⋅Δvx = pt⋅R, Δvx = vx - vx0
+//   (3)  vt = vx + ω⋅R
+//   (4)  |pt| ≤ μ⋅pn
+// where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction and the
+// normal force, respectively.
+// The problem above can be solved analytically for vx, ω and ft. We will find
+// the condition for either stiction or sliding after impact by solving the
+// easier stiction problem and subsequently verifying the condition given by
+// Eq. (4).
+//
+//                  Stiction After Impact, vt = 0.
+// Setting vt = 0 in Eq. (3), solving for ω and substituting the result in
+// Eq. (1) leads now, together with Eq. (2), to a system of equations in vx and
+// pt. We solve it for pt to find:
+//   pt = -m⋅vx0 / (1 + m⋅R²/I)
+// From Eq. (4), stiction occurs if vx0 is smaller than:
+//   vx0 ≤ vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
+// Otherwise the cylinder will be sliding after impact.
+//
+//              Transition of this test's problem parameters.
+//
+// For this unit test we have:
+//   R = 1.0
+//   m = 1.0
+//   I = 1.0
+//   h0 = 1 / 2
+//   g = 9.0
+//   mu = 0.1
+// With this set of parameters we have:
+//   vy = 3.0 m/s (velocity at impact).
+//   pn = 3.0 Ns
+//   vx_transition = 0.6 m/s
 class RollingCylinder : public ::testing::Test {
  public:
   void SetUp() override {
@@ -360,7 +412,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   (void) kTolerance;
 
   const double dt = 1.0e-3;  // time step in seconds.
-  const double mu = 0.5;  // Friction coefficient.
+  const double mu = 0.1;  // Friction coefficient.
 
   // Other than normal contact forces, external forcing for this problem
   // includes gravity.
@@ -372,8 +424,8 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Vertical velocity at the moment of impact.
   const double vy0 = -sqrt(2.0 * g_ * h0);
 
-  // Initial horizontal velocity.
-  const double vx0 = 0.1;  // m/s.
+  // Initial horizontal velocity (recall vx_transition = 0.6 m/s)
+  const double vx0 = 0.5;  // m/s.
 
   // Initial velocity.
   const Vector3<double> v0(vx0, vy0, 0.0);
@@ -441,8 +493,8 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // Vertical velocity at the moment of impact.
   const double vy0 = -sqrt(2.0 * g_ * h0);
 
-  // Initial horizontal velocity.
-  const double vx0 = 1.0;  // m/s.
+  // Initial horizontal velocity (vx_transition = 0.6 m/s).
+  const double vx0 = 0.7;  // m/s.
 
   // Initial velocity.
   const Vector3<double> v0(vx0, vy0, 0.0);
