@@ -177,7 +177,6 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();
   ASSERT_EQ(vt.size(), 2 * nc_);
-  PRINT_VAR(vt.transpose());
 
   // The problem has symmetry of revolution. Thus, for any rotation theta,
   // the three tangential velocities should have the same magnitude.
@@ -411,8 +410,6 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // We expect stiction, to within the Stribeck stiction tolerance.
   EXPECT_LT(vt(0), parameters.stiction_tolerance);
 
-  PRINT_VAR(vt.transpose());
-
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
@@ -423,6 +420,78 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
   EXPECT_LT(abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+}
+
+// Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction
+// coefficient of mu = 0.1 and initial horizontal velocity of vx0 = 1.0 m/s,
+// which leads to the cylinder to be sliding after impact.
+TEST_F(RollingCylinder, SlidingAfterImpact) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  const double dt = 1.0e-3;  // time step in seconds.
+  const double mu = 0.1;     // Friction coefficient.
+
+  // Other than normal contact forces, external forcing for this problem
+  // includes gravity.
+  const Vector3<double> tau(0.0, -m_ * g_, 0.0);
+
+  // Initial height. We choose it so that vy at impact is exactly 3.0 m/s.
+  const double h0 = 0.5;
+
+  // Vertical velocity at the moment of impact.
+  const double vy0 = -sqrt(2.0 * g_ * h0);
+
+  // Initial horizontal velocity.
+  const double vx0 = 1.0;  // m/s.
+
+  // Initial velocity.
+  const Vector3<double> v0(vx0, vy0, 0.0);
+
+  SetImpactProblem(v0, tau, mu, h0, dt);
+
+  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  parameters.stiction_tolerance = 1.0e-6;
+  solver_.set_solver_parameters(parameters);
+
+  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+
+  const ImplicitStribeckSolver<double>::IterationStats& stats =
+      solver_.get_iteration_statistics();
+
+  const double vt_tolerance =
+      /* Dimensionless relative (to the stiction tolerance) tolerance */
+      solver_.get_solver_parameters().tolerance *
+          solver_.get_solver_parameters().stiction_tolerance;
+  EXPECT_TRUE(stats.vt_residual < vt_tolerance);
+
+  // Friction should only act horizontally.
+  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+
+  // The moment due to friction Mf should exactly match R * ft.
+  EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
+
+  const VectorX<double>& vt = solver_.get_tangential_velocities();
+  ASSERT_EQ(vt.size(), 2 * nc_);
+
+  // There should be no spurious out-of-plane tangential velocity.
+  EXPECT_NEAR(vt(1), 0.0, kTolerance);
+
+  // We expect sliding, i.e. a sliding velocity larger than the Stribeck
+  // stiction tolerance.
+  EXPECT_GT(vt(0), parameters.stiction_tolerance);
+
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // Even though not rolling, the cylinder should be rotating clockwise.
+  EXPECT_TRUE(v(2) < 0.0);
+
+  // We expect the solver to update vt accordingly based on v before return.
+  EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
+
+  // Since we imposed the normal force exactly to bring the cylinder to a stop,
+  // we expect the vertical velocity to be zero.
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
 }
 
 }  // namespace
