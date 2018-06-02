@@ -145,12 +145,12 @@ class ImplicitStribeckSolver {
 
   /// This method must be called after SolveWithGuess() to retrieve the vector
   /// of tangential velocities.
-  const VectorX<T>& get_tangential_velocities() const {
-    return vtk;
+  Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
+    return variable_size_workspace_.vt();
   }
 
   const VectorX<T>& get_generalized_velocities() const {
-    return vk;
+    return fixed_size_workspace_.vk;
   }
 
  private:
@@ -172,47 +172,148 @@ class ImplicitStribeckSolver {
   // x = v / v_stribeck.
   static T ModifiedStribeckPrime(const T& speed_BcAc, const T& mu);
 
-  void ResizeSolverWorkspaceAsNeeded(int nc);
-
   int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
   Parameters parameters_;
 
-  // The solver keeps references to the problem data but does not own it.
-  EigenPtr<const MatrixX<T>> M_{nullptr};  // The mass matrix of the system.
-  EigenPtr<const MatrixX<T>> D_{nullptr};  // The tangential velocities Jacobian.
-  // The generalized momementum vector **before** friction is applied. For a
-  // generalized velocity vector v, the generalized momentum vector is defined
-  // as p = M ⋅ v.
-  EigenPtr<const VectorX<T>> p_star_{nullptr};
+  // Contains all the references that define the problem to be solved.
+  // These references must remain valid at least from the time they are set with
+  // SetProblemData() and until SolveWithGuess() returns.
+  struct ProblemDataAliases {
+    void Set(EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+             EigenPtr<const VectorX<T>> p_star,
+             EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+      M_ = M;
+      D_ = D;
+      p_star_ = p_star;
+      fn_ = fn;
+      mu_ = mu;
+    }
 
-  // At each contact point ic, fn_(ic) and mu_(ic) store the normal contact
-  // force and friction coefficient, respectively. Both have size nc, the number
-  // of contact points.
-  EigenPtr<const VectorX<T>> fn_{nullptr};
-  EigenPtr<const VectorX<T>> mu_{nullptr};
+    // The solver keeps references to the problem data but does not own it.
+    EigenPtr<const MatrixX<T>> M_{nullptr};  // The mass matrix of the system.
+    EigenPtr<const MatrixX<T>> D_{nullptr};  // The tangential velocities Jacobian.
+    // The generalized momementum vector **before** friction is applied. For a
+    // generalized velocity vector v, the generalized momentum vector is defined
+    // as p = M ⋅ v.
+    EigenPtr<const VectorX<T>> p_star_{nullptr};
 
-  // The solver's workspace allocated at construction time:
-  VectorX<T> vk;
-  VectorX<T> Rk;
-  MatrixX<T> Jk;
-  VectorX<T> Delta_vk;
+    // At each contact point ic, fn_(ic) and mu_(ic) store the normal contact
+    // force and friction coefficient, respectively. Both have size nc, the number
+    // of contact points.
+    EigenPtr<const VectorX<T>> fn_{nullptr};
+    EigenPtr<const VectorX<T>> mu_{nullptr};
+  };
+  ProblemDataAliases problem_data_aliases_;
 
-  // Workspace that needs to be allocated everytime nc changes.
-  VectorX<T> Delta_vtk;
-  VectorX<T> vtk;
-  VectorX<T> ftk;
-  VectorX<T> that;
-  VectorX<T> v_slip;
-  VectorX<T> mus; // Stribeck friction.
-  VectorX<T> dmudv;
-  std::vector<Matrix2<T>> dft_dv;
+  // The solver's workspace allocated at construction time. Sizes only depend on
+  // nv, the number of generalized velocities.
+  // The size of the variables in this workspace MSUT remain fixed throghout the
+  // lifetime of the solver. Do not resize any of them!.
+  struct FixedSizeWorkspace {
+    // Constructs a workspace with size only dependent on nv.
+    explicit FixedSizeWorkspace(int nv) {
+      vk.resize(nv);
+      Rk.resize(nv);
+      Delta_vk.resize(nv);
+      Jk.resize(nv, nv);
+    }
+    VectorX<T> vk;
+    VectorX<T> Rk;
+    MatrixX<T> Jk;
+    VectorX<T> Delta_vk;
+  };
+  mutable FixedSizeWorkspace fixed_size_workspace_;
+
+  // The variables in this workspace can change size with each invocation of
+  // SetProblemData() since the number of contact points nc can change.
+  // The workspace only performs re-allocations if needed, meaning that previous
+  // storeage is re-used if large engouh for the next problem data set.
+  class VariableSizeWorkspace {
+   public:
+    explicit VariableSizeWorkspace(int initial_nc) {
+      ResizeIfNeeded(initial_nc);
+    }
+
+    // Performs a resize of this workspace's variables only if the new size `nc`
+    // is larger than the any of the other sizes with with this method was
+    // called before.
+    void ResizeIfNeeded(int nc) {
+      nc_ = nc;
+      if (capacity() >= nc) return;  // no-op if not needed.
+      const int nf = 2 * nc;
+      // Only reallocate if sizes from previous allocations are not sufficient.
+      vtk.resize(nf);
+      ftk.resize(nf);
+      Delta_vtk.resize(nf);
+      that.resize(nf);
+      v_slip.resize(nc);
+      mus.resize(nc);
+      dmudv.resize(nc);
+      // There is no reallocation if std::vector::capacity() >= nc.
+      dft_dv.resize(nc);
+    }
+
+    // Returns the current (maximum) capacity of the workspace.
+    int capacity() const {
+      return vtk.size();
+    }
+
+    Eigen::VectorBlock<const VectorX<T>> vt() const {
+      return vtk.segment(0, 2 * nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_vt() {
+      return vtk.segment(0, 2 * nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_delta_vt() {
+      return Delta_vtk.segment(0, 2 * nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_ft() {
+      return ftk.segment(0, 2 * nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_that() {
+      return that.segment(0, 2 * nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_v_slip() {
+      return v_slip.segment(0, nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_mu() {
+      return mus.segment(0, nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_dmudv() {
+      return dmudv.segment(0, nc_);
+    }
+
+    std::vector<Matrix2<T>>& mutable_dft_dv() {
+      return dft_dv;
+    }
+
+   private:
+    // The number of contact points. This determines sizes in this workspace.
+    int nc_;
+    VectorX<T> Delta_vtk;
+    VectorX<T> vtk;
+    VectorX<T> ftk;
+    VectorX<T> that;
+    VectorX<T> v_slip;
+    VectorX<T> mus; // Stribeck friction.
+    VectorX<T> dmudv;
+    std::vector<Matrix2<T>> dft_dv;
+  };
+  mutable VariableSizeWorkspace variable_size_workspace_;
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
-  IterationStats statistics_;
+  mutable IterationStats statistics_;
 };
 
 }  // namespace multibody

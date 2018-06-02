@@ -471,7 +471,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
-  EXPECT_LT(abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+  EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
 }
 
 // Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction

@@ -20,13 +20,13 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) : nv_(nv) {
-  DRAKE_DEMAND(nv > 0);
-  // Allocate once and for all workspace with size only dependent on nv.
-  vk.resize(nv);
-  Rk.resize(nv);
-  Delta_vk.resize(nv);
-  Jk.resize(nv, nv);
+ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
+    nv_(nv),
+    fixed_size_workspace_(nv),
+    // Provide an initial workspace size so that we avoid re-allocations
+    // afterwards as much as we can.
+    variable_size_workspace_(128) {
+  DRAKE_THROW_UNLESS(nv > 0);
 }
 
 template <typename T>
@@ -35,38 +35,13 @@ void ImplicitStribeckSolver<T>::SetProblemData(
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
   nc_ = fn->size();
-
-  PRINT_VAR(nv_);
-  PRINT_VAR(nc_);
-  PRINT_VAR(D->rows());
-  PRINT_VAR(D->cols());
-
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
   DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
-  M_ = M;
-  D_ = D;
-  p_star_ = p_star;
-  fn_ = fn;
-  mu_ = mu;
-  ResizeSolverWorkspaceAsNeeded(nc_);
-}
-
-template <typename T>
-void ImplicitStribeckSolver<T>::ResizeSolverWorkspaceAsNeeded(int nc) {
-  const int nf = 2 * nc;
-
-  // Only reallocate if sizes from previous allocations are not sufficient.
-  if (vtk.size() < nf) vtk.resize(nf);
-  if (ftk.size() < nf) ftk.resize(nf);
-  if (Delta_vtk.size() < nf) Delta_vtk.resize(nf);
-  if (that.size() < nf) that.resize(nf);
-  if (v_slip.size() < nc) v_slip.resize(nc);
-  if (mus.size() < nc) mus.resize(nc);
-  if (dmudv.size() < nc) dmudv.resize(nc);
-  // There is no reallocation if std::vector::capacity() >= nc.
-  dft_dv.resize(nc);
+  // Keep references to the problem data.
+  problem_data_aliases_.Set(M, D, p_star, fn, mu);
+  variable_size_workspace_.ResizeIfNeeded(nc_);
 }
 
 template <typename T>
@@ -95,12 +70,28 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
   // Size of the friction forces vector ft and tangential velocities vector vt.
   const int nf = 2 * nc;
 
-  // Convenient aliases.
-  const auto& M = *M_;
-  const auto& D = *D_;
-  const auto& p_star = *p_star_;
-  const auto& fn = *fn_;
-  const auto& mu = *mu_;
+  // Convenient aliases to problem data.
+  const auto& M = *problem_data_aliases_.M_;
+  const auto& D = *problem_data_aliases_.D_;
+  const auto& p_star = *problem_data_aliases_.p_star_;
+  const auto& fn = *problem_data_aliases_.fn_;
+  const auto& mu = *problem_data_aliases_.mu_;
+
+  // Convenient aliases to fixed size workspace variables.
+  auto& vk = fixed_size_workspace_.vk;
+  auto& Delta_vk = fixed_size_workspace_.Delta_vk;
+  auto& Rk = fixed_size_workspace_.Rk;
+  auto& Jk = fixed_size_workspace_.Jk;
+
+  // Convenient aliases to variable size workspace variables.
+  auto vtk = variable_size_workspace_.mutable_vt();
+  auto ftk = variable_size_workspace_.mutable_ft();
+  auto Delta_vtk = variable_size_workspace_.mutable_delta_vt();
+  auto dft_dv = variable_size_workspace_.mutable_dft_dv();
+  auto dmudv = variable_size_workspace_.mutable_dmudv();
+  auto mus = variable_size_workspace_.mutable_mu();
+  auto that = variable_size_workspace_.mutable_that();
+  auto v_slip = variable_size_workspace_.mutable_v_slip();
 
   // Initialize residual to a value larger than tolerance so that the solver at
   // least performs one iteration
