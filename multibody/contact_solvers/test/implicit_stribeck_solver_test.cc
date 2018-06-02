@@ -115,7 +115,6 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   const double dt = 1.0e-3;  // time step in seconds.
-  const double stiction_tolerance = 1.0e-4;  // m/s
 
   const double mu = 0.5;
 
@@ -124,7 +123,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double theta = M_PI / 5;
 
   // External forcing.
-  const double Mz = 6.0;
+  const double Mz = 3.0;  // M_transition = 5.0
   const Vector3<double> tau(0.0, 0.0, Mz);
 
   // Initial velocity.
@@ -141,7 +140,10 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   const MatrixX<double> D = ComputeTangentialJacobian(theta);
 
-  ImplicitStribeckSolver<double> solver(nv_, stiction_tolerance);
+  ImplicitStribeckSolver<double> solver(nv_);
+  ImplicitStribeckSolver<double>::Parameters parameters;
+  parameters.stiction_tolerance = 1.0e-4;
+  solver.set_solver_parameters(parameters);
   solver.SetProblemData(&M_, &D, &p_star, &fn, &mus);
 
   VectorX<double> tau_f = solver.SolveWithGuess(dt, v0);
@@ -149,15 +151,19 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const ImplicitStribeckSolver<double>::IterationStats& stats =
       solver.get_iteration_statistics();
 
-  EXPECT_TRUE(stats.vt_residual < solver.get_solver_parameters().v_tolerance);
+  EXPECT_TRUE(stats.vt_residual < solver.get_solver_parameters().tolerance);
 
   PRINT_VAR(tau_f.transpose());
   PRINT_VAR(stats.vt_residual);
   PRINT_VAR(stats.num_iterations);
   PRINT_VAR(stats.linear_residuals.size());
   PRINT_VAR(stats.linear_iterations.size());
-  for(int i=0;i<stats.num_iterations;++i) {
-    PRINT_VAR(stats.alphas[i]);
+  for(int iter=0;iter<stats.num_iterations;++iter) {
+    PRINT_VAR(iter);
+    PRINT_VAR(stats.residuals[iter]);
+    PRINT_VAR(stats.linear_iterations[iter]);
+    PRINT_VAR(stats.linear_residuals[iter]);
+    PRINT_VAR(stats.alphas[iter]);
   }
 
   const VectorX<double>& vt = solver.get_tangential_velocities();

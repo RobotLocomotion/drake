@@ -20,9 +20,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-ImplicitStribeckSolver<T>::ImplicitStribeckSolver(
-    int nv, double stiction_tolerance) :
-    nv_(nv), stiction_tolerance_(stiction_tolerance) {
+ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) : nv_(nv) {
   DRAKE_DEMAND(nv > 0);
   // Allocate once and for all workspace with size only dependent on nv.
   vk.resize(nv);
@@ -81,7 +79,9 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Solver parameters.
   const int max_iterations = parameters_.max_iterations;
-  const double tolerance = parameters_.v_tolerance;
+  // Tolerance used to monitor the convergence of the tangential velocities.
+  const double vt_tolerance =
+      parameters_.tolerance * parameters_.stiction_tolerance;
 
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -98,14 +98,14 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Initialize residual to a value larger than tolerance so that the solver at
   // least performs one iteration
-  T residual = 2 * tolerance;
+  T residual = 2 * vt_tolerance;
 
   // Initialize iteration with the provided guess.
   vk = v_guess;
   vtk = D * vk;
 
   // The stiction tolerance.
-  const double v_stribeck = stiction_tolerance_;
+  const double v_stribeck = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
   // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
@@ -147,7 +147,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
     // After the previous iteration, we allow updating ftk above to have its
     // latest value before leaving.
-    if (residual < tolerance) {
+    if (residual < vt_tolerance) {
       break;
     }
 
@@ -238,6 +238,8 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     //PRINT_VARn((Minv_times_Dtrans * D).eval());
     //PRINT_VARn((D.transpose() * D).eval());
 
+    PRINT_VARn(Jk);
+
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
     // is probably best.
@@ -246,15 +248,19 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     //Delta_vk = Jk.llt().solve(-Rk);
     // TODO(amcastro-tri): Make cg a solver's member and figure out how to avoid
     // allocation.
-    Eigen::ConjugateGradient<MatrixX<T>, Eigen::Lower|Eigen::Upper> cg;
+    Eigen::ConjugateGradient<MatrixX<T>,
+                             Eigen::Lower|Eigen::Upper,
+                             Eigen::DiagonalPreconditioner<T>> cg;
     cg.compute(Jk);
-    cg.setTolerance(100 * tolerance);
+    cg.setTolerance(1.0e-6);  // relative tolerance |Jdv + R|/|R|
     cg.setMaxIterations(nv);
     Delta_vk = cg.solve(-Rk);
+    PRINT_VAR(cg.iterations());
+    PRINT_VAR(cg.error());
 
     if (cg.info() != Eigen::Success) {
       throw std::logic_error("Iterative linear solver did not converge to the "
-                                 "specified tolerance.");
+                                 "specified vt_tolerance.");
     }
 
     // cg.iterations()
@@ -270,10 +276,10 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // points.
     Delta_vtk = D * Delta_vk;
 
-    residual = Delta_vk.norm();
+    residual = Delta_vtk.norm();
 
     // Limit the angle change
-    const  T theta_max = 0.25;  // about 15 degs
+    const  T theta_max = parameters_.theta_max;
     const T cmin = cos(theta_max);
     T alpha_min = 1.0;
     for (int ic = 0; ic < nc; ++ic) {
