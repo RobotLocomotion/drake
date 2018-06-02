@@ -36,7 +36,6 @@ namespace {
 // theta = 0 for the triangle in the configuration shown in the schematic.
 class PizzaSaver : public ::testing::Test {
  public:
-  // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     // Now we'll set up each term in the equation:
     //   Mv̇ = τ + Dᵀ⋅fₜ
@@ -286,6 +285,145 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_NEAR(v_slipC, R_ * omega, kTolerance);
 }
 
+class RollingCylinder : public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Now we'll set up each term in the equation:
+    //   Mv̇ = τ + Dᵀ⋅fₜ
+    // where τ =[Fx, Fy, Mz] contains the external force in x, the external
+    // force in y and the external moment about z (out of plane).
+    M_ << m_,  0,  0,
+        0, m_,  0,
+        0,  0,  I_;
+  }
+
+  MatrixX<double> ComputeTangentialJacobian() {
+    MatrixX<double> D(2 * nc_, nv_);
+    // vt = vx + w * R = [1, 0, R] * v
+    D << 1.0, 0.0, R_,   // Along the x axis
+         0.0, 0.0, 0.0;  // Along the z axis out of the plane.
+    return D;
+  }
+
+  void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
+                        double mu, double height, double dt) {
+    // At the moment of impact the cylinder will have a vertical velocity
+    // vy = sqrt(2 * h * g).
+    const double vy = sqrt(2.0 * g_ * height);
+
+    // The non-penetration constraint implies there will be a discrete change of
+    // momentum equal to m * vy. We therefore compute a normal force so that the
+    // cylinder undergoes this finite change of momentum and comes to a stop
+    // within the discrete interval dt.
+    fn_(0) = m_ * vy / dt + m_ * g_;
+
+    // Next time step generalized momentum if there are no friction forces.
+    p_star_ = M_ * v0 + dt * tau + dt * Vector3<double>(0.0, fn_(0), 0.0);
+
+    // Friction coefficient for the only contact point in the problem.
+    mu_(0) = mu;
+
+    D_ = ComputeTangentialJacobian();
+
+    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_);
+  }
+
+ protected:
+  // Problem parameters.
+  const double m_{1.0};   // Mass of the cylinder.
+  const double R_{1.0};   // Distance from COM to any contact point.
+  const double g_{9.0};  // Acceleration of gravity.
+  // For a thin cylindrical shell the moment of inertia is I = m⋅R². We use this
+  // inertia so that numbers are simpler (I = 1.0 kg⋅m² in this case).
+  const double I_{R_ * R_ * m_};
+
+  // Problem sizes.
+  const int nv_{3};  // number of generalized velocities.
+  const int nc_{1};  // number of contact points.
+
+  // Mass matrix.
+  MatrixX<double> M_{nv_, nv_};
+
+  // Tangential velocities Jacobian.
+  MatrixX<double> D_{2 * nc_, nv_};
+
+  // The implicit Stribeck solver for this problem.
+  ImplicitStribeckSolver<double> solver_{nv_};
+
+  // Additional solver data that must outlive solver_ during solution.
+  VectorX<double> p_star_{nv_};  // Generalized momentum.
+  VectorX<double> fn_{nc_};      // Normal forces at each contact point.
+  VectorX<double> mu_{nc_};      // Friction coefficient at each contact point.
+};
+
+TEST_F(RollingCylinder, StictionAfterImpact) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  (void) kTolerance;
+
+  const double dt = 1.0e-3;  // time step in seconds.
+  const double mu = 0.5;  // Friction coefficient.
+
+  // Other than normal contact forces, external forcing for this problem
+  // includes gravity.
+  const Vector3<double> tau(0.0, -m_ * g_, 0.0);
+
+  // Initial height. We choose it so that vy at impact is exactly 3.0 m/s.
+  const double h0 = 0.5;
+
+  // Vertical velocity at the moment of impact.
+  const double vy0 = -sqrt(2.0 * g_ * h0);
+
+  // Initial horizontal velocity.
+  const double vx0 = 0.1;  // m/s.
+
+  // Initial velocity.
+  const Vector3<double> v0(vx0, vy0, 0.0);
+
+  SetImpactProblem(v0, tau, mu, h0, dt);
+
+  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  parameters.stiction_tolerance = 1.0e-6;
+  solver_.set_solver_parameters(parameters);
+
+  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+
+  const ImplicitStribeckSolver<double>::IterationStats& stats =
+      solver_.get_iteration_statistics();
+
+  const double vt_tolerance =
+      /* Dimensionless relative (to the stiction tolerance) tolerance */
+      solver_.get_solver_parameters().tolerance *
+          solver_.get_solver_parameters().stiction_tolerance;
+  EXPECT_TRUE(stats.vt_residual < vt_tolerance);
+
+  // Friction should only act horizontally.
+  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+
+  // The moment due to friction Mf should exactly match R * ft.
+  EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
+
+  const VectorX<double>& vt = solver_.get_tangential_velocities();
+  ASSERT_EQ(vt.size(), 2 * nc_);
+
+  // There should be no spurious out-of-plane tangential velocity.
+  EXPECT_NEAR(vt(1), 0.0, kTolerance);
+
+  // We expect stiction, to within the Stribeck stiction tolerance.
+  EXPECT_LT(vt(0), parameters.stiction_tolerance);
+
+  PRINT_VAR(vt.transpose());
+
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // Since we imposed the normal force exactly to bring the cylinder to a stop,
+  // we expect the vertical velocity to be zero.
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
+
+  // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
+  // tolerance.
+  EXPECT_LT(abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+}
 
 }  // namespace
 }  // namespace multibody

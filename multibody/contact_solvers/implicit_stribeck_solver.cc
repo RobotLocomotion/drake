@@ -34,8 +34,14 @@ void ImplicitStribeckSolver<T>::SetProblemData(
     EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
-  nv_ = p_star->size();
   nc_ = fn->size();
+
+  PRINT_VAR(nv_);
+  PRINT_VAR(nc_);
+  PRINT_VAR(D->rows());
+  PRINT_VAR(D->cols());
+
+  DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
   DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
