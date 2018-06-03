@@ -51,6 +51,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   DRAKE_DEMAND(v_alpha_out->size() == v.size());
   DRAKE_DEMAND(dv.size() == v.size());
 
+  using std::abs;
   using std::sqrt;
 
   const double v_stribeck = parameters_.stiction_tolerance;
@@ -58,20 +59,20 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   // Alias for output v_alpha.
-  auto &v_alpha = *v_alpha_out;
+  auto& v_alpha = *v_alpha_out;
+
+  const Vector2<T> v1 = v + dv;  // v_alpha = v + dv, when alpha = 1.
 
   // Case I: Quick exit for small changes in v.
   const T dv_norm2 = dv.squaredNorm();
   if (dv_norm2 < epsilon_v2) {
-    v_alpha = v + dv;
+    v_alpha = v1;
     return 1.0;
   }
 
-  Vector2<T> v1 = v + dv;  // v_alpha when alpha = 1.
-
   const T v_norm = v.norm();
   const T v1_norm = v1.norm();
-  const T x = v_norm / v_stribeck;
+  const T x = v_norm / v_stribeck;    // Dimensionless slip v and v1.
   const T x1 = v1_norm / v_stribeck;
   // From Case I, we know dv_norm > epsilon_v.
   const T dv_norm = sqrt(dv_norm2);
@@ -92,7 +93,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     //   1. x1 < 1.0. Then we just make alpha = 1.0
     //   2. x > parameters_.tolerance i.e. we are in the zone of
     //      "strong gradients" where it is safe to take alpha = 1.0.
-    v_alpha = v + dv;
+    v_alpha = v1;
     return 1.0;
   } else {  // x > 1.0
 
@@ -101,7 +102,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
 
     if (x1 < 1.0) {
       // Transition happens with alpha = 1.0.
-      v_alpha = v + dv;
+      v_alpha = v1;
       return 1.0;
     }
 
@@ -131,6 +132,8 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     //  - x > 1.0
     //  - x1 > 1.0
     //  - dv_norm > epsilon_v
+    //  - line connecting v with v1 never goes through circle of radius
+    //    v_stribeck.
     //
     // Case III:
     // Therefore we know changes happen entirely outside the circle of radius
@@ -139,77 +142,69 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // To this end, we find a scalar 0 < alpha < 1 such that
     // cos(theta_max) = v⋅v1/(‖v‖‖v1‖).
     const T theta_max = parameters_.theta_max;
-    const T cmin = cos(theta_max);
+    const T cos_min = cos(theta_max);  // TODO: precompute when we set parameters.
 
-    // TODO: Cleanup code to solve quadratic in alpha.
-    // Now at this point at least we know:
-    //  - x > 1.0
-    //  - x1 > 1.0
-    //  - dv_norm > epsilon_v
-    // which before we did not.
+    // First we compute the angle change when alpha = 1, between v1 and v.
+    const T cos1 = v.dot(v1) / v_norm / v1_norm;
 
-    T A = v.norm();
-    T B = v.dot(dv);
-    T DD = dv.norm();
+    // We allow angle changes theta < theta_max, and we take alpha = 1.0.
+    // In particular, when v1 is exactly aligned wiht v (but we know it does not
+    // cross through zero, i.e. cos(theta) > 0).
+    if (cos1 > cos_min) {
+      v_alpha = v1;
+      return 1.0;
+    } else {  // we limit the angle change to theta_max.
+      // All term are made non-dimensional using v_stribeck as the reference
+      // sale.
+      const T A = v.norm() / v_stribeck;  // = x
+      const T B = v.dot(dv) / (v_stribeck * v_stribeck);
+      const T DD = dv.norm() / v_stribeck;
 
-    //if (A < 1e-14 && D < 1e-14) continue;
-    const T cos_init = v1.dot(v) / (v1_norm + 1e-10) / (v_norm + 1e-10);
+      const T A2 = A * A;
+      const T A4 = A2 * A2;
+      const T cmin2 = cos_min * cos_min;
 
-    Vector2<T> valpha;
-    T alpha;
+      // Form the terms of the quadratic equation aα² + bα + c = 0.
+      const T a = A2 * DD * DD * cmin2 - B * B;
+      const T b = 2 * A2 * B * (cmin2 - 1.0);
+      const T c = A4 * (cmin2 - 1.0);
 
+      // Solve quadratic equation. We know, from the geometry of the problem,
+      // that the roots to this problem are real. Thus, the discriminant of the
+      // quadratic equation (Δ = b² - 4ac) is positive.
+      // Also, unless there is a single root (a = 0), they have different signs.
+      // From Vieta's formulas we know:
+      //   - α₁ + α₂ = -b / a
+      //   - α₁ * α₂ = c / a < 0
+      // Since we know that c < 0 (strictly), then we must have a ≥ 0.
+      // Also since c < 0 strictly, α = 0 (zero) cannot be a root.
+      // We use this knowledge in the solution below.
 
-
-    // 180 degrees direction change.
-    if (abs(1.0 + cos_init) < 1.0e-10) {
-      // Clip to near the origin since we know for sure we crossed it.
-      valpha = v / (v.norm() + 1e-14) * v_stribeck / 2.0;
-      alpha = dv.dot(valpha - v) / dv.squaredNorm();
-    } else if (cos_init > cmin || (v1_norm * v_norm) < 1.0e-14 || x < 1.0
-        || x1 < 1.0) {  // the angle change is small enough
-      alpha = 1.0;
-      valpha = v1;
-    } else { // Limit the angle change
-      T A2 = A * A;
-      T A4 = A2 * A2;
-      T cmin2 = cmin * cmin;
-
-      T a = A2 * DD * DD * cmin2 - B * B;
-      T b = 2 * A2 * B * (cmin2 - 1.0);
-      T c = A4 * (cmin2 - 1.0);
-
-      T delta = b * b - 4 * a * c;
-
-      T sqrt_delta = sqrt(max(delta, 0.0));
-
-      // There should be a positive and a negative root.
-      alpha = (-b + sqrt_delta) / a / 2.0;
-      //double alpha2 = (-b - sqrt_delta)/a/2.0;
-      if (alpha <= 0) {
-        PRINT_VAR(alpha);
-        PRINT_VAR(iter);
-        PRINT_VAR(delta);
-        PRINT_VAR(A);
-        PRINT_VAR(B);
-        PRINT_VAR(cmin);
-        PRINT_VAR(DD);
-        PRINT_VAR(cos_init);
-        PRINT_VAR(abs(1.0 + cos_init));
-        PRINT_VAR(a);
-        PRINT_VAR(b);
-        PRINT_VAR(c);
-        PRINT_VAR(v.transpose());
-        PRINT_VAR(v1.transpose());
-        PRINT_VAR(dv.transpose());
+      T alpha;
+      // First determine if a = 0 (to machine epsilon).
+      if (abs(a) < std::numeric_limits<double>::epsilon()) {
+        // There is only a single root to the, now linear, equation bα + c = 0.
+        alpha = -c / b;
+        // Note: a = 0, α > 0 => B = A * DD * cmin ≠ 0 => b ≠ 0
+      } else {
+        // The determinant of the quadratic equation.
+        const T Delta = b * b - 4 * a * c;
+        // Geometry tell us that a real solution does exist i.e. Delta > 0.
+        DRAKE_ASSERT(Delta > 0);
+        const T sqrt_delta = sqrt(Delta);
+        alpha = (-b + sqrt_delta) / a / 2.0;  // we know a > 0
       }
 
-      DRAKE_DEMAND(alpha > 0);
+      // The geometry of the problem tells us that α ≤ 1.0
+      DRAKE_ASSERT(alpha <= 1.0);
 
-      valpha = v + alpha * dv;
+      v_alpha = v + alpha * dv;
+      return alpha;
     }
-
   }
 
+  // We should never reach this point.
+  throw std::logic_error("Bug degected. An angle change case was missed.");
 }
 
 
