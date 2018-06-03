@@ -45,6 +45,175 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 }
 
 template <typename T>
+T ImplicitStribeckSolver<T>::LimitDirectionChange(
+    const VectorX<T>& v, const VectorX<T>& dv, VectorX<T>* v_alpha_out) const {
+  DRAKE_DEMAND(v_alpha_out != nullptr);
+  DRAKE_DEMAND(v_alpha_out->size() == v.size());
+  DRAKE_DEMAND(dv.size() == v.size());
+
+  using std::sqrt;
+
+  const double v_stribeck = parameters_.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters_.tolerance;
+  const double epsilon_v2 = epsilon_v * epsilon_v;
+
+  // Alias for output v_alpha.
+  auto &v_alpha = *v_alpha_out;
+
+  // Case I: Quick exit for small changes in v.
+  const T dv_norm2 = dv.squaredNorm();
+  if (dv_norm2 < epsilon_v2) {
+    v_alpha = v + dv;
+    return 1.0;
+  }
+
+  Vector2<T> v1 = v + dv;  // v_alpha when alpha = 1.
+
+  const T v_norm = v.norm();
+  const T v1_norm = v1.norm();
+  const T x = v_norm / v_stribeck;
+  const T x1 = v1_norm / v_stribeck;
+  // From Case I, we know dv_norm > epsilon_v.
+  const T dv_norm = sqrt(dv_norm2);
+
+  // Case II: limit transition from stiction to sliding when x << 1.0 and
+  // gradients might be close to zero (due to the "soft norms").
+  if (x < parameters_.tolerance && x1 > 1.0) {
+    // we know v1 != 0  since x1 > 1.0.
+    v_alpha = v1 / v1_norm * v_stribeck / 2.0;  // |v_alpha| = v_stribeck / 2
+    // For this case dv ≈ v1 (v ≈ 0). Therefore:
+    // alpha ≈ v_stribeck / dv_norm / 2.
+    return v_stribeck / dv_norm / 2.0;
+  }
+
+  // Another quick exit.
+  if (x < 1.0) {
+    // Since we went through Case II, we know that either:
+    //   1. x1 < 1.0. Then we just make alpha = 1.0
+    //   2. x > parameters_.tolerance i.e. we are in the zone of
+    //      "strong gradients" where it is safe to take alpha = 1.0.
+    v_alpha = v + dv;
+    return 1.0;
+  } else {  // x > 1.0
+
+    // We want to detect transition from sliding (x > 1) to stiction when the
+    // velocity change passes through the circle of radius v_stribeck.
+
+    if (x1 < 1.0) {
+      // Transition happens with alpha = 1.0.
+      v_alpha = v + dv;
+      return 1.0;
+    }
+
+    // Since v_stribeck is so small, this very seldom happens. However, it is a
+    // very common case for 1D-like problems for which tangential velocities
+    // change in sign and typically if we don't do anything we miss the zero
+    // crossing.
+    // Notice that since we passed the check in Case I, we know that:
+    //  - x > 1.0
+    //  - x1 > 1.0
+    //  - dv_norm > epsilon_v (i.e. non-zero)
+    const T v_dot_dv = v.dot(dv);
+    if (v_dot_dv < 0.0) {  // Moving towards the origin.
+      T alpha = -v_dot_dv / dv_norm2;  // alpha > 0
+      if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
+        v_alpha = v + alpha * dv;  // v1.dot(v) = 0.
+        const T v_alpha_norm = v_alpha.norm();
+        if (v_alpha_norm < v_stribeck) {
+          // Velocity crossed the circle of radius v_stribeck.
+          v_alpha = v + alpha * dv;
+          return alpha;
+        }
+      }
+    }
+
+    // If we are here we know:
+    //  - x > 1.0
+    //  - x1 > 1.0
+    //  - dv_norm > epsilon_v
+    //
+    // Case III:
+    // Therefore we know changes happen entirely outside the circle of radius
+    // v_stribeck. To avoid large jumps in the direction of v (typically during
+    // strong impacts), we limit the maximum angle change between v to v1.
+    // To this end, we find a scalar 0 < alpha < 1 such that
+    // cos(theta_max) = v⋅v1/(‖v‖‖v1‖).
+    const T theta_max = parameters_.theta_max;
+    const T cmin = cos(theta_max);
+
+    // TODO: Cleanup code to solve quadratic in alpha.
+    // Now at this point at least we know:
+    //  - x > 1.0
+    //  - x1 > 1.0
+    //  - dv_norm > epsilon_v
+    // which before we did not.
+
+    T A = v.norm();
+    T B = v.dot(dv);
+    T DD = dv.norm();
+
+    //if (A < 1e-14 && D < 1e-14) continue;
+    const T cos_init = v1.dot(v) / (v1_norm + 1e-10) / (v_norm + 1e-10);
+
+    Vector2<T> valpha;
+    T alpha;
+
+
+
+    // 180 degrees direction change.
+    if (abs(1.0 + cos_init) < 1.0e-10) {
+      // Clip to near the origin since we know for sure we crossed it.
+      valpha = v / (v.norm() + 1e-14) * v_stribeck / 2.0;
+      alpha = dv.dot(valpha - v) / dv.squaredNorm();
+    } else if (cos_init > cmin || (v1_norm * v_norm) < 1.0e-14 || x < 1.0
+        || x1 < 1.0) {  // the angle change is small enough
+      alpha = 1.0;
+      valpha = v1;
+    } else { // Limit the angle change
+      T A2 = A * A;
+      T A4 = A2 * A2;
+      T cmin2 = cmin * cmin;
+
+      T a = A2 * DD * DD * cmin2 - B * B;
+      T b = 2 * A2 * B * (cmin2 - 1.0);
+      T c = A4 * (cmin2 - 1.0);
+
+      T delta = b * b - 4 * a * c;
+
+      T sqrt_delta = sqrt(max(delta, 0.0));
+
+      // There should be a positive and a negative root.
+      alpha = (-b + sqrt_delta) / a / 2.0;
+      //double alpha2 = (-b - sqrt_delta)/a/2.0;
+      if (alpha <= 0) {
+        PRINT_VAR(alpha);
+        PRINT_VAR(iter);
+        PRINT_VAR(delta);
+        PRINT_VAR(A);
+        PRINT_VAR(B);
+        PRINT_VAR(cmin);
+        PRINT_VAR(DD);
+        PRINT_VAR(cos_init);
+        PRINT_VAR(abs(1.0 + cos_init));
+        PRINT_VAR(a);
+        PRINT_VAR(b);
+        PRINT_VAR(c);
+        PRINT_VAR(v.transpose());
+        PRINT_VAR(v1.transpose());
+        PRINT_VAR(dv.transpose());
+      }
+
+      DRAKE_DEMAND(alpha > 0);
+
+      valpha = v + alpha * dv;
+    }
+
+  }
+
+}
+
+
+template <typename T>
 VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);

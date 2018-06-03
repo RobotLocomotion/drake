@@ -172,6 +172,10 @@ class ImplicitStribeckSolver {
   // x = v / v_stribeck.
   static T ModifiedStribeckPrime(const T& speed_BcAc, const T& mu);
 
+  // Returns alpha, s.t. v1 = v + alpha * dv.
+  T LimitDirectionChange(const VectorX<T>& v, const VectorX<T>& dv,
+                         VectorX<T>* v1) const;
+
   int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
 
