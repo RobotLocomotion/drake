@@ -42,13 +42,24 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
 }  // namespace
 
 Junction* RoadGeometry::NewJunction(api::JunctionId id) {
-  junctions_.push_back(std::make_unique<Junction>(id, this));
-  return junctions_.back().get();
+  junctions_.push_back(std::make_unique<Junction>(
+      id, this,
+      [this](const api::Segment* s) {
+        DRAKE_THROW_UNLESS(segment_map_.emplace(s->id(), s).second);
+      },
+      [this](const api::Lane* l) {
+        DRAKE_THROW_UNLESS(lane_map_.emplace(l->id(), l).second);
+      }));
+  Junction* junction = junctions_.back().get();
+  DRAKE_THROW_UNLESS(junction_map_.emplace(id, junction).second);
+  return junction;
 }
 
 BranchPoint* RoadGeometry::NewBranchPoint(api::BranchPointId id) {
   branch_points_.push_back(std::make_unique<BranchPoint>(id, this));
-  return branch_points_.back().get();
+  BranchPoint* branch_point = branch_points_.back().get();
+  DRAKE_THROW_UNLESS(branch_point_map_.emplace(id, branch_point).second);
+  return branch_point;
 }
 
 const api::Junction* RoadGeometry::do_junction(int index) const {
@@ -57,6 +68,30 @@ const api::Junction* RoadGeometry::do_junction(int index) const {
 
 const api::BranchPoint* RoadGeometry::do_branch_point(int index) const {
   return branch_points_[index].get();
+}
+
+template <typename T, typename U>
+T find_or_nullptr(const std::unordered_map<U, T>& map, const U& id) {
+  auto it = map.find(id);
+  return (it == map.end()) ? nullptr : it->second;
+}
+
+const api::Lane* RoadGeometry::DoGetLane(const api::LaneId& id) const {
+  return find_or_nullptr(lane_map_, id);
+}
+
+const api::Segment* RoadGeometry::DoGetSegment(const api::SegmentId& id) const {
+  return find_or_nullptr(segment_map_, id);
+}
+
+const api::Junction*
+RoadGeometry::DoGetJunction(const api::JunctionId& id) const {
+  return find_or_nullptr(junction_map_, id);
+}
+
+const api::BranchPoint*
+RoadGeometry::DoGetBranchPoint(const api::BranchPointId& id) const {
+  return find_or_nullptr(branch_point_map_, id);
 }
 
 api::RoadPosition RoadGeometry::DoToRoadPosition(

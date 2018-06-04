@@ -35,6 +35,17 @@ RoadGeometry::RoadGeometry(const api::RoadGeometryId& id,
   DRAKE_DEMAND(maximum_height >= 0);
   DRAKE_DEMAND(linear_tolerance >= 0);
   DRAKE_DEMAND(angular_tolerance >= 0);
+
+  // Create index of lanes (of the single segment, of the single junction).
+  const api::Segment* segment = junction_.segment(0);
+  for (int i = 0; i < segment->num_lanes(); ++i) {
+    const api::Lane* lane = segment->lane(i);
+    DRAKE_THROW_UNLESS(lane_map_.emplace(lane->id(), lane).second);
+    const api::BranchPoint* branch_point =
+        lane->GetBranchPoint(api::LaneEnd::kStart);
+    DRAKE_THROW_UNLESS(
+        branch_point_map_.emplace(branch_point->id(), branch_point).second);
+  }
 }
 
 const api::Junction* RoadGeometry::do_junction(int index) const {
@@ -53,6 +64,28 @@ const api::BranchPoint* RoadGeometry::do_branch_point(int index) const {
   // matter whether the start or finish BranchPoint is returned.
   return junction_.segment(0)->lane(index)->GetBranchPoint(
       api::LaneEnd::kStart);
+}
+
+const api::Lane* RoadGeometry::DoGetLane(const api::LaneId& id) const {
+  auto it = lane_map_.find(id);
+  return (it == lane_map_.end()) ? nullptr : it->second;
+}
+
+const api::Segment* RoadGeometry::DoGetSegment(const api::SegmentId& id) const {
+  DRAKE_DEMAND(junction_.num_segments() == 1);
+  const api::Segment* segment = junction_.segment(0);
+  return (id == segment->id()) ? segment : nullptr;
+}
+
+const api::Junction*
+RoadGeometry::DoGetJunction(const api::JunctionId& id) const {
+  return (id == junction_.id()) ? &junction_ : nullptr;
+}
+
+const api::BranchPoint*
+RoadGeometry::DoGetBranchPoint(const api::BranchPointId& id) const {
+  auto it = branch_point_map_.find(id);
+  return (it == branch_point_map_.end()) ? nullptr : it->second;
 }
 
 bool RoadGeometry::IsGeoPositionOnDragway(const api::GeoPosition& geo_pos)

@@ -65,6 +65,15 @@ class RoadGeometry : public api::RoadGeometry {
   // and the current maximum available index of branch_points_ vector.
   const api::BranchPoint* do_branch_point(int index) const override;
 
+  const api::Lane* DoGetLane(const api::LaneId& id) const override;
+
+  const api::Segment* DoGetSegment(const api::SegmentId& id) const override;
+
+  const api::Junction* DoGetJunction(const api::JunctionId& id) const override;
+
+  const api::BranchPoint* DoGetBranchPoint(
+      const api::BranchPointId& id) const override;
+
   // This function will abort as it's not implemented and should not be called.
   api::RoadPosition DoToRoadPosition(const api::GeoPosition& geo_pos,
                                      const api::RoadPosition* hint,

@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -69,6 +70,15 @@ class RoadGeometry final : public api::RoadGeometry {
 
   const api::BranchPoint* do_branch_point(int index) const final;
 
+  const api::Lane* DoGetLane(const api::LaneId& id) const final;
+
+  const api::Segment* DoGetSegment(const api::SegmentId& id) const final;
+
+  const api::Junction* DoGetJunction(const api::JunctionId& id) const final;
+
+  const api::BranchPoint* DoGetBranchPoint(
+      const api::BranchPointId& id) const final;
+
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_position,
       const api::RoadPosition* hint,
@@ -92,6 +102,9 @@ class RoadGeometry final : public api::RoadGeometry {
   const double linear_tolerance_{};
   const double angular_tolerance_{};
   const Junction junction_;
+  std::unordered_map<api::LaneId, const api::Lane*> lane_map_;
+  std::unordered_map<api::BranchPointId,
+                     const api::BranchPoint*> branch_point_map_;
 };
 
 }  // namespace dragway

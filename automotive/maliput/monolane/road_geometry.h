@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -48,6 +49,15 @@ class RoadGeometry : public api::RoadGeometry {
 
   const api::BranchPoint* do_branch_point(int index) const override;
 
+  const api::Lane* DoGetLane(const api::LaneId& id) const override;
+
+  const api::Segment* DoGetSegment(const api::SegmentId& id) const override;
+
+  const api::Junction* DoGetJunction(const api::JunctionId& id) const override;
+
+  const api::BranchPoint* DoGetBranchPoint(
+      const api::BranchPointId& id) const override;
+
   // Returns a RoadPosition for a lane containing the provided `geo_position`.
   // If there is no containing lane, the position is returned for the lane
   // closest to the centerline curve.  If `hint` is non-null, then the search is
@@ -67,6 +77,11 @@ class RoadGeometry : public api::RoadGeometry {
   double angular_tolerance_{};
   std::vector<std::unique_ptr<Junction>> junctions_;
   std::vector<std::unique_ptr<BranchPoint>> branch_points_;
+  std::unordered_map<api::JunctionId, const api::Junction*> junction_map_;
+  std::unordered_map<api::SegmentId, const api::Segment*> segment_map_;
+  std::unordered_map<api::LaneId, const api::Lane*> lane_map_;
+  std::unordered_map<api::BranchPointId,
+                     const api::BranchPoint*> branch_point_map_;
 };
 
 }  // namespace monolane

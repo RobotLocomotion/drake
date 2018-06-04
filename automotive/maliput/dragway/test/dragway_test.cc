@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/test_utilities/check_id_indexing.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/dragway/branch_point.h"
 #include "drake/automotive/maliput/dragway/junction.h"
@@ -388,6 +389,7 @@ TEST_F(MaliputDragwayLaneTest, SingleLane) {
 
   VerifyLaneCorrectness(lane_, kNumLanes);
   VerifyBranches(lane_, road_geometry_.get());
+  EXPECT_TRUE(api::test::CheckIdIndexing(road_geometry_.get()));
 }
 
 /*
@@ -421,6 +423,7 @@ TEST_F(MaliputDragwayLaneTest, TwoLaneDragway) {
     VerifyLaneCorrectness(lane, kNumLanes);
     VerifyBranches(lane, road_geometry_.get());
   }
+  EXPECT_TRUE(api::test::CheckIdIndexing(road_geometry_.get()));
 }
 
 // Tests dragway::RoadGeometry::ToRoadPosition() using a two-lane dragway where

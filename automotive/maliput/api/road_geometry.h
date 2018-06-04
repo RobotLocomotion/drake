@@ -3,7 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "drake/automotive/maliput/api/branch_point.h"
+#include "drake/automotive/maliput/api/junction.h"
+#include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
@@ -56,6 +60,25 @@ class RoadGeometry {
   /// @pre @p index must be >= 0 and < num_branch_points().
   const BranchPoint* branch_point(int index) const {
     return do_branch_point(index);
+  }
+
+  /// Returns the Lane identified by @p id, or `nullptr` if @p id is unknown.
+  const Lane* GetLane(const LaneId& id) const { return DoGetLane(id); }
+
+  /// Returns the Segment identified by @p id, or `nullptr` if @p id is unknown.
+  const Segment* GetSegment(const SegmentId& id) const {
+    return DoGetSegment(id);
+  }
+
+  /// Returns the Junction identified by @p id, or `nullptr` if @p id is
+  /// unknown.
+  const Junction* GetJunction(const JunctionId& id) const {
+    return DoGetJunction(id); }
+
+  /// Returns the BranchPoint identified by @p id, or `nullptr` if @p id is
+  /// unknown.
+  const BranchPoint* GetBranchPoint(const BranchPointId& id) const {
+    return DoGetBranchPoint(id);
   }
 
   /// Determines the RoadPosition corresponding to GeoPosition @p geo_position.
@@ -139,6 +162,15 @@ class RoadGeometry {
   virtual int do_num_branch_points() const = 0;
 
   virtual const BranchPoint* do_branch_point(int index) const = 0;
+
+  virtual const Lane* DoGetLane(const LaneId& id) const = 0;
+
+  virtual const Segment* DoGetSegment(const SegmentId& id) const = 0;
+
+  virtual const Junction* DoGetJunction(const JunctionId& id) const = 0;
+
+  virtual const BranchPoint* DoGetBranchPoint(
+      const BranchPointId& id) const = 0;
 
   virtual RoadPosition DoToRoadPosition(const GeoPosition& geo_pos,
                                         const RoadPosition* hint,

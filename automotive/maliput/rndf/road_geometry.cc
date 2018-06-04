@@ -28,6 +28,28 @@ const api::BranchPoint* RoadGeometry::do_branch_point(int index) const {
   return branch_points_[index].get();
 }
 
+const api::Lane* RoadGeometry::DoGetLane(const api::LaneId& id) const {
+  // TODO(maddog@tri.global) Implement when someone needs it.
+  DRAKE_ABORT();
+}
+
+const api::Segment* RoadGeometry::DoGetSegment(const api::SegmentId& id) const {
+  // TODO(maddog@tri.global) Implement when someone needs it.
+  DRAKE_ABORT();
+}
+
+const api::Junction*
+RoadGeometry::DoGetJunction(const api::JunctionId& id) const {
+  // TODO(maddog@tri.global) Implement when someone needs it.
+  DRAKE_ABORT();
+}
+
+const api::BranchPoint*
+RoadGeometry::DoGetBranchPoint(const api::BranchPointId& id) const {
+  // TODO(maddog@tri.global) Implement when someone needs it.
+  DRAKE_ABORT();
+}
+
 api::RoadPosition RoadGeometry::DoToRoadPosition(const api::GeoPosition&,
                                                  const api::RoadPosition*,
                                                  api::GeoPosition*,
