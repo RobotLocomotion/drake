@@ -86,10 +86,11 @@ class EndpointZ {
   /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
   /// and theta. theta_dot will remain the same.
   EndpointZ reverse() const {
-    if (theta_dot_.has_value()) {
-      return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
-    }
-    return EndpointZ(z_, -z_dot_, -theta_, {});
+    // if (theta_dot_.has_value()) {
+    //   return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
+    // }
+    // return EndpointZ(z_, -z_dot_, -theta_, {});
+    return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
   }
 
   double z() const { return z_; }
@@ -370,10 +371,6 @@ class Connection {
 
   /// Returns an Endpoint describing the end of the `lane_index` lane.
   Endpoint LaneEnd(int lane_index) const;
-
-  double ReferenceCurvature() const;
-
-  double LaneCurvature(int lane_index) const;
 
   /// Creates a RoadCurve that describes the reference curve of this Connection.
   std::unique_ptr<RoadCurve> CreateRoadCurve() const;

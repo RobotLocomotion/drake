@@ -1,6 +1,7 @@
 #include "drake/automotive/maliput/multilane/loader.h"
 
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <string>
 #include <tuple>
@@ -19,30 +20,26 @@ namespace maliput {
 namespace multilane {
 namespace {
 
-// Types of Endpoints based on how they are assigned in the YAML.
-enum class EndpointType {
-  kRaw,        //< A point listed in "points" YAML map.
-  kReference,  //< A point that belongs to a connection's reference curve.
-  kLane,       //< A point that belongs to a connection's lane curve.
-};
+// String literals used several times to parse endpoints. The string reference
+// must take one of the following formats:
+//
+// - Points:        points.P_ID.<forward|reverse>
+// - Connections:   connection.C_ID.<start|end>.<ref|LANE_ID>.<forward|reverse>
+//
+// Where:
+// - P_ID is the ID of the Endpoint in "points" YAML map.
+// - C_ID is the ID of the Connection.
+// - LANE_ID is a non negative integer that refers to C_ID Connection's lane.
+const char kConnections[]{"connections."};
+const char kPoints[]{"points."};
+const char kReference[]{".ref."};
+const char kStartKey[]{".start."};
+const char kEndKey[]{".end."};
+const char kForward[]{".forward"};
+const char kReverse[]{".reverse"};
 
-// Types of connection's curves.
-enum class CurveType {
-  kReferenceCurve,  //< Reference curve.
-  kLaneCurve,       //< Lane curve.
-};
-
-// A structure to hold loaded Endpoints as they are being loaded into the
-// catalog.
-struct LoadedEndpoint {
-  // Type of endpoint.
-  EndpointType type{};
-  // Parsed endpoint.
-  Endpoint endpoint{};
-  // When the endpoint is not a free one, it explicitly belongs to a
-  // connection's curve. Given that, a curvature can be assigned.
-  optional<double> curvature{};
-};
+// Converts `degrees` angle into radians.
+double deg_to_rad(double degrees) { return degrees * M_PI / 180.; }
 
 // Parses a YAML `node` and returns an api::HBounds object from it.
 // `node` must be a sequence and have two doubles. First item will be minimum
@@ -51,11 +48,6 @@ api::HBounds ParseHBounds(const YAML::Node& node) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   return api::HBounds(node[0].as<double>(), node[1].as<double>());
-}
-
-// Converts `degrees` angle into radians.
-double deg_to_rad(double degrees) {
-  return degrees * M_PI / 180.;
 }
 
 // Parses a YAML `node` and returns an EndpointXy object from it.
@@ -130,6 +122,21 @@ ArcOffset ParseArcOffset(const YAML::Node& node) {
   return ArcOffset(node[0].as<double>(), deg_to_rad(node[1].as<double>()));
 }
 
+// Parses a yaml `node` that represents a ComputationPolicy.
+// `node` must be a string scalar, with one of the following
+// values: "prefer-accuracy", "prefer-speed".
+ComputationPolicy ParseComputationPolicy(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsScalar());
+  const std::string& policy = node.Scalar();
+  if (policy == "prefer-accuracy") {
+    return ComputationPolicy::kPreferAccuracy;
+  }
+  if (policy == "prefer-speed") {
+    return ComputationPolicy::kPreferSpeed;
+  }
+  DRAKE_ABORT();
+}
+
 // Builds a LaneLayout based `node`'s lane node, the left and right shoulders.
 LaneLayout ResolveLaneLayout(const YAML::Node& node,
                              double default_left_shoulder,
@@ -151,19 +158,14 @@ LaneLayout ResolveLaneLayout(const YAML::Node& node,
   return LaneLayout(left_shoulder, right_shoulder, num_lanes, ref_lane, r_ref);
 }
 
-// Looks for the Endpoint in `xyz_catalog` given `ref` description. `ref` can
-// be either a bare Endpoint in "points" YAML map, an Endpoint that references
-// a connection's reference curve start / end, or an Endpoint that references a
-// connection's lane start / end. Either ".forward" or ".reverse" keyword must
-// be present. When ".reverse" is used, the Endpoint will be reversed.
-// Otherwise the Endpoint will be returned as is.
+// Looks for the Endpoint in `xyz_catalog` given `ref` description. `ref` should
+// be a bare Endpoint in "points" YAML map. Either ".forward" or ".reverse"
+// keyword must be present.
 // @return An optional<Endpoint> with the Endpoint or nullopt if it is not
 // found inside `xyz_catalog`.
-optional<LoadedEndpoint> FindEndpointInCatalog(
+optional<Endpoint> FindEndpointInCatalog(
     const std::string& ref,
-    const std::map<std::string, LoadedEndpoint>& xyz_catalog) {
-  static const std::string kForward{".forward"};
-  static const std::string kReverse{".reverse"};
+    const std::map<std::string, Endpoint>& xyz_catalog) {
   const std::string::size_type forward_pos = ref.rfind(kForward);
   const std::string::size_type reverse_pos = ref.rfind(kReverse);
   // Either ".forward" or ".reverse" must be present.
@@ -174,100 +176,183 @@ optional<LoadedEndpoint> FindEndpointInCatalog(
                                             ? ref.substr(0, reverse_pos)
                                             : ref.substr(0, forward_pos);
   auto it = xyz_catalog.find(catalog_reference);
-  if (it == xyz_catalog.end()) {
-    return nullopt;
-  }
-  return {{it->second.type,
-           reverse_pos != std::string::npos ? it->second.endpoint.reverse()
-                                            : it->second.endpoint,
-           it->second.curvature}};
+  return it == xyz_catalog.end() ? nullopt : optional<Endpoint>(it->second);
+}
+
+// Looks for the Connection in `connection_catalog` given `endpoint_key`
+// description. `endpoint_key` should be the token specified to reference a
+// connection, its curve, the end and the direction.
+// @return An optional<const Connection*> with the Connection or nullopt if it
+// is not found inside `connection_catalog`.
+optional<const Connection*> FindConnectionInCatalog(
+    const std::string& endpoint_key,
+    const std::map<std::string, const Connection*>& connection_catalog) {
+  const std::string::size_type connection_pos = endpoint_key.find(kConnections);
+  DRAKE_DEMAND(connection_pos != std::string::npos);
+
+  const std::string::size_type start_pos = endpoint_key.find(kStartKey);
+  const std::string::size_type end_pos = endpoint_key.find(kEndKey);
+  // Either ".start." or ".end." must be present.
+  DRAKE_DEMAND((start_pos != std::string::npos) !=
+               (end_pos != std::string::npos));
+  const std::string::size_type end_connection_id_pos =
+      std::string::npos != start_pos ? start_pos : end_pos;
+
+  const std::string connection_id =
+      endpoint_key.substr(std::strlen(kConnections),
+                          end_connection_id_pos - std::strlen(kConnections));
+  return connection_catalog.find(connection_id) == connection_catalog.end()
+             ? nullopt
+             : optional<const Connection*>(
+                   connection_catalog.at(connection_id));
+}
+
+// Returns the Direction that `endpoint_key` sets to the Endpoint / EndpointZ.
+Direction ResolveDirection(const std::string& endpoint_key) {
+  const std::string::size_type forward_pos = endpoint_key.rfind(kForward);
+  const std::string::size_type reverse_pos = endpoint_key.rfind(kReverse);
+  // Either ".forward" or ".reverse" must be present.
+  DRAKE_DEMAND((reverse_pos != std::string::npos) !=
+               (forward_pos != std::string::npos));
+  return forward_pos != std::string::npos ? Direction::kForward
+                                          : Direction::kReverse;
+}
+
+// Returns the Direction that `endpoint_key` sets to the Endpoint / EndpointZ.
+api::LaneEnd::Which ResolveEnd(const std::string& endpoint_key) {
+  const std::string::size_type start_pos = endpoint_key.find(kStartKey);
+  const std::string::size_type end_pos = endpoint_key.find(kEndKey);
+  // Either ".start." or ".end." must be present.
+  DRAKE_DEMAND((start_pos != std::string::npos) !=
+               (end_pos != std::string::npos));
+  return start_pos != std::string::npos ? api::LaneEnd::Which::kStart
+                                        : api::LaneEnd::Which::kFinish;
 }
 
 // Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
 // must go first and then a string that points to the Endpoint. It will be
-// looked for inside `xyz_catalog`. In addition, the point be assigned to
-// either a reference curve or a lane curve.
-// @return A std::pair<CurveType, optional<Endpoint>> with the type of
-// curve
-// and the point information. If the point is not found in `xyz_catalog` a
-// nullopt will be returned instead.
-std::pair<CurveType, optional<LoadedEndpoint>> ResolveEndpoint(
-    const YAML::Node& node,
-    const std::map<std::string, LoadedEndpoint>& xyz_catalog) {
+// looked for inside `xyz_catalog` or a Connection will be selected from
+// `connection_catalog`.
+// @return An optional<StartRefernece::Spec> with the point information when
+// it is possible to identify. When the point refers to a Connection that is
+// not in `connection_catalog`, nullopt is returned.
+// TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
+//                     are supported.
+optional<StartReference::Spec> ResolveEndpoint(
+    const YAML::Node& node, const std::map<std::string, Endpoint>& xyz_catalog,
+    const std::map<std::string, const Connection*>& connection_catalog) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
   // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
   //                       lane ID.
   DRAKE_DEMAND(node[0].as<std::string>() == "ref");
-  return std::make_pair(
-      CurveType::kReferenceCurve,
-      FindEndpointInCatalog(node[1].as<std::string>(), xyz_catalog));
+  DRAKE_DEMAND(node[1].IsScalar());
+  const std::string endpoint_key = node[1].as<std::string>();
+
+  // Identifies if it's querying an Endpoint from "points" or from a Connection.
+  const std::string::size_type point_pos = endpoint_key.find(kPoints);
+  if (point_pos != std::string::npos && point_pos == 0) {
+    // Endpoint in "points".
+    optional<Endpoint> endpoint =
+        FindEndpointInCatalog(endpoint_key, xyz_catalog);
+    DRAKE_DEMAND(endpoint.has_value());
+    return {
+        StartReference().at(endpoint.value(), ResolveDirection(endpoint_key))};
+  }
+  const std::string::size_type connection_pos = endpoint_key.find(kConnections);
+  if (connection_pos != std::string::npos && connection_pos == 0) {
+    // Endpoint from a connection.
+    optional<const Connection*> connection =
+        FindConnectionInCatalog(endpoint_key, connection_catalog);
+    if (!connection) {
+      return {};
+    }
+    const std::string::size_type reference_pos = endpoint_key.find(kReference);
+    // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
+    //                       the lane ID.
+    DRAKE_DEMAND(reference_pos != std::string::npos);
+
+    return {StartReference().at(*connection.value(), ResolveEnd(endpoint_key),
+                                ResolveDirection(endpoint_key))};
+  }
+  DRAKE_ABORT();
 }
 
-// Checks that `end_node` is a sequence with two elements. "ref" or "lane.NB"
-// must go first and then a string that points to the starting Endpoint. The
-// second element will be parsed as an EndpointZ.
-// @return A std::pair<CurveType, EndpointZ> whose first element is the type of
-// curve and the second one the the EndpointZ to be placed.
-std::pair<CurveType, EndpointZ> ResolveEndpointZReference(
-    const YAML::Node& end_node) {
-  DRAKE_DEMAND(end_node.IsSequence());
-  DRAKE_DEMAND(end_node.size() == 2);
+// Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
+// must go first and then a string that points to the EndpointZ, or a sequence
+// that represents an EndpointZ.
+// When the node has a sequence as its second element, it will be parsed as
+// an EndpointZ and Direction::kForward will be assumed. Otherwise, the second
+// element will be checked to be a scalar of string type. It must refer to
+// either a point in `xyz_catalog` or to an EndpointZ of any Connection in
+// `connection_catalog`.
+// @return An optional<EndRefernece::Spec> with the point information when
+// it is possible to identify. When the point refers to a Connection that is
+// not in `connection_catalog`, nullopt is returned.
+// TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
+//                     are supported.
+optional<EndReference::Spec> ResolveEndpointZ(
+    const YAML::Node& node, const std::map<std::string, Endpoint>& xyz_catalog,
+    const std::map<std::string, const Connection*>& connection_catalog) {
+  DRAKE_DEMAND(node.IsSequence());
+  DRAKE_DEMAND(node.size() == 2);
   // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference the
   //                       lane ID.
-  DRAKE_DEMAND(end_node[0].as<std::string>() == "ref");
-  return std::make_pair(CurveType::kReferenceCurve,
-                        ParseEndpointZ(end_node[1]));
+  DRAKE_DEMAND(node[0].as<std::string>() == "ref");
+  if (node[1].IsSequence()) {
+    return {EndReference().z_at(ParseEndpointZ(node[1]), Direction::kForward)};
+  } else if (node[1].IsScalar()) {
+    const std::string endpoint_key = node[1].as<std::string>();
+    // Identifies if it's querying an Endpoint from "points" or from a
+    // Connection.
+    const std::string::size_type point_pos = endpoint_key.find(kPoints);
+    if (point_pos != std::string::npos && point_pos == 0) {
+      // Endpoint in "points".
+      optional<Endpoint> endpoint =
+          FindEndpointInCatalog(endpoint_key, xyz_catalog);
+      DRAKE_DEMAND(endpoint.has_value());
+      return {EndReference().z_at(endpoint.value().z(),
+                                  ResolveDirection(endpoint_key))};
+    }
+    const std::string::size_type connection_pos =
+        endpoint_key.find(kConnections);
+    if (connection_pos != std::string::npos && connection_pos == 0) {
+      // Endpoint from a connection.
+      optional<const Connection*> connection =
+          FindConnectionInCatalog(endpoint_key, connection_catalog);
+      if (!connection) {
+        return {};
+      }
+      const std::string::size_type reference_pos =
+          endpoint_key.find(kReference);
+      // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
+      //                       the lane ID.
+      DRAKE_DEMAND(reference_pos != std::string::npos);
+      return {EndReference().z_at(*connection.value(), ResolveEnd(endpoint_key),
+                                  ResolveDirection(endpoint_key))};
+    }
+  }
+  DRAKE_ABORT();
 }
 
 // Returns a string with the following format:
 //
 // points.<`point_name`>
 std::string PointsKey(const std::string& point_name) {
-  return std::string("points.") + point_name;
+  return kPoints + point_name;
 }
 
 // Parses `points` YAML node to resolve all the endpoints in the collection.
 // `points` must be a YAML map.
-// `xyz_catalog` will be fed with the parsed endpoints from `points`. Endpoints
-// must be fully initialized, i.e. endpoint's theta_dot must be provided.
+// `xyz_catalog` will be fed with the parsed endpoints from `points`.
 // `xyz_catalog` must not be nullptr.
-void ResolveEndpointsFromPoints(
-    const YAML::Node& points,
-    std::map<std::string, LoadedEndpoint>* xyz_catalog) {
+void ResolveEndpointsFromPoints(const YAML::Node& points,
+                                std::map<std::string, Endpoint>* xyz_catalog) {
   DRAKE_DEMAND(points.IsMap());
   DRAKE_DEMAND(xyz_catalog != nullptr);
   for (const auto& p : points) {
-    const Endpoint point = ParseEndpoint(p.second);
-    DRAKE_DEMAND(point.z().theta_dot() != nullopt);
-    (*xyz_catalog)[PointsKey(p.first.as<std::string>())] = {
-        EndpointType::kRaw, point, {}};
-  }
-}
-
-// Enforces `ez_point`'s theta_dot to nullopt to make the builder adjust it to
-// match continuity constraint. Two different situations are identified:
-// - `type` == kRaw: `ez_point` was either listed in "points" YAML map or it was
-// inlined (as "z_end" value). The former will be a full EndpointZ which means
-// that the builder must keep that theta_dot value. The later may or may not
-// have a theta_dot value and the builder needs to adjust it if it is not
-// provided.
-// - `type` == kReference or `type` == kLane: `ez_point` belongs to another
-// connection curve. Consequently, the builder must adjust theta_dot to ensure
-// the continuity constraints in that connection.
-void EnforceContinuityConstraint(EndpointType type, EndpointZ* ez_point) {
-  DRAKE_DEMAND(ez_point != nullptr);
-
-  switch (type) {
-    case EndpointType::kRaw: {
-      break;
-    }
-    case EndpointType::kReference:
-    case EndpointType::kLane: {
-      ez_point->get_mutable_theta_dot() = {};
-      break;
-    }
-    default: { DRAKE_ABORT(); }
+    (*xyz_catalog)[PointsKey(p.first.as<std::string>())] =
+        ParseEndpoint(p.second);
   }
 }
 
@@ -276,7 +361,8 @@ void EnforceContinuityConstraint(EndpointType type, EndpointZ* ez_point) {
 // connections").
 const Connection* MaybeMakeConnection(
     std::string id, const YAML::Node& node,
-    const std::map<std::string, LoadedEndpoint>& xyz_catalog,
+    const std::map<std::string, Endpoint>& xyz_catalog,
+    const std::map<std::string, const Connection*>& connection_catalog,
     BuilderBase* builder, double default_left_shoulder,
     double default_right_shoulder) {
   DRAKE_DEMAND(node.IsMap());
@@ -301,45 +387,25 @@ const Connection* MaybeMakeConnection(
       node["length"] ? Connection::kLine : Connection::kArc;
 
   // Resolve start endpoint.
-  std::pair<CurveType, optional<LoadedEndpoint>> start_point =
-      ResolveEndpoint(node["start"], xyz_catalog);
-  if (!(start_point.second)) {
+  // TODO(agalbachicar): Once the Builder can create lane-connected
+  //                     segments, the return type should handle also
+  //                     StartLane::Spec.
+  optional<StartReference::Spec> start_spec =
+      ResolveEndpoint(node["start"], xyz_catalog, connection_catalog);
+  if (!start_spec.has_value()) {
     return nullptr;
   }  // "Try to resolve later."
+
+  // Resolve end endpoint.
   // TODO(agalbachicar): Once the Builder can create lane-connected
-  //                     segments, this requirement should be removed and
-  //                     appropriate continuity constraint must be applied.
-  DRAKE_DEMAND(start_point.first == CurveType::kReferenceCurve);
-  EnforceContinuityConstraint(start_point.second->type,
-                              &(start_point.second->endpoint.get_mutable_z()));
-
-  // Resolve end endpoint
-  EndpointZ ez_point{};
-  if (node["explicit_end"]) {
-    std::pair<CurveType, optional<LoadedEndpoint>> end_point =
-        ResolveEndpoint(node["explicit_end"], xyz_catalog);
-    if (!(end_point.second)) {
-      return nullptr;
-    }  // "Try to resolve later."
-    // TODO(agalbachicar): Once the Builder can create lane-connected
-    //                     segments, this requirement should be removed and
-    //                     appropriate continuity constraint must be applied.
-    DRAKE_DEMAND(end_point.first == CurveType::kReferenceCurve);
-    EnforceContinuityConstraint(end_point.second->type,
-                                &(end_point.second->endpoint.get_mutable_z()));
-    ez_point = end_point.second->endpoint.z();
-  } else {
-    std::pair<CurveType, EndpointZ> end_z_point =
-        ResolveEndpointZReference(node["z_end"]);
-    // TODO(agalbachicar): Once the Builder can create lane-connected
-    //                     segments, this requirement should be removed and
-    //                     appropriate continuity constraint must be applied.
-    DRAKE_DEMAND(end_z_point.first == CurveType::kReferenceCurve);
-    EnforceContinuityConstraint(EndpointType::kRaw, &(end_z_point.second));
-    ez_point = end_z_point.second;
-  }
-
-  // Call appropriate Builder method.
+  //                     segments, the return type should handle also
+  //                     EndLane::Spec.
+  optional<EndReference::Spec> end_spec = ResolveEndpointZ(
+      node["explicit_end"] ? node["explicit_end"] : node["z_end"], xyz_catalog,
+      connection_catalog);
+  if (!end_spec.has_value()) {
+    return nullptr;
+  }  // "Try to resolve later."
 
   // TODO(agalbachicar)    Once the API of the Builder is finished, support for
   //                       the alternative API is needed and the format may
@@ -347,81 +413,17 @@ const Connection* MaybeMakeConnection(
   //                       this code covers Builder's reference-curve API.
   switch (geometry_type) {
     case Connection::kLine: {
-      return builder->Connect(
-          id, lane_layout,
-          StartReference().at(start_point.second->endpoint,
-                              Direction::kForward),
-          ParseLineOffset(node["length"]),
-          EndReference().z_at(ez_point, Direction::kForward));
+      return builder->Connect(id, lane_layout, start_spec.value(),
+                              ParseLineOffset(node["length"]),
+                              end_spec.value());
     }
     case Connection::kArc: {
-      return builder->Connect(
-          id, lane_layout,
-          StartReference().at(start_point.second->endpoint,
-                              Direction::kForward),
-          ParseArcOffset(node["arc"]),
-          EndReference().z_at(ez_point, Direction::kForward));
+      return builder->Connect(id, lane_layout, start_spec.value(),
+                              ParseArcOffset(node["arc"]), end_spec.value());
     }
     default: {
       DRAKE_ABORT();
     }
-  }
-}
-
-// Parses a yaml `node` that represents a ComputationPolicy.
-// `node` must be a string scalar, with one of the following
-// values: "prefer-accuracy", "prefer-speed".
-ComputationPolicy ResolveComputationPolicy(const YAML::Node& node) {
-  DRAKE_DEMAND(node.IsScalar());
-  const std::string& policy = node.Scalar();
-  if (policy == "prefer-accuracy") {
-    return ComputationPolicy::kPreferAccuracy;
-  }
-  if (policy == "prefer-speed") {
-    return ComputationPolicy::kPreferSpeed;
-  }
-  DRAKE_ABORT();
-}
-
-// Returns a string with the following format:
-//
-// connections.<`id`>.<start|end>.<`lane_index`>
-//
-// When `is_start` is true "start" is used, Otherwise, "end" is used.
-std::string LaneEndpointKey(const std::string& id, int lane_index,
-                            bool is_start) {
-  return std::string("connections.") + id + (is_start ? ".start" : ".end") +
-         "." + std::to_string(lane_index);
-}
-
-// Returns a string with the following format:
-//
-// connections.<`id`>.<start|end>.ref
-//
-// When `is_start` is true "start" is used, Otherwise, "end" is used.
-std::string ReferenceCurveEndpointKey(const std::string& id, bool is_start) {
-  return std::string("connections.") + id +
-         (is_start ? ".start.ref" : ".end.ref");
-}
-
-// Fills in `xyz_catalog` with all start and end endpoints of `conn`'s curves.
-void FillConnectionEndpointsInCatalog(
-    const Connection& conn,
-    std::map<std::string, LoadedEndpoint>* xyz_catalog) {
-  DRAKE_DEMAND(xyz_catalog != nullptr);
-
-  double curvature = conn.ReferenceCurvature();
-  (*xyz_catalog)[ReferenceCurveEndpointKey(conn.id(), true)] = {
-      EndpointType::kReference, conn.start(), {curvature}};
-  (*xyz_catalog)[ReferenceCurveEndpointKey(conn.id(), false)] = {
-      EndpointType::kReference, conn.end(), {curvature}};
-
-  for (int i = 0; i < conn.num_lanes(); ++i) {
-    curvature = conn.LaneCurvature(i);
-    (*xyz_catalog)[LaneEndpointKey(conn.id(), i, true)] = {
-        EndpointType::kLane, conn.LaneStart(i), {curvature}};
-    (*xyz_catalog)[LaneEndpointKey(conn.id(), i, false)] = {
-        EndpointType::kLane, conn.LaneEnd(i), {curvature}};
   }
 }
 
@@ -454,16 +456,15 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
   const double scale_length = mmb["scale_length"].as<double>();
   DRAKE_DEMAND(scale_length > 0.);
   const ComputationPolicy computation_policy =
-      ResolveComputationPolicy(mmb["computation_policy"]);
+      ParseComputationPolicy(mmb["computation_policy"]);
 
-  auto builder =
-      builder_factory.Make(lane_width, h_bounds(mmb["elevation_bounds"]),
-                           linear_tolerance, angular_tolerance, scale_length,
-                           computation_policy);
+  auto builder = builder_factory.Make(
+      lane_width, ParseHBounds(mmb["elevation_bounds"]), linear_tolerance,
+      angular_tolerance, scale_length, computation_policy);
   DRAKE_DEMAND(builder != nullptr);
 
   drake::log()->debug("loading points !");
-  std::map<std::string, LoadedEndpoint> xyz_catalog;
+  std::map<std::string, Endpoint> xyz_catalog;
   ResolveEndpointsFromPoints(mmb["points"], &xyz_catalog);
 
   drake::log()->debug("loading raw connections !");
@@ -482,18 +483,15 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
     const size_t cooked_before_this_pass = cooked_connections.size();
     for (const auto& r : raw_connections) {
       const std::string id = r.first;
-      const Connection* conn =
-          MaybeMakeConnection(id, r.second, xyz_catalog, builder.get(),
-                              default_left_shoulder, default_right_shoulder);
+      const Connection* conn = MaybeMakeConnection(
+          id, r.second, xyz_catalog, cooked_connections, builder.get(),
+          default_left_shoulder, default_right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);
         continue;
       }
       drake::log()->debug("...cooked '{}'", id);
       cooked_connections[id] = conn;
-      // Adds reference curve start / end Endpoints as well as lanes start /
-      // end Endpoints.
-      FillConnectionEndpointsInCatalog(*conn, &xyz_catalog);
     }
     DRAKE_DEMAND(cooked_connections.size() > cooked_before_this_pass);
     for (const auto& c : cooked_connections) {

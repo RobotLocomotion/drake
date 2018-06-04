@@ -47,10 +47,14 @@ GTEST_TEST(StartReferenceSpecTest, Connection) {
   const double kScaleLength{1.};
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
-  const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
-  const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
-  const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
-                        1.5, LineOffset(10.), kLinearTolerance, kScaleLength,
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
+  const EndpointXy kStartXy{1., 2., 3.};
+  const LineOffset kLineOffset{10.};
+  const EndpointXy kEndXy{1. + 10. * std::cos(3.), 2. + 10. * std::sin(3.), 3.};
+  const Endpoint kStartEndpoint{kStartXy, kFlatZ};
+  const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
+                        kLineOffset, kLinearTolerance, kScaleLength,
                         kComputationPolicy);
   const double kVeryExact{1e-15};
 
@@ -102,12 +106,17 @@ GTEST_TEST(EndReferenceSpecTest, Endpoint) {
 
 // EndReference::Spec using a connection's reference curve.
 GTEST_TEST(EndReferenceSpecTest, Connection) {
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
   const EndpointZ kFlatZ{0., 0., 0., 0.};
   const EndpointXy kStartXy{1., 2., 3.};
   const Endpoint kStartEndpoint{kStartXy, kFlatZ};
   const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
   const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
-                        LineOffset(10.));
+                        LineOffset(10.), kLinearTolerance, kScaleLength,
+                        kComputationPolicy);
   const double kVeryExact{1e-15};
 
   const EndReference::Spec forward_start_dut =
@@ -659,6 +668,9 @@ class MultilaneBuilderPrimitiveContinuityConstraintTest
   const api::HBounds kElevationBounds{0., 5.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
   const EndpointZ kStartZ{1., 2., M_PI / 6., {}};
   const double kStartHeading{-M_PI / 4.};
   const Endpoint kStartEndpoint{{0., 0., kStartHeading}, kStartZ};
@@ -668,7 +680,8 @@ class MultilaneBuilderPrimitiveContinuityConstraintTest
 // Checks how theta_dot is adjusted at the end points of the connection and set
 // to zero always because of infinite curvature radius of a line.
 TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
   const LineOffset kLineOffset(50.);
   auto c0 =
       b.Connect("c0", kLaneLayout,
@@ -689,7 +702,8 @@ TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
 // Checks how theta_dot is adjusted at the end points of the connection based
 // on curvature and angular displacement.
 TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
-  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
   const double kRadius = 30.;
   const double kDTheta = 0.5 * M_PI;
   auto counter_clockwise_conn =
