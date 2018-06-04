@@ -216,8 +216,8 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Make contact solver when the plant is discrete.
   if (is_discrete()) {
     implicit_stribeck_solver_ =
-        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
-    typename ImplicitStribeckSolver<T>::Parameters solver_parameters;
+        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(num_velocities());
+    implicit_stribeck::Parameters solver_parameters;
     solver_parameters.stiction_tolerance = stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
   }
@@ -791,9 +791,11 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   implicit_stribeck_solver_->SetProblemData(&M0, &D, &p_star, &fn, &mu);
 
   // Solver for the generalized contact forces.
-  const VectorX<T> tau_f = implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  implicit_stribeck::ComputationInfo info = implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  DRAKE_DEMAND(info == implicit_stribeck::Success);
+  const VectorX<T>& tau_f = implicit_stribeck_solver_->get_generalized_forces();
 
-  const typename ImplicitStribeckSolver<T>::IterationStats& stats =
+  const implicit_stribeck::IterationStats& stats =
       implicit_stribeck_solver_->get_iteration_statistics();
 
   std::ofstream outfile;
