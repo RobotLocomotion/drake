@@ -210,11 +210,14 @@ class ImplicitStribeckSolver {
       Rk.resize(nv);
       Delta_vk.resize(nv);
       Jk.resize(nv, nv);
+      Jk_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
     }
     VectorX<T> vk;
     VectorX<T> Rk;
     MatrixX<T> Jk;
     VectorX<T> Delta_vk;
+    // Factorization for the Newton-Raphson Jacobian.
+    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> Jk_ldlt;
   };
   mutable FixedSizeWorkspace fixed_size_workspace_;
 

@@ -227,6 +227,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& Delta_vk = fixed_size_workspace_.Delta_vk;
   auto& Rk = fixed_size_workspace_.Rk;
   auto& Jk = fixed_size_workspace_.Jk;
+  auto& Jk_ldlt = *fixed_size_workspace_.Jk_ldlt;
 
   // Convenient aliases to variable size workspace variables.
   auto vtk = variable_size_workspace_.mutable_vt();
@@ -377,7 +378,8 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    Delta_vk = Jk.llt().solve(-Rk);
+    Jk_ldlt.compute(Jk);  // Update factorization.
+    Delta_vk = Jk_ldlt.solve(-Rk);
 
     // Since we keep D constant we have that:
     // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
