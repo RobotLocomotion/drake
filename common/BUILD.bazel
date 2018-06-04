@@ -273,6 +273,26 @@ drake_cc_library(
     ],
 )
 
+# Provides an anchor for finding resources.
+drake_cc_binary(
+    name = "libdrake_marker.so",
+    srcs = [
+        "drake_marker.cc",
+        "drake_marker.h",
+    ],
+    linkshared = 1,
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "drake_marker_shared_library",
+    srcs = ["libdrake_marker.so"],
+    hdrs = ["drake_marker.h"],
+    tags = ["exclude_from_package"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
+)
+
 drake_cc_library(
     name = "find_resource",
     srcs = [
@@ -292,6 +312,7 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":drake_marker_shared_library",
         ":essential",
         "@spruce",
     ],
@@ -473,7 +494,10 @@ drake_py_binary(
 install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
-    targets = [":resource_tool"],
+    targets = [
+        ":libdrake_marker.so",
+        ":resource_tool",
+    ],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
     # in the installed path.  For now, we'll just specify it manually.
