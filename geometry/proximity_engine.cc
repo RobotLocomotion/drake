@@ -1,6 +1,8 @@
 #include "drake/geometry/proximity_engine.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <unordered_map>
 #include <utility>
 
@@ -9,6 +11,7 @@
 #include <fcl/narrowphase/collision_request.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/sorted_vectors_have_intersection.h"
 
 namespace drake {
 namespace geometry {
@@ -43,7 +46,11 @@ Isometry3<double> convert(
 }
 
 // Utilities/functions for working with the encoding of collision object index
-// and mobility type in the fcl::CollisionObject user data field.
+// and mobility type in the fcl::CollisionObject user data field. The encoded
+// data produces a value that is guaranteed to be unique across all geometries.
+// The guarantee arises from the fact that it's an engine index combined with
+// a bit reporting anchored vs dynamic geometry; every geometry is uniquely
+// identified by its engine index and its dynamic/anchored state.
 class EncodedData {
  public:
   EncodedData(int index, bool is_dynamic)
@@ -55,6 +62,14 @@ class EncodedData {
 
   explicit EncodedData(const fcl::CollisionObject<double>& fcl_object)
       : data_(reinterpret_cast<uintptr_t>(fcl_object.getUserData())) {}
+
+  static EncodedData encode_dynamic(GeometryIndex index) {
+    return EncodedData(index, true);
+  }
+
+  static EncodedData encode_anchored(AnchoredGeometryIndex index) {
+    return EncodedData(index, false);
+  }
 
   // Sets the encoded data to be dynamic.
   void set_dynamic() { data_ |= kIsDynamicMask; }
@@ -82,7 +97,9 @@ class EncodedData {
     return is_dynamic() ? dynamic_map[i] : anchored_map[i];
   }
 
- private:
+  // Reports the encoded data.
+  uintptr_t encoded_data() const { return data_; }
+
   // Fcl Collision objects allow for user data. We're storing *two* pieces of
   // information: the engine index of the corresponding geometry and the
   // _mobility_ type (i.e., dynamic vs anchored). We do this by mangling bits.
@@ -97,6 +114,7 @@ class EncodedData {
   static const uintptr_t kIsDynamicMask = uintptr_t{1}
                                           << (sizeof(void*) * 8 - 1);
 
+ private:
   // The encoded data - index and mobility type.
   // We're using an unsigned value here because:
   //   - Bitmasking games are typically more intuitive with unsigned values
@@ -105,15 +123,88 @@ class EncodedData {
   uintptr_t data_{};
 };
 
+// A simple class for providing collision filtering functionality similar to
+// that found in RigidBodyTree but made compatible with fcl. The majority of
+// this code is lifted verbatim from drake/multibody/collision/element.{h, cc}.
+//
+// Note: I'm using uintptr_t instead of EncodedData directly to avoid having
+// to hash EncodedData.
+// TODO(SeanCurtis-TRI): Update this with the new collision filter mechanism and
+// algorithms.
+class CollisionFilterLegacy {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterLegacy)
+
+  CollisionFilterLegacy() = default;
+
+  void AddGeometry(uintptr_t id) {
+    collision_cliques_.insert({id, std::vector<int>()});
+  }
+
+  // NOTE: This assumes that `id_A` and `id_B` will *never* both be anchored
+  // geometries. The structure of the collision query logic precludes that
+  // possibility; dynamic is collided against dynamic and dynamic is collided
+  // against anchored, but anchored is never collided against anchored.
+  bool CanCollideWith(uintptr_t id_A, uintptr_t id_B) const {
+    // These ids should all be registered with the filter machinery.
+    DRAKE_ASSERT(collision_cliques_.count(id_A) == 1);
+    DRAKE_ASSERT(collision_cliques_.count(id_B) == 1);
+
+    bool excluded = id_A == id_B ||
+                    SortedVectorsHaveIntersection(collision_cliques_.at(id_A),
+                                                  collision_cliques_.at(id_B));
+
+    return !excluded;
+  }
+
+  void AddToCollisionClique(uintptr_t geometry_id, int clique_id) {
+    DRAKE_ASSERT(collision_cliques_.count(geometry_id) == 1);
+
+    std::vector<int>& cliques = collision_cliques_[geometry_id];
+    // Order(N) insertion.
+    // Member Element::collision_cliques_ is a sorted vector so that checking if
+    // two collision elements belong to a common group can be performed
+    // efficiently in order N.
+    // See Element::CanCollideWith() and Element::collision_cliques_ for
+    // explanation.
+    auto it = std::lower_bound(cliques.begin(), cliques.end(), clique_id);
+
+    // This test prevents duplicate clique ids from being added.
+    if (it == cliques.end() || clique_id < *it)
+      cliques.insert(it, clique_id);
+  }
+
+  int num_cliques(uintptr_t geometry_id) const {
+    DRAKE_ASSERT(collision_cliques_.count(geometry_id) == 1);
+    return static_cast<int>(collision_cliques_.at(geometry_id).size());
+  }
+
+  // This method is not thread safe.
+  int next_clique_id() { return next_available_clique_++; }
+
+  // Test support; to detect when cliques are generated.
+  int peek_next_clique() const { return next_available_clique_; }
+
+ private:
+  // A map between the EncodedData::encoded_data() value for a geometry and
+  // its set of cliques.
+  std::unordered_map<uintptr_t, std::vector<int>> collision_cliques_;
+  int next_available_clique_{0};
+};
+
 // Struct for use in SingleCollisionCallback(). Contains the collision request
 // and accumulates results in a drake::multibody::collision::PointPair vector.
 struct CollisionData {
   CollisionData(const std::vector<GeometryId>* dynamic_map_in,
-                const std::vector<GeometryId>* anchored_map_in)
-      : dynamic_map(*dynamic_map_in), anchored_map(*anchored_map_in) {}
+                const std::vector<GeometryId>* anchored_map_in,
+                const CollisionFilterLegacy* collision_filter_in)
+      : dynamic_map(*dynamic_map_in),
+        anchored_map(*anchored_map_in),
+        collision_filter(*collision_filter_in) {}
   // Maps so the penetration call back can map from engine index to geometry id.
   const std::vector<GeometryId>& dynamic_map;
   const std::vector<GeometryId>& anchored_map;
+  const CollisionFilterLegacy& collision_filter;
 
   // Collision request
   fcl::CollisionRequestd request;
@@ -134,15 +225,18 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
   const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
 
-  // TODO(SeanCurtis-TRI): Introduce collision filtering here.
-  const bool is_filtered = false;
+  auto& collision_data = *static_cast<CollisionData*>(callback_data);
+  const std::vector<GeometryId>& dynamic_map = collision_data.dynamic_map;
+  const std::vector<GeometryId>& anchored_map = collision_data.anchored_map;
+  EncodedData encoding_A(fcl_object_A);
+  EncodedData encoding_B(fcl_object_B);
 
-  if (!is_filtered) {
+  const bool can_collide = collision_data.collision_filter.CanCollideWith(
+      encoding_A.encoded_data(), encoding_B.encoded_data());
+
+  if (can_collide) {
     // Unpack the callback data
-    auto& collision_data = *static_cast<CollisionData*>(callback_data);
     const fcl::CollisionRequestd& request = collision_data.request;
-    const std::vector<GeometryId> dynamic_map = collision_data.dynamic_map;
-    const std::vector<GeometryId> anchored_map = collision_data.anchored_map;
 
     // This callback only works for a single contact, this confirms a request
     // hasn't been made for more contacts.
@@ -178,10 +272,8 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       penetration.depth = depth;
       // The engine doesn't know geometry ids; it returns engine indices. The
       // caller must map engine indices to geometry ids.
-      penetration.id_A =
-          EncodedData(fcl_object_A).id(dynamic_map, anchored_map);
-      penetration.id_B =
-          EncodedData(fcl_object_B).id(dynamic_map, anchored_map);
+      penetration.id_A = encoding_A.id(dynamic_map, anchored_map);
+      penetration.id_B = encoding_B.id(dynamic_map, anchored_map);
       penetration.p_WCa = p_WAc;
       penetration.p_WCb = p_WBc;
       penetration.nhat_BA_W = drake_normal;
@@ -306,6 +398,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(other.dynamic_tree_, object_map, &dynamic_tree_);
     BuildTreeFromReference(other.anchored_tree_, object_map, &anchored_tree_);
+    collision_filter_ = other.collision_filter_;
   }
 
   // Only the copy constructor is used to facilitate copying of the parent
@@ -328,6 +421,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                           &object_map);
     CopyFclObjectsOrThrow(dynamic_objects_, &engine->dynamic_objects_,
                           &object_map);
+    engine->collision_filter_ = this->collision_filter_;
 
     // Build new AABB trees from the input AABB trees.
     BuildTreeFromReference(dynamic_tree_, object_map, &engine->dynamic_tree_);
@@ -343,9 +437,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     shape.Reify(this, &fcl_object);
     dynamic_tree_.registerObject(fcl_object.get());
     GeometryIndex index(static_cast<int>(dynamic_objects_.size()));
-    EncodedData(index, true /* is dynamic */).store_in(fcl_object.get());
+    EncodedData encoding(index, true /* is dynamic */);
+    encoding.store_in(fcl_object.get());
     dynamic_objects_.emplace_back(std::move(fcl_object));
-
+    collision_filter_.AddGeometry(encoding.encoded_data());
     return index;
   }
 
@@ -358,8 +453,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     fcl_object->setTransform(X_WG);
     anchored_tree_.registerObject(fcl_object.get());
     AnchoredGeometryIndex index(static_cast<int>(anchored_objects_.size()));
-    EncodedData(index, false /* is dynamic */).store_in(fcl_object.get());
+    EncodedData encoding(index, false /* is dynamic */);
+    encoding.store_in(fcl_object.get());
     anchored_objects_.emplace_back(std::move(fcl_object));
+    collision_filter_.AddGeometry(encoding.encoded_data());
 
     return index;
   }
@@ -425,7 +522,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const {
     std::vector<PenetrationAsPointPair<double>> contacts;
-    CollisionData collision_data{&dynamic_map, &anchored_map};
+    // CollisionData stores references to the provided data structures.
+    CollisionData collision_data{&dynamic_map, &anchored_map,
+                                 &collision_filter_};
     collision_data.contacts = &contacts;
     collision_data.request.num_max_contacts = 1;
     collision_data.request.enable_contact = true;
@@ -450,6 +549,95 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             &anchored_tree_),
         &collision_data, SingleCollisionCallback);
     return contacts;
+  }
+
+  void ExcludeCollisionsWithin(
+      const std::unordered_set<GeometryIndex>& dynamic,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored) {
+    // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
+
+    // There are no collisions between anchored geometries. So, to meaningfully
+    // add collisions, there must be dynamic geometry. Only perform work if:
+    //   1. There are multiple dynamic geometries, or
+    //   2. There are non-zero numbers of dynamic *and* anchored geometries.
+    //
+    // NOTE: Given the set of geometries G, if the pair (gᵢ, gⱼ), gᵢ, gⱼ ∈ G
+    // is already filtered, this *will* add a redundant clique.
+    if (dynamic.size() > 1 || (dynamic.size() > 0 && anchored.size() > 0)) {
+      int clique = collision_filter_.next_clique_id();
+      for (auto index : dynamic) {
+        EncodedData encoding(index, true /* is dynamic */);
+        collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
+      }
+      for (auto index : anchored) {
+        EncodedData encoding(index, false /* is dynamic */);
+        collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
+      }
+    }
+  }
+
+  void ExcludeCollisionsBetween(
+      const std::unordered_set<GeometryIndex>& dynamic1,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored1,
+      const std::unordered_set<GeometryIndex>& dynamic2,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored2) {
+    // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
+
+    // NOTE: This is a brute-force implementation. It does not claim to be
+    // optimal in any way. It merely guarantees the semantics given. If the
+    // two sets of geometries are in fact the *same* set (i.e., this is used
+    // to create the same effect as ExcludeCollisionsWithin), it will work, but
+    // be horribly inefficient (with each geometry picking up N cliques).
+    using std::transform;
+    using std::back_inserter;
+    using std::vector;
+
+    // There are no collisions between anchored geometries. So, there must be
+    // dynamic geometry for work to be necessary.
+    if (dynamic1.size() > 0 || dynamic2.size() > 0) {
+      vector<EncodedData> group1;
+      transform(dynamic1.begin(), dynamic1.end(), back_inserter(group1),
+                EncodedData::encode_dynamic);
+      transform(anchored1.begin(), anchored1.end(), back_inserter(group1),
+                EncodedData::encode_anchored);
+      vector<EncodedData> group2;
+      transform(dynamic2.begin(), dynamic2.end(), back_inserter(group2),
+                EncodedData::encode_dynamic);
+      transform(anchored2.begin(), anchored2.end(), back_inserter(group2),
+                EncodedData::encode_anchored);
+
+      // O(N²) process which generates O(N²) cliques. For the two collision
+      // groups G and H, each pair (g, h), g ∈ G, h ∈ H, requires a unique
+      // clique. If the cliques were not unique, then there would be a pair
+      // (a, b) where a, b ∈ G or a, b ∈ H where a and b have the same clique.
+      // And that would lead to removal of self-collision within one of the
+      // collision groups.
+      //
+      // NOTE: Using cliques for this purpose is *horribly* inefficient. This is
+      // exactly what collision filter groups are best at.
+      for (auto encoding1 : group1) {
+        for (auto encoding2 : group2) {
+          if ((encoding1.is_dynamic() || encoding2.is_dynamic()) &&
+              collision_filter_.CanCollideWith(encoding1.encoded_data(),
+                                               encoding2.encoded_data())) {
+            int clique = collision_filter_.next_clique_id();
+            collision_filter_.AddToCollisionClique(encoding2.encoded_data(),
+                                                   clique);
+            collision_filter_.AddToCollisionClique(encoding1.encoded_data(),
+                                                   clique);
+          }
+        }
+      }
+    }
+  }
+
+  int get_next_clique() {
+    return collision_filter_.next_clique_id();
+  }
+
+  void set_clique(GeometryIndex index, int clique) {
+    EncodedData encoding(index, true /* is dynamic */);
+    collision_filter_.AddToCollisionClique(encoding.encoded_data(), clique);
   }
 
   // Testing utilities
@@ -498,6 +686,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return false;
   }
 
+  int peek_next_clique() const {
+    return collision_filter_.peek_next_clique();
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -535,6 +727,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // All of the *anchored* collision elements (spanning *all* sources). Their
   // AnchoredGeometryIndex maps to their position in *this* vector.
   std::vector<std::unique_ptr<fcl::CollisionObject<double>>> anchored_objects_;
+
+  // The mechanism for dictating collision filtering.
+  CollisionFilterLegacy collision_filter_;
 };
 
 template <typename T>
@@ -623,11 +818,44 @@ ProximityEngine<T>::ComputePointPairPenetration(
   return impl_->ComputePointPairPenetration(dynamic_map, anchored_map);
 }
 
+template <typename T>
+void ProximityEngine<T>::ExcludeCollisionsWithin(
+    const std::unordered_set<GeometryIndex>& dynamic,
+    const std::unordered_set<AnchoredGeometryIndex>& anchored) {
+  impl_->ExcludeCollisionsWithin(dynamic, anchored);
+}
+
+template <typename T>
+void ProximityEngine<T>::ExcludeCollisionsBetween(
+    const std::unordered_set<GeometryIndex>& dynamic1,
+    const std::unordered_set<AnchoredGeometryIndex>& anchored1,
+    const std::unordered_set<GeometryIndex>& dynamic2,
+    const std::unordered_set<AnchoredGeometryIndex>& anchored2) {
+  impl_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2, anchored2);
+}
+
+// Client-attorney interface for GeometryState to manipulate collision filters.
+
+template <typename T>
+int ProximityEngine<T>::get_next_clique() {
+  return impl_->get_next_clique();
+}
+
+template <typename T>
+void ProximityEngine<T>::set_clique(GeometryIndex index, int clique) {
+  impl_->set_clique(index, clique);
+}
+
 // Testing utilities
 
 template <typename T>
 bool ProximityEngine<T>::IsDeepCopy(const ProximityEngine<T>& other) const {
   return impl_->IsDeepCopy(*other.impl_);
+}
+
+template <typename T>
+int ProximityEngine<T>::peek_next_clique() const {
+  return impl_->peek_next_clique();
 }
 
 }  // namespace internal

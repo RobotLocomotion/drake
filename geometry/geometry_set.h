@@ -17,7 +17,7 @@ namespace geometry {
 
  This class does no validation; it is a simple collection. Ultimately, it serves
  as the operand of SceneGraph operations (e.g.,
- SceneGraph::DisallowSelfCollision()). If the _operation_ has a particular
+ SceneGraph::ExcludeCollisionsWithin()). If the _operation_ has a particular
  prerequisite on the members of a %GeometrySet, it is the operation's
  responsibility to enforce that requirement.
 
@@ -130,6 +130,12 @@ class GeometrySet {
 
   template <typename Container>
   explicit GeometrySet(const Container& geometries,
+                       std::initializer_list<FrameId> frames) {
+    Add(geometries);
+    Add(frames);
+  }
+
+  explicit GeometrySet(std::initializer_list<GeometryId> geometries,
                        std::initializer_list<FrameId> frames) {
     Add(geometries);
     Add(frames);

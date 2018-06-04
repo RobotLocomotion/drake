@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -15,6 +16,12 @@ namespace geometry {
 template <typename T> class GeometryState;
 
 namespace internal {
+
+#ifndef DRAKE_DOXYGEN_CXX
+// This provides GeometryState limited "friend" access to ProximityEngine for
+// the purpose of collision filters.
+class GeometryStateCollisionFilterAttorney;
+#endif
 
 // TODO(SeanCurtis-TRI): Swap Isometry3 for the new Transform class.
 
@@ -142,7 +149,49 @@ class ProximityEngine {
 
   //@}
 
+  /** @name               Collision filters
+
+   This interface allows control over which pairs of geometries can even be
+   considered for collision.
+
+   See @ref scene_graph_collision_filtering "Scene Graph Collision Filtering"
+   for more details.
+   */
+  //@{
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
+   `G = dynamic ⋃ anchored = {g₀, g₁, ..., gₙ}`.
+   @param[in]   dynamic     The set of _dynamic_ geometry indexes for which no
+                            collisions can be reported.
+   @param[in]   anchored    The set of _anchored_ geometry indices for which no
+                            collisions can be reported.  */
+  void ExcludeCollisionsWithin(
+      const std::unordered_set<GeometryIndex>& dynamic,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored);
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
+   `A = dynamic1 ⋃ anchored1 = {a₀, a₁, ..., aₘ}` and
+   `B = dynamic2 ⋃ anchored2 = {b₀, b₁, ..., bₙ}`. This does _not_
+   preclude collisions between members of the _same_ set.   */
+  void ExcludeCollisionsBetween(
+      const std::unordered_set<GeometryIndex>& dynamic1,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored1,
+      const std::unordered_set<GeometryIndex>& dynamic2,
+      const std::unordered_set<AnchoredGeometryIndex>& anchored2);
+
+  //@}
+
  private:
+  // Class to give GeometryState access to clique management.
+  friend class GeometryStateCollisionFilterAttorney;
+
+  // Retrieves the next available clique.
+  int get_next_clique();
+
+  void set_clique(GeometryIndex index, int clique);
+
   ////////////////////////////////////////////////////////////////////////////
 
   // Testing utilities:
@@ -152,6 +201,9 @@ class ProximityEngine {
 
   // Reports true if other is detectably a deep copy of this engine.
   bool IsDeepCopy(const ProximityEngine<T>& other) const;
+
+  // Reveals what the next generated clique will be (without changing it).
+  int peek_next_clique() const;
 
   ////////////////////////////////////////////////////////////////////////////
 
@@ -173,6 +225,33 @@ class ProximityEngine {
   // Facilitate testing.
   friend class ProximityEngineTester;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+// This is an attorney-client pattern providing GeometryState limited access to
+// the collision filtering mechanism of the ProximityEngine in order to be able
+// to filter collisions between geometries affixed to the same frame.
+class GeometryStateCollisionFilterAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateCollisionFilterAttorney);
+  GeometryStateCollisionFilterAttorney() = delete;
+
+ private:
+  template <typename T>
+  friend class drake::geometry::GeometryState;
+
+  template <typename T>
+  static int get_next_clique(ProximityEngine<T>* engine) {
+    return engine->get_next_clique();
+  }
+
+  template <typename T>
+  static void set_dynamic_geometry_clique(ProximityEngine<T>* engine,
+                                          GeometryIndex geometry_index,
+                                          int clique) {
+    engine->set_clique(geometry_index, clique);
+  }
+};
+#endif
 
 }  // namespace internal
 }  // namespace geometry

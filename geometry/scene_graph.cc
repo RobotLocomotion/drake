@@ -187,16 +187,16 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
-void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet&) {
+void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
   GS_THROW_IF_CONTEXT_ALLOCATED
-  // TODO(SeanCurtis-TRI): Implemented in the follow-up PR.
+  initial_state_->ExcludeCollisionsWithin(geometry_set);
 }
 
 template <typename T>
-void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet&,
-                                             const GeometrySet&) {
+void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
+                                             const GeometrySet& setB) {
   GS_THROW_IF_CONTEXT_ALLOCATED
-  // TODO(SeanCurtis-TRI): Implemented in the follow-up PR.
+  initial_state_->ExcludeCollisionsBetween(setA, setB);
 }
 
 template <typename T>
