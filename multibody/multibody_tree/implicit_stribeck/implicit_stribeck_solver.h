@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -114,11 +117,12 @@ struct IterationStats {
 /// where `v ∈ ℝⁿᵛ` is the vector of generalized velocities, `M(q) ∈ ℝⁿᵛˣⁿᵛ` is
 /// the mass matrix, `Jₙᵀ(q) ∈ ℝⁿᶜˣⁿᵛ` is the Jacobian of normal separation
 /// velocities, `Jₜᵀ(q) ∈ ℝ²ⁿᶜˣⁿᵛ` is the Jacobian of tangent velocities,
-/// `fₙ ∈ ℝⁿᶜ` is the vector of normal contact forces, `fₜ ∈ ℝ²ⁿᶜ` is the vector
-/// of tangent friction forces and τ ∈ ℝⁿᵛ is a vector of generalized forces
-/// containing externally applied forces as well as Coriolis and gyroscopic
-/// terms. Since %ImplicitStribeckSolver uses a Stribeck model for friction,
-/// `fₜ(v)` implicitly depends on the vector of generalized velocities.
+/// `fₙ ∈ ℝⁿᶜ` is the vector of normal contact forces, `fₜ ∈ ℝ²ⁿᶜ` is the
+/// vector of tangent friction forces and τ ∈ ℝⁿᵛ is a vector of generalized
+/// forces containing externally applied forces as well as Coriolis and
+/// gyroscopic terms. Since %ImplicitStribeckSolver uses a Stribeck model for
+/// friction, `fₜ(v)` implicitly depends on the vector of generalized
+/// velocities.
 ///
 /// Equations (1) is discretized in time using a first order semi-implicit Euler
 /// scheme with time step `dt` as: <pre>
@@ -382,7 +386,7 @@ class ImplicitStribeckSolver {
    private:
     // The number of contact points. This determines sizes in this workspace.
     int nc_;
-    VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ⋅Δvᵏ, in ℝ²ⁿᶜ, for the k-th NR iteration.
+    VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ⋅Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> ft_;        // fₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> that_;      // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.

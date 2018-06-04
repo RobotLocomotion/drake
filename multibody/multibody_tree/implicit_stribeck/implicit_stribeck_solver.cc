@@ -1,14 +1,13 @@
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
-
-#include <fstream>
-#include <iostream>
 
 namespace drake {
 namespace multibody {
@@ -87,7 +86,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     //      "strong gradients" where it is safe to take alpha = 1.0.
     return 1.0;
   } else {  // x > 1.0
-
     // We want to detect transition from sliding (x > 1) to stiction when the
     // velocity change passes through the circle of radius v_stribeck.
 
@@ -361,11 +359,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Newton-Raphson Jacobian:
     //  J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D
     // J is an (nv x nv) symmetric positive definite matrix.
-    // diag(dfₜ/dvₜ) is the (2nc x 2nc) block diagonal matrix with dfₜ/dvₜ in
-    // each 2x2 diagonal entry.
+    // diag(dfₜ/dvₜ) is the (2nc x 2nc) block diagonal matrix with dfₜ/dvₜ
+    // in each 2x2 diagonal entry.
 
-    // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that diag(dfₜ/dvₜ)
-    // is block diagonal.
+    // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that
+    // diag(dfₜ/dvₜ) is block diagonal.
     MatrixX<T> diag_dftdv_times_D(nf, nv);
     // TODO(amcastro-tri): Only build half of the matrix since it is
     // symmetric.

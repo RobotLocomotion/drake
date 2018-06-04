@@ -1,12 +1,9 @@
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 
+#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
-
-//#include "drake/common/test_utilities/expect_throws_message.h"
-
-#include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 #define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
 
@@ -59,8 +56,8 @@ class PizzaSaver : public ::testing::Test {
 
     // Position of each contact point in the body frame B.
     const Vector2<double> p_BoA(-sqrt(3) / 2.0, -0.5);
-    const Vector2<double> p_BoB( sqrt(3) / 2.0, -0.5);
-    const Vector2<double> p_BoC( 0.0, 1.0);
+    const Vector2<double> p_BoB(sqrt(3) / 2.0, -0.5);
+    const Vector2<double> p_BoC(0.0, 1.0);
 
     // Position of each contact point in the world frame W.
     const Vector2<double> p_BoA_W = R_WB * p_BoA;
