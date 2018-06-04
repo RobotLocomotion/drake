@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/test_utilities/check_id_indexing.h"
 #include "drake/automotive/maliput/api/test_utilities/maliput_types_compare.h"
 #include "drake/automotive/maliput/multilane/test_utilities/multilane_types_compare.h"
 
@@ -232,6 +233,8 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
     EXPECT_EQ(bp->GetASide()->size(), 1);
     EXPECT_EQ(bp->GetBSide()->size(), 1);
   }
+
+  EXPECT_TRUE(api::test::CheckIdIndexing(rg.get()));
 };
 
 
@@ -371,6 +374,8 @@ GTEST_TEST(MultilaneBuilderTest, QuadRing) {
       GTEST_FAIL();
     }
   }
+
+  EXPECT_TRUE(api::test::CheckIdIndexing(rg.get()));
 };
 
 // Holds Lane IDs for each Lane, both at the start and end of the Lane.
@@ -723,6 +728,8 @@ GTEST_TEST(MultilaneBuilderTest, MultilaneCross) {
     }
   }
   EXPECT_EQ(rg->num_branch_points(), 20);
+
+  EXPECT_TRUE(api::test::CheckIdIndexing(rg.get()));
 }
 
 }  // namespace

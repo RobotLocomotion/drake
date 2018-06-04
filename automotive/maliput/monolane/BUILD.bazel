@@ -92,6 +92,7 @@ drake_cc_googletest(
     srcs = ["test/monolane_builder_test.cc"],
     deps = [
         ":builder",
+        "//automotive/maliput/api/test_utilities",
     ],
 )
 

@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/monolane/road_geometry.h"
 
+#include <functional>
+
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -42,13 +44,21 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
 }  // namespace
 
 Junction* RoadGeometry::NewJunction(api::JunctionId id) {
-  junctions_.push_back(std::make_unique<Junction>(id, this));
-  return junctions_.back().get();
+  namespace sp = std::placeholders;
+  junctions_.push_back(std::make_unique<Junction>(
+      id, this,
+      std::bind(&api::BasicIdIndex::AddSegment, &id_index_, sp::_1),
+      std::bind(&api::BasicIdIndex::AddLane, &id_index_, sp::_1)));
+  Junction* junction = junctions_.back().get();
+  id_index_.AddJunction(junction);
+  return junction;
 }
 
 BranchPoint* RoadGeometry::NewBranchPoint(api::BranchPointId id) {
   branch_points_.push_back(std::make_unique<BranchPoint>(id, this));
-  return branch_points_.back().get();
+  BranchPoint* branch_point = branch_points_.back().get();
+  id_index_.AddBranchPoint(branch_point);
+  return branch_point;
 }
 
 const api::Junction* RoadGeometry::do_junction(int index) const {
