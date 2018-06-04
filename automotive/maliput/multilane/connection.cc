@@ -204,17 +204,6 @@ Endpoint Connection::LaneEnd(int lane_index) const {
                   {position[2], z_dot, end_.z().theta(), theta_dot});
 }
 
-double Connection::ReferenceCurvature() const {
-  return type_ == kLine ? 0. : (1. / radius_);
-}
-
-double Connection::LaneCurvature(int lane_index) const {
-  if (type_ == kLine) return 0.;
-  const double lane_radius =
-      radius_ - std::copysign(1., d_theta_) * lane_offset(lane_index);
-  return 1. / lane_radius;
-}
-
 namespace {
 // Construct a CubicPolynomial such that:
 //    f(0) = Y0 / dX           f'(0) = Ydot0
@@ -246,11 +235,8 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           start_.z().z_dot(),
           end_.z().z_dot()));
       const CubicPolynomial superelevation(MakeCubic(
-          dxy.norm(),
-          start_.z().theta(),
-          end_.z().theta() - start_.z().theta(),
-          start_.z().theta_dot().value(),
-          end_.z().theta_dot().value()));
+          dxy.norm(), start_.z().theta(), end_.z().theta() - start_.z().theta(),
+          start_.z().theta_dot().value(), end_.z().theta_dot().value()));
       return std::make_unique<LineRoadCurve>(
           xy0, dxy, elevation, superelevation,
           linear_tolerance_, scale_length_,
