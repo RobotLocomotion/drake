@@ -152,7 +152,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
@@ -231,7 +231,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
@@ -439,7 +439,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
@@ -511,7 +511,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  ImplicitStribeckSolver<double>::Parameters parameters;  // Default parameters.
+  Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 

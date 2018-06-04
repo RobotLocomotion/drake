@@ -20,6 +20,40 @@ enum ComputationInfo {
   LinearSolverFailed = 2
 };
 
+struct Parameters {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parameters);
+
+  Parameters() = default;
+
+  /// The stiction tolerance vₛ for the slip velocity in the Stribeck
+  /// function, in m/s. Roughly, for an externally applied tangential forcing
+  /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
+  /// approximately to vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
+  /// error of the Stribeck approximation occurs at the edge of the friction
+  /// cone when fₜ = μfₙ and vₜ = vₛ.
+  double stiction_tolerance{1.0e-4};  // 0.1 mm/s
+
+  /// The maximum number of iterations allowed for the Newton-Raphson
+  /// iterative solver.
+  int max_iterations{100};
+
+  /// The tolerance to monitor the convergence of the tangential velocities.
+  /// This number specifies a tolerance relative to the value of the
+  /// stiction_tolerance and thus it is dimensionless. Using a tolerance
+  /// relative to the value of the stiction_tolerance is necessary in order
+  /// to capture transitions to stiction that would require an accuracy in the
+  /// value of the tangential velocities smaller than that of the
+  /// "Stribeck stiction region" (the circle around the origin with radius
+  /// stiction_tolerance).
+  /// Typical value is about 1%.
+  double tolerance{1.0e-2};
+
+  /// The maximum angle change in tangential velocity allowed at each
+  /// iteration. See ImplicitStribeckSolver::LimitDirectionChange() for
+  /// details.
+  double theta_max{0.25};  // about 15 degs
+};
+
 /// This class encapsulates the compliant contact model force computations as
 /// described in detail in @ref drake_contacts.
 ///
@@ -36,40 +70,6 @@ template <typename T>
 class ImplicitStribeckSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitStribeckSolver)
-
-  struct Parameters {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parameters);
-
-    Parameters() = default;
-
-    /// The stiction tolerance vₛ for the slip velocity in the Stribeck
-    /// function, in m/s. Roughly, for an externally applied tangential forcing
-    /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
-    /// approximately to vₜ ≈ vₛ fₜ/(μfₙ). In other words, the maximum slip
-    /// error of the Stribeck approximation occurs at the edge of the friction
-    /// cone when fₜ = μfₙ and vₜ = vₛ.
-    double stiction_tolerance{1.0e-4};  // 0.1 mm/s
-
-    /// The maximum number of iterations allowed for the Newton-Raphson
-    /// iterative solver.
-    int max_iterations{100};
-
-    /// The tolerance to monitor the convergence of the tangential velocities.
-    /// This number specifies a tolerance relative to the value of the
-    /// stiction_tolerance and thus it is dimensionless. Using a tolerance
-    /// relative to the value of the stiction_tolerance is necessary in order
-    /// to capture transitions to stiction that would require an accuracy in the
-    /// value of the tangential velocities smaller than that of the
-    /// "Stribeck stiction region" (the circle around the origin with radius
-    /// stiction_tolerance).
-    /// Typical value is about 1%.
-    double tolerance{1.0e-2};
-
-    /// The maximum angle change in tangential velocity allowed at each
-    /// iteration. See ImplicitStribeckSolver::LimitDirectionChange() for
-    /// details.
-    double theta_max{0.25};  // about 15 degs
-  };
 
   struct IterationStats {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IterationStats);
