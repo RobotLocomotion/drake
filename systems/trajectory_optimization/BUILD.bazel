@@ -68,6 +68,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_body_tree_multiple_shooting",
+    srcs = ["rigid_body_tree_multiple_shooting.cc"],
+    hdrs = [
+        "rigid_body_tree_multiple_shooting.h",
+        "rigid_body_tree_multiple_shooting_internal.h",
+    ],
+    deps = [
+        ":generalized_constraint_force_evaluator",
+        ":joint_limit_constraint_force_evaluator",
+        ":multiple_shooting",
+        ":position_constraint_force_evaluator",
+        "//common:essential",
+        "//math:autodiff",
+        "//math:gradient",
+        "//multibody:kinematics_cache_helper",
+        "//multibody:rigid_body_tree",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
     name = "direct_collocation",
     srcs = [
         "direct_collocation.cc",
@@ -160,6 +181,21 @@ drake_cc_googletest(
         ":joint_limit_constraint_force_evaluator",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_tree_multiple_shooting_test",
+    data = [
+        "//examples/simple_four_bar:models",
+    ],
+    deps = [
+        ":position_constraint_force_evaluator",
+        ":rigid_body_tree_multiple_shooting",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+        "//multibody/parsers",
     ],
 )
 
