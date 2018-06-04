@@ -15,45 +15,79 @@ load(
 
 _PY_VERSION = "2.7"
 
+def pybind_py_library(
+        name,
+        cc_srcs = [],
+        cc_deps = [],
+        cc_so_name = None,
+        cc_binary_rule = native.cc_binary,
+        py_srcs = [],
+        py_deps = [],
+        py_imports = [],
+        py_library_rule = native.py_library,
+        visibility = None,
+        testonly = None):
+    """Declares a pybind11 Python library with C++ and Python portions.
+
+    @param cc_srcs
+        C++ source files.
+    @param cc_deps (optional)
+        C++ dependencies.
+        At present, these should be libraries that will not cause ODR
+        conflicts (generally, header-only).
+    @param cc_so_name (optional)
+        Shared object name. By default, this is `${name}`, so that the C++
+        code can be then imported in a more controlled fashion in Python.
+        If overridden, this could be the public interface exposed to the user.
+    @param py_srcs (optional)
+        Python sources.
+    @param py_deps (optional)
+        Python dependencies.
+    @param py_imports (optional)
+        Additional Python import directories.
+    @return struct(cc_so_target = ..., py_target = ...)
+    """
+    py_name = name
+    if not cc_so_name:
+        cc_so_name = name
+    # TODO(eric.cousineau): See if we can keep non-`*.so` target name, but
+    # output a *.so, so that the target name is similar to what is provided.
+    cc_so_target = cc_so_name + ".so"
+    # Add C++ shared library.
+    cc_binary_rule(
+        name = cc_so_target,
+        srcs = cc_srcs,
+        # This is how you tell Bazel to create a shared library.
+        linkshared = 1,
+        linkstatic = 1,
+        # Always link to pybind11.
+        deps = [
+            "@pybind11",
+        ] + cc_deps,
+        testonly = testonly,
+        visibility = visibility,
+    )
+    # Add Python library.
+    py_library_rule(
+        name = py_name,
+        data = [cc_so_target],
+        srcs = py_srcs,
+        deps = py_deps,
+        imports = py_imports,
+        testonly = testonly,
+        visibility = visibility,
+    )
+    return struct(
+        cc_so_target = cc_so_target,
+        py_target = py_name,
+    )
+
 # TODO(eric.cousineau): Consider making a `PybindProvider`, to sort
 # out dependencies, sources, etc, and simplify installation
 # dependencies.
 
-def _drake_pybind_cc_binary(
-        name,
-        srcs = [],
-        deps = [],
-        visibility = None,
-        testonly = None):
-    """Declares a pybind11 shared library.
-
-    The defines the library with the given name and srcs.
-    The libdrake.so library and its headers are already automatically
-    depended-on by this rule.
-    """
-    # TODO(eric.cousineau): Ensure `deps` is header-only, if this code is to
-    # live longer.
-    drake_cc_binary(
-        name = name,
-        # This is how you tell Bazel to link in a shared library.
-        srcs = srcs + ["//tools/install/libdrake:libdrake.so"],
-        # This is how you tell Bazel to create a shared library.
-        linkshared = 1,
-        linkstatic = 1,
-        # For all pydrake_foo.so, always link to Drake and pybind11.
-        deps = [
-            # Even though "libdrake.so" appears in srcs above, we have to list
-            # :drake_shared_library here in order to get its headers onto the
-            # include path, and its prerequisite *.so's onto LD_LIBRARY_PATH.
-            "//tools/install/libdrake:drake_shared_library",
-            "@pybind11",
-            # TODO(jwnimmer-tri) We should be getting stx header path from
-            # :drake_shared_library, but that isn't working yet.
-            "@stx",
-        ] + deps,
-        testonly = testonly,
-        visibility = visibility,
-    )
+# TODO(eric.cousineau): Rename `drake_pybind_library` to
+# `drake_pybind_py_library`.
 
 def drake_pybind_library(
         name,
@@ -69,13 +103,15 @@ def drake_pybind_library(
         testonly = None):
     """Declares a pybind11 library with C++ and Python portions.
 
-    @param cc_srcs
-        C++ source files.
+    For parameters `cc_srcs`, `py_srcs`, `py_deps`, `py_imports`, please refer
+    to `pybind_py_library`.
+
     @param cc_deps (optional)
         C++ dependencies.
         At present, these should be libraries that will not cause ODR
         conflicts (generally, header-only).
-        By default, this includes `pydrake_pybind`.
+        By default, this includes `pydrake_pybind` and
+        `//:drake_shared_library`.
     @param cc_so_name (optional)
         Shared object name. By default, this is `_${name}`, so that the C++
         code can be then imported in a more controlled fashion in Python.
@@ -84,51 +120,37 @@ def drake_pybind_library(
         This should be the result of `get_pybind_package_info` called from the
         current package. This dictates how `PYTHONPATH` is configured, and
         where the modules will be installed.
-    @param py_srcs (optional)
-        Python sources.
-    @param py_deps (optional)
-        Python dependencies.
-    @param py_imports (optional)
-        Additional Python import directories.
     @param add_install (optional)
         Add install targets.
     """
     if package_info == None:
         fail("`package_info` must be supplied.")
-    py_name = name
     if not cc_so_name:
         cc_so_name = "_" + name
-    # TODO(eric.cousineau): See if we can keep non-`*.so` target name, but
-    # output a *.so, so that the target name is similar to what is provided.
-    cc_so_name += ".so"
     install_name = name + "_install"
-    # Add C++ shared library.
-    _drake_pybind_cc_binary(
-        name = cc_so_name,
-        srcs = cc_srcs,
-        deps = cc_deps + [
+    targets = pybind_py_library(
+        name = name,
+        cc_so_name = cc_so_name,
+        cc_srcs = cc_srcs,
+        cc_deps = cc_deps + [
+            "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
         ],
+        cc_binary_rule = drake_cc_binary,
+        py_srcs = py_srcs,
+        py_deps = py_deps,
+        py_imports = package_info.py_imports + py_imports,
+        py_library_rule = drake_py_library,
         testonly = testonly,
         visibility = visibility,
     )
-    # Add Python library.
-    drake_py_library(
-        name = py_name,
-        data = [cc_so_name],
-        srcs = py_srcs,
-        deps = py_deps,
-        imports = package_info.py_imports + py_imports,
-        testonly = testonly,
-        visibility = visibility,
-    )
-    # Add installation target for C++ and C++ bits.
+    # Add installation target for C++ and Python bits.
     if add_install:
         install(
             name = install_name,
             targets = [
-                py_name,
-                cc_so_name,
+                targets.cc_so_target,
+                targets.py_target,
             ],
             py_dest = package_info.py_dest,
             library_dest = package_info.py_dest,
@@ -213,8 +235,8 @@ def drake_pybind_cc_googletest(
         name = cc_name,
         srcs = cc_srcs,
         deps = cc_deps + [
+            "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
-            "//tools/install/libdrake:drake_shared_library",
             "@pybind11",
             "@python//:python_direct_link",
         ],
