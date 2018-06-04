@@ -233,6 +233,8 @@ class ImplicitStribeckSolver {
   /// See Parameters for details.
   void set_solver_parameters(const Parameters parameters) {
     parameters_ = parameters;
+    using std::cos;
+    cos_min_ = cos(parameters_.theta_max);
   }
 
   /// Returns a constant reference to the last solved vector of generalized
@@ -421,6 +423,7 @@ class ImplicitStribeckSolver {
 
   int nv_;  // Number of generalized velocities.
   int nc_;  // Number of contact points.
+  T cos_min_;  // Precomputed value of cos(theta_max).
   // The parameters of the solver controlling the iteration strategy.
   Parameters parameters_;
   ProblemDataAliases problem_data_aliases_;

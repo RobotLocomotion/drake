@@ -22,6 +22,9 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
     // afterwards as much as we can.
     variable_size_workspace_(128) {
   DRAKE_THROW_UNLESS(nv > 0);
+  using std::cos;
+  // Precompute cos(theta_max).
+  cos_min_ = cos(parameters_.theta_max);
 }
 
 template <typename T>
@@ -126,9 +129,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // strong impacts), we limit the maximum angle change between v to v1.
     // To this end, we find a scalar 0 < alpha < 1 such that
     // cos(theta_max) = v⋅v1/(‖v‖‖v1‖).
-    const T theta_max = parameters_.theta_max;
-    const T
-        cos_min = cos(theta_max);  // TODO: precompute when we set parameters.
 
     // First we compute the angle change when alpha = 1, between v1 and v.
     const T cos1 = v.dot(v1) / v_norm / v1_norm;
@@ -136,23 +136,21 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // We allow angle changes theta < theta_max, and we take alpha = 1.0.
     // In particular, when v1 is exactly aligned wiht v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
-    if (cos1 > cos_min) {
+    if (cos1 > cos_min_) {
       return 1.0;
     } else {  // we limit the angle change to theta_max.
       // All term are made non-dimensional using v_stribeck as the reference
       // sale.
-      const T A = v.norm() / v_stribeck;  // = x
-      const T B = v.dot(dv) / (v_stribeck * v_stribeck);
-      const T DD = dv.norm() / v_stribeck;
-
-      const T A2 = A * A;
-      const T A4 = A2 * A2;
-      const T cmin2 = cos_min * cos_min;
+      const T x_dot_dx = v_dot_dv / (v_stribeck * v_stribeck);
+      const T dx = dv.norm() / v_stribeck;
+      const T dx2 = x * x;
+      const T dx4 = dx2 * dx2;
+      const T cmin2 = cos_min_ * cos_min_;
 
       // Form the terms of the quadratic equation aα² + bα + c = 0.
-      const T a = A2 * DD * DD * cmin2 - B * B;
-      const T b = 2 * A2 * B * (cmin2 - 1.0);
-      const T c = A4 * (cmin2 - 1.0);
+      const T a = dx2 * dx * dx * cmin2 - x_dot_dx * x_dot_dx;
+      const T b = 2 * dx2 * x_dot_dx * (cmin2 - 1.0);
+      const T c = dx4 * (cmin2 - 1.0);
 
       // Solve quadratic equation. We know, from the geometry of the problem,
       // that the roots to this problem are real. Thus, the discriminant of the
@@ -170,7 +168,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
       if (abs(a) < std::numeric_limits<double>::epsilon()) {
         // There is only a single root to the, now linear, equation bα + c = 0.
         alpha = -c / b;
-        // Note: a = 0, α > 0 => B = A * DD * cmin ≠ 0 => b ≠ 0
+        // Note: a = 0, α > 0 => x_dot_dx = x * dx * cmin ≠ 0 => b ≠ 0
       } else {
         // The determinant of the quadratic equation.
         const T Delta = b * b - 4 * a * c;
