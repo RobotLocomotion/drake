@@ -22,7 +22,9 @@ Lane* Segment::NewLane(api::LaneId id, double r0,
       std::make_unique<Lane>(id, this, index, lane_bounds, driveable_bounds,
                              elevation_bounds_, road_curve_.get(), r0);
   lanes_.push_back(std::move(lane_));
-  return lanes_.back().get();
+  Lane* result = lanes_.back().get();
+  register_lane_(result);
+  return result;
 }
 
 const api::Lane* Segment::do_lane(int index) const {
