@@ -54,6 +54,40 @@ struct Parameters {
   double theta_max{0.25};  // about 15 degs
 };
 
+struct IterationStats {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IterationStats);
+
+  IterationStats() = default;
+
+  int num_iterations{0};
+  double vt_residual{0.0};
+  /// vt residual at each i-th iteration.
+  std::vector<double> residuals;
+  // At each iteration a velocity direction Δv is computed so that the
+  // velocity at the next iteration is vᵏ⁺¹ = vᵏ + αΔv, where 0 < α < 1
+  // (alpha) is a coefficient used to limit maximum angle change between
+  // vₜᵏ⁺¹ and vₜᵏ, see ImplicitStribeckSolver::LimitDirectionChange().
+  // This vector stores alpha for each iteration.
+  std::vector<double> alphas{128};
+
+  void Reset() {
+    num_iterations = 0;
+    vt_residual = -1.0;  // an invalid value.
+    // Clear does not change a std::vector "capacity", and therefore there's
+    // no reallocation (or deallocation) that could affect peformance.
+    alphas.clear();
+  }
+
+  void Update(
+      double iteration_residual, double iteration_alpha) {
+    ++num_iterations;
+    vt_residual = iteration_residual;
+
+    residuals.push_back(iteration_residual);
+    alphas.push_back(iteration_alpha);
+  }
+};
+
 /// This class encapsulates the compliant contact model force computations as
 /// described in detail in @ref drake_contacts.
 ///
@@ -70,40 +104,6 @@ template <typename T>
 class ImplicitStribeckSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitStribeckSolver)
-
-  struct IterationStats {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IterationStats);
-
-    IterationStats() = default;
-
-    int num_iterations{0};
-    double vt_residual{0.0};
-    /// vt residual at each i-th iteration.
-    std::vector<double> residuals;
-    // At each iteration a velocity direction Δv is computed so that the
-    // velocity at the next iteration is vᵏ⁺¹ = vᵏ + αΔv, where 0 < α < 1
-    // (alpha) is a coefficient used to limit maximum angle change between
-    // vₜᵏ⁺¹ and vₜᵏ, see ImplicitStribeckSolver::LimitDirectionChange().
-    // This vector stores alpha for each iteration.
-    std::vector<double> alphas{128};
-
-    void Reset() {
-      num_iterations = 0;
-      vt_residual = -1.0;  // an invalid value.
-      // Clear does not change a std::vector "capacity", and therefore there's
-      // no reallocation (or deallocation) that could affect peformance.
-      alphas.clear();
-    }
-
-    void Update(
-        double iteration_residual, double iteration_alpha) {
-      ++num_iterations;
-      vt_residual = iteration_residual;
-
-      residuals.push_back(iteration_residual);
-      alphas.push_back(iteration_alpha);
-    }
-  };
 
   /// Instantiates a %ImplicitStribeckSolver.
   explicit ImplicitStribeckSolver(int nv);

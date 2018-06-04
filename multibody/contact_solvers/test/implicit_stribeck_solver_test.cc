@@ -161,8 +161,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   VectorX<double> tau_f = solver_.get_generalized_forces();
 
-  const ImplicitStribeckSolver<double>::IterationStats& stats =
-      solver_.get_iteration_statistics();
+  const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       /* Dimensionless relative (to the stiction tolerance) tolerance */
@@ -240,8 +239,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   VectorX<double> tau_f = solver_.get_generalized_forces();
 
-  const ImplicitStribeckSolver<double>::IterationStats& stats =
-      solver_.get_iteration_statistics();
+  const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       /* Dimensionless relative (to the stiction tolerance) tolerance */
@@ -448,8 +446,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   VectorX<double> tau_f = solver_.get_generalized_forces();
 
-  const ImplicitStribeckSolver<double>::IterationStats& stats =
-      solver_.get_iteration_statistics();
+  const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       /* Dimensionless relative (to the stiction tolerance) tolerance */
@@ -520,8 +517,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   VectorX<double> tau_f = solver_.get_generalized_forces();
 
-  const ImplicitStribeckSolver<double>::IterationStats& stats =
-      solver_.get_iteration_statistics();
+  const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       /* Dimensionless relative (to the stiction tolerance) tolerance */
