@@ -10,7 +10,6 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/contact_solvers/implicit_stribeck_solver.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -1027,22 +1026,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
-  std::vector<geometry::PenetrationAsPointPair<T>>
-  CalcPointPairPenetrations(const systems::Context<T>& context) const;
-
-  std::vector<CoulombFriction<T>> CalcCombinedFrictionCoefficients(
-      const std::vector<geometry::PenetrationAsPointPair<T>>&
-      point_pairs) const;
-
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
-      VectorX<T>* fn) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
   // Jacobian N(q) such that:
@@ -1161,20 +1151,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// previously with set_stiction_tolerance().
     double stiction_tolerance() const { return v_stiction_tolerance_; }
 
-    // Dimensionless modified Stribeck function defined as:
-    // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
-    //         ⌊ mu                ,  x >= 1
-    // where x corresponds to the dimensionless tangential speed
-    // x = v / v_stribeck.
-    static T ModifiedStribeck(const T& x, const T& mu);
-
-    // Derivative of the dimensionless modified Stribeck function:
-    // ms(x) = ⌈ mu * (2 * (1 - x)),  x  < 1
-    //         ⌊ 0                 ,  x >= 1
-    // where x corresponds to the dimensionless tangential speed
-    // x = v / v_stribeck.
-    static T ModifiedStribeckPrime(const T& speed_BcAc, const T& mu);
-
    private:
     // Stiction velocity tolerance for the Stribeck model.
     // A negative value indicates it was not properly initialized.
@@ -1237,9 +1213,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
-
-  // The default solver when the plant is modeled as a discrete system.
-  std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
