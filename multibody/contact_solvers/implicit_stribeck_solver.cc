@@ -4,8 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include<Eigen/IterativeLinearSolvers>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
@@ -379,21 +377,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    //Delta_vk = Jk.llt().solve(-Rk);
-    // TODO(amcastro-tri): Make cg a solver's member and figure out how to avoid
-    // allocation.
-    Eigen::ConjugateGradient<MatrixX<T>,
-                             Eigen::Lower|Eigen::Upper,
-                             Eigen::DiagonalPreconditioner<T>> cg;
-    cg.compute(Jk);
-    cg.setTolerance(1.0e-6);  // relative tolerance |Jdv + R|/|R|
-    cg.setMaxIterations(nv);
-    Delta_vk = cg.solve(-Rk);
-
-    if (cg.info() != Eigen::Success) {
-      throw std::logic_error("Iterative linear solver did not converge to the "
-                                 "specified vt_tolerance.");
-    }
+    Delta_vk = Jk.llt().solve(-Rk);
 
     // Since we keep D constant we have that:
     // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
@@ -425,8 +409,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
     // Save iteration statistics.
     statistics_.Update(
-        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha),
-        cg.iterations(), ExtractDoubleOrThrow(cg.error()));
+        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha));
   }
 
   // Returns vector of generalized friction forces.

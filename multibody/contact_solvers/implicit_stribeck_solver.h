@@ -73,33 +73,21 @@ class ImplicitStribeckSolver {
     // This vector stores alpha for each iteration.
     std::vector<double> alphas{128};
 
-    // The number of linear iterations performed by the linear solver at each
-    // Newton-Raphsone iteration.
-    std::vector<int> linear_iterations{128};
-
-    // The residual of the linear solver at each Newton-Raphson iteration.
-    std::vector<double> linear_residuals{128};
-
     void Reset() {
       num_iterations = 0;
       vt_residual = -1.0;  // an invalid value.
       // Clear does not change a std::vector "capacity", and therefore there's
       // no reallocation (or deallocation) that could affect peformance.
       alphas.clear();
-      linear_iterations.clear();
-      linear_residuals.clear();
     }
 
     void Update(
-        double iteration_residual, double iteration_alpha,
-        int lin_iterations, double lin_residuals) {
+        double iteration_residual, double iteration_alpha) {
       ++num_iterations;
       vt_residual = iteration_residual;
 
       residuals.push_back(iteration_residual);
       alphas.push_back(iteration_alpha);
-      linear_iterations.push_back(lin_iterations);
-      linear_residuals.push_back(lin_residuals);
     }
   };
 
