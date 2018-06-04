@@ -7,7 +7,7 @@ namespace maliput {
 namespace multilane {
 
 BranchPoint::BranchPoint(const api::BranchPointId& id,
-                         api::RoadGeometry* road_geometry)
+                         const api::RoadGeometry* road_geometry)
     : id_(id), road_geometry_(road_geometry) {}
 
 const api::RoadGeometry* BranchPoint::do_road_geometry() const {

@@ -65,6 +65,9 @@ class RoadGeometry : public api::RoadGeometry {
   // and the current maximum available index of branch_points_ vector.
   const api::BranchPoint* do_branch_point(int index) const override;
 
+  // TODO(maddog@tri.global) Implement when someone needs it.
+  const IdIndex& DoById() const override { DRAKE_ABORT(); }
+
   // This function will abort as it's not implemented and should not be called.
   api::RoadPosition DoToRoadPosition(const api::GeoPosition& geo_pos,
                                      const api::RoadPosition* hint,

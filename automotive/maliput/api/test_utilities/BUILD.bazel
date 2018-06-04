@@ -13,8 +13,22 @@ drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":check_id_indexing",
         ":maliput_types_compare",
         ":rules_test_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "check_id_indexing",
+    testonly = 1,
+    srcs = ["check_id_indexing.cc"],
+    hdrs = ["check_id_indexing.h"],
+    deps = [
+        ":rules_test_utilities",
+        "//automotive/maliput/api",
+        "//common:essential",
+        "@gtest//:without_main",
     ],
 )
 
