@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 
 #include <memory>
 
