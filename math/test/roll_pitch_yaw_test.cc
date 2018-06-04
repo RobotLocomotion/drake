@@ -157,7 +157,6 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
                               std::logic_error, expected_message);
 }
 
-#if 0
 // Test accuracy of back-and-forth conversion from angular velocity to rpyDt
 // (time-derivative of roll-pitch-yaw angles) and back to angular velocity as a
 // way to understand how many digits of precision are lost near gimbal-lock.
@@ -165,8 +164,9 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
   const Vector3d wA(1, 1, 1);
   const Vector3d alphaA(1, 1, 1);
   const double tolerate = RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
-  for (int i = -10; i < 10; ++i) {
-    const double pitch_angle = M_PI / 2 + i * tolerate;
+  for (double i = -2.00; i <= 2.001; i += 0.05) {
+    const double difference_from_gimbal_lock = i * tolerate;
+    const double pitch_angle = M_PI / 2 + difference_from_gimbal_lock;
     const RollPitchYaw<double> rpy(1, pitch_angle, 1);
     const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
 
@@ -180,29 +180,50 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
         rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
         std::logic_error,
         "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*");
+
+      // Skip over lots of unnecessarily redundant near-singular tests.
+      if (-0.9 <= i  &&  i <= 0.85) i = 0.9;
     } else {
       rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
       rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA);
+
+      const double max_rpyDt = rpyDt.template lpNorm<Eigen::Infinity>();
+      const double max_rpyDDt = rpyDDt.template lpNorm<Eigen::Infinity>();
+
+      // rpyDt scales with 1/cos(pitch_angle).
+      // rpyDDt scales with 1/cos(pitch_angle)^2, so check these have a range
+      // that is within a reasonable multiplier (1000) of that scale.
+      EXPECT_TRUE(1E-3 / tolerate <= max_rpyDt && max_rpyDt <= 1E3 / tolerate);
+      EXPECT_TRUE(1E-6 / (tolerate * tolerate) <= max_rpyDDt &&
+          max_rpyDDt <= 1E6 / (tolerate * tolerate));
+
+      // Now, reverse procedure by calculating angular velocity from rpyDt.
+      const Vector3d wB = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
+
+      // Compare the given and calculated angular velocities.
+      const Vector3d w_diff = wB - wA;
+      const Vector3d w_error(w_diff(0) / wA(0),
+                             w_diff(1) / wA(1),
+                             w_diff(2) / wA(2));
+      const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
+
+      // Results of this test show the following.
+      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.001, test
+      // machines show max_error <= (≈ 2.2737E-13), which means there may be
+      // inaccuracies in 10 (but not 11) of the 52 bits in the mantissa.
+      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.002, test
+      // machines show max_error <= (≈ 1.1368E-13), which means there may be
+      // inaccuracies in 9 (but not 10) of the 52 bits in the mantissa.
+      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.008, test
+      // machines show max_error <= (≈ 2.8422E-14), which means there may be
+      // inaccuracies in 7 (but not 8) of the 52 bits in the mantissa.
+      // Note: 2.2737E-13 ≈ (2^10 = 1024) * (kEpsilon = 1/2^52 ≈ 2.22E-16).
+      // Note: 1.1368E-13 ≈ (2^9 = 512) * (kEpsilon = 1/2^52 ≈ 2.22E-16).
+      // Note: 2.8422E-13 ≈ (2^7 = 128) * (kEpsilon = 1/2^52 ≈ 2.22E-16)
+      EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
     }
-    const double max_rpyDt = rpyDt.template lpNorm<Eigen::Infinity>();
-    const double max_rpyDDt = rpyDDt.template lpNorm<Eigen::Infinity>();
-    EXPECT_TRUE(0.001 / tolerate <= max_rpyDt && max_rpyDt <= 1000 / tolerate);
-    EXPECT_TRUE(0.001 / (tolerate * tolerate) <= max_rpyDDt &&
-                max_rpyDDt <= 1000 / (tolerate * tolerate));
-
-    // Calculate angular velocity from rpyDt.
-    const Vector3d wB = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
-
-    // Compare the given angular velocity with the calculated angular velocity.
-    const Vector3d w_diff = wB - wA;
-    const Vector3d w_error(w_diff(0) / wA(0),
-                           w_diff(1) / wA(1),
-                           w_diff(2) / wA(2));
-    const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
-    EXPECT_LE(max_error, 512*kEpsilon);
   }
 }
-#endif
 
 
 // For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,

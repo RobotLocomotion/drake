@@ -540,14 +540,15 @@ class RollPitchYaw {
   // pitch-angle `p` to gimbal-lock [the proximity of `cos(p)` to 0].
   // @note For small values (<= 0.1), this value approximates the allowable
   // proximity of the pitch-angle (in radians) to gimbal-lock.  Example: A value
-  // of 0.01 corresponds to `p` within ≈ 0.01 radians of gimbal-lock, i.e.,
-  // `p` is within 0.01 radians of `(n*π + π/2)` where `n = 0, ±1, ±2, ...`
+  // of 0.01 corresponds to `p` within ≈ 0.01 radians (≈ 0.57°) of gimbal-lock,
+  // i.e., `p` is within 0.01 radians of `(n*π + π/2)`, `n = 0, ±1, ±2, ...`.
+  // A value 0.008 corresponds to `p` ≈ 0.008 radians (≈ 0.46°) of gimbal-lock.
   // @note The conversion from angular velocity to rpyDt (the time-derivative of
-  // %RollPitchYaw) has a calculation that divides by `cos(p` (the cosine of the
-  // pitch angle).  This results in values of rpyDt that scale with angular
+  // %RollPitchYaw) has a calculation that divides by `cos(p)` (the cosine of
+  // the pitch angle).  This results in values of rpyDt that scale with angular
   // velocity multiplied by `1/cos(p)`, which causes problems with
   // numerical integration.
-  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 0.001;
+  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 0.008;
 };
 
 /// (Deprecated), use @ref math::RollPitchYaw(quaternion).
