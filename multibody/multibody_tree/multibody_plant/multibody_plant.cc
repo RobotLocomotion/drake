@@ -216,8 +216,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Make contact solver when the plant is discrete.
   if (is_discrete()) {
     implicit_stribeck_solver_ =
-        std::make_unique<ImplicitStribeckSolver<T>>(
-            num_velocities(), stribeck_model_.stiction_tolerance());
+        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
+    typename ImplicitStribeckSolver<T>::Parameters solver_parameters;
+    solver_parameters.stiction_tolerance = stribeck_model_.stiction_tolerance();
+    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
   }
 }
 
