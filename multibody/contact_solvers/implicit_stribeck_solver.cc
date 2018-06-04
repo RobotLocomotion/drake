@@ -220,26 +220,25 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const int nf = 2 * nc;
 
   // Convenient aliases to problem data.
-  const auto& M = *problem_data_aliases_.M_;
-  const auto& D = *problem_data_aliases_.D_;
-  const auto& p_star = *problem_data_aliases_.p_star_;
-  const auto& fn = *problem_data_aliases_.fn_;
-  const auto& mu = *problem_data_aliases_.mu_;
+  const auto& M = *problem_data_aliases_.M_ptr;
+  const auto& D = *problem_data_aliases_.D_ptr;
+  const auto& p_star = *problem_data_aliases_.p_star_ptr;
+  const auto& fn = *problem_data_aliases_.fn_ptr;
+  const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
-  auto& vk = fixed_size_workspace_.vk;
-  auto& Delta_vk = fixed_size_workspace_.Delta_vk;
-  auto& Rk = fixed_size_workspace_.Rk;
-  auto& Jk = fixed_size_workspace_.Jk;
-  auto& Jk_ldlt = *fixed_size_workspace_.Jk_ldlt;
+  auto& v = fixed_size_workspace_.v;
+  auto& Delta_v = fixed_size_workspace_.Delta_v;
+  auto& R = fixed_size_workspace_.R;
+  auto& J = fixed_size_workspace_.J;
+  auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
   auto& tau_f = fixed_size_workspace_.tau_f;
 
   // Convenient aliases to variable size workspace variables.
-  auto vtk = variable_size_workspace_.mutable_vt();
-  auto ftk = variable_size_workspace_.mutable_ft();
-  auto Delta_vtk = variable_size_workspace_.mutable_delta_vt();
+  auto vt = variable_size_workspace_.mutable_vt();
+  auto ft = variable_size_workspace_.mutable_ft();
+  auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
   auto dft_dv = variable_size_workspace_.mutable_dft_dv();
-  auto dmudv = variable_size_workspace_.mutable_dmudv();
   auto mus = variable_size_workspace_.mutable_mu();
   auto that = variable_size_workspace_.mutable_that();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
@@ -249,8 +248,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   T residual = 2 * vt_tolerance;
 
   // Initialize iteration with the provided guess.
-  vk = v_guess;
-  vtk = D * vk;
+  v = v_guess;
+  vt = D * v;
 
   // The stiction tolerance.
   const double v_stribeck = parameters_.stiction_tolerance;
@@ -281,7 +280,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // consistency.
     for (int ic = 0; ic < nc; ++ic) {
       const int ik = 2 * ic;
-      const auto vt_ic = vtk.template segment<2>(ik);
+      const auto vt_ic = vt.template segment<2>(ik);
       // "soft norm":
       v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
       // "soft" tangent vector:
@@ -290,19 +289,19 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
       // Friction force.
       // Note: minus sign not included in this definition.
-      ftk.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
+      ft.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
     }
 
-    // After the previous iteration, we allow updating ftk above to have its
+    // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
     if (residual < vt_tolerance) {
       // Update generalized forces vector and return.
-      tau_f = D.transpose() * ftk;
+      tau_f = D.transpose() * ft;
       return ComputationInfo::Success;
     }
 
     // Newton-Raphson residual
-    Rk = M * vk - p_star + dt * D.transpose() * ftk;
+    R = M * v - p_star + dt * D.transpose() * ft;
 
     // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
     // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
@@ -311,7 +310,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
       // Compute dmu/dv = (1/v_stribeck) * dmu/dx
       // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      dmudv(ic) = ModifiedStribeckPrime(
+      const T dmudv = ModifiedStribeckPrime(
           v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
 
       const auto that_ic = that.template segment<2>(ik);
@@ -355,7 +354,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
       // Changes in the magnitude of vt (which in turns makes mu_stribeck
       // change), in the direction of that.
-      dft_dv[ic] += P_ic * dmudv(ic);
+      dft_dv[ic] += P_ic * dmudv;
 
       // Note: dft_dv is a symmetric 2x2 matrix.
       dft_dv[ic] *= fn(ic);
@@ -378,16 +377,16 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
           dft_dv[ic] * D.block(ik, 0, 2, nv);
     }
     // Form J = M + dt Dᵀdiag(dfₜ/dvₜ)D:
-    Jk = M + dt * D.transpose() * diag_dftdv_times_D;
+    J = M + dt * D.transpose() * diag_dftdv_times_D;
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    Jk_ldlt.compute(Jk);  // Update factorization.
-    Delta_vk = Jk_ldlt.solve(-Rk);
-    if (Jk_ldlt.info() != Eigen::Success) {
+    J_ldlt.compute(J);  // Update factorization.
+    Delta_v = J_ldlt.solve(-R);
+    if (J_ldlt.info() != Eigen::Success) {
       return ComputationInfo::LinearSolverFailed;
     }
 
@@ -399,9 +398,9 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
     // For multiple contact points, we choose the minimum α amongs all contact
     // points.
-    Delta_vtk = D * Delta_vk;
+    Delta_vt = D * Delta_v;
 
-    residual = Delta_vtk.norm();
+    residual = Delta_vt.norm();
 
     // Limit the angle change. We do this by limiting the angle change at each
     // friction point calling LimitDirectionChange(). We take the minimum
@@ -410,14 +409,14 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     T alpha = 1.0;
     for (int ic = 0; ic < nc; ++ic) {
       const int ik = 2 * ic;
-      auto v = vtk.template segment<2>(ik);
-      const auto dv = Delta_vtk.template segment<2>(ik);
-      alpha = min(alpha, LimitDirectionChange(v, dv));
+      auto vt_ic = vt.template segment<2>(ik);
+      const auto dvt_ic = Delta_vt.template segment<2>(ik);
+      alpha = min(alpha, LimitDirectionChange(vt_ic, dvt_ic));
     }
 
-    // Limit vk update:
-    vk = vk + alpha * Delta_vk;
-    vtk = D * vk;
+    // Limit v update:
+    v = v + alpha * Delta_v;
+    vt = D * v;
 
     // Save iteration statistics.
     statistics_.Update(

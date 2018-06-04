@@ -158,7 +158,7 @@ class ImplicitStribeckSolver {
   }
 
   const VectorX<T>& get_generalized_velocities() const {
-    return fixed_size_workspace_.vk;
+    return fixed_size_workspace_.v;
   }
 
  private:
@@ -196,26 +196,26 @@ class ImplicitStribeckSolver {
     void Set(EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
              EigenPtr<const VectorX<T>> p_star,
              EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
-      M_ = M;
-      D_ = D;
-      p_star_ = p_star;
-      fn_ = fn;
-      mu_ = mu;
+      M_ptr = M;
+      D_ptr = D;
+      p_star_ptr = p_star;
+      fn_ptr = fn;
+      mu_ptr = mu;
     }
 
     // The solver keeps references to the problem data but does not own it.
-    EigenPtr<const MatrixX<T>> M_{nullptr};  // The mass matrix of the system.
-    EigenPtr<const MatrixX<T>> D_{nullptr};  // The tangential velocities Jacobian.
+    EigenPtr<const MatrixX<T>> M_ptr{nullptr};  // The mass matrix of the system.
+    EigenPtr<const MatrixX<T>> D_ptr{nullptr};  // The tangential velocities Jacobian.
     // The generalized momementum vector **before** friction is applied. For a
     // generalized velocity vector v, the generalized momentum vector is defined
     // as p = M ⋅ v.
-    EigenPtr<const VectorX<T>> p_star_{nullptr};
+    EigenPtr<const VectorX<T>> p_star_ptr{nullptr};
 
     // At each contact point ic, fn_(ic) and mu_(ic) store the normal contact
     // force and friction coefficient, respectively. Both have size nc, the number
     // of contact points.
-    EigenPtr<const VectorX<T>> fn_{nullptr};
-    EigenPtr<const VectorX<T>> mu_{nullptr};
+    EigenPtr<const VectorX<T>> fn_ptr{nullptr};
+    EigenPtr<const VectorX<T>> mu_ptr{nullptr};
   };
   ProblemDataAliases problem_data_aliases_;
 
@@ -226,27 +226,35 @@ class ImplicitStribeckSolver {
   struct FixedSizeWorkspace {
     // Constructs a workspace with size only dependent on nv.
     explicit FixedSizeWorkspace(int nv) {
-      vk.resize(nv);
-      Rk.resize(nv);
-      Delta_vk.resize(nv);
-      Jk.resize(nv, nv);
-      Jk_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
+      v.resize(nv);
+      R.resize(nv);
+      Delta_v.resize(nv);
+      J.resize(nv, nv);
+      J_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
       tau_f.resize(nv);
     }
-    VectorX<T> vk;
-    VectorX<T> Rk;
-    MatrixX<T> Jk;
-    VectorX<T> Delta_vk;
-    VectorX<T> tau_f;  // Vector of generalized forces due to friction.
-    // Factorization for the Newton-Raphson Jacobian.
-    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> Jk_ldlt;
+    // Vector of generalized velocities.
+    VectorX<T> v;
+    // Newton-Raphson residual.
+    VectorX<T> R;
+    // Newton-Raphson Jacobian, i.e. Jᵢⱼ = ∂Rᵢ/∂vⱼ.
+    MatrixX<T> J;
+    // Solution to Newton-Raphson update, i.e. Δv = -J⁻¹⋅R.
+    VectorX<T> Delta_v;
+    // Vector of generalized forces due to friction.
+    VectorX<T> tau_f;
+    // LDLT Factorization of the Newton-Raphson Jacobian J.
+    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt;
   };
   mutable FixedSizeWorkspace fixed_size_workspace_;
 
   // The variables in this workspace can change size with each invocation of
   // SetProblemData() since the number of contact points nc can change.
   // The workspace only performs re-allocations if needed, meaning that previous
-  // storeage is re-used if large engouh for the next problem data set.
+  // storage is re-used if large engouh for the next problem data set.
+  // This class provides accessors that return Eigen blocks of size consistent
+  // with the data currenly stored, even if the (maximum) capacity is larger
+  // than the data size.
   class VariableSizeWorkspace {
    public:
     explicit VariableSizeWorkspace(int initial_nc) {
@@ -254,76 +262,68 @@ class ImplicitStribeckSolver {
     }
 
     // Performs a resize of this workspace's variables only if the new size `nc`
-    // is larger than the any of the other sizes with with this method was
-    // called before.
+    // is larger than capcity() in order to reuse previously allocated space.
     void ResizeIfNeeded(int nc) {
       nc_ = nc;
       if (capacity() >= nc) return;  // no-op if not needed.
       const int nf = 2 * nc;
       // Only reallocate if sizes from previous allocations are not sufficient.
-      vtk.resize(nf);
-      ftk.resize(nf);
-      Delta_vtk.resize(nf);
-      that.resize(nf);
-      v_slip.resize(nc);
-      mus.resize(nc);
-      dmudv.resize(nc);
-      // There is no reallocation if std::vector::capacity() >= nc.
-      dft_dv.resize(nc);
+      vt_.resize(nf);
+      ft_.resize(nf);
+      Delta_vt_.resize(nf);
+      that_.resize(nf);
+      v_slip_.resize(nc);
+      mus_.resize(nc);
+      dft_dv_.resize(nc);
     }
 
     // Returns the current (maximum) capacity of the workspace.
     int capacity() const {
-      return vtk.size();
+      return vt_.size();
     }
 
     Eigen::VectorBlock<const VectorX<T>> vt() const {
-      return vtk.segment(0, 2 * nc_);
+      return vt_.segment(0, 2 * nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_vt() {
-      return vtk.segment(0, 2 * nc_);
+      return vt_.segment(0, 2 * nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_delta_vt() {
-      return Delta_vtk.segment(0, 2 * nc_);
+      return Delta_vt_.segment(0, 2 * nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_ft() {
-      return ftk.segment(0, 2 * nc_);
+      return ft_.segment(0, 2 * nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_that() {
-      return that.segment(0, 2 * nc_);
+      return that_.segment(0, 2 * nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_v_slip() {
-      return v_slip.segment(0, nc_);
+      return v_slip_.segment(0, nc_);
     }
 
     Eigen::VectorBlock<VectorX<T>> mutable_mu() {
-      return mus.segment(0, nc_);
-    }
-
-    Eigen::VectorBlock<VectorX<T>> mutable_dmudv() {
-      return dmudv.segment(0, nc_);
+      return mus_.segment(0, nc_);
     }
 
     std::vector<Matrix2<T>>& mutable_dft_dv() {
-      return dft_dv;
+      return dft_dv_;
     }
 
    private:
     // The number of contact points. This determines sizes in this workspace.
     int nc_;
-    VectorX<T> Delta_vtk;
-    VectorX<T> vtk;
-    VectorX<T> ftk;
-    VectorX<T> that;
-    VectorX<T> v_slip;
-    VectorX<T> mus; // Stribeck friction.
-    VectorX<T> dmudv;
-    std::vector<Matrix2<T>> dft_dv;
+    VectorX<T> Delta_vt_;
+    VectorX<T> vt_;
+    VectorX<T> ft_;
+    VectorX<T> that_;
+    VectorX<T> v_slip_;
+    VectorX<T> mus_; // Stribeck friction.
+    std::vector<Matrix2<T>> dft_dv_;
   };
   mutable VariableSizeWorkspace variable_size_workspace_;
 
