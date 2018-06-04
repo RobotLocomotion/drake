@@ -9,26 +9,26 @@ namespace multibody {
 namespace implicit_stribeck {
 namespace {
 
-// Top view of the pizza saver:
-//
-//   ^ y               C
-//   |                 ◯
-//   |                /\
-//   ----> x         /  \
-//                b /    \ a
-//                 /      \
-//                /        \
-//               ◯----------◯
-//               A     c    B
-//
-// It is modeled as an equilateral triangle with a contact point at each of the
-// legs. The total mass of the pizza saver is m and its rotational inertia about
-// the triangle's barycenter is I.
-// If h is the height of the triangle from any of its sides, the distance from
-// any point to the triangle's center is 2h/3. The height h relates to the size
-// a of a side by h = 3/2/sqrt(3) a.
-// The generalized positions vector for this case is q = [x, y, theta], with
-// theta = 0 for the triangle in the configuration shown in the schematic.
+/* Top view of the pizza saver:
+
+  ^ y               C
+  |                 ◯
+  |                /\
+  ----> x         /  \
+               b /    \ a
+                /      \
+               /        \
+              ◯----------◯
+              A     c    B
+
+It is modeled as an equilateral triangle with a contact point at each of the
+legs. The total mass of the pizza saver is m and its rotational inertia about
+the triangle's barycenter is I.
+If h is the height of the triangle from any of its sides, the distance from
+any point to the triangle's center is 2h/3. The height h relates to the size
+a of a side by h = 3/2/sqrt(3) a.
+The generalized positions vector for this case is q = [x, y, theta], with
+theta = 0 for the triangle in the configuration shown in the schematic. */
 class PizzaSaver : public ::testing::Test {
  public:
   void SetUp() override {
