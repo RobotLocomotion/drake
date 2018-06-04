@@ -5,6 +5,20 @@
 
 namespace drake {
 namespace multibody {
+namespace implicit_stribeck {
+
+enum ComputationInfo {
+  /// Successful computation.
+  Success = 0,
+
+  /// The maximum number of iterations was reached.
+  MaxIterationsReached = 1,
+
+  /// The linear solver used within the Newton-Raphson loop failed.
+  /// This might be caused by a divergent iteration that led to an invalid
+  /// Jacobian matrix.
+  LinearSolverFailed = 2
+};
 
 /// This class encapsulates the compliant contact model force computations as
 /// described in detail in @ref drake_contacts.
@@ -117,7 +131,7 @@ class ImplicitStribeckSolver {
   /// @returns the vector of generalized forces due to friction.
   /// @throws std::logic_error if v_guess is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  VectorX<T> SolveWithGuess(double dt, const VectorX<T>& v_guess);
+  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess);
 
   const IterationStats& get_iteration_statistics() const {
     return statistics_;
@@ -129,6 +143,12 @@ class ImplicitStribeckSolver {
 
   void set_solver_parameters(const Parameters parameters) {
     parameters_ = parameters;
+  }
+
+  /// Get a constant reference to the vector of generalized friction forces.
+  /// This is the solution to the problem.
+  const VectorX<T>& get_generalized_forces() const {
+    return fixed_size_workspace_.tau_f;
   }
 
   /// This method must be called after SolveWithGuess() to retrieve the vector
@@ -211,11 +231,13 @@ class ImplicitStribeckSolver {
       Delta_vk.resize(nv);
       Jk.resize(nv, nv);
       Jk_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
+      tau_f.resize(nv);
     }
     VectorX<T> vk;
     VectorX<T> Rk;
     MatrixX<T> Jk;
     VectorX<T> Delta_vk;
+    VectorX<T> tau_f;  // Vector of generalized forces due to friction.
     // Factorization for the Newton-Raphson Jacobian.
     std::unique_ptr<Eigen::LDLT<MatrixX<T>>> Jk_ldlt;
   };
@@ -310,5 +332,6 @@ class ImplicitStribeckSolver {
   mutable IterationStats statistics_;
 };
 
+}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake

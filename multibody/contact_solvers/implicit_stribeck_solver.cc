@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace multibody {
+namespace implicit_stribeck {
 
 template <typename T>
 ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
@@ -126,7 +127,8 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // To this end, we find a scalar 0 < alpha < 1 such that
     // cos(theta_max) = v⋅v1/(‖v‖‖v1‖).
     const T theta_max = parameters_.theta_max;
-    const T cos_min = cos(theta_max);  // TODO: precompute when we set parameters.
+    const T
+        cos_min = cos(theta_max);  // TODO: precompute when we set parameters.
 
     // First we compute the angle change when alpha = 1, between v1 and v.
     const T cos1 = v.dot(v1) / v_norm / v1_norm;
@@ -188,9 +190,8 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   throw std::logic_error("Bug detected. An angle change case was missed.");
 }
 
-
 template <typename T>
-VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
+ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
@@ -201,7 +202,10 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // If there are no contact points return a zero generalized friction forces
   // vector, i.e. tau_f = 0.
-  if (nc_ == 0) return VectorX<T>::Zero(nv_);
+  if (nc_ == 0) {
+    fixed_size_workspace_.tau_f.setZero();
+    return ComputationInfo::Success;
+  }
 
   // Solver parameters.
   const int max_iterations = parameters_.max_iterations;
@@ -228,6 +232,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& Rk = fixed_size_workspace_.Rk;
   auto& Jk = fixed_size_workspace_.Jk;
   auto& Jk_ldlt = *fixed_size_workspace_.Jk_ldlt;
+  auto& tau_f = fixed_size_workspace_.tau_f;
 
   // Convenient aliases to variable size workspace variables.
   auto vtk = variable_size_workspace_.mutable_vt();
@@ -280,7 +285,7 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
       // "soft norm":
       v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
       // "soft" tangent vector:
-      const Vector2<T> that_ic =  vt_ic / v_slip(ic);
+      const Vector2<T> that_ic = vt_ic / v_slip(ic);
       that.template segment<2>(ik) = that_ic;
       mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
       // Friction force.
@@ -291,7 +296,9 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // After the previous iteration, we allow updating ftk above to have its
     // latest value before leaving.
     if (residual < vt_tolerance) {
-      break;
+      // Update generalized forces vector and return.
+      tau_f = D.transpose() * ftk;
+      return ComputationInfo::Success;
     }
 
     // Newton-Raphson residual
@@ -380,6 +387,9 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
     Jk_ldlt.compute(Jk);  // Update factorization.
     Delta_vk = Jk_ldlt.solve(-Rk);
+    if (Jk_ldlt.info() != Eigen::Success) {
+      return ComputationInfo::LinearSolverFailed;
+    }
 
     // Since we keep D constant we have that:
     // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
@@ -414,10 +424,10 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
         ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha));
   }
 
-  // Returns vector of generalized friction forces.
-  return D.transpose() * ftk;
+  // If we are here is because we reached the maximum number of iterations
+  // without converging to the specified tolerance.
+  return ComputationInfo::MaxIterationsReached;
 }
-
 
 template <typename T>
 T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& x, const T& mu) {
@@ -439,10 +449,10 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckPrime(const T& x, const T& mu) {
   }
 }
 
-
+}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake
 
 // Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::ImplicitStribeckSolver)
+    class ::drake::multibody::implicit_stribeck::ImplicitStribeckSolver)

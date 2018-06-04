@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace multibody {
+namespace implicit_stribeck {
 namespace {
 
 // Top view of the pizza saver:
@@ -155,7 +156,10 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
 
   const ImplicitStribeckSolver<double>::IterationStats& stats =
       solver_.get_iteration_statistics();
@@ -231,7 +235,10 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
 
   const ImplicitStribeckSolver<double>::IterationStats& stats =
       solver_.get_iteration_statistics();
@@ -344,8 +351,8 @@ class RollingCylinder : public ::testing::Test {
     // where τ =[Fx, Fy, Mz] contains the external force in x, the external
     // force in y and the external moment about z (out of plane).
     M_ << m_,  0,  0,
-        0, m_,  0,
-        0,  0,  I_;
+           0, m_,  0,
+           0,  0,  I_;
   }
 
   MatrixX<double> ComputeTangentialJacobian() {
@@ -436,7 +443,10 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
 
   const ImplicitStribeckSolver<double>::IterationStats& stats =
       solver_.get_iteration_statistics();
@@ -505,7 +515,10 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  VectorX<double> tau_f = solver_.SolveWithGuess(dt, v0);
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
 
   const ImplicitStribeckSolver<double>::IterationStats& stats =
       solver_.get_iteration_statistics();
@@ -547,6 +560,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 }
 
 }  // namespace
+}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake
 
