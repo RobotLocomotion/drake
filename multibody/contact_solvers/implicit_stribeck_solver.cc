@@ -46,9 +46,7 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 
 template <typename T>
 T ImplicitStribeckSolver<T>::LimitDirectionChange(
-    const VectorX<T>& v, const VectorX<T>& dv, VectorX<T>* v_alpha_out) const {
-  DRAKE_DEMAND(v_alpha_out != nullptr);
-  DRAKE_DEMAND(v_alpha_out->size() == v.size());
+    const VectorX<T>& v, const VectorX<T>& dv) const {
   DRAKE_DEMAND(dv.size() == v.size());
 
   using std::abs;
@@ -58,15 +56,11 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   const double epsilon_v = v_stribeck * parameters_.tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
-  // Alias for output v_alpha.
-  auto& v_alpha = *v_alpha_out;
-
   const Vector2<T> v1 = v + dv;  // v_alpha = v + dv, when alpha = 1.
 
   // Case I: Quick exit for small changes in v.
   const T dv_norm2 = dv.squaredNorm();
   if (dv_norm2 < epsilon_v2) {
-    v_alpha = v1;
     return 1.0;
   }
 
@@ -81,7 +75,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   // gradients might be close to zero (due to the "soft norms").
   if (x < parameters_.tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
-    v_alpha = v1 / v1_norm * v_stribeck / 2.0;  // |v_alpha| = v_stribeck / 2
+    // We make |v_alpha| = v_stribeck / 2.
     // For this case dv ≈ v1 (v ≈ 0). Therefore:
     // alpha ≈ v_stribeck / dv_norm / 2.
     return v_stribeck / dv_norm / 2.0;
@@ -93,7 +87,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     //   1. x1 < 1.0. Then we just make alpha = 1.0
     //   2. x > parameters_.tolerance i.e. we are in the zone of
     //      "strong gradients" where it is safe to take alpha = 1.0.
-    v_alpha = v1;
     return 1.0;
   } else {  // x > 1.0
 
@@ -102,7 +95,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
 
     if (x1 < 1.0) {
       // Transition happens with alpha = 1.0.
-      v_alpha = v1;
       return 1.0;
     }
 
@@ -118,11 +110,9 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     if (v_dot_dv < 0.0) {  // Moving towards the origin.
       T alpha = -v_dot_dv / dv_norm2;  // alpha > 0
       if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
-        v_alpha = v + alpha * dv;  // v1.dot(v) = 0.
+        const Vector2<T> v_alpha = v + alpha * dv;  // v1.dot(v) = 0.
         const T v_alpha_norm = v_alpha.norm();
         if (v_alpha_norm < v_stribeck) {
-          // Velocity crossed the circle of radius v_stribeck.
-          v_alpha = v + alpha * dv;
           return alpha;
         }
       }
@@ -151,7 +141,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // In particular, when v1 is exactly aligned wiht v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
     if (cos1 > cos_min) {
-      v_alpha = v1;
       return 1.0;
     } else {  // we limit the angle change to theta_max.
       // All term are made non-dimensional using v_stribeck as the reference
@@ -197,8 +186,6 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
 
       // The geometry of the problem tells us that α ≤ 1.0
       DRAKE_ASSERT(alpha <= 1.0);
-
-      v_alpha = v + alpha * dv;
       return alpha;
     }
   }
@@ -439,7 +426,19 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
     residual = Delta_vtk.norm();
 
-    // Limit the angle change
+    // Limit the angle change. We do this by limiting the angle change at each
+    // friction point calling LimitDirectionChange(). We take the minimum
+    // coefficient alpha among all points in order to satisfy the angle change
+    // limit for all points.
+    T alpha = 1.0;
+    for (int ic = 0; ic < nc; ++ic) {
+      const int ik = 2 * ic;
+      auto v = vtk.template segment<2>(ik);
+      const auto dv = Delta_vtk.template segment<2>(ik);
+      alpha = min(alpha, LimitDirectionChange(v, dv));
+    }
+
+#if 0
     const  T theta_max = parameters_.theta_max;
     const T cmin = cos(theta_max);
     T alpha_min = 1.0;
@@ -516,14 +515,15 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
       v = valpha;
       alpha_min = min(alpha_min, alpha);
     }
+#endif
 
     // Limit vk update:
-    vk = vk + alpha_min * Delta_vk;
+    vk = vk + alpha * Delta_vk;
     vtk = D * vk;
 
     // Save iteration statistics.
     statistics_.Update(
-        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha_min),
+        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha),
         cg.iterations(), ExtractDoubleOrThrow(cg.error()));
 
     //statistics_.residuals.push_back(ExtractDoubleOrThrow(residual));
