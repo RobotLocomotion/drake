@@ -11,10 +11,6 @@
 
 #include <fstream>
 #include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-#define PRINT_VAR(a) (void)a;
-#define PRINT_VARn(a) (void)a;
 
 namespace drake {
 namespace multibody {
@@ -191,7 +187,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
   }
 
   // We should never reach this point.
-  throw std::logic_error("Bug degected. An angle change case was missed.");
+  throw std::logic_error("Bug detected. An angle change case was missed.");
 }
 
 
@@ -357,8 +353,6 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
 
       // Note: dft_dv is a symmetric 2x2 matrix.
       dft_dv[ic] *= fn(ic);
-
-      //PRINT_VARn(dft_dv[ic]);
     }
 
     // Newton-Raphson Jacobian:
@@ -380,14 +374,6 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     // Form J = M + dt Dᵀdiag(dfₜ/dvₜ)D:
     Jk = M + dt * D.transpose() * diag_dftdv_times_D;
 
-    //PRINT_VARn(Jk);
-    //PRINT_VARn(Rk.transpose());
-    //PRINT_VARn(Minv_times_Dtrans);
-    //PRINT_VARn((Minv_times_Dtrans * D).eval());
-    //PRINT_VARn((D.transpose() * D).eval());
-
-    PRINT_VARn(Jk);
-
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
     // is probably best.
@@ -403,16 +389,11 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     cg.setTolerance(1.0e-6);  // relative tolerance |Jdv + R|/|R|
     cg.setMaxIterations(nv);
     Delta_vk = cg.solve(-Rk);
-    PRINT_VAR(cg.iterations());
-    PRINT_VAR(cg.error());
 
     if (cg.info() != Eigen::Success) {
       throw std::logic_error("Iterative linear solver did not converge to the "
                                  "specified vt_tolerance.");
     }
-
-    // cg.iterations()
-    // cg.error()
 
     // Since we keep D constant we have that:
     // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
@@ -438,85 +419,6 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
       alpha = min(alpha, LimitDirectionChange(v, dv));
     }
 
-#if 0
-    const  T theta_max = parameters_.theta_max;
-    const T cmin = cos(theta_max);
-    T alpha_min = 1.0;
-    for (int ic = 0; ic < nc; ++ic) {
-      const int ik = 2 * ic;
-      auto v = vtk.template segment<2>(ik);
-      const auto dv = Delta_vtk.template segment<2>(ik);
-
-      T A = v.norm();
-      T B = v.dot(dv);
-      T DD = dv.norm();
-
-      //if (A < 1e-14 && D < 1e-14) continue;
-
-      Vector2<T> v1 = v+dv;  // for alpha = 1
-      const T v1_norm = v1.norm();
-      const T v_norm = v.norm();
-      const T cos_init = v1.dot(v) / (v1_norm+1e-10) / (v_norm+1e-10);
-
-      Vector2<T> valpha;
-      T alpha;
-
-      const T x = v_norm / v_stribeck;
-      const T x1 = v1_norm / v_stribeck;
-
-      // 180 degrees direction change.
-      if ( abs(1.0+cos_init) < 1.0e-10 ) {
-        // Clip to near the origin since we know for sure we crossed it.
-        valpha = v / (v.norm()+1e-14) * v_stribeck / 2.0;
-        alpha = dv.dot(valpha - v) / dv.squaredNorm();
-      } else if (cos_init > cmin || (v1_norm*v_norm) < 1.0e-14 || x < 1.0 || x1 < 1.0) {  // the angle change is small enough
-        alpha = 1.0;
-        valpha = v1;
-      } else { // Limit the angle change
-        T A2 = A * A;
-        T A4 = A2 * A2;
-        T cmin2 = cmin * cmin;
-
-        T a = A2 * DD * DD * cmin2 - B * B;
-        T b = 2 * A2 * B * (cmin2 - 1.0);
-        T c = A4 * (cmin2 - 1.0);
-
-        T delta = b * b - 4 * a * c;
-
-        T sqrt_delta = sqrt(max(delta, 0.0));
-
-        // There should be a positive and a negative root.
-        alpha = (-b + sqrt_delta) / a / 2.0;
-        //double alpha2 = (-b - sqrt_delta)/a/2.0;
-        if (alpha <= 0) {
-          PRINT_VAR(alpha);
-          PRINT_VAR(iter);
-          PRINT_VAR(delta);
-          PRINT_VAR(A);
-          PRINT_VAR(B);
-          PRINT_VAR(cmin);
-          PRINT_VAR(DD);
-          PRINT_VAR(cos_init);
-          PRINT_VAR(abs(1.0+cos_init));
-          PRINT_VAR(a);
-          PRINT_VAR(b);
-          PRINT_VAR(c);
-          PRINT_VAR(v.transpose());
-          PRINT_VAR(v1.transpose());
-          PRINT_VAR(dv.transpose());
-        }
-
-        DRAKE_DEMAND(alpha > 0);
-
-        valpha = v + alpha * dv;
-      }
-
-      // clip v
-      v = valpha;
-      alpha_min = min(alpha_min, alpha);
-    }
-#endif
-
     // Limit vk update:
     vk = vk + alpha * Delta_vk;
     vtk = D * vk;
@@ -525,11 +427,6 @@ VectorX<T> ImplicitStribeckSolver<T>::SolveWithGuess(
     statistics_.Update(
         ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha),
         cg.iterations(), ExtractDoubleOrThrow(cg.error()));
-
-    //statistics_.residuals.push_back(ExtractDoubleOrThrow(residual));
-    //statistics_.alphas.push_back(ExtractDoubleOrThrow(alpha_min));
-    //statistics_.linear_iterations.push_back(cg.iterations());
-    //statistics_.linear_residuals.push_back(ExtractDoubleOrThrow(cg.error()));
   }
 
   // Returns vector of generalized friction forces.
