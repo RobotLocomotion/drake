@@ -133,3 +133,38 @@ class TestEigenGeometry(unittest.TestCase):
         value = test_util.create_translation()
         self.assertEqual(value.shape, (3,))
         test_util.check_translation(value)
+
+    def test_angle_axis(self):
+        angax_I = mut.AngleAxis.Identity()
+        self.assertEqual(angax_I.angle(), 0)
+        self.assertTrue(np.allclose(angax_I.axis(), [1, 0, 0]))
+
+        # Construct with rotation matrix.
+        R = np.array([
+            [0., 1, 0],
+            [-1, 0, 0],
+            [0, 0, 1]])
+        angax_R = mut.AngleAxis(rotation=R)
+        self.assertTrue(np.allclose(angax_R.rotation(), R))
+        self.assertTrue(np.allclose(angax_R.inverse().rotation(), R.T))
+        self.assertTrue(np.allclose(
+            angax_R.multiply(angax_R.inverse()).rotation(), np.eye(3)))
+        angax_R.set_rotation(np.eye(3))
+        self.assertTrue(np.allclose(angax_R.rotation(), np.eye(3)))
+
+        # Construct with quatnerion.
+        q = mut.Quaternion(R)
+        angax_q = mut.AngleAxis(quaternion=q)
+        self.assertTrue(np.allclose(angax_q.quaternion().wxyz(), q.wxyz()))
+        angax_q.set_quaternion(mut.Quaternion.Identity())
+        self.assertTrue(np.allclose(angax_q.quaternion().wxyz(), [1, 0, 0, 0]))
+
+        # Test setters.
+        angax = mut.AngleAxis(angax_I)
+        angax.set_angle(np.pi / 4)
+        v = normalize(np.array([0.1, 0.2, 0.3]))
+        with self.assertRaises(RuntimeError):
+            angax.set_axis([0.1, 0.2, 0.3])
+        angax.set_axis(v)
+        self.assertEqual(angax.angle(), np.pi / 4)
+        self.assertTrue(np.allclose(angax.axis(), v))
