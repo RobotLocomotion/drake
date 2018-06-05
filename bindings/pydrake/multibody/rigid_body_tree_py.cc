@@ -154,7 +154,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def_readonly("joint_limit_min", &RigidBodyTree<double>::joint_limit_min)
     .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max)
     .def("FindBaseBodies", &RigidBodyTree<double>::FindBaseBodies,
-         py::arg("model_instance_id") = -1);
+         py::arg("model_instance_id") = -1)
+    .def("Clone", &RigidBodyTree<double>::Clone)
+    .def("__copy__", &RigidBodyTree<double>::Clone);
 
   // This lambda defines RigidBodyTree methods which are defined for a given
   // templated type. The methods are either (a) direct explicit template
