@@ -61,19 +61,21 @@ endif()
 set(BAZEL_ENV)
 
 if(NOT APPLE)
-  # Patches applied to the compiler by particular distributions may have broken
-  # the behavior expected by bazel when identifying the built-in include
-  # directories, so call a wrapper script that intercepts certain calls and
-  # fixes the output.
-  foreach(LANG C CXX)
-    set(COMPILER ${CMAKE_${LANG}_COMPILER})
-    configure_file(tools/cc_toolchain/wrapper.sh.in ${LANG}_wrapper.sh @ONLY)
-  endforeach()
+  if(CMAKE_C_COMPILER_ID STREQUAL Clang OR CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+    # Patches applied to the compiler by particular distributions may have broken
+    # the behavior expected by bazel when identifying the built-in include
+    # directories, so call a wrapper script that intercepts certain calls and
+    # fixes the output.
+    foreach(LANG C CXX)
+      set(COMPILER ${CMAKE_${LANG}_COMPILER})
+      configure_file(cmake/wrapper.sh.in ${LANG}_wrapper.sh @ONLY)
+    endforeach()
 
-  list(APPEND BAZEL_ENV
-    "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh"
-    "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh"
-  )
+    list(APPEND BAZEL_ENV
+      "CC=${CMAKE_CURRENT_BINARY_DIR}/C_wrapper.sh"
+      "CXX=${CMAKE_CURRENT_BINARY_DIR}/CXX_wrapper.sh"
+    )
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
