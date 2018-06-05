@@ -319,3 +319,38 @@ class TestCustom(unittest.TestCase):
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
+
+    def test_abstract_io_port(self):
+        # N.B. Since this has trivial operations, we can test all scalar types.
+        for T in [float, AutoDiffXd, Expression]:
+
+            def MakeAbstractValue():
+                return AbstractValue.Make(("test_string", T(np.pi)))
+
+            class AbstractFeedthroughSystem(LeafSystem_[T]):
+                def __init__(self):
+                    LeafSystem_[T].__init__(self)
+                    test_input_type = MakeAbstractValue()
+                    self.input_port = \
+                        self._DeclareInputPort(PortDataType.kAbstractValued, 0)
+                    self.output_port = \
+                        self._DeclareAbstractOutputPort(
+                            MakeAbstractValue, self._DoCalcAbstractOutput)
+
+                def _DoCalcAbstractOutput(self, context, y_data):
+                    input_value = \
+                        self.EvalAbstractInput(context, 0).get_value()
+                    print(y_data.get_mutable_value())
+                    y_data.set_value(input_value)
+
+            system = AbstractFeedthroughSystem()
+            context = system.CreateDefaultContext()
+
+            self.assertEqual(context.get_num_input_ports(), 1)
+            fixed_input = MakeAbstractValue()
+            context.FixInputPort(0, fixed_input)
+            output = system.AllocateOutput(context)
+            self.assertEqual(output.get_num_ports(), 1)
+            system.CalcOutput(context, output)
+            value = output.get_data(0)
+            self.assertEqual(value.get_value(), fixed_input.get_value())
