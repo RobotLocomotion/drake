@@ -192,6 +192,12 @@ class LeafSystem : public System<T> {
       BasicVector<T>& s = xd.get_mutable_vector(i);
       s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
+    AbstractValues& xa = state->get_mutable_abstract_state();
+    for (int i = 0; i < xa.size(); i++) {
+        AbstractValue& a = xa.get_mutable_value(i);
+        auto model_value = model_abstract_states_.CloneModel(i);
+        a.SetFrom(*model_value);
+    }
   }
 
   /// Default implementation: sets all numeric parameters to the model vector
