@@ -73,7 +73,7 @@ filegroup(
         ":osx_cc_wrapper",
         ":universal_toolchain_deps",
     ],
-    visibility = ["//visibility:private"],
+    visibility = ["//common:__pkg__"],
 )
 
 filegroup(
