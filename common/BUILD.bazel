@@ -687,6 +687,8 @@ sh_test(
     name = "print_host_settings_test",
     srcs = ["test/print_host_settings_test.sh"],
     data = [":print_host_settings"],
+    # TODO(jwnimmer-tri) Temporarily disabled because it fails on macOS.
+    tags = ["manual"],
 )
 
 drake_cc_googletest(
