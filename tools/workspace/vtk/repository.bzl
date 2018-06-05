@@ -448,6 +448,16 @@ licenses([
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
+        "vtkImagingCore",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
         "vtkIOGeometry",
         hdrs = [
             "vtkIOGeometryModule.h",
@@ -469,6 +479,7 @@ licenses([
             "vtkImageReader2.h",
             "vtkImageWriter.h",
             "vtkIOImageModule.h",
+            "vtkJPEGReader.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
         ],
@@ -519,6 +530,7 @@ licenses([
             "vtkActor.h",
             "vtkActorCollection.h",
             "vtkCamera.h",
+            "vtkLight.h",
             "vtkMapper.h",
             "vtkPolyDataMapper.h",
             "vtkProp.h",
@@ -526,7 +538,9 @@ licenses([
             "vtkPropCollection.h",
             "vtkProperty.h",
             "vtkRenderer.h",
+            "vtkRendererCollection.h",
             "vtkRenderingCoreModule.h",
+            "vtkRenderPass.h",
             "vtkRenderWindow.h",
             "vtkTexture.h",
             "vtkViewport.h",
@@ -571,6 +585,64 @@ licenses([
             ":vtkCommonDataModel",
             ":vtkRenderingCore",
             VTKGLEW,
+        ],
+    )
+
+    file_content += """
+cc_library(
+    name = "ospray",
+    srcs =
+        glob(["lib/libembree.so*"]) +
+        glob(["lib/libospray*.so*"]),
+    visibility = ["//visibility:private"],
+)
+"""
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingOSPRay",
+        visibility = ["//visibility:public"],
+        hdrs = [
+            "vtkOSPRayLightNode.h",
+            "vtkOSPRayMaterialLibrary.h",
+            "vtkOSPRayPass.h",
+            "vtkOSPRayRendererNode.h",
+            "vtkRenderingOSPRayModule.h",
+            "vtkRenderingVolumeModule.h",
+        ],
+        deps = [
+            ":vtkCommonDataModel",
+            ":vtkImagingCore",
+            ":vtkIOXML",
+            ":vtkRenderingOpenGL2",
+            ":vtkRenderingCore",
+            ":vtkRenderingSceneGraph",
+            ":vtkRenderingVolume",
+            ":ospray",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingSceneGraph",
+        visibility = ["//visibility:public"],
+        hdrs = [
+            "vtkLightNode.h",
+            "vtkRendererNode.h",
+            "vtkRenderingSceneGraphModule.h",
+            "vtkViewNode.h",
+        ],
+        deps = [
+            ":vtkCommonCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingVolume",
+         deps = [
+            ":vtkCommonCore",
+            ":vtkRenderingCore",
         ],
     )
 
