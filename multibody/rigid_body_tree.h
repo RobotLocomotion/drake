@@ -1482,8 +1482,8 @@ class RigidBodyTree {
   int parseBodyOrFrameID(const int body_or_frame_id) const;
 
   void addDistanceConstraint(
-      int from_body_or_frame_ind, const Eigen::Vector3d& from_point,
-      int to_body_or_frame_ind, const Eigen::Vector3d& to_point,
+      int from_body_or_frame_index, const Eigen::Vector3d& from_point,
+      int to_body_or_frame_index, const Eigen::Vector3d& to_point,
       double distance);
 
   template <typename Scalar>
@@ -1673,8 +1673,9 @@ class RigidBodyTree {
               Eigen::aligned_allocator<RigidBodyLoop<T>>> loops;
 
   // Rigid body distance constraints
-  std::vector<RigidBodyDistCon, Eigen::aligned_allocator<RigidBodyDistCon>>
-      distCons;
+  std::vector<RigidBodyDistanceConstraint,
+      Eigen::aligned_allocator<RigidBodyDistanceConstraint>>
+      distance_constraints;
 
   drake::TwistVector<double> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces

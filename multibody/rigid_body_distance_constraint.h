@@ -11,7 +11,7 @@
 /// `Vector3d` objects representing a point on each `RigidBody` object, and a
 /// distance between these two points.
 ///
-class RigidBodyDistCon {
+class RigidBodyDistanceConstraint {
  public:
   /// The constructor
   ///
@@ -24,9 +24,10 @@ class RigidBodyDistCon {
   /// @param[in] pointB Point on second Rigid Body to measure distance from
   ///
   /// @param[in] dist Distance the two points should be separated by
-  RigidBodyDistCon(int bodyA_index, const Eigen::Vector3d& pointA,
-                  int bodyB_index, const Eigen::Vector3d& pointB,
-                  double dist);
+  RigidBodyDistanceConstraint(int bodyA_index,
+                  const Eigen::Vector3d& pointA, int bodyB_index,
+                  const Eigen::Vector3d& pointB,
+                  double distance_);
 
   const int from_body, to_body;
   const Eigen::Vector3d from_point, to_point;
