@@ -185,12 +185,14 @@ drake_cc_library(
     name = "rgbd_renderer",
     srcs = [
         "rgbd_renderer.cc",
+        "rgbd_renderer_ospray.cc",
         "rgbd_renderer_vtk.cc",
     ],
     hdrs = [
         "color_palette.h",
         "depth_shaders.h",
         "rgbd_renderer.h",
+        "rgbd_renderer_ospray.h",
         "rgbd_renderer_vtk.h",
     ],
     deps = [
@@ -207,7 +209,9 @@ drake_cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
     ],
 )
 
@@ -235,7 +239,9 @@ drake_cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
     ],
 )
 
