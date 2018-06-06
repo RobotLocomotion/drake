@@ -13,44 +13,18 @@ namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
 
+namespace internal {
 template <typename T>
-ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
-    nv_(nv),
-    fixed_size_workspace_(nv),
-    // Provide an initial workspace size so that we avoid re-allocations
-    // afterwards as much as we can.
-    variable_size_workspace_(128) {
-  DRAKE_THROW_UNLESS(nv > 0);
-  using std::cos;
-  // Precompute cos(theta_max).
-  cos_min_ = cos(parameters_.theta_max);
-}
-
-template <typename T>
-void ImplicitStribeckSolver<T>::SetProblemData(
-    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
-    EigenPtr<const VectorX<T>> p_star,
-    EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
-  nc_ = fn->size();
-  DRAKE_THROW_UNLESS(p_star->size() == nv_);
-  DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
-  DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
-  DRAKE_THROW_UNLESS(mu->size() == nc_);
-  // Keep references to the problem data.
-  problem_data_aliases_.Set(M, D, p_star, fn, mu);
-  variable_size_workspace_.ResizeIfNeeded(nc_);
-}
-
-template <typename T>
-T ImplicitStribeckSolver<T>::LimitDirectionChange(
-    const VectorX<T>& v, const VectorX<T>& dv) const {
+T LimitDirectionChange<T>::run(
+    const Eigen::Ref<const Vector2<T>>& v,
+    const Eigen::Ref<const Vector2<T>>& dv,
+    double cos_min, double v_stribeck, double tolerance) {
   DRAKE_DEMAND(dv.size() == v.size());
 
   using std::abs;
   using std::sqrt;
 
-  const double v_stribeck = parameters_.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters_.tolerance;
+  const double epsilon_v = v_stribeck * tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   const Vector2<T> v1 = v + dv;  // v_alpha = v + dv, when alpha = 1.
@@ -70,7 +44,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
 
   // Case II: limit transition from stiction to sliding when x << 1.0 and
   // gradients might be close to zero (due to the "soft norms").
-  if (x < parameters_.tolerance && x1 > 1.0) {
+  if (x < tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
     // We make |v_alpha| = v_stribeck / 2.
     // For this case dv ≈ v1 (v ≈ 0). Therefore:
@@ -134,7 +108,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
     // We allow angle changes theta < theta_max, and we take alpha = 1.0.
     // In particular, when v1 is exactly aligned wiht v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
-    if (cos1 > cos_min_) {
+    if (cos1 > cos_min) {
       return 1.0;
     } else {  // we limit the angle change to theta_max.
       // All term are made non-dimensional using v_stribeck as the reference
@@ -143,7 +117,7 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
       const T dx = dv.norm() / v_stribeck;
       const T dx2 = x * x;
       const T dx4 = dx2 * dx2;
-      const T cmin2 = cos_min_ * cos_min_;
+      const T cmin2 = cos_min * cos_min;
 
       // Form the terms of the quadratic equation aα² + bα + c = 0.
       const T a = dx2 * dx * dx * cmin2 - x_dot_dx * x_dot_dx;
@@ -184,6 +158,43 @@ T ImplicitStribeckSolver<T>::LimitDirectionChange(
 
   // We should never reach this point.
   throw std::logic_error("Bug detected. An angle change case was missed.");
+}
+}
+
+template <typename T>
+ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
+    nv_(nv),
+    fixed_size_workspace_(nv),
+    // Provide an initial workspace size so that we avoid re-allocations
+    // afterwards as much as we can.
+    variable_size_workspace_(128) {
+  DRAKE_THROW_UNLESS(nv > 0);
+  using std::cos;
+  // Precompute cos(theta_max).
+  cos_min_ = cos(parameters_.theta_max);
+}
+
+template <typename T>
+void ImplicitStribeckSolver<T>::SetProblemData(
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+    EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+  nc_ = fn->size();
+  DRAKE_THROW_UNLESS(p_star->size() == nv_);
+  DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
+  DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
+  DRAKE_THROW_UNLESS(mu->size() == nc_);
+  // Keep references to the problem data.
+  problem_data_aliases_.Set(M, D, p_star, fn, mu);
+  variable_size_workspace_.ResizeIfNeeded(nc_);
+}
+
+template <typename T>
+T ImplicitStribeckSolver<T>::LimitDirectionChange(
+    const Eigen::Ref<const Vector2<T>>& v,
+    const Eigen::Ref<const Vector2<T>>& dv) const {
+  return internal::LimitDirectionChange<T>::run(
+      v, dv, cos_min_, parameters_.stiction_tolerance, parameters_.tolerance);
 }
 
 template <typename T>
@@ -398,10 +409,12 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
     residual = Delta_vt.norm();
 
-    // Limit the angle change. We do this by limiting the angle change at each
-    // friction point calling LimitDirectionChange(). We take the minimum
-    // coefficient alpha among all points in order to satisfy the angle change
-    // limit for all points.
+    // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
+    // The angle change θ is defined by the dot product between vₜᵏ⁺¹ and vₜᵏ
+    // as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
+    // We'll do so by computing a coefficient 0 < α < 1 so that if the
+    // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
+    // for all contact points.
     T alpha = 1.0;
     for (int ic = 0; ic < nc; ++ic) {
       const int ik = 2 * ic;
