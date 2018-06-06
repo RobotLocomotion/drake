@@ -1,1 +1,0 @@
-#include "drake/manipulation/scene_generation/random_clutter_generator.h"
