@@ -20,6 +20,15 @@ struct LimitDirectionChange {
 // We'll do so by computing a coefficient 0 < α < 1 so that if the
 // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
 // for all contact points.
+
+// TODO:
+//  Define what the "Stribeck circle" is so that it helps understand comments.
+//  Define "strong" vs. "weak" gradients.
+//  Define v_alpha, also to help understand comments.
+//  Mention that cases with norm(v_alpha) < epsilon_v are not allowed when v
+//  is outside the Stribeck circle, to avoid falling within a region of
+//  "weak gradints"
+
 static T run(const Eigen::Ref<const Vector2<T>>& v,
              const Eigen::Ref<const Vector2<T>>& dv,
              double cos_min, double v_stribeck, double tolerance);

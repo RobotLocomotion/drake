@@ -22,6 +22,8 @@ T LimitDirectionChange<T>::run(
   DRAKE_DEMAND(dv.size() == v.size());
 
   using std::abs;
+  using std::max;
+  using std::min;
   using std::sqrt;
 
   const double epsilon_v = v_stribeck * tolerance;
@@ -52,12 +54,24 @@ T LimitDirectionChange<T>::run(
     return v_stribeck / dv_norm / 2.0;
   }
 
-  // Another quick exit.
+  // Special case IIb: Transition to an almost exact stiction from sliding.
+  // We want to avoid v1 landing in a region of zero gradients so that we force
+  // it to land within the circle of radius v_stribeck, at v_stribec/2 in the
+  // direction of v.
+  if (x > 1.0 && x1 < epsilon_v) {
+    // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
+    // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. It turns out that for this to
+    // happen we need:
+    return 1.0 - v_stribeck / 2.0 / dv_norm;
+  }
+
   if (x < 1.0) {
-    // Since we went through Case II, we know that either:
-    //   1. x1 < 1.0. Then we just make alpha = 1.0
-    //   2. x > parameters_.tolerance i.e. we are in the zone of
-    //      "strong gradients" where it is safe to take alpha = 1.0.
+    // Another quick exit. Two possibilities:
+    // x1 < 1: we go from within the Stribeck circle back into it. Since this
+    //         region has strong gradients, we allow it. i.e. alpha = 1.0
+    // x1 > 1: If we go from a region of strong gradients (x < 1) to sliding
+    //         (x1 > 1), we allow it. Notice that the case from weak gradients
+    //         (close to zero) when x < tolerance, was covered by Case II.
     return 1.0;
   } else {  // x > 1.0
     // We want to detect transition from sliding (x > 1) to stiction when the
@@ -82,11 +96,13 @@ T LimitDirectionChange<T>::run(
       if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
         const Vector2<T> v_alpha = v + alpha * dv;  // v1.dot(v) = 0.
         const T v_alpha_norm = v_alpha.norm();
-
-        // Within the circle of radius v_stribeck, but almost zero.
         if (v_alpha_norm < epsilon_v) {
+          // v_alpha is almost zero.
+          // This situation happens when dv ≈ -a v with a > 0.
           return alpha - v_stribeck / 2.0 / dv_norm;
         } else if (v_alpha_norm < v_stribeck) {
+          // v_alpha falls within the Stribeck circle but its magnitude is
+          // larger than epsilon_v.
           return alpha;
         }
       }
@@ -119,13 +135,13 @@ T LimitDirectionChange<T>::run(
       // sale.
       const T x_dot_dx = v_dot_dv / (v_stribeck * v_stribeck);
       const T dx = dv.norm() / v_stribeck;
-      const T dx2 = x * x;
-      const T dx4 = dx2 * dx2;
+      const T x2 = x * x;
+      const T dx4 = x2 * x2;
       const T cmin2 = cos_min * cos_min;
 
       // Form the terms of the quadratic equation aα² + bα + c = 0.
-      const T a = dx2 * dx * dx * cmin2 - x_dot_dx * x_dot_dx;
-      const T b = 2 * dx2 * x_dot_dx * (cmin2 - 1.0);
+      const T a = x2 * dx * dx * cmin2 - x_dot_dx * x_dot_dx;
+      const T b = 2 * x2 * x_dot_dx * (cmin2 - 1.0);
       const T c = dx4 * (cmin2 - 1.0);
 
       // Solve quadratic equation. We know, from the geometry of the problem,
@@ -151,7 +167,23 @@ T LimitDirectionChange<T>::run(
         // Geometry tell us that a real solution does exist i.e. Delta > 0.
         DRAKE_ASSERT(Delta > 0);
         const T sqrt_delta = sqrt(Delta);
-        alpha = (-b + sqrt_delta) / a / 2.0;  // we know a > 0
+
+        const T alpha_plus = (-b + sqrt_delta) / a / 2.0;
+        const T alpha_minus = (-b - sqrt_delta) / a / 2.0;
+
+        // The geometry of the problem tells us that at least one must be
+        // positive.
+        DRAKE_ASSERT(alpha_minus > 0 || alpha_plus > 0);
+
+        if (alpha_minus > 0 && alpha_plus > 0) {
+          // This branch is triggered for large angle changes (typically close
+          // to 180 degrees) between v1 and vt
+          alpha = min(alpha_minus, alpha_plus);
+        } else {
+          // This branch is triggered for small angles changes (typically
+          // smaller than 90 degrees) between v1 and vt.
+          alpha = max(alpha_minus, alpha_plus);
+        }
       }
 
       // The geometry of the problem tells us that α ≤ 1.0
