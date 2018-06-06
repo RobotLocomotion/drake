@@ -1,96 +1,83 @@
 #pragma once
 
-#include <map>
+#include <random>
+#include <set>
 #include <string>
 
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
-#include "drake/lcm/drake_lcm.h"
-#include "drake/manipulation/util/world_sim_tree_builder.h"
-#include "drake/multibody/rigid_body_constraint.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace manipulation {
 namespace scene_generation {
-/* A utility method for populating a WorldSimTreeBuilder object with 
- * multiple floating instances of specified models.
- * @param model_map A std::map between model names and quantities of
- * repetitions of the objects to be rendered in the clutter.
- */
-void PopulateWithFloatingObjectRepetitions(
-  util::WorldSimTreeBuilder<double>* world_sim_tree_builder, 
-  std::map<std::string, int> model_map);
 
 /**
- * Given a RigidBodyTree containing a given scene with atleast one floating
- * object, the RandomClutterGenerator generates poses such that the specified 
- * floating element(s) are organised into a random cluttered scene (random 
- * configuration) within a specified bounding region. 
- * each of these objects are seperated from each other by (settable) minimum distance and their object frames are
- * located within a (settable) bounding box volume. 
-
- * The ClutterGenerator
- * initializes a random configuration of the specified set of objects and
- * uses InverseKinematics to find a feasible configuration that obeys
- * MinDistance, FixedOrientation, and WorldPosition constraints, and finally
- * simulates falling in order to generate the scene and return the final
- * poses.
+ * Given a RigidBodyTree containing a given scene the RandomClutterGenerator
+ * can repeatedly generate bounded random poses/configurations on selected
+ * model instances within the tree. Each of these objects are seperated from
+ * each other by (settable) minimum distance and their object frames are
+ * located within a (settable) bounding box volume. This class solves the
+ * IK problem to find feasible poses on the clutter bodies
+ *
+ * NOTES:
+ * 1. Current version only ensures bounded clutter for the case of all model
+ * instances on the tree containing the QuaternionFloatingJoint.
+ * 2. The current version has only been tested with SNOPT.
+ * 3. The solvability of the problem is strongly dependent on the dimensions
+ * of the clutter bounding volume as specified in clutter_size and the number
+ * and geometry of the clutter model instances that are to be dealt with. There
+ * is no explicit time-out on the execution and the GenerateFloatingClutter
+ * will keep attempting to find a solution, if any.
+ * 4. There are no explicit guarantees on the solvability.
+ * 5. The underlying IK computations utilise the bullet collision library and
+ * as such only process the convex-hull of the geometry. The resulting IK
+ * solution will be subject to this simplification.
  */
+
 class RandomClutterGenerator {
  public:
   /**
-   * Constructs the RandomClutterGenerator with bounding volume enabled.
-   
-   * @param bounding_box Specifications of the volume bounds on the
-   * generated clutter.
-   * @param lcm Pointer to the DrakeLcmInterface object.
-   * @param visualize_steps Flag enabling visualization of the clutter
-   * generation process.
+   * Constructs the RandomClutterGenerator
+   * @param scene_tree A pointer to the tree containing the scene.
+   * @param clutter_model_instances A set of model instance indices
+   * corresponding to the bodies on the tree that should comprise the clutter
+   * @param clutter_center Centroid of the clutter bounding box in
+   * world coordinates.
+   * @param clutter_size The size of the clutter bounding box along the
+   * length, breadth, and height.
    * @param min_inter_object_distance Minimum distance between objects.
-   * @param X_WC Transform to convert the cluttered scene object poses
-   * to a desired reference frame.
    */
-  RandomClutterGenerator(
-      const RigidBodyTreed& scene_tree, 
-      Eigen::Isometry3<double> X_WB,
-      Vector3<double> bounding_box_size, 
-      std::vector<int> clutter_model_instances,
-      double min_inter_object_distance = 0.001);
+  RandomClutterGenerator(RigidBodyTree<double>* scene_tree,
+                         const std::set<int>& clutter_model_instances,
+                         const Vector3<double>& clutter_center,
+                         const Vector3<double>& clutter_size,
+                         double min_inter_object_distance = 0.001);
+
   /**
-   * Generates the cluttered scene.
-   * @return a ModelPosePair of the object model names and their poses.
+   * Generates the "Floating" clutter scene by solving an IK problem.
+   * @return a VectorX<double> containing a feasible .
+   * @param q_nominal : nominal configuration for the scene_tree. Poses of
+   * the model_instances not specified in `clutter_model_instances' are set
+   * to this value.
+   * @param generator : used to pass a seed.
+   * @param z_height_cost : An optional cost added to the optimization problem 
+   * on the height (z) of each of the model intances. Set to either 0 or {} 
+   * in order to not utilise any z cost.
    */
- VectorX<double> Generate(VectorX<double> q_in);
+  VectorX<double> GenerateFloatingClutter(const VectorX<double>& q_nominal,
+                                          std::default_random_engine *generator,
+                                          optional<double> z_height_cost = {});
 
  private:
-  // Generates a random pose within the bounds of the problem.
-  Isometry3<double> GenerateRandomBoundedPose();
+  RigidBodyTree<double>* scene_tree_ptr_{};
+  std::set<int> clutter_model_instances_;
 
-  // Generates a random bounded tree configuration.
-  VectorX<double> GetRandomBoundedConfiguration(
-      q_initial);
-
-  // Simulates a drop of the objects to the ground.
-  VectorX<double> DropObjectsToGround(
-      std::unique_ptr<systems::RigidBodyPlant<double>> plant_ptr,
-      const VectorX<double>& q_ik);
-
-  const RigidBodyTreed scene_tree_;
-  Isometry3<double> X_WB_{
-    Isometry3<double>::Identity();}
-  Vector3<double> bounding_box_size_{
-    Vector3<double>::Zero();}
-  std::vector<int> clutter_model_instances_;
+  Vector3<double> clutter_center_;
+  Vector3<double> clutter_lb_;
+  Vector3<double> clutter_ub_;
 
   double inter_object_distance_{0.1};
-  bool visualize_steps_{false};  
-  std::vector<int> clutter_model_instances_;
-
-  // Will be used to obtain a seed for the random number engine
-  std::random_device random_device_{};
-  // Standard mersenne_twister_engine seeded with rd()
-  std::mt19937 generator_;
 };
 
 }  // namespace scene_generation

@@ -17,57 +17,57 @@
 
     <!-- Front -->
     <visual>
-    s  <origin rpy="0 0 0" xyz="0.19 0 0.065"/>
+      <origin rpy="0 0 0" xyz="0.19 0 0.15"/>
       <geometry>
-        <box size="0.01 0.52 0.13"/>
+        <box size="0.01 0.52 0.3"/>
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0.19 0 0.065"/>
+      <origin rpy="0 0 0" xyz="0.19 0 0.15"/>
       <geometry>
-        <box size="0.01 0.52 0.13"/>
+        <box size="0.01 0.52 0.3"/>
       </geometry>
     </collision>
 
     <!-- Back -->
     <visual>
-      <origin rpy="0 0 0" xyz="-0.19 0 0.065"/>
+      <origin rpy="0 0 0" xyz="-0.19 0 0.15"/>
       <geometry>
-        <box size="0.01 0.52 0.13"/>
+        <box size="0.01 0.52 0.3"/>
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="-0.19 0 0.065"/>
+      <origin rpy="0 0 0" xyz="-0.19 0 0.15"/>
       <geometry>
-        <box size="0.01 0.52 0.13"/>
+        <box size="0.01 0.52 0.3"/>
       </geometry>
     </collision>
 
     <!-- Left -->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0.26 0.065"/>
+      <origin rpy="0 0 0" xyz="0 0.26 0.15"/>
       <geometry>
-        <box size="0.38 0.01 0.13"/>
+        <box size="0.38 0.01 0.3"/>
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.26 0.065"/>
+      <origin rpy="0 0 0" xyz="0 0.26 0.15"/>
       <geometry>
-        <box size="0.38 0.01 0.13"/>
+        <box size="0.38 0.01 0.3"/>
       </geometry>
     </collision>
 
     <!-- Right -->
     <visual>
-      <origin rpy="0 0 0" xyz="0 -0.26 0.065"/>
+      <origin rpy="0 0 0" xyz="0 -0.26 0.15"/>
       <geometry>
-        <box size="0.38 0.01 0.13"/>
+        <box size="0.38 0.01 0.3"/>
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 -0.26 0.065"/>
+      <origin rpy="0 0 0" xyz="0 -0.26 0.15"/>
       <geometry>
-        <box size="0.38 0.01 0.13"/>
+        <box size="0.38 0.01 0.3"/>
       </geometry>
     </collision>
 
@@ -87,3 +87,5 @@
 
   </link>
 </robot>
+
+
