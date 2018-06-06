@@ -167,7 +167,8 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Attempt to add a body having the same name as a body already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model->AddRigidBody("iiwa_link_5", SpatialInertia<double>()),
+      model->AddRigidBody("iiwa_link_5", default_model_instance(),
+                          SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "This model already contains a body named 'iiwa_link_5'. "
@@ -785,4 +786,3 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
 }  // namespace multibody_model
 }  // namespace multibody
 }  // namespace drake
-

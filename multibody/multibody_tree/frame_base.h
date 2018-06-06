@@ -56,6 +56,9 @@ class FrameBase : public MultibodyTreeElement<FrameBase<T>, FrameIndex> {
   //     const FrameBase<T> measured_in_frame) const;
   // That computes the pose of `this` frame as measured in the
   // `measured_in_frame` frame.
+ protected:
+  explicit FrameBase(ModelInstanceIndex model_instance)
+      : MultibodyTreeElement<FrameBase<T>, FrameIndex>(model_instance) {}
 };
 
 }  // namespace multibody

@@ -84,9 +84,9 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
-  /// Given the actuation values u for `this` actuator, this method sets the
-  /// actuation vector u for the entire %MultibodyTree model to which this
-  /// actuator belongs to.
+  /// Given the actuation values u_a for `this` actuator, this method
+  /// sets the actuation vector u for the entire MultibodyTree model
+  /// to which this actuator belongs to.
   /// @param[in] u_a
   ///   Actuation values for `this` actuator. It must be of size equal to the
   ///   number of degrees of freedom of the actuated Joint, see

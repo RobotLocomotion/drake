@@ -17,13 +17,6 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-// This is a class used by MultibodyTree internals to create the implementation
-// for a particular joint object.
-template <typename T>
-class JointImplementationBuilder;
-}  // namespace internal
-
 /// A %Joint models the kinematical relationship which characterizes the
 /// possible relative motion between two bodies.
 /// The two bodies connected by a %Joint object are referred to as the
@@ -89,9 +82,11 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
   Joint(const std::string& name,
-        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child) :
-      name_(name),
-      frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
+        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child)
+      : MultibodyTreeElement<Joint<T>, JointIndex>(
+            frame_on_child.model_instance()),
+        name_(name),
+        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
   }
