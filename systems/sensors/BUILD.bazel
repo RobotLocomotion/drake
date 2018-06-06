@@ -453,6 +453,29 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test",
+    data = [
+        ":test_models",
+    ],
+    tags = [
+        # Disable under LeakSanitizer and Valgrind Memcheck due to
+        # driver-related leaks. For more information, see #7520.
+        "no_lsan",
+        "no_memcheck",
+        # Mitigates driver-related issues when running under `bazel test`. For
+        # more information, see #7004.
+        "no-sandbox",
+    ],
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "rgbd_renderer_vtk_test",
     data = [
         ":test_models",
