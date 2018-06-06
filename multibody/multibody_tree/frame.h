@@ -84,8 +84,11 @@ class Frame : public FrameBase<T> {
 
  protected:
   /// Only derived classes can use this constructor. It creates a %Frame
-  /// object attached to `body`.
-  explicit Frame(const Body<T>& body) : body_(body) {}
+  /// object attached to `body` and puts the frame in the body's model
+  /// instance.
+  explicit Frame(const Body<T>& body)
+      : FrameBase<T>(body.model_instance()),
+        body_(body) {}
 
   /// @name Methods to make a clone templated on different scalar types.
   ///
