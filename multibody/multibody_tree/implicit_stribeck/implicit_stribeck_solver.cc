@@ -88,7 +88,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
   auto dft_dv = variable_size_workspace_.mutable_dft_dv();
   auto mus = variable_size_workspace_.mutable_mu();
-  auto that = variable_size_workspace_.mutable_that();
+  auto that = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
   // Initialize residual to a value larger than tolerance so that the solver at
@@ -105,7 +105,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // We use the stiction tolerance as a reference scale to estimate a small
   // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
-  // singularity when tangential velocities are zerl.
+  // singularity when tangential velocities are zero.
   const double epsilon_v = v_stribeck * 1.0e-4;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
@@ -158,7 +158,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
       // Compute dmu/dv = (1/v_stribeck) * dmu/dx
       // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      const T dmudv = ModifiedStribeckPrime(
+      const T dmudv = ModifiedStribeckDerivative(
           v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
 
       const auto that_ic = that.template segment<2>(ik);
@@ -233,10 +233,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
     J_ldlt.compute(J);  // Update factorization.
-    Delta_v = J_ldlt.solve(-R);
     if (J_ldlt.info() != Eigen::Success) {
       return ComputationInfo::LinearSolverFailed;
     }
+    Delta_v = J_ldlt.solve(-R);
 
     // Since we keep D constant we have that:
     // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
@@ -262,8 +262,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     vt = D * v;
 
     // Save iteration statistics.
-    statistics_.Update(
-        ExtractDoubleOrThrow(residual), ExtractDoubleOrThrow(alpha));
+    statistics_.Update(ExtractDoubleOrThrow(residual));
   }
 
   // If we are here is because we reached the maximum number of iterations
@@ -282,7 +281,8 @@ T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& x, const T& mu) {
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeckPrime(const T& x, const T& mu) {
+T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
+    const T& x, const T& mu) {
   DRAKE_ASSERT(x >= 0);
   if (x >= 1) {
     return 0;
