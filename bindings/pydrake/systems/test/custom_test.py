@@ -321,36 +321,42 @@ class TestCustom(unittest.TestCase):
                     context.get_continuous_state_vector().size(), 6)
 
     def test_abstract_io_port(self):
+        test = self
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
+            expected_default_value = ("default", T(0.))
+            expected_input_value = ("input", T(np.pi))
+            expected_output_value = ("output", 2*T(np.pi))
 
-            def MakeAbstractValue():
-                return AbstractValue.Make(("test_string", T(np.pi)))
-
-            class AbstractFeedthroughSystem(LeafSystem_[T]):
+            class CustomAbstractSystem(LeafSystem_[T]):
                 def __init__(self):
                     LeafSystem_[T].__init__(self)
-                    test_input_type = MakeAbstractValue()
-                    self.input_port = \
-                        self._DeclareInputPort(PortDataType.kAbstractValued, 0)
-                    self.output_port = \
-                        self._DeclareAbstractOutputPort(
-                            MakeAbstractValue, self._DoCalcAbstractOutput)
+                    test_input_type = AbstractValue.Make(
+                        expected_default_value)
+                    self.input_port = self._DeclareInputPort(
+                        PortDataType.kAbstractValued, 0)
+                    self.output_port = self._DeclareAbstractOutputPort(
+                        lambda: AbstractValue.Make(expected_default_value),
+                        self._DoCalcAbstractOutput)
 
                 def _DoCalcAbstractOutput(self, context, y_data):
-                    input_value = \
-                        self.EvalAbstractInput(context, 0).get_value()
-                    print(y_data.get_mutable_value())
-                    y_data.set_value(input_value)
+                    input_value = self.EvalAbstractInput(
+                        context, 0).get_value()
+                    # The allocator function will populate the output with
+                    # the "input"
+                    test.assertTupleEqual(y_data.get_value(),
+                                          expected_default_value)
+                    y_data.set_value(expected_output_value)
+                    test.assertTupleEqual(y_data.get_value(),
+                                          expected_output_value)
 
-            system = AbstractFeedthroughSystem()
+            system = CustomAbstractSystem()
             context = system.CreateDefaultContext()
 
             self.assertEqual(context.get_num_input_ports(), 1)
-            fixed_input = MakeAbstractValue()
-            context.FixInputPort(0, fixed_input)
+            context.FixInputPort(0, AbstractValue.Make(expected_input_value))
             output = system.AllocateOutput(context)
             self.assertEqual(output.get_num_ports(), 1)
             system.CalcOutput(context, output)
             value = output.get_data(0)
-            self.assertEqual(value.get_value(), fixed_input.get_value())
+            self.assertEqual(value.get_value(), expected_output_value)
