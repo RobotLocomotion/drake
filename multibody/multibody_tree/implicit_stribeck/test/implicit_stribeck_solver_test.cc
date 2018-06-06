@@ -6,33 +6,31 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
 namespace {
 
+// A test fixture to test LimitDirectionChange for a very standard configuration
+// of parameters.
 class DirectionLimiter : public ::testing::Test {
- public:
-  void SetUp() override {
-  }
-
+ protected:
   // Helper to make a 2D rotation matrix.
-  Matrix2<double> Rotation(double theta) {
+  static Matrix2<double> Rotation(double theta) {
     return Eigen::Rotation2D<double>(theta).toRotationMatrix();
   }
 
- protected:
   // Limiter parameters. See LimitDirectionChange for further details.
   const double v_stribeck = 1.0e-4;  // m/s
   const double theta_max = M_PI / 6.0;  // radians.
   const double cos_min = std::cos(theta_max);
   const double tolerance = 0.01;  // Dimensionless. A factor of v_stribeck.
-  // Tolerance to perform comparisons close to machine precission.
+  // Tolerance to perform comparisons close to machine precision.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 };
 
+// Verify results when vt and dvt are exactly zero.
 TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
@@ -41,6 +39,8 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
+// Verify implementation when vt = 0 and the update dvt takes the velocity
+// to within the Stribeck circle.
 TEST_F(DirectionLimiter, ZeroVtoWithinStribeckCircle) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stribeck;
@@ -92,6 +92,9 @@ TEST_F(DirectionLimiter, OutsideStribeckToWithinCircle) {
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
+// Similar to ZeroVtoOutsideStribeckCircle, a velocity vt within the Stribeck
+// region (but not to zero) is updated to a sliding configuration. Since vt
+// falls in a region of strong gradients, the limiter allows it.
 TEST_F(DirectionLimiter, WithinStribeckCircleToOutsideStribeckCircle) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stribeck;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
@@ -119,6 +122,7 @@ TEST_F(DirectionLimiter, StictionToSliding) {
   EXPECT_NEAR(alpha, alpha_expected, kTolerance);
 }
 
+// Verifies that the limiter allows negligible changes dvt with alpha = 1.
 TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt =
@@ -128,6 +132,9 @@ TEST_F(DirectionLimiter, VerySmallDeltaV) {
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
+// A very specific scenario when the update vt + dvt crosses zero exactly.
+// This is a very common case in 1D-like problems and therefore it does happen
+// often.
 TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
