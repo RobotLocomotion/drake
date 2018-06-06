@@ -443,8 +443,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns a const Eigen expression of the vector of generalized positions
   /// for `this` mobilizer from a vector `q_array` of generalized positions for
   /// the entire MultibodyTree model.
-  /// This method aborts if `q_array` is not of size
-  /// MultibodyTree::num_positions().
+  /// @pre @p q_array is of size MultibodyTree::num_positions().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_positions_from_array(const Eigen::Ref<const VectorX<T>>& q_array) const {
     DRAKE_DEMAND(
@@ -466,8 +465,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// Returns a const Eigen expression of the vector of generalized velocities
   /// for `this` mobilizer from a vector `v_array` of generalized velocities for
   /// the entire MultibodyTree model.
-  /// This method aborts if the input array is not of size
-  /// MultibodyTree::num_velocities().
+  /// @pre @p v_array is of size MultibodyTree::num_velocities().
   Eigen::VectorBlock<const Eigen::Ref<const VectorX<T>>>
   get_velocities_from_array(const Eigen::Ref<const VectorX<T>>& v_array) const {
     DRAKE_DEMAND(

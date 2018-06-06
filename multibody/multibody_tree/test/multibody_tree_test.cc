@@ -785,4 +785,3 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
 }  // namespace multibody_model
 }  // namespace multibody
 }  // namespace drake
-

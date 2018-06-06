@@ -116,8 +116,12 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @note %BodyNode keeps a reference to the parent body, body and mobilizer
   /// for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
-           const Body<T>* body, const Mobilizer<T>* mobilizer) :
-      parent_node_(parent_node), body_(body), mobilizer_(mobilizer) {
+           const Body<T>* body, const Mobilizer<T>* mobilizer)
+      : MultibodyTreeElement<BodyNode<T>, BodyNodeIndex>(
+            body->model_instance()),
+        parent_node_(parent_node),
+        body_(body),
+        mobilizer_(mobilizer) {
     DRAKE_DEMAND(!(parent_node == nullptr &&
         body->index() != world_index()));
     DRAKE_DEMAND(!(mobilizer == nullptr && body->index() != world_index()));
