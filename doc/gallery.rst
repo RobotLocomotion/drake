@@ -29,6 +29,18 @@ rigid-body contact.
 *Source Code:* `drake/examples/kuka_iiwa_arm <https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm>`_
 
 
+Trajectory Optimization
+=======================
+
+Michael Posa and the UPenn DAIR lab have an implementation of DIRCON,
+as described in
+
+  Michael Posa, Scott Kuindersma, Russ Tedrake. "Optimization and
+  Stabilization of Trajectories for Constrained Dynamical Systems." ICRA, 2016.
+
+*Source Code:* https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization
+
+
 Third Party Documentation / Tutorials
 =====================================
 
