@@ -18,6 +18,13 @@ using Eigen::Matrix3d;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
+const char *ExpectedMessage(const char *function_name) {
+  static char expected_message[200];
+  snprintf(expected_message, sizeof(expected_message), "RollPitchYaw::%s().*",
+           function_name);
+  return expected_message;
+}
+
 // This tests the RollPitchYaw constructors and IsNearlyEqualTo().
 GTEST_TEST(RollPitchYaw, testConstructorsAndIsNearlyEqualTo) {
   const RollPitchYaw<double> a(0.1, 0.2, -0.3);
@@ -42,14 +49,19 @@ GTEST_TEST(RollPitchYaw, testAcessMethods) {
 }
 
 // Test whether or not pitch angle is near gimbal lock.
-GTEST_TEST(RollPitchYaw, testIsPitchAngleNearGimbalLock) {
+GTEST_TEST(RollPitchYaw, testIsPitchAngleViolageGimbalLock) {
   RollPitchYaw<double> rpy(-2.1, 0, 5.7);
-  EXPECT_FALSE(rpy.IsPitchAngleNearGimbalLock());
-  EXPECT_TRUE(rpy.set(-2.1, M_PI_2, 5.7).IsPitchAngleNearGimbalLock());
-  EXPECT_FALSE(rpy.set(M_PI_2, 1, M_PI_2).IsPitchAngleNearGimbalLock());
-  EXPECT_TRUE(rpy.set(2.3, -M_PI_2, 4.5).IsPitchAngleNearGimbalLock());
-  EXPECT_FALSE(rpy.set(-9 * M_PI_2, 90, M_PI_2).IsPitchAngleNearGimbalLock());
-  EXPECT_TRUE(rpy.set(2.3, 91 * M_PI_2, 4.5).IsPitchAngleNearGimbalLock());
+  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  rpy.set(-2.1, M_PI_2, 5.7);
+  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  rpy.set(M_PI_2, 1, M_PI_2);
+  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  rpy.set(2.3, -M_PI_2, 4.5);
+  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  rpy.set(-9 * M_PI_2, 90, M_PI_2);
+  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  rpy.set(2.3, 91 * M_PI_2, 4.5);
+  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
 }
 
 // This tests the RollPitchYaw.ToQuaternion() method.
@@ -130,8 +142,8 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
                               MatrixCompareType::absolute));
 
   // Check for some throw conditions.
-  const char* expected_message = "RollPitchYaw::"
-                                 "CalcRpyDtFromAngularVelocityInParent().*";
+  const char* expected_message =
+      ExpectedMessage("CalcRpyDtFromAngularVelocityInParent");
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
                               std::logic_error, expected_message);
@@ -163,39 +175,48 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
 GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
   const Vector3d wA(1, 1, 1);
   const Vector3d alphaA(1, 1, 1);
-  const double tolerate = RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
-  for (double i = -2.00; i <= 2.001; i += 0.05) {
-    const double difference_from_gimbal_lock = i * tolerate;
+  const double tolerance =
+      RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
+  int number_of_precise_cases = 0, number_of_imprecise_cases = 0;
+  // Note: The for-loop logic is designed to only test a few imprecises cases.
+  for (double i = -2.00; i <= 2.001; i += (-0.9 <= i && i <= 0.8) ? 1 : 0.05) {
+    const double difference_from_gimbal_lock = i * tolerance;
     const double pitch_angle = M_PI / 2 + difference_from_gimbal_lock;
     const RollPitchYaw<double> rpy(1, pitch_angle, 1);
-    const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
+    const bool is_imprecise = rpy.IsPitchAngleViolateGimbalLockTolerance();
 
     // Calculate rpyDt from angular velocity.
     Vector3d rpyDt, rpyDDt;
-    if (is_near_singular) {
-      DRAKE_EXPECT_THROWS_MESSAGE(rpyDt =
-                 rpy.CalcRpyDtFromAngularVelocityInParent(wA), std::logic_error,
-                      "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*");
+    if (is_imprecise) {
+      ++number_of_precise_cases;
+      const char* expected_message =
+          ExpectedMessage("CalcRpyDtFromAngularVelocityInParent");
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA),
+          std::logic_error, expected_message);
+      expected_message =
+          ExpectedMessage("CalcRpyDDtFromRpyDtAndAngularAccelInParent");
       DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
         rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
-        std::logic_error,
-        "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*");
-
-      // Skip over lots of unnecessarily redundant near-singular tests.
-      if (-0.9 <= i  &&  i <= 0.85) i = 0.9;
+        std::logic_error, expected_message);
     } else {
+      ++number_of_imprecise_cases;
       rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
       rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA);
 
       const double max_rpyDt = rpyDt.template lpNorm<Eigen::Infinity>();
       const double max_rpyDDt = rpyDDt.template lpNorm<Eigen::Infinity>();
 
-      // rpyDt scales with 1/cos(pitch_angle).
-      // rpyDDt scales with 1/cos(pitch_angle)^2, so check these have a range
-      // that is within a reasonable multiplier (1000) of that scale.
-      EXPECT_TRUE(1E-3 / tolerate <= max_rpyDt && max_rpyDt <= 1E3 / tolerate);
-      EXPECT_TRUE(1E-6 / (tolerate * tolerate) <= max_rpyDDt &&
-          max_rpyDDt <= 1E6 / (tolerate * tolerate));
+      // max_rpyDt scales with 1/cos(pitch_angle) multiplied by angular velocity
+      // wA = (1, 1, 1).  Check that max_rpyDt has a range that is within
+      // a reasonable multiplier (1000) of that scale.
+      // max_rpyDDt scales with 1/cos(pitch_angle)² multipled by angular
+      // acceleration alphaA = (1, 1, 1).  Check that max_rpyDDt has a range
+      // that is within a reasonable multiplier (1000²) of that scale.
+      EXPECT_TRUE(1E-3 / tolerance <= max_rpyDt &&
+                  max_rpyDt <= 1E3 / tolerance);
+      EXPECT_TRUE(1E-6 / (tolerance * tolerance) <= max_rpyDDt &&
+                  max_rpyDDt <= 1E6 / (tolerance * tolerance));
 
       // Now, reverse procedure by calculating angular velocity from rpyDt.
       const Vector3d wB = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
@@ -217,12 +238,16 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
       // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.008, test
       // machines show max_error <= (≈ 2.8422E-14), which means there may be
       // inaccuracies in 7 (but not 8) of the 52 bits in the mantissa.
-      // Note: 2.2737E-13 ≈ (2^10 = 1024) * (kEpsilon = 1/2^52 ≈ 2.22E-16).
-      // Note: 1.1368E-13 ≈ (2^9 = 512) * (kEpsilon = 1/2^52 ≈ 2.22E-16).
-      // Note: 2.8422E-13 ≈ (2^7 = 128) * (kEpsilon = 1/2^52 ≈ 2.22E-16)
+      // Note: For double precision, machine kEpsilon = 1/2^52 ≈ 2.22E-16.
+      // Note: 2.2737E-13 ≈ (2^10 = 1024) * kEpsilon.
+      // Note: 1.1368E-13 ≈ (2^9 = 512) * kEpsilon.
+      // Note: 2.8422E-13 ≈ (2^7 = 128) * kEpsilon.
+      // This test uses (2^8 = 256) * kEpsilon in the unlikely event that a
+      // compiler, operating system, ... inadvertently loses an extra bit.
       EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
     }
   }
+  EXPECT_TRUE(number_of_precise_cases > 0  &&  number_of_imprecise_cases > 0);
 }
 
 
@@ -259,6 +284,7 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
   const Vector3d alpha_AD_A(0.5, 0.7, 0.9);
 
   // Set up to test a reasonable range of values.
+  // Note: tol helps ensure that each for-loop's end-value is reached.
   const double tol = 64 * kEpsilon * M_PI;
   const double deg = M_PI / 180;
   for (double roll = -M_PI; roll <= M_PI + tol; roll += 10 * deg) {
@@ -268,35 +294,30 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
 
         // Calculate [r̈, p̈, ÿ] from alpha_AD_A which is
         // D's angular acceleration in A, expressed in A.
-        const bool is_near_singular = rpy.IsPitchAngleNearGimbalLock();
-        Vector3d rpyDDt;
-        if (is_near_singular) {
-          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
-             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
-             std::logic_error,
-             "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*");
-        } else {
-          rpyDDt =
-              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
-        }
-
-        // Calculate [r̈, p̈, ÿ] from alpha_AD_D which is
+        // Also calculate [r̈, p̈, ÿ] from alpha_AD_D which is
         // D's angular acceleration in A, expressed in D.
         const RotationMatrix<double> R_AD(rpy);
         const Vector3d alpha_AD_D = R_AD.inverse() * alpha_AD_A;
-        Vector3d rpyDDt_verify;
-        if (is_near_singular) {
-          const char* expected_message = "RollPitchYaw::"
-              "CalcRpyDDtFromAngularAccelInChild().*";
+        Vector3d rpyDDt, rpyDDt_verify;
+        const bool is_imprecise = rpy.IsPitchAngleViolateGimbalLockTolerance();
+        if (is_imprecise) {
+          const char* expected_message =
+              ExpectedMessage("CalcRpyDDtFromRpyDtAndAngularAccelInParent");
+          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
+             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
+             std::logic_error, expected_message);
+          expected_message =
+              ExpectedMessage("CalcRpyDDtFromAngularAccelInChild");
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
-              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
-              std::logic_error, expected_message);
-        } else {
-          rpyDDt_verify =
-              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
+             rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
+             std::logic_error, expected_message);
+          continue;
         }
 
-        if (is_near_singular) continue;
+        rpyDDt =
+          rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
+        rpyDDt_verify =
+            rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
 
         // These two calculations should produce identical answers.
         const double rpyDDt_norm = rpyDDt.norm();
