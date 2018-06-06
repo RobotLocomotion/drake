@@ -17,13 +17,6 @@
 namespace drake {
 namespace multibody {
 
-namespace internal {
-// This is a class used by MultibodyTree internals to create the implementation
-// for a particular joint object.
-template <typename T>
-class JointImplementationBuilder;
-}  // namespace internal
-
 /// A %Joint models the kinematical relationship which characterizes the
 /// possible relative motion between two bodies.
 /// The two bodies connected by a %Joint object are referred to as the
@@ -79,8 +72,10 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Creates a joint between two Frame objects which imposes a given kinematic
   /// relation between frame F attached on the parent body P and frame M
-  /// attached on the child body B. See this class's documentation for further
-  /// details.
+  /// attached on the child body B. The joint will be initialized to the model
+  /// instance from @p frame_on_child (this is the typical convention for joints
+  /// between the world and a model, or between two models (e.g. an arm to a
+  /// gripper)).  See this class's documentation for further details.
   ///
   /// @param[in] name
   ///   A string with a name identifying `this` joint.
@@ -89,9 +84,11 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
   Joint(const std::string& name,
-        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child) :
-      name_(name),
-      frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
+        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child)
+      : MultibodyTreeElement<Joint<T>, JointIndex>(
+            frame_on_child.model_instance()),
+        name_(name),
+        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
   }
