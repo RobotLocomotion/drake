@@ -324,7 +324,7 @@ class TestCustom(unittest.TestCase):
         test = self
         # N.B. Since this has trivial operations, we can test all scalar types.
         for T in [float, AutoDiffXd, Expression]:
-            expected_default_value = ("default", T(0.))
+            default_value = ("default", T(0.))
             expected_input_value = ("input", T(np.pi))
             expected_output_value = ("output", 2*T(np.pi))
 
@@ -332,11 +332,11 @@ class TestCustom(unittest.TestCase):
                 def __init__(self):
                     LeafSystem_[T].__init__(self)
                     test_input_type = AbstractValue.Make(
-                        expected_default_value)
+                        default_value)
                     self.input_port = self._DeclareInputPort(
                         PortDataType.kAbstractValued, 0)
                     self.output_port = self._DeclareAbstractOutputPort(
-                        lambda: AbstractValue.Make(expected_default_value),
+                        lambda: AbstractValue.Make(default_value),
                         self._DoCalcAbstractOutput)
 
                 def _DoCalcAbstractOutput(self, context, y_data):
@@ -344,8 +344,7 @@ class TestCustom(unittest.TestCase):
                         context, 0).get_value()
                     # The allocator function will populate the output with
                     # the "input"
-                    test.assertTupleEqual(y_data.get_value(),
-                                          expected_default_value)
+                    test.assertTupleEqual(input_value, expected_input_value)
                     y_data.set_value(expected_output_value)
                     test.assertTupleEqual(y_data.get_value(),
                                           expected_output_value)
