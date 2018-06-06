@@ -79,6 +79,14 @@ class TestGeneral(unittest.TestCase):
             rhs_port = rhs.get_output_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
 
+    def test_system_base_api(self):
+        # Test a system with a different number of inputs from outputs.
+        system = Adder(3, 10)
+        self.assertEqual(system.get_num_input_ports(), 3)
+        self.assertEqual(system.get_num_output_ports(), 1)
+        # TODO(eric.cousineau): Consolidate the main API tests for `System`
+        # to this test point.
+
     def test_instantiations(self):
         # Quick check of instantions for given types.
         # N.B. These checks are ordered according to their binding definitions
