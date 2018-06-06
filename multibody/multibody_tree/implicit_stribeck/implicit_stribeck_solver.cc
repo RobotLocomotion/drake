@@ -199,8 +199,8 @@ T LimitDirectionChange<T>::run(
   // We should never reach this point.
   throw std::logic_error("Bug detected. An angle change case was missed.");
 }
-}
 
+}  // namespace internal
 }  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake

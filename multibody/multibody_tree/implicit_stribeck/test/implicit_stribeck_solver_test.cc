@@ -1,12 +1,11 @@
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 
+#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-
-#include <iostream>
 #define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
 
 namespace drake {
