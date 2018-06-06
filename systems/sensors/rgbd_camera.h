@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <Eigen/Dense>
 
@@ -175,6 +176,19 @@ class RgbdCamera final : public LeafSystem<double> {
 
   ~RgbdCamera() = default;
 
+  /// Sets and initializes RgbdRenderer. You don't need to think about the
+  /// viewpoint of renderer since it will be appropriately handled inside this
+  /// function.
+  void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
+    renderer_ = std::move(renderer);
+    InitRenderer();
+    // This needs only for camera_fixed_ is true since this will be called
+    // in UpdateModelPoses() if false.
+    if (camera_fixed_) {
+      renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
+    }
+  }
+
   /// Reterns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
 
@@ -222,7 +236,9 @@ class RgbdCamera final : public LeafSystem<double> {
   const OutputPort<double>& camera_base_pose_output_port() const;
 
  private:
-  void Init(const std::string& name);
+  void InitPorts(const std::string& name);
+
+  void InitRenderer();
 
   // These are the calculator methods for the four output ports.
   void OutputColorImage(const Context<double>& context,
