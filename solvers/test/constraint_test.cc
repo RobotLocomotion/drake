@@ -270,6 +270,11 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
 
   ExpressionConstraint constraint(e, Vector2d::Zero(), 2.*Vector2d::Ones());
 
+  const VectorX<symbolic::Expression>& expressions{constraint.expressions()};
+  ASSERT_EQ(expressions.size(), 2);
+  EXPECT_TRUE(e[0].EqualTo(expressions[0]));
+  EXPECT_TRUE(e[1].EqualTo(expressions[1]));
+
   const Vector3d x{.2, .4, .6};
   VectorXd y;
   const Vector2d y_expected{1.04, .76};
