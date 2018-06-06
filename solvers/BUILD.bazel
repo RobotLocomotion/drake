@@ -535,7 +535,6 @@ drake_cc_library(
     srcs = [
         "dreal_solver.cc",
         "dreal_solver_common.cc",
-        "no_dreal.cc",
     ],
     hdrs = ["dreal_solver.h"],
     deps = [
@@ -904,6 +903,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":dreal_solver",
+        ":generic_trivial_constraint",
+        ":generic_trivial_cost",
+        ":mathematical_program",
     ],
 )
 
