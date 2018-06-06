@@ -26,6 +26,7 @@ T LimitDirectionChange<T>::run(
   using std::min;
   using std::sqrt;
 
+  // εᵥ is used to determine when a velocity is close to zero.
   const double epsilon_v = v_stribeck * tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
@@ -54,14 +55,14 @@ T LimitDirectionChange<T>::run(
     return v_stribeck / dv_norm / 2.0;
   }
 
-  // Special case IIb: Transition to an almost exact stiction from sliding.
+  // Case III: Transition to an almost exact stiction from sliding.
   // We want to avoid v1 landing in a region of zero gradients so that we force
   // it to land within the circle of radius v_stribeck, at v_stribec/2 in the
   // direction of v.
-  if (x > 1.0 && x1 < epsilon_v) {
+  if (x > 1.0 && x1 < tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
-    // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. It turns out that for this to
-    // happen we need:
+    // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. After a small algebraic
+    // manipulation it turns out that:
     return 1.0 - v_stribeck / 2.0 / dv_norm;
   }
 
@@ -74,22 +75,25 @@ T LimitDirectionChange<T>::run(
     //         (close to zero) when x < tolerance, was covered by Case II.
     return 1.0;
   } else {  // x > 1.0
-    // We want to detect transition from sliding (x > 1) to stiction when the
-    // velocity change passes through the circle of radius v_stribeck.
-
     if (x1 < 1.0) {
-      // Transition happens with alpha = 1.0.
+      // Case IV:
+      // From Case III we know that x1 > tolerance, i.e x1 falls in a region of
+      // strong gradients and thus we allow it.
       return 1.0;
     }
 
-    // Since v_stribeck is so small, this very seldom happens. However, it is a
-    // very common case for 1D-like problems for which tangential velocities
-    // change in sign and typically if we don't do anything we miss the zero
-    // crossing.
-    // Notice that since we passed the check in Case I, we know that:
-    //  - x > 1.0
-    //  - x1 > 1.0
-    //  - dv_norm > epsilon_v (i.e. non-zero)
+    // Case V:
+    // Since v_stribeck is so small, the next case very seldom happens. However,
+    // it is a very common case for 1D-like problems for which tangential
+    // velocities change in sign and typically if we don't do anything we miss
+    // the zero crossing.
+    // Notice that since we reached this point, we know that:
+    //  - x > 1.0 (we are within the scope of an if statement for x > 1)
+    //  - x1 > 1.0 (we went trough Case IV)
+    //  - dv_norm > epsilon_v (we went trough Case I, i.e. non-zero)
+    // Here we are checking for the case when the line connecting v and v1
+    // intersects the Stribeck circle. For this case we compute alpha so that
+    // the update corresponds to the velocity closest to the origin.
     const T v_dot_dv = v.dot(dv);
     if (v_dot_dv < 0.0) {  // Moving towards the origin.
       T alpha = -v_dot_dv / dv_norm2;  // alpha > 0
@@ -112,15 +116,14 @@ T LimitDirectionChange<T>::run(
     //  - x > 1.0
     //  - x1 > 1.0
     //  - dv_norm > epsilon_v
-    //  - line connecting v with v1 never goes through circle of radius
-    //    v_stribeck.
+    //  - line connecting v with v1 never goes through the Stribeck circle.
     //
-    // Case III:
+    // Case VI:
     // Therefore we know changes happen entirely outside the circle of radius
     // v_stribeck. To avoid large jumps in the direction of v (typically during
     // strong impacts), we limit the maximum angle change between v to v1.
     // To this end, we find a scalar 0 < alpha < 1 such that
-    // cos(theta_max) = v⋅v1/(‖v‖‖v1‖).
+    // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖)
 
     // First we compute the angle change when alpha = 1, between v1 and v.
     const T cos1 = v.dot(v1) / v_norm / v1_norm;
@@ -130,8 +133,15 @@ T LimitDirectionChange<T>::run(
     // cross through zero, i.e. cos(theta) > 0).
     if (cos1 > cos_min) {
       return 1.0;
-    } else {  // we limit the angle change to theta_max.
-      // All term are made non-dimensional using v_stribeck as the reference
+    } else {
+      // we limit the angle change to theta_max so that:
+      // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖)
+      // if we squared both sides of this equation, we arrive to a quadratic
+      // equation with coefficients a, b, c, for α. The math below simply is the
+      // algebra to compute coefficients a, b, c and solve the quadratic
+      // equation.
+
+      // All terms are made non-dimensional using v_stribeck as the reference
       // sale.
       const T x_dot_dx = v_dot_dv / (v_stribeck * v_stribeck);
       const T dx = dv.norm() / v_stribeck;
@@ -146,17 +156,11 @@ T LimitDirectionChange<T>::run(
 
       // Solve quadratic equation. We know, from the geometry of the problem,
       // that the roots to this problem are real. Thus, the discriminant of the
-      // quadratic equation (Δ = b² - 4ac) is positive.
-      // Also, unless there is a single root (a = 0), they have different signs.
-      // From Vieta's formulas we know:
-      //   - α₁ + α₂ = -b / a
-      //   - α₁ * α₂ = c / a < 0
-      // Since we know that c < 0 (strictly), then we must have a ≥ 0.
-      // Also since c < 0 strictly, α = 0 (zero) cannot be a root.
-      // We use this knowledge in the solution below.
+      // quadratic equation (Δ = b² - 4ac) must be positive.
 
       T alpha;
-      // First determine if a = 0 (to machine epsilon).
+      // First determine if a = 0 (to machine epsilon). This comparison is fair
+      // since a is dimensionless.
       if (abs(a) < std::numeric_limits<double>::epsilon()) {
         // There is only a single root to the, now linear, equation bα + c = 0.
         alpha = -c / b;
