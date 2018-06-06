@@ -94,13 +94,20 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
                                                      I_GGcm_G_);
 
   // Add this robot's seven links.
-  const RigidBody<T>& linkA = model->AddRigidBody("iiwa_link_1", M_AAo_A);
-  const RigidBody<T>& linkB = model->AddRigidBody("iiwa_link_2", M_BBo_B);
-  const RigidBody<T>& linkC = model->AddRigidBody("iiwa_link_3", M_CCo_C);
-  const RigidBody<T>& linkD = model->AddRigidBody("iiwa_link_4", M_DDo_D);
-  const RigidBody<T>& linkE = model->AddRigidBody("iiwa_link_5", M_EEo_E);
-  const RigidBody<T>& linkF = model->AddRigidBody("iiwa_link_6", M_FFo_F);
-  const RigidBody<T>& linkG = model->AddRigidBody("iiwa_link_7", M_GGo_G);
+  const RigidBody<T>& linkA =
+      model->AddRigidBody("iiwa_link_1", default_model_instance(), M_AAo_A);
+  const RigidBody<T>& linkB =
+      model->AddRigidBody("iiwa_link_2", default_model_instance(), M_BBo_B);
+  const RigidBody<T>& linkC =
+      model->AddRigidBody("iiwa_link_3", default_model_instance(), M_CCo_C);
+  const RigidBody<T>& linkD =
+      model->AddRigidBody("iiwa_link_4", default_model_instance(), M_DDo_D);
+  const RigidBody<T>& linkE =
+      model->AddRigidBody("iiwa_link_5", default_model_instance(), M_EEo_E);
+  const RigidBody<T>& linkF =
+      model->AddRigidBody("iiwa_link_6", default_model_instance(), M_FFo_F);
+  const RigidBody<T>& linkG =
+      model->AddRigidBody("iiwa_link_7", default_model_instance(), M_GGo_G);
 
   // Create a revolute joint between linkN (Newtonian frame/world) and linkA
   // using two joint-frames, namely "Na" and "An".  The "inboard frame" Na is
