@@ -207,6 +207,8 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle) {
 // larger than theta_max and the limiter will limit the change to a
 // vt_alpha = vt + alpha * dvt so that vt_alpha forms an angle theta_max with
 // vt.
+// Internal detail note: the limiter computed two roots with different signs and
+// returns the positive root.
 TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_LargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = M_PI / 3.0;
@@ -233,6 +235,13 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_LargeTheta) {
   EXPECT_NEAR(theta, theta_max, kTolerance);
 }
 
+// Tests the limiter for a case in which both vt and v1 = vt + dvt are both
+// outside the Stribeck circle. In this test, the angle formed by vt and v1 is
+// MUCH larger than theta_max and the limiter will limit the change to a
+// vt_alpha = vt + alpha * dvt so that vt_alpha forms an angle theta_max with
+// vt.
+// Internal detail note: the limiter computed two positive roots and returns
+// the smallest of the two.
 TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_VeryLargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = 5.0 * M_PI / 6.0;
@@ -245,6 +254,39 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_VeryLargeTheta) {
 
   // Delta dvt that takes vt to v1.
   const Vector2<double> dvt = v1 - vt;
+
+  const double alpha = internal::LimitDirectionChange<double>::run(
+      vt, dvt, cos_min, v_stribeck, tolerance);
+
+  const Vector2<double> vt_alpha = vt + alpha * dvt;
+
+  // Compute the angle between vt_alpha and vt.
+  double cos_theta = vt.dot(vt_alpha)/vt.norm()/vt_alpha.norm();
+  double theta = std::acos(cos_theta);
+
+  // Verify the result was limited to form an angle theta_max.
+  EXPECT_NEAR(theta, theta_max, kTolerance);
+}
+
+// This is a very degenerate case in which the angle formed by vt and dvt
+// equals (whithin machine epsilon) to theta_max. It so happens than in this
+// case there is a single solution to the quadratic equation solved by the
+// limiter (the equation becomes linear).
+// Even though this will rarely (or impossibly) happen, we make sure we consider
+// it for maximum robustness.
+TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_SingleSolution) {
+  // A vt outside the Stribeck circle
+  const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
+
+  // A dvt forming an angle of theta_max with vt not necessarily having the same
+  // magnitude as vt.
+  const Vector2<double> dvt = -3.0 * Rotation(theta_max) * vt;
+
+  // Before proceeding with the test, assert that we are in a case where theta1
+  // is larger than theta_max.
+  const Vector2<double> v1 = vt + dvt;
+  double theta1 = std::cos(vt.dot(v1)/vt.norm()/v1.norm());
+  ASSERT_GT(theta1, theta_max);
 
   const double alpha = internal::LimitDirectionChange<double>::run(
       vt, dvt, cos_min, v_stribeck, tolerance);
