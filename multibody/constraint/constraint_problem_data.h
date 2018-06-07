@@ -10,8 +10,26 @@ namespace drake {
 namespace multibody {
 namespace constraint {
 
-/// Structure for holding constraint data for computing constraint forces
-/// at the acceleration-level.
+/// Structure for holding constraint data for computing forces due to
+/// constraints and the resulting multibody accelerations.
+///
+/// The Newton-Euler equations (essentially F = ma) coupled with constraints
+/// on the positional coordinates g(q) yields an Index-3 DAE
+/// (see [Hairer 1996]), and generally makes initial value problems hard to
+/// solve, computationally speaking; coupling the Newton-Euler equations with
+/// the second time derivative of such constraint equations (i.e., g̈(q,v,v̇))
+/// yields a far more manageable Index-1 DAE, again with regard to computation.
+/// This structure stores problem data for computing dynamics under such
+/// constraints and others (nonholonomic constraints, Coulomb friction
+/// constraints, etc.)
+///
+/// <h3>Definition of variables specific to this class</h3>
+/// (See @ref constraint_variable_defs) for the more general set of
+/// definitions).
+/// - ns ∈ ℕ   The number of contacts at which sliding is occurring. Note
+///            that nc = ns + nns, where nc is the number of points of contact.
+/// - nns ∈ ℕ   The number of contacts at which sliding is not occurring. Note
+///            that nc = ns + nns.
 template <class T>
 struct ConstraintAccelProblemData {
   /// Constructs acceleration problem data for a system with a @p gv_dim
@@ -49,13 +67,13 @@ struct ConstraintAccelProblemData {
 
   /// The indices of the sliding contacts (those contacts at which there is
   /// non-zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), out of the set of all contact indices (0...n-1).
+  /// point of contact), out of the set of all contact indices (0...nc-1).
   /// This vector must be in sorted order.
   std::vector<int> sliding_contacts;
 
   /// The indices of the non-sliding contacts (those contacts at which there
   /// is zero relative velocity between bodies in the plane tangent to the
-  /// point of contact), out of the set of all contact indices (0...n-1).
+  /// point of contact), out of the set of all contact indices (0...nc-1).
   /// This vector must be in sorted order.
   std::vector<int> non_sliding_contacts;
 
@@ -71,13 +89,13 @@ struct ConstraintAccelProblemData {
   /// approximation.
   std::vector<int> r;
 
-  /// Coefficients of friction for the s = n - y sliding contacts (where `y` is
-  /// the number of non-sliding contacts). The size of this vector should be
-  /// equal to `sliding_contacts.size()`.
+  /// Coefficients of friction for the ns = nc - nns sliding contacts (where
+  /// `nns` is the number of non-sliding contacts). The size of this vector
+  /// should be equal to `sliding_contacts.size()`.
   VectorX<T> mu_sliding;
 
-  /// Coefficients of friction for the y = n - s non-sliding contacts (where `s`
-  /// is the number of sliding contacts). The size of this vector should be
+  /// Coefficients of friction for the nns = nc - ns non-sliding contacts (where
+  /// `ns` is the number of sliding contacts). The size of this vector should be
   /// equal to `non_sliding_contacts.size()`.
   VectorX<T> mu_non_sliding;
 
@@ -86,9 +104,9 @@ struct ConstraintAccelProblemData {
   /// acceleration, where the constraint can be formulated as:<pre>
   /// 0 = G(q)⋅v̇ + kᴳ(t,q,v)
   /// </pre>
-  /// which implies the constraint definition c(t,q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
-  /// G is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
+  /// which implies the constraint definition g(t,q,v,v̇) ≡ G(q)⋅v̇ + kᴳ(t,q,v).
+  /// G is defined as the ℝⁿᵇˣⁿᵛ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝⁿᵛ) into the time derivatives of b bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(t,q). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
@@ -109,38 +127,38 @@ struct ConstraintAccelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> G_mult;
 
-  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝᵇ are the
+  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
   /// magnitudes of the constraint forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
 
-  /// This ℝᵇ vector is the vector kᴳ(t,q,v) defined above.
+  /// This ℝⁿᵇ vector is the vector kᴳ(t,q,v) defined above.
   VectorX<T> kG;
   /// @}
 
   /// @name Data for constraints on accelerations along the contact normal
   /// Problem data for constraining the acceleration of two bodies projected
   /// along the contact surface normal, for n point contacts.
-  /// These data center around two Jacobian matrices, N and Q. N is the ℝⁿˣᵐ
-  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
-  /// velocities projected along the contact normals at the n point contacts.
-  /// Q ∈ ℝⁿˣᵐ is the Jacobian matrix that transforms generalized velocities
-  /// (m is the dimension of generalized velocity) into velocities projected
-  /// along the directions of sliding at the s *sliding* contact points (rows
+  /// These data center around two Jacobian matrices, N and Q. N is the ℝⁿᶜˣⁿᵛ
+  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝⁿᵛ) into
+  /// velocities projected along the contact normals at the nc point contacts.
+  /// Q ∈ ℝⁿᶜˣⁿᵛ is the Jacobian matrix that transforms generalized velocities
+  /// (nv is the dimension of generalized velocity) into velocities projected
+  /// along the directions of sliding at the ns *sliding* contact points (rows
   /// of Q that correspond to non-sliding contacts should be zero). Finally,
   /// the Jacobian matrix N allows formulating the non-interpenetration
   /// constraint (a constraint imposed at the velocity level) as:<pre>
   /// 0 ≤ N(q)⋅v̇ + kᴺ(t,q,v)  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint c̈(q,v,v̇) ≡ N(q)⋅v̇ + kᴺ(t,q,v) is
+  /// which means that the constraint g̈(q,v,v̇) ≡ N(q)⋅v̇ + kᴺ(t,q,v) is
   /// coupled to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Nv̇ + kᴺ(t,q,v)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if c̈(q,v,v̇) is strictly greater than zero).
-  /// Note that differentiating the original constraint ċ(t,q,v) ≡ Nv (i.e.,
+  /// if it is inactive (i.e., if g̈(q,v,v̇) is strictly greater than zero).
+  /// Note that differentiating the original constraint ġ(t,q,v) ≡ Nv (i.e.,
   /// the constraint posed at the velocity level) once with
   /// respect to time, such that all constraints are imposed at the
   /// acceleration level, yields: <pre>
-  /// c̈(t,q,v,v̇) = N(q) v̇ + dN/dt(q,v) v
+  /// g̈(t,q,v,v̇) = N(q) v̇ + dN/dt(q,v) v
   /// </pre>
   /// Thus, the constraint at the acceleration level can be realized by setting
   /// kᴺ(t,q,v) = dN/dt(q,v)⋅v. If there is pre-existing constraint error (e.g.,
@@ -157,35 +175,35 @@ struct ConstraintAccelProblemData {
   /// An operator that performs the multiplication (Nᵀ - μQᵀ)⋅f, where μ is a
   /// diagonal matrix with nonzero entries corresponding to the coefficients of
   /// friction at the s sliding contact points, and (Nᵀ - μQᵀ) transforms forces
-  /// (f ∈ ℝⁿ) applied along the contact normals at the n point contacts into
+  /// (f ∈ ℝⁿᶜ) applied along the contact normals at the nc point contacts into
   /// generalized forces. The default operator returns a zero vector of
   /// dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> N_minus_muQ_transpose_mult;
 
-  /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
+  /// This ℝⁿᶜ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
   /// @}
 
   /// @name Data for non-sliding contact friction constraints
   /// Problem data for constraining the tangential acceleration of two bodies
-  /// projected along the contact surface tangents, for n point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝʸʳˣᵐ, that
-  /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
-  /// along the r vectors that span the contact tangents at the y *non-sliding*
-  /// point contacts. For contact problems in two dimensions, r would be one.
-  /// For a friction pyramid in three dimensions, r would be two. While the
-  /// definition of the dimension of the Jacobian matrix above indicates that
-  /// every one of the y non-sliding contacts uses the same "r", the code
-  /// imposes no such requirement.
-  ///
-  /// Finally, the Jacobian matrix F allows formulating the non-sliding friction
-  /// force constraints as:<pre>
+  /// projected along the contact surface tangents, for nc point contacts.
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
+  /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
+  /// along the nr vectors that span the contact tangents at the nns
+  /// *non-sliding* point contacts (these nns * nr vectors are denoted `nnr`,
+  /// like "total number of nr", for brevity). For contact problems in two
+  /// dimensions, nr will be one and nnr would equal nns. For friction pyramids
+  /// at each contact in three dimensions, nr would be two and nnr would equal
+  /// 2nns. While the definition of nnr above indicates that every one of the
+  /// nns non-sliding contacts uses the same "nr", the code imposes no such
+  /// requirement. Finally, the Jacobian matrix F allows formulating the
+  /// non-sliding friction force constraints as:<pre>
   /// 0 ≤ F(q)⋅v̇ + kᶠ(t,q,v) + λe  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint c̈(t,q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) is
+  /// which means that the constraint g̈(t,q,v,v̇) ≡ F(q)⋅v̇ + kᶠ(t,q,v) is
   /// coupled to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Fv̇ + kᴺ(t,q,v) + λe) = 0: the constraint can apply no
-  /// force if it is inactive (i.e., if c̈(t,q,v,v̇) is strictly greater than
+  /// force if it is inactive (i.e., if g̈(t,q,v,v̇) is strictly greater than
   /// zero). The presence of the λe term is taken directly from [Anitescu 1997],
   /// where e is a vector of ones and zeros and λ corresponds roughly to the
   /// tangential acceleration at the contacts. The interested reader should
@@ -200,12 +218,12 @@ struct ConstraintAccelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝʸʳ
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿⁿˢʳ
   /// corresponds to frictional force magnitudes. The default operator returns
   /// a zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
+  /// This ℝⁿⁿˢʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
   /// @}
 
@@ -214,12 +232,12 @@ struct ConstraintAccelProblemData {
   /// acceleration, where the constraint can be formulated as:<pre>
   /// 0 ≤ L(q)⋅v̇ + kᴸ(t,q,v)  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint c(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
+  /// which means that the constraint g(q,v,v̇) ≡ L(q)⋅v̇ + kᴸ(t,q,v) is coupled
   /// to a force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(L⋅v̇ + kᴸ(t,q,v)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if c(q,v,v̇) is strictly greater than zero). L
-  /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
+  /// if it is inactive (i.e., if g(q,v,v̇) is strictly greater than zero). L
+  /// is defined as the ℝⁿᵘˣⁿᵛ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝⁿᵛ) into the time derivatives of nu unilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(t,q). Such holonomic
   /// constraints must be twice differentiated with respect to time to yield
@@ -242,16 +260,16 @@ struct ConstraintAccelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> L_mult;
 
-  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝˢ are the
+  /// An operator that performs the multiplication Lᵀ⋅f where f ∈ ℝⁿᵘ are the
   /// magnitudes of the constraint forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
 
-  /// This ℝˢ vector is the vector kᴸ(t,q,v) defined above.
+  /// This ℝⁿᵘ vector is the vector kᴸ(t,q,v) defined above.
   VectorX<T> kL;
   /// @}
 
-  /// The ℝᵐ vector tau, the generalized external force vector that
+  /// The ℝⁿᵛ vector tau, the generalized external force vector that
   /// comprises gravitational, centrifugal, Coriolis, actuator, etc. forces
   /// applied to the rigid body system at q. m is the dimension of the
   /// generalized force, which is also equal to the dimension of the
@@ -291,7 +309,7 @@ struct ConstraintVelProblemData {
   }
 
   /// The number of spanning vectors in the contact tangents (used to linearize
-  /// the friction cone) at the n contact points. For contact
+  /// the friction cone) at the nc contact points. For contact
   /// problems in two dimensions, each element of r will be one. For contact
   /// problems in three dimensions, a friction pyramid (for example), for a
   /// contact point i will have rᵢ = 2. [Anitescu 1997] define k such vectors
@@ -302,7 +320,7 @@ struct ConstraintVelProblemData {
   /// approximation.
   std::vector<int> r;
 
-  /// Coefficients of friction for the n contacts. This problem specification
+  /// Coefficients of friction for the nc contacts. This problem specification
   /// does not distinguish between static and dynamic friction coefficients.
   VectorX<T> mu;
 
@@ -311,9 +329,9 @@ struct ConstraintVelProblemData {
   /// velocity, where the constraint can be formulated as:<pre>
   /// 0 = G(q)⋅v + kᴳ(t,q)
   /// </pre>
-  /// which implies the constraint definition c(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
-  /// is defined as the ℝᵇˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of b bilateral constraint
+  /// which implies the constraint definition g(t,q,v) ≡ G(q)⋅v + kᴳ(t,q). G
+  /// is defined as the ℝⁿᵇˣⁿᵛ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝⁿᵛ) into the time derivatives of nb bilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(t,q). Such holonomic
   /// constraints must be differentiated with respect to time to yield
@@ -334,20 +352,20 @@ struct ConstraintVelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> G_mult;
 
-  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝᵇ are the
+  /// An operator that performs the multiplication Gᵀ⋅f where f ∈ ℝⁿᵇ are the
   /// magnitudes of the constraint forces. The default operator returns a
   /// zero vector of dimension equal to that of the generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> G_transpose_mult;
 
-  /// This ℝᵇ vector is the vector kᴳ(t,q) defined above.
+  /// This ℝⁿᵇ vector is the vector kᴳ(t,q) defined above.
   VectorX<T> kG;
   /// @}
 
   /// @name Data for constraints on velocities along the contact normal
   /// Problem data for constraining the velocity of two bodies projected
   /// along the contact surface normal, for n point contacts.
-  /// These data center around the Jacobian matrix N, the ℝⁿˣᵐ
-  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝᵐ) into
+  /// These data center around the Jacobian matrix N, the ℝⁿᶜˣⁿᵛ
+  /// Jacobian matrix that transforms generalized velocities (v ∈ ℝⁿᵛ) into
   /// velocities projected along the contact normals at the n point contacts.
   /// Constraint error (φ < 0, where φ is the signed distance between two
   /// bodies) can be incorporated into the constraint solution process (and
@@ -359,48 +377,49 @@ struct ConstraintVelProblemData {
   /// which means that the constraint ċ(q,v) ≡ N(q)⋅v + kᴺ(t,q) is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Nv + kᴺ(t,q)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if ċ(q,v) is strictly greater than zero).
+  /// if it is inactive (i.e., if ġ(q,v) is strictly greater than zero).
   /// @{
 
   /// An operator that performs the multiplication N⋅v. The default operator
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> N_mult;
 
-  /// An operator that performs the multiplication Nᵀ⋅f, where f ∈ ℝⁿ are the
+  /// An operator that performs the multiplication Nᵀ⋅f, where f ∈ ℝⁿᶜ are the
   /// the magnitudes of the impulsive forces applied along the contact normals
-  /// at the n point contacts. The default operator returns a zero vector of
+  /// at the nc point contacts. The default operator returns a zero vector of
   /// dimension equal to that of the generalized velocities (which should be
   /// identical to the dimension of the generalized forces).
   std::function<VectorX<T>(const VectorX<T>&)> N_transpose_mult;
 
-  /// This ℝⁿ vector is the vector kᴺ(t,q,v) defined above.
+  /// This ℝⁿᶜ vector is the vector kᴺ(t,q,v) defined above.
   VectorX<T> kN;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝⁿ vector represents the diagonal matrix γᴺ.
+  /// This ℝⁿᶜ vector represents the diagonal matrix γᴺ.
   VectorX<T> gammaN;
   /// @}
 
   /// @name Data for constraints on contact friction
   /// Problem data for constraining the tangential velocity of two bodies
   /// projected along the contact surface tangents, for n point contacts.
-  /// These data center around the Jacobian matrix, F ∈ ℝⁿʳˣᵐ, that
-  /// transforms generalized velocities (v ∈ ℝᵐ) into velocities projected
-  /// along the r vectors that span the contact tangents at the n
-  /// point contacts. For contact problems in two dimensions, r would be one.
-  /// For a friction pyramid in three dimensions, r would be two. While the
-  /// definition of the dimension of the Jacobian matrix above indicates that
-  /// every one of the n contacts uses the same "r", the code imposes no such
-  /// requirement. Constraint error (F⋅v < 0) can be reduced through the
-  /// constraint solution process by setting the `kF` term to something other
-  /// than its default zero value. The resulting constraint on the motion will
+  /// These data center around the Jacobian matrix, F ∈ ℝⁿⁿʳˣⁿᵛ, that
+  /// transforms generalized velocities (v ∈ ℝⁿᵛ) into velocities projected
+  /// along the nr vectors that span the contact tangents at the nc
+  /// point contacts (these nc * nr vectors are denoted nnr for brevity). For
+  /// contact problems in two dimensions, nr will be one and nnr would equal nc.
+  /// For a friction pyramid at each point contact in in three dimensions, nr
+  /// would be two and nnr would equation 2nc. While the definition of the
+  /// dimension of the Jacobian matrix above indicates that every one of the nc
+  /// contacts uses the same "nr", the code imposes no such requirement.
+  /// Constraint error (F⋅v < 0) can be reduced through the constraint solution
+  /// process by setting the `kF` term to something other than its default zero
+  /// value. The resulting constraint on the motion will
   /// be:<pre>
   /// 0 ≤ F(q)⋅v + kᴺ(t,q) + eλ  ⊥  fᶜ ≥ 0
   /// </pre>
-  /// which means that the constraint ċ(q,v) ≡ F(q)⋅v + kᶠ(t,q) + eλ is coupled
+  /// which means that the constraint ġ(q,v) ≡ F(q)⋅v + kᶠ(t,q) + eλ is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(Fv + kᶠ(t,q) + eλ) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if ċ(q,v) is strictly greater than zero).
+  /// if it is inactive (i.e., if ġ(q,v) is strictly greater than zero).
   /// The presence of the λe term is taken directly from [Anitescu 1997],
   /// where e is a vector of ones and zeros and λ corresponds roughly to the
   /// tangential acceleration at the contacts. The interested reader should
@@ -413,21 +432,19 @@ struct ConstraintVelProblemData {
   /// returns an empty vector.
   std::function<VectorX<T>(const VectorX<T>&)> F_mult;
 
-  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿʳ
+  /// An operator that performs the multiplication Fᵀ⋅f, where f ∈ ℝⁿᶜʳ
   /// corresponds to frictional impulsive force magnitudes. The default
   /// operator returns a zero vector of dimension equal to that of the
   /// generalized forces.
   std::function<VectorX<T>(const VectorX<T>&)> F_transpose_mult;
 
-  /// This ℝʸʳ vector is the vector kᶠ(t,q,v) defined above.
+  /// This ℝⁿᶜʳ vector is the vector kᶠ(t,q,v) defined above.
   VectorX<T> kF;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝʸʳ vector represents the diagonal matrix γᶠ.
+  /// This ℝⁿᶜʳ vector represents the diagonal matrix γᶠ.
   VectorX<T> gammaF;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝʸ vector represents the diagonal matrix γᴱ.
+  /// This ℝⁿᶜ vector represents the diagonal matrix γᴱ.
   VectorX<T> gammaE;
 
   /// @}
@@ -440,9 +457,9 @@ struct ConstraintVelProblemData {
   /// which means that the constraint ċ(q,v) ≡ L(q)⋅v + kᴸ(t,q) is coupled
   /// to an impulsive force constraint (fᶜ ≥ 0) and a complementarity constraint
   /// fᶜ⋅(L⋅v + kᴸ(t,q)) = 0, meaning that the constraint can apply no force
-  /// if it is inactive (i.e., if ċ(q,v) is strictly greater than zero). L
-  /// is defined as the ℝˢˣᵐ Jacobian matrix that transforms generalized
-  /// velocities (v ∈ ℝᵐ) into the time derivatives of s unilateral constraint
+  /// if it is inactive (i.e., if ġ(q,v) is strictly greater than zero). L
+  /// is defined as the ℝⁿᵘˣⁿᵛ Jacobian matrix that transforms generalized
+  /// velocities (v ∈ ℝⁿᵛ) into the time derivatives of nu unilateral constraint
   /// functions. The class of constraint functions naturally includes holonomic
   /// constraints, which are constraints posable as g(q, t). Such holonomic
   /// constraints must be differentiated with respect to time to yield
@@ -469,15 +486,14 @@ struct ConstraintVelProblemData {
   /// forces.
   std::function<VectorX<T>(const VectorX<T>&)> L_transpose_mult;
 
-  /// This ℝˢ vector is the vector kᴸ(t,q) defined above.
+  /// This ℝⁿᵘ vector is the vector kᴸ(t,q) defined above.
   VectorX<T> kL;
 
-  // TODO(edrumwri): define this quantity properly (documentation forthcoming).
-  /// This ℝˢ vector represents the diagonal matrix γᴸ.
+  /// This ℝⁿᵘ vector represents the diagonal matrix γᴸ.
   VectorX<T> gammaL;
   /// @}
 
-  /// The ℝᵐ generalized momentum immediately before any impulsive
+  /// The ℝⁿᵛ generalized momentum immediately before any impulsive
   /// forces (from impact) are applied.
   VectorX<T> Mv;
 
