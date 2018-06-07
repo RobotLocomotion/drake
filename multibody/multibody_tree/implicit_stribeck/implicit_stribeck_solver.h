@@ -125,12 +125,24 @@ struct DirectionChangeLimiter {
                      const Eigen::Ref<const Vector2<T>>& dv,
                      double cos_theta_max, double v_stiction, double tolerance);
 
+  /// Helper method detect when the line connecting v with `v1 = v + dv`
+  /// crosses the stiction region, a circle of radius `v_stiction`.
+  /// All other input arguments are quantities already precomputed by
+  /// CalcAlpha() and thus we reuse them.
+  /// @param alpha when this method returns `true` (zero crossing), a
+  /// coefficient in `(0, 1]` so that `v_alpha = v + alpha * dv` is the closest
+  /// vector to the origin. It is not set when the method returns `false`.
+  /// @returns `true` if the line connecting v with `v1 = v + dv` crosses the
+  /// stiction region.
   static bool CrossesTheStictionRegion(
       const Eigen::Ref<const Vector2<T>>& v,
       const Eigen::Ref<const Vector2<T>>& dv,
       const T& v_dot_dv, const T& dv_norm, const T& dv_norm2,
       double epsilon_v, double v_stiction, T* alpha);
 
+  /// Helper method to solve the quadratic equation aα² + bα + c = 0 for the
+  /// very particular case we know we have real roots (Δ = b² - 4ac > 0) and we
+  /// are interested in the smallest positive root.
   static T SolveQuadraticForTheSmallestPositiveRoot(
       const T& a, const T& b, const T& c);
 };

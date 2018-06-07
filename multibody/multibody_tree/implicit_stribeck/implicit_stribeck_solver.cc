@@ -208,21 +208,26 @@ T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     DRAKE_ASSERT(Delta > 0);
     const T sqrt_delta = sqrt(Delta);
 
-    const T alpha_plus = (-b + sqrt_delta) / a / 2.0;
-    const T alpha_minus = (-b - sqrt_delta) / a / 2.0;
+    // To avoid loss of significance, when 4ac is close to b² (i.e. the square
+    // root of the discriminant is close to b), we use Vieta's formula
+    // (α₁α₂ = c / a) to compute the second root given we computed the first
+    // root without precision lost. This guarantees the stability of the method.
+    const T numerator = -0.5 * (b + (b > 0.0 ? sqrt_delta : -sqrt_delta));
+    const T alpha1 = numerator / a;
+    const T alpha2 = c / numerator;
 
     // The geometry of the problem tells us that at least one must be
     // positive.
-    DRAKE_ASSERT(alpha_minus > 0 || alpha_plus > 0);
+    DRAKE_ASSERT(alpha2 > 0 || alpha1 > 0);
 
-    if (alpha_minus > 0 && alpha_plus > 0) {
+    if (alpha2 > 0 && alpha1 > 0) {
       // This branch is triggered for large angle changes (typically close
       // to 180 degrees) between v1 and vt
-      alpha = min(alpha_minus, alpha_plus);
+      alpha = min(alpha2, alpha1);
     } else {
       // This branch is triggered for small angles changes (typically
       // smaller than 90 degrees) between v1 and vt.
-      alpha = max(alpha_minus, alpha_plus);
+      alpha = max(alpha2, alpha1);
     }
   }
   return alpha;
