@@ -47,6 +47,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
   using std::min;
 
+  // Clear statistics so that we can update them with new ones for this call to
+  // SolveWithGuess().
+  statistics_.Reset();
+
   // If there are no contact points return a zero generalized friction forces
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
@@ -107,10 +111,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // singularity when tangential velocities are zero.
   const double epsilon_v = v_stribeck * 1.0e-4;
   const double epsilon_v2 = epsilon_v * epsilon_v;
-
-  // Clear statistics so that we can update them with new ones for this call to
-  // SolveWithGuess().
-  statistics_.Reset();
 
   for (int iter = 0; iter < max_iterations; ++iter) {
     // Compute 2D tangent vectors.

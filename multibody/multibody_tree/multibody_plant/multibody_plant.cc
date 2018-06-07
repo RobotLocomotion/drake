@@ -798,13 +798,14 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const implicit_stribeck::IterationStats& stats =
       implicit_stribeck_solver_->get_iteration_statistics();
 
+  const T alpha = (stats.num_iterations == 0) ? 1.0 : stats.alphas.back();
+
   std::ofstream outfile;
   outfile.open("nr_iteration.dat", std::ios_base::app);
   outfile <<
           fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e} {5:14.6e}\n",
                       context0.get_time(), istep, stats.num_iterations,
-                      num_contacts, stats.vt_residual,
-                      stats.alphas.back());
+                      num_contacts, stats.vt_residual, alpha);
   outfile.close();
 
   // Compute velocity at next time step.
