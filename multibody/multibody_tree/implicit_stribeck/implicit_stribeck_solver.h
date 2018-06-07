@@ -228,6 +228,8 @@ struct IterationStats {
   /// to the residual upon completion of the solver, i.e. vt_residual.
   std::vector<double> residuals;
 
+  std::vector<double> alphas;
+
   /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
   void Reset() {
     num_iterations = 0;
@@ -235,13 +237,15 @@ struct IterationStats {
     // Clear does not change a std::vector "capacity", and therefore there's
     // no reallocation (or deallocation) that could affect performance.
     residuals.clear();
+    alphas.clear();
   }
 
   /// (Internal) Used by ImplicitStribeckSolver to update statistics.
-  void Update(double iteration_residual) {
+  void Update(double iteration_residual, double iteration_alpha) {
     ++num_iterations;
     vt_residual = iteration_residual;
     residuals.push_back(iteration_residual);
+    alphas.push_back(iteration_alpha);
   }
 };
 

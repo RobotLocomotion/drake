@@ -274,7 +274,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     vt = D * v;
 
     // Save iteration statistics.
-    statistics_.Update(ExtractDoubleOrThrow(residual));
+    statistics_.Update(ExtractDoubleOrThrow(residual),
+                       ExtractDoubleOrThrow(alpha));
   }
 
   // If we are here is because we reached the maximum number of iterations
