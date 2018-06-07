@@ -127,6 +127,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "multilane_lanes_test",
     srcs = ["test/multilane_lanes_test.cc"],
+    shard_count = 10,
     deps = [
         ":lanes",
         "//automotive/maliput/api/test_utilities",

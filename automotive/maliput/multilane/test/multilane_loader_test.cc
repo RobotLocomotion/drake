@@ -49,9 +49,10 @@ namespace {
 class BuilderMock : public BuilderBase {
  public:
   BuilderMock(double lane_width, const api::HBounds& elevation_bounds,
-              double linear_tolerance, double angular_tolerance)
+              double linear_tolerance, double angular_tolerance,
+              double scale_length, ComputationPolicy computation_policy)
       : builder_(lane_width, elevation_bounds, linear_tolerance,
-                 angular_tolerance) {
+                 angular_tolerance, scale_length, computation_policy) {
     ON_CALL(*this, get_lane_width())
         .WillByDefault(Invoke(&builder_, &Builder::get_lane_width));
 
@@ -63,6 +64,12 @@ class BuilderMock : public BuilderBase {
 
     ON_CALL(*this, get_angular_tolerance())
         .WillByDefault(Invoke(&builder_, &Builder::get_angular_tolerance));
+
+    ON_CALL(*this, get_scale_length())
+        .WillByDefault(Invoke(&builder_, &Builder::get_scale_length));
+
+    ON_CALL(*this, get_computation_policy())
+        .WillByDefault(Invoke(&builder_, &Builder::get_computation_policy));
 
     const Connection* (Builder::*connect_line_ref)(
         const std::string&, const LaneLayout&, const StartReference::Spec&,
@@ -101,6 +108,10 @@ class BuilderMock : public BuilderBase {
 
   MOCK_CONST_METHOD0(get_angular_tolerance, double());
 
+  MOCK_CONST_METHOD0(get_scale_length, double());
+
+  MOCK_CONST_METHOD0(get_computation_policy, ComputationPolicy());
+
   MOCK_METHOD5(Connect,
                const Connection*(const std::string&, const LaneLayout&,
                                  const StartReference::Spec&, const LineOffset&,
@@ -136,17 +147,16 @@ class BuilderFactoryMock : public BuilderFactoryBase {
  public:
   explicit BuilderFactoryMock(std::unique_ptr<BuilderBase> builder_mock)
       : builder_mock_(std::move(builder_mock)) {
-    ON_CALL(*this, Make(_, _, _, _))
+    ON_CALL(*this, Make(_, _, _, _, _, _))
         .WillByDefault(Invoke(this, &BuilderFactoryMock::InternalMake));
   }
 
-  MOCK_CONST_METHOD4(Make,
-                     std::unique_ptr<BuilderBase>(double, const api::HBounds&,
-                                                  double, double));
+  MOCK_CONST_METHOD6(Make, std::unique_ptr<BuilderBase>(
+      double, const api::HBounds&, double, double, double, ComputationPolicy));
 
   // Wraps GMock Return(value) given that std::unique_ptr is non-copiable.
   std::unique_ptr<BuilderBase> InternalMake(double, const api::HBounds&, double,
-                                            double) {
+                                            double, double, ComputationPolicy) {
     return std::move(builder_mock_);
   }
 
@@ -162,27 +172,33 @@ GTEST_TEST(MultilaneLoaderTest, MinimalCorrectYaml) {
   left_shoulder: 1
   right_shoulder: 2
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: 0.01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   points: {}
   connections: {}
   groups: {}
 )R";
 
   const double kLaneWidth{4.};
+  const double kScaleLength{1.0};
   const double kZeroTolerance{0.};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.5 * M_PI / 180.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const api::HBounds kElevationBounds{0., 5.};
-
   auto local_builder_mock = std::make_unique<BuilderMock>(
-      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+      kScaleLength, kComputationPolicy);
   BuilderMock* builder_mock = local_builder_mock.get();
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
 
   EXPECT_CALL(builder_factory_mock,
               Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
-                   kLinearTolerance, kAngularTolerance));
+                   kLinearTolerance, kAngularTolerance, kScaleLength,
+                   kComputationPolicy));
 
   EXPECT_CALL(*builder_mock, Build(api::RoadGeometryId("empty_road_geometry")));
 
@@ -245,8 +261,10 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   left_shoulder: 1
   right_shoulder: 1.5
   elevation_bounds: [0, 5]
+  scale_length: 1.0
   linear_tolerance: 0.01
   angular_tolerance: 0.5
+  computation_policy: prefer-accuracy
   points:
     a:
       xypoint: [0, 0, 0]
@@ -327,8 +345,11 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   const EndpointZ kEndpointZElevated{10., 0., 0., 0.};
   const Endpoint kEndpointA{{0., 0., 0.}, kEndpointZZero};
   const double kZeroTolerance{0.};
+  const double kScaleLength{1.0};
   const double kLinearTolerance{0.01};
   const double kAngularTolerance{0.5 * M_PI / 180.};
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
   const api::HBounds kElevationBounds{0., 5.};
   const int kRefLane{0};
   const int kOneLane{1};
@@ -342,7 +363,8 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   const double kCustomRightShoulder{0.8};
 
   auto local_builder_mock = std::make_unique<BuilderMock>(
-      kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance);
+      kLaneWidth, kElevationBounds, kLinearTolerance,
+      kAngularTolerance, kScaleLength, kComputationPolicy);
   BuilderMock* builder_mock = local_builder_mock.get();
 
   BuilderFactoryMock builder_factory_mock(std::move(local_builder_mock));
@@ -352,7 +374,8 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
   prebuild_expectations += EXPECT_CALL(
       builder_factory_mock,
       Make(kLaneWidth, Matches(api::HBounds(0., 5.), kZeroTolerance),
-           kLinearTolerance, kAngularTolerance));
+           kLinearTolerance, kAngularTolerance,
+           kScaleLength, kComputationPolicy));
 
   // Connection expectations.
   prebuild_expectations += EXPECT_CALL(

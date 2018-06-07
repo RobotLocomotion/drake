@@ -9,9 +9,8 @@ const int AccelerometerOutputConstants::kAccelYIndex;
 const int AccelerometerOutputConstants::kAccelZIndex;
 
 template <typename T>
-AccelerometerOutput<T>::AccelerometerOutput() : BasicVector<double>(3) {
-  this->SetFromVector(VectorX<double>::Zero(3));
-}
+AccelerometerOutput<T>::AccelerometerOutput()
+    : BasicVector<double>(VectorX<double>::Zero(3)) {}
 
 template <typename T>
 Vector3<T> AccelerometerOutput<T>::get_accel() const {

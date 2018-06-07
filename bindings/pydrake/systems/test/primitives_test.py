@@ -45,8 +45,8 @@ def compare_value(test, a, b):
     if isinstance(a, VectorBase):
         test.assertTrue(np.allclose(a.get_value(), b.get_value()))
     else:
-        test.assertEquals(type(a.get_value()), type(b.get_value()))
-        test.assertEquals(a.get_value(), b.get_value())
+        test.assertEqual(type(a.get_value()), type(b.get_value()))
+        test.assertEqual(a.get_value(), b.get_value())
 
 
 class TestGeneral(unittest.TestCase):

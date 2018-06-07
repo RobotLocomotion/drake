@@ -794,6 +794,7 @@ drake_cc_googletest(
     name = "trivial_right_of_way_state_provider_test",
     deps = [
         ":trivial_right_of_way_state_provider",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )
 

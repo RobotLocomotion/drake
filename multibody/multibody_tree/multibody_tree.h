@@ -1123,10 +1123,57 @@ class MultibodyTree {
   /// the same size as the input array `p_BQi_set`.
   /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
   /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
   void CalcPointsGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_BQi_set,
       EigenPtr<MatrixX<T>> p_WQi_set, EigenPtr<MatrixX<T>> Jv_WQi) const;
+
+  /// This is a variant to compute the geometric Jacobian `Jv_WQi` for a set of
+  /// points `Qi` moving with `frame_B`, given that we know the position `p_WQi`
+  /// of each point in the set measured and expressed in the world frame W. The
+  /// geometric Jacobian `Jv_WQi` is defined such that: <pre>
+  ///   v_WQi(q, v) = Jv_WQi(q)⋅v
+  /// </pre>
+  /// where `v_WQi(q, v)` is the translational velocity of point `Qi` in the
+  /// world frame W and q and v are the vectors of generalized position and
+  /// velocity, respectively. Since the spatial velocity of each
+  /// point `Qi` is linear in the generalized velocities, the geometric
+  /// Jacobian `Jv_WQi` is a function of the generalized coordinates q only.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_B
+  ///   Points `Qi` in the set instantaneously move with this frame.
+  /// @param[in] p_WQi_set
+  ///   A matrix with the fixed position of a set of points `Qi` measured and
+  ///   expressed in the world frame W.
+  ///   Each column of this matrix contains the position vector `p_WQi` for a
+  ///   point `Qi` measured and expressed in the world frame W. Therefore this
+  ///   input matrix lives in ℝ³ˣⁿᵖ with `np` the number of points in the set.
+  /// @param[out] Jv_WQi
+  ///   The geometric Jacobian `Jv_WQi(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates the translational velocity
+  ///   `v_WQi` of each point `Qi` in the input set by: <pre>
+  ///     `v_WQi(q, v) = Jv_WQi(q)⋅v`
+  ///   </pre>
+  ///   so that `v_WQi` is a column vector of size `3⋅np` concatenating the
+  ///   velocity of all points `Qi` in the same order they were given in the
+  ///   input set. Therefore `J_WQi` is a matrix of size `3⋅np x nv`, with `nv`
+  ///   the number of generalized velocities. On input, matrix `J_WQi` **must**
+  ///   have size `3⋅np x nv` or this method throws a std::runtime_error
+  ///   exception.
+  ///
+  /// @throws an exception if `Jv_WQi` is nullptr or if it does not have the
+  /// appropriate size, see documentation for `Jv_WQi` for details.
+  // TODO(amcastro-tri): provide the Jacobian-times-vector operation, since for
+  // most applications it is all we need and it is more efficient to compute.
+  void CalcPointsGeometricJacobianExpressedInWorld(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const MatrixX<T>>& p_WQi_set,
+      EigenPtr<MatrixX<T>> Jv_WQi) const;
 
   /// Given a frame F with fixed position `p_BoFo_B` in a frame B, this method
   /// computes the geometric Jacobian `Jv_WF` defined by:

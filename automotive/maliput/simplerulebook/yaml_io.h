@@ -30,11 +30,17 @@ namespace simplerulebook {
 ///     .
 ///   right_of_way:  # RightOfWayRule group
 ///     ID1:  # ID, as a string
-///       controlled_zone:  # sequence of LaneSRange items
+///       zone:  # sequence of LaneSRange items
 ///         - [LANE_ID, S0, S1]
 ///         - [LANE_ID, S0, S1]
 ///         - [LANE_ID, S0, S1]
-///       type: StopThenGo  # ...the Type enum, without the leading 'k'
+///       zone_type: StopExcluded  # ...ZoneType enum, without the leading 'k'
+///       states:
+///         STATE_ID1:
+///           type: StopThenGo  # ...Type enum, without the leading 'k'
+///           yield_to:
+///             - OTHER_RULE_ID
+///             - OTHER_RULE_ID
 ///     .
 ///     .
 ///     .

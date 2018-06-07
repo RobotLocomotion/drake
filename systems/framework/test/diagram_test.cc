@@ -333,7 +333,7 @@ GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
   BadDiagram diagram;
   auto context = diagram.AllocateContext();
 
-  context->FixInputPort(0, BasicVector<double>::Make({1}));
+  context->FixInputPort(0, {1});
 
   const Context<double>& inside_context =
       diagram.GetSubsystemContext(diagram.inside(), *context);
@@ -469,10 +469,6 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_ = BasicVector<double>::Make({1, 2, 4});
-    input1_ = BasicVector<double>::Make({8, 16, 32});
-    input2_ = BasicVector<double>::Make({64, 128, 256});
-
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
     integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
@@ -528,9 +524,9 @@ class DiagramTest : public ::testing::Test {
   }
 
   void AttachInputs() {
-    context_->FixInputPort(0, std::move(input0_));
-    context_->FixInputPort(1, std::move(input1_));
-    context_->FixInputPort(2, std::move(input2_));
+    context_->FixInputPort(0, input0_);
+    context_->FixInputPort(1, input1_);
+    context_->FixInputPort(2, input2_);
   }
 
   Adder<double>* adder0() { return diagram_->adder0(); }
@@ -541,9 +537,9 @@ class DiagramTest : public ::testing::Test {
 
   std::unique_ptr<ExampleDiagram> diagram_;
 
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
-  std::unique_ptr<BasicVector<double>> input2_;
+  const BasicVector<double> input0_{1, 2, 4};
+  const BasicVector<double> input1_{8, 16, 32};
+  const BasicVector<double> input2_{64, 128, 256};
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -725,20 +721,20 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   /// adder2_: (A + B)             -> output 1
   /// integrator1_: A              -> C
   /// integrator2_: C              -> output 2
-  auto input0 = std::make_unique<BasicVector<AutoDiffXd>>(3);
-  auto input1 = std::make_unique<BasicVector<AutoDiffXd>>(3);
-  auto input2 = std::make_unique<BasicVector<AutoDiffXd>>(3);
+  BasicVector<AutoDiffXd> input0(3);
+  BasicVector<AutoDiffXd> input1(3);
+  BasicVector<AutoDiffXd> input2(3);
   for (int i = 0; i < 3; ++i) {
-    (*input0)[i].value() = 1 + 0.1 * i;
-    (*input0)[i].derivatives() = Eigen::VectorXd::Unit(9, i);
-    (*input1)[i].value() = 2 + 0.2 * i;
-    (*input1)[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
-    (*input2)[i].value() = 3 + 0.3 * i;
-    (*input2)[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
+    input0[i].value() = 1 + 0.1 * i;
+    input0[i].derivatives() = Eigen::VectorXd::Unit(9, i);
+    input1[i].value() = 2 + 0.2 * i;
+    input1[i].derivatives() = Eigen::VectorXd::Unit(9, 3 + i);
+    input2[i].value() = 3 + 0.3 * i;
+    input2[i].derivatives() = Eigen::VectorXd::Unit(9, 6 + i);
   }
-  context->FixInputPort(0, std::move(input0));
-  context->FixInputPort(1, std::move(input1));
-  context->FixInputPort(2, std::move(input2));
+  context->FixInputPort(0, input0);
+  context->FixInputPort(1, input1);
+  context->FixInputPort(2, input2);
 
   ad_diagram->CalcOutput(*context, output.get());
   ASSERT_EQ(kSize, output->get_num_ports());
@@ -796,9 +792,9 @@ TEST_F(DiagramTest, ToSymbolic) {
 // Tests that the same diagram can be evaluated into the same output with
 // different contexts interchangeably.
 TEST_F(DiagramTest, Clone) {
-  context_->FixInputPort(0, std::move(input0_));
-  context_->FixInputPort(1, std::move(input1_));
-  context_->FixInputPort(2, std::move(input2_));
+  context_->FixInputPort(0, input0_);
+  context_->FixInputPort(1, input1_);
+  context_->FixInputPort(2, input2_);
 
   // Compute the output with the default inputs and sanity-check it.
   diagram_->CalcOutput(*context_, output_.get());
@@ -807,9 +803,8 @@ TEST_F(DiagramTest, Clone) {
   // Create a clone of the context and change an input.
   auto clone = context_->Clone();
 
-  auto next_input_0 = std::make_unique<BasicVector<double>>(kSize);
-  next_input_0->get_mutable_value() << 3, 6, 9;
-  clone->FixInputPort(0, std::move(next_input_0));
+  DRAKE_DEMAND(kSize == 3);
+  clone->FixInputPort(0, {3, 6, 9});
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
@@ -871,13 +866,9 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput(*context_);
 
-    input0_ = BasicVector<double>::Make({8});
-    input1_ = BasicVector<double>::Make({64});
-    input2_ = BasicVector<double>::Make({512});
-
-    context_->FixInputPort(0, std::move(input0_));
-    context_->FixInputPort(1, std::move(input1_));
-    context_->FixInputPort(2, std::move(input2_));
+    context_->FixInputPort(0, {8});
+    context_->FixInputPort(1, {64});
+    context_->FixInputPort(2, {512});
 
     // Initialize the integrator states.
     Context<double>& d0_context =
@@ -911,10 +902,6 @@ class DiagramOfDiagramsTest : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_ = nullptr;
   ExampleDiagram* subdiagram0_ = nullptr;
   ExampleDiagram* subdiagram1_ = nullptr;
-
-  std::unique_ptr<BasicVector<double>> input0_;
-  std::unique_ptr<BasicVector<double>> input1_;
-  std::unique_ptr<BasicVector<double>> input2_;
 
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<SystemOutput<double>> output_;
@@ -994,10 +981,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
-  auto vec = std::make_unique<BasicVector<double>>(1 /* size */);
-  vec->get_mutable_value() << 12.0;
-  context->FixInputPort(0, std::move(vec));
-
+  context->FixInputPort(0, {12.0});
   plus_seven.CalcOutput(*context, output.get());
 
   ASSERT_EQ(1, output->get_num_ports());
@@ -1460,8 +1444,8 @@ class DiscreteStateTest : public ::testing::Test {
  public:
   void SetUp() override {
     context_ = diagram_.CreateDefaultContext();
-    context_->FixInputPort(0, BasicVector<double>::Make({17.0}));
-    context_->FixInputPort(1, BasicVector<double>::Make({23.0}));
+    context_->FixInputPort(0, {17.0});
+    context_->FixInputPort(1, {23.0});
   }
 
  protected:

@@ -3,6 +3,10 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/test/generic_trivial_constraints.h"
+#include "drake/solvers/test/generic_trivial_costs.h"
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -12,8 +16,14 @@ using symbolic::Formula;
 using symbolic::Variable;
 using symbolic::Variables;
 
+using std::logic_error;
+using std::make_shared;
+using std::shared_ptr;
+
 class DrealSolverTest : public ::testing::Test {
  protected:
+  void SetUp() override { xvec_ = prog_.NewContinuousVariables(4, "x"); }
+
   // Continuous variables.
   const Variable x_{"x", Variable::Type::CONTINUOUS};
   const Variable y_{"y", Variable::Type::CONTINUOUS};
@@ -33,7 +43,16 @@ class DrealSolverTest : public ::testing::Test {
   const Variable b3_{"b3", Variable::Type::BOOLEAN};
 
   const double delta_{0.001};
+  MathematicalProgram prog_;
+  VectorXDecisionVariable xvec_;
+  DrealSolver solver_;
 };
+
+TEST_F(DrealSolverTest, Available) {
+  const auto result = DrealSolver::CheckSatisfiability(
+      Expression{0.0} > Expression{1.0}, delta_);
+  ASSERT_FALSE(result);
+}
 
 // 0.0 > 1.0 is trivially UNSAT.
 TEST_F(DrealSolverTest, CheckSatisfiabilityTrivialUnsat) {
@@ -187,7 +206,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityNonlinear) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityLog) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == log(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -198,7 +217,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityLog) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityExp) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == exp(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -209,7 +228,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityExp) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilitySin) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == sin(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -220,7 +239,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilitySin) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityCos) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == cos(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -231,7 +250,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityCos) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityTan) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tan(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -242,7 +261,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityTan) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAsin) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == asin(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -253,7 +272,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityAsin) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAcos) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == acos(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -264,7 +283,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityAcos) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAtan) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == atan(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -275,7 +294,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityAtan) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityAtan2) {
-  auto result = DrealSolver::CheckSatisfiability(
+  const auto result = DrealSolver::CheckSatisfiability(
       x_ == 4 && y_ == 3 && z_ == atan2(x_, y_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -288,7 +307,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityAtan2) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilitySinh) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == sinh(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -299,7 +318,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilitySinh) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityCosh) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 0.5 && y_ == cosh(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -310,7 +329,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityCosh) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityTanh) {
-  auto result =
+  const auto result =
       DrealSolver::CheckSatisfiability(x_ == 4 && y_ == tanh(x_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -321,7 +340,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityTanh) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityMin) {
-  auto result = DrealSolver::CheckSatisfiability(
+  const auto result = DrealSolver::CheckSatisfiability(
       x_ == 4 && y_ == 3 && z_ == min(x_, y_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -334,7 +353,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityMin) {
 }
 
 TEST_F(DrealSolverTest, CheckSatisfiabilityMax) {
-  auto result = DrealSolver::CheckSatisfiability(
+  const auto result = DrealSolver::CheckSatisfiability(
       x_ == 4 && y_ == 3 && z_ == max(x_, y_), delta_);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
@@ -353,7 +372,7 @@ TEST_F(DrealSolverTest, CheckSatisfiabilityForall) {
   //     min x² s.t. x ∈ [-3, 3].
   // ->  ∃x. (-3 ≤ x) ∧ (x ≤ 3) ∧ [∀y. ((-3 ≤ y) ∧ (y ≤ 3)) → (x² ≤ y²)]
   // ->  ∃x. (-3 ≤ x) ∧ (x ≤ 3) ∧ [∀y. ¬((-3 ≤ y) ∧ (y ≤ 3)) ∨ (x² ≤ y²)]
-  auto result = DrealSolver::CheckSatisfiability(
+  const auto result = DrealSolver::CheckSatisfiability(
       (-3 <= x_) && (x_ <= 3) &&
           forall({y_}, !((-3 <= y_) && (y_ <= 3)) || (x_ * x_ <= y_ * y_)),
       delta_);
@@ -371,7 +390,8 @@ TEST_F(DrealSolverTest, Minimize1) {
   const double delta{0.01};
   const double known_minimum{0.5};
 
-  const auto result = DrealSolver::Minimize(objective, constraint, delta);
+  const auto result = DrealSolver::Minimize(
+      objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
   ASSERT_TRUE(result);
   const DrealSolver::IntervalBox& solution{*result};
   const double x{solution.at(x_).mid()};
@@ -386,8 +406,8 @@ TEST_F(DrealSolverTest, Minimize2) {
   const Formula constraint{-3 <= x_ && x_ <= 3};
   const double delta{0.001};
   const double known_minimum{-2.77877};
-
-  const auto result = DrealSolver::Minimize(objective, constraint, delta);
+  const auto result = DrealSolver::Minimize(
+      objective, constraint, delta, DrealSolver::LocalOptimization::kUse);
   ASSERT_TRUE(result);
   const double x{result->at(x_).mid()};
   EXPECT_TRUE(-3 <= x && x <= 3);
@@ -399,8 +419,8 @@ TEST_F(DrealSolverTest, Minimize3) {
   // Note that the side constraints have no model.
   const Expression objective{sin(3 * x_)};
   const Formula constraint{-3 <= x_ && x_ <= 3 && (x_ * x_ - 16 == 0)};
-
-  const auto result = DrealSolver::Minimize(objective, constraint, delta_);
+  const auto result = DrealSolver::Minimize(
+      objective, constraint, delta_, DrealSolver::LocalOptimization::kUse);
   EXPECT_FALSE(result);
 }
 
@@ -450,6 +470,241 @@ TEST_F(DrealSolverTest, UnsupportedFormulaPositiveSemidefinite) {
       std::runtime_error);
 }
 
+TEST_F(DrealSolverTest, SolveLinearProgramming) {
+  // Linear Cost + BoundingBox constraints + Linear constraint
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  prog_.AddConstraint(x0, 100, 200);
+  prog_.AddConstraint(x1, 80, 170);
+  prog_.AddConstraint(x1 >= -x0 + 200);
+  prog_.AddCost(2 * x0 - 5 * x1);
+  ASSERT_TRUE(solver_.available());
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  const double delta{0.001};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  const double v1{prog_.GetSolution(x1)};
+  EXPECT_TRUE(100 - delta <= v0 && v0 <= 200 + delta);
+  EXPECT_TRUE(80 - delta <= v1 && v1 <= 170 + delta);
+  EXPECT_TRUE(v1 >= -v0 + 200 - delta);
+  EXPECT_NEAR(2 * v0 - 5 * v1, 2 * 100 - 5 * 170 /* known minimum */,
+              delta * 5.0);
+}
+
+TEST_F(DrealSolverTest, SolveQuadraticProgramming) {
+  // Linear Cost + BoundingBox constraints + Linear constraint
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  prog_.AddConstraint(x0, 0, 20);
+  prog_.AddConstraint(x1 >= 0);
+  prog_.AddConstraint(2 * x0 + x1 >= 2);
+  prog_.AddConstraint(-x0 + 2 * x1 <= 6);
+  prog_.AddCost(4 + 1.5 * x0 - 2 * x1 + 4 * x0 * x0 + 2 * x0 + x1 +
+                5 * x1 * x1);
+  const double delta{1e-5};
+  prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
+  prog_.SetSolverOption(DrealSolver::id(), "use_local_optimization", 0);
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  const double v1{prog_.GetSolution(x1)};
+  EXPECT_TRUE(0 - delta <= v0 && v0 <= 20 + delta);
+  EXPECT_TRUE(0 - delta <= v1);
+  EXPECT_TRUE(2 * v0 + v1 >= 2 - delta);
+  EXPECT_NEAR(4 + 1.5 * v0 - 2 * v1 + 4 * v0 * v0 + 2 * v0 + v1 + 5 * v1 * v1,
+              4 + 1.5 * 0.71875 - 2 * 0.5625 + 4 * 0.71875 * 0.71875 +
+                  2 * 0.71875 + 0.5625 + 5 * 0.5625 * 0.5625,
+              delta * 5.0);
+}
+
+TEST_F(DrealSolverTest, SolveLinearEqualityConstraint) {
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  prog_.AddConstraint(x0, -5, 5);
+  prog_.AddConstraint(x1, -5, 5);
+  prog_.AddConstraint(2 * x0 + 3 * x1 == 2);
+  prog_.AddConstraint(-3 * x0 + 4 * x1 <= 0);
+  const double delta{1e-3};
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  const double v1{prog_.GetSolution(x1)};
+  EXPECT_NEAR(2 * v0 + 3 * v1, 2.0, delta);
+  EXPECT_TRUE(-3 * v0 + 4 * v1 <= delta);
+}
+
+TEST_F(DrealSolverTest, SolveQuadraticConstraint) {
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  prog_.AddConstraint(x0, 0, 5);
+  prog_.AddConstraint(x1, 0, 5);
+  prog_.AddConstraint(x0 <= x1 * x1);
+  prog_.AddConstraint(x1 * x1 - 0.0001 <= x0);
+  prog_.AddConstraint(x0 == 3.0);
+  const double delta{1e-3};
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v1{prog_.GetSolution(x1)};
+  EXPECT_NEAR(v1, 1.7320 /* sqrt(3.0) */, delta);
+}
+
+TEST_F(DrealSolverTest, SolveLorentzConeConstraint) {
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  const Variable& x2{xvec_(2)};
+  prog_.AddConstraint(x0, -5, 5);
+  prog_.AddConstraint(x1, -5, 5);
+  prog_.AddConstraint(x2, 0, 5);
+  prog_.AddLorentzConeConstraint(
+      Vector3<symbolic::Expression>(0 * x0 + 1, x0 - 1, x1 - 1));
+  prog_.AddLorentzConeConstraint(Vector3<symbolic::Expression>(x2, x0, x1));
+  prog_.AddCost(x2);
+  const double delta{1e-5};
+  prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v2{prog_.GetSolution(x2)};
+  // We check if the found minimum (solution for x2) is close to the one from
+  // SCS solver.
+  EXPECT_NEAR(v2, /* Solution from SCS Solver */ 0.414212, delta * 5);
+}
+
+TEST_F(DrealSolverTest, SolveRotatedLorentzConeConstraint) {
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  const Variable& x2{xvec_(2)};
+  prog_.AddLinearCost(2 * x0 + 3 * x1 - 2 * x2);
+  prog_.AddConstraint(x0, -1, 1);
+  prog_.AddConstraint(x1, -1, 1);
+  prog_.AddConstraint(x2, -1, 1);
+  prog_.AddRotatedLorentzConeConstraint(
+      Vector4<symbolic::Expression>(x0 + x1, x1 + x2, +x0, +x1));
+  const double delta{1e-10};
+  prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  const double v1{prog_.GetSolution(x1)};
+  const double v2{prog_.GetSolution(x2)};
+  // We check if the found minimum (solution for 2x0 + 3x1 - 2x2) is close to
+  // the one from Gurobi solver.
+  EXPECT_NEAR(2 * v0 + 3 * v1 - 2 * v2,
+              /* Solution from Gurobi */ 2 * 0.0953487 + 3 * -0.0787482 - 2 * 1,
+              1e-5);
+}
+
+TEST_F(DrealSolverTest, SolveLinearComplementarityConstraint) {
+  // The problem and the expected solution are copied from "bard1" test in
+  // solvers/test/complementary_problem_test.cc.
+  //
+  // A problem from J.F. Bard, Convex two-level optimization,
+  // Mathematical Programming 40(1), 15-27, 1988.
+  // min (x-5)² + (2*y + 1)²
+  // s.t 2*(y-1) - 1.5*x + l(0) - 0.5*l(1) + l(2) = 0
+  //     0 <= l(0) ⊥ 3 * x - y - 3 >= 0
+  //     0 <= l(1) ⊥ -x + 0.5*y + 4 >= 0
+  //     0 <= l(2) ⊥ -x - y + 7 >= 0
+  //     x >= 0, y >= 0
+  const auto x = prog_.NewContinuousVariables<1>();
+  const auto y = prog_.NewContinuousVariables<1>();
+  const auto l = prog_.NewContinuousVariables<3>();
+  prog_.AddCost(pow(x(0) - 5, 2) + pow(2 * y(0) + 1, 2));
+  prog_.AddConstraint(x(0), -10, 10);
+  prog_.AddConstraint(y(0), -10, 10);
+  prog_.AddConstraint(l(0), -10, 10);
+  prog_.AddConstraint(l(1), -10, 10);
+  prog_.AddConstraint(l(2), -10, 10);
+  prog_.AddLinearConstraint(
+      2 * (y(0) - 1) - 1.5 * x(0) + l(0) - 0.5 * l(1) + l(2) == 0);
+  Eigen::Matrix<double, 5, 5> M;
+  // clang-format off
+  M <<  3,  -1, 0, 0, 0,
+       -1, 0.5, 0, 0, 0,
+       -1,  -1, 0, 0, 0,
+        0,   0, 0, 0, 0,
+        0,   0, 0, 0, 0;
+  // clang-format on
+  Eigen::Matrix<double, 5, 1> q;
+  q << -3, 4, 7, 0, 0;
+  prog_.AddLinearComplementarityConstraint(M, q, {x, y, l});
+  const double delta{1e-5};
+  prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
+  const SolutionResult solution_result{solver_.Solve(prog_)};
+  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const auto x_val = prog_.GetSolution(x);
+  const auto y_val = prog_.GetSolution(y);
+  EXPECT_NEAR(x_val(0), 1, 1E-6);
+  EXPECT_NEAR(y_val(0), 0, 1E-6);
+}
+
+TEST_F(DrealSolverTest, SolveNonLinearConstraint) {
+  const Variable& x0{xvec_(0)};
+  prog_.AddConstraint(x0, -3.141592, 3.141592);
+  prog_.AddConstraint(sin(x0) + cos(x0), 0.4, 0.41);
+  const double delta{1e-5};
+  prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  EXPECT_TRUE(-3.141592 - delta <= v0 && v0 <= 3.141592 + delta);
+  EXPECT_TRUE(0.4 - delta <= sin(v0) + cos(v0));
+  EXPECT_TRUE(sin(v0) + cos(v0) <= 0.41 + delta);
+  // Add more constraints to make the problem infeasible.
+  prog_.AddConstraint(cos(x0) * sin(x0), 0.9, 0.91);
+  solution_result = solver_.Solve(prog_);
+  ASSERT_EQ(solution_result, SolutionResult::kInfeasibleConstraints);
+}
+
+TEST_F(DrealSolverTest, SolvePositiveSemidefiniteConstraint) {
+  // No support yet. Checks DrealSolver throws std::logic_error.
+  const auto X = prog_.NewSymmetricContinuousVariables<4>("X");
+  prog_.AddPositiveSemidefiniteConstraint(X);
+  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+}
+
+TEST_F(DrealSolverTest, SolveLinearMatrixInequalityConstraint) {
+  // No support yet. Checks DrealSolver throws std::logic_error.
+  prog_.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
+       2 * Eigen::Matrix2d::Ones()},
+      xvec_.head<2>());
+  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+}
+
+TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
+  const Variable& x{xvec_(0)};
+  prog_.AddConstraint(x, -10, 10);
+  prog_.AddCost(-2 * x + 1);  // -2x + 1
+  prog_.AddCost(x * x);       // x²
+  // Cost function = x² - 2x + 1 = (x-1)²
+  SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v{prog_.GetSolution(x)};
+  EXPECT_NEAR(v, 1, 0.005);
+}
+
+TEST_F(DrealSolverTest, SolveGenericConstraint) {
+  // No support for a generic constraint which is not of
+  // ExpressionConstraint. Checks DrealSolver throws std::logic_error.
+  const shared_ptr<Constraint> generic_trivial_constraint1 =
+      make_shared<test::GenericTrivialConstraint1>();
+  prog_.AddConstraint(Binding<Constraint>(
+      generic_trivial_constraint1,
+      VectorDecisionVariable<3>(xvec_(0), xvec_(1), xvec_(2))));
+  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+}
+
+TEST_F(DrealSolverTest, SolveGenericCost) {
+  // No support yet. Checks DrealSolver throws std::logic_error.
+  const shared_ptr<Cost> generic_trivial_cost1 =
+      make_shared<test::GenericTrivialCost1>();
+  prog_.AddCost(
+      Binding<Cost>(generic_trivial_cost1,
+                    VectorDecisionVariable<3>(xvec_(0), xvec_(1), xvec_(2))));
+  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+}
+
 }  // namespace
+
 }  // namespace solvers
 }  // namespace drake

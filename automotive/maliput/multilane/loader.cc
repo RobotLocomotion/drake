@@ -258,6 +258,21 @@ const Connection* MaybeMakeConnection(
   }
 }
 
+// Parses a yaml `node` that represents a ComputationPolicy.
+// `node` must be a string scalar, with one of the following
+// values: "prefer-accuracy", "prefer-speed".
+ComputationPolicy ResolveComputationPolicy(const YAML::Node& node) {
+  DRAKE_DEMAND(node.IsScalar());
+  const std::string& policy = node.Scalar();
+  if (policy == "prefer-accuracy") {
+    return ComputationPolicy::kPreferAccuracy;
+  }
+  if (policy == "prefer-speed") {
+    return ComputationPolicy::kPreferSpeed;
+  }
+  DRAKE_ABORT();
+}
+
 // Parses a yaml `node` that represents a RoadGeometry.
 // `node` must be a map and contain a map node called
 // "maliput_multilane_builder". This last node must contain the complete
@@ -284,10 +299,15 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
   const double angular_tolerance =
       deg_to_rad(mmb["angular_tolerance"].as<double>());
   DRAKE_DEMAND(angular_tolerance >= 0.);
+  const double scale_length = mmb["scale_length"].as<double>();
+  DRAKE_DEMAND(scale_length > 0.);
+  const ComputationPolicy computation_policy =
+      ResolveComputationPolicy(mmb["computation_policy"]);
 
   auto builder =
       builder_factory.Make(lane_width, h_bounds(mmb["elevation_bounds"]),
-                           linear_tolerance, angular_tolerance);
+                           linear_tolerance, angular_tolerance, scale_length,
+                           computation_policy);
   DRAKE_DEMAND(builder != nullptr);
 
   drake::log()->debug("loading points !");
