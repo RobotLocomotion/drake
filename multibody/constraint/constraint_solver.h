@@ -151,17 +151,18 @@ class ConstraintSolver {
   /// v⁻ ∈ ℝⁿᵛ, v ∈ ℝⁿᵛ⁺ correspond to the velocity of the system before and
   /// after impulses are applied, respectively. More details will be forthcoming
   /// but key variables are `M ∈ ℝⁿᵛˣⁿᵛ`, the generalized inertia matrix;
-  /// `G ∈ ℝⁿᵇˣⁿᵛ`, `N ∈ ℝⁿᶜˣⁿᵛ`, `D ∈ ℝⁿᶜˣⁿᵛ`, and `L ∈ ℝⁿᶜˣⁿᵛ` correspond to
+  /// `G ∈ ℝⁿᵇˣⁿᵛ`, `N ∈ ℝⁿᶜˣⁿᵛ`, `D ∈ ℝⁿᶜᵏˣⁿᵛ`, and `L ∈ ℝⁿᵘˣⁿᵛ` correspond to
   /// Jacobian matrices for various constraints (joints, contact, friction,
   /// generic unilateral constraints, respectively); `μ ∈ ℝⁿᶜˣⁿᶜ` is a diagonal
-  /// matrix comprised of Coulomb friction coefficients; `E ∈ ℝⁿᶜˣⁿᶜ` is a
+  /// matrix comprised of Coulomb friction coefficients; `E ∈ ℝⁿᶜᵏˣⁿᶜ` is a
   /// binary matrix used to linearize the friction cone (necessary to make
   /// this into a *linear* complementarity problem); `fG ∈ ℝⁿᵇ`, `fN ∈ ℝⁿᶜ`,
-  /// `fD ∈ ℝⁿᶜ`, and `fL ∈ ℝⁿᶜ` are constraint impulses; `λ ∈ ℝⁿᶜ`, `x₅`, `x₆`,
-  /// `x₇`, and `x₈` can be viewed as mathematical programming "slack"
-  /// variables; and `kᴳ ∈ ℝⁿᵇ`, `kᴺ ∈ ℝⁿᶜ`, `kᴰ ∈ ℝⁿᶜ`, `kᴸ ∈ ℝⁿᶜ`
+  /// `fD ∈ ℝⁿᶜᵏ`, and `fL ∈ ℝⁿᵘ` are constraint impulses; `λ ∈ ℝⁿᶜ`, `x₅`,
+  /// `x₆`, `x₇`, and `x₈` can be viewed as mathematical programming "slack"
+  /// variables; and `kᴳ ∈ ℝⁿᵇ`, `kᴺ ∈ ℝⁿᶜ`, `kᴰ ∈ ℝⁿᶜᵏ`, `kᴸ ∈ ℝⁿᵘ`
   /// allow customizing the problem to, e.g., correct constraint violations and
-  /// simulate restitution. Note that 
+  /// simulate restitution. See @ref constraint_variable_defs for complete
+  /// definitions of `nv`, `nc`, `nb`, etc.
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
@@ -466,22 +467,6 @@ class ConstraintSolver {
     const ConstraintVelProblemData<T>& problem_data,
     const VectorX<T>& cf,
     VectorX<T>* generalized_acceleration);
-
-  /// Computes the system generalized acceleration due *only* to constraint
-  /// forces.
-  /// @param cf The computed constraint forces, in the packed storage
-  ///           format described in documentation for SolveConstraintProblem.
-  /// @param v  The system generalized velocity at time t.
-  /// @param dt The discretization time constant used to take the system's
-  ///           generalized velocities from time t to time t + `dt`.
-  /// @throws std::logic_error if `generalized_acceleration` is null,
-  ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
-  static void ComputeGeneralizedAcceleration(
-      const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& v,
-      const VectorX<T>& cf,
-      double dt,
-      VectorX<T>* generalized_acceleration);
 
   /// Computes the change to the system generalized velocity from constraint
   /// impulses.
@@ -2287,28 +2272,6 @@ void ConstraintSolver<T>::ComputeGeneralizedAccelerationFromConstraintForces(
   ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
                                               &generalized_force);
   *generalized_acceleration = problem_data.solve_inertia(generalized_force);
-}
-
-template <class T>
-void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
-    const ConstraintVelProblemData<T>& problem_data,
-    const VectorX<T>& v,
-    const VectorX<T>& cf,
-    double dt,
-    VectorX<T>* generalized_acceleration) {
-  DRAKE_DEMAND(dt > 0);
-
-  ComputeGeneralizedAccelerationFromConstraintForces(problem_data, cf,
-                                              generalized_acceleration);
-
-  // The new velocity is v(t+dt) = v(t) + dt*accel.
-  //                             = inv(M)*M*(v(t) + dt*fext) + dt*ga
-  //                             = inv(M)*Mv + dt*ga
-  // Note: we have no way to break apart the Mv term. But, we can instead
-  // compute v(t+dt) and then solve for accel.
-  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv) +
-                           dt * (*generalized_acceleration);
-  *generalized_acceleration = (vplus - v)/dt;
 }
 
 template <class T>
