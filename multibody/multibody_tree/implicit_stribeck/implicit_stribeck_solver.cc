@@ -15,7 +15,7 @@ namespace implicit_stribeck {
 
 namespace internal {
 template <typename T>
-T LimitDirectionChange<T>::run(
+T DirectionChangeLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double tolerance) {
@@ -208,4 +208,4 @@ T LimitDirectionChange<T>::run(
 // Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     struct
-    ::drake::multibody::implicit_stribeck::internal::LimitDirectionChange)
+    ::drake::multibody::implicit_stribeck::internal::DirectionChangeLimiter)

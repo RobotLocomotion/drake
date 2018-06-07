@@ -113,7 +113,7 @@ namespace internal {
 /// inside a struct so that we can use Eigen::Ref arguments allowing different
 /// scalar types T.
 template <typename T>
-struct LimitDirectionChange {
+struct DirectionChangeLimiter {
   /// Implements the limiting algorithm described in the documentation above.
   /// @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
@@ -121,9 +121,9 @@ struct LimitDirectionChange {
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
   /// @param[in] tolerance a value << 1 used to determine when ‖vₜ‖ ≈ 0.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
-  static T run(const Eigen::Ref<const Vector2<T>>& v,
-               const Eigen::Ref<const Vector2<T>>& dv,
-               double cos_theta_max, double v_stiction, double tolerance);
+  static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
+                     const Eigen::Ref<const Vector2<T>>& dv,
+                     double cos_theta_max, double v_stiction, double tolerance);
 };
 }  // namespace internal
 
