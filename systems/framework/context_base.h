@@ -198,9 +198,9 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Add the next output port. Expected index is supplied along with the
   // assigned ticket.
-  void AddOutputPort(OutputPortIndex expected_index, DependencyTicket ticket,
-                     const std::pair<optional<SubsystemIndex>,
-                                     DependencyTicket>& prerequisite);
+  void AddOutputPort(
+      OutputPortIndex expected_index, DependencyTicket ticket,
+      const internal::OutputPortPrerequisite& prerequisite);
 #endif
 
  protected:

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/type_safe_index.h"
 
 namespace drake {
@@ -221,6 +222,16 @@ enum BuiltInTicketNumbers {
   kXcdotTicket          = 16,
   kXdhatTicket          = 17,
   kNextAvailableTicket  = kXdhatTicket+1
+};
+
+// Specifies the prerequisite of an output port. It will always be either
+// an internal cache entry within the subsystem that owns the output port, or
+// an output port of a child subsystem that is being forwarded as an output port
+// of the child's parent Diagram. If the `child_subsystem` index is missing it
+// indicates that the prerequisite is internal.
+struct OutputPortPrerequisite {
+  optional<SubsystemIndex> child_subsystem;
+  DependencyTicket dependency;
 };
 
 // These are some utility methods that are reused within the framework.
