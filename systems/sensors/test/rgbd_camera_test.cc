@@ -247,6 +247,10 @@ class RgbdCameraDiagramTest : public ::testing::Test {
     output_ = diagram_->AllocateOutput(*context_);
   }
 
+  void CalcOutput() {
+    diagram_->CalcOutput(*context_, output_.get());
+  }
+
   std::unique_ptr<RgbdCameraDiagram> diagram_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   Size size_;
@@ -317,6 +321,8 @@ TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
             RenderingConfig{size.width, size.height, kFovY,
                             kDepthRangeNear, kDepthRangeFar, kShowWindow},
             Eigen::Isometry3d::Identity())));
+
+    CalcOutput();
 
     auto const rgb2 =
         output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
