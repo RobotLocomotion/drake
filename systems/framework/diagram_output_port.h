@@ -105,10 +105,8 @@ class DiagramOutputPort final : public OutputPort<T> {
 
   // Returns the source output port's subsystem, and the ticket for that
   // port's tracker.
-  std::pair<optional<SubsystemIndex>, DependencyTicket>
-  DoGetPrerequisite() const final {
-    return std::make_pair(source_subsystem_index_,
-                          source_output_port_->ticket());
+  internal::OutputPortPrerequisite DoGetPrerequisite() const final {
+    return {source_subsystem_index_, source_output_port_->ticket()};
   };
 
   // Digs out the right subcontext for delegation.

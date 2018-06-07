@@ -3,7 +3,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/drake_optional.h"
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
@@ -55,12 +54,13 @@ class OutputPortBase {
     return owning_subsystem_;
   }
 
-  /** Returns the prerequisite for this output port -- either a cache entry
-  in this System, or an output port of a child System. */
-  std::pair<optional<SubsystemIndex>, DependencyTicket> GetPrerequisite()
-      const {
+#ifndef DRAKE_DOXYGEN_CXX
+  // Internal use only. Returns the prerequisite for this output port -- either
+  // a cache entry in this System, or an output port of a child System.
+  internal::OutputPortPrerequisite GetPrerequisite() const {
     return DoGetPrerequisite();
-  };
+  }
+#endif
 
  protected:
   /** Provides derived classes the ability to set the base class members at
@@ -88,8 +88,7 @@ class OutputPortBase {
   /** Concrete output ports must implement this to return the prerequisite
   dependency ticket for this port, which may be in the current System or one
   of its immediate child subsystems. */
-  virtual std::pair<optional<SubsystemIndex>, DependencyTicket>
-  DoGetPrerequisite() const = 0;
+  virtual internal::OutputPortPrerequisite DoGetPrerequisite() const = 0;
 
  private:
   // Associated System and System resources.
