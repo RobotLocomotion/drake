@@ -1,0 +1,340 @@
+#pragma once
+
+#include <algorithm>
+#include <limits>
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "drake/common/autodiff.h"
+#include "drake/common/eigen_types.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/systems/analysis/stepwise_continuous_extension.h"
+
+namespace drake {
+namespace systems {
+
+/// An StepwiseContinuousExtension class implementation using Hermitian
+/// interpolators. For every integration step, state 𝐱 and state time
+/// derivative d𝐱/dt are required at both ends. Hermite cubic polynomials
+/// are then constructed for each, yielding a C1 extension to the solution 𝐱(t).
+///
+/// Hermitian continuous extensions show the same error bound as that of the
+/// integration scheme being used for up to 3rd order schemes (see
+/// [Hairer, 1993]).
+///
+/// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
+///                  Differential Equations I (Nonstiff Problems), p.190,
+///                  Springer, 1993.
+/// @tparam T A valid Eigen scalar type.
+template <typename T,
+          // TODO(hidmic): Support non `double` type scalars.
+          typename std::enable_if<
+            std::is_same<T, double>::value, int>::type = 0>
+class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
+ public:
+  /// An integration step representation class, holding just enough
+  /// for hermitian interpolation i.e. three (3) related sets containing
+  /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ , step states
+  /// {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ∈ ℝⁿ,  and state derivatives
+  /// {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}.where d𝐱/dtᵢ ∈ ℝⁿ.
+  class IntegrationStep {
+   public:
+    /// Constructs a zero length step by copy from column matrices.
+    ///
+    /// @param initial_time Initial time t₀ where the step starts.
+    /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
+    ///                      as a column matrix.
+    /// @param initial_state_derivative Initial state derivative vector
+    ///                                 d𝐱/dt₀ at @p initial_time as a
+    ///                                 column matrix.
+    /// @throw std::runtime_error
+    ///   if given @p initial_state 𝐱₀ is not a column matrix.<br>
+    ///   if given @p initial_state_derivative d𝐱/t₀ is not a column matrix.<br>
+    ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative d𝐱/dt₀ do
+    ///   not match each other's dimension.
+    explicit IntegrationStep(const T& initial_time,
+                             const MatrixX<T>& initial_state,
+                             const MatrixX<T>& initial_state_derivative) {
+      ValidateOrThrow(initial_time, initial_state, initial_state_derivative);
+      times_.push_back(initial_time);
+      states_.push_back(initial_state);
+      state_derivatives_.push_back(initial_state_derivative);
+    }
+
+    /// Constructs a zero length step by move from column matrices.
+    ///
+    /// @copydetails IntegrationStep(const T&,const MatrixX<T>&,
+    ///                              const MatrixX<T>&)
+    explicit IntegrationStep(const T& initial_time,
+                             MatrixX<T>&& initial_state,
+                             MatrixX<T>&& initial_state_derivative) {
+      ValidateOrThrow(initial_time, initial_state, initial_state_derivative);
+      times_.push_back(initial_time);
+      states_.push_back(std::move(initial_state));
+      state_derivatives_.push_back(std::move(initial_state_derivative));
+    }
+
+    /// Extends the step forward in time by copy from column matrices.
+    ///
+    /// @param time Time tᵢto extend the step to.
+    /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
+    /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
+    ///                         as a column matrix.
+    /// @throw std::runtime_error
+    ///   if given @p state 𝐱ᵢ is not a column matrix.<br>
+    ///   if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
+    ///   if given @p time tᵢ is not greater than the previous time tᵢ₋₁ in
+    ///   the step.<br>
+    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of the
+    ///   previous state 𝐱ᵢ₋₁.<br>
+    ///   if given @p state 𝐱ᵢand @p state_derivative d𝐱/dtᵢ do not match each
+    ///   other's dimension.
+    void Extend(const T& time, const MatrixX<T>& state,
+                const MatrixX<T>& state_derivative) {
+      ValidateOrThrow(time, state, state_derivative);
+      times_.push_back(time);
+      states_.push_back(state);
+      state_derivatives_.push_back(state_derivative);
+    }
+
+    /// Extends the step forward in time by move of column matrices.
+    ///
+    /// @copydetails Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
+    void Extend(const T& time, MatrixX<T>&& state,
+                MatrixX<T>&& state_derivative) {
+      ValidateOrThrow(time, state, state_derivative);
+      times_.push_back(time);
+      states_.push_back(std::move(state));
+      state_derivatives_.push_back(std::move(state_derivative));
+    }
+
+    /// Returns step start time t₀, which may coincide with its
+    /// end time tᵢ if the step has zero length.
+    const T& get_start_time() const { return times_.front(); }
+
+    /// Returns step end time tᵢ, which may coincide with its
+    /// start time t₀ if the step has zero length.
+    const T& get_end_time() const { return times_.back(); }
+
+    /// Returns the step state 𝐱 dimensions.
+    int get_dimensions() const {
+      return states_.back().rows();
+    }
+
+    /// Returns step times {t₀, ..., tᵢ₋₁, tᵢ}.
+    const std::vector<T>& get_times() const { return times_; }
+
+    /// Returns step states {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} as column matrices.
+    const std::vector<MatrixX<T>>& get_states() const { return states_; }
+
+    /// Gets step state derivatives {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}
+    /// as column matrices.
+    const std::vector<MatrixX<T>>& get_state_derivatives() const {
+      return state_derivatives_;
+    }
+
+   private:
+    // Validates step update triplet for consistency between the triplet
+    // and with current step content.
+    //
+    // @see Extend(const T&, const MatrixX<T>&, const MatrixX<T>&
+    void ValidateOrThrow(const T& time, const MatrixX<T>& state,
+                         const MatrixX<T>& state_derivative) {
+      if (state.cols() != 1) {
+        throw std::runtime_error("Provided state for step is "
+                                 "not a column matrix.");
+      }
+      if (state_derivative.cols() != 1) {
+        throw std::runtime_error("Provided state derivative for "
+                                 " step is not a column matrix.");
+      }
+      if (!times_.empty()) {
+        if (time < times_.front()) {
+          throw std::runtime_error("Step cannot be extended"
+                                   " backwards in time.");
+        }
+        if (time <= times_.back()) {
+          throw std::runtime_error("Step already extends up"
+                                   " to the given time.");
+        }
+      }
+      if (!states_.empty() && states_.back().rows() != state.rows()) {
+          throw std::runtime_error("Provided state dimensions do not "
+                                   "match that of the states in the step.");
+      }
+      if (state.rows() != state_derivative.rows()) {
+        throw std::runtime_error("Provided state and state derivative "
+                                 "dimensions do not match.");
+      }
+    }
+    // Step times, ordered in increasing order.
+    std::vector<T> times_{};
+    // Step states, ordered as to match its corresponding time in `times_`.
+    std::vector<MatrixX<T>> states_{};
+    // Step state derivatives, ordered as to match its corresponding
+    // time in `times_`.
+    std::vector<MatrixX<T>> state_derivatives_{};
+  };
+
+  VectorX<T> Evaluate(const T& t) const override {
+    if (is_empty()) {
+      throw std::logic_error("Empty continuous extension cannot"
+                             " be evaluated.");
+    }
+    if (t < get_start_time() || t > get_end_time()) {
+      throw std::runtime_error("Continuous extension is not "
+                               "defined for given time.");
+    }
+    return continuous_trajectory_.value(t).col(0);
+  }
+
+  int get_dimensions() const override {
+    if (is_empty()) {
+      throw std::logic_error("Dimension is not defined for an"
+                             " empty continuous extension.");
+    }
+    return continuous_trajectory_.rows();
+  }
+
+  bool is_empty() const override {
+    return continuous_trajectory_.empty();
+  }
+
+  const T& get_end_time() const override {
+    if (is_empty()) {
+      throw std::logic_error("End time is not defined for an"
+                             " empty continuous extension.");
+    }
+    return end_time_;
+  }
+
+  const T& get_start_time() const override {
+    if (is_empty()) {
+      throw std::logic_error("Start time is not defined for an"
+                             " empty continuous extension.");
+    }
+    return start_time_;
+  }
+
+  /// Update extension with the given @p step by copy.
+  /// @param step Integration step to update this extension with.
+  /// @throw std::runtime_error
+  ///   if given @p step has zero length.<br>
+  ///   if given @p step does not ensure C1 continuity at the end of
+  ///   this continuous extension.<br>
+  ///   if given @p step dimensions does not match this continuous
+  ///   extension dimensions.
+  void Update(const IntegrationStep& step) {
+    ValidateOrThrow(step);
+    raw_steps_.push_back(step);
+  }
+
+  /// Update extension with the given @p step by move.
+  ///
+  /// @copydetails Update(const IntegrationStep&)
+  void Update(IntegrationStep&& step) {
+    ValidateOrThrow(step);
+    raw_steps_.push_back(step);
+  }
+
+  void Rollback() override {
+    if (raw_steps_.empty()) {
+      throw std::logic_error("No updates to rollback.");
+    }
+    raw_steps_.pop_back();
+  }
+
+  void Consolidate() override {
+    if (raw_steps_.empty()) {
+      throw std::logic_error("No updates to consolidate.");
+    }
+    for (const IntegrationStep& step : raw_steps_) {
+      continuous_trajectory_.ConcatenateInTime(
+          trajectories::PiecewisePolynomial<double>::Cubic(
+              step.get_times(), step.get_states(),
+              step.get_state_derivatives()));
+    }
+    // TODO(hidmic): Remove state keeping members when
+    // PiecewisePolynomial supports return by reference.
+    start_time_ = continuous_trajectory_.start_time();
+    end_time_ = continuous_trajectory_.end_time();
+
+    raw_steps_.clear();
+  }
+
+ private:
+  // Validates that the provided @p step can be consolidated
+  // into this continuous extension.
+  // @see Update(const IntegrationStep&)
+  void ValidateOrThrow(const IntegrationStep& step) {
+    if (step.get_start_time() == step.get_end_time()) {
+      throw std::runtime_error("Provided step has zero length "
+                               "i.e. start time and end time "
+                               "are equal.");
+    }
+    if (!raw_steps_.empty()) {
+      const IntegrationStep& last_raw_step = raw_steps_.back();
+      EnsureConsistencyOrThrow(step, last_raw_step.get_end_time(),
+                               last_raw_step.get_states().back(),
+                               last_raw_step.get_state_derivatives().back());
+    } else if (!continuous_trajectory_.empty()) {
+      EnsureConsistencyOrThrow(
+          step, end_time_, continuous_trajectory_.value(end_time_),
+          continuous_trajectory_.derivative().value(end_time_));
+    }
+  }
+
+  // Ensures the provided @p step is consistent with the given
+  // continuous extension quantities evaluated at its end.
+  // @param step Integration step to be taken.
+  // @param end_time Continuous extension end time.
+  // @param end_state Continuous extension end state.
+  // @param end_state Continuous extension end state derivative.
+  // @throw std::runtime_error
+  //   if given @p step does not ensure C1 continuity at the end
+  //   of this continuous extension.<br>
+  //   if given @p step dimension does not match this continuous
+  //   extension dimension.
+  void EnsureConsistencyOrThrow(const IntegrationStep& step,
+                                const T& end_time, const MatrixX<T>& end_state,
+                                const MatrixX<T>& end_state_derivative) {
+    if (end_state.rows() != step.get_dimensions()) {
+      throw std::runtime_error("Provided step dimension and continuous"
+                               " extension (inferred) dimension do not match.");
+    }
+    const T time_misalignment = std::abs(
+        end_time - step.get_start_time());
+    if (time_misalignment > kAllowedTimeMisalignment) {
+      throw std::runtime_error("Provided step start time and continuous"
+                               " extension end time differ.");
+    }
+    if (!end_state.isApprox(step.get_states().front())) {
+      throw std::runtime_error("Provided step start state and continuous"
+                               " extension end state differ. Cannot ensure"
+                               " C0 continuity.");
+    }
+    if (!end_state_derivative.isApprox(step.get_state_derivatives().front())) {
+      throw std::runtime_error("Provided step start state derivative and"
+                               " continuous extension end state derivative"
+                               " differ. Cannot ensure C1 continuity.");
+    }
+  }
+
+  // The smallest time at which the extension is defined.
+  T start_time_{};
+  // The largest time at which the extension is defined.
+  T end_time_{};
+  // The integration steps taken but not consolidated yet (via Consolidate()).
+  std::vector<IntegrationStep> raw_steps_{};
+  // The underlying PiecewisePolynomial continuous trajectory.
+  trajectories::PiecewisePolynomial<T> continuous_trajectory_{};
+  // Maximum time misalignment between steps that it is safe to align
+  // to ensure continuity.
+  static constexpr T kAllowedTimeMisalignment{
+    std::numeric_limits<T>::epsilon()};
+};
+
+}  // namespace systems
+}  // namespace drake
