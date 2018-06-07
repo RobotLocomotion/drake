@@ -11,7 +11,7 @@ namespace multibody {
 namespace implicit_stribeck {
 
 namespace internal {
-/// This struct implements an internal (thus within internal::) detail of the
+/// This struct implements an internal (thus within `internal::`) detail of the
 /// implicit Stribeck solver. The implicit Stribeck solver performs a
 /// Newton-Raphson iteration, and at each k-th iteration, it computes a
 /// tangential velocity update Δvₜᵏ. A standard Newton-Raphson strategy would
@@ -23,9 +23,21 @@ namespace internal {
 /// very steep gradients only within the very small regions close to where the
 /// tangential velocities are zero. These regions are circles in ℝ² of radius
 /// equal to the stiction tolerance of the solver vₛ. For short, we refer to
-/// these circular regions as the "stiction circles".
+/// these circular regions as the "stiction regions" and to their boundaries as
+/// the "stiction circles". We refer to the region of ℝ² outside the stiction
+/// region around the origin as the "sliding region".
+/// The implicit Stribeck solver uses the following modified Stribeck function
+/// describing the functional dependence of the Stribeck coefficient of friction
+/// `μₛ`with slip speed: <pre>
+///     μₛ(x) = ⌈ μ⋅x⋅(2.0 - x),  x  < 1
+///             ⌊ μ            ,  x >= 1
+/// </pre>
+/// where x corresponds to the dimensionless slip speed `x = ‖vₜ‖ / vₛ` and
+/// μ is the Coulomb's law coefficint of friction. The implicit Stribeck solver
+/// makes no distinction between static and dynamic coefficients of friction and
+/// therefore a single coefficient μ needs to be specified.
 /// Since the Stribeck function used for the friction coefficient has a very
-/// steep gradients only within the stiction circle and zero outside of it,
+/// steep gradients only within the stiction region and zero outside of it,
 /// gradients (that is the Jacobian of the residual) in the Newton-Raphson
 /// iteration performed by the implicit Stribeck solver are large within
 /// these small circular regions (stiction) and small outside them (slip).
@@ -47,16 +59,23 @@ namespace internal {
 ///
 /// LimitDirectionChange implements a specific strategy with knowledge of the
 /// implicit Stribeck iteration procedure. It is important to note that the
-/// implicit Stribeck uses "soft norms" to avoid divisions by zero. Details are
-/// not important here but yes the fact that gradients in the neighborhood to
-/// vₜ = 0 are "weak" (close to zero), i.e. external forcing (either from
-/// applied forces or from coupling with other friction forces) has the
-/// potential to, mistakenly, force a transition from stiction to sliding.
-/// The solver will most likely recover from this, but this will result in a
-/// larger number of iterations. LimitDirectionChange considers any tangential
-/// velocity vₜ (or change Δvₜ) to be approximately zero if x = ‖vₜ‖/vₛ is
-/// smaller than `tolerance` (see docs below, this is a dimensionless number
-/// << 1). We define εᵥ = tolerance⋅vₛ (with units of m/s).
+/// implicit Stribeck uses "soft norms" to avoid divisions by zero. That is,
+/// friction forces are computed according to: <pre>
+///   fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
+/// </pre>
+/// where, to avoid the singularity at zero velocity, we use a "soft norm"
+/// `‖vₜ‖ₛ = sqrt(vₜᵀvₜ + εᵥ²)`, with εᵥ a small fraction of vₛ. Due to the
+/// use of soft norms, the gradient of `fₜ` with `vₜ` is now well defined,
+/// but it goes to zero as `vₜ` approaches the origin. Therefore, gradients
+/// are also "weak" in the neighborhood of `‖vₜ‖ₛ ≲ εᵥ`.
+/// Due to this, External forcing (either from applied forces or from coupling
+/// with other friction forces) has the potential to, mistakenly, force a
+/// transition from stiction to sliding. The solver will most likely recover
+/// from this, but this will result in a larger number of iterations.
+/// LimitDirectionChange considers any tangential velocity vₜ (or change Δvₜ)
+/// to be approximately zero if x = ‖vₜ‖/vₛ is smaller than `tolerance`
+/// (see docs below, this is a dimensionless number << 1). We define
+/// `εᵥ = tolerance⋅vₛ` (with units of m/s).
 ///
 /// In what follows we list a number of special scenarios dealt with by
 /// LimitDirectionChange. We use the observations made above.
