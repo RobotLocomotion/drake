@@ -122,6 +122,8 @@ struct IterationStats {
 ///   (2)  M(qⁿ)⋅vⁿ⁺¹ =
 ///            M(qⁿ)⋅vⁿ + δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
 /// </pre>
+/// Please see details in the @ref time_splitting "Time Stepping Derivation"
+/// section.
 /// The equation for the generalized velocities in Eq. (2) is rewritten as:
 /// <pre>
 ///   (3)  M⋅vⁿ⁺¹ = p* + δt Jₜᵀ⋅fₜ(vⁿ⁺¹)
@@ -147,6 +149,65 @@ struct IterationStats {
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
 ///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
+///
+/// @anchor time_splitting
+/// <h2>Time Stepping Derivation</h2>
+/// In this section we provide a detailed derivation of the first order time
+/// stepping approach in Eq. (2). We start from the continuous Eq. (1): <pre>
+///   (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(v)
+/// </pre>
+/// we can discretize Eq. (1) in time using a first oder semi-implicit Euler
+/// scheme in velocities: <pre>
+///   (4)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
+///           δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₁(δt²)
+/// </pre>
+/// where the equality holds exactly since we included the leading terms in
+/// `O(δt²)`.
+/// When moving from the continuous Eq. (1) to the discrete version Eq. (4), we
+/// lost the nice property that our compliant normal forces are decoupled from
+/// the friction forces (both depend on the same unknown vⁿ⁺¹ in Eq (4)). The
+/// reason is that Eq. (4) includes an integraion over a small interval of
+/// size δt. To solve the discrete system in Eq. (4), we'd like to decouple the
+/// normal forces from the tangential forces again, which will require a new
+/// (though still valid) approximation.
+/// To do so we will expand in Taylor series the term `fₙ(qⁿ, vⁿ⁺¹)`: <pre>
+///   (5)  fₙ(qⁿ, vⁿ⁺¹) = fₙ(qⁿ, vⁿ) + ∇ᵥfₙ(qⁿ,vⁿ)⋅(vⁿ⁺¹-vⁿ) + O₂(‖vⁿ⁺¹-vⁿ‖²)
+/// </pre>
+/// The difference between `vⁿ` and `vⁿ⁺¹` can be written as: <pre>
+///   (6)  vⁿ⁺¹-vⁿ = δtv̇ⁿ + δtO₃(δt²) = O₄(δt)
+/// </pre>
+/// Substituting `vⁿ⁺¹-vⁿ` from Eq. (6) into Eq. (5) we arrive to: <pre>
+///   (7)  fₙ(qⁿ, vⁿ⁺¹) = fₙ(qⁿ, vⁿ) + ∇ᵥfₙ(qⁿ,vⁿ)⋅O₄(δt) + O₅(δt²)
+///                     = fₙ(qⁿ, vⁿ) + O₆(δt)
+/// </pre>
+/// where `O₅(δt²) = O₂(‖vⁿ⁺¹-vⁿ‖²) = O₂(O₄(δt))`.
+/// We can now use Eq. (7) into Eq. (4) to arrive to: <pre>
+///   (8)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
+///         δt (τⁿ + Jₙᵀ(qⁿ)⋅(fₙ(qⁿ, vⁿ) + O₆(δt)) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) +
+///         O₁(δt²)
+/// </pre>
+/// which we can rewrite as: <pre>
+///   (9)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
+///       δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₇(δt²)
+/// </pre>
+/// with `O₇(δt²) = δt Jₙᵀ(qⁿ)⋅O₆(δt) + O₁(δt²)`.
+/// That is, Eq. (9) introduces the same order of approximation as in the
+/// semi-implicit method in Eq. (4).
+/// Up to this point we have made no approximations but we instead propagated
+/// the `O(⋅)` leading terms. Therefore the equalities in the equations above
+/// are exact. To obtain an approximate time stepping scheme, we drop `O₇(δt²)`
+/// (we neglect it) in Eq. (9) to arrive to a first order scheme:<pre>
+///   (10)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
+///                      δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
+/// </pre>
+/// Therefore, with the scheme in Eq. (10) we are able to decouple the
+/// computation of (compliant) normal forces from that of friction forces.
+/// A very important feature of this scheme however, is the explicit nature of
+/// the term associated with the normal forces, which will become unstable
+/// for a sufficiently large time step.  Notice that Eq. (5) introduces an
+/// expansion of `fₙ` with an order of approximation consistent with the first
+/// order scheme as needed. Therefore, it propagates into a `O(δt²)` term
+/// exactly as needed in Eq. (9).
 ///
 /// @tparam T The type of mathematical object being added.
 /// Instantiated templates for the following kinds of T's are provided:
