@@ -81,7 +81,7 @@ struct IterationStats {
   /// After ImplicitStribeckSolver solved a problem, this vector will have size
   /// num_iterations.
   /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
-  /// to the residual upon comletion of the solver, i.e. vt_residual.
+  /// to the residual upon completion of the solver, i.e. vt_residual.
   std::vector<double> residuals;
 
   /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
@@ -130,10 +130,10 @@ struct IterationStats {
 /// </pre>
 /// where `p* = M⋅vⁿ + δt τⁿ + δt Jₙᵀ⋅fₙ` is the generalized momentum that the
 /// system would have in the absence of friction forces and, for simplicity, we
-/// have only kept the explicit functional dependencies in generalized
-/// velocities. Notice that %ImplicitStribeckSolver uses a precomputed value of
-/// the normal forces. These normal forces could be available for instance if
-/// using a compliant contact apporach, for which normal forces are a funciton
+/// have only kept the functional dependencies in generalized velocities. Notice
+/// that %ImplicitStribeckSolver uses a precomputed value of the normal forces.
+/// These normal forces could be available for instance if
+/// using a compliant contact approach, for which normal forces are a function
 /// of the state.
 ///
 /// %ImplicitStribeckSolver is designed to solve, implicitly, the system in
@@ -156,17 +156,17 @@ struct IterationStats {
 /// stepping approach in Eq. (2). We start from the continuous Eq. (1): <pre>
 ///   (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(v)
 /// </pre>
-/// we can discretize Eq. (1) in time using a first oder semi-implicit Euler
+/// we can discretize Eq. (1) in time using a first order semi-implicit Euler
 /// scheme in velocities: <pre>
 ///   (4)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
 ///           δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₁(δt²)
 /// </pre>
-/// where the equality holds exactly since we included the leading terms in
-/// `O(δt²)`.
+/// where the equality holds strictly since we included the leading terms in
+/// `O(δt²)`. We use `τⁿ = τ(tⁿ, qⁿ, vⁿ)` for brevity in Eq. (4).
 /// When moving from the continuous Eq. (1) to the discrete version Eq. (4), we
 /// lost the nice property that our compliant normal forces are decoupled from
 /// the friction forces (both depend on the same unknown vⁿ⁺¹ in Eq (4)). The
-/// reason is that Eq. (4) includes an integraion over a small interval of
+/// reason is that Eq. (4) includes an integration over a small interval of
 /// size δt. To solve the discrete system in Eq. (4), we'd like to decouple the
 /// normal forces from the tangential forces again, which will require a new
 /// (though still valid) approximation.
@@ -180,7 +180,7 @@ struct IterationStats {
 ///   (7)  fₙ(qⁿ, vⁿ⁺¹) = fₙ(qⁿ, vⁿ) + ∇ᵥfₙ(qⁿ,vⁿ)⋅O₄(δt) + O₅(δt²)
 ///                     = fₙ(qⁿ, vⁿ) + O₆(δt)
 /// </pre>
-/// where `O₅(δt²) = O₂(‖vⁿ⁺¹-vⁿ‖²) = O₂(O₄(δt))`.
+/// where `O₅(δt²) = O₂(‖vⁿ⁺¹-vⁿ‖²) = O₂(‖O₄(δt)‖²)`.
 /// We can now use Eq. (7) into Eq. (4) to arrive to: <pre>
 ///   (8)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
 ///         δt (τⁿ + Jₙᵀ(qⁿ)⋅(fₙ(qⁿ, vⁿ) + O₆(δt)) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) +
@@ -202,12 +202,20 @@ struct IterationStats {
 /// </pre>
 /// Therefore, with the scheme in Eq. (10) we are able to decouple the
 /// computation of (compliant) normal forces from that of friction forces.
-/// A very important feature of this scheme however, is the explicit nature of
-/// the term associated with the normal forces, which will become unstable
-/// for a sufficiently large time step.  Notice that Eq. (5) introduces an
-/// expansion of `fₙ` with an order of approximation consistent with the first
-/// order scheme as needed. Therefore, it propagates into a `O(δt²)` term
-/// exactly as needed in Eq. (9).
+/// A very important feature of this scheme however, is the explicit nature (in
+/// the velocities v) of the term associated with the normal forces (usually
+/// including dissipation in the normal direction), which will become unstable
+/// for a sufficiently large time step. However, for most applications in
+/// practice, the stability of the scheme is mostly determined by the explicit
+/// update of normal forces with positions, that is, Eq. (10) is explicit in
+/// positions through the normal forces `fₙ(qⁿ, vⁿ)`. For many common
+/// applications, the explicit dependence of `τⁿ(tⁿ, qⁿ, vⁿ)` on the
+/// previous time step velocities `vⁿ` determines the overall stability of
+/// the scheme, since this term can include velocity dependent contributions
+/// such as control forces and dampers. Notice that Eq. (5) introduces an
+/// expansion of `fₙ` with an order of approximation consistent with the
+/// first order scheme as needed. Therefore, it propagates into a `O(δt²)`
+/// term exactly as needed in Eq. (9).
 ///
 /// @tparam T The type of mathematical object being added.
 /// Instantiated templates for the following kinds of T's are provided:
