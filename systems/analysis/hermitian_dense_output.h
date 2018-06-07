@@ -8,34 +8,93 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/systems/analysis/stepwise_continuous_extension.h"
+#include "drake/systems/analysis/stepwise_dense_output.h"
+#include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
-/// A StepwiseContinuousExtension class implementation using Hermitian
-/// interpolators. Updates take the form of integration steps, for which
-/// state 𝐱 and state time derivative d𝐱/dt are known at least at both ends
-/// of the step. Hermite cubic polynomials are then constructed upon
-/// consolidation, yielding a C1 extension of the solution 𝐱(t).
+namespace detail {
+
+/// Converts a matrix with scalar type `S` elements to a matrix with double
+/// type elements, failing at runtime if the type cannot be converted.
+/// @see ExtractDoubleOrThrow(const T&)
+/// @tparam S A valid Eigen scalar type.
+template <typename S>
+MatrixX<double> ExtractDoublesOrThrow(const MatrixX<S>& input_matrix) {
+  return input_matrix.unaryExpr([] (const S& value) {
+      return ExtractDoubleOrThrow(value);
+  });
+}
+
+/// Converts an STL vector of scalar type `S` elements to an STL vector
+/// of double type elements, failing at runtime if the type cannot be
+/// converted.
+/// @see ExtractDoubleOrThrow(const T&)
+/// @tparam S A valid Eigen scalar type.
+template <typename S>
+std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
+  std::vector<double> output_vector{};
+  output_vector.reserve(input_vector.size());
+  std::transform(input_vector.begin(), input_vector.end(),
+                 std::back_inserter(output_vector),
+                 [] (const S& value) {
+                   return ExtractDoubleOrThrow(value);
+                 });
+  return output_vector;
+}
+
+/// Converts an STL vector of matrices with scalar type `S` elements to an STL
+/// vector of matrices with double type elements, failing at runtime if the type
+/// cannot be converted.
+/// @see ExtractDoublesOrThrow(const MatrixX<T>&)
+/// @tparam S A valid Eigen scalar type.
+template <typename S>
+std::vector<MatrixX<double>>
+ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
+  std::vector<MatrixX<double>> output_vector{};
+  output_vector.reserve(input_vector.size());
+  std::transform(input_vector.begin(), input_vector.end(),
+                 std::back_inserter(output_vector),
+                 [] (const MatrixX<S>& value) {
+                   return ExtractDoublesOrThrow(value);
+                 });
+  return output_vector;
+}
+
+}  // namespace detail
+
+/// A StepwiseDenseOutput class implementation using Hermitian interpolators,
+/// and therefore a _continuous extension_ of the solution 𝐱(t) (see
+/// [Engquist, 2105]). This concept can be recast as a type of dense output that
+/// is continuous.
 ///
-/// Hermitian continuous extensions exhibit the same truncation error as that of
-/// the integration scheme being used for up to 3rd order schemes (see
+/// Updates take the form of integration steps, for which state 𝐱 and state time
+/// derivative d𝐱/dt are known at least at both ends of the step. Hermite cubic
+/// polynomials are then constructed upon @ref StepwiseDenseOutput::Consolidate
+/// "consolidation", yielding a C1 extension of the solution 𝐱(t).
+///
+/// Hermitian continuous extensions exhibit the same truncation error as that
+/// of the integration scheme being used for up to 3rd order schemes (see
 /// [Hairer, 1993]).
 ///
+/// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
+///                    Mathematics, p. 339, Springer, 2015.
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
-class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
-  // TODO(hidmic): Support non `double` type scalars.
-  static_assert(std::is_same<T, double>::value,
-                "HermitianContinuousExtension only supports double for now.");
-
+class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HermitianDenseOutput)
+
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
   /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
@@ -45,8 +104,16 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   /// This step definition allows for intermediate time, state and state
   /// derivative triplets (e.g. the integrator internal stages) to improve
   /// interpolation.
+  ///
+  /// @note The use of column matrices instead of plain vectors helps reduce
+  ///       HermitianDenseOutput construction overhead, as this type of dense
+  ///       output leverages a PiecewisePolynomial instance that takes matrices.
   class IntegrationStep {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IntegrationStep)
+    /// Constructs an empty step.
+    IntegrationStep() = default;
+
     /// Constructs a zero length step (i.e. a step containing a single time,
     /// state and state derivative triplet) from column matrices.
     ///
@@ -129,7 +196,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     // Validates step update triplet for consistency between the triplet
     // and with current step content.
     //
-    // @see Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
+    // @see Extend(const T&, MatrixX<T>, MatrixX<T>)
     void ValidateStepExtendTripletOrThrow(
         const T& time, const MatrixX<T>& state,
         const MatrixX<T>& state_derivative) {
@@ -169,22 +236,24 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     std::vector<MatrixX<T>> state_derivatives_{};
   };
 
+  HermitianDenseOutput() = default;
+
   VectorX<T> Evaluate(const T& t) const override {
     if (is_empty()) {
-      throw std::logic_error("Empty continuous extension cannot"
-                             " be evaluated.");
+      throw std::logic_error("Empty dense output cannot be evaluated.");
     }
     if (t < get_start_time() || t > get_end_time()) {
-      throw std::runtime_error("Continuous extension is not "
-                               "defined for given time.");
+      throw std::runtime_error("Dense output is not defined for given time.");
     }
-    return continuous_trajectory_.value(t).col(0);
+    const MatrixX<double> matrix_value =
+        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
+    return matrix_value.col(0).cast<T>();
   }
 
   int get_dimensions() const override {
     if (is_empty()) {
-      throw std::logic_error("Dimension is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("Dimension is not defined for"
+                             " an empty dense output.");
     }
     return continuous_trajectory_.rows();
   }
@@ -195,33 +264,33 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
 
   const T& get_end_time() const override {
     if (is_empty()) {
-      throw std::logic_error("End time is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("End time is not defined for"
+                             " an empty dense output.");
     }
     return end_time_;
   }
 
   const T& get_start_time() const override {
     if (is_empty()) {
-      throw std::logic_error("Start time is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("Start time is not defined for"
+                             " an empty dense output.");
     }
     return start_time_;
   }
 
-  /// Update extension with the given @p step.
+  /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
   /// the time the @p step extends cannot be readily evaluated (see
-  /// StepwiseContinuousExtension class documentation).
+  /// StepwiseDenseOutput class documentation).
   ///
-  /// @param step Integration step to update this extension with.
+  /// @param step Integration step to update this output with.
   /// @throw std::runtime_error
   ///   if given @p step has zero length.<br>
   ///   if given @p step does not ensure C1 continuity at the end of
-  ///   this continuous extension.<br>
-  ///   if given @p step dimensions does not match this continuous
-  ///   extension dimensions.
+  ///   this dense output.<br>
+  ///   if given @p step dimensions does not match this dense output
+  ///   dimensions.
   void Update(IntegrationStep step) {
     ValidateStepCanBeConsolidatedOrThrow(step);
     raw_steps_.push_back(std::move(step));
@@ -241,20 +310,19 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     for (const IntegrationStep& step : raw_steps_) {
       continuous_trajectory_.ConcatenateInTime(
           trajectories::PiecewisePolynomial<double>::Cubic(
-              step.get_times(), step.get_states(),
-              step.get_state_derivatives()));
+              detail::ExtractDoublesOrThrow(step.get_times()),
+              detail::ExtractDoublesOrThrow(step.get_states()),
+              detail::ExtractDoublesOrThrow(step.get_state_derivatives())));
     }
-    // TODO(hidmic): Remove state keeping members when
-    // PiecewisePolynomial supports return by reference.
     start_time_ = continuous_trajectory_.start_time();
     end_time_ = continuous_trajectory_.end_time();
-
+    last_consolidated_step_ = std::move(raw_steps_.back());
     raw_steps_.clear();
   }
 
  private:
-  // Validates that the provided @p step can be consolidated
-  // into this continuous extension.
+  // Validates that the provided @p step can be consolidated into this
+  // dense output.
   // @see Update(const IntegrationStep&)
   void ValidateStepCanBeConsolidatedOrThrow(const IntegrationStep& step) {
     if (step.get_start_time() == step.get_end_time()) {
@@ -263,64 +331,84 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
                                "are equal.");
     }
     if (!raw_steps_.empty()) {
-      const IntegrationStep& last_raw_step = raw_steps_.back();
-      EnsureExtensionConsistencyOrThrow(step, last_raw_step.get_end_time(),
-                               last_raw_step.get_states().back(),
-                               last_raw_step.get_state_derivatives().back());
+      EnsureOutputConsistencyOrThrow(step, raw_steps_.back());
     } else if (!continuous_trajectory_.empty()) {
-      EnsureExtensionConsistencyOrThrow(
-          step, end_time_, continuous_trajectory_.value(end_time_),
-          continuous_trajectory_.derivative().value(end_time_));
+      EnsureOutputConsistencyOrThrow(step, last_consolidated_step_);
     }
   }
 
-  // Ensures that the continuous extension would remain consistent if the
+  // Ensures that this dense output would remain consistent if the
   // provided @p step were to be consolidated at its end.
-  // @param step Integration step to be taken.
-  // @param end_time Continuous extension end time.
-  // @param end_state Continuous extension end state.
-  // @param end_state Continuous extension end state derivative.
+  // @param next_step Integration step to be taken.
+  // @param prev_step Last integration step consolidated or to be
+  //                  consolidated into dense output.
   // @throw std::runtime_error
-  //   if given @p step does not ensure C1 continuity at the end
-  //   of this continuous extension.<br>
-  //   if given @p step dimension does not match this continuous
-  //   extension dimension.
-  void EnsureExtensionConsistencyOrThrow(
-      const IntegrationStep& step, const T& end_time,
-      const MatrixX<T>& end_state, const MatrixX<T>& end_state_derivative) {
-    if (end_state.rows() != step.get_dimensions()) {
-      throw std::runtime_error("Provided step dimension and continuous"
-                               " extension (inferred) dimension do not match.");
+  //   if given @p next_step does not ensure C1 continuity at the
+  //   end of the given @p prev_step.<br>
+  //   if given @p next_step dimensions does not match @p prev_step
+  //   dimensions.
+  static void EnsureOutputConsistencyOrThrow(const IntegrationStep& next_step,
+                                             const IntegrationStep& prev_step) {
+    using std::abs;
+    using std::max;
+
+    if (prev_step.get_dimensions() != next_step.get_dimensions()) {
+      throw std::runtime_error("Provided step dimensions and previous"
+                               " step dimensions do not match.");
     }
-    // Maximum time misalignment between step and continuous extension that can
-    // still be disregarded as a discontinuity in time.
-    const T allowed_time_misalignment = std::max(std::abs(end_time), 1.) *
-                                        std::numeric_limits<T>::epsilon();
-    const T time_misalignment = std::abs(end_time - step.get_start_time());
+    // Maximum time misalignment between previous step and next step that
+    // can still be disregarded as a discontinuity in time.
+    const T& prev_end_time = prev_step.get_end_time();
+    const T& next_start_time = next_step.get_start_time();
+    const T allowed_time_misalignment =
+        max(abs(prev_end_time), T{1.}) * std::numeric_limits<T>::epsilon();
+    const T time_misalignment = abs(prev_end_time - next_start_time);
     if (time_misalignment > allowed_time_misalignment) {
-      throw std::runtime_error("Provided step start time and continuous"
-                               " extension end time differ.");
+      throw std::runtime_error("Provided step start time and"
+                               " previous step end time differ.");
     }
-    if (!end_state.isApprox(step.get_states().front())) {
-      throw std::runtime_error("Provided step start state and continuous"
-                               " extension end state differ. Cannot ensure"
-                               " C0 continuity.");
+    const MatrixX<T>& prev_end_state = prev_step.get_states().back();
+    const MatrixX<T>& next_start_state = next_step.get_states().front();
+    if (!prev_end_state.isApprox(next_start_state)) {
+      throw std::runtime_error("Provided step start state and previous step end"
+                               " state differ. Cannot ensure C0 continuity.");
     }
-    if (!end_state_derivative.isApprox(step.get_state_derivatives().front())) {
+    const MatrixX<T>& prev_end_state_derivative =
+        prev_step.get_state_derivatives().back();
+    const MatrixX<T>& next_start_state_derivative =
+        next_step.get_state_derivatives().front();
+    if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
       throw std::runtime_error("Provided step start state derivative and"
-                               " continuous extension end state derivative"
-                               " differ. Cannot ensure C1 continuity.");
+                               " previous step end state derivative differ."
+                               " Cannot ensure C1 continuity.");
     }
   }
 
-  // The smallest time at which the extension is defined.
+  // TODO(hidmic): Remove redundant time-keeping member fields when
+  // PiecewisePolynomial supports return by-reference of its time extents.
+  // It currently returns them by-value, double type only, and thus the
+  // need for this storage in order to meet DenseOutput::get_start_time()
+  // and DenseOutput::get_end_time() API.
+
+  // The smallest time at which the output is defined.
   T start_time_{};
-  // The largest time at which the extension is defined.
+  // The largest time at which the output is defined.
   T end_time_{};
+
+  // The last integration step consolidated into `continuous_trajectory_`,
+  // useful to validate the next integration steps.
+  // @see EnsureOutputConsistencyOrThrow
+  IntegrationStep last_consolidated_step_{};
+
   // The integration steps taken but not consolidated yet (via Consolidate()).
   std::vector<IntegrationStep> raw_steps_{};
+
+  // TODO(hidmic): When PiecewisePolynomial supports scalar types other than
+  // doubles, pass in the template parameter T to it too and remove all scalar
+  // type conversions.
+
   // The underlying PiecewisePolynomial continuous trajectory.
-  trajectories::PiecewisePolynomial<T> continuous_trajectory_{};
+  trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
 };
 
 }  // namespace systems
