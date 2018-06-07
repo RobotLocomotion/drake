@@ -63,6 +63,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(!geometry_source_is_registered());
   source_id_ = scene_graph->RegisterSource();
+  body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
   // Save the GS pointer so that on later geometry registrations we can verify
   // the user is making calls on the same GS instance. Only used for that
   // purpose, it gets nullified at Finalize().
@@ -145,9 +146,27 @@ MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
 }
 
 template <typename T>
+geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
+    const std::vector<const RigidBody<T>*>& bodies) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+
+  geometry::GeometrySet geometry_set;
+  for (const RigidBody<T>* body : bodies) {
+    optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
+    if (frame_id) {
+      geometry_set.Add(frame_id.value());
+    }
+  }
+  return geometry_set;
+}
+
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape, SceneGraph<T>* scene_graph) {
+  // This should never be called with the world index.
+  DRAKE_DEMAND(body.index() != world_index());
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(scene_graph == scene_graph_);
@@ -824,6 +843,8 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   // been registered.
   std::vector<FrameId> ids;
   for (auto it : body_index_to_frame_id_) {
+    // Don't add the world frame.
+    if (it.second == body_index_to_frame_id_[world_index()]) continue;
     ids.push_back(it.second);
   }
   geometry_pose_port_ =
@@ -837,8 +858,10 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     const Context<T>& context, FramePoseVector<T>* poses) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_ASSERT(source_id_ != nullopt);
+  // body_index_to_frame_id_ will include the world frame which should be
+  // excluded from the output.
   DRAKE_ASSERT(
-      poses->size() == static_cast<int>(body_index_to_frame_id_.size()));
+      poses->size() == static_cast<int>(body_index_to_frame_id_.size()) - 1);
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
@@ -846,6 +869,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   poses->clear();
   for (const auto it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
+    if (body_index == world_index()) continue;
     const Body<T>& body = model_->get_body(body_index);
 
     // NOTE: The GeometryFrames for each body were registered in the world

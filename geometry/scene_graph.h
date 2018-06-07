@@ -201,6 +201,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   ~SceneGraph() override {}
 
+  /** Reports the id for scene graph's world frame. It is not *owned* by a
+   any geometry source, but is common across all sources.
+   @throws std::logic_error if a context has already been allocated for this
+                            %SceneGraph.  */
+  FrameId world_frame_id() const;
+
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
    registration of geometry sources because the input ports are mapped to
