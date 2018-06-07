@@ -114,16 +114,16 @@ namespace internal {
 /// scalar types T.
 template <typename T>
 struct LimitDirectionChange {
-  /// Implements the limiting algorithm descrebied in the documentation above.
+  /// Implements the limiting algorithm described in the documentation above.
   /// @param[in] v the k-th iteration tangential velocity vₜᵏ, in m/s.
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
-  /// @param[in] cos_min precomputed value of cos(θₘₐₓ).
-  /// @param[in] v_stribeck the stiction tolerance vₛ, in m/s.
+  /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
+  /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
   /// @param[in] tolerance a value << 1 used to determine when ‖vₜ‖ ≈ 0.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
   static T run(const Eigen::Ref<const Vector2<T>>& v,
                const Eigen::Ref<const Vector2<T>>& dv,
-               double cos_min, double v_stribeck, double tolerance);
+               double cos_theta_max, double v_stiction, double tolerance);
 };
 }  // namespace internal
 

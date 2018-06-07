@@ -18,7 +18,7 @@ template <typename T>
 T LimitDirectionChange<T>::run(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
-    double cos_min, double v_stribeck, double tolerance) {
+    double cos_theta_max, double v_stiction, double tolerance) {
   DRAKE_DEMAND(dv.size() == v.size());
 
   using std::abs;
@@ -27,7 +27,7 @@ T LimitDirectionChange<T>::run(
   using std::sqrt;
 
   // εᵥ is used to determine when a velocity is close to zero.
-  const double epsilon_v = v_stribeck * tolerance;
+  const double epsilon_v = v_stiction * tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   const Vector2<T> v1 = v + dv;  // v_alpha = v + dv, when alpha = 1.
@@ -40,8 +40,8 @@ T LimitDirectionChange<T>::run(
 
   const T v_norm = v.norm();
   const T v1_norm = v1.norm();
-  const T x = v_norm / v_stribeck;    // Dimensionless slip v and v1.
-  const T x1 = v1_norm / v_stribeck;
+  const T x = v_norm / v_stiction;    // Dimensionless slip v and v1.
+  const T x1 = v1_norm / v_stiction;
   // From Case I, we know dv_norm > epsilon_v.
   const T dv_norm = sqrt(dv_norm2);
 
@@ -49,21 +49,21 @@ T LimitDirectionChange<T>::run(
   // gradients might be close to zero (due to the "soft norms").
   if (x < tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
-    // We make |v_alpha| = v_stribeck / 2.
+    // We make |v_alpha| = v_stiction / 2.
     // For this case dv ≈ v1 (v ≈ 0). Therefore:
-    // alpha ≈ v_stribeck / dv_norm / 2.
-    return v_stribeck / dv_norm / 2.0;
+    // alpha ≈ v_stiction / dv_norm / 2.
+    return v_stiction / dv_norm / 2.0;
   }
 
   // Case III: Transition to an almost exact stiction from sliding.
   // We want to avoid v1 landing in a region of zero gradients so that we force
-  // it to land within the circle of radius v_stribeck, at v_stribec/2 in the
+  // it to land within the circle of radius v_stiction, at v_stribec/2 in the
   // direction of v.
   if (x > 1.0 && x1 < tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
     // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. After a small algebraic
     // manipulation it turns out that:
-    return 1.0 - v_stribeck / 2.0 / dv_norm;
+    return 1.0 - v_stiction / 2.0 / dv_norm;
   }
 
   if (x < 1.0) {
@@ -83,7 +83,7 @@ T LimitDirectionChange<T>::run(
     }
 
     // Case V:
-    // Since v_stribeck is so small, the next case very seldom happens. However,
+    // Since v_stiction is so small, the next case very seldom happens. However,
     // it is a very common case for 1D-like problems for which tangential
     // velocities change in sign and typically if we don't do anything we miss
     // the zero crossing.
@@ -103,8 +103,8 @@ T LimitDirectionChange<T>::run(
         if (v_alpha_norm < epsilon_v) {
           // v_alpha is almost zero.
           // This situation happens when dv ≈ -a v with a > 0.
-          return alpha - v_stribeck / 2.0 / dv_norm;
-        } else if (v_alpha_norm < v_stribeck) {
+          return alpha - v_stiction / 2.0 / dv_norm;
+        } else if (v_alpha_norm < v_stiction) {
           // v_alpha falls within the Stribeck circle but its magnitude is
           // larger than epsilon_v.
           return alpha;
@@ -120,7 +120,7 @@ T LimitDirectionChange<T>::run(
     //
     // Case VI:
     // Therefore we know changes happen entirely outside the circle of radius
-    // v_stribeck. To avoid large jumps in the direction of v (typically during
+    // v_stiction. To avoid large jumps in the direction of v (typically during
     // strong impacts), we limit the maximum angle change between v to v1.
     // To this end, we find a scalar 0 < alpha < 1 such that
     // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖)
@@ -131,7 +131,7 @@ T LimitDirectionChange<T>::run(
     // We allow angle changes theta < theta_max, and we take alpha = 1.0.
     // In particular, when v1 is exactly aligned wiht v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
-    if (cos1 > cos_min) {
+    if (cos1 > cos_theta_max) {
       return 1.0;
     } else {
       // we limit the angle change to theta_max so that:
@@ -141,18 +141,18 @@ T LimitDirectionChange<T>::run(
       // algebra to compute coefficients a, b, c and solve the quadratic
       // equation.
 
-      // All terms are made non-dimensional using v_stribeck as the reference
+      // All terms are made non-dimensional using v_stiction as the reference
       // sale.
-      const T x_dot_dx = v_dot_dv / (v_stribeck * v_stribeck);
-      const T dx = dv.norm() / v_stribeck;
+      const T x_dot_dx = v_dot_dv / (v_stiction * v_stiction);
+      const T dx = dv.norm() / v_stiction;
       const T x2 = x * x;
       const T dx4 = x2 * x2;
-      const T cmin2 = cos_min * cos_min;
+      const T cos_theta_max2 = cos_theta_max * cos_theta_max;
 
       // Form the terms of the quadratic equation aα² + bα + c = 0.
-      const T a = x2 * dx * dx * cmin2 - x_dot_dx * x_dot_dx;
-      const T b = 2 * x2 * x_dot_dx * (cmin2 - 1.0);
-      const T c = dx4 * (cmin2 - 1.0);
+      const T a = x2 * dx * dx * cos_theta_max2 - x_dot_dx * x_dot_dx;
+      const T b = 2 * x2 * x_dot_dx * (cos_theta_max2 - 1.0);
+      const T c = dx4 * (cos_theta_max2 - 1.0);
 
       // Solve quadratic equation. We know, from the geometry of the problem,
       // that the roots to this problem are real. Thus, the discriminant of the
