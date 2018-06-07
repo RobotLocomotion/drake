@@ -4,11 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include<Eigen/IterativeLinearSolvers>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/extract_double.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -405,92 +402,31 @@ void MultibodyPlant<T>::set_penetration_allowance(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
-template <>
-std::vector<PenetrationAsPointPair<double>>
-MultibodyPlant<double>::CalcPointPairPenetrations(
-    const systems::Context<double>& context) const {
+template<>
+void MultibodyPlant<double>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<double>& context,
+    const PositionKinematicsCache<double>& pc,
+    const VelocityKinematicsCache<double>& vc,
+    std::vector<SpatialForce<double>>* F_BBo_W_array) const {
+  if (num_collision_geometries() == 0) return;
+
   const geometry::QueryObject<double>& query_object =
       this->EvalAbstractInput(context, geometry_query_port_)
           ->template GetValue<geometry::QueryObject<double>>();
+
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
-
-  // TODO(amcastro-tri): Request SceneGraph to do this filtering for us
-  // when that capability lands.
-  // TODO(amcastro-tri): consider allowing this id's to belong to a third
-  // external system when they correspond to anchored geometry.
-  std::vector<PenetrationAsPointPair<double>> filtered_penetrations;
   for (const auto& penetration : penetrations) {
     const GeometryId geometryA_id = penetration.id_A;
     const GeometryId geometryB_id = penetration.id_B;
 
-    // Filter visuals.
+    // TODO(amcastro-tri): Request SceneGraph to do this filtering for us
+    // when that capability lands.
+    // TODO(amcastro-tri): consider allowing this id's to belong to a third
+    // external system when they correspond to anchored geometry.
     if (!is_collision_geometry(geometryA_id) ||
         !is_collision_geometry(geometryB_id))
       continue;
-
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-
-    // Filter out same body collisions.
-    if (bodyA_index == bodyB_index) continue;
-
-    filtered_penetrations.push_back(penetration);
-  }
-  return filtered_penetrations;
-}
-
-template<typename T>
-std::vector<PenetrationAsPointPair<T>> MultibodyPlant<T>::CalcPointPairPenetrations(
-    const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("Only <double> is supported.");
-}
-
-template<typename T>
-std::vector<CoulombFriction<T>>
-MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
-  std::vector<CoulombFriction<T>> combined_frictions(point_pairs.size());
-  for (size_t ic = 0; ic < point_pairs.size(); ++ic) {
-    const auto& pair = point_pairs[ic];
-    const GeometryId geometryA_id = pair.id_A;
-    const GeometryId geometryB_id = pair.id_B;
-
-    const int collision_indexA =
-        geometry_id_to_collision_index_.at(geometryA_id);
-    const int collision_indexB =
-        geometry_id_to_collision_index_.at(geometryB_id);
-    const CoulombFriction<double> &geometryA_friction =
-        default_coulomb_friction_[collision_indexA];
-    const CoulombFriction<double> &geometryB_friction =
-        default_coulomb_friction_[collision_indexB];
-
-    combined_frictions[ic] =
-        CalcContactFrictionFromSurfaceProperties(
-            geometryA_friction, geometryB_friction).template cast<T>();
-  }
-  return combined_frictions;
-}
-
-template<typename T>
-void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
-    const systems::Context<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs,
-    VectorX<T>* fn) const {
-  if (num_collision_geometries() == 0) return;
-
-  std::vector<CoulombFriction<T>> combined_friction_pairs;
-  if (include_friction) {
-    combined_friction_pairs = CalcCombinedFrictionCoefficients(point_pairs);
-  }
-
-  int ic = 0;
-  for (const auto& pair : point_pairs) {
-    const GeometryId geometryA_id = pair.id_A;
-    const GeometryId geometryB_id = pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
@@ -500,95 +436,109 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     BodyNodeIndex bodyB_node_index =
         model().get_body(bodyB_index).node_index();
 
-    // Penetration depth, > 0 during pair.
-    const T& x = pair.depth;
+    // Penetration depth, > 0 during penetration.
+    const double& x = penetration.depth;
     DRAKE_ASSERT(x >= 0);
-    const Vector3<T>& nhat_BA_W = pair.nhat_BA_W;
-    const Vector3<T>& p_WCa = pair.p_WCa;
-    const Vector3<T>& p_WCb = pair.p_WCb;
+    const Vector3<double>& nhat_BA_W = penetration.nhat_BA_W;
+    const Vector3<double>& p_WCa = penetration.p_WCa;
+    const Vector3<double>& p_WCb = penetration.p_WCb;
 
     // Contact point C.
-    const Vector3<T> p_WC = 0.5 * (p_WCa + p_WCb);
+    const Vector3<double> p_WC = 0.5 * (p_WCa + p_WCb);
 
     // Contact point position on body A.
-    const Vector3<T>& p_WAo =
+    const Vector3<double>& p_WAo =
         pc.get_X_WB(bodyA_node_index).translation();
-    const Vector3<T>& p_CoAo_W = p_WAo - p_WC;
+    const Vector3<double>& p_CoAo_W = p_WAo - p_WC;
 
     // Contact point position on body B.
-    const Vector3<T>& p_WBo =
+    const Vector3<double>& p_WBo =
         pc.get_X_WB(bodyB_node_index).translation();
-    const Vector3<T>& p_CoBo_W = p_WBo - p_WC;
+    const Vector3<double>& p_CoBo_W = p_WBo - p_WC;
 
     // Separation velocity, > 0  if objects separate.
-    const Vector3<T> v_WAc =
+    const Vector3<double> v_WAc =
         vc.get_V_WB(bodyA_node_index).Shift(-p_CoAo_W).translational();
-    const Vector3<T> v_WBc =
+    const Vector3<double> v_WBc =
         vc.get_V_WB(bodyB_node_index).Shift(-p_CoBo_W).translational();
-    const Vector3<T> v_AcBc_W = v_WBc - v_WAc;
+    const Vector3<double> v_AcBc_W = v_WBc - v_WAc;
 
     // if xdot = vn > 0 ==> they are getting closer.
-    const T vn = v_AcBc_W.dot(nhat_BA_W);
+    const double vn = v_AcBc_W.dot(nhat_BA_W);
 
     // Magnitude of the normal force on body A at contact point C.
-    const T k = penalty_method_contact_parameters_.stiffness;
-    const T d = penalty_method_contact_parameters_.damping;
-    const T fn_AC = k * x * (1.0 + d * vn);
-
-    (*fn)(ic) = fn_AC;
+    const double k = penalty_method_contact_parameters_.stiffness;
+    const double d = penalty_method_contact_parameters_.damping;
+    const double fn_AC = k * x * (1.0 + d * vn);
 
     if (fn_AC > 0) {
       // Normal force on body A, at C, expressed in W.
-      const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
+      const Vector3<double> fn_AC_W = fn_AC * nhat_BA_W;
 
-      Vector3<T> ft_AC_W = Vector3<T>::Zero();
       // Since the normal force is positive (non-zero), compute the friction
-      // force.
-      if (include_friction) {
-        // Compute tangential velocity, that is, v_AcBc projected onto the tangent
-        // plane with normal nhat_BA:
-        const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
-        // Tangential speed (squared):
-        const T vt_squared = vt_AcBc_W.squaredNorm();
+      // force. First obtain the friction coefficients:
+      const int collision_indexA =
+          geometry_id_to_collision_index_.at(geometryA_id);;
+      const int collision_indexB =
+          geometry_id_to_collision_index_.at(geometryB_id);;
+      const CoulombFriction<double>& geometryA_friction =
+          default_coulomb_friction_[collision_indexA];
+      const CoulombFriction<double>& geometryB_friction =
+          default_coulomb_friction_[collision_indexB];
+      const CoulombFriction<double> combined_friction_coefficients =
+          CalcContactFrictionFromSurfaceProperties(
+              geometryA_friction, geometryB_friction);
+      // Compute tangential velocity, that is, v_AcBc projected onto the tangent
+      // plane with normal nhat_BA:
+      const Vector3<double> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
+      // Tangential speed (squared):
+      const double vt_squared = vt_AcBc_W.squaredNorm();
 
-        // Consider a value indistinguishable from zero if it is smaller
-        // then 1e-14 and test against that value squared.
-        const T kNonZeroSqd = 1e-14 * 1e-14;
-        // Tangential friction force on A at C, expressed in W.
-        if (vt_squared > kNonZeroSqd) {
-          const T vt = sqrt(vt_squared);
-          // Stribeck friction coefficient.
-          const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
-              vt, combined_friction_pairs[ic]);
-          // Tangential direction.
-          const Vector3<T> that_W = vt_AcBc_W / vt;
+      // Consider a value indistinguishable from zero if it is smaller
+      // then 1e-14 and test against that value squared.
+      const double kNonZeroSqd = 1e-14 * 1e-14;
+      // Tangential friction force on A at C, expressed in W.
+      Vector3<double> ft_AC_W = Vector3<double>::Zero();
+      if (vt_squared > kNonZeroSqd) {
+        const double vt = sqrt(vt_squared);
+        // Stribeck friction coefficient.
+        const double mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+            vt, combined_friction_coefficients);
+        // Tangential direction.
+        const Vector3<double> that_W = vt_AcBc_W / vt;
 
-          // Magnitude of the friction force on A at C.
-          const T ft_AC = mu_stribeck * fn_AC;
-          ft_AC_W = ft_AC * that_W;
-        }
-      } // include friction
+        // Magnitude of the friction force on A at C.
+        const double ft_AC = mu_stribeck * fn_AC;
+        ft_AC_W = ft_AC * that_W;
+      }
 
       // Spatial force on body A at C, expressed in the world frame W.
-      const SpatialForce<T> F_AC_W(Vector3<T>::Zero(),
-                                   fn_AC_W + ft_AC_W);
+      const SpatialForce<double> F_AC_W(Vector3<double>::Zero(),
+                                        fn_AC_W + ft_AC_W);
 
       if (F_BBo_W_array != nullptr) {
         if (bodyA_index != world_index()) {
           // Spatial force on body A at Ao, expressed in W.
-          const SpatialForce<T> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
+          const SpatialForce<double> F_AAo_W = F_AC_W.Shift(p_CoAo_W);
           F_BBo_W_array->at(bodyA_node_index) += F_AAo_W;
         }
 
         if (bodyB_index != world_index()) {
           // Spatial force on body B at Bo, expressed in W.
-          const SpatialForce<T> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
+          const SpatialForce<double> F_BBo_W = -F_AC_W.Shift(p_CoBo_W);
           F_BBo_W_array->at(bodyB_node_index) += F_BBo_W;
         }
       }
     }
-    ++ic;
   }
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
+    const systems::Context<T>&,
+    const PositionKinematicsCache<T>&, const VelocityKinematicsCache<T>&,
+    std::vector<SpatialForce<T>>*) const {
+  DRAKE_ABORT_MSG("Only <double> is supported.");
 }
 
 template<typename T>
@@ -652,11 +602,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // Compute contact forces on each body by penalty method.
   if (num_collision_geometries() > 0) {
-    std::vector<PenetrationAsPointPair<T>> penetrations =
-        CalcPointPairPenetrations(context);
-    VectorX<T> fn(penetrations.size());
-    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array,
-                                           true, penetrations, &fn);
+    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array);
   }
 
   model_->CalcInverseDynamics(
@@ -679,26 +625,16 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
 
-  using std::sqrt;
-  using std::max;
-  using std::min;
-  using std::abs;
-  // If plant state is continuous, no discrete state to update.
-  if (!is_discrete()) return;
-
   const double dt = time_step_;  // just a shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
-
-  int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
-  (void) istep;
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
@@ -709,11 +645,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
-  auto M0_llt = M0.llt();
+  auto M0_ldlt = M0.ldlt();
 
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
 
+  // Position and velocity kinematics at the previous time step.
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
@@ -738,16 +675,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
-      CalcPointPairPenetrations(context0);
-  const int num_contacts = point_pairs0.size();
-  VectorX<T> fn(num_contacts);
-
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
-  // Compute contact forces0 on each body by penalty method. No friction, only normal forces0.
+  // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
   if (num_collision_geometries() > 0) {
-    CalcAndAddContactForcesByPenaltyMethod(
-        context0, pc0, vc0, &F_BBo_W_array, false, point_pairs0, &fn);
+    throw std::runtime_error("Contact not supported in time stepping mode.");
   }
 
   // Workspace for inverse dynamics:
@@ -756,7 +686,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
-  // With vdot = 0, this computes (includes normal forces):
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
+
+  // With vdot = 0, this computes:
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   model_->CalcInverseDynamics(
@@ -818,10 +750,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   VectorX<T> qdot_next(this->num_positions());
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
+  VectorX<T> q_next = q0 + dt * qdot_next;
 
-  // qn = q + dt*qdot.
   VectorX<T> x_next(this->num_multibody_states());
-  x_next << q0 + dt * qdot_next, v_next;
+  x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
 }
 
@@ -1027,27 +959,6 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
-}
-
-template <typename T>
-T MultibodyPlant<T>::StribeckModel::ModifiedStribeck(const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
-    return mu;
-  } else {
-    return mu * x * (2.0 - x);
-  }
-}
-
-template <typename T>
-T MultibodyPlant<T>::StribeckModel::ModifiedStribeckPrime(
-    const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
-    return 0;
-  } else {
-    return mu * (2 * (1 - x));
-  }
 }
 
 }  // namespace multibody_plant

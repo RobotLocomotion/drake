@@ -78,9 +78,6 @@ DEFINE_double(max_time_step, 1.0e-3,
               "is used.");
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
-DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
-    "discrete system with periodic updates of period 'max_time_step'."
-    "If 'false', the plant is modeled as a continuous system.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -170,12 +167,7 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  DRAKE_DEMAND(FLAGS_max_time_step > 0);
-
-  MultibodyPlant<double>& plant =
-      FLAGS_time_stepping ?
-      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
-      *builder.AddSystem<MultibodyPlant>();
+  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>();
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
