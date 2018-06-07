@@ -302,7 +302,7 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
   }
 }
 
-// Making sure that output image will be the same before v.s. after calling
+// Making sure that output image will be the same before vs. after calling
 // ResetRenderer()
 TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
   // RgbdCamera is looking straight down 1m above the ground.

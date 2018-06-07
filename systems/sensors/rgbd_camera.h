@@ -182,8 +182,9 @@ class RgbdCamera final : public LeafSystem<double> {
   void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
     renderer_ = std::move(renderer);
     InitRenderer();
-    // This needs only for camera_fixed_ is true since this will be called
-    // in UpdateModelPoses() if false.
+    // This is needed only for camera_fixed_ is true since UpdateViewpoint()
+    // will be called while rendering related output ports are evaluated
+    // if it is false.
     if (camera_fixed_) {
       renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
     }
