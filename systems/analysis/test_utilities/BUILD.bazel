@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "test_utilities",
     testonly = 1,
     deps = [
+        ":approximation_techniques",
         ":controlled_spring_mass_system",
         ":discontinuous_spring_mass_damper_system",
         ":explicit_error_controlled_integrator_test",
@@ -109,6 +110,16 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["stiff_double_mass_spring_system.h"],
     deps = [],
+)
+
+drake_cc_library(
+    name = "approximation_techniques",
+    testonly = 1,
+    hdrs = ["approximation_techniques.h"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+    ],
 )
 
 drake_cc_googletest(

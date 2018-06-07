@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -56,8 +58,27 @@ class ScalarInitialValueProblem {
   /// @param x The dependent variable x ∈ ℝ .
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
   /// @return The derivative dx/dt ∈ ℝ.
-  typedef std::function<T(const T& t, const T& x,
-                          const VectorX<T>& k)> ScalarODEFunction;
+  using ScalarODEFunction = std::function<T(const T& t, const T& x,
+                                            const VectorX<T>& k)>;
+
+  /// Approximation technique function type, to build an approximating function
+  /// z(t) to an x(t; 𝐤) solution based on a partition of its domain into
+  /// multiple contiguous intervals where value x and first derivative dx/dt
+  /// are known and provided at the boundaries.
+  ///
+  /// @param t_sequence The independent scalar variable sequence
+  ///                   (t₁ ... tₚ) where tₚ ∈ ℝ.
+  /// @param x_sequence The dependent scalar variable sequence
+  ///                   (x(t₁) ... x(tₚ)) where x(tₚ) ∈ ℝ.
+  /// @param dx_dt_sequence The dependent scalar variable first derivative
+  ///                       sequence ((dx/dt)(t₁) ... (dx/dt)(tₚ)) where
+  ///                       (dx/dt)(tₚ) ∈ ℝ.
+  /// @return The approximating function z(t) ∈ ℝ.
+  /// @tparam ApproximatingFn The approximating function type.
+  template <typename ApproximatingFn>
+  using ApproximationTechnique = std::function<ApproximatingFn (
+      const std::vector<T>& t, const std::vector<T>& x,
+      const std::vector<T>& dx_dt)>;
 
   /// A collection of values i.e. initial time t₀, initial state x₀
   /// and parameter vector 𝐤 to further specify the ODE system (in
@@ -124,6 +145,40 @@ class ScalarInitialValueProblem {
     return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
   }
 
+  /// Approximates the IVP solution x(t; 𝐤) with x(t₀; 𝐤) = x₀ using
+  /// another function z(t) defined for t₀ <= t <= tf using the
+  /// given @p approximation_technique.
+  ///
+  /// @param approximation_technique The technique to build the approximating
+  ///                                function z(t).
+  /// @param tf The time to solve the IVP for.
+  /// @param values The specified values for the IVP.
+  /// @return The approximating function z(t) to the IVP solution x(t; 𝐤)
+  ///         with x(t₀; 𝐤) = x₀ for t₀ <= t <= tf.
+  /// @tparam ApproximatingFn The approximating function type.
+  /// @pre Given @p tf must be larger than or equal to the specified initial
+  ///      time t₀ (either given or default).
+  /// @pre If given, the dimension of the initial state vector @p values.x0
+  ///      must match that of the default initial state vector in the default
+  ///      specified values given on construction.
+  /// @pre If given, the dimension of the parameter vector @p values.k
+  ///      must match that of the parameter vector in the default specified
+  ///      values given on construction.
+  /// @throw std::logic_error if preconditions are not met.
+  /// @note See InitialValueProblem::Approximate() documentation for
+  ///       further reference.
+  template <typename ApproximatingFn>
+  ApproximatingFn Approximate(
+      const ApproximationTechnique<ApproximatingFn>& approximation_technique,
+      const T& tf, const SpecifiedValues& values = {}) const {
+    // Delegates request to the vector form of this IVP by putting
+    // both approximation technique and specified values in vector form
+    // as well.
+    return this->vector_ivp_->Approximate(
+        ToVectorApproximationTechnique(approximation_technique),
+        tf, ToVectorIVPSpecifiedValues(values));
+  }
+
   /// Resets the internal integrator instance by in-place
   /// construction of the given integrator type.
   ///
@@ -164,10 +219,42 @@ class ScalarInitialValueProblem {
     typename InitialValueProblem<T>::SpecifiedValues vector_ivp_values;
     vector_ivp_values.k = values.k;
     vector_ivp_values.t0 = values.t0;
-    if (values.x0) {
-      vector_ivp_values.x0 = VectorX<T>::Constant(1, values.x0.value()).eval();
+    if (values.x0.has_value()) {
+      // Scalar initial state x₀ as a vector initial state 𝐱₀
+      // of a single dimension.
+      vector_ivp_values.x0 = VectorX<T>::Constant(
+          1, values.x0.value()).eval();
     }
     return vector_ivp_values;
+  }
+
+  template <typename A>
+  using VectorApproximationTechnique =
+      typename InitialValueProblem<T>::template ApproximationTechnique<A>;
+
+  // Wraps given scalar @p approximation_technique in its equivalent vector
+  // form, where both values and first derivatives of the function to be
+  // approximated are vectors of a single dimension instead of scalars
+  // (compare the InitialValueProblem::ApproximationTechnique and
+  // ScalarInitialValueProblem::ApproximationTechnique definitions).
+  template <typename ApproximatingFn>
+  static VectorApproximationTechnique<ApproximatingFn>
+  ToVectorApproximationTechnique(
+      const ApproximationTechnique<ApproximatingFn>& approximation_technique) {
+    return [&approximation_technique](
+        const std::vector<T>& t_sequence,
+        const std::vector<VectorX<T>>& x_sequence,
+        const std::vector<VectorX<T>>& dxdt_sequence) {
+      auto vector_to_scalar = [](const VectorX<T>& v) { return v[0]; };
+      std::vector<T> scalar_x_sequence(x_sequence.size());
+      std::transform(x_sequence.begin(), x_sequence.end(),
+                     scalar_x_sequence.begin(), vector_to_scalar);
+      std::vector<T> scalar_dxdt_sequence(x_sequence.size());
+      std::transform(dxdt_sequence.begin(), dxdt_sequence.end(),
+                     scalar_dxdt_sequence.begin(), vector_to_scalar);
+      return approximation_technique(
+          t_sequence, scalar_x_sequence, scalar_dxdt_sequence);
+    };
   }
 
   // Vector IVP representation of this scalar IVP.

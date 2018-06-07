@@ -116,6 +116,7 @@ drake_cc_library(
     deps = [
         ":runge_kutta3_integrator",
         "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
         "//systems/framework:context",
         "//systems/framework:continuous_state",
         "//systems/framework:leaf_system",
@@ -131,6 +132,7 @@ drake_cc_library(
     ],
     hdrs = [
         "scalar_initial_value_problem.h",
+        "scalar_initial_value_problem-inl.h",
     ],
     deps = [
         ":initial_value_problem",
@@ -146,6 +148,7 @@ drake_cc_library(
     ],
     hdrs = [
         "antiderivative_function.h",
+        "antiderivative_function-inl.h",
     ],
     deps = [
         ":scalar_initial_value_problem",
@@ -246,6 +249,8 @@ drake_cc_googletest(
         ":initial_value_problem",
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 
@@ -253,6 +258,8 @@ drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
         ":scalar_initial_value_problem",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 
@@ -260,6 +267,8 @@ drake_cc_googletest(
     name = "antiderivative_function_test",
     deps = [
         ":antiderivative_function",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis/test_utilities:approximation_techniques",
     ],
 )
 

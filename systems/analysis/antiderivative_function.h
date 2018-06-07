@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -54,7 +55,27 @@ class AntiderivativeFunction {
   /// @param x The variable of integration x ∈ ℝ .
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
   /// @return The function value f(@p x; @p k).
-  typedef std::function<T(const T& x, const VectorX<T>& k)> IntegrableFunction;
+  using IntegrableFunction = std::function<T(const T& x, const VectorX<T>& k)>;
+
+  /// Approximation technique function type, to build an approximating function
+  /// G(u) to an F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx antiderivative function based on a
+  /// partition of its domain into multiple contiguous intervals where function
+  /// value and first derivative are known and provided at the boundaries.
+  ///
+  /// @param u_sequence The integration upper bound sequence
+  ///                   (u₁ ... uₚ) where uₚ ∈ ℝ.
+  /// @param f_sequence The dependent scalar variable sequence
+  ///                   (F(u₁; 𝐤) ... F(uₚ; 𝐤)) where F(uₚ; 𝐤) ∈ ℝ.
+  /// @param dfdt_sequence The dependent scalar variable first derivative
+  ///                      sequence (f(u₁; 𝐤) ... f(uₚ; 𝐤)) where
+  ///                      f(uₚ; 𝐤) ∈ ℝ.
+  /// @return The approximating function G(u) ∈ ℝ.
+  /// @tparam ApproximatingFn The approximating function type.
+  template <typename ApproximatingFn>
+  using ApproximationTechnique = std::function<ApproximatingFn (
+      const std::vector<T>& u_sequence,
+      const std::vector<T>& f_sequence,
+      const std::vector<T>& dfdt_sequence)>;
 
   /// The set of values that, along with the function being integrated,
   /// partially specify the definite integral i.e. providing the lower
@@ -111,10 +132,10 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
-  /// Evaluates the definite integral over the lower integration bound v (see
-  /// definition in class documentation) to @p u using the parameter vector 𝐤
-  /// (see definition in class documentation) if present in @p values, falling
-  /// back to the ones given on construction if not given.
+  /// Evaluates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx from the lower
+  /// integration bound v (see definition in class documentation) to @p u using
+  /// the parameter vector 𝐤 (see definition in class documentation) if present
+  /// in @p values, falling back to the ones given on construction if missing.
   ///
   /// @param u The upper integration bound.
   /// @param values The specified values for the integration.
@@ -129,6 +150,39 @@ class AntiderivativeFunction {
     typename ScalarInitialValueProblem<T>::SpecifiedValues
         scalar_ivp_values(values.v, {}, values.k);
     return scalar_ivp_->Solve(u, scalar_ivp_values);
+  }
+
+  /// Approximates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx with
+  /// another function G(w) defined for v <= w <= @p u using the given
+  /// @p approximation_technique. Above's lower integration bound v and
+  /// parameter vector 𝐤 (see definition in class documentation) are taken from
+  /// @p values, falling back to the ones given on construction if missing.
+  ///
+  /// @param approximation_technique The technique to build the approximating
+  ///                                function G(w).
+  /// @param u The uppermost integration bound.
+  /// @param values The specified values for the integration.
+  /// @return The approximating function G(w) to the definite integral for
+  ///         for v <= w <= @p u.
+  /// @tparam ApproximatingFn The approximating function type.
+  /// @pre The given upper integration bound @p u must be larger than or equal
+  ///      to the lower integration bound v.
+  /// @pre If given, the dimension of the parameter vector @p values.k
+  ///      must match that of the parameter vector 𝐤 in the default specified
+  ///      values given on construction.
+  /// @throw std::logic_error if preconditions are not met.
+  /// @note See ScalarInitialValueProblem::Approximate() documentation for
+  ///       further reference.
+  template <typename ApproximatingFn>
+  ApproximatingFn Approximate(
+      const ApproximationTechnique<ApproximatingFn>& approximation_technique,
+      const T& u, const SpecifiedValues& values = {}) const {
+    // Delegates request to the scalar IVP used for computations, by putting
+    // specified values in scalar IVP terms.
+    typename ScalarInitialValueProblem<T>::SpecifiedValues
+        scalar_ivp_values(values.v, {}, values.k);
+    return this->scalar_ivp_->Approximate(
+        approximation_technique, u, scalar_ivp_values);
   }
 
   /// Resets the internal integrator instance.
