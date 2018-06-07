@@ -1027,13 +1027,22 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
+  std::vector<geometry::PenetrationAsPointPair<T>>
+  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+
+  std::vector<CoulombFriction<T>> CalcCombinedFrictionCoefficients(
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs) const;
+
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
-      std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+      std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
+      VectorX<T>* fn) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
   // Jacobian N(q) such that:
@@ -1151,6 +1160,20 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// It returns a negative value when the stiction tolerance has not been set
     /// previously with set_stiction_tolerance().
     double stiction_tolerance() const { return v_stiction_tolerance_; }
+
+    // Dimensionless modified Stribeck function defined as:
+    // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
+    //         ⌊ mu                ,  x >= 1
+    // where x corresponds to the dimensionless tangential speed
+    // x = v / v_stribeck.
+    static T ModifiedStribeck(const T& x, const T& mu);
+
+    // Derivative of the dimensionless modified Stribeck function:
+    // ms(x) = ⌈ mu * (2 * (1 - x)),  x  < 1
+    //         ⌊ 0                 ,  x >= 1
+    // where x corresponds to the dimensionless tangential speed
+    // x = v / v_stribeck.
+    static T ModifiedStribeckPrime(const T& speed_BcAc, const T& mu);
 
    private:
     // Stiction velocity tolerance for the Stribeck model.
