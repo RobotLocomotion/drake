@@ -48,6 +48,18 @@ class DenseOutput {
   ///                           given @p t.
   virtual VectorX<T> Evaluate(const T& t) const = 0;
 
+  /// Evaluates the output's @p dimension at the given time @p t.
+  /// @param t Time to evaluate output at.
+  /// @param dimension Dimension to evaluate.
+  /// @return Output @p dimension scalar value .
+  /// @pre Output is not empty i.e. is_empty() equals false.
+  /// @throw std::logic_error if any of the preconditions are not met.
+  /// @throw std::runtime_error if the output is not defined for the
+  ///                           given @p t.
+  /// @throw std::runtime_error if given @p dimension is not valid
+  ///                           i.e. 0 <= @p dimension < get_dimensions().
+  virtual T Evaluate(const T& t, int dimension) const = 0;
+
   /// Returns the output dimension `n`.
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.

@@ -250,6 +250,20 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     return matrix_value.col(0).cast<T>();
   }
 
+  T Evaluate(const T& t, const int dimension) const override {
+    if (is_empty()) {
+      throw std::logic_error("Empty dense output cannot be evaluated.");
+    }
+    if (dimension < 0 || get_dimensions() <= dimension) {
+      throw std::runtime_error("Invalid dimension for dense output.");
+    }
+    if (t < get_start_time() || t > get_end_time()) {
+      throw std::runtime_error("Dense output is not defined for given time.");
+    }
+    return continuous_trajectory_.scalarValue(
+        ExtractDoubleOrThrow(t), dimension, 0);
+  }
+
   int get_dimensions() const override {
     if (is_empty()) {
       throw std::logic_error("Dimension is not defined for"

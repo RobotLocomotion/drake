@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
+#include "drake/systems/analysis/scalar_dense_output.h"
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
 
 namespace drake {
@@ -21,6 +23,12 @@ namespace systems {
 /// which can later be evaluated for any instance of said vector. Also, note
 /// that 𝐤 can be understood as an m-tuple or as an element of ℝᵐ, the vector
 /// space, depending on how it is used by the integrable function.
+///
+/// Additionally, support for computing the antiderivative function F for
+/// entire integration intervals is provided. This is convenient when a more
+/// dense sampling of the IVP solution than what would be available through
+/// either fixed or error-controlled step integration (for a given accuracy)
+/// is needed.
 ///
 /// For further insight into its use, consider the following examples.
 ///
@@ -54,7 +62,7 @@ class AntiderivativeFunction {
   /// @param x The variable of integration x ∈ ℝ .
   /// @param k The parameter vector 𝐤 ∈ ℝᵐ.
   /// @return The function value f(@p x; @p k).
-  typedef std::function<T(const T& x, const VectorX<T>& k)> IntegrableFunction;
+  using IntegrableFunction = std::function<T(const T& x, const VectorX<T>& k)>;
 
   /// The set of values that, along with the function being integrated,
   /// partially specify the definite integral i.e. providing the lower
@@ -111,10 +119,10 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
-  /// Evaluates the definite integral over the lower integration bound v (see
-  /// definition in class documentation) to @p u using the parameter vector 𝐤
-  /// (see definition in class documentation) if present in @p values, falling
-  /// back to the ones given on construction if not given.
+  /// Evaluates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx from the lower
+  /// integration bound v (see definition in class documentation) to @p u using
+  /// the parameter vector 𝐤 (see definition in class documentation) if present
+  /// in @p values, falling back to the ones given on construction if missing.
   ///
   /// @param u The upper integration bound.
   /// @param values The specified values for the integration.
@@ -124,11 +132,35 @@ class AntiderivativeFunction {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector 𝐤 in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if preconditions are not met.
+  /// @throw std::logic_error if any of the preconditions is not met.
   T Evaluate(const T& u, const SpecifiedValues& values = {}) const {
     typename ScalarInitialValueProblem<T>::SpecifiedValues
         scalar_ivp_values(values.v, {}, values.k);
     return scalar_ivp_->Solve(u, scalar_ivp_values);
+  }
+
+  /// Evaluates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx for the whole
+  /// interval that goes from the lower integration bound v (see definition
+  /// in class documentation) to the uppermost integration bound @p w using
+  /// the parameter vector 𝐤 (see definition in class documentation) if present
+  /// in @p values, falling back to the ones given on construction if missing.
+  ///
+  /// @param w The uppermost integration bound.
+  /// @param values The specified values for the integration.
+  /// @return A dense approximation to F(u; 𝐤), defined for v <= u <= w.
+  /// @pre The given upper integration bound @p u must be larger than or equal
+  ///      to the lower integration bound v.
+  /// @pre If given, the dimension of the parameter vector @p values.k
+  ///      must match that of the parameter vector 𝐤 in the default specified
+  ///      values given on construction.
+  /// @throw std::logic_error if any of the preconditions is not met.
+  std::unique_ptr<ScalarDenseOutput<T>> DenseEvaluate(
+      const T& u, const SpecifiedValues& values = {}) const {
+    // Delegates request to the scalar IVP used for computations, by putting
+    // specified values in scalar IVP terms.
+    typename ScalarInitialValueProblem<T>::SpecifiedValues
+        scalar_ivp_values(values.v, {}, values.k);
+    return this->scalar_ivp_->DenseSolve(u, scalar_ivp_values);
   }
 
   /// Resets the internal integrator instance.

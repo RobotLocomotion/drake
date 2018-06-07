@@ -23,7 +23,9 @@ drake_cc_package_library(
         ":lyapunov",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":scalar_dense_output",
         ":scalar_initial_value_problem",
+        ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":stepwise_dense_output",
@@ -57,6 +59,24 @@ drake_cc_library(
         "//common:extract_double",
         "//common/trajectories:piecewise_polynomial",
         "//systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_dense_output",
+    hdrs = ["scalar_dense_output.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_view_dense_output",
+    hdrs = ["scalar_view_dense_output.h"],
+    deps = [
+        ":dense_output",
+        ":scalar_dense_output",
+        "//common:essential",
     ],
 )
 
@@ -150,6 +170,7 @@ drake_cc_library(
         "initial_value_problem-inl.h",
     ],
     deps = [
+        ":dense_output",
         ":integrator_base",
         ":runge_kutta3_integrator",
         "//systems/framework:context",
@@ -167,9 +188,12 @@ drake_cc_library(
     ],
     hdrs = [
         "scalar_initial_value_problem.h",
+        "scalar_initial_value_problem-inl.h",
     ],
     deps = [
         ":initial_value_problem",
+        ":scalar_dense_output",
+        ":scalar_view_dense_output",
         "//common:essential",
         "//common:unused",
     ],
@@ -182,8 +206,10 @@ drake_cc_library(
     ],
     hdrs = [
         "antiderivative_function.h",
+        "antiderivative_function-inl.h",
     ],
     deps = [
+        ":scalar_dense_output",
         ":scalar_initial_value_problem",
         "//common:essential",
         "//common:unused",
@@ -311,6 +337,16 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_view_dense_output_test",
+    deps = [
+        ":hermitian_dense_output",
+        ":scalar_view_dense_output",
+        "//common:autodiff",
+        "//common:essential",
     ],
 )
 

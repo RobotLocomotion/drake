@@ -43,6 +43,8 @@ class HermitianDenseOutputTest : public ::testing::Test {
     (MatrixX<double>(4, 1) << 1., 0., 1., 0.).finished()};
   const MatrixX<double> kFinalStateDerivativeNotAVector{
     (MatrixX<double>(2, 2) << 0., 1., 0., 1.).finished()};
+  const int kValidDimension{0};
+  const int kInvalidDimension{10};
 };
 
 
@@ -60,6 +62,8 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   ASSERT_TRUE(dense_output.is_empty());
   EXPECT_THROW(dense_output.Evaluate(
       this->kInitialTime), std::logic_error);
+  EXPECT_THROW(dense_output.Evaluate(
+      this->kInitialTime, this->kValidDimension), std::logic_error);
   EXPECT_THROW(dense_output.get_start_time(), std::logic_error);
   EXPECT_THROW(dense_output.get_end_time(), std::logic_error);
   EXPECT_THROW(dense_output.get_dimensions(), std::logic_error);
@@ -83,6 +87,8 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   ASSERT_TRUE(dense_output.is_empty());
   EXPECT_THROW(dense_output.Evaluate(
       this->kMidTime), std::logic_error);
+  EXPECT_THROW(dense_output.Evaluate(
+      this->kMidTime, this->kValidDimension), std::logic_error);
   EXPECT_THROW(dense_output.get_start_time(), std::logic_error);
   EXPECT_THROW(dense_output.get_end_time(), std::logic_error);
   EXPECT_THROW(dense_output.get_dimensions(), std::logic_error);
@@ -100,8 +106,14 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   EXPECT_EQ(dense_output.get_end_time(), first_step.get_end_time());
   EXPECT_EQ(dense_output.get_dimensions(), first_step.get_dimensions());
   EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
+  EXPECT_NO_THROW(dense_output.Evaluate(
+      this->kMidTime, this->kValidDimension));
 
   // Verifies that invalid evaluation arguments generate errors.
+  EXPECT_THROW(dense_output.Evaluate(
+      this->kMidTime, this->kInvalidDimension), std::runtime_error);
+  EXPECT_THROW(dense_output.Evaluate(
+      this->kInvalidTime, this->kValidDimension), std::runtime_error);
   EXPECT_THROW(dense_output.Evaluate(this->kInvalidTime),
                std::runtime_error);
 
