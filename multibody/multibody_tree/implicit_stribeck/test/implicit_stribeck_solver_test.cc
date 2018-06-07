@@ -41,7 +41,7 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
 
 // Verify implementation when vt = 0 and the update dvt takes the velocity
 // to within the Stribeck circle.
-TEST_F(DirectionLimiter, ZeroVtoWithinStribeckCircle) {
+TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stribeck;
   const double alpha = internal::LimitDirectionChange<double>::run(
@@ -50,7 +50,7 @@ TEST_F(DirectionLimiter, ZeroVtoWithinStribeckCircle) {
 }
 
 // Perfect stiction (vt = 0) to sliding.
-TEST_F(DirectionLimiter, ZeroVtoOutsideStribeckCircle) {
+TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
   const double alpha = internal::LimitDirectionChange<double>::run(
@@ -62,7 +62,7 @@ TEST_F(DirectionLimiter, ZeroVtoOutsideStribeckCircle) {
 }
 
 // Sliding to perfect stiction with vt = 0.
-TEST_F(DirectionLimiter, OutsideStribeckCircletoZero) {
+TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
   const double alpha = internal::LimitDirectionChange<double>::run(
@@ -82,7 +82,7 @@ TEST_F(DirectionLimiter, OutsideStribeckCircletoZero) {
 // A vt that lies outside the Stribeck circle lies somewhere within the circle
 // after the update v_alpha = v + dv, alpha = 1. Since gradients are strong
 // within this region, the limiter allows it.
-TEST_F(DirectionLimiter, OutsideStribeckToWithinCircle) {
+TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
   const Vector2<double> vt = Vector2<double>(1.2, 0.4);
   const Vector2<double> vt_alpha_expected =
       Vector2<double>(-0.3, 0.45) * v_stribeck;
@@ -92,10 +92,10 @@ TEST_F(DirectionLimiter, OutsideStribeckToWithinCircle) {
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
-// Similar to ZeroVtoOutsideStribeckCircle, a velocity vt within the Stribeck
+// Similar to ZeroVtoSlidingRegion, a velocity vt within the Stribeck
 // region (but not to zero) is updated to a sliding configuration. Since vt
 // falls in a region of strong gradients, the limiter allows it.
-TEST_F(DirectionLimiter, WithinStribeckCircleToOutsideStribeckCircle) {
+TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stribeck;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
   const double alpha = internal::LimitDirectionChange<double>::run(
@@ -103,7 +103,7 @@ TEST_F(DirectionLimiter, WithinStribeckCircleToOutsideStribeckCircle) {
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
-// Similar to test ZeroVtoOutsideStribeckCircle, but vt is not exactly zero
+// Similar to test ZeroVtoSlidingRegion, but vt is not exactly zero
 // but negligibly small with norm/v_stribeck < tolerance.
 TEST_F(DirectionLimiter, StictionToSliding) {
   const Vector2<double> vt =
@@ -155,7 +155,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
 // Test a direction change from vt to v1 = vt + dvt that crosses through the
 // Stribeck circle. In this case the limiter will find a scalar 0< alpha < 1
 // such that v_alpha = vt + alpha * dvt is the closest vector to the origin.
-TEST_F(DirectionLimiter, CrossStribeckCircleFromTheOutside) {
+TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   // We construct a v_alpha expected to be within the Stribeck circle.
   const Vector2<double> vt_alpha_expected =
       Vector2<double>(0.3, 0.2) * v_stribeck;
@@ -189,7 +189,7 @@ TEST_F(DirectionLimiter, CrossStribeckCircleFromTheOutside) {
 // Tests the limiter for a case in which both vt and v1 = vt + dvt are both
 // outside the Stribeck circle. In this test, the angle formed by vt and v1 is
 // smaller than theta_max and the limiter allows it, i.e. it returns alpha = 1.
-TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle) {
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   // an angle smaller that theta_max = M_PI / 6.
   const double theta = M_PI / 8.0;
 
@@ -215,7 +215,7 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle) {
 // vt.
 // Internal detail note: the limiter computed two roots with different signs and
 // returns the positive root.
-TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_LargeTheta) {
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = M_PI / 3.0;
 
@@ -248,7 +248,7 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_LargeTheta) {
 // vt.
 // Internal detail note: the limiter computed two positive roots and returns
 // the smallest of the two.
-TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_VeryLargeTheta) {
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   // Angle formed by v1 and vt, an angle larger that theta_max = M_PI / 6.
   const double theta1 = 5.0 * M_PI / 6.0;
 
@@ -280,7 +280,7 @@ TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_VeryLargeTheta) {
 // limiter (the equation becomes linear).
 // Even though this will rarely (or impossibly) happen, we make sure we consider
 // it for maximum robustness.
-TEST_F(DirectionLimiter, ChangesOutsideTheStribeckCircle_SingleSolution) {
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   // A vt outside the Stribeck circle
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7);
 
