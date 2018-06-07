@@ -28,12 +28,12 @@ namespace internal {
 /// region around the origin as the "sliding region".
 /// The implicit Stribeck solver uses the following modified Stribeck function
 /// describing the functional dependence of the Stribeck coefficient of friction
-/// `μₛ`with slip speed: <pre>
+/// μₛwith slip speed: <pre>
 ///     μₛ(x) = ⌈ μ⋅x⋅(2.0 - x),  x  < 1
 ///             ⌊ μ            ,  x >= 1
 /// </pre>
-/// where x corresponds to the dimensionless slip speed `x = ‖vₜ‖ / vₛ` and
-/// μ is the Coulomb's law coefficint of friction. The implicit Stribeck solver
+/// where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
+/// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
 /// makes no distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
 /// Since the Stribeck function used for the friction coefficient has a very
@@ -64,11 +64,11 @@ namespace internal {
 ///   fₜ(vₜ) = -μ(‖vₜ‖ₛ) vₜ/‖vₜ‖ₛ
 /// </pre>
 /// where, to avoid the singularity at zero velocity, we use a "soft norm"
-/// `‖vₜ‖ₛ = sqrt(vₜᵀvₜ + εᵥ²)`, with εᵥ a small fraction of vₛ. Due to the
-/// use of soft norms, the gradient of `fₜ` with `vₜ` is now well defined,
-/// but it goes to zero as `vₜ` approaches the origin. Therefore, gradients
-/// are also "weak" in the neighborhood of `‖vₜ‖ₛ ≲ εᵥ`.
-/// Due to this, External forcing (either from applied forces or from coupling
+/// ‖vₜ‖ₛ = sqrt(vₜᵀvₜ + εᵥ²), with εᵥ a small fraction of vₛ. Due to the
+/// use of soft norms, the gradient of fₜ with vₜ is now well defined,
+/// but it goes to zero as vₜ approaches the origin. Therefore, gradients
+/// are also "weak" in the neighborhood of ‖vₜ‖ₛ ≲ εᵥ.
+/// Due to this, external forcing (either from applied forces or from coupling
 /// with other friction forces) has the potential to, mistakenly, force a
 /// transition from stiction to sliding. The solver will most likely recover
 /// from this, but this will result in a larger number of iterations.
@@ -79,12 +79,16 @@ namespace internal {
 ///
 /// In what follows we list a number of special scenarios dealt with by
 /// LimitDirectionChange. We use the observations made above.
+///  - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
+///    divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
+///    to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0 while it allows small
+///    updates within the stiction region (i.e. α = 1). See implementation
+///    notes for CalcAlpha() for further details.
 ///  - Transition from ‖vₜ‖ ≈ 0 (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since we
 ///    are in a region of "weak" gradients, we limit the update to
-///    vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2. i.e. we make it fall within the stiction
-///    region of strong gradients. We do allow however transition to sliding
-///    from the stiction region (presumably in the next iteration for large
-///    enough forcing).
+///    vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2. In other words, if the speed would grow too
+///    fast, we cap it at vₛ/2 so that at least two Newton iterations are
+///    required to go from near-0 sticking to sliding.
 ///  - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
 ///    ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
 ///    iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
@@ -99,11 +103,11 @@ namespace internal {
 ///  - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
 ///    changes happen in a region away from stiction (within the sliding
 ///    region). However, large angular changes (measured by the angle
-///    `θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))` between `vₜᵏ⁺¹` and `vₜᵏ`)
+///    θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)) between vₜᵏ⁺¹ and vₜᵏ)
 ///    might indicate a solution that is attempting to reach a stiction region.
 ///    In order to aid convergence, we limit the angle change to θₘₐₓ, and
 ///    therefore (see [Uchida et al., 2015]) we compute α so that
-///    `θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))`.
+///    θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
 ///
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
@@ -125,14 +129,14 @@ struct DirectionChangeLimiter {
                      const Eigen::Ref<const Vector2<T>>& dv,
                      double cos_theta_max, double v_stiction, double tolerance);
 
-  /// Helper method detect when the line connecting v with `v1 = v + dv`
+  /// Helper method detect when the line connecting v with v1 = v + dv
   /// crosses the stiction region, a circle of radius `v_stiction`.
   /// All other input arguments are quantities already precomputed by
   /// CalcAlpha() and thus we reuse them.
   /// @param alpha when this method returns `true` (zero crossing), a
   /// coefficient in `(0, 1]` so that `v_alpha = v + alpha * dv` is the closest
   /// vector to the origin. It is not set when the method returns `false`.
-  /// @returns `true` if the line connecting v with `v1 = v + dv` crosses the
+  /// @returns `true` if the line connecting v with v1 = v + dv crosses the
   /// stiction region.
   static bool CrossesTheStictionRegion(
       const Eigen::Ref<const Vector2<T>>& v,

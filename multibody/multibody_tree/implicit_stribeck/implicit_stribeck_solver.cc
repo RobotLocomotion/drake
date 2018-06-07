@@ -202,17 +202,18 @@ T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     alpha = -c / b;
     // Note: a = 0, α > 0 => x_dot_dx = x * dx * cmin ≠ 0 => b ≠ 0
   } else {
-    // The determinant of the quadratic equation.
-    const T Delta = b * b - 4 * a * c;
+    // The determinant, Δ = b² - 4ac, of the quadratic equation.
+    const T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
     // Geometry tell us that a real solution does exist i.e. Delta > 0.
     DRAKE_ASSERT(Delta > 0);
-    const T sqrt_delta = sqrt(Delta);
+    const T sqrt_Delta = sqrt(Delta);
 
-    // To avoid loss of significance, when 4ac is close to b² (i.e. the square
-    // root of the discriminant is close to b), we use Vieta's formula
-    // (α₁α₂ = c / a) to compute the second root given we computed the first
-    // root without precision lost. This guarantees the stability of the method.
-    const T numerator = -0.5 * (b + (b > 0.0 ? sqrt_delta : -sqrt_delta));
+    // To avoid loss of significance, when 4ac is relatively small compared
+    // to b² (i.e. the square root of the discriminant is close to b), we use
+    // Vieta's formula (α₁α₂ = c / a) to compute the second root given we
+    // computed the first root without precision lost. This guarantees the
+    // numerical stability of the method.
+    const T numerator = -0.5 * (b + (b > 0.0 ? sqrt_Delta : -sqrt_Delta));
     const T alpha1 = numerator / a;
     const T alpha2 = c / numerator;
 
