@@ -130,8 +130,12 @@ class ConstraintSolver {
   /// and this value for `y` can be substituted into (e) to obtain the value
   /// for `u`.
   ///
+  /// <h3>An MLCP-based impact model:</h3>
   /// Consider the following problem formulation of a multibody dynamics
-  /// impact model (taken from [Anitescu 1997]).
+  /// impact model (taken from [Anitescu 1997]). In a simulator, one could use
+  /// this model when a collision is detected in order to compute an
+  /// instantaneous change in velocity.
+  /// <pre>
   /// (1) | M  -Gᵀ  -Nᵀ  -Dᵀ  0  -Lᵀ | | v⁺ | + |-Mv⁻ | = | 0  |
   ///     | G   0    0    0   0   0  | | fG | + |  kᴳ | = | 0  |
   ///     | N   0    0    0   0   0  | | fN | + |  kᴺ | = | x₅ |
@@ -144,18 +148,20 @@ class ConstraintSolver {
   /// (5) 0 ≤ fL  ⊥  x₈ ≥ 0
   /// </pre>
   /// Here, the velocity variables
-  /// v⁻ and v⁺ correspond to the velocity of the system before and after
-  /// impulses are applied, respectively. More details will be forthcoming,
-  /// but key variables are `M`, the generalized inertia matrix; `G`,
-  /// `N`, `D`, and `L` correspond to Jacobian matrices for various constraints
-  /// (joints, contact, friction, generic unilateral constraints); `μ` is a
-  /// diagonal matrix comprised of Coulomb friction coefficients; `E` is a
-  /// bnary matrix used to linearize the friction cone (necessary to make this
-  /// into a *linear* complementarity problem); `fG`, `fN`, `fD`, and `fL` are
-  /// constraint impulses; `λ`, `x₅`, `x₆`, `x₇`, and `x₈` can be viewed as
-  /// mathematical programming "slack" variables; and `kᴳ`, `kᴺ`, `kᴰ`, `kᴸ`
+  /// v⁻ ∈ ℝⁿᵛ, v ∈ ℝⁿᵛ⁺ correspond to the velocity of the system before and
+  /// after impulses are applied, respectively. More details will be forthcoming
+  /// but key variables are `M ∈ ℝⁿᵛˣⁿᵛ`, the generalized inertia matrix;
+  /// `G ∈ ℝⁿᵇˣⁿᵛ`, `N ∈ ℝⁿᶜˣⁿᵛ`, `D ∈ ℝⁿᶜˣⁿᵛ`, and `L ∈ ℝⁿᶜˣⁿᵛ` correspond to
+  /// Jacobian matrices for various constraints (joints, contact, friction,
+  /// generic unilateral constraints, respectively); `μ ∈ ℝⁿᶜˣⁿᶜ` is a diagonal
+  /// matrix comprised of Coulomb friction coefficients; `E ∈ ℝⁿᶜˣⁿᶜ` is a
+  /// binary matrix used to linearize the friction cone (necessary to make
+  /// this into a *linear* complementarity problem); `fG ∈ ℝⁿᵇ`, `fN ∈ ℝⁿᶜ`,
+  /// `fD ∈ ℝⁿᶜ`, and `fL ∈ ℝⁿᶜ` are constraint impulses; `λ ∈ ℝⁿᶜ`, `x₅`, `x₆`,
+  /// `x₇`, and `x₈` can be viewed as mathematical programming "slack"
+  /// variables; and `kᴳ ∈ ℝⁿᵇ`, `kᴺ ∈ ℝⁿᶜ`, `kᴰ ∈ ℝⁿᶜ`, `kᴸ ∈ ℝⁿᶜ`
   /// allow customizing the problem to, e.g., correct constraint violations and
-  /// simulate restitution.
+  /// simulate restitution. Note that 
   ///
   /// From the notation above in Equations (a)-(d), we can convert the MLCP
   /// to a "pure" linear complementarity problem (LCP), which is easier to
@@ -174,9 +180,12 @@ class ConstraintSolver {
   ///                      |  λ  |
   ///                      | fL  |
   /// </pre>
-  /// Therefore, using Equations (f) and (g) and defining `C` as the
-  /// nv × nv-dimensional upper left block of `A⁻¹` (`nv` is the dimension of
-  /// the generalized velocities) the pure LCP `(qq,MM)` is defined as:<pre>
+  /// Where applicable, ConstraintSolver computes solutions to linear equations
+  /// with rank-deficient `A` (e.g., `AX₅ = x₆`) using a least squares approach
+  /// (the complete orthogonal factorization). Now, using Equations (f) and (g)
+  /// and defining `C` as the nv × nv-dimensional upper left block of
+  /// `A⁻¹` (`nv` is the dimension of the generalized velocities) the pure
+  /// LCP `(qq,MM)` is defined as:<pre>
   /// MM ≡ | NCNᵀ  NCDᵀ   0   NCLᵀ |
   ///      | DCNᵀ  DCDᵀ   E   DCLᵀ |
   ///      | μ      -Eᵀ   0   0    |
@@ -201,7 +210,8 @@ class ConstraintSolver {
   /// given matrix and `X` is an unknown matrix. UpdateDiscretizedTimeLCP()
   /// computes and returns `a` during its operation.
   ///
-  /// Another use of the MLCP formulation:
+  /// <h3>Another use of the MLCP formulation (discretized multi-body dynamics
+  /// with contact and friction):</h3>
   ///
   /// Without reconstructing the entire MLCP, we now show a very similar
   /// formulation to solve the problem of discretizing
@@ -238,33 +248,39 @@ class ConstraintSolver {
   /// forthcoming.
   ///
   /// The procedure one uses to formulate and solve this discretization problem
-  /// is: (1) Call ConstructBaseDiscretizedTimeLCP(); (2) Select an integration
-  /// step size, dt; (3) Compute `kᴺ' and `kᴸ` in the problem data, accounting
-  /// for dt as necessary; (4) Call UpdateDiscretizedTimeLCP(), obtaining MM and
-  /// qq that encode the linear complementarity problem; (5) Solve the linear
-  /// complementarity problem, if possible; if not, (6) reduce dt and repeat the
-  /// process from (3) until success. The solution to the LCP can be used to
-  /// obtain the constraint forces via
+  /// is:
+  /// -# Call ConstructBaseDiscretizedTimeLCP()
+  /// -# Select an integration step size, dt
+  /// -# Compute `kᴺ' and `kᴸ` in the problem data, accounting for dt as
+  ///    necessary
+  /// -# Call UpdateDiscretizedTimeLCP(), obtaining MM and qq that encode the
+  ///    linear complementarity problem
+  /// -# Solve the linear complementarity problem
+  /// -# If LCP solved, quit.
+  /// -# Reduce dt and repeat the process from 3. until success.
+  ///
+  /// The solution to the LCP can be used to obtain the constraint forces via
   /// PopulatePackedConstraintForcesFromLCPSolution().
   ///
-  /// Obtaining the generalized constraint forces:
+  /// <h3>Obtaining the generalized constraint forces:</h3>
   ///
   /// Given the constraint forces, which have been obtained either through
   /// SolveImpactProblem() (in which case the forces are impulsive) or through
-  /// direct solution of the LCP followed by
+  /// direct solution of the LCP corresponding to the discretized multibody
+  /// dynamics problem, followed by
   /// PopulatePackedConstraintForcesFromLCPSolution() (in which cases the forces
   /// are non-impulsive), the generalized forces/impulses due to the constraints
   /// can then be acquired via ComputeGeneralizedForceFromConstraintForces().
   // @{
   /// Computes the base time-discretization of the system using the problem
-  /// data, resulting in the `MM` and `qq` described in the "impact model",
-  /// above; if `MM` and `qq` are modified no further, the LCP corresponds to
-  /// an impact problem (i.e., the multibody dynamics problem would not be
-  /// discretized). The data output (`mlcp_to_lcp_data`, `MM`, and `qq`) can be
-  /// updated using a particular time step in UpdateDiscretizedTimeLCP(),
-  /// resulting in a non-impulsive problem formulation. In that case, the
-  /// multibody dynamics equations *are* discretized, as described in
-  /// UpdateDiscretizedTimeLCP().
+  /// data, resulting in the `MM` and `qq` described in
+  /// @ref velocity-level-MLCPs; if `MM` and `qq` are modified no further, the
+  /// LCP corresponds to an impact problem (i.e., the multibody dynamics problem
+  /// would not be discretized). The data output (`mlcp_to_lcp_data`, `MM`, and
+  /// `qq`) can be updated using a particular time step in
+  /// UpdateDiscretizedTimeLCP(), resulting in a non-impulsive problem
+  /// formulation. In that case, the multibody dynamics equations *are*
+  /// discretized, as described in UpdateDiscretizedTimeLCP().
   /// @note If you really do wish to solve an impact problem, you should use
   ///       SolveImpactProblem() instead.
   /// @param problem_data the constraint problem data.
@@ -337,6 +353,8 @@ class ConstraintSolver {
   /// ConstructBaseDiscretizedTimeLCP() and UpdateDiscretizedTimeLCP().
   /// @param problem_data the constraint problem data.
   /// @param mlcp_to_lcp_data a reference to a MlcpToLcpData object.
+  /// @param zz the solution to the LCP resulting from
+  ///        UpdateDiscretizedTimeLCP().
   /// @param a the vector `a` output from UpdateDiscretizedTimeLCP().
   /// @param dt the time step used to discretize the problem.
   /// @param[out] cf the constraint forces, on return.
