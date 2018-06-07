@@ -15,6 +15,137 @@
 namespace drake {
 namespace systems {
 
+namespace detail {
+
+/// A class providing a basic set of operations to convert to/from
+/// `scalar` type values from/to a `double` floating point type values.
+///
+/// @tparam T A valid Eigen scalar type.
+template <typename T>
+struct ScalarBaseConverter {
+  /// Converts a given scalar type value to its
+  /// double floating point type value equivalent.
+  /// @param value Scalar value to be converted.
+  /// @return Given @p value as a double.
+  double ToDouble(const T& value) const {
+    return double{value};
+  }
+
+  /// Converts a double floating point type value
+  /// to its equivalent scalar type value.
+  /// @param value Floating point value to be converted.
+  /// @return Given @p value as a scalar type value.
+  T FromDouble(double value) const {
+    return T{value};
+  }
+
+  /// Converts a matrix using scalar type elements to its equivalent
+  /// matrix using double floating point type elements.
+  /// @param matrix Matrix to be converted.
+  /// @return Given @p matrix using double floating type elements.
+  MatrixX<double> ToDoubleMatrix(const MatrixX<T>& matrix) const {
+    return matrix.template cast<double>();
+  }
+
+  /// Converts a matrix using double floating point type elements to
+  /// its equivalent matrix using scalar type elements.
+  /// @param matrix Matrix to be converted.
+  /// @return Given @p matrix using scalar type elements.
+  MatrixX<T> FromDoubleMatrix(const MatrixX<double>& matrix) const {
+    return matrix.template cast<T>();
+  }
+};
+
+/// A ScalarBaseConverter explicit specialization to deal
+/// with Eigen::AutoDiffScalar values.
+template <typename S>
+struct ScalarBaseConverter<Eigen::AutoDiffScalar<S>> {
+  double ToDouble(const Eigen::AutoDiffScalar<S>& scalar) const {
+    return double{scalar.value()};
+  }
+
+  Eigen::AutoDiffScalar<S> FromDouble(double scalar) const {
+    return Eigen::AutoDiffScalar<S>{scalar};
+  }
+
+  MatrixX<double> ToDoubleMatrix(
+      const MatrixX<Eigen::AutoDiffScalar<S>>& matrix) const {
+    MatrixX<double> result(matrix.rows(), matrix.cols());
+    for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
+      for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
+        result(i, j) = matrix(i, j).value();
+      }
+    }
+    return result;
+  }
+
+  MatrixX<Eigen::AutoDiffScalar<S>> FromDoubleMatrix(
+      const MatrixX<double>& matrix) const {
+    MatrixX<Eigen::AutoDiffScalar<S>> result(
+        matrix.rows(), matrix.cols());
+    for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
+      for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
+        result(i, j) = matrix(i, j);
+      }
+    }
+    return result;
+  }
+};
+
+/// A ScalarBaseConverter extension to deal with scalars in
+/// common use data structures.
+///
+/// @tparam T A valid Eigen scalar type.
+template <typename T>
+struct ScalarConverter : public ScalarBaseConverter<T> {
+  /// Converts a given vector of scalar type values to its
+  /// equivalent vector of double floating point type values.
+  /// @param scalar_vector A vector of scalar type values.
+  /// @return Given @p scalar_vector using double floating point type values.
+  std::vector<double> ToDoubleVector(
+      const std::vector<T>& scalar_vector) const {
+    using std::placeholders::_1;
+    std::vector<double> scalar_vector_using_doubles{};
+    scalar_vector_using_doubles.reserve(scalar_vector.size());
+    std::transform(scalar_vector.begin(), scalar_vector.end(),
+                   std::back_inserter(scalar_vector_using_doubles),
+                   std::bind(&ScalarConverter<T>::ToDouble, this, _1));
+    return scalar_vector_using_doubles;
+  }
+
+  /// Converts a given vector of matrices using scalar type elements to its
+  /// equivalent vector of matrices using double floating point type elements.
+  /// @param matrix_vector A vector of matrices using scalar type elements.
+  /// @return Given @p matrix_vector using double floating point type elements.
+  std::vector<MatrixX<double>> ToDoubleMatrixVector(
+      const std::vector<MatrixX<T>>& matrix_vector) const {
+    using std::placeholders::_1;
+    std::vector<MatrixX<double>> matrix_vector_using_doubles{};
+    matrix_vector_using_doubles.reserve(matrix_vector.size());
+    std::transform(matrix_vector.begin(), matrix_vector.end(),
+                   std::back_inserter(matrix_vector_using_doubles),
+                   std::bind(&ScalarConverter<T>::ToDoubleMatrix, this, _1));
+    return matrix_vector_using_doubles;
+  }
+};
+
+/// A ScalarConverter explicit specialization to work as a passthrough
+/// for double scalars.
+template <>
+struct ScalarConverter<double> : public ScalarBaseConverter<double> {
+  std::vector<double> ToDoubleVector(
+      const std::vector<double>& scalar_vector) const {
+    return scalar_vector;
+  }
+
+  std::vector<MatrixX<double>> ToDoubleMatrixVector(
+      const std::vector<MatrixX<double>>& matrix_vector) const {
+    return matrix_vector;
+  }
+};
+
+}  // namespace detail
+
 /// A StepwiseContinuousExtension class implementation using Hermitian
 /// interpolators. Updates take the form of integration steps, for which
 /// state 𝐱 and state time derivative d𝐱/dt are known at least at both ends
@@ -29,12 +160,10 @@ namespace systems {
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
+// TODO(hidmic): Better support AutoDiff scalars when PiecewisePolynomial
+// fully supports them.
 template <typename T>
 class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
-  // TODO(hidmic): Support non `double` type scalars.
-  static_assert(std::is_same<T, double>::value,
-                "HermitianContinuousExtension only supports double for now.");
-
  public:
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -178,7 +307,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       throw std::runtime_error("Continuous extension is not "
                                "defined for given time.");
     }
-    return continuous_trajectory_.value(t).col(0);
+    return scalar_converter_.FromDoubleMatrix(
+        continuous_trajectory_.value(
+            scalar_converter_.ToDouble(t)).col(0));
   }
 
   int get_dimensions() const override {
@@ -239,15 +370,22 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       throw std::logic_error("No updates to consolidate.");
     }
     for (const IntegrationStep& step : raw_steps_) {
+      const std::vector<double> step_times =
+          scalar_converter_.ToDoubleVector(step.get_times());
+      const std::vector<MatrixX<double>> step_states =
+          scalar_converter_.ToDoubleMatrixVector(step.get_states());
+      const std::vector<MatrixX<double>> step_state_derivatives =
+          scalar_converter_.ToDoubleMatrixVector(step.get_state_derivatives());
       continuous_trajectory_.ConcatenateInTime(
           trajectories::PiecewisePolynomial<double>::Cubic(
-              step.get_times(), step.get_states(),
-              step.get_state_derivatives()));
+              step_times, step_states, step_state_derivatives));
     }
     // TODO(hidmic): Remove state keeping members when
-    // PiecewisePolynomial supports return by reference.
+    // PiecewisePolynomial better supports non-double types.
     start_time_ = continuous_trajectory_.start_time();
     end_time_ = continuous_trajectory_.end_time();
+    end_state_ = raw_steps_.back().get_states().back();
+    end_state_derivative_ = raw_steps_.back().get_state_derivatives().back();
 
     raw_steps_.clear();
   }
@@ -268,9 +406,8 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
                                last_raw_step.get_states().back(),
                                last_raw_step.get_state_derivatives().back());
     } else if (!continuous_trajectory_.empty()) {
-      EnsureExtensionConsistencyOrThrow(
-          step, end_time_, continuous_trajectory_.value(end_time_),
-          continuous_trajectory_.derivative().value(end_time_));
+      EnsureExtensionConsistencyOrThrow(step, end_time_, end_state_,
+                                        end_state_derivative_);
     }
   }
 
@@ -294,9 +431,12 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     }
     // Maximum time misalignment between step and continuous extension that can
     // still be disregarded as a discontinuity in time.
-    const T allowed_time_misalignment = std::max(std::abs(end_time), 1.) *
-                                        std::numeric_limits<T>::epsilon();
-    const T time_misalignment = std::abs(end_time - step.get_start_time());
+    const double allowed_time_misalignment = std::max(
+        std::abs(scalar_converter_.ToDouble(end_), 1.) *
+        std::numeric_limits<double>::epsilon();;
+    const double time_misalignment = std::abs(
+        scalar_converter_.ToDouble(end_time) -
+        scalar_converter_.ToDouble(step.get_start_time()));
     if (time_misalignment > allowed_time_misalignment) {
       throw std::runtime_error("Provided step start time and continuous"
                                " extension end time differ.");
@@ -313,14 +453,24 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     }
   }
 
+  // TODO(hidmic): Remove state keeping members when
+  // PiecewisePolynomial better supports non-double types.
+
   // The smallest time at which the extension is defined.
   T start_time_{};
   // The largest time at which the extension is defined.
   T end_time_{};
+  // The value of the extension at the `end_time`.
+  MatrixX<T> end_state_{};
+  // The value of the extension's first time derivative at the `end_time`.
+  MatrixX<T> end_state_derivative_{};
+
   // The integration steps taken but not consolidated yet (via Consolidate()).
   std::vector<IntegrationStep> raw_steps_{};
   // The underlying PiecewisePolynomial continuous trajectory.
-  trajectories::PiecewisePolynomial<T> continuous_trajectory_{};
+  trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
+  // Conversion mechanisms to deal with non floating point types.
+  const detail::ScalarConverter<T> scalar_converter_{};
 };
 
 }  // namespace systems

@@ -52,6 +52,7 @@ drake_cc_library(
     hdrs = ["hermitian_continuous_extension.h"],
     deps = [
         ":stepwise_continuous_extension",
+        "//common:autodiff",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
     ],
@@ -301,6 +302,7 @@ drake_cc_googletest(
     name = "hermitian_continuous_extension_test",
     deps = [
         ":hermitian_continuous_extension",
+        "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
