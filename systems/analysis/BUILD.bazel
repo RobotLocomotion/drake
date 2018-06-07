@@ -55,6 +55,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/framework:vector",
     ],
 )
 
@@ -62,6 +63,9 @@ drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     deps = [
+        ":continuous_extension",
+        ":hermitian_continuous_extension",
+        ":stepwise_continuous_extension",
         "//systems/framework:context",
         "//systems/framework:system",
     ],

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/quaternion_floating_joint.h"
@@ -109,6 +110,46 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   const double close_tol = 2e-6;
   for (int i=0; i< x_final_rk2.size(); ++i)
     EXPECT_NEAR(x_final_rk2[i], x_final_rk3[i], close_tol);
+
+  // Re-integrate with RK3 but generate a continuous extension.
+  context->set_time(0.);
+  plant.SetDefaultState(*context, &context->get_mutable_state());
+  for (int i=0; i< plant.get_num_velocities(); ++i)
+    plant.set_velocity(context.get(), i, generalized_velocities[i]);
+  // Reset the non-identity position and orientation.
+  plant.set_position(context.get(), 0, 1.0);  // Set position to (1,2,3).
+  plant.set_position(context.get(), 1, 2.0);
+  plant.set_position(context.get(), 2, 3.0);
+  plant.set_position(context.get(), 3, std::sqrt(2)/2);  // Set orientation to
+  plant.set_position(context.get(), 4, 0.0);             // 90 degree rotation
+  plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
+  plant.set_position(context.get(), 6, 0.0);
+
+  // Start a dense integration i.e. one that generates a continuous
+  // extension for the state function.
+  std::unique_ptr<ContinuousExtension<double>> rk3_continuous_extension =
+      rk3.StartDenseIntegration();
+
+  const double t_step = t_final / 100.;
+  for (double t = 0.; t <= t_final ; t += t_step) {
+    // Integrate the whole step.
+    rk3.IntegrateWithMultipleSteps(t_step);
+    // Check solution.
+    EXPECT_TRUE(CompareMatrices(
+        rk3_continuous_extension->Evaluate(t + t_step),
+        plant.GetStateVector(*context),
+        rk3.get_accuracy_in_use(),
+        MatrixCompareType::relative));
+  }
+
+  // Stop undergoing dense integration.
+  rk3.StopDenseIntegration();
+
+  // Integrate one more step.
+  rk3.IntegrateWithMultipleSteps(t_step);
+
+  // Verify that the continuous extension was not updated.
+  EXPECT_LT(rk3_continuous_extension->get_end_time(), context->get_time());
 }
 
 }  // namespace analysis_test

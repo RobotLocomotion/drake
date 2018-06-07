@@ -11,11 +11,25 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/stepwise_continuous_extension.h"
+#include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
 namespace detail {
+
+/// Copies a potentially non flat @p vector into a flat column matrix.
+/// @param vector A vector to be copied.
+/// @return The copied column matrix.
+/// @tparam T Vector elements' type, which must be a valid Eigen scalar type.
+template <typename T>
+MatrixX<T> CopyToColumnMatrix(const VectorBase<T>& vector) {
+  MatrixX<T> column_matrix(vector.size(), 1);
+  for (int i = 0 ; i < vector.size() ; ++i) {
+    column_matrix(i, 0) = vector.GetAtIndex(i);
+  }
+  return std::move(column_matrix);
+}
 
 /// A class providing a basic set of operations to convert to/from
 /// `scalar` type values from/to a `double` floating point type values.
@@ -200,6 +214,22 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       state_derivatives_.push_back(std::move(initial_state_derivative));
     }
 
+    /// Constructs a zero length step by copy from system vectors.
+    ///
+    /// @param initial_time Initial time t₀ where the step starts.
+    /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
+    /// @param initial_state_derivative Initial state derivative vector
+    ///                                 d𝐱/dt₀ at @p initial_time.
+    /// @throw std::runtime_error if given @p initial_state 𝐱₀ and
+    ///                           @p initial_state_derivative d𝐱/dt₀
+    ///                           do not match each other's dimension.
+    explicit IntegrationStep(const T& initial_time,
+                             const VectorBase<T>& initial_state,
+                             const VectorBase<T>& initial_state_derivative)
+        : IntegrationStep(
+              initial_time, detail::CopyToColumnMatrix(initial_state),
+              detail::CopyToColumnMatrix(initial_state_derivative)) {}
+
     /// Extends the step forward in time from column matrices.
     ///
     /// Provided @p time, @p state and @p state_derivative are appended
@@ -223,6 +253,24 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       times_.push_back(time);
       states_.push_back(std::move(state));
       state_derivatives_.push_back(std::move(state_derivative));
+    }
+
+    /// Extends the step forward in time from system vectors.
+    ///
+    /// @param time Time tᵢto extend the step to.
+    /// @param state State vector 𝐱ᵢ at @p time tᵢ.
+    /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ.
+    /// @throw std::runtime_error
+    ///   if given @p time tᵢ is not greater than the previous time tᵢ₋₁ in
+    ///   the step.<br>
+    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of the
+    ///   previous state 𝐱ᵢ₋₁.<br>
+    ///   if given @p state 𝐱ᵢand @p state_derivative d𝐱/dtᵢ do not match each
+    ///   other's dimension.<br>
+    void Extend(const T& time, const VectorBase<T>& state,
+                const VectorBase<T>& state_derivative) {
+      this->Extend(time, detail::CopyToColumnMatrix(state),
+                   detail::CopyToColumnMatrix(state_derivative));
     }
 
     /// Returns step start time t₀ (that of the first time, state and state
@@ -432,8 +480,8 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     // Maximum time misalignment between step and continuous extension that can
     // still be disregarded as a discontinuity in time.
     const double allowed_time_misalignment = std::max(
-        std::abs(scalar_converter_.ToDouble(end_), 1.) *
-        std::numeric_limits<double>::epsilon();;
+        std::abs(scalar_converter_.ToDouble(end_time)), 1.) *
+        std::numeric_limits<double>::epsilon();
     const double time_misalignment = std::abs(
         scalar_converter_.ToDouble(end_time) -
         scalar_converter_.ToDouble(step.get_start_time()));
