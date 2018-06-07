@@ -68,22 +68,22 @@ namespace internal {
 ///    enough forcing).
 ///  - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
 ///    ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
-///   iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
-///   velocity "in the same direction where it came from", within the stiction
-///   region, but where gradients are strong.
-/// - Velocity change Δvₜᵏ intersects the Stribeck region. This situation
-///   implies that most likely a stiction transition could happen but the pure
-///   Newton-Raphson would miss it. This situation is outlined in
-///   [Uchida et al., 2015]. In this case LimitDirectionChange computes α so
-///   that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the origin. This
-///   corresponds to the geometric condition dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
-/// - Velocity change Δvₜᵏ does not intersect the Stribeck circle, i.e. changes
-///   happen in a region away from stiction. However, large angular changes (
-///   measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))
-///   between vₜᵏ⁺¹ and vₜᵏ) might indicate a solution that is attempting
-///   to reach a stiction region. In order to aid convergence, we limit the
-///   angle change to θₘₐₓ, and therefore (see [Uchida et al., 2015]) we
-///   compute α so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+///    iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
+///    velocity "in the same direction where it came from", within the stiction
+///    region, but where gradients are strong.
+///  - Velocity change Δvₜᵏ intersects the Stribeck region. This situation
+///    implies that most likely a stiction transition could happen but the pure
+///    Newton-Raphson would miss it. This situation is outlined in
+///    [Uchida et al., 2015]. In this case LimitDirectionChange computes α so
+///    that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the origin. This
+///    corresponds to the geometric condition dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
+///  - Velocity change Δvₜᵏ does not intersect the Stribeck circle, i.e. changes
+///    happen in a region away from stiction. However, large angular changes (
+///    measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))
+///    between vₜᵏ⁺¹ and vₜᵏ) might indicate a solution that is attempting
+///    to reach a stiction region. In order to aid convergence, we limit the
+///    angle change to θₘₐₓ, and therefore (see [Uchida et al., 2015]) we
+///    compute α so that θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
 ///
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
