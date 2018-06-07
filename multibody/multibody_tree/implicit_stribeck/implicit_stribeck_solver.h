@@ -81,10 +81,10 @@ namespace internal {
 /// LimitDirectionChange. We use the observations made above.
 ///  - Transition from ‖vₜ‖ ≈ 0 (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since we
 ///    are in a region of "weak" gradients, we limit the update to
-///    vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2. i.e. we make it fall within the stiction region
-///    of strong gradients. We do allow however transition to sliding from the
-///    stiction region (presumably in the next iteration for large enough
-///    forcing).
+///    vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2. i.e. we make it fall within the stiction
+///    region of strong gradients. We do allow however transition to sliding
+///    from the stiction region (presumably in the next iteration for large
+///    enough forcing).
 ///  - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
 ///    ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
 ///    iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
@@ -96,12 +96,12 @@ namespace internal {
 ///    [Uchida et al., 2015]. In this case LimitDirectionChange computes α so
 ///    that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the origin. This
 ///    corresponds to the geometric condition dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
-///  - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e. changes
-///    happen in a region away from stiction (within the sliding region).
-///    However, large angular changes (measured by the angle
-///    `θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))` between `vₜᵏ⁺¹` and `vₜᵏ`) might
-///    indicate a solution that is attempting to reach a stiction region. In
-///    order to aid convergence, we limit the angle change to θₘₐₓ, and
+///  - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
+///    changes happen in a region away from stiction (within the sliding
+///    region). However, large angular changes (measured by the angle
+///    `θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))` between `vₜᵏ⁺¹` and `vₜᵏ`)
+///    might indicate a solution that is attempting to reach a stiction region.
+///    In order to aid convergence, we limit the angle change to θₘₐₓ, and
 ///    therefore (see [Uchida et al., 2015]) we compute α so that
 ///    `θₘₐₓ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖))`.
 ///

@@ -57,7 +57,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 
   // Case III: Transition to an almost exact stiction from sliding.
   // We want to avoid v1 landing in a region of zero gradients so that we force
-  // it to land within the circle of radius v_stiction, at v_stribec/2 in the
+  // it to land within the circle of radius v_stiction, at v_stribeck/2 in the
   // direction of v.
   if (x > 1.0 && x1 < tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
@@ -89,8 +89,8 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     // the zero crossing.
     // Notice that since we reached this point, we know that:
     //  - x > 1.0 (we are within the scope of an if statement for x > 1)
-    //  - x1 > 1.0 (we went trough Case IV)
-    //  - dv_norm > epsilon_v (we went trough Case I, i.e. non-zero)
+    //  - x1 > 1.0 (we went through Case IV)
+    //  - dv_norm > epsilon_v (we went through Case I, i.e. non-zero)
     // Here we are checking for the case when the line connecting v and v1
     // intersects the Stribeck circle. For this case we compute alpha so that
     // the update corresponds to the velocity closest to the origin.
@@ -129,7 +129,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     const T cos1 = v.dot(v1) / v_norm / v1_norm;
 
     // We allow angle changes theta < theta_max, and we take alpha = 1.0.
-    // In particular, when v1 is exactly aligned wiht v (but we know it does not
+    // In particular, when v1 is exactly aligned with v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
     if (cos1 > cos_theta_max) {
       return 1.0;
@@ -142,7 +142,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
       // equation.
 
       // All terms are made non-dimensional using v_stiction as the reference
-      // sale.
+      // scale.
       const T x_dot_dx = v_dot_dv / (v_stiction * v_stiction);
       const T dx = dv.norm() / v_stiction;
       const T x2 = x * x;
