@@ -94,22 +94,11 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     // Here we are checking for the case when the line connecting v and v1
     // intersects the Stribeck circle. For this case we compute alpha so that
     // the update corresponds to the velocity closest to the origin.
+    T alpha;
     const T v_dot_dv = v.dot(dv);
-    if (v_dot_dv < 0.0) {  // Moving towards the origin.
-      T alpha = -v_dot_dv / dv_norm2;  // alpha > 0
-      if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
-        const Vector2<T> v_alpha = v + alpha * dv;  // v1.dot(v) = 0.
-        const T v_alpha_norm = v_alpha.norm();
-        if (v_alpha_norm < epsilon_v) {
-          // v_alpha is almost zero.
-          // This situation happens when dv ≈ -a v with a > 0.
-          return alpha - v_stiction / 2.0 / dv_norm;
-        } else if (v_alpha_norm < v_stiction) {
-          // v_alpha falls within the Stribeck circle but its magnitude is
-          // larger than epsilon_v.
-          return alpha;
-        }
-      }
+    if (CrossesTheStictionRegion(
+        v, dv, v_dot_dv, dv_norm, dv_norm2, epsilon_v, v_stiction, &alpha)) {
+      return alpha;
     }
 
     // If we are here we know:
@@ -157,38 +146,9 @@ T DirectionChangeLimiter<T>::CalcAlpha(
       // Solve quadratic equation. We know, from the geometry of the problem,
       // that the roots to this problem are real. Thus, the discriminant of the
       // quadratic equation (Δ = b² - 4ac) must be positive.
-
-      T alpha;
-      // First determine if a = 0 (to machine epsilon). This comparison is fair
-      // since a is dimensionless.
-      if (abs(a) < std::numeric_limits<double>::epsilon()) {
-        // There is only a single root to the, now linear, equation bα + c = 0.
-        alpha = -c / b;
-        // Note: a = 0, α > 0 => x_dot_dx = x * dx * cmin ≠ 0 => b ≠ 0
-      } else {
-        // The determinant of the quadratic equation.
-        const T Delta = b * b - 4 * a * c;
-        // Geometry tell us that a real solution does exist i.e. Delta > 0.
-        DRAKE_ASSERT(Delta > 0);
-        const T sqrt_delta = sqrt(Delta);
-
-        const T alpha_plus = (-b + sqrt_delta) / a / 2.0;
-        const T alpha_minus = (-b - sqrt_delta) / a / 2.0;
-
-        // The geometry of the problem tells us that at least one must be
-        // positive.
-        DRAKE_ASSERT(alpha_minus > 0 || alpha_plus > 0);
-
-        if (alpha_minus > 0 && alpha_plus > 0) {
-          // This branch is triggered for large angle changes (typically close
-          // to 180 degrees) between v1 and vt
-          alpha = min(alpha_minus, alpha_plus);
-        } else {
-          // This branch is triggered for small angles changes (typically
-          // smaller than 90 degrees) between v1 and vt.
-          alpha = max(alpha_minus, alpha_plus);
-        }
-      }
+      // We use a very specialized quadratic solver for this case where we know
+      // there must exist a positive (i.e. real) root.
+      alpha = SolveQuadraticForTheSmallestPositiveRoot(a, b, c);
 
       // The geometry of the problem tells us that α ≤ 1.0
       DRAKE_ASSERT(alpha <= 1.0);
@@ -198,6 +158,74 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 
   // We should never reach this point.
   throw std::logic_error("Bug detected. An angle change case was missed.");
+}
+
+template <typename T>
+bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
+    const Eigen::Ref<const Vector2<T>>& v,
+    const Eigen::Ref<const Vector2<T>>& dv,
+    const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
+    double epsilon_v, double v_stiction, T* alpha_out) {
+  T& alpha = *alpha_out;
+  if (v_dot_dv < 0.0) {  // Moving towards the origin.
+    alpha = -v_dot_dv / dv_norm2;  // alpha > 0
+    if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
+      const Vector2<T> v_alpha = v + alpha * dv;  // Note: v_alpha.dot(dv) = 0.
+      const T v_alpha_norm = v_alpha.norm();
+      if (v_alpha_norm < epsilon_v) {
+        // v_alpha is almost zero.
+        // This situation happens when dv ≈ -a v with a > 0.
+        alpha -= v_stiction / 2.0 / dv_norm;
+        return true;
+      } else if (v_alpha_norm < v_stiction) {
+        // v_alpha falls within the Stribeck circle but its magnitude is
+        // larger than epsilon_v.
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+template <typename T>
+T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
+    const T& a, const T& b, const T& c) {
+  using std::abs;
+  using std::max;
+  using std::min;
+  using std::sqrt;
+  T alpha;
+  // First determine if a = 0 (to machine epsilon). This comparison is fair
+  // since a is dimensionless.
+  if (abs(a) < std::numeric_limits<double>::epsilon()) {
+    // There is only a single root to the, now linear, equation bα + c = 0.
+    alpha = -c / b;
+    // Note: a = 0, α > 0 => x_dot_dx = x * dx * cmin ≠ 0 => b ≠ 0
+  } else {
+    // The determinant of the quadratic equation.
+    const T Delta = b * b - 4 * a * c;
+    // Geometry tell us that a real solution does exist i.e. Delta > 0.
+    DRAKE_ASSERT(Delta > 0);
+    const T sqrt_delta = sqrt(Delta);
+
+    const T alpha_plus = (-b + sqrt_delta) / a / 2.0;
+    const T alpha_minus = (-b - sqrt_delta) / a / 2.0;
+
+    // The geometry of the problem tells us that at least one must be
+    // positive.
+    DRAKE_ASSERT(alpha_minus > 0 || alpha_plus > 0);
+
+    if (alpha_minus > 0 && alpha_plus > 0) {
+      // This branch is triggered for large angle changes (typically close
+      // to 180 degrees) between v1 and vt
+      alpha = min(alpha_minus, alpha_plus);
+    } else {
+      // This branch is triggered for small angles changes (typically
+      // smaller than 90 degrees) between v1 and vt.
+      alpha = max(alpha_minus, alpha_plus);
+    }
+  }
+  return alpha;
 }
 
 }  // namespace internal

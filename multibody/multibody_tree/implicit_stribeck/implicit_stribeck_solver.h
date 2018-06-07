@@ -124,6 +124,15 @@ struct DirectionChangeLimiter {
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
                      double cos_theta_max, double v_stiction, double tolerance);
+
+  static bool CrossesTheStictionRegion(
+      const Eigen::Ref<const Vector2<T>>& v,
+      const Eigen::Ref<const Vector2<T>>& dv,
+      const T& v_dot_dv, const T& dv_norm, const T& dv_norm2,
+      double epsilon_v, double v_stiction, T* alpha);
+
+  static T SolveQuadraticForTheSmallestPositiveRoot(
+      const T& a, const T& b, const T& c);
 };
 }  // namespace internal
 
