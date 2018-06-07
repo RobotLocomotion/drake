@@ -620,11 +620,7 @@ GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
       std::make_pair(ground_id, sphere1_id),
       std::make_pair(ground_id, sphere2_id),
       std::make_pair(ground_id, sphere3_id),
-      std::make_pair(sphere1_id, sphere3_id),
-      // TODO(SeanCurtis-TRI): These two pairs will disappear in the next PR
-      // when the filtering is fully implemented.
-      std::make_pair(sphere1_id, sphere2_id),
-      std::make_pair(sphere2_id, sphere3_id),
+      std::make_pair(sphere1_id, sphere3_id)
   };
   ASSERT_EQ(contacts.size(), expected_pairs.size());
 

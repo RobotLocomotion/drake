@@ -15,9 +15,11 @@
 namespace drake {
 namespace geometry {
 
+using internal::GeometryStateCollisionFilterAttorney;
 using internal::InternalAnchoredGeometry;
 using internal::InternalFrame;
 using internal::InternalGeometry;
+using internal::ProximityEngine;
 using std::make_pair;
 using std::make_unique;
 using std::move;
@@ -227,9 +229,11 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
   DRAKE_ASSERT(pose_index == static_cast<int>(pose_index_to_frame_map_.size()));
   pose_index_to_frame_map_.push_back(frame_id);
   f_set.insert(frame_id);
-  frames_.emplace(
-      frame_id, InternalFrame(source_id, frame_id, frame.name(),
-                              frame.frame_group(), pose_index, parent_id));
+  int clique = GeometryStateCollisionFilterAttorney::get_next_clique(
+      geometry_engine_.get_mutable());
+  frames_.emplace(frame_id, InternalFrame(source_id, frame_id, frame.name(),
+                                          frame.frame_group(), pose_index,
+                                          parent_id, clique));
   return frame_id;
 }
 
@@ -256,21 +260,46 @@ GeometryId GeometryState<T>::RegisterGeometry(
     return "Referenced frame " + to_string(frame_id) + " for source " +
         to_string(source_id) + ", but the frame doesn't belong to the source.";
   });
-  geometry_index_id_map_.push_back(geometry_id);
 
   // Pass the geometry to the engine.
   GeometryIndex engine_index =
       geometry_engine_->AddDynamicGeometry(geometry->shape());
+  DRAKE_DEMAND(engine_index == geometry_index_id_map_.size());
+  geometry_index_id_map_.push_back(geometry_id);
 
   // Configure topology.
-  frames_[frame_id].add_child(geometry_id);
+  InternalFrame& frame = frames_[frame_id];
+  frame.add_child(geometry_id);
+
   // TODO(SeanCurtis-TRI): Get name from geometry instance (when available).
   geometries_.emplace(
       geometry_id,
       InternalGeometry(geometry->release_shape(), frame_id, geometry_id,
                        geometry->pose(), engine_index,
                        geometry->visual_material()));
-  // TODO(SeanCurtis-TRI): Enforcing the invariant that the indexes are
+
+
+  int child_count = static_cast<int>(frame.get_child_geometries().size());
+  if (child_count > 1) {
+    // Filter collisions between geometries affixed to the same frame. We only
+    // add a clique to a frame's geometries when there are *multiple* child
+    // geometries.
+    ProximityEngine<T>& engine = *geometry_engine_.get_mutable();
+    if (child_count > 2) {
+      // Assume all previous geometries have had the clique assigned.
+      GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
+          &engine, engine_index, frame.clique());
+    } else {  // child_count == 2.
+      // We *now* have multiple child geometries -- assign to clique.
+      for (GeometryId child_id : frame.get_child_geometries()) {
+        GeometryIndex child_index = geometries_[child_id].get_engine_index();
+        GeometryStateCollisionFilterAttorney::set_dynamic_geometry_clique(
+            &engine, child_index, frame.clique());
+      }
+    }
+  }
+
+  // TODO(SeanCurtis-TRI): Enforcing the invariant that the indices are
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(static_cast<int>(X_FG_.size()) == engine_index);
   DRAKE_ASSERT(static_cast<int>(geometry_index_id_map_.size()) - 1 ==
@@ -400,11 +429,75 @@ const FrameIdSet& GeometryState<T>::GetFramesForSource(
 }
 
 template <typename T>
+void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
+  // There is no work to be done if:
+  //   1. the set contains a single frame and no geometries -- geometries *on*
+  //      that single frame have already been handled, or
+  //   2. there are no frames and a single geometry.
+  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
+      (set.num_frames() == 0 && set.num_geometries() == 1)) {
+    return;
+  }
+
+  std::unordered_set<GeometryIndex> dynamic;
+  std::unordered_set<AnchoredGeometryIndex> anchored;
+  CollectIndices(set, &dynamic, &anchored);
+
+  geometry_engine_->ExcludeCollisionsWithin(dynamic, anchored);
+}
+
+template <typename T>
+void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
+                                                const GeometrySet& setB) {
+  std::unordered_set<GeometryIndex> dynamic1;
+  std::unordered_set<AnchoredGeometryIndex> anchored1;
+  CollectIndices(setA, &dynamic1, &anchored1);
+  std::unordered_set<GeometryIndex> dynamic2;
+  std::unordered_set<AnchoredGeometryIndex> anchored2;
+  CollectIndices(setB, &dynamic2, &anchored2);
+
+  geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
+                                             anchored2);
+}
+
+template <typename T>
 std::unique_ptr<GeometryState<AutoDiffXd>> GeometryState<T>::ToAutoDiffXd()
     const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
 }
+
+template <typename T>
+void GeometryState<T>::CollectIndices(
+    const GeometrySet& geometry_set, std::unordered_set<GeometryIndex>* dynamic,
+    std::unordered_set<AnchoredGeometryIndex>* anchored) {
+  for (auto frame_id : geometry_set.frames()) {
+    auto iterator = frames_.find(frame_id);
+    if (iterator == frames_.end()) {
+      throw std::logic_error(
+          "Geometry set includes a frame id that doesn't belong to the "
+          "SceneGraph: " + to_string(frame_id));
+    }
+
+    const auto& frame = iterator->second;
+    for (auto geometry_id : frame.get_child_geometries()) {
+      dynamic->insert(geometries_[geometry_id].get_engine_index());
+    }
+  }
+
+  for (auto geometry_id : geometry_set.geometries()) {
+    if (geometries_.count(geometry_id) == 1) {
+      dynamic->insert(geometries_[geometry_id].get_engine_index());
+    } else if (anchored_geometries_.count(geometry_id) == 1) {
+      anchored->insert(anchored_geometries_[geometry_id].get_engine_index());
+    } else {
+      throw std::logic_error(
+          "Geometry set includes a geometry id that doesn't belong to the "
+          "SceneGraph: " + to_string(geometry_id));
+    }
+  }
+}
+
 template <typename T>
 void GeometryState<T>::SetFramePoses(const FramePoseVector<T>& poses) {
   // TODO(SeanCurtis-TRI): Down the road, make this validation depend on

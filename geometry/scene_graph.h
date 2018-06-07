@@ -359,6 +359,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   //@}
 
   /** @name         Collision filtering
+   @anchor scene_graph_collision_filtering
    The interface for limiting the scope of penetration queries (i.e., "filtering
    collisions").
 
@@ -369,13 +370,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
    candidate pairs is initially defined as `C = (G × G) - (A × A) - F - I`,
    where:
      - `G × G = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` is the cartesian product of the set
-       of SceneGraph geometries.
+       of %SceneGraph geometries.
      - `A × A` represents all pairs consisting only of anchored geometry;
        anchored geometry is never tested against other anchored geometry.
      - `F = (gᵢ, gⱼ)`, such that `frame(gᵢ) == frame(gⱼ)`; the pair where both
        geometries are rigidly affixed to the same frame. By implication,
        `gᵢ, gⱼ ∈ D` as only dynamic geometries are affixed to frames.
-     - `I = {(g, g)}, ∀ g ∈ G` is the set of all pairs consisting a geometry
+     - `I = {(g, g)}, ∀ g ∈ G` is the set of all pairs consisting of a geometry
         with itself; there is no collision between a geometry and itself.
 
    Only pairs contained in C will be tested as part of penetration queries.

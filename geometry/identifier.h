@@ -100,14 +100,14 @@ namespace geometry {
 
  In principle, the *identifier* is related to the TypeSafeIndex. In
  some sense, both are "type-safe" `int`s. They differ in their semantics. We can
- consider `ints`, indexes, and identifiers as a list of `int` types with
+ consider `ints`, indices, and identifiers as a list of `int` types with
  _decreasing_ functionality.
 
    - The int, obviously, has the full range of C++ ints.
    - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
      limited number of operations _on_ the index that produce other instances
      of the index (e.g., increment, in-place addition, etc.) They can be
-     compared with `int` and other indexes of the same type. This behavior
+     compared with `int` and other indices of the same type. This behavior
      arises from the intention of having them serve as an _index_ in an
      ordered set (e.g., `std::vector`).
    - The Identifier is the most restricted. They exist solely to serve as a
@@ -116,7 +116,7 @@ namespace geometry {
      type, hashing, writing to output stream). These *cannot* be used as
      indices.
 
- Ultimately, indexes _can_ serve as identifiers (within the scope of the object
+ Ultimately, indices _can_ serve as identifiers (within the scope of the object
  they index into). Although, their mutability could make this a dangerous
  practice for a public API. Identifiers are more general in that they don't
  reflect an object's position in memory (hence the inability to transform to or
