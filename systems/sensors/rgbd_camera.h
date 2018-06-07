@@ -194,7 +194,7 @@ class RgbdCamera final : public LeafSystem<double> {
   }
 
   /// Reterns mutable renderer.
-  RgbdRenderer& get_mutable_renderer() { return *renderer_; }
+  RgbdRenderer& mutable_renderer() { return *renderer_; }
 
   /// Reterns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
