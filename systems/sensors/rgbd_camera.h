@@ -176,9 +176,12 @@ class RgbdCamera final : public LeafSystem<double> {
 
   ~RgbdCamera() = default;
 
-  /// Sets and initializes RgbdRenderer. You don't need to think about the
-  /// viewpoint of renderer since it will be appropriately handled inside this
-  /// function.
+  /// Sets and initializes RgbdRenderer. The viewpoint of renderer will be
+  /// appropriately handled inside this function.
+  /// Note that if any visual element is registered with renderer before
+  /// this method is called, its behavior will not be guaranteed.
+  // TODO(kunimatsu-tri) Initialize the internal state of renderer when this
+  // method is called.
   void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
     renderer_ = std::move(renderer);
     InitRenderer();
@@ -189,6 +192,9 @@ class RgbdCamera final : public LeafSystem<double> {
       renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
     }
   }
+
+  /// Reterns mutable renderer.
+  RgbdRenderer& get_mutable_renderer() { return *renderer_; }
 
   /// Reterns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }

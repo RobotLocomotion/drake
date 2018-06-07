@@ -313,6 +313,8 @@ TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
     Init("nothing.sdf", X_WB, size);
     Verify();
 
+    auto renderer1 = &diagram_->camera().get_mutable_renderer();
+
     auto const rgb1 =
         output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
 
@@ -321,6 +323,9 @@ TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
             RenderingConfig{size.width, size.height, kFovY,
                             kDepthRangeNear, kDepthRangeFar, kShowWindow},
             Eigen::Isometry3d::Identity())));
+
+    auto renderer2 = &diagram_->camera().get_mutable_renderer();
+    EXPECT_NE(renderer1, renderer2);
 
     CalcOutput();
 
