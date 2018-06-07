@@ -103,8 +103,8 @@ PiecewisePolynomial<T>::integral(
 
 template <typename T>
 double PiecewisePolynomial<T>::scalarValue(double t,
-                                                         Eigen::Index row,
-                                                         Eigen::Index col) {
+                                           Eigen::Index row,
+                                           Eigen::Index col) const {
   int segment_index = this->get_segment_index(t);
   return segmentValueAtGlobalAbscissa(segment_index, t, row, col);
 }
@@ -262,6 +262,34 @@ bool PiecewisePolynomial<T>::isApprox(
           return false;
       }
     }
+  }
+  return true;
+}
+
+template <typename T>
+bool PiecewisePolynomial<T>::concatenate(
+    const PiecewisePolynomial<T>& other, double max_time_misalignment) {
+  if (!empty()) {
+    DRAKE_DEMAND(this->rows() == other.rows());
+    DRAKE_DEMAND(this->cols() == other.cols());
+    const double time_offset = other.start_time() - this->end_time();
+    if (std::abs(time_offset) > max_time_misalignment) return false;
+    std::vector<double>& breaks = this->get_mutable_breaks();
+    // Drops first break to avoid duplication.
+    breaks.pop_back();
+    // Concatenates other breaks, while shifting them appropriately
+    // for both trajectories to be time-aligned.
+    for (double other_break : other.breaks()) {
+      breaks.push_back(other_break - time_offset);
+    }
+    // Concatenates other polynomials.
+    polynomials_.insert(polynomials_.end(),
+                        other.polynomials_.begin(),
+                        other.polynomials_.end());
+  } else {
+    std::vector<double>& breaks = this->get_mutable_breaks();
+    breaks = other.breaks();
+    polynomials_ = other.polynomials_;
   }
   return true;
 }

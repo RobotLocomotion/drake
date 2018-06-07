@@ -1,6 +1,5 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
-#include <iostream>
 #include <random>
 #include <vector>
 
@@ -106,6 +105,16 @@ void testBasicFunctionality() {
     piecewise1_shifted.shiftRight(shift);
     PiecewisePolynomialType product = piecewise1 * piecewise2;
 
+    const double piecewise2_total_time =
+        piecewise2.end_time() - piecewise2.start_time();
+    PiecewisePolynomialType piecewise2_twice = piecewise2;
+    PiecewisePolynomialType piecewise2_shifted = piecewise2;
+    piecewise2_shifted.shiftRight(piecewise2_total_time);
+    const double kEpsilonTimeMisalignment =
+        5. * std::numeric_limits<double>::epsilon();
+    EXPECT_TRUE(piecewise2_twice.concatenate(
+        piecewise2_shifted, kEpsilonTimeMisalignment));
+
     uniform_real_distribution<double> uniform(piecewise1.start_time(),
                                               piecewise1.end_time());
     double t = uniform(generator);
@@ -134,6 +143,12 @@ void testBasicFunctionality() {
         product.value(t),
         (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
         1e-8, MatrixCompareType::absolute));
+
+    EXPECT_TRUE(CompareMatrices(
+        piecewise2_twice.value(t),
+        piecewise2_twice.value(
+            t + piecewise2_total_time),
+         1e-8, MatrixCompareType::absolute));
   }
 }
 

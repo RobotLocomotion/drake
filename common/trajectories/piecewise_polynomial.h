@@ -329,7 +329,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   bool empty() const { return polynomials_.empty(); }
 
-  double scalarValue(double t, Eigen::Index row = 0, Eigen::Index col = 0);
+  double scalarValue(double t, Eigen::Index row = 0,
+                     Eigen::Index col = 0) const;
 
   /**
    * Evaluates the PiecewisePolynomial at the given time \p t.
@@ -398,6 +399,22 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * if any Polynomial in either PiecewisePolynomial is not univariate.
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
+
+  /// Concatenates @p other at the end, yielding a continuous trajectory
+  /// from current start_time() to @p other end_time(). For concatenation
+  /// to succeed, this end_time() and @p other start_time() must not differ
+  /// more than the specified @p max_time_misalignment.
+  ///
+  /// @param other PiecewisePolynomial instance to concatenate.
+  /// @param max_time_misalignment Maximum difference in time between this
+  ///                              trajectory's end time and the @p other
+  ///                              trajectory's start time that is safe to
+  ///                              align.
+  /// @return true if concatenation was successful, or false if @p other's
+  ///         start time is farther away from this instance's end time than
+  ///         the allowed @p max_time_misalignment.
+  bool concatenate(const PiecewisePolynomial& other,
+                   double max_time_misalignment);
 
   void shiftRight(double offset);
 
