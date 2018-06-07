@@ -75,18 +75,20 @@ void ContextBase::AddInputPort(InputPortIndex expected_index,
 
 void ContextBase::AddOutputPort(
     OutputPortIndex expected_index, DependencyTicket ticket,
-    const std::pair<optional<SubsystemIndex>, DependencyTicket>& prerequisite) {
+    const internal::OutputPortPrerequisite& prerequisite) {
   DRAKE_DEMAND(expected_index.is_valid() && ticket.is_valid());
   DRAKE_DEMAND(expected_index == get_num_output_ports());
   auto& yi_tracker = graph_.CreateNewDependencyTracker(
       ticket, "y_" + std::to_string(expected_index));
   output_port_tickets_.push_back(ticket);
-  // If no subsystem was provided then this output port's dependency is
+  // If no child subsystem was specified then this output port's dependency is
   // resolvable within this subcontext so we can subscribe now. Inter-subcontext
   // dependencies are deferred until a later pass.
-  if (!prerequisite.first)
+  // TODO(sherm1) That pass is in MakeContextConnections() in the caching
+  // branch but not actually being done yet.
+  if (!prerequisite.child_subsystem)
     yi_tracker.SubscribeToPrerequisite(
-        &get_mutable_tracker(prerequisite.second));
+        &get_mutable_tracker(prerequisite.dependency));
 }
 
 void ContextBase::SetFixedInputPortValue(
