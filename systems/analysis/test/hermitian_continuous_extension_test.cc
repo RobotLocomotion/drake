@@ -45,8 +45,9 @@ class HermitianContinuousExtensionTest : public ::testing::Test {
     (MatrixX<T>(2, 2) << 0., 1., 0., 1.).finished()};
 };
 
+
 // HermitianContinuousExtension types to test.
-typedef ::testing::Types<double> ExtensionTypes;
+typedef ::testing::Types<double, AutoDiffXd> ExtensionTypes;
 
 TYPED_TEST_CASE(HermitianContinuousExtensionTest, ExtensionTypes);
 
@@ -222,12 +223,21 @@ TYPED_TEST(HermitianContinuousExtensionTest, CorrectConstruction) {
 TYPED_TEST(HermitianContinuousExtensionTest, CorrectEvaluation) {
   // Creates an Hermite cubic spline with times, states and state
   // derivatives.
+  const detail::ScalarConverter<TypeParam> scalar_converter;
+  const std::vector<double> spline_times =
+      scalar_converter.ToDoubleVector(
+          {this->kInitialTime, this->kMidTime, this->kFinalTime});
+  const std::vector<MatrixX<double>> spline_states =
+      scalar_converter.ToDoubleMatrixVector(
+          {this->kInitialState, this->kMidState, this->kFinalState});
+  const std::vector<MatrixX<double>> spline_state_derivatives =
+      scalar_converter.ToDoubleMatrixVector({
+          this->kInitialStateDerivative,
+              this->kMidStateDerivative,
+              this->kFinalStateDerivative});
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::Cubic(
-          {this->kInitialTime, this->kMidTime, this->kFinalTime},
-          {this->kInitialState, this->kMidState, this->kFinalState},
-          {this->kInitialStateDerivative, this->kMidStateDerivative,
-                this->kFinalStateDerivative});
+          spline_times, spline_states, spline_state_derivatives);
   // Instantiates continuous extension.
   HermitianContinuousExtension<TypeParam> continuous_extension;
   // Updates extension for the first time.
@@ -249,7 +259,9 @@ TYPED_TEST(HermitianContinuousExtensionTest, CorrectEvaluation) {
   for (TypeParam t = this->kInitialTime;
        t <= this->kFinalTime; t += this->kTimeStep) {
     EXPECT_TRUE(CompareMatrices(continuous_extension.Evaluate(t),
-                                hermite_spline.value(t),
+                                scalar_converter.FromDoubleMatrix(
+                                    hermite_spline.value(
+                                        scalar_converter.ToDouble(t))),
                                 kAccuracy));
   }
 }
