@@ -210,6 +210,7 @@ template<typename T>
 void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   model_->Finalize();
   FilterAdjacentBodies(scene_graph);
+  ExcludeCollisionsWithVisualGeometry(scene_graph);
   FinalizePlantOnly();
 }
 
@@ -265,6 +266,29 @@ void MultibodyPlant<T>::FilterAdjacentBodies(SceneGraph<T>* scene_graph) {
             geometry::GeometrySet(*parent_id));
       }
     }
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry(
+    geometry::SceneGraph<T>* scene_graph) {
+  if (geometry_source_is_registered()) {
+    if (scene_graph == nullptr) {
+      throw std::logic_error(
+          "This MultibodyPlant has been registered as a SceneGraph geometry "
+              "source. Finalize() should be invoked with a pointer to the "
+              "SceneGraph instance");
+    }
+    geometry::GeometrySet visual;
+    for (const auto& body_geometries : visual_geometries_) {
+      visual.Add(body_geometries);
+    }
+    geometry::GeometrySet collision;
+    for (const auto& body_geometries : collision_geometries_) {
+      collision.Add(body_geometries);
+    }
+    scene_graph->ExcludeCollisionsWithin(visual);
+    scene_graph->ExcludeCollisionsBetween(visual, collision);
   }
 }
 

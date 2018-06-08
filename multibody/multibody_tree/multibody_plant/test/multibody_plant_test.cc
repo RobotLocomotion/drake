@@ -580,6 +580,10 @@ class SphereChainScenario {
       GeometryId sphere_id = plant_->RegisterCollisionGeometry(
           sphere, Isometry3d::Identity(), geometry::Sphere(radius),
           CoulombFriction<double>(), scene_graph_);
+      // We add visual geometry to implicitly test that they are *not* included
+      // in the collision results. We don't even save the ids for them.
+      plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
+                                     geometry::Sphere(radius), scene_graph_);
       return std::make_tuple(&sphere, sphere_id);
     };
 
@@ -622,6 +626,7 @@ class SphereChainScenario {
     plant_context_ =
         &diagram_->GetMutableSubsystemContext(*plant_, context_.get());
 
+    // NOTE: Only ids for collision geometries are included.
     for (int i = 0; i < sphere_count; ++i) {
       unfiltered_collisions_.insert(std::make_pair(ground_id(), sphere_id(i)));
       for (int j = i + 2; j < sphere_count; ++j) {
@@ -689,6 +694,10 @@ class SphereChainScenario {
 // contact is reported between S1 & S2, or S2 & S3. But there *should* be a
 // collision between S1 & S3. Therefore, four total collisions will be reported:
 // (G, S1), (G, S2), (G, S3), (S1, S3).
+//
+// NOTE: This *implicitly* tests that visual geometries are *not* included in
+// collision because the `expected_pairs` only accounts for collision
+// geometries.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
   SphereChainScenario scenario(3);
   std::vector<geometry::PenetrationAsPointPair<double>> contacts =
