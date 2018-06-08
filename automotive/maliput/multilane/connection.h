@@ -284,6 +284,63 @@ class Connection {
              const ArcOffset& arc_offset, double linear_tolerance,
              double scale_length, ComputationPolicy computation_policy);
 
+  /// Constructs a line-segment connection.
+  ///
+  /// Segment's `start_lane` lane begins at `start` and Segment's `end_lane`
+  /// ends with `end_z`. Segment's reference curve extends on the plane z=0
+  /// `line_offset.length()` distance with `start.xy().heading()` heading angle.
+  ///
+  /// `line_offset` holds the length of the line.
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// `lane_ref` lane centerline will be placed at `r_ref` distance from the
+  /// reference curve. Each lane's width will be `lane_width`, which should be
+  /// greater or equal to zero.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  ///
+  /// `linear_tolerance` applies to all RoadCurve-level computations. It must be
+  /// positive.
+  ///
+  /// `scale_length` constrains the maximum level of detail captured by the
+  /// underlying RoadCurve. It must be positive.
+  ///
+  /// `computation_policy` sets the speed vs. accuracy for computations in the
+  /// underlying RoadCurve.
+  Connection(const std::string& id, const Endpoint& start, double start_lane,
+             const EndpointZ& end_z, double end_lane, int num_lanes,
+             int lane_ref, double r_ref, double lane_width,
+             double left_shoulder, double right_shoulder,
+             const LineOffset& line_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
+
+  /// Constructs a arc-segment connection.
+  ///
+  /// Segment's `start_lane` lane begins at `start` and Segment's `end_lane`
+  /// ends with `end_z`. Segment's reference curve extends on the plane z=0
+  /// with `arc_offset.radius()` and angle span of `arc_offset.d_theta()`.
+  ///
+  /// `arc_offset.radius()` must be positive. `arc_offset.d_theta()` > 0
+  /// indicates a counterclockwise arc from `start` with initial heading angle
+  /// `start.heading()`.
+  ///
+  /// Segments will contain `num_lanes` lanes, which must be greater than zero.
+  /// `lane_ref` lane centerline will be placed at `r_ref` distance from the
+  /// reference curve. Each lane's width will be `lane_width`, which should be
+  /// greater or equal to zero.
+  ///
+  /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
+  /// and left side of the first and last lanes of the Segment. They will be
+  /// added to Segment's bounds and must be greater or equal to zero.
+  Connection(const std::string& id, const Endpoint& start, double start_lane,
+             const EndpointZ& end_z, double end_lane, int num_lanes,
+             int lane_ref, double r_ref, double lane_width,
+             double left_shoulder, double right_shoulder,
+             const ArcOffset& arc_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
+
   /// Returns the geometric type of the path.
   Type type() const { return type_; }
 
@@ -372,9 +429,13 @@ class Connection {
   std::unique_ptr<RoadCurve> CreateRoadCurve() const;
 
  private:
+  // Computes the `end_` endpoint from `road_curve_` information.
+  void ComputeEndEndpoint();
+
   const Type type_{};
   const std::string id_;
-  const Endpoint start_{};
+  Endpoint start_{};
+  EndpointZ end_z_{};
   Endpoint end_{};
   const int num_lanes_{};
   const double r0_{};
