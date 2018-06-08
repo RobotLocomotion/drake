@@ -64,6 +64,8 @@ Connection::Connection(const std::string& id, const Endpoint& start,
   DRAKE_DEMAND(linear_tolerance_ > 0.);
   DRAKE_DEMAND(scale_length_ > 0.);
   DRAKE_DEMAND(line_length_ > 0.);
+  DRAKE_DEMAND(start.z().theta_dot().has_value());
+  DRAKE_DEMAND(end_z.theta_dot().has_value());
   // Computes end Endpoint and RoadCurve.
   end_ = Endpoint(
       {start_.xy().x() + line_length_ * std::cos(start_.xy().heading()),
@@ -107,6 +109,8 @@ Connection::Connection(const std::string& id, const Endpoint& start,
   DRAKE_DEMAND(linear_tolerance_ > 0.);
   DRAKE_DEMAND(scale_length_ > 0.);
   DRAKE_DEMAND(radius_ > 0);
+  DRAKE_DEMAND(start.z().theta_dot().has_value());
+  DRAKE_DEMAND(end_z.theta_dot().has_value());
   // Fills arc related parameters, computes end Endpoint and creates the
   // RoadCurve.
   theta0_ = start_.xy().heading() - std::copysign(M_PI / 2., d_theta_);

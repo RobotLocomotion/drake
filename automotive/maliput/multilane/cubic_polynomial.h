@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <ostream>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
@@ -93,6 +94,12 @@ class CubicPolynomial {
   double d_{};
   double s_1_{};
 };
+
+/// Streams a string representation of `cubic_polynomial` into `out`.
+/// Returns `out`. This method is provided for the purposes of debugging or
+/// text-logging. It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out,
+                         const CubicPolynomial& cubic_polynomial);
 
 }  // namespace multilane
 }  // namespace maliput

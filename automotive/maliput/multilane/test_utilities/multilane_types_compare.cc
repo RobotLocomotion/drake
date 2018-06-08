@@ -3,6 +3,7 @@
 #include <cmath>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace drake {
 namespace maliput {
@@ -188,6 +189,40 @@ namespace test {
          << arc_offset2 << "\nwith linear tolerance = " << linear_tolerance
          << "\nand angular tolerance =\n"
          << angular_tolerance;
+}
+
+::testing::AssertionResult IsCubicPolynomialClose(const CubicPolynomial& cubic1,
+                                                  const CubicPolynomial& cubic2,
+                                                  double tolerance) {
+  bool fails = false;
+  std::string error_message{};
+  const std::vector<std::string> coefficient_strs{"a", "b", "c", "d"};
+  const std::vector<double> coefficients1{cubic1.a(), cubic1.b(), cubic1.c(),
+                                          cubic1.d()};
+  const std::vector<double> coefficients2{cubic2.a(), cubic2.b(), cubic2.c(),
+                                          cubic2.d()};
+
+  for (int i = 0; i < 4; ++i) {
+    const double delta = std::abs(coefficients1[i] - coefficients2[i]);
+    if (delta > tolerance) {
+      fails = true;
+      error_message = error_message + "Cubic polynomials are different at " +
+                      coefficient_strs[i] + " coefficient. " + "cubic1." +
+                      coefficient_strs[i] +
+                      "(): " + std::to_string(coefficients1[i]) +
+                      " vs. cubic2." + coefficient_strs[i] +
+                      "(): " + std::to_string(coefficients2[i]) +
+                      ", diff = " + std::to_string(delta) +
+                      ", tolerance = " + std::to_string(tolerance) + "\n";
+    }
+  }
+  if (fails) {
+    return ::testing::AssertionFailure() << error_message;
+  }
+  return ::testing::AssertionSuccess()
+         << "cubic1 =\n"
+         << cubic1 << "\nis approximately equal to cubic2 =\n"
+         << cubic2 << "\ntolerance = " << tolerance;
 }
 
 Matcher<const api::HBounds&> Matches(const api::HBounds& elevation_bounds,
