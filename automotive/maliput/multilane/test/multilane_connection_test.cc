@@ -92,10 +92,16 @@ GTEST_TEST(ArcOffsetTest, ParametrizedConstructor) {
 }
 
 // Connection checks.
+
+// Reference curve parameters.
 class MultilaneConnectionTest : public ::testing::Test {
  protected:
   const double kR0{2.};
   const int kNumLanes{3};
+  const int kStartLane{1};
+  const int kEndLane{2};
+  const int kLaneRef{2};
+  const double kRRef{-3.};
   const double kLeftShoulder{1.};
   const double kRightShoulder{1.5};
   const double kLaneWidth{2.};
@@ -104,28 +110,26 @@ class MultilaneConnectionTest : public ::testing::Test {
   const EndpointXy kStartXy{20., 30., kHeading};
   const Endpoint kStartEndpoint{kStartXy, kLowFlatZ};
   const double kZeroTolerance{0.};
+  const double kVeryExact{1e-12};
   const double kLinearTolerance{0.01};
   const double kScaleLength{1.0};
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
-  const double kVeryExact{1e-12};
 };
 
-TEST_F(MultilaneConnectionTest, ArcAccessors) {
+// Evaluates how an arc-ref-curve connection is created via its accessors.
+TEST_F(MultilaneConnectionTest, RefArcAccessors) {
   const std::string kId{"arc_connection"};
   const double kRadius{10. * std::sqrt(2.)};
   const double kDTheta{M_PI / 2.};
   const ArcOffset kArcOffset(kRadius, kDTheta);
   const Endpoint kEndEndpoint{{40., 30., kHeading + kDTheta}, kLowFlatZ};
-
   const Connection dut(kId, kStartEndpoint, kLowFlatZ, kNumLanes, kR0,
                        kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset,
                        kLinearTolerance, kScaleLength, kComputationPolicy);
+
   EXPECT_EQ(dut.type(), Connection::Type::kArc);
   EXPECT_EQ(dut.id(), kId);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kZeroTolerance));
   EXPECT_EQ(dut.num_lanes(), kNumLanes);
   EXPECT_EQ(dut.r0(), kR0);
   EXPECT_EQ(dut.lane_width(), kLaneWidth);
@@ -148,7 +152,52 @@ TEST_F(MultilaneConnectionTest, ArcAccessors) {
   EXPECT_EQ(dut.scale_length(), kScaleLength);
 }
 
-TEST_F(MultilaneConnectionTest, LineAccessors) {
+// Evaluates how an arc-lane-curve connection is created via its accessors.
+TEST_F(MultilaneConnectionTest, LaneArcAccessors) {
+  const std::string kId{"arc_connection"};
+  const double kRadius{10. * std::sqrt(2.)};
+  const double kDTheta{M_PI / 2.};
+  const ArcOffset kArcOffset(kRadius, kDTheta);
+
+  const Connection dut(kId, kStartEndpoint, kStartLane, kLowFlatZ, kEndLane,
+                       kNumLanes, kLaneRef, kRRef, kLaneWidth, kLeftShoulder,
+                       kRightShoulder, kArcOffset, kLinearTolerance,
+                       kScaleLength, kComputationPolicy);
+  EXPECT_EQ(dut.type(), Connection::Type::kArc);
+  EXPECT_EQ(dut.id(), kId);
+  EXPECT_EQ(dut.num_lanes(), kNumLanes);
+  const double r0 = -kRRef - kLaneWidth * static_cast<double>(kLaneRef);
+  EXPECT_EQ(dut.r0(), r0);
+  EXPECT_EQ(dut.lane_width(), kLaneWidth);
+  EXPECT_EQ(dut.left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(dut.right_shoulder(), kRightShoulder);
+  EXPECT_EQ(dut.radius(), kRadius);
+  EXPECT_EQ(dut.d_theta(), kDTheta);
+  EXPECT_EQ(dut.r_min(), r0 - kLaneWidth / 2. - kRightShoulder);
+  EXPECT_EQ(dut.r_max(),
+            r0 + kLaneWidth * (static_cast<double>(kNumLanes - 1) + .5) +
+                kLeftShoulder);
+  const Endpoint start_ref_endpoint{
+      {kStartEndpoint.xy().x() + std::sin(kHeading),
+       kStartEndpoint.xy().y() - std::cos(kHeading), kHeading},
+      kLowFlatZ};
+  EXPECT_TRUE(
+      test::IsEndpointClose(dut.start(), start_ref_endpoint, kVeryExact));
+  const Endpoint end_ref_endpoint{
+      {start_ref_endpoint.xy().x() + std::sqrt(2) * kRadius,
+       start_ref_endpoint.xy().y(), kHeading + kDTheta},
+      kLowFlatZ};
+  EXPECT_TRUE(test::IsEndpointClose(dut.end(), end_ref_endpoint, kVeryExact));
+  EXPECT_EQ(dut.lane_offset(0), r0);
+  EXPECT_EQ(dut.lane_offset(1), r0 + kLaneWidth);
+  EXPECT_EQ(dut.lane_offset(2), r0 + 2. * kLaneWidth);
+  EXPECT_EQ(dut.computation_policy(), kComputationPolicy);
+  EXPECT_EQ(dut.linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(dut.scale_length(), kScaleLength);
+}
+
+// Evaluates how an line-ref-curve connection is created via its accessors.
+TEST_F(MultilaneConnectionTest, RefLineAccessors) {
   const std::string kId{"line_connection"};
   const Endpoint kEndEndpoint{{50., 0., kHeading}, kLowFlatZ};
 
@@ -159,9 +208,6 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
                        kLinearTolerance, kScaleLength, kComputationPolicy);
   EXPECT_EQ(dut.type(), Connection::Type::kLine);
   EXPECT_EQ(dut.id(), kId);
-  EXPECT_TRUE(
-      test::IsEndpointClose(dut.start(), kStartEndpoint, kZeroTolerance));
-  EXPECT_TRUE(test::IsEndpointClose(dut.end(), kEndEndpoint, kZeroTolerance));
   EXPECT_EQ(dut.num_lanes(), kNumLanes);
   EXPECT_EQ(dut.r0(), kR0);
   EXPECT_EQ(dut.lane_width(), kLaneWidth);
@@ -183,6 +229,49 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
   EXPECT_EQ(dut.scale_length(), kScaleLength);
 }
 
+// Evaluates how an line-lane-curve connection is created via its accessors.
+TEST_F(MultilaneConnectionTest, LaneLineAccessors) {
+  const std::string kId{"line_connection"};
+  const double kLineLength{30. * std::sqrt(2.)};
+  const LineOffset kLineOffset{kLineLength};
+  const Connection dut(kId, kStartEndpoint, kStartLane, kLowFlatZ, kEndLane,
+                       kNumLanes, kLaneRef, kRRef, kLaneWidth, kLeftShoulder,
+                       kRightShoulder, kLineOffset, kLinearTolerance,
+                       kScaleLength, kComputationPolicy);
+
+  EXPECT_EQ(dut.type(), Connection::Type::kLine);
+  EXPECT_EQ(dut.id(), kId);
+  EXPECT_EQ(dut.num_lanes(), kNumLanes);
+  const double r0 = -kRRef - kLaneWidth * static_cast<double>(kLaneRef);
+  EXPECT_EQ(dut.r0(), r0);
+  EXPECT_EQ(dut.lane_width(), kLaneWidth);
+  EXPECT_EQ(dut.left_shoulder(), kLeftShoulder);
+  EXPECT_EQ(dut.right_shoulder(), kRightShoulder);
+  EXPECT_EQ(dut.line_length(), kLineLength);
+  EXPECT_EQ(dut.r_min(), r0 - kLaneWidth / 2. - kRightShoulder);
+  EXPECT_EQ(dut.r_max(),
+            r0 + kLaneWidth * (static_cast<double>(kNumLanes - 1) + .5) +
+                kLeftShoulder);
+  const Endpoint start_ref_endpoint{
+      {kStartEndpoint.xy().x() + std::sin(kHeading),
+       kStartEndpoint.xy().y() - std::cos(kHeading), kHeading},
+      kLowFlatZ};
+  EXPECT_TRUE(
+      test::IsEndpointClose(dut.start(), start_ref_endpoint, kVeryExact));
+  const Endpoint end_ref_endpoint{
+      {start_ref_endpoint.xy().x() + kLineLength * std::cos(kHeading),
+       start_ref_endpoint.xy().y() + kLineLength * std::sin(kHeading),
+       kHeading},
+      kLowFlatZ};
+  EXPECT_TRUE(test::IsEndpointClose(dut.end(), end_ref_endpoint, kVeryExact));
+  EXPECT_EQ(dut.lane_offset(0), r0);
+  EXPECT_EQ(dut.lane_offset(1), r0 + kLaneWidth);
+  EXPECT_EQ(dut.lane_offset(2), r0 + 2. * kLaneWidth);
+  EXPECT_EQ(dut.computation_policy(), kComputationPolicy);
+  EXPECT_EQ(dut.linear_tolerance(), kLinearTolerance);
+  EXPECT_EQ(dut.scale_length(), kScaleLength);
+}
+
 // Checks RoadCurve creation.
 //
 // Literals for elevation and superelevation polynomials below have been derived
@@ -197,7 +286,9 @@ TEST_F(MultilaneConnectionTest, LineAccessors) {
 // b = y_dot_0 / d_x
 // c = 3 * (y_1 - y_0) / d_x - 2 * y_dot_0 - y_dot_1
 // d = y_dot_0 + y_dot_1 - 2 * (y_1 - y_0)
-TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
+
+// Arc-ref-curve constructor is used.
+TEST_F(MultilaneConnectionTest, RefArcRoadCurveValidation) {
   const std::string kId{"arc_connection"};
   const double kRadius{10. * std::sqrt(2.)};
   const double kDTheta{M_PI / 2.};
@@ -231,19 +322,10 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
       flat_end, kVeryExact));
   // Checks that elevation and superelevation polynomials are correctly built
   // for the trivial case of a flat dut.
-  EXPECT_EQ(road_curve->elevation().a(), 0.);
-  EXPECT_EQ(road_curve->elevation().b(), 0.);
-  EXPECT_EQ(road_curve->elevation().c(), 0.);
-  EXPECT_EQ(road_curve->elevation().d(), 0.);
-  EXPECT_EQ(road_curve->superelevation().a(), 0.);
-  EXPECT_EQ(road_curve->superelevation().b(), 0.);
-  EXPECT_EQ(road_curve->superelevation().c(), 0.);
-  EXPECT_EQ(road_curve->superelevation().d(), 0.);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{40., 30., kHeading + kDTheta},
@@ -273,27 +355,103 @@ TEST_F(MultilaneConnectionTest, ArcRoadCurveValidation) {
                                               kEndElevatedEndpoint.xy().y(),
                                               kEndElevatedEndpoint.z().z()),
                               complex_end, kVeryExact));
-
-  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.32476276288217043,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.549841841921447,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().c(), -0.9292893218813453,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.9528595479208968,
-              kVeryExact);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.32476276288217043, 0.549841841921447),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->superelevation(),
+      CubicPolynomial(0., 0., -0.9292893218813453, 0.9528595479208968),
+      kVeryExact));
 }
 
-TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
+// Arc-lane-curve constructor is used.
+TEST_F(MultilaneConnectionTest, LaneArcRoadCurveValidation) {
+  const std::string kId{"arc_connection"};
+  const double kRadius{10. * std::sqrt(2.)};
+  const double kDTheta{M_PI / 2.};
+  const ArcOffset kArcOffset(kRadius, kDTheta);
+  const Connection flat_dut(kId, kStartEndpoint, kStartLane, kLowFlatZ,
+                            kEndLane, kNumLanes, kLaneRef, kRRef, kLaneWidth,
+                            kLeftShoulder, kRightShoulder, kArcOffset,
+                            kLinearTolerance, kScaleLength, kComputationPolicy);
+
+  std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
+  EXPECT_NE(dynamic_cast<ArcRoadCurve*>(road_curve.get()), nullptr);
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> flat_origin = road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.start().xy().x(), flat_dut.start().xy().y(),
+                      flat_dut.start().z().z()),
+      flat_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading),
+                      kStartEndpoint.z().z()),
+      flat_origin, kVeryExact));
+  const Vector3<double> flat_end = road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.end().xy().x(), flat_dut.end().xy().y(),
+                      flat_dut.end().z().z()),
+      flat_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(
+          kStartEndpoint.xy().x() + std::sin(kHeading) + std::sqrt(2) * kRadius,
+          kStartEndpoint.xy().y() - std::cos(kHeading), kLowFlatZ.z()),
+      flat_end, kVeryExact));
+
+  // Checks that elevation and superelevation polynomials are correctly built
+  // for the trivial case of a flat dut.
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+
+  // Creates a new complex dut with cubic elevation and superelevation.
+  // TODO(agalbachicar)    Once s <--> p relation in RoadCurve is fixed and
+  //                       child implementations allow non-zero superelevation
+  //                       for all r values, we should add superelevation
+  //                       polynomial.
+  const EndpointZ kEndElevatedZ{5., 1., 0., {}};
+  const Connection complex_dut(
+      kId, kStartEndpoint, kStartLane, kEndElevatedZ, kEndLane, kNumLanes,
+      kLaneRef, kRRef, kLaneWidth, kLeftShoulder, kRightShoulder, kArcOffset,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
+  std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> complex_origin =
+      complex_road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(complex_dut.start().xy().x(),
+                                              complex_dut.start().xy().y(),
+                                              complex_dut.start().z().z()),
+                              complex_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading),
+                      kStartEndpoint.z().z()),
+      complex_origin, kVeryExact));
+  const Vector3<double> complex_end = complex_road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(complex_dut.end().xy().x(), complex_dut.end().xy().y(),
+                      complex_dut.end().z().z()),
+      complex_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(
+          kStartEndpoint.xy().x() + std::sin(kHeading) + std::sqrt(2) * kRadius,
+          kStartEndpoint.xy().y() - std::cos(kHeading), kEndElevatedZ.z()),
+      complex_end, kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.112630728526206, 0.337709807565483),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->superelevation(),
+      CubicPolynomial(0., 0., 0.0437605039347369, -0.0437605039347369),
+      kVeryExact));
+}
+
+// Line-ref-curve constructor is used.
+TEST_F(MultilaneConnectionTest, RefLineRoadCurveValidation) {
   const std::string kId{"line_connection"};
   const Endpoint kEndEndpoint{{50., 0., kHeading}, kLowFlatZ};
   const double kLineLength{30. * std::sqrt(2.)};
@@ -326,19 +484,10 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
       flat_end, kVeryExact));
   // Checks that elevation and superelevation polynomials are correctly built
   // for the trivial case of a flat dut.
-  EXPECT_EQ(road_curve->elevation().a(), 0.);
-  EXPECT_EQ(road_curve->elevation().b(), 0.);
-  EXPECT_EQ(road_curve->elevation().c(), 0.);
-  EXPECT_EQ(road_curve->elevation().d(), 0.);
-  EXPECT_EQ(road_curve->superelevation().a(), 0.);
-  EXPECT_EQ(road_curve->superelevation().b(), 0.);
-  EXPECT_EQ(road_curve->superelevation().c(), 0.);
-  EXPECT_EQ(road_curve->superelevation().d(), 0.);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(road_curve->scale_length(), kScaleLength);
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kZeroTolerance));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
 
   // Creates a new complex dut with cubic elevation and superelevation.
   const Endpoint kEndElevatedEndpoint{{50., 0., kHeading},
@@ -369,24 +518,101 @@ TEST_F(MultilaneConnectionTest, LineRoadCurveValidation) {
                                               kEndElevatedEndpoint.xy().y(),
                                               kEndElevatedEndpoint.z().z()),
                               complex_end, kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.646446609406726, 0.764297739604484),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->superelevation(),
+      CubicPolynomial(0., 0., -0.962975975515347, 0.975317317010231),
+      kVeryExact));
+}
 
-  EXPECT_NEAR(complex_road_curve->elevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().c(), -0.646446609406726,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->elevation().d(), 0.764297739604484,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().a(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().b(), 0., kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().c(), -0.962975975515347,
-              kVeryExact);
-  EXPECT_NEAR(complex_road_curve->superelevation().d(), 0.975317317010231,
-              kVeryExact);
-  // Checks that computation accuracy and speed related parameters are
-  // correctly set.
-  EXPECT_EQ(complex_road_curve->computation_policy(), kComputationPolicy);
-  EXPECT_EQ(complex_road_curve->linear_tolerance(), kLinearTolerance);
-  EXPECT_EQ(complex_road_curve->scale_length(), kScaleLength);
+// Line-lane-curve constructor is used.
+TEST_F(MultilaneConnectionTest, LaneLineRoadCurveValidation) {
+  const std::string kId{"line_connection"};
+  const double kLineLength{30. * std::sqrt(2.)};
+  const LineOffset kLineOffset{kLineLength};
+  const Connection flat_dut(kId, kStartEndpoint, kStartLane, kLowFlatZ,
+                            kEndLane, kNumLanes, kLaneRef, kRRef, kLaneWidth,
+                            kLeftShoulder, kRightShoulder, kLineOffset,
+                            kLinearTolerance, kScaleLength, kComputationPolicy);
+  std::unique_ptr<RoadCurve> road_curve = flat_dut.CreateRoadCurve();
+  EXPECT_NE(dynamic_cast<LineRoadCurve*>(road_curve.get()), nullptr);
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> flat_origin = road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.start().xy().x(), flat_dut.start().xy().y(),
+                      flat_dut.start().z().z()),
+      flat_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading),
+                      kStartEndpoint.z().z()),
+      flat_origin, kVeryExact));
+  const Vector3<double> flat_end = road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(flat_dut.end().xy().x(), flat_dut.end().xy().y(),
+                      flat_dut.end().z().z()),
+      flat_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading) +
+                          kLineLength * std::cos(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading) +
+                          kLineLength * std::sin(kHeading),
+                      kStartEndpoint.z().z()),
+      flat_end, kVeryExact));
+  // Checks that elevation and superelevation polynomials are correctly built
+  // for the trivial case of a flat dut.
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->elevation(),
+                                           CubicPolynomial(), kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(road_curve->superelevation(),
+                                           CubicPolynomial(), kVeryExact));
+
+  // Creates a new complex dut with cubic elevation.
+  // TODO(agalbachicar)    Once s <--> p relation in RoadCurve is fixed and
+  //                       child implementations allow non-zero superelevation
+  //                       for all r values, we should add superelevation
+  //                       polynomial.
+  const EndpointZ kEndElevatedZ{5., 1., 0., 0.};
+  const Connection complex_dut(
+      kId, kStartEndpoint, kStartLane, kEndElevatedZ, kEndLane, kNumLanes,
+      kLaneRef, kRRef, kLaneWidth, kLeftShoulder, kRightShoulder, kLineOffset,
+      kLinearTolerance, kScaleLength, kComputationPolicy);
+  std::unique_ptr<RoadCurve> complex_road_curve = complex_dut.CreateRoadCurve();
+
+  // Checks that the road curve starts and ends at given endpoints.
+  const Vector3<double> complex_origin =
+      complex_road_curve->W_of_prh(0., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(complex_dut.start().xy().x(),
+                                              complex_dut.start().xy().y(),
+                                              complex_dut.start().z().z()),
+                              complex_origin, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading),
+                      kStartEndpoint.z().z()),
+      complex_origin, kVeryExact));
+  const Vector3<double> complex_end = complex_road_curve->W_of_prh(1., 0., 0.);
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(complex_dut.end().xy().x(), complex_dut.end().xy().y(),
+                      complex_dut.end().z().z()),
+      complex_end, kVeryExact));
+  EXPECT_TRUE(CompareMatrices(
+      Vector3<double>(kStartEndpoint.xy().x() + std::sin(kHeading) +
+                          kLineLength * std::cos(kHeading),
+                      kStartEndpoint.xy().y() - std::cos(kHeading) +
+                          kLineLength * std::sin(kHeading),
+                      kEndElevatedZ.z()),
+      complex_end, kVeryExact));
+
+  EXPECT_TRUE(test::IsCubicPolynomialClose(
+      complex_road_curve->elevation(),
+      CubicPolynomial(0., 0., -0.646446609406726, 0.764297739604484),
+      kVeryExact));
+  EXPECT_TRUE(test::IsCubicPolynomialClose(complex_road_curve->superelevation(),
+                                           CubicPolynomial(), kZeroTolerance));
 }
 
 // Lane Endpoints with different EndpointZ. Those are selected to cover
@@ -437,16 +663,16 @@ class MultilaneConnectionEndpointZTest
   const double kLaneWidth{2.};
   const double kHeading{-M_PI / 4.};
   const EndpointXy kStartXy{20., 30., kHeading};
-  const double kLinearTolerance{0.01};
-  const double kScaleLength{1.0};
-  const ComputationPolicy kComputationPolicy{
-    ComputationPolicy::kPreferAccuracy};
   EndpointZ start_z{};
   EndpointZ end_z{};
   double r0{};
   int num_lanes{};
   Endpoint start_endpoint{};
   const double kVeryExact{1e-12};
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.0};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
 };
 
 TEST_P(MultilaneConnectionEndpointZTest, ArcLaneEndpoints) {

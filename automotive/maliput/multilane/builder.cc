@@ -21,9 +21,19 @@ std::ostream& operator<<(std::ostream& out,
   return out << "(endpoint: " << start_spec.endpoint() << ")";
 }
 
+std::ostream& operator<<(std::ostream& out, const StartLane::Spec& start_spec) {
+  return out << "(endpoint: " << start_spec.endpoint()
+             << ", lane_id: " << start_spec.lane_id() << ")";
+}
+
 std::ostream& operator<<(std::ostream& out,
                          const EndReference::Spec& end_spec) {
   return out << "(endpoint_z: " << end_spec.endpoint_z() << ")";
+}
+
+std::ostream& operator<<(std::ostream& out, const EndLane::Spec& end_spec) {
+  return out << "(endpoint_z: " << end_spec.endpoint_z()
+             << ", lane_id: " << end_spec.lane_id() << ")";
 }
 
 std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
@@ -123,6 +133,34 @@ const Connection* Builder::Connect(const std::string& id,
   }
   connections_.push_back(std::make_unique<Connection>(
       id, start_endpoint, end_endpoint_z, lane_layout.num_lanes(),
+      lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
+      lane_layout.right_shoulder(), arc_offset, linear_tolerance_,
+      scale_length_, computation_policy_));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartLane::Spec& start_spec,
+                                   const LineOffset& line_offset,
+                                   const EndLane::Spec& end_spec) {
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_spec.endpoint(), start_spec.lane_id(), end_spec.endpoint_z(),
+      end_spec.lane_id(), lane_layout.num_lanes(), lane_layout.ref_lane(),
+      lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
+      lane_layout.right_shoulder(), line_offset, linear_tolerance_,
+      scale_length_, computation_policy_));
+  return connections_.back().get();
+}
+
+const Connection* Builder::Connect(const std::string& id,
+                                   const LaneLayout& lane_layout,
+                                   const StartLane::Spec& start_spec,
+                                   const ArcOffset& arc_offset,
+                                   const EndLane::Spec& end_spec) {
+  connections_.push_back(std::make_unique<Connection>(
+      id, start_spec.endpoint(), start_spec.lane_id(), end_spec.endpoint_z(),
+      end_spec.lane_id(), lane_layout.num_lanes(), lane_layout.ref_lane(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
       lane_layout.right_shoulder(), arc_offset, linear_tolerance_,
       scale_length_, computation_policy_));
