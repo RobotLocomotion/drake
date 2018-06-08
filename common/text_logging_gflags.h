@@ -41,28 +41,3 @@ inline void HandleSpdlogGFlags(int argc, char *argv[]) {
 
 }  // namespace logging
 }  // namespace drake
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
