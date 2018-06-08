@@ -18,13 +18,6 @@ using Eigen::Matrix3d;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();
 
-const char *ExpectedMessage(const char *function_name) {
-  static char expected_message[200];
-  snprintf(expected_message, sizeof(expected_message), "RollPitchYaw::%s().*",
-           function_name);
-  return expected_message;
-}
-
 // This tests the RollPitchYaw constructors and IsNearlyEqualTo().
 GTEST_TEST(RollPitchYaw, testConstructorsAndIsNearlyEqualTo) {
   const RollPitchYaw<double> a(0.1, 0.2, -0.3);
@@ -49,19 +42,19 @@ GTEST_TEST(RollPitchYaw, testAcessMethods) {
 }
 
 // Test whether or not pitch angle is near gimbal lock.
-GTEST_TEST(RollPitchYaw, testIsPitchAngleViolageGimbalLock) {
+GTEST_TEST(RollPitchYaw, testDoesPitchAngleViolateGimbalLock) {
   RollPitchYaw<double> rpy(-2.1, 0, 5.7);
-  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
   rpy.set(-2.1, M_PI_2, 5.7);
-  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
   rpy.set(M_PI_2, 1, M_PI_2);
-  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
   rpy.set(2.3, -M_PI_2, 4.5);
-  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
   rpy.set(-9 * M_PI_2, 90, M_PI_2);
-  EXPECT_FALSE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
   rpy.set(2.3, 91 * M_PI_2, 4.5);
-  EXPECT_TRUE(rpy.IsPitchAngleViolateGimbalLockTolerance());
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
 }
 
 // This tests the RollPitchYaw.ToQuaternion() method.
@@ -143,7 +136,7 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
 
   // Check for some throw conditions.
   const char* expected_message =
-      ExpectedMessage("CalcRpyDtFromAngularVelocityInParent");
+      "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*gimbal-lock.*";
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
                               std::logic_error, expected_message);
@@ -183,24 +176,25 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
     const double difference_from_gimbal_lock = i * tolerance;
     const double pitch_angle = M_PI / 2 + difference_from_gimbal_lock;
     const RollPitchYaw<double> rpy(1, pitch_angle, 1);
-    const bool is_imprecise = rpy.IsPitchAngleViolateGimbalLockTolerance();
+    const bool is_imprecise = rpy.DoesPitchAngleViolateGimbalLockTolerance();
 
     // Calculate rpyDt from angular velocity.
     Vector3d rpyDt, rpyDDt;
     if (is_imprecise) {
-      ++number_of_precise_cases;
+      ++number_of_imprecise_cases;
       const char* expected_message =
-          ExpectedMessage("CalcRpyDtFromAngularVelocityInParent");
+          "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*gimbal-lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(
           rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA),
           std::logic_error, expected_message);
       expected_message =
-          ExpectedMessage("CalcRpyDDtFromRpyDtAndAngularAccelInParent");
+          "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*gimbal-"
+          "lock.*";
       DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
         rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
         std::logic_error, expected_message);
     } else {
-      ++number_of_imprecise_cases;
+      ++number_of_precise_cases;
       rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
       rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA);
 
@@ -228,22 +222,11 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
                              w_diff(2) / wA(2));
       const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
 
-      // Results of this test show the following.
-      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.001, test
-      // machines show max_error <= (≈ 2.2737E-13), which means there may be
-      // inaccuracies in 10 (but not 11) of the 52 bits in the mantissa.
-      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.002, test
-      // machines show max_error <= (≈ 1.1368E-13), which means there may be
-      // inaccuracies in 9 (but not 10) of the 52 bits in the mantissa.
-      // When RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.008, test
-      // machines show max_error <= (≈ 2.8422E-14), which means there may be
-      // inaccuracies in 7 (but not 8) of the 52 bits in the mantissa.
-      // Note: For double precision, machine kEpsilon = 1/2^52 ≈ 2.22E-16.
-      // Note: 2.2737E-13 ≈ (2^10 = 1024) * kEpsilon.
-      // Note: 1.1368E-13 ≈ (2^9 = 512) * kEpsilon.
-      // Note: 2.8422E-13 ≈ (2^7 = 128) * kEpsilon.
+      // Since RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.008,
+      // we expect max_error <= (2^7 = 256) * kEpsilon ≈ 2.842E-14.
       // This test uses (2^8 = 256) * kEpsilon in the unlikely event that a
       // compiler, operating system, ... inadvertently loses an extra bit.
+      // For details, see documentation for kGimbalLockToleranceCosPitchAngle_.
       EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
     }
   }
@@ -299,15 +282,16 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const RotationMatrix<double> R_AD(rpy);
         const Vector3d alpha_AD_D = R_AD.inverse() * alpha_AD_A;
         Vector3d rpyDDt, rpyDDt_verify;
-        const bool is_imprecise = rpy.IsPitchAngleViolateGimbalLockTolerance();
-        if (is_imprecise) {
+        if (rpy.DoesPitchAngleViolateGimbalLockTolerance()) {
           const char* expected_message =
-              ExpectedMessage("CalcRpyDDtFromRpyDtAndAngularAccelInParent");
+              "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*"
+              "gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
              std::logic_error, expected_message);
           expected_message =
-              ExpectedMessage("CalcRpyDDtFromAngularAccelInChild");
+              "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild().*"
+                  "gimbal-lock.*";
           DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
              rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
              std::logic_error, expected_message);

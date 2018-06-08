@@ -192,7 +192,7 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
     const T& pitch_angle) {
     const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
     const double cos_pitch_angle = std::cos(pitch_radians);
-    DRAKE_ASSERT(IsCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
+    DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
     const double tolerance_degrees =
         GimbalLockPitchAngleTolerance() * 180 / M_PI;
     std::string message = fmt::format("RollPitchYaw::{}():"
