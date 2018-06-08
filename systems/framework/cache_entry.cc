@@ -14,7 +14,7 @@ CacheEntry::CacheEntry(
     const internal::SystemMessageInterface* owning_subsystem, CacheIndex index,
     DependencyTicket ticket, std::string description,
     AllocCallback alloc_function, CalcCallback calc_function,
-    std::vector<DependencyTicket> prerequisites_of_calc)
+    std::set<DependencyTicket> prerequisites_of_calc)
     : owning_subsystem_(owning_subsystem),
       cache_index_(index),
       ticket_(ticket),

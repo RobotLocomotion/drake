@@ -29,7 +29,7 @@ std::string SystemBase::GetSystemPathname() const {
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, CacheEntry::AllocCallback alloc_function,
     CacheEntry::CalcCallback calc_function,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   // If the prerequisite list is empty the CacheEntry constructor will throw
   // a logic error.
   const CacheIndex index(num_cache_entries());
@@ -79,7 +79,8 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   // were just created above. If the output port's prerequisite is just a
   // cache entry in this subsystem, set up that dependency here. For output
   // ports that have been exported from a child subsystem, defer setting up the
-  // dependency until we're doing inter-subsystem dependencies later.
+  // dependency until we're doing inter-subsystem dependencies later in the
+  // Context-allocation process.
   for (const auto& oport : output_ports_) {
     context.AddOutputPort(oport->get_index(), oport->ticket(),
                           oport->GetPrerequisite());
@@ -114,7 +115,7 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
     const char* func, const ContextBase& context,
     InputPortIndex port_index) const {
   if (port_index >= get_num_input_ports())
-    ThrowInputPortIndexOutOfRange(func, port_index, get_num_input_ports());
+    ThrowInputPortIndexOutOfRange(func, port_index);
 
   const FixedInputPortValue* const free_port_value =
       context.MaybeGetFixedInputPortValue(port_index);
@@ -133,16 +134,8 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
       get_input_port_base(port_index));
 }
 
-void SystemBase::ThrowNegativeInputPortIndex(const char* func,
-                                             int port_index) const {
-  DRAKE_DEMAND(port_index < 0);
-  throw std::out_of_range(
-      fmt::format("{}: negative port index {} is illegal. (Subsystem {})",
-                  FmtFunc(func), port_index, GetSystemPathname()));
-}
-
-void SystemBase::ThrowNegativeOutputPortIndex(const char* func,
-                                              int port_index) const {
+void SystemBase::ThrowNegativePortIndex(const char* func,
+                                        int port_index) const {
   DRAKE_DEMAND(port_index < 0);
   throw std::out_of_range(
       fmt::format("{}: negative port index {} is illegal. (Subsystem {})",
@@ -150,23 +143,19 @@ void SystemBase::ThrowNegativeOutputPortIndex(const char* func,
 }
 
 void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
-                                               InputPortIndex port,
-                                               int num_input_ports) const {
-  DRAKE_DEMAND(num_input_ports >= 0);
-  throw std::out_of_range(
-      fmt::format("{}: there is no input port with index {} because there "
-                      "are only {} input ports in subsystem {}.",
-                  FmtFunc(func), port, num_input_ports, GetSystemPathname()));
+                                               InputPortIndex port) const {
+  throw std::out_of_range(fmt::format(
+      "{}: there is no input port with index {} because there "
+      "are only {} input ports in subsystem {}.",
+      FmtFunc(func), port, get_num_input_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
-                                                OutputPortIndex port,
-                                                int num_output_ports) const {
-  DRAKE_DEMAND(num_output_ports >= 0);
-  throw std::out_of_range(
-      fmt::format("{}: there is no output port with index {} because there "
-                      "are only {} output ports in subsystem {}.",
-                  FmtFunc(func), port, num_output_ports, GetSystemPathname()));
+                                                OutputPortIndex port) const {
+  throw std::out_of_range(fmt::format(
+      "{}: there is no output port with index {} because there "
+      "are only {} output ports in subsystem {}.",
+      FmtFunc(func), port, get_num_output_ports(), GetSystemPathname()));
 }
 
 void SystemBase::ThrowNotAVectorInputPort(const char* func,

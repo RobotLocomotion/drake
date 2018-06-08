@@ -75,13 +75,13 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> absport_general_{
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /*size*/,
+      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry(
           "absport", alloc_string, calc_string)};
   LeafOutputPort<double> vecport_general_{
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /*size*/,
+      dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
       &dummy_.DeclareCacheEntry(
           "vecport", alloc_myvector3, calc_vector3)};
   unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
@@ -139,7 +139,7 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
-      kAbstractValued, 0 /*size*/,
+      kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry("null", alloc_null, calc_string)};
   // Creating a context for this system should fail when it tries to allocate
   // a cache entry for null_port.

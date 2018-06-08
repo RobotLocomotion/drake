@@ -64,7 +64,7 @@ void CacheEntryValue::ThrowIfBadOtherValue(
 CacheEntryValue& Cache::CreateNewCacheEntryValue(
     CacheIndex index, DependencyTicket ticket,
     const std::string& description,
-    const std::vector<DependencyTicket>& prerequisites,
+    const std::set<DependencyTicket>& prerequisites,
     DependencyGraph* trackers) {
   DRAKE_DEMAND(trackers != nullptr);
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());

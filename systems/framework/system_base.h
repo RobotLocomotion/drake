@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -119,7 +120,7 @@ class SystemBase : public internal::SystemMessageInterface {
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
@@ -140,7 +141,7 @@ class SystemBase : public internal::SystemMessageInterface {
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
@@ -165,8 +166,8 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(input_ports_.size());
   }
 
-  /** Returns the number ny of output ports currently allocated in this System.
-  These are indexed from 0 to ny-1. */
+  /** Returns the number of output ports currently allocated in this System.
+  These are indexed from 0 to %get_num_output_ports()-1. */
   int get_num_output_ports() const {
     return static_cast<int>(output_ports_.size());
   }
@@ -324,7 +325,7 @@ class SystemBase : public internal::SystemMessageInterface {
   const CacheEntry& DeclareCacheEntry(
       std::string description, CacheEntry::AllocCallback alloc_function,
       CacheEntry::CalcCallback calc_function,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
   /** Declares a cache entry by specifying member functions to use both for the
@@ -344,7 +345,7 @@ class SystemBase : public internal::SystemMessageInterface {
       std::string description,
       ValueType (MySystem::*make)() const,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
   /** Declares a cache entry by specifying a model value of concrete type
@@ -363,7 +364,7 @@ class SystemBase : public internal::SystemMessageInterface {
   const CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
   /** Declares a cache entry by specifying only a calculator function that is a
@@ -391,7 +392,7 @@ class SystemBase : public internal::SystemMessageInterface {
   const CacheEntry& DeclareCacheEntry(
       std::string description,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
   //@}
 
@@ -583,7 +584,7 @@ class SystemBase : public internal::SystemMessageInterface {
   already set to the next available input port index for this System. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
-  void CreateInputPort(std::unique_ptr<InputPortBase> port) {
+  void AddInputPort(std::unique_ptr<InputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
     DRAKE_DEMAND(port->get_index() == this->get_num_input_ports());
@@ -595,12 +596,13 @@ class SystemBase : public internal::SystemMessageInterface {
   already set to the next available output port index for this System. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
-  void CreateOutputPort(std::unique_ptr<OutputPortBase> port) {
+  void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
     DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
     output_ports_.push_back(std::move(port));
   }
+
   /** Returns a pointer to the service interface of the immediately enclosing
   Diagram if one has been set, otherwise nullptr. */
   const internal::SystemParentServiceInterface* get_parent_service() const {
@@ -647,29 +649,23 @@ class SystemBase : public internal::SystemMessageInterface {
                                              const ContextBase& context,
                                              InputPortIndex port_index) const;
 
-  /** Throws std::out_of_range to report a negative input `port_index` that was
-  passed to API method `func`. */
-  // We're taking an int here for the index; InputPortIndex can't be negative.
-  [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
-                                                int port_index) const;
-
-  /** Throws std::out_of_range to report a negative output `port_index` that was
-  passed to API method `func`. */
-  // We're taking an int here for the index; OutputPortIndex can't be negative.
-  [[noreturn]] void ThrowNegativeOutputPortIndex(const char* func,
-                                                 int port_index) const;
+  /** Throws std::out_of_range to report a negative `port_index` that was
+  passed to API method `func`. Caller must ensure that the function name
+  makes it clear what kind of port we're complaining about. */
+  // We're taking an int here for the index; InputPortIndex and OutputPortIndex
+  // can't be negative.
+  [[noreturn]] void ThrowNegativePortIndex(const char* func,
+                                           int port_index) const;
 
   /** Throws std::out_of_range to report bad input `port_index` that was passed
   to API method `func`. */
-  [[noreturn]] void ThrowInputPortIndexOutOfRange(const char* func,
-                                                  InputPortIndex port_index,
-                                                  int num_input_ports) const;
+  [[noreturn]] void ThrowInputPortIndexOutOfRange(
+      const char* func, InputPortIndex port_index) const;
 
   /** Throws std::out_of_range to report bad output `port_index` that was passed
   to API method `func`. */
-  [[noreturn]] void ThrowOutputPortIndexOutOfRange(const char* func,
-                                                   OutputPortIndex port_index,
-                                                   int num_output_ports) const;
+  [[noreturn]] void ThrowOutputPortIndexOutOfRange(
+      const char* func, OutputPortIndex port_index) const;
 
   /** Throws std::logic_error because someone misused API method `func`, that is
   only allowed for declared-vector input ports, on an abstract port whose
@@ -696,10 +692,10 @@ class SystemBase : public internal::SystemMessageInterface {
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
                                                int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(func, port_index);
+      ThrowNegativePortIndex(func, port_index);
     const InputPortIndex port(port_index);
     if (port_index >= get_num_input_ports())
-      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
+      ThrowInputPortIndexOutOfRange(func, port);
     return *input_ports_[port];
   }
 
@@ -710,10 +706,10 @@ class SystemBase : public internal::SystemMessageInterface {
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
                                                  int port_index) const {
     if (port_index < 0)
-      ThrowNegativeOutputPortIndex(func, port_index);
+      ThrowNegativePortIndex(func, port_index);
     const OutputPortIndex port(port_index);
     if (port_index >= get_num_output_ports())
-      ThrowOutputPortIndexOutOfRange(func, port, get_num_output_ports());
+      ThrowOutputPortIndexOutOfRange(func, port);
     return *output_ports_[port_index];
   }
 
@@ -796,7 +792,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     ValueType (MySystem::*make)() const,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
@@ -824,7 +820,7 @@ template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
@@ -859,7 +855,7 @@ template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,

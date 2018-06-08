@@ -1464,7 +1464,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
         this->assign_next_dependency_ticket(),
         &source_output_port,
         GetSystemIndexOrAbort(&source_output_port.get_system()));
-    this->CreateOutputPort(std::move(diagram_port));
+    this->AddOutputPort(std::move(diagram_port));
   }
 
   // Returns a reference to the value in the given context, of the specified

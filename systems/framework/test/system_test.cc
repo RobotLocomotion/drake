@@ -77,7 +77,7 @@ class TestSystem : public System<double> {
         assign_next_dependency_ticket(),
         kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
-    this->CreateOutputPort(std::move(port));
+    this->AddOutputPort(std::move(port));
     return *port_ptr;
   }
 
@@ -418,11 +418,11 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this, static_cast<SystemBase*>(this),
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
-        kAbstractValued, 0 /*size*/,
+        kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
             []() { return AbstractValue::Make(std::string()); },
@@ -432,7 +432,7 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
         this, static_cast<SystemBase*>(this),
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
@@ -479,7 +479,6 @@ class ValueIOTestSystem : public System<T> {
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return std::make_unique<ContinuousState<T>>();
   }
-
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<T>>();

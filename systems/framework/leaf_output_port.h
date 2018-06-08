@@ -2,14 +2,9 @@
 
 #include <functional>
 #include <memory>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
@@ -89,7 +84,12 @@ class LeafOutputPort final : public OutputPort<T> {
   }
 
   // Invokes the cache entry's Eval() function.
+  // TODO(sherm1) Caching is intentionally disabled here. Enable when
+  // invalidation wiring is connected up.
   const AbstractValue& DoEval(const Context<T>& context) const final {
+    CacheEntryValue& cache_value =
+        cache_entry().get_mutable_cache_entry_value(context);
+    cache_value.mark_out_of_date();  // Force re-evaluation.
     return cache_entry().EvalAbstract(context);
   }
 
