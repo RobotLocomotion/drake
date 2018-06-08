@@ -4,6 +4,7 @@
 /// This file defines gflags settings to control spdlog levels.
 /// Only include this from translation units that declare a `main` function.
 
+#include <memory>
 #include <string>
 
 #include <gflags/gflags.h>
@@ -19,14 +20,19 @@ DEFINE_string(spdlog_level, "unchanged",
 namespace drake {
 namespace logging {
 
+inline void HandleSpdlogGflags() {
+  std::shared_ptr<logging::logger> log_console = ReturnDefaultLogger();
+  SetLoggerLevel(log_console, FLAGS_spdlog_level);
+}
+
 /// Creates loggers at specified logging levels. The example below sets the
 /// default logger to "off", creates a logger named "logger_a" and sets
 /// it to trace and creates a logger named "logger_b" and sets it to info.
 /// <pre>
 ///  ./compiled_project --spdlog_level=off logger_a trace logger_b info
 /// </pre>
-inline void HandleSpdlogGFlags(int argc, char *argv[]) {
-  MakeLoggerSetLevel("console", FLAGS_spdlog_level);
+inline void HandleSpdlogGflags(int argc, char *argv[]) {
+  HandleSpdlogGflags();
 
   if (argc % 2 == 0) {
     throw std::runtime_error("Commandline argument number is odd.");
