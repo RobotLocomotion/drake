@@ -422,7 +422,7 @@ class ValueIOTestSystem : public System<T> {
         this, static_cast<SystemBase*>(this),
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
-        kAbstractValued, 0 /*size*/,
+        kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
             []() { return AbstractValue::Make(std::string()); },

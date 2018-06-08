@@ -86,9 +86,10 @@ void ContextBase::AddOutputPort(
   // dependencies are deferred until a later pass.
   // TODO(sherm1) That pass is in MakeContextConnections() in the caching
   // branch but not actually being done yet.
-  if (!prerequisite.child_subsystem)
+  if (!prerequisite.child_subsystem) {
     yi_tracker.SubscribeToPrerequisite(
         &get_mutable_tracker(prerequisite.dependency));
+  }
 }
 
 void ContextBase::SetFixedInputPortValue(
