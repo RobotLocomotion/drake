@@ -1,12 +1,31 @@
 #include "drake/systems/primitives/multiplexer.h"
 
 #include <functional>
-#include <numeric>
+#include <memory>
 
 #include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
+
+namespace {
+
+// Given a Multiplexer templated on scalar type `U`, make a BasicVector of a
+// different scalar type, `T`.  This is only supported when the output port is
+// exactly typed as BasicVector (not a subclass of BasicVector) because
+// BasicVector does not support scalar conversion in a way that preserves
+// subtyping (see #5454 for some related discussion).
+template <typename T, typename U>
+std::unique_ptr<BasicVector<T>> MakeBasicVectorOrThrow(
+    const Multiplexer<U>& other) {
+  auto context = other.CreateDefaultContext();
+  auto output = other.AllocateOutput(*context);
+  const BasicVector<U>* old_vector = output->get_vector_data(0);
+  DRAKE_THROW_UNLESS(typeid(*old_vector) == typeid(BasicVector<U>));
+  return std::make_unique<BasicVector<T>>(old_vector->size());
+}
+
+}  // namespace
 
 template <typename T>
 Multiplexer<T>::Multiplexer(int num_scalar_inputs)
@@ -40,8 +59,7 @@ Multiplexer<T>::Multiplexer(std::vector<int> input_sizes,
 template <typename T>
 template <typename U>
 Multiplexer<T>::Multiplexer(const Multiplexer<U>& other)
-    : Multiplexer<T>(other.input_sizes_,
-                     systems::BasicVector<T>(other.get_output_port(0).size())) {
+    : Multiplexer<T>(other.input_sizes_, *MakeBasicVectorOrThrow<T, U>(other)) {
 }
 
 template <typename T>
