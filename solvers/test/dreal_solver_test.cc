@@ -548,8 +548,7 @@ TEST_F(DrealSolverTest, SolveQuadraticConstraint) {
   EXPECT_NEAR(v1, 1.7320 /* sqrt(3.0) */, delta);
 }
 
-// TODO(soonho): Enable this when mac CIs are using >= dReal-4.18.05.3.
-TEST_F(DrealSolverTest, DISABLED_SolveLorentzConeConstraint) {
+TEST_F(DrealSolverTest, SolveLorentzConeConstraint) {
   const Variable& x0{xvec_(0)};
   const Variable& x1{xvec_(1)};
   const Variable& x2{xvec_(2)};
