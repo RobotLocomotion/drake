@@ -105,14 +105,18 @@ void testBasicFunctionality() {
     piecewise1_shifted.shiftRight(shift);
     PiecewisePolynomialType product = piecewise1 * piecewise2;
 
+    const double kEpsilonTimeMisalignment =
+        5. * std::numeric_limits<double>::epsilon();
     const double piecewise2_total_time =
         piecewise2.end_time() - piecewise2.start_time();
     PiecewisePolynomialType piecewise2_twice = piecewise2;
     PiecewisePolynomialType piecewise2_shifted = piecewise2;
     piecewise2_shifted.shiftRight(piecewise2_total_time);
-    const double kEpsilonTimeMisalignment =
-        5. * std::numeric_limits<double>::epsilon();
-    EXPECT_TRUE(piecewise2_twice.concatenate(
+    PiecewisePolynomialType piecewise2_shifted_twice = piecewise2;
+    piecewise2_shifted_twice.shiftRight(2. * piecewise2_total_time);
+    EXPECT_FALSE(piecewise2_twice.Concatenate(
+        piecewise2_shifted_twice, kEpsilonTimeMisalignment));
+    EXPECT_TRUE(piecewise2_twice.Concatenate(
         piecewise2_shifted, kEpsilonTimeMisalignment));
 
     uniform_real_distribution<double> uniform(piecewise1.start_time(),
@@ -144,6 +148,13 @@ void testBasicFunctionality() {
         (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
         1e-8, MatrixCompareType::absolute));
 
+    // Checks that `piecewise2_twice` is effectively the concatenation of
+    // `piecewise2` and a copy of `piecewise2` that is shifted to the right
+    // (i.e. towards increasing values of t) by an amount equal to its entire
+    // time length. To this end, it verifies that R(tₓ) = R(tₓ + d), where
+    // R(t) = P(t) for t0 <= t <= t1, R(t) = Q(t) for t1 <= t <= t2,
+    // Q(t) = P(t - d) for t1 <= t <= t2, d = t1 - t0 = t2 - t1 and
+    // t0 < tₓ < t1, with P, Q and R functions being piecewise polynomials.
     EXPECT_TRUE(CompareMatrices(
         piecewise2_twice.value(t),
         piecewise2_twice.value(

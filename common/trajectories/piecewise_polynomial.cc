@@ -267,7 +267,7 @@ bool PiecewisePolynomial<T>::isApprox(
 }
 
 template <typename T>
-bool PiecewisePolynomial<T>::concatenate(
+bool PiecewisePolynomial<T>::Concatenate(
     const PiecewisePolynomial<T>& other, double max_time_misalignment) {
   if (!empty()) {
     DRAKE_DEMAND(this->rows() == other.rows());

@@ -413,7 +413,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /// @return true if concatenation was successful, or false if @p other's
   ///         start time is farther away from this instance's end time than
   ///         the allowed @p max_time_misalignment.
-  bool concatenate(const PiecewisePolynomial& other,
+  bool Concatenate(const PiecewisePolynomial& other,
                    double max_time_misalignment);
 
   void shiftRight(double offset);
