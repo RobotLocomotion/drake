@@ -7,7 +7,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_optional.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/cache.h"

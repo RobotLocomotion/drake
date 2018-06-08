@@ -72,12 +72,13 @@ class TestSystem : public System<double> {
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});
     auto port = std::make_unique<LeafOutputPort<double>>(
-        this, static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         assign_next_dependency_ticket(),
         kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
-    this->CreateOutputPort(std::move(port));
+    this->AddOutputPort(std::move(port));
     return *port_ptr;
   }
 
@@ -418,11 +419,12 @@ class ValueIOTestSystem : public System<T> {
         this->AllocateForcedUnrestrictedUpdateEventCollection());
 
     this->DeclareAbstractInputPort();
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        this, static_cast<SystemBase*>(this),
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
-        kAbstractValued, 0 /*size*/,
+        kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
             "absport",
             []() { return AbstractValue::Make(std::string()); },
@@ -432,8 +434,9 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1);
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
-    this->CreateOutputPort(std::make_unique<LeafOutputPort<T>>(
-        this, static_cast<SystemBase*>(this),
+    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,
@@ -479,7 +482,6 @@ class ValueIOTestSystem : public System<T> {
   std::unique_ptr<ContinuousState<T>> AllocateTimeDerivatives() const override {
     return std::make_unique<ContinuousState<T>>();
   }
-
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     return std::make_unique<LeafContext<T>>();
@@ -663,7 +665,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 1), std::logic_error,
-      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*BasicVector.*");
+      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
 
   // Now induce errors that only apply to abstract-valued input ports.
 

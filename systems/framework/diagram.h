@@ -1458,13 +1458,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
     auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
-        static_cast<const System<T>*>(this),
-        static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         &source_output_port,
         GetSystemIndexOrAbort(&source_output_port.get_system()));
-    this->CreateOutputPort(std::move(diagram_port));
+    this->AddOutputPort(std::move(diagram_port));
   }
 
   // Returns a reference to the value in the given context, of the specified

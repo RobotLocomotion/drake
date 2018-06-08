@@ -791,6 +791,7 @@ drake_cc_googletest(
         ":leaf_context",
         ":system",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
         "//systems/primitives:constant_vector_source",
     ],
@@ -823,6 +824,7 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 

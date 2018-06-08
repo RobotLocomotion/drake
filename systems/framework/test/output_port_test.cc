@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -75,13 +76,13 @@ class LeafOutputPortTest : public ::testing::Test {
   LeafOutputPort<double> absport_general_{
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /*size*/,
+      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry(
           "absport", alloc_string, calc_string)};
   LeafOutputPort<double> vecport_general_{
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /*size*/,
+      dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
       &dummy_.DeclareCacheEntry(
           "vecport", alloc_myvector3, calc_vector3)};
   unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
@@ -139,7 +140,7 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
       &dummy_, static_cast<SystemBase*>(&dummy_),
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
-      kAbstractValued, 0 /*size*/,
+      kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry("null", alloc_null, calc_string)};
   // Creating a context for this system should fail when it tries to allocate
   // a cache entry for null_port.
@@ -155,15 +156,17 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
   EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
-  EXPECT_THROW(absport_general_.Calc(*context_, bad_out.get()),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
+      "OutputPort::Calc(): expected.*std::string.*got.*int.*");
 
-  // The vector port is a MyVector<3,double>, we'll give it a shorter one.
+  // The vector port is a MyVector<3,double>, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
-  EXPECT_THROW(vecport_general_.Calc(*context_, bad_vec.get()),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
+      "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
 }
 #endif
 

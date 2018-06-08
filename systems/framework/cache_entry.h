@@ -2,9 +2,9 @@
 
 #include <functional>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context_base.h"
@@ -42,6 +42,9 @@ a manner very similar to the declaration of output ports. */
 class CacheEntry {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CacheEntry)
+
+  // TODO(sherm1) These callbacks should not be specific to this class. Move
+  // elsewhere, e.g. framework_common.h so they can be shared with output port.
 
   /** Signature of a function suitable for allocating an object that can hold
   a value of a particular cache entry. The result is always returned as an
@@ -85,12 +88,12 @@ class CacheEntry {
   CacheEntry(const internal::SystemMessageInterface* owning_subsystem,
              CacheIndex index, DependencyTicket ticket, std::string description,
              AllocCallback alloc_function, CalcCallback calc_function,
-             std::vector<DependencyTicket> prerequisites_of_calc);
+             std::set<DependencyTicket> prerequisites_of_calc);
 
   /** Returns a reference to the list of prerequisites needed by this cache
   entry's Calc() function. These are all within the same subsystem that
   owns this %CacheEntry. */
-  const std::vector<DependencyTicket>& prerequisites() const {
+  const std::set<DependencyTicket>& prerequisites() const {
     return prerequisites_of_calc_;
   }
 
@@ -309,7 +312,7 @@ class CacheEntry {
   // changes, the cache value must be recalculated. Note that all possible
   // prerequisites are internal to the containing subsystem, so the ticket
   // alone is a unique specification of a prerequisite.
-  const std::vector<DependencyTicket> prerequisites_of_calc_;
+  const std::set<DependencyTicket> prerequisites_of_calc_;
 };
 
 }  // namespace systems

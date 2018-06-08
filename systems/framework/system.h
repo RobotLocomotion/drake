@@ -412,7 +412,7 @@ class System : public SystemBase {
 
     // The API allows an int but we'll use InputPortIndex internally.
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex iport_index(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -442,7 +442,7 @@ class System : public SystemBase {
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -1413,7 +1413,7 @@ class System : public SystemBase {
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
-    this->CreateInputPort(
+    this->AddInputPort(
         std::make_unique<InputPortDescriptor<T>>(
             port_index, port_ticket, type, size, random_type, this, this));
     return get_input_port(port_index);

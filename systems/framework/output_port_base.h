@@ -1,31 +1,23 @@
 #pragma once
 
-#include <string>
-#include <utility>
-
 #include "drake/systems/framework/framework_common.h"
 
 namespace drake {
 namespace systems {
 
+// Break the SystemBase <=> OutputPortBase physical dependency cycle. An
+// OutputPortBase contains a back-pointer to its owning SystemBase, but that
+// pointer is forward-declared here and never dereferenced within this file.
 class SystemBase;
 
-/** An OutputPort belongs to a System and represents the properties of one of
-that System's output ports. OutputPort objects are assigned OutputPortIndex
-values in the order they are declared; these are unique within a single System.
-A DependencyTicket is assigned so that downstream dependents can subscribe to
-the value of this port. Also, each output port has a single prerequisite to
-which it must be subscribed. For leaf systems, that prerequisite is a cache
-entry that holds the most-recently-calculated port value. For diagrams, it is
-the output port of a child subsystem which has been exported to be an output
-of its parent.
-
-%OutputPortBase handles the scalar type-independent aspects of an OutputPort. */
+/** %OutputPortBase handles the scalar type-independent aspects of an
+OutputPort. An OutputPort belongs to a System and represents the properties of
+one of that System's output ports. */
 class OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPortBase)
 
-  virtual ~OutputPortBase() = default;
+  virtual ~OutputPortBase();
 
   /** Returns the index of this output port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
@@ -71,7 +63,7 @@ class OutputPortBase {
   @param index
     The index to be assigned to this OutputPort.
   @param ticket
-      The DependencyTicket to be assigned to this OutputPort.
+    The DependencyTicket to be assigned to this OutputPort.
   @param data_type
     Whether the port described is vector or abstract valued.
   @param size
