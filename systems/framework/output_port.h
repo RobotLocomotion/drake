@@ -145,10 +145,11 @@ class OutputPort : public OutputPortBase {
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
-  parameters. */
+  parameters.
+  @pre The `system` parameter must be the same object as the `system_base`
+  parameter. */
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  // They must refer to the same System.
   OutputPort(const System<T>* system,
              SystemBase* system_base,
              OutputPortIndex index,
@@ -195,21 +196,14 @@ class OutputPort : public OutputPortBase {
   }
 
  private:
-  // Check whether the allocator returned a value that is consistent with
-  // this port's specification.
+  // If this is a vector-valued port, we can check that the returned abstract
+  // value actually holds a BasicVector-derived object, and for fixed-size ports
+  // that the object has the right size.
   void CheckValidAllocation(const AbstractValue&) const;
 
   // Check that an AbstractValue provided to Calc() is suitable for this port.
   // (Very expensive; use in Debug only.)
   void CheckValidOutputType(const AbstractValue&) const;
-
-  // Check that both type-erased arguments have the same underlying type.
-  void CheckValidAbstractValue(const AbstractValue& good,
-                               const AbstractValue& proposed) const;
-
-  // Check that both BasicVector arguments have the same underlying type.
-  void CheckValidBasicVector(const BasicVector<T>& good,
-                             const BasicVector<T>& proposed) const;
 
   // User said output port would have a particular concrete type but it doesn't.
   template <typename ValueType>
@@ -225,9 +219,6 @@ class OutputPort : public OutputPortBase {
   const System<T>& system_;
 };
 
-// If this is a vector-valued port, we can check that the returned abstract
-// value actually holds a BasicVector-derived object, and for fixed-size ports
-// that the object has the right size.
 template <typename T>
 void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   if (this->get_data_type() != kVectorValued)
@@ -238,7 +229,7 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
     throw std::logic_error(
         fmt::format("OutputPort::Allocate(): expected BasicVector output type "
                     "but got {} for {}.",
-                    NiceTypeName::Get(proposed), GetPortIdString()));
+                    proposed.GetNiceTypeName(), GetPortIdString()));
   }
 
   if (this->size() == kAutoSize) return;  // Any size is acceptable.
@@ -252,8 +243,6 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   }
 }
 
-// Check that an AbstractValue provided to Calc() is suitable for this port.
-// (Very expensive; use in Debug only.)
 // See CacheEntry::CheckValidAbstractValue; treat both methods similarly.
 template <typename T>
 void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
@@ -262,38 +251,11 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
   // have to allocate one here. If so could also store a precomputed
   // type_index there for further savings. Would need to pass in a Context.
   auto good = DoAllocate();  // Expensive!
-  // Attempt to interpret these as BasicVectors.
-  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
-  auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());
-  if (proposed_vec && good_vec) {
-    CheckValidBasicVector(good_vec->get_value(), proposed_vec->get_value());
-  } else {
-    // At least one is not a BasicVector.
-    CheckValidAbstractValue(*good, proposed);
-  }
-}
-
-// Check that both type-erased arguments have the same underlying type.
-template <typename T>
-void OutputPort<T>::CheckValidAbstractValue(
-    const AbstractValue& good, const AbstractValue& proposed) const {
-  if (typeid(proposed) != typeid(good)) {
+  if (proposed.type_info() != good->type_info()) {
     throw std::logic_error(
-        fmt::format("OutputPort::Calc(): expected AbstractValue output type "
-                    "{} but got {} for {}.",
-                    NiceTypeName::Get(good), NiceTypeName::Get(proposed),
-                    GetPortIdString()));
-  }
-}
-
-template <typename T>
-void OutputPort<T>::CheckValidBasicVector(
-    const BasicVector<T>& good, const BasicVector<T>& proposed) const {
-  if (typeid(proposed) != typeid(good)) {
-    throw std::logic_error(
-        fmt::format("OutputPort::Calc(): expected BasicVector output type "
-                    "{} but got {} for {}.",
-                    NiceTypeName::Get(good), NiceTypeName::Get(proposed),
+        fmt::format("OutputPort::Calc(): expected output type {} "
+                    "but got {} for {}.",
+                    good->GetNiceTypeName(), proposed.GetNiceTypeName(),
                     GetPortIdString()));
   }
 }
@@ -314,7 +276,8 @@ template <typename ValueType>
 const ValueType& OutputPort<T>::ExtractValueOrThrow(
     const char* func, const AbstractValue& abstract) const {
   const ValueType* value = abstract.MaybeGetValue<ValueType>();
-  if (!value) ThrowBadValueType<ValueType>(func, abstract);
+  if (!value)
+    ThrowBadValueType<ValueType>(func, abstract);
   return *value;
 }
 
