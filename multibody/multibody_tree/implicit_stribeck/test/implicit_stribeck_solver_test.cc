@@ -42,7 +42,7 @@ class PizzaSaver : public ::testing::Test {
   }
 
   MatrixX<double> ComputeTangentialJacobian(double theta) {
-    MatrixX<double> D(2 * nc_, nv_);
+    MatrixX<double> Jt(2 * nc_, nv_);
     const double c = cos(theta);
     const double s = sin(theta);
 
@@ -62,18 +62,18 @@ class PizzaSaver : public ::testing::Test {
     const Vector2<double> p_BoC_W = R_WB * p_BoC;
 
     // Point A
-    D.block(0, 0, 2, nv_) << 1, 0, -p_BoA_W.y(),
+    Jt.block(0, 0, 2, nv_) << 1, 0, -p_BoA_W.y(),
                              0, 1,  p_BoA_W.x();
 
     // Point B
-    D.block(2, 0, 2, nv_) << 1, 0, -p_BoB_W.y(),
+    Jt.block(2, 0, 2, nv_) << 1, 0, -p_BoB_W.y(),
                              0, 1,  p_BoB_W.x();
 
     // Point C
-    D.block(4, 0, 2, nv_) << 1, 0, -p_BoC_W.y(),
+    Jt.block(4, 0, 2, nv_) << 1, 0, -p_BoC_W.y(),
                              0, 1,  p_BoC_W.x();
 
-    return D;
+    return Jt;
   }
 
   void SetProblem(const Vector3<double>& v0, const Vector3<double>& tau,
@@ -87,9 +87,9 @@ class PizzaSaver : public ::testing::Test {
     // All contact points have the same friction for this case.
     mu_ = mu * Vector3<double>::Ones();
 
-    D_ = ComputeTangentialJacobian(theta);
+    Jt_ = ComputeTangentialJacobian(theta);
 
-    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_);
+    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
   void SetNoContactProblem(const Vector3<double>& v0,
@@ -101,9 +101,9 @@ class PizzaSaver : public ::testing::Test {
     // No contact points.
     fn_.resize(0);
     mu_.resize(0);
-    D_.resize(0, nv_);
+    Jt_.resize(0, nv_);
 
-    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_);
+    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
  protected:
@@ -125,7 +125,7 @@ class PizzaSaver : public ::testing::Test {
   MatrixX<double> M_{nv_, nv_};
 
   // Tangential velocities Jacobian.
-  MatrixX<double> D_{2 * nc_, nv_};
+  MatrixX<double> Jt_{2 * nc_, nv_};
 
   // The implicit Stribeck solver for this problem.
   ImplicitStribeckSolver<double> solver_{nv_};
@@ -136,7 +136,7 @@ class PizzaSaver : public ::testing::Test {
   VectorX<double> mu_;      // Friction coefficient at each contact point.
 };
 
-// This test the solver when we apply a moment Mz about COM to the pizza saver.
+// This tests the solver when we apply a moment Mz about COM to the pizza saver.
 // If Mz < mu * m * g * R, the saver should be in stiction (within the Stribeck
 // approximation). Otherwise the saver will be sliding.
 // For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
@@ -148,7 +148,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double mu = 0.5;
 
   // Some arbitrary orientation. This particular case has symmetry of
-  // revolution.
+  // revolution (meaning the result is independent of angle theta).
   const double theta = M_PI / 5;
 
   // External forcing.
@@ -178,13 +178,17 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
-  // friction to be zero to machine epsilon.
+  // friction to be zero.
   EXPECT_NEAR(tau_f(0), 0.0, kTolerance);
   EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
 
-  // The moment due to friction should balance the applied Mz. There is though
-  // an error introduced by the non-zero stiction tolerance.
-  EXPECT_NEAR(tau_f(2), Mz, 5.0e-4);
+  // The moment due to friction should balance the applied Mz. However, it will
+  // take several time steps until tau_f balances Mz (eventually it will).
+  // Therefore, here we just sanity check that Mz is at least relatively close
+  // (to the value of Mz) to tau_f. In other words, with only a single time
+  // step, we are still accelerating towards the final steady state slip
+  // introduce by having a finite stiction tolerance.
+  EXPECT_NEAR(tau_f(2), -Mz, 5.0e-4);
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();
   ASSERT_EQ(vt.size(), 2 * nc_);
@@ -207,8 +211,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
-  // For this problem we expect the translational velocities to be zero within
-  // machine epsilon.
+  // For this problem we expect the translational velocities to be zero.
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
 }
@@ -256,11 +259,11 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
-  // friction to be zero to machine epsilon.
+  // friction to be zero.
   EXPECT_NEAR(tau_f(0), 0.0, kTolerance);
   EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
   // Since we are sliding, the total moment should match M_transition.
-  EXPECT_NEAR(tau_f(2), M_transition, 1.0e-13);
+  EXPECT_NEAR(tau_f(2), -M_transition, 1.0e-13);
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();
   ASSERT_EQ(vt.size(), 2 * nc_);
@@ -283,8 +286,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
-  // For this problem we expect the translational velocities to be zero within
-  // machine epsilon.
+  // For this problem we expect the translational velocities to be zero.
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
 

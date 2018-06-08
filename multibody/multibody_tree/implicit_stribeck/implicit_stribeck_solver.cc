@@ -17,24 +17,25 @@ template <typename T>
 ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
     nv_(nv),
     fixed_size_workspace_(nv),
-    // Provide an initial workspace size so that we avoid re-allocations
-    // afterwards as much as we can.
+    // Provide an initial (arbitrarily large enough for most applications)
+    // workspace size so that we avoid re-allocations afterwards as much as we
+    // can.
     variable_size_workspace_(128) {
   DRAKE_THROW_UNLESS(nv > 0);
 }
 
 template <typename T>
 void ImplicitStribeckSolver<T>::SetProblemData(
-    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
   nc_ = fn->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
-  DRAKE_THROW_UNLESS(D->rows() == 2 * nc_ && D->cols() == nv_);
+  DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, D, p_star, fn, mu);
+  problem_data_aliases_.Set(M, Jt, p_star, fn, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_);
 }
 
@@ -48,7 +49,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   using std::min;
   using std::sqrt;
 
-  // Clear statistics so that we can update them with new ones for this call to
+  // Clear statistics so t_hat we can update them with new ones for this call to
   // SolveWithGuess().
   statistics_.Reset();
 
@@ -62,7 +63,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // With no friction forces Eq. (3) in the documentation reduces to
     // M⋅vⁿ⁺¹ = p*.
     v = M.ldlt().solve(p_star);
-    // "One iteration" with exactly "zero" residual.
+    // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
     return ComputationInfo::Success;
   }
@@ -81,7 +82,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
-  const auto& D = *problem_data_aliases_.D_ptr;
+  const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
   const auto& mu = *problem_data_aliases_.mu_ptr;
@@ -89,7 +90,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.v;
   auto& Delta_v = fixed_size_workspace_.Delta_v;
-  auto& R = fixed_size_workspace_.R;
+  auto& residual = fixed_size_workspace_.residual;
   auto& J = fixed_size_workspace_.J;
   auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
   auto& tau_f = fixed_size_workspace_.tau_f;
@@ -98,18 +99,18 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
   auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
-  auto dft_dv = variable_size_workspace_.mutable_dft_dv();
+  auto Gt = variable_size_workspace_.mutable_dft_dv();
   auto mus = variable_size_workspace_.mutable_mu();
-  auto that = variable_size_workspace_.mutable_t_hat();
+  auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
-  // Initialize residual to a value larger than tolerance so that the solver at
-  // least performs one iteration
-  T residual = 2 * vt_tolerance;
+  // Initialize vt_error to a value larger than tolerance so t_hat the solver at
+  // least performs one iteration.
+  T vt_error = 2 * vt_tolerance;
 
   // Initialize iteration with the provided guess.
   v = v_guess;
-  vt = D * v;
+  vt = Jt * v;
 
   // The stiction tolerance.
   const double v_stribeck = parameters_.stiction_tolerance;
@@ -126,38 +127,56 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
     // idea is to replace the norm in the definition of slip velocity by a
     // "soft norm":
-    //    ‖v‖ ≜ sqrt(vᵀv + εᵥ²)
-    // We use this to redefine the slip velocity:
+    //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
+    // (in code εᵥ is named epsilon_v and εᵥ² is named epislon_v2). We use
+    // this to redefine the slip velocity:
     //   v_slip = sqrt(vtᵀvt + v_epsilon)
     // and a "soft" tangent vector:
     //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
     // which now is not only well defined but it has well defined derivatives.
-    // We use these softened quantities all throuout our derivations for
+    // We use these softened quantities all throughout our derivations for
     // consistency.
-    for (int ic = 0; ic < nc; ++ic) {
-      const int ik = 2 * ic;
+    // Notes on the effect of the "soft norm":
+    // Consider a 1D case for which vₜ = v, to avoid geometric complications,
+    // but without loss of generality. If using a soft norm:
+    //   fₜ(v) = v/‖v‖ₛμ(‖v‖ₛ)
+    //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
+    // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
+    // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
+    //   fₜ(v) ≈ 2μ₀S(v)|v|
+    // where S(v) is the sign function and we have used the fact that in the
+    // limit v --> 0, μ(|v|) ≈ 2μ₀|v|. In this case case (recall this is
+    // equivalent to the solution in the limit εᵥ --> 0) fₜ(v) is linear in v.
+    // Now, very close to the origin, in the limit |v| << εᵥ, where the
+    // "softness" of the norm is important, the limit on fₜ(v) is:
+    //   fₜ(v) ≈ 2μ₀v²
+    // i.e. fₜ(v) is quadratic in v.
+    // This exaplains why we have "weak" gradients in the limit of vₜ
+    // approaching zero.
+    // These observations easily extend to the general 2D case.
+    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
       const auto vt_ic = vt.template segment<2>(ik);
       // "soft norm":
       v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
       // "soft" tangent vector:
       const Vector2<T> that_ic = vt_ic / v_slip(ic);
-      that.template segment<2>(ik) = that_ic;
+      t_hat.template segment<2>(ik) = that_ic;
       mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
       // Friction force.
-      // Note: minus sign not included in this definition.
-      ft.template segment<2>(ik) = mus(ic) * that_ic * fn(ic);
+      ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
     }
 
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
-    if (residual < vt_tolerance) {
+    if (vt_error < vt_tolerance) {
       // Update generalized forces vector and return.
-      tau_f = D.transpose() * ft;
+      tau_f = Jt.transpose() * ft;
       return ComputationInfo::Success;
     }
 
-    // Newton-Raphson residual
-    R = M * v - p_star + dt * D.transpose() * ft;
+    // Newton-Raphson residual.
+    residual = M * v - p_star - dt * Jt.transpose() * ft;
 
     // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
     // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
@@ -169,71 +188,74 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       const T dmudv = ModifiedStribeckDerivative(
           v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
 
-      const auto that_ic = that.template segment<2>(ik);
+      const auto t_hat_ic = t_hat.template segment<2>(ik);
 
-      // Projection matrix. It projects in the direction of that.
+      // Projection matrix. It projects in the direction of t_hat.
       // Notice it is a symmetric 2x2 matrix.
-      const Matrix2<T> P_ic = that_ic * that_ic.transpose();
+      const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
 
-      // Removes the projected direction along that.
+      // Removes the projected direction along t_hat.
       // This is also a symmetric 2x2 matrix.
       const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
 
       // Some notes about projection matrices P:
       //  - They are symmetric, positive semi-definite.
       //  - All their eigenvalues are either one or zero.
-      //  - Their rank equals the number of non-zero eigenvales.
+      //  - Their rank equals the number of non-zero eigenvalues.
       //  - From the previous item we have rank(P) = trace(P).
       //  - If P is a projection matrix, so is (I - P).
-      // From the above we then know that P and Pperp are both projection
+      // From the above we then know t_hat P and Pperp are both projection
       // matrices of rank one (i.e. rank deficient) and are symmetric
       // semi-positive definite. This has very important consequences for the
-      // Jacobian of the residual.
+      // Jacobian of the vt_error.
 
-      // We now compute dft/dvt as:
-      //   dft/dvt = fn * (
-      //     mu_stribeck(‖vₜ‖) / ‖vₜ‖ * Pperp(t̂) +
+      // We now compute the dradient with respect to the tangential velocity
+      // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
+      // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
+      //   ∇ᵥₜfₜ = -Gt = -fn * (
+      //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
       //     dmu_stribeck/dx * P(t̂) / v_stribeck )
-      // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      // Therefore dft/dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
+      // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
+      // have defined Gt = -∇ᵥₜfₜ.
+      // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
       // (P and Pperp) where the coefficients of the combination are positive
       // scalars. Therefore,
-      // IMPORTANT NOTE: dft/dvt also PSD.
-      // IMPORTANT NOTE 2: The derivation for dft/dvt leads to exactly the
+      // IMPORTANT NOTE: Gt also PSD.
+      // IMPORTANT NOTE 2: The derivation for Gt leads to exactly the
       // same result when using the "softened" definitions for v_slip and
-      // that where each occurrence of these quantities is replaced by their
+      // t_hat where each occurrence of these quantities is replaced by its
       // softened counterpart.
 
-      // Compute dft/dv:
-      // Changes of vt in the direction perpendicular to that.
-      dft_dv[ic] = Pperp_ic * mus(ic) / v_slip(ic);
+      // Compute Gt:
+      // Changes of vt in the direction perpendicular to t_hat.
+      Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
 
       // Changes in the magnitude of vt (which in turns makes mu_stribeck
-      // change), in the direction of that.
-      dft_dv[ic] += P_ic * dmudv;
+      // change), in the direction of t_hat.
+      Gt[ic] += P_ic * dmudv;
 
-      // Note: dft_dv is a symmetric 2x2 matrix.
-      dft_dv[ic] *= fn(ic);
+      // Note: Gt is a symmetric 2x2 matrix.
+      Gt[ic] *= fn(ic);
     }
 
     // Newton-Raphson Jacobian:
-    //  J = I + dt M⁻¹Dᵀdiag(dfₜ/dvₜ)D
+    //  J = M + dt Jtᵀdiag(Gt)Jt:
     // J is an (nv x nv) symmetric positive definite matrix.
-    // diag(dfₜ/dvₜ) is the (2nc x 2nc) block diagonal matrix with dfₜ/dvₜ
-    // in each 2x2 diagonal entry.
+    // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
+    // diagonal entry.
 
-    // Start by multiplying diag(dfₜ/dvₜ)D and use the fact that
-    // diag(dfₜ/dvₜ) is block diagonal.
-    MatrixX<T> diag_dftdv_times_D(nf, nv);
+    // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
+    // block diagonal.
+    MatrixX<T> diag_Gt_times_Jt(nf, nv);
     // TODO(amcastro-tri): Only build half of the matrix since it is
     // symmetric.
-    for (int ic = 0; ic < nc; ++ic) {
-      const int ik = 2 * ic;
-      diag_dftdv_times_D.block(ik, 0, 2, nv) =
-          dft_dv[ic] * D.block(ik, 0, 2, nv);
+    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+      diag_Gt_times_Jt.block(ik, 0, 2, nv) =
+          Gt[ic] * Jt.block(ik, 0, 2, nv);
     }
-    // Form J = M + dt Dᵀdiag(dfₜ/dvₜ)D:
-    J = M + dt * D.transpose() * diag_dftdv_times_D;
+    // Form J = M + dt Jtᵀdiag(Gt)Jt:
+    J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
@@ -244,33 +266,33 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     if (J_ldlt.info() != Eigen::Success) {
       return ComputationInfo::LinearSolverFailed;
     }
-    Delta_v = J_ldlt.solve(-R);
+    Delta_v = J_ldlt.solve(-residual);
 
-    // Since we keep D constant we have that:
-    // vₜᵏ⁺¹ = D⋅vᵏ⁺¹ = D⋅(vᵏ + α Δvᵏ)
-    //                = vₜᵏ + α D⋅Δvᵏ
+    // Since we keep Jt constant we have t_hat:
+    // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
+    //                = vₜᵏ + α Jt⋅Δvᵏ
     //                = vₜᵏ + α Δvₜᵏ
-    // where we defined Δvₜᵏ = D⋅Δvᵏ and 0 < α < 1 is a constant that we'll
+    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant t_hat we'll
     // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
-    // For multiple contact points, we choose the minimum α amongs all contact
+    // For multiple contact points, we choose the minimum α among all contact
     // points.
-    Delta_vt = D * Delta_v;
+    Delta_vt = Jt * Delta_v;
 
     // Convergence is monitored in the tangential velocties.
-    residual = Delta_vt.norm();
+    vt_error = Delta_vt.norm();
 
     // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
     // all contact points. The angle change θ is defined by the dot product
     // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
-    // We'll do so by computing a coefficient 0 < α < 1 so that if the
+    // We'll do so by computing a coefficient 0 < α < 1 so t_hat if the
     // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
     // for all contact points.
     T alpha = 1.0;  // We set α = 1 for now.
     v = v + alpha * Delta_v;
-    vt = D * v;
+    vt = Jt * v;
 
     // Save iteration statistics.
-    statistics_.Update(ExtractDoubleOrThrow(residual));
+    statistics_.Update(ExtractDoubleOrThrow(vt_error));
   }
 
   // If we are here is because we reached the maximum number of iterations

@@ -120,7 +120,7 @@ struct IterationStats {
 ///   (2)  M(qⁿ)⋅vⁿ⁺¹ =
 ///            M(qⁿ)⋅vⁿ + δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
 /// </pre>
-/// Please see details in the @ref time_splitting "Time Stepping Derivation"
+/// Please see details in the @ref time_discretization "Discretization in Time"
 /// section.
 /// The equation for the generalized velocities in Eq. (2) is rewritten as:
 /// <pre>
@@ -148,8 +148,8 @@ struct IterationStats {
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
 ///   in spatial multibody systems. Proc. R. Soc. A, 471(2177), p.20140859.
 ///
-/// @anchor time_splitting
-/// <h2>Time Stepping Derivation</h2>
+/// @anchor time_discretization
+/// <h2>Discretization in Time</h2>
 /// In this section we provide a detailed derivation of the first order time
 /// stepping approach in Eq. (2). We start from the continuous Eq. (1): <pre>
 ///   (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(v)
@@ -160,7 +160,7 @@ struct IterationStats {
 ///           δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₁(δt²)
 /// </pre>
 /// where the equality holds strictly since we included the leading terms in
-/// `O(δt²)`. We use `τⁿ = τ(tⁿ, qⁿ, vⁿ)` for brevity in Eq. (4).
+/// `O(δt²)`. We use `τⁿ = τ(tⁿ, qⁿ, vⁿ⁺¹)` for brevity in Eq. (4).
 /// When moving from the continuous Eq. (1) to the discrete version Eq. (4), we
 /// lost the nice property that our compliant normal forces are decoupled from
 /// the friction forces (both depend on the same unknown vⁿ⁺¹ in Eq (4)). The
@@ -333,11 +333,11 @@ class ImplicitStribeckSolver {
   // SetProblemData() and until SolveWithGuess() returns.
   struct ProblemDataAliases {
     // Sets the references to the data defining the problem.
-    void Set(EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> D,
+    void Set(EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jt,
              EigenPtr<const VectorX<T>> p_star,
              EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
       M_ptr = M;
-      D_ptr = D;
+      Jt_ptr = Jt;
       p_star_ptr = p_star;
       fn_ptr = fn;
       mu_ptr = mu;
@@ -346,7 +346,7 @@ class ImplicitStribeckSolver {
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr{nullptr};
     // The tangential velocities Jacobian.
-    EigenPtr<const MatrixX<T>> D_ptr{nullptr};
+    EigenPtr<const MatrixX<T>> Jt_ptr{nullptr};
     // The generalized momementum vector **before** friction is applied.
     EigenPtr<const VectorX<T>> p_star_ptr{nullptr};
     // At each contact point ic, fn(ic) and mu(ic) store the normal contact
@@ -364,7 +364,7 @@ class ImplicitStribeckSolver {
     // Constructs a workspace with size only dependent on nv.
     explicit FixedSizeWorkspace(int nv) {
       v.resize(nv);
-      R.resize(nv);
+      residual.resize(nv);
       Delta_v.resize(nv);
       J.resize(nv, nv);
       J_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
@@ -373,7 +373,7 @@ class ImplicitStribeckSolver {
     // Vector of generalized velocities.
     VectorX<T> v;
     // Newton-Raphson residual.
-    VectorX<T> R;
+    VectorX<T> residual;
     // Newton-Raphson Jacobian, i.e. Jᵢⱼ = ∂Rᵢ/∂vⱼ.
     MatrixX<T> J;
     // Solution to Newton-Raphson update, i.e. Δv = -J⁻¹⋅R.
