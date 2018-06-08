@@ -50,7 +50,8 @@ class Multiplexer : public LeafSystem<T> {
  private:
   template <typename> friend class Multiplexer;
 
-  Multiplexer(std::vector<int> input_sizes,
+  // All other constructors delegate to here.
+  Multiplexer(SystemScalarConverter converter, std::vector<int> input_sizes,
               const systems::BasicVector<T>& model_vector);
 
   // This is the calculator for the output port.
