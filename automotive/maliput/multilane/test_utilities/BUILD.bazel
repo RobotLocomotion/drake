@@ -29,6 +29,7 @@ drake_cc_library(
         "//automotive/maliput/multilane",
         "//common:essential",
         "//math:geometric_transform",
+        "@fmt",
         "@gtest//:without_main",
     ],
 )
