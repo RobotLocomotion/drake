@@ -130,6 +130,10 @@ class GeometryState {
    Various methods that allow reading the state's properties and values. */
   //@{
 
+  /** Reports the id for scene graph's world frame. It is not *owned* by any
+   geometry source, but is common across all sources.  */
+  FrameId world_frame_id() const { return world_frame_id_; }
+
   /** Reports the number of registered sources -- whether they have frames or
    not. */
   int get_num_sources() const {
@@ -633,6 +637,11 @@ class GeometryState {
   // rely on temporal coherency to speed up the calculations. Thus we persist
   // and copy it.
   copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
+
+  // The id of the world frame for all sources. It is *functionally* const
+  // in that there are no setters, but in order to allow default copy
+  // assignment, it can't be declared const.
+  FrameId world_frame_id_;
 };
 }  // namespace geometry
 }  // namespace drake

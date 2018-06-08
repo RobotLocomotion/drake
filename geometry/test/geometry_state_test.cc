@@ -1170,6 +1170,38 @@ TEST_F(GeometryStateTest, ExcludeCollisionsBetween) {
   ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
 }
 
+// A small variation of the previous ExcludeCollision* method tests. This
+// explicitly adds the GeometryState's world frame id to the GeometrySet to
+// confirm the anchored geometry gets included.
+TEST_F(GeometryStateTest, ExcludeCollisionsWithWorldFrame) {
+  SetUpSingleSourceTree();
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses(source_id_, frames_);
+  poses.clear();
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PF_[f]);
+  }
+  gs_tester_.SetFramePoses(poses);
+  gs_tester_.FinalizePoseUpdate();
+
+  // This is *non* const; we'll decrement it as we filter more and more
+  // collisions.
+  int expected_collisions = default_collision_pair_count();
+
+  // Baseline collision - the unfiltered collisions.
+  auto pairs = geometry_state_.ComputePointPairPenetration();
+  EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+
+  // Frame 2 has *two* geometries that collide with the anchored geometry. This
+  // eliminates those collisions.
+  geometry_state_.ExcludeCollisionsWithin(
+      GeometrySet({frames_[2], geometry_state_.world_frame_id()}));
+  expected_collisions -= 2;
+  pairs = geometry_state_.ComputePointPairPenetration();
+  ASSERT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
 // Tests the documented error conditions of ExcludeCollisionsWithin.
 TEST_F(GeometryStateTest, SelfCollisionFilterExceptions) {
   SetUpSingleSourceTree();
