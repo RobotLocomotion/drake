@@ -41,6 +41,9 @@ class Multiplexer : public LeafSystem<T> {
   /// and one vector-valued output port whose size equals the size of
   /// `model_vector`.  In addition, the output type derives from that of
   /// `model_vector`.
+  ///
+  /// @note Objects created using this constructor overload do not support
+  /// system scalar conversion.  See @ref system_scalar_conversion.
   explicit Multiplexer(const systems::BasicVector<T>& model_vector);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -50,7 +53,8 @@ class Multiplexer : public LeafSystem<T> {
  private:
   template <typename> friend class Multiplexer;
 
-  Multiplexer(std::vector<int> input_sizes,
+  // All other constructors delegate to here.
+  Multiplexer(SystemScalarConverter converter, std::vector<int> input_sizes,
               const systems::BasicVector<T>& model_vector);
 
   // This is the calculator for the output port.
