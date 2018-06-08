@@ -27,6 +27,8 @@ using systems::Value;
 using std::make_unique;
 using std::vector;
 
+// TODO(SeanCurtis-TRI): Fix this so that it's invocation ends with ();.
+// https://github.com/RobotLocomotion/drake/issues/8959
 #define GS_THROW_IF_CONTEXT_ALLOCATED ThrowIfContextAllocated(__FUNCTION__);
 
 namespace {
