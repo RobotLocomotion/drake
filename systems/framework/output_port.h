@@ -145,10 +145,11 @@ class OutputPort : public OutputPortBase {
  protected:
   /** Provides derived classes the ability to set the base class members at
   construction. See OutputPortBase::OutputPortBase() for the meaning of these
-  parameters. */
+  parameters.
+  @pre The `system` parameter must be the same object as the `system_base`
+  parameter. */
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  // They must refer to the same System.
   OutputPort(const System<T>* system,
              SystemBase* system_base,
              OutputPortIndex index,
@@ -195,8 +196,9 @@ class OutputPort : public OutputPortBase {
   }
 
  private:
-  // Check whether the allocator returned a value that is consistent with
-  // this port's specification.
+  // If this is a vector-valued port, we can check that the returned abstract
+  // value actually holds a BasicVector-derived object, and for fixed-size ports
+  // that the object has the right size.
   void CheckValidAllocation(const AbstractValue&) const;
 
   // Check that an AbstractValue provided to Calc() is suitable for this port.
@@ -225,9 +227,6 @@ class OutputPort : public OutputPortBase {
   const System<T>& system_;
 };
 
-// If this is a vector-valued port, we can check that the returned abstract
-// value actually holds a BasicVector-derived object, and for fixed-size ports
-// that the object has the right size.
 template <typename T>
 void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   if (this->get_data_type() != kVectorValued)
@@ -252,8 +251,6 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   }
 }
 
-// Check that an AbstractValue provided to Calc() is suitable for this port.
-// (Very expensive; use in Debug only.)
 // See CacheEntry::CheckValidAbstractValue; treat both methods similarly.
 template <typename T>
 void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
@@ -273,7 +270,6 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
   }
 }
 
-// Check that both type-erased arguments have the same underlying type.
 template <typename T>
 void OutputPort<T>::CheckValidAbstractValue(
     const AbstractValue& good, const AbstractValue& proposed) const {

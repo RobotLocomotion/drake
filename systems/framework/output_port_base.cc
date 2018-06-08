@@ -6,6 +6,8 @@
 namespace drake {
 namespace systems {
 
+OutputPortBase::~OutputPortBase() = default;
+
 OutputPortBase::OutputPortBase(
     SystemBase* owning_subsystem,
     OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
