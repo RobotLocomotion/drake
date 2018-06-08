@@ -127,6 +127,12 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
 }
 
 template <typename T>
+FrameId SceneGraph<T>::world_frame_id() const {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->world_frame_id();
+}
+
+template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   SourceId source_id = initial_state_->RegisterNewSource(name);

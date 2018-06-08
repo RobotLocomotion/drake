@@ -98,7 +98,8 @@ std::string get_missing_id_message<GeometryId>(const GeometryId& key) {
 
 template <typename T>
 GeometryState<T>::GeometryState()
-    : geometry_engine_(make_unique<internal::ProximityEngine<T>>()) {}
+    : geometry_engine_(make_unique<internal::ProximityEngine<T>>()),
+      world_frame_id_(FrameId::get_new_id()) {}
 
 template <typename T>
 bool GeometryState<T>::source_is_registered(SourceId source_id) const {
@@ -472,16 +473,24 @@ void GeometryState<T>::CollectIndices(
     const GeometrySet& geometry_set, std::unordered_set<GeometryIndex>* dynamic,
     std::unordered_set<AnchoredGeometryIndex>* anchored) {
   for (auto frame_id : geometry_set.frames()) {
-    auto iterator = frames_.find(frame_id);
-    if (iterator == frames_.end()) {
-      throw std::logic_error(
-          "Geometry set includes a frame id that doesn't belong to the "
-          "SceneGraph: " + to_string(frame_id));
-    }
+    if (frame_id == world_frame_id_) {
+      // Add *all* the anchored geometry. Currently all anchored geometry, by
+      // definition, belongs to the world frame.
+      for (const auto& pair : anchored_geometries_) {
+        anchored->insert(pair.second.get_engine_index());
+      }
+    } else {
+      auto iterator = frames_.find(frame_id);
+      if (iterator == frames_.end()) {
+        throw std::logic_error(
+            "Geometry set includes a frame id that doesn't belong to the "
+                "SceneGraph: " + to_string(frame_id));
+      }
 
-    const auto& frame = iterator->second;
-    for (auto geometry_id : frame.get_child_geometries()) {
-      dynamic->insert(geometries_[geometry_id].get_engine_index());
+      const auto& frame = iterator->second;
+      for (auto geometry_id : frame.get_child_geometries()) {
+        dynamic->insert(geometries_[geometry_id].get_engine_index());
+      }
     }
   }
 
