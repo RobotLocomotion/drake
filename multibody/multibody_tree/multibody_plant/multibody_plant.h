@@ -973,6 +973,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // bodies connected by a joint.
   void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
+  // This is a *temporary* method to eliminate visual geometries from collision
+  // while we wait for geometry roles to be introduced.
+  // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
+  void ExcludeCollisionsWithVisualGeometry(
+      geometry::SceneGraph<T>* scene_graph);
+
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
