@@ -4,6 +4,8 @@
 /// This file defines gflags settings to control spdlog levels.
 /// Only include this from translation units that declare a `main` function.
 
+#include <string>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/text_logging.h"
@@ -11,32 +13,56 @@
 // Declare the --spdlog_level gflags option.
 DEFINE_string(spdlog_level, "unchanged",
               "sets the spdlog output threshold; "
-              "possible values are 'unchanged', 'trace', 'debug', 'warn'");
+              "possible values are 'unchanged', 'trace', 'debug', 'info', "
+                      "'warn', 'err', 'critical', 'off'");
 
 namespace drake {
 namespace logging {
 
-/// Check the gflags settings for validity.  If spdlog is enabled, update its
-/// configuration to match the flags.
-inline void HandleSpdlogGflags() {
-  const bool want_unchanged = (FLAGS_spdlog_level == "unchanged");
-  const bool want_trace = (FLAGS_spdlog_level == "trace");
-  const bool want_debug = (FLAGS_spdlog_level == "debug");
-  const bool want_warn = (FLAGS_spdlog_level == "warn");
-  if (!want_unchanged && !want_trace && !want_debug && !want_warn) {
-    log()->critical("Unknown spdlog_level {}", FLAGS_spdlog_level);
-    throw std::runtime_error("Unknown spdlog level");
+/// Creates loggers at specified logging levels. The example below sets the
+/// default logger to "off", creates a logger named "logger_a" and sets
+/// it to trace and creates a logger named "logger_b" and sets it to info.
+/// <pre>
+///  ./compiled_project --spdlog_level=off logger_a trace logger_b info
+/// </pre>
+inline void HandleSpdlogGFlags(int argc, char *argv[]) {
+  MakeLoggerSetLevel("console", FLAGS_spdlog_level);
+
+  if (argc % 2 == 0) {
+    throw std::runtime_error("Commandline argument number is odd.");
   }
-#ifdef HAVE_SPDLOG
-  if (want_trace) {
-    log()->set_level(spdlog::level::trace);
-  } else if (want_debug) {
-    log()->set_level(spdlog::level::debug);
-  } else if (want_warn) {
-    log()->set_level(spdlog::level::warn);
+
+  for (int k = 1; k < argc; k+=2) {
+    std::string logger_name = argv[k];
+    std::string logger_level = argv[k + 1];
+    MakeLoggerSetLevel(logger_name, logger_level);
   }
-#endif
 }
 
 }  // namespace logging
 }  // namespace drake
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

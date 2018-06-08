@@ -2,25 +2,34 @@
 
 /**
 @file
-This is the entry point for all text logging within Drake.
-Once you've included this file, the suggested ways you
-should write log messages include:
+This is the entry point for all text logging within Drake. Text logging in
+Drake is intentionally flexible. Drake uses spdlog for to keep track of
+logger names and levels. All loggers write to the same sink. Users can
+create loggers within code using drake::MakeLoggerSetLevel or at runtime
+from commandline arguments with drake::HandleSpdlogGflags. One can log
+to loggers whose existence is unknown at compile time using
+drake::ReturnLoggerPreferablyNamed. Once you've included this file, the
+suggested ways you should write log messages include:
 <pre>
-  drake::log()->trace("Some trace message: {} {}", something, some_other);
+ drake::log()->trace("Some trace message: {} {}", something, some_other);
+ auto logger_ptr = drake::ReturnLoggerPreferablyNamed("my_logger_name");
+ logger_ptr->trace("Some trace message: {} {}", something, some_other);
 </pre>
 Similarly, it provides:
 <pre>
-  drake::log()->debug(...);
-  drake::log()->info(...);
-  drake::log()->warn(...);
-  drake::log()->error(...);
-  drake::log()->critical(...);
+ drake::log()->debug(...);
+ logger_ptr->info(...);
+ drake::log()->warn(...);
+ logger_ptr->error(...);
+ drake::log()->critical(...);
 </pre>
+Note that drake::log() refers to the default logger which is named "console".
+Logger levels can be set at arbitrary times using drake::SetLoggerLevel.
 If you want to log objects that are expensive to serialize, these macros will
 not be compiled if debugging is turned off (-DNDEBUG is set):
 <pre>
-  SPDLOG_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
-  SPDLOG_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
+ SPDLOG_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
+ SPDLOG_DEBUG(logger_ptr, "message: {}", something_conditionally_compiled);
 </pre>
 Note that if you are running with NDEBUG _undefined_, so that these two macros
 are expanded, the arguments will be evaluated even if logging is disabled. If
@@ -28,10 +37,10 @@ you want to avoid that cost, Drake provides macros that provide the same
 functionality but won't evaluate the arguments unless they are actually going
 to be logged:
 <pre>
-  DRAKE_SPDLOG_TRACE(drake::log(),
-                     "message: {}", something_conditionally_compiled);
-  DRAKE_SPDLOG_DEBUG(drake::log(),
-                     "message: {}", something_conditionally_compiled);
+ DRAKE_SPDLOG_TRACE(drake::log(),
+                    "message: {}", something_conditionally_compiled);
+ DRAKE_SPDLOG_DEBUG(logger_ptr,
+                    "message: {}", something_conditionally_compiled);
 </pre>
 We suggest using the Drake versions of these macros everywhere so that you don't
 have to decide when the argument-evaluation cost is going to be excessive.
@@ -42,6 +51,7 @@ printed without any special handling.
 */
 
 #include <memory>
+#include <string>
 
 #ifdef HAVE_SPDLOG
 // Before including spdlog, activate the SPDLOG_DEBUG and SPDLOG_TRACE macros
@@ -110,6 +120,8 @@ class logger {
   void error(const char*, const Args&...) {}
   template <typename... Args>
   void critical(const char*, const Args&...) {}
+  template <typename... Args>
+  void off(const char*, const Args&...) {}
 
   template <typename T> void trace(const T&) {}
   template <typename T> void debug(const T&) {}
@@ -117,6 +129,7 @@ class logger {
   template <typename T> void warn(const T&) {}
   template <typename T> void error(const T&) {}
   template <typename T> void critical(const T&) {}
+  template <typename T> void off(const T&) {}
 };
 
 }  // namespace logging
@@ -131,5 +144,29 @@ class logger {
 /// Retrieve an instance of a logger to use for logging; for example:
 ///   `drake::log()->info("potato!")`
 logging::logger* log();
+
+/// Updates the level of an existing logger after checking the logging level
+/// for validity. Levels are "unchanged", "trace", "debug", "info", "warn",
+/// "error", "critical" and "off". One sets the level of the default logger
+/// as shown below:
+/// <pre>
+///  auto logger_console = drake::ReturnDefaultLogger();
+///  drake::SetLoggerLevel(logger_console, "debug");
+/// </pre>
+void SetLoggerLevel(const std::shared_ptr<logging::logger> &logger_ptr,
+                    const std::string& logger_level);
+
+/// Returns the named logger if it exists and the default logger otherwise.
+std::shared_ptr<logging::logger> ReturnLoggerPreferablyNamed(
+        const std::string& logger_name);
+
+/// Returns a named logger at a specified level. For possible levels see
+/// drake::SetLoggerLevel.
+std::shared_ptr<logging::logger> MakeLoggerSetLevel(
+        const std::string& logger_name,
+        const std::string& logger_level);
+
+/// Returns the default logger which is named "console".
+std::shared_ptr<logging::logger> ReturnDefaultLogger();
 
 }  // namespace drake
