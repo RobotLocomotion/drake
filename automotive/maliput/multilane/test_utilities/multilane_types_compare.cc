@@ -252,9 +252,19 @@ Matcher<const StartReference::Spec&> Matches(
   return MakeMatcher(new StartReferenceSpecMatcher(start_reference, tolerance));
 }
 
+Matcher<const StartLane::Spec&> Matches(
+    const StartLane::Spec& start_lane, double tolerance) {
+  return MakeMatcher(new StartLaneSpecMatcher(start_lane, tolerance));
+}
+
 Matcher<const EndReference::Spec&> Matches(
     const EndReference::Spec& end_reference, double tolerance) {
   return MakeMatcher(new EndReferenceSpecMatcher(end_reference, tolerance));
+}
+
+Matcher<const EndLane::Spec&> Matches(
+    const EndLane::Spec& end_lane, double tolerance) {
+  return MakeMatcher(new EndLaneSpecMatcher(end_lane, tolerance));
 }
 
 }  // namespace test
