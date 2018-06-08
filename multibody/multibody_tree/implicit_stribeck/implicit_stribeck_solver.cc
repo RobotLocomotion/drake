@@ -48,10 +48,22 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   using std::min;
   using std::sqrt;
 
+  // Clear statistics so that we can update them with new ones for this call to
+  // SolveWithGuess().
+  statistics_.Reset();
+
   // If there are no contact points return a zero generalized friction forces
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
     fixed_size_workspace_.tau_f.setZero();
+    const auto& M = *problem_data_aliases_.M_ptr;
+    const auto& p_star = *problem_data_aliases_.p_star_ptr;
+    auto& v = fixed_size_workspace_.v;
+    // With no friction forces Eq. (3) in the documentation reduces to
+    // M⋅vⁿ⁺¹ = p*.
+    v = M.ldlt().solve(p_star);
+    // "One iteration" with exactly "zero" residual.
+    statistics_.Update(0.0);
     return ComputationInfo::Success;
   }
 
@@ -108,10 +120,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // singularity when tangential velocities are zero.
   const double epsilon_v = v_stribeck * 1.0e-4;
   const double epsilon_v2 = epsilon_v * epsilon_v;
-
-  // Clear statistics so that we can update them with new ones for this call to
-  // SolveWithGuess().
-  statistics_.Reset();
 
   for (int iter = 0; iter < max_iterations; ++iter) {
     // Compute 2D tangent vectors.

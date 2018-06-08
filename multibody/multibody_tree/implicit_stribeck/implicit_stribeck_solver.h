@@ -70,10 +70,10 @@ struct IterationStats {
   /// solve.
   int num_iterations{0};
 
-  /// The residual in the tangential velocities, in m/s. Upon convergence of
-  /// the solver this value should be smaller than Parameters::tolerance times
-  /// Parameters::stiction_tolerance.
-  double vt_residual{0.0};
+  /// Returns the residual in the tangential velocities, in m/s. Upon
+  /// convergence of the solver this value should be smaller than
+  /// Parameters::tolerance times Parameters::stiction_tolerance.
+  double vt_residual() const { return residuals.back();}
 
   /// (Advanced) Residual in the tangential velocities, in m/s. The k-th entry
   /// in this vector corresponds to the residual for the k-th Newton-Raphson
@@ -87,7 +87,6 @@ struct IterationStats {
   /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
   void Reset() {
     num_iterations = 0;
-    vt_residual = -1.0;  // an invalid value.
     // Clear does not change a std::vector "capacity", and therefore there's
     // no reallocation (or deallocation) that could affect performance.
     residuals.clear();
@@ -96,7 +95,6 @@ struct IterationStats {
   /// (Internal) Used by ImplicitStribeckSolver to update statistics.
   void Update(double iteration_residual) {
     ++num_iterations;
-    vt_residual = iteration_residual;
     residuals.push_back(iteration_residual);
   }
 };

@@ -92,6 +92,20 @@ class PizzaSaver : public ::testing::Test {
     solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_);
   }
 
+  void SetNoContactProblem(const Vector3<double>& v0,
+                           const Vector3<double>& tau,
+                           double dt) {
+    // Next time step generalized momentum if there are no friction forces.
+    p_star_ = M_ * v0 + dt * tau;
+
+    // No contact points.
+    fn_.resize(0);
+    mu_.resize(0);
+    D_.resize(0, nv_);
+
+    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_);
+  }
+
  protected:
   // Problem parameters.
   const double m_{1.0};   // Mass of the pizza saver.
@@ -118,8 +132,8 @@ class PizzaSaver : public ::testing::Test {
 
   // Additional solver data that must outlive solver_ during solution.
   Vector3<double> p_star_;  // Generalized momentum.
-  Vector3<double> fn_;      // Normal forces at each contact point.
-  Vector3<double> mu_;      // Friction coefficient at each contact point.
+  VectorX<double> fn_;      // Normal forces at each contact point.
+  VectorX<double> mu_;      // Friction coefficient at each contact point.
 };
 
 // This test the solver when we apply a moment Mz about COM to the pizza saver.
@@ -161,7 +175,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
       /* Dimensionless relative (to the stiction tolerance) tolerance */
       solver_.get_solver_parameters().tolerance *
           solver_.get_solver_parameters().stiction_tolerance;
-  EXPECT_TRUE(stats.vt_residual < vt_tolerance);
+  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
   // friction to be zero to machine epsilon.
@@ -239,7 +253,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
       /* Dimensionless relative (to the stiction tolerance) tolerance */
       solver_.get_solver_parameters().tolerance *
           solver_.get_solver_parameters().stiction_tolerance;
-  EXPECT_TRUE(stats.vt_residual < vt_tolerance);
+  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
   // friction to be zero to machine epsilon.
@@ -281,6 +295,46 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_NEAR(v_slipA, R_ * omega, kTolerance);
   EXPECT_NEAR(v_slipB, R_ * omega, kTolerance);
   EXPECT_NEAR(v_slipC, R_ * omega, kTolerance);
+}
+
+// Verify the solver behaves correctly when the problem data contains no
+// contact points.
+TEST_F(PizzaSaver, NoContact) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  const double dt = 1.0e-3;  // time step in seconds.
+
+  // External forcing.
+  const double Mz = 6.0;
+  const Vector3<double> tau(0.0, 0.0, Mz);
+
+  // Initial velocity.
+  const Vector3<double> v0 = Vector3<double>::Zero();
+
+  SetNoContactProblem(v0, tau, dt);
+
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  EXPECT_EQ(solver_.get_generalized_forces(), Vector3<double>::Zero());
+
+  const IterationStats& stats = solver_.get_iteration_statistics();
+  EXPECT_EQ(stats.vt_residual(), 0);
+  EXPECT_EQ(stats.num_iterations, 1);
+
+  // Verify solution.
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // For this problem we expect the translational velocities to be zero.
+  EXPECT_NEAR(v(0), 0.0, kTolerance);
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
+  // Expected angular velocity change about z due to the applied moment Mz.
+  const double omega = dt * Mz / I_;
+  EXPECT_NEAR(v(2), omega, kTolerance);
+
+  // No contact.
+  EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
 
 }  // namespace
