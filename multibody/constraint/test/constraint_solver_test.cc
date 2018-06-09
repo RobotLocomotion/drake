@@ -636,6 +636,8 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // to three times.
     for (int contact_dup = 0; contact_dup < 3; ++contact_dup) {
       for (int friction_dir_dup = 0; friction_dir_dup < 4; ++friction_dir_dup) {
+        const int n_contacts = contact_dup + 1;
+
         // Compute the problem data.
         CalcConstraintAccelProblemData(
           dt, vel_data_.get(), contact_dup, friction_dir_dup);
@@ -689,6 +691,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
         }
 
         // Verify that the generalized acceleration of the rod is equal to zero.
+        VectorX<double> v = rod_->GetRodVelocity(*context_);
         VectorX<double> ga;
         solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
         EXPECT_LT(ga.norm(), lcp_eps_ * cf.size());
