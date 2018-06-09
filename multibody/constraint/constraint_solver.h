@@ -597,15 +597,15 @@ class ConstraintSolver {
 
   static void FormImpactingConstraintLCP(
       const ConstraintVelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
+      const VectorX<T>& trunc_neg_invA_a,
       MatrixX<T>* MM, VectorX<T>* qq);
   static void FormSustainedConstraintLCP(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
+      const VectorX<T>& trunc_neg_invA_a,
       MatrixX<T>* MM, VectorX<T>* qq);
   static void FormSustainedConstraintLinearSystem(
       const ConstraintAccelProblemData<T>& problem_data,
-      const VectorX<T>& invA_a,
+      const VectorX<T>& trunc_neg_invA_a,
       MatrixX<T>* MM, VectorX<T>* qq);
 
   template <typename ProblemData>
@@ -1509,10 +1509,6 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
   a->tail(num_eq_constraints) = problem_data.kG;
   const VectorX<T> invA_a = mlcp_to_lcp_data->A_solve(*a);
   const VectorX<T> trunc_neg_invA_a = -invA_a.head(Mv.size());
-
-  // Look for quick exit.
-  if (qq->rows() == 0)
-    return;
 
   // Get numbers of contacts.
   const int num_contacts = problem_data.mu.size();
