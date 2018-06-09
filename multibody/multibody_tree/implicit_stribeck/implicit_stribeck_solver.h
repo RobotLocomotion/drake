@@ -479,6 +479,9 @@ class ImplicitStribeckSolver {
     std::vector<Matrix2<T>> dft_dv_;
   };
 
+  void CalcFrictionForces(const Eigen::Ref<const VectorX<T>>& vt,
+                          const Eigen::Ref<const VectorX<T>>& fn);
+
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
   //         ⌊ mu                ,  x >= 1

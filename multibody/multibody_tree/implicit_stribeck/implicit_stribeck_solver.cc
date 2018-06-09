@@ -40,6 +40,76 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 }
 
 template <typename T>
+void ImplicitStribeckSolver<T>::CalcFrictionForces(
+    const Eigen::Ref<const VectorX<T>>& vt,
+    const Eigen::Ref<const VectorX<T>>& fn) {
+  const int nc = nc_;  // Number of contact points.
+
+  // Convenient aliases to problem data.
+  const auto& mu = *problem_data_aliases_.mu_ptr;
+
+  // Convenient aliases to variable size workspace variables.
+  auto ft = variable_size_workspace_.mutable_ft();
+  auto mus = variable_size_workspace_.mutable_mu();
+  auto t_hat = variable_size_workspace_.mutable_t_hat();
+  auto v_slip = variable_size_workspace_.mutable_v_slip();
+
+  // The stiction tolerance.
+  const double v_stribeck = parameters_.stiction_tolerance;
+
+  // We use the stiction tolerance as a reference scale to estimate a small
+  // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
+  // use to compute "soft" tangent vectors to avoid a division by zero
+  // singularity when tangential velocities are zero.
+  const double epsilon_v = v_stribeck * 1.0e-4;
+  const double epsilon_v2 = epsilon_v * epsilon_v;
+
+  // Compute 2D tangent vectors.
+  // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
+  // idea is to replace the norm in the definition of slip velocity by a
+  // "soft norm":
+  //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
+  // (in code εᵥ is named epsilon_v and εᵥ² is named epislon_v2). We use
+  // this to redefine the slip velocity:
+  //   v_slip = sqrt(vtᵀvt + v_epsilon)
+  // and a "soft" tangent vector:
+  //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
+  // which now is not only well defined but it has well defined derivatives.
+  // We use these softened quantities all throughout our derivations for
+  // consistency.
+  // Notes on the effect of the "soft norm":
+  // Consider a 1D case for which vₜ = v, to avoid geometric complications,
+  // but without loss of generality. If using a soft norm:
+  //   fₜ(v) = v/‖v‖ₛμ(‖v‖ₛ)
+  //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
+  // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
+  // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
+  //   fₜ(v) ≈ 2μ₀S(v)|v|
+  // where S(v) is the sign function and we have used the fact that in the
+  // limit v --> 0, μ(|v|) ≈ 2μ₀|v|. In this case case (recall this is
+  // equivalent to the solution in the limit εᵥ --> 0) fₜ(v) is linear in v.
+  // Now, very close to the origin, in the limit |v| << εᵥ, where the
+  // "softness" of the norm is important, the limit on fₜ(v) is:
+  //   fₜ(v) ≈ 2μ₀v²
+  // i.e. fₜ(v) is quadratic in v.
+  // This exaplains why we have "weak" gradients in the limit of vₜ
+  // approaching zero.
+  // These observations easily extend to the general 2D case.
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+    const auto vt_ic = vt.template segment<2>(ik);
+    // "soft norm":
+    v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
+    // "soft" tangent vector:
+    const Vector2<T> that_ic = vt_ic / v_slip(ic);
+    t_hat.template segment<2>(ik) = that_ic;
+    mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    // Friction force.
+    ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
+  }
+}
+
+template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
@@ -115,57 +185,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // The stiction tolerance.
   const double v_stribeck = parameters_.stiction_tolerance;
 
-  // We use the stiction tolerance as a reference scale to estimate a small
-  // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
-  // use to compute "soft" tangent vectors to avoid a division by zero
-  // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * 1.0e-4;
-  const double epsilon_v2 = epsilon_v * epsilon_v;
-
   for (int iter = 0; iter < max_iterations; ++iter) {
-    // Compute 2D tangent vectors.
-    // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
-    // idea is to replace the norm in the definition of slip velocity by a
-    // "soft norm":
-    //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
-    // (in code εᵥ is named epsilon_v and εᵥ² is named epislon_v2). We use
-    // this to redefine the slip velocity:
-    //   v_slip = sqrt(vtᵀvt + v_epsilon)
-    // and a "soft" tangent vector:
-    //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
-    // which now is not only well defined but it has well defined derivatives.
-    // We use these softened quantities all throughout our derivations for
-    // consistency.
-    // Notes on the effect of the "soft norm":
-    // Consider a 1D case for which vₜ = v, to avoid geometric complications,
-    // but without loss of generality. If using a soft norm:
-    //   fₜ(v) = v/‖v‖ₛμ(‖v‖ₛ)
-    //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
-    // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
-    // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
-    //   fₜ(v) ≈ 2μ₀S(v)|v|
-    // where S(v) is the sign function and we have used the fact that in the
-    // limit v --> 0, μ(|v|) ≈ 2μ₀|v|. In this case case (recall this is
-    // equivalent to the solution in the limit εᵥ --> 0) fₜ(v) is linear in v.
-    // Now, very close to the origin, in the limit |v| << εᵥ, where the
-    // "softness" of the norm is important, the limit on fₜ(v) is:
-    //   fₜ(v) ≈ 2μ₀v²
-    // i.e. fₜ(v) is quadratic in v.
-    // This exaplains why we have "weak" gradients in the limit of vₜ
-    // approaching zero.
-    // These observations easily extend to the general 2D case.
-    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
-      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-      const auto vt_ic = vt.template segment<2>(ik);
-      // "soft norm":
-      v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
-      // "soft" tangent vector:
-      const Vector2<T> that_ic = vt_ic / v_slip(ic);
-      t_hat.template segment<2>(ik) = that_ic;
-      mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
-      // Friction force.
-      ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
-    }
+    // Update:
+    //  ft, mus, t_hat, v_slip.
+    CalcFrictionForces(vt, fn);
 
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
