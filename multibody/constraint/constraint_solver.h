@@ -1406,10 +1406,11 @@ void ConstraintSolver<T>::ConstructLinearEquationSolversForMLCP(
 }
 
 // Populates the packed constraint force vector from the solution to the
-// linear complementarity problem (LCP).
+// linear complementarity problem (LCP) constructed by SolveImpactProblem().
 // @param problem_data the constraint problem data.
-// @param a reference to a MlcpToLcpData object.
-// @param a the vector `a` output from UpdateDiscretizedTimeLCP().
+// @param mlcp_to_lcp_data a reference to a MlcpToLcpData object.
+// @param zz the solution obtained by a LCP solver to the LCP.
+// @param a the vector `a` as described in @ref velocity-level-MLCPs.
 // @param[out] cf the constraint forces, on return.
 // @pre cf is non-null.
 template <typename T>
@@ -1419,6 +1420,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLCPSolution(
     const VectorX<T>& zz,
     const VectorX<T>& a,
     VectorX<T>* cf) {
+  // Forces are impulsive- they are not to be scaled using a time delta.
   PopulatePackedConstraintForcesFromLCPSolution(
       problem_data, mlcp_to_lcp_data, zz, a, 1.0, cf);
 }
