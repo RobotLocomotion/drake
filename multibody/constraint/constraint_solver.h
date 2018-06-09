@@ -82,11 +82,11 @@ class ConstraintSolver {
     /// constraint matrix and M is the system generalized inertia matrix.
     Eigen::CompleteOrthogonalDecomposition<MatrixX<T>> delassus_QTZ;
 
-    /// A function pointer for solving linear systems using MLCP "A" matrix
+    /// A function wrapper for solving linear systems using MLCP "A" matrix
     /// (see @ref Velocity-level-MLCPs).
     std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
 
-    /// A function pointer for solving linear systems using only the upper left
+    /// A function wrapper for solving linear systems using only the upper left
     /// block of A⁻¹ in the MLCP (see @ref Velocity-level-MLCPs),
     /// toward exploiting operations with zero blocks. For example:<pre>
     /// A⁻¹ | b |
@@ -148,7 +148,7 @@ class ConstraintSolver {
   /// (5) 0 ≤ fL  ⊥  x₈ ≥ 0
   /// </pre>
   /// Here, the velocity variables
-  /// v⁻ ∈ ℝⁿᵛ, v ∈ ℝⁿᵛ⁺ correspond to the velocity of the system before and
+  /// v⁻ ∈ ℝⁿᵛ, v ∈ ℝⁿᵛ correspond to the velocity of the system before and
   /// after impulses are applied, respectively. More details will be forthcoming
   /// but key variables are `M ∈ ℝⁿᵛˣⁿᵛ`, the generalized inertia matrix;
   /// `G ∈ ℝⁿᵇˣⁿᵛ`, `N ∈ ℝⁿᶜˣⁿᵛ`, `D ∈ ℝⁿᶜᵏˣⁿᵛ`, and `L ∈ ℝⁿᵘˣⁿᵛ` correspond to
@@ -305,6 +305,7 @@ class ConstraintSolver {
   /// `h`. Solving the resulting pure LCP yields non-impulsive constraint forces
   /// that can be obtained from PopulatePackedConstraintForcesFromLCPSolution().
   /// @param problem_data the constraint problem data.
+  /// @param h the time step. 
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
   ///             the constraint solution process.
@@ -321,7 +322,7 @@ class ConstraintSolver {
       MatrixX<T>* MM,
       VectorX<T>* qq);
 
-  /// Solves the impact problem described above.
+  /// Solves the impact problem described in @ref velocity-level-MLCPs.
   /// @param problem_data The data used to compute the impulsive constraint
   ///            forces.
   /// @param cf The computed impulsive forces, on return, in a packed storage
@@ -341,11 +342,11 @@ class ConstraintSolver {
   ///           CalcContactForcesInContactFrames(). `cf` will be resized as
   ///           necessary.
   /// @pre Constraint data has been computed.
-  /// @throws a std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., the effects of roundoff error in attempting to
   ///         solve a complementarity problem); in such cases, it is
   ///         recommended to increase regularization and attempt again.
-  /// @throws a std::logic_error if `cf` is null.
+  /// @throws std::logic_error if `cf` is null.
   void SolveImpactProblem(const ConstraintVelProblemData<T>& problem_data,
                           VectorX<T>* cf) const;
 
@@ -371,27 +372,27 @@ class ConstraintSolver {
 
   /// Solves the appropriate constraint problem at the acceleration level.
   /// @param problem_data The data used to compute the constraint forces.
-  /// @param cf The computed constraint forces, on return, in a packed storage
-  ///           format. The first `nc` elements of `cf` correspond to the
-  ///           magnitudes of the contact forces applied along the normals of
-  ///           the `nc` contact points. The next elements of `cf`
-  ///           correspond to the frictional forces along the `r` spanning
-  ///           directions at each non-sliding point of contact. The first `r`
-  ///           values (after the initial `nc` elements) correspond to the first
-  ///           non-sliding contact, the next `r` values correspond to the
-  ///           second non-sliding contact, etc. The next `ℓ` values of `cf`
-  ///           correspond to the forces applied to enforce generic unilateral
-  ///           constraints. The final `b` values of `cf` correspond to the
-  ///           forces applied to enforce generic bilateral constraints. This
-  ///           packed storage format can be turned into more useful
-  ///           representations through
-  ///           ComputeGeneralizedForceFromConstraintForces() and
-  ///           CalcContactForcesInContactFrames(). `cf` will be resized as
-  ///           necessary.
+  /// @param[out] cf The computed constraint forces, on return, in a packed
+  ///             storage format. The first `nc` elements of `cf` correspond to
+  ///             the magnitudes of the contact forces applied along the normals
+  ///             of the `nc` contact points. The next elements of `cf`
+  ///             correspond to the frictional forces along the `r` spanning
+  ///             directions at each non-sliding point of contact. The first `r`
+  ///             values (after the initial `nc` elements) correspond to the
+  ///             first non-sliding contact, the next `r` values correspond to
+  ///             the second non-sliding contact, etc. The next `nl` values of
+  ///             `cf` correspond to the forces applied to enforce generic
+  ///             unilateral constraints. The final `nb` values of `cf`
+  ///             correspond to the forces applied to enforce generic bilateral
+  ///             constraints. This packed storage format can be turned into
+  ///             more useful representations through
+  ///             ComputeGeneralizedForceFromConstraintForces() and
+  ///             CalcContactForcesInContactFrames(). `cf` will be resized as
+  ///             necessary.
   /// @pre Constraint data has been computed.
-  /// @throws a std::runtime_error if the constraint forces cannot be computed
+  /// @throws std::runtime_error if the constraint forces cannot be computed
   ///         (due to, e.g., an "inconsistent" rigid contact configuration).
-  /// @throws a std::logic_error if `cf` is null.
+  /// @throws std::logic_error if `cf` is null.
   void SolveConstraintProblem(const ConstraintAccelProblemData<T>& problem_data,
                               VectorX<T>* cf) const;
 
@@ -414,7 +415,7 @@ class ConstraintSolver {
 
   /// Computes the generalized force on the system from the constraint forces
   /// given in packed storage.
-  /// @param problem_data The data used to compute the contact forces.
+  /// @param problem_data The data used to compute the constraint forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for
   ///           PopulatePackedConstraintForcesFromLCPSolution().
@@ -432,8 +433,11 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due to both external forces
   /// and constraint forces.
+  /// @param problem_data The data used to compute the constraint forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
+  /// @param[out] generalized_acceleration the generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
@@ -448,8 +452,12 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due *only* to constraint
   /// forces.
+  /// @param problem_data The acceleration-level data used to compute the
+  ///        constraint forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
+  /// @param[out] generalized_acceleration the generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAccelerationFromConstraintForces(
@@ -459,8 +467,12 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due *only* to constraint
   /// forces.
+  /// @param problem_data The velocity-level data used to compute the
+  ///        constraint forces.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
+  /// @param[out] generalized_acceleration the generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAccelerationFromConstraintForces(
@@ -470,8 +482,11 @@ class ConstraintSolver {
 
   /// Computes the change to the system generalized velocity from constraint
   /// impulses.
+  /// @param problem_data The data used to compute the constraint forces.
   /// @param cf The computed constraint impulses, in the packed storage
   ///           format described in documentation for SolveImpactProblem.
+  /// @param[out] generalized_delta_v the change in generalized velocity, on
+  ///             return.
   /// @throws std::logic_error if `generalized_delta_v` is null or
   ///         `cf` vector is incorrectly sized.
   static void ComputeGeneralizedVelocityChange(
@@ -621,7 +636,7 @@ class ConstraintSolver {
 // Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
 //     | G   0  |
-// this function sets a function pointer that computes X for X = A⁻¹ | B | and
+// this function sets a function wrapper that computes X for X = A⁻¹ | B | and
 //                                                                   | 0 |
 // given B for the case where X will be premultiplied by some matrix | R 0 |,
 // where R is an arbitrary matrix. This odd operation is relatively common, and
@@ -683,7 +698,7 @@ void ConstraintSolver<T>::DetermineNewPartialInertiaSolveOperator(
 // Jacobian of bilaterals constraints (G):
 // A ≡ | M  -Gᵀ |
 //     | G   0  |
-// this function sets a function pointer that computes X for AX = B, given B.
+// this function sets a function wrapper that computes X for AX = B, given B.
 // @param num_generalized_velocities The dimension of the system generalized
 //        velocities.
 // @param problem_data The constraint problem data.
@@ -801,7 +816,7 @@ ProblemData* ConstraintSolver<T>::UpdateProblemDataForUnilateralConstraints(
     new_data.G_mult = zero_fn;
     new_data.G_transpose_mult = zero_gv_dim_fn;
 
-    // Update the inertia function pointer.
+    // Update the inertia function wrapper.
     new_data.solve_inertia = modified_inertia_solve;
     return &new_data;
   }
@@ -1467,7 +1482,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLCPSolution(
 template <typename T>
 void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
     const ConstraintVelProblemData<T>& problem_data,
-    double dt,
+    double h,
     MlcpToLcpData* mlcp_to_lcp_data,
     VectorX<T>* a,
     MatrixX<T>* MM,
@@ -1535,10 +1550,10 @@ void ConstraintSolver<T>::UpdateDiscretizedTimeLCP(
   // where D = |  F |
   //           | -F |
   const int nr2 = nr * 2;
-  MM->topLeftCorner(nc + nr2, nc + nr2) *= dt;
-  MM->bottomLeftCorner(nl, nc + nr2) *= dt;
-  MM->topRightCorner(nc + nr2, nl) *= dt;
-  MM->bottomRightCorner(nl, nl) *= dt;
+  MM->topLeftCorner(nc + nr2, nc + nr2) *= h;
+  MM->bottomLeftCorner(nl, nc + nr2) *= h;
+  MM->topRightCorner(nc + nr2, nl) *= h;
+  MM->bottomRightCorner(nl, nl) *= h;
 
   // Regularize the LCP matrix.
   MM->topLeftCorner(nc, nc) += Eigen::DiagonalMatrix<T, Eigen::Dynamic>(gammaN);
