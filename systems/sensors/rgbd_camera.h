@@ -122,8 +122,13 @@ class RgbdCamera final : public LeafSystem<double> {
   /// offscreen rendering is executed. This is useful for debugging purposes.
   /// The default is true.
   ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.  The default is true.
+  ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
@@ -133,7 +138,8 @@ class RgbdCamera final : public LeafSystem<double> {
              double fov_y = M_PI_4,
              bool show_window = RenderingConfig::kDefaultShowWindow,
              int width = RenderingConfig::kDefaultWidth,
-             int height = RenderingConfig::kDefaultHeight);
+             int height = RenderingConfig::kDefaultHeight,
+             bool flat_terrain = true);
 
   /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
@@ -164,8 +170,13 @@ class RgbdCamera final : public LeafSystem<double> {
   /// offscreen rendering is executed. This is useful for debugging purposes.
   /// The default is true.
   ///
+  /// @param flat_terrain A flag to add a flat terrain at z = 0 in the world
+  /// coordinate system.  The default is true.
+  ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
@@ -174,7 +185,8 @@ class RgbdCamera final : public LeafSystem<double> {
              double fov_y = M_PI_4,
              bool show_window = RenderingConfig::kDefaultShowWindow,
              int width = RenderingConfig::kDefaultWidth,
-             int height = RenderingConfig::kDefaultHeight);
+             int height = RenderingConfig::kDefaultHeight,
+             bool flat_terrain = true);
 
   ~RgbdCamera() = default;
 
@@ -276,6 +288,7 @@ class RgbdCamera final : public LeafSystem<double> {
   std::map<int, std::vector<VisualIndex>> body_visual_indices_map_;
 
   const bool camera_fixed_;
+  const bool flat_terrain_;
   const CameraInfo color_camera_info_;
   const CameraInfo depth_camera_info_;
   const Eigen::Isometry3d X_WB_initial_;
