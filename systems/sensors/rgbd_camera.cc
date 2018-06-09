@@ -53,11 +53,12 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const Eigen::Vector3d& position,
                        const Eigen::Vector3d& orientation, double z_near,
-                       double z_far, double fov_y, bool show_window, int width,
-                       int height)
+                       double z_far, double fov_y, bool show_window,
+                       int width, int height, bool flat_terrain)
     : tree_(tree),
       frame_(RigidBodyFrame<double>()),
       camera_fixed_(true),
+      flat_terrain_(flat_terrain),
       color_camera_info_(width, height, fov_y),
       depth_camera_info_(width, height, fov_y),
       X_WB_initial_(
@@ -77,10 +78,11 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        const RigidBodyTree<double>& tree,
                        const RigidBodyFrame<double>& frame, double z_near,
                        double z_far, double fov_y, bool show_window,
-                       int width, int height)
+                       int width, int height, bool flat_terrain)
     : tree_(tree),
       frame_(frame),
       camera_fixed_(false),
+      flat_terrain_(flat_terrain),
       color_camera_info_(width, height, fov_y),
       depth_camera_info_(width, height, fov_y),
       renderer_(
@@ -135,7 +137,8 @@ void RgbdCamera::InitRenderer() {
     }
   }
 
-  renderer_->AddFlatTerrain();
+  if (flat_terrain_)
+    renderer_->AddFlatTerrain();
 }
 
 const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
