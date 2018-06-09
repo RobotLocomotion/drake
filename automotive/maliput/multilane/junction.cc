@@ -16,8 +16,11 @@ Segment* Junction::NewSegment(const api::SegmentId& id,
                               double r_min, double r_max,
                               const api::HBounds& elevation_bounds) {
   segments_.push_back(std::make_unique<Segment>(
-      id, this, std::move(road_curve), r_min, r_max, elevation_bounds));
-  return segments_.back().get();
+      id, this, register_lane_,
+      std::move(road_curve), r_min, r_max, elevation_bounds));
+  Segment* segment = segments_.back().get();
+  register_segment_(segment);
+  return segment;
 }
 
 }  // namespace multilane

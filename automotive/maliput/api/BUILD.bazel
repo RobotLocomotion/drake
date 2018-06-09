@@ -20,11 +20,13 @@ drake_cc_package_library(
 drake_cc_library(
     name = "everything",
     srcs = [
+        "basic_id_index.cc",
         "lane.cc",
         "lane_data.cc",
         "road_geometry.cc",
     ],
     hdrs = [
+        "basic_id_index.h",
         "branch_point.h",
         "junction.h",
         "lane.h",

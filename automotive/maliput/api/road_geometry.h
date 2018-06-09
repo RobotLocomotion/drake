@@ -3,7 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "drake/automotive/maliput/api/branch_point.h"
+#include "drake/automotive/maliput/api/junction.h"
+#include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
+#include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
 #include "drake/common/drake_copyable.h"
 
@@ -25,7 +29,9 @@ using RoadGeometryId = TypeSpecificIdentifier<class RoadGeometry>;
 //                          scalar type T like everything else in drake.
 class RoadGeometry {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry)
+  class IdIndex;
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RoadGeometry);
 
   virtual ~RoadGeometry() = default;
 
@@ -57,6 +63,10 @@ class RoadGeometry {
   const BranchPoint* branch_point(int index) const {
     return do_branch_point(index);
   }
+
+  /// Accesses the IdIndex interface, which allows getting elements of
+  /// the RoadGeometry's object graph by their unique id's.
+  const IdIndex& ById() const { return DoById(); }
 
   /// Determines the RoadPosition corresponding to GeoPosition @p geo_position.
   ///
@@ -140,6 +150,8 @@ class RoadGeometry {
 
   virtual const BranchPoint* do_branch_point(int index) const = 0;
 
+  virtual const IdIndex& DoById() const = 0;
+
   virtual RoadPosition DoToRoadPosition(const GeoPosition& geo_pos,
                                         const RoadPosition* hint,
                                         GeoPosition* nearest_position,
@@ -149,6 +161,47 @@ class RoadGeometry {
 
   virtual double do_angular_tolerance() const = 0;
   ///@}
+};
+
+
+/// Abstract interface for a collection of methods which allow accessing
+/// objects in a RoadGeometry's object graph (Lanes, Segments, Junctions,
+/// BranchPoints) by their unique id's.
+class RoadGeometry::IdIndex {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IdIndex);
+  virtual ~IdIndex() = default;
+
+  /// Returns the Lane identified by @p id, or `nullptr` if @p id is unknown.
+  const Lane* GetLane(const LaneId& id) const { return DoGetLane(id); }
+
+  /// Returns the Segment identified by @p id, or `nullptr` if @p id is
+  /// unknown.
+  const Segment* GetSegment(const SegmentId& id) const {
+    return DoGetSegment(id);
+  }
+
+  /// Returns the Junction identified by @p id, or `nullptr` if @p id is
+  /// unknown.
+  const Junction* GetJunction(const JunctionId& id) const {
+    return DoGetJunction(id);
+  }
+
+  /// Returns the BranchPoint identified by @p id, or `nullptr` if @p id is
+  /// unknown.
+  const BranchPoint* GetBranchPoint(const BranchPointId& id) const {
+    return DoGetBranchPoint(id);
+  }
+
+ protected:
+  IdIndex() = default;
+
+ private:
+  virtual const Lane* DoGetLane(const LaneId& id) const = 0;
+  virtual const Segment* DoGetSegment(const SegmentId& id) const = 0;
+  virtual const Junction* DoGetJunction(const JunctionId& id) const = 0;
+  virtual const BranchPoint* DoGetBranchPoint(
+      const BranchPointId& id) const = 0;
 };
 
 

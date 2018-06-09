@@ -21,6 +21,11 @@ class ProximityEngineTester {
                          const ProximityEngine<T>& ref_engine) {
     return ref_engine.IsDeepCopy(test_engine);
   }
+
+  template <typename T>
+  static int peek_next_clique(const ProximityEngine<T>& engine) {
+    return engine.peek_next_clique();
+  }
 };
 
 namespace {
@@ -277,8 +282,8 @@ class SimplePenetrationTest : public ::testing::Test {
   }
 
   // Compute penetration and confirm that none were found.
-  void ExpectNoPenetration(ProximityEngine<double>* engine = nullptr) {
-    engine = engine == nullptr ? &engine_ : engine;
+  template <typename T>
+  void ExpectNoPenetration(ProximityEngine<T>* engine) {
     std::vector<PenetrationAsPointPair<double>> results =
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
     EXPECT_EQ(results.size(), 0);
@@ -313,7 +318,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
 
   // Non-colliding case
   MoveDynamicSphere(dynamic_index, false /* not colliding */);
-  ExpectNoPenetration();
+  ExpectNoPenetration(&engine_);
 
   // Colliding case
   MoveDynamicSphere(dynamic_index, true /* colliding */);
@@ -347,7 +352,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
-  ExpectNoPenetration();
+  ExpectNoPenetration(&engine_);
 
   // Colliding case
   MoveDynamicSphere(collide_index, true /* colliding */);
@@ -361,6 +366,168 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+// Invokes ExcludeCollisionsWithin in various scenarios which will and won't
+// generate cliques.
+TEST_F(SimplePenetrationTest, ExcludeCollisionsWithinCliqueGeneration) {
+  using PET = ProximityEngineTester;
+  GeometryIndex dynamic1 = engine_.AddDynamicGeometry(sphere_);
+  GeometryIndex dynamic2 = engine_.AddDynamicGeometry(sphere_);
+
+  Isometry3<double> pose{Isometry3<double>::Identity()};
+  AnchoredGeometryIndex anchored1 = engine_.AddAnchoredGeometry(sphere_, pose);
+  AnchoredGeometryIndex anchored2 = engine_.AddAnchoredGeometry(sphere_, pose);
+
+  int expected_clique = PET::peek_next_clique(engine_);
+
+  // No dynamic geometry --> no cliques generated.
+  engine_.ExcludeCollisionsWithin({}, {anchored1, anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Single dynamic and no anchored geometry --> no cliques generated.
+  engine_.ExcludeCollisionsWithin({dynamic1}, {});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Multiple dynamic and no anchored geometry --> cliques generated.
+  engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+
+  // Single dynamic and (one or more) anchored geometry --> cliques generated.
+  engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  engine_.ExcludeCollisionsWithin({dynamic1}, {anchored1, anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+
+  // Multiple dynamic and (one or more) anchored geometry --> cliques generated.
+  engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {anchored1});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+  engine_.ExcludeCollisionsWithin({dynamic1, dynamic2}, {anchored1, anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+}
+
+// Performs the same collision test where the geometries have been filtered.
+TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
+  GeometryIndex origin_index = engine_.AddDynamicGeometry(sphere_);
+  GeometryId origin_id = GeometryId::get_new_id();
+  dynamic_map_.push_back(origin_id);
+  EXPECT_EQ(origin_index, 0);
+  std::vector<Isometry3<double>> poses{Isometry3<double>::Identity()};
+  engine_.UpdateWorldPoses(poses);
+
+  GeometryIndex collide_index = engine_.AddDynamicGeometry(sphere_);
+  GeometryId collide_id = GeometryId::get_new_id();
+  dynamic_map_.push_back(collide_id);
+  EXPECT_EQ(collide_index, 1);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  engine_.ExcludeCollisionsWithin({origin_index, collide_index}, {});
+
+  // Non-colliding case
+  MoveDynamicSphere(collide_index, false /* not colliding */);
+  ExpectNoPenetration(&engine_);
+
+  // Colliding case
+  MoveDynamicSphere(collide_index, true /* colliding */);
+  ExpectNoPenetration(&engine_);
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  ExpectNoPenetration(&copy_engine);
+
+  // Test AutoDiffXd converted engine
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  ExpectNoPenetration(ad_engine.get());
+}
+
+// Invokes ExcludeCollisionsBetween in various scenarios which will and won't
+// generate cliques.
+TEST_F(SimplePenetrationTest, ExcludeCollisionsBetweenCliqueGeneration) {
+  using PET = ProximityEngineTester;
+  GeometryIndex dynamic1 = engine_.AddDynamicGeometry(sphere_);
+  GeometryIndex dynamic2 = engine_.AddDynamicGeometry(sphere_);
+  GeometryIndex dynamic3 = engine_.AddDynamicGeometry(sphere_);
+
+  Isometry3<double> pose{Isometry3<double>::Identity()};
+  AnchoredGeometryIndex anchored1 = engine_.AddAnchoredGeometry(sphere_, pose);
+  AnchoredGeometryIndex anchored2 = engine_.AddAnchoredGeometry(sphere_, pose);
+  AnchoredGeometryIndex anchored3 = engine_.AddAnchoredGeometry(sphere_, pose);
+
+  int expected_clique = PET::peek_next_clique(engine_);
+
+  // No dynamic geometry --> no cliques generated.
+  engine_.ExcludeCollisionsBetween({}, {anchored1}, {}, {anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // One empty group --> no cliques generated
+  engine_.ExcludeCollisionsBetween({}, {}, {dynamic1}, {anchored1});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1}, {}, {});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Two groups with the same single geometry --> no cliques generated.
+  engine_.ExcludeCollisionsBetween({dynamic1}, {}, {dynamic1}, {});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Groups with dynamic and anchored geometry -- cliques generated for (g, a)
+  // pairs but *not* (a, a) pairs: (d1, d2), (d1, a2), (d2, a1).
+  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1},
+                                   {dynamic2}, {anchored2});
+  expected_clique += 3;
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Repeat previous filter declaration -- no cliques added.
+  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1},
+                                   {dynamic2}, {anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+
+  // Partial repeat -- add one anchored geometry to one set. One new clique for
+  // (d2, a3).
+  engine_.ExcludeCollisionsBetween({dynamic1}, {anchored1, anchored3},
+                                   {dynamic2}, {anchored2});
+  ASSERT_EQ(PET::peek_next_clique(engine_), ++expected_clique);
+
+  // Partial repeat -- add one dynamic geometry to one set. Two new cliques for
+  // (d3, d2) and (d3, a2).
+  engine_.ExcludeCollisionsBetween({dynamic1, dynamic3}, {anchored1},
+                                   {dynamic2}, {anchored2});
+  expected_clique += 2;
+  ASSERT_EQ(PET::peek_next_clique(engine_), expected_clique);
+}
+
+TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
+  GeometryIndex origin_index = engine_.AddDynamicGeometry(sphere_);
+  GeometryId origin_id = GeometryId::get_new_id();
+  dynamic_map_.push_back(origin_id);
+  EXPECT_EQ(origin_index, 0);
+  std::vector<Isometry3<double>> poses{Isometry3<double>::Identity()};
+  engine_.UpdateWorldPoses(poses);
+
+  GeometryIndex collide_index = engine_.AddDynamicGeometry(sphere_);
+  GeometryId collide_id = GeometryId::get_new_id();
+  dynamic_map_.push_back(collide_id);
+  EXPECT_EQ(collide_index, 1);
+  EXPECT_EQ(engine_.num_geometries(), 2);
+
+  engine_.ExcludeCollisionsBetween({origin_index}, {}, {collide_index}, {});
+
+  // Non-colliding case
+  MoveDynamicSphere(collide_index, false /* not colliding */);
+  ExpectNoPenetration(&engine_);
+
+  // Colliding case
+  MoveDynamicSphere(collide_index, true /* colliding */);
+  ExpectNoPenetration(&engine_);
+
+  // Test colliding case on copy.
+  ProximityEngine<double> copy_engine(engine_);
+  ExpectNoPenetration(&copy_engine);
+
+  // Test AutoDiffXd converted engine
+  std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
+      engine_.ToAutoDiffXd();
+  ExpectNoPenetration(ad_engine.get());
 }
 
 // Robust Box-Primitive tests. Tests collision of the box with other primitives

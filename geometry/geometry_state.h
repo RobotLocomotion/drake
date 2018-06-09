@@ -13,6 +13,7 @@
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/proximity_engine.h"
@@ -384,6 +385,35 @@ class GeometryState {
 
   //@}
 
+  /** @name               Collision filters
+
+   This interface allows control over which pairs of geometries can even be
+   considered for collision.
+
+   See @ref scene_graph_collision_filtering "Scene Graph Collision Filtering"
+   for more details.   */
+  //@{
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
+   `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
+
+   @throws std::logic_error if the set includes ids that don't exist in the
+                            scene graph.  */
+  void ExcludeCollisionsWithin(const GeometrySet& set);
+
+  /** Excludes geometry pairs from collision evaluation by updating the
+   candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
+   `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
+   geometries `setA` and `setB`, respectively. This does _not_ preclude
+   collisions between members of the _same_ set.
+
+   @throws std::logic_error if the groups include ids that don't exist in the
+                            scene graph.   */
+  void ExcludeCollisionsBetween(const GeometrySet& setA,
+                                const GeometrySet& setB);
+  //@}
+
   /** @name Scalar conversion */
   //@{
 
@@ -443,6 +473,20 @@ class GeometryState {
   // Friend declaration so that the internals of the state can be confirmed in
   // unit tests.
   template <class U> friend class GeometryStateTester;
+
+  // Function to facilitate testing.
+  int peek_next_clique() const {
+    return internal::GeometryStateCollisionFilterAttorney::peek_next_clique(
+        *geometry_engine_);
+  }
+
+  // Takes the frame and geometry ids from the given geometry set and
+  // populates the sets of geometry *indices* for the dynamic and anchored
+  // geometries implied by the group. Ids that can't be identified will cause
+  // an exception to be thrown.
+  void CollectIndices(const GeometrySet& geometry_set,
+                      std::unordered_set<GeometryIndex>* dynamic,
+                      std::unordered_set<AnchoredGeometryIndex>* anchored);
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param poses The frame id and pose values.

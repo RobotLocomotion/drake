@@ -86,13 +86,21 @@ void GetPositionIfSmallerDistance(const api::GeoPosition& geo_position,
 }  // namespace
 
 Junction* RoadGeometry::NewJunction(api::JunctionId id) {
-  junctions_.push_back(std::make_unique<Junction>(id, this));
-  return junctions_.back().get();
+  namespace sp = std::placeholders;
+  junctions_.push_back(std::make_unique<Junction>(
+      id, this,
+      [this](auto segment) { id_index_.AddSegment(segment); },
+      [this](auto lane) { id_index_.AddLane(lane); }));
+  Junction* junction = junctions_.back().get();
+  id_index_.AddJunction(junction);
+  return junction;
 }
 
 BranchPoint* RoadGeometry::NewBranchPoint(api::BranchPointId id) {
   branch_points_.push_back(std::make_unique<BranchPoint>(id, this));
-  return branch_points_.back().get();
+  BranchPoint* branch_point = branch_points_.back().get();
+  id_index_.AddBranchPoint(branch_point);
+  return branch_point;
 }
 
 const api::Junction* RoadGeometry::do_junction(int index) const {
