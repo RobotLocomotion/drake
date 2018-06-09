@@ -305,7 +305,7 @@ class ConstraintSolver {
   /// `h`. Solving the resulting pure LCP yields non-impulsive constraint forces
   /// that can be obtained from PopulatePackedConstraintForcesFromLCPSolution().
   /// @param problem_data the constraint problem data.
-  /// @param h the time step. 
+  /// @param h the time step.
   /// @param[out] mlcp_to_lcp_data a pointer to a valid MlcpToLcpData object;
   ///             the caller must ensure that this pointer remains valid through
   ///             the constraint solution process.
@@ -449,6 +449,26 @@ class ConstraintSolver {
     (*generalized_acceleration) += problem_data.solve_inertia(
         problem_data.tau);
   }
+
+  /// Computes the system generalized acceleration due to both external forces
+  /// and constraint forces.
+  /// @param problem_data The velocity-level data used to compute the
+  ///        constraint forces.
+  /// @param cf The computed constraint forces, in the packed storage
+  ///           format described in documentation for SolveConstraintProblem.
+  /// @param v  The system generalized velocity at time t.
+  /// @param dt The discretization time constant used to take the system's
+  ///           generalized velocities from time t to time t + `dt`.
+  /// @param[out] generalized_acceleration the generalized acceleration, on
+  ///             return.
+  /// @throws std::logic_error if `generalized_acceleration` is null,
+  ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
+  static void ComputeGeneralizedAcceleration(
+      const ConstraintVelProblemData<T>& problem_data,
+      const VectorX<T>& v,
+      const VectorX<T>& cf,
+      double dt,
+      VectorX<T>* generalized_acceleration);
 
   /// Computes the system generalized acceleration due *only* to constraint
   /// forces.
@@ -2255,6 +2275,28 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
       problem_data.F_transpose_mult(f_frictional) +
       problem_data.L_transpose_mult(f_limit) +
       problem_data.G_transpose_mult(f_bilat);
+}
+
+template <class T>
+void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
+    const ConstraintVelProblemData<T>& problem_data,
+    const VectorX<T>& v,
+    const VectorX<T>& cf,
+    double dt,
+    VectorX<T>* generalized_acceleration) {
+  DRAKE_DEMAND(dt > 0);
+
+  ComputeGeneralizedAccelerationFromConstraintForces(problem_data, cf,
+                                              generalized_acceleration);
+
+  // The new velocity is v(t+dt) = v(t) + dt*accel.
+  //                             = inv(M)*M*(v(t) + dt*fext) + dt*ga
+  //                             = inv(M)*Mv + dt*ga
+  // Note: we have no way to break apart the Mv term. But, we can instead
+  // compute v(t+dt) and then solve for accel.
+  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv) +
+                           dt * (*generalized_acceleration);
+  *generalized_acceleration = (vplus - v)/dt;
 }
 
 template <class T>
