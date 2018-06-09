@@ -222,11 +222,11 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
                              w_diff(2) / wA(2));
       const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
 
-      // Since RollPitchYaw::kGimbalLockToleranceCosPitchAngle_ = 0.008,
+      // Since RollPitchYaw::kGimbalLockToleranceCosPitchAngle = 0.008,
       // we expect max_error <= (2^7 = 256) * kEpsilon ≈ 2.842E-14.
       // This test uses (2^8 = 256) * kEpsilon in the unlikely event that a
       // compiler, operating system, ... inadvertently loses an extra bit.
-      // For details, see documentation for kGimbalLockToleranceCosPitchAngle_.
+      // For details, see documentation for kGimbalLockToleranceCosPitchAngle.
       EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
     }
   }

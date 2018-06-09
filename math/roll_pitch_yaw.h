@@ -185,7 +185,7 @@ class RollPitchYaw {
   static bool DoesCosPitchAngleViolateGimbalLockTolerance(
       const T& cos_pitch_angle) {
     using std::abs;
-    return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle_;
+    return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle;
   }
 
   /// Returns true if the pitch-angle `p` is within an internally-defined
@@ -203,7 +203,7 @@ class RollPitchYaw {
   /// pitch angle `p` to gimbal-lock, i.e., the allowable proximity of `p` to
   /// `(n*π + π/2)` where `n = 0, ±1, ±2, ...`.
   static double GimbalLockPitchAngleTolerance() {
-    return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle_);
+    return M_PI_2 - std::acos(kGimbalLockToleranceCosPitchAngle);
   }
 
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
@@ -325,9 +325,10 @@ class RollPitchYaw {
     using std::cos;
     const T sr = sin(r), cr = cos(r);
     const T sp = sin(p), cp = cos(p);
-    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp))
+    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
       ThrowPitchAngleViolatesGimbalLockTolerance(__func__, __FILE__, __LINE__,
                                                  p);
+    }
     const T one_over_cp = T(1)/cp;
     const T cr_over_cp = cr * one_over_cp;
     const T sr_over_cp = sr * one_over_cp;
@@ -506,9 +507,10 @@ class RollPitchYaw {
     const T& p = pitch_angle();
     const T& y = yaw_angle();
     const T sp = sin(p), cp = cos(p);
-    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp))
+    if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
       ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
                                                  line_number, p);
+    }
     const T one_over_cp = T(1)/cp;
     const T sy = sin(y), cy = cos(y);
     const T cy_over_cp = cy * one_over_cp;
@@ -552,23 +554,23 @@ class RollPitchYaw {
   // and then back to angular velocity.  This test revealed an imprecision in
   // the back-and-forth calculation near gimbal-lock by calculating max_error
   // (how much the angular velocity changed in the back-and-forth calculation).
-  // The table below shows various values of kGimbalLockToleranceCosPitchAngle_,
+  // The table below shows various values of kGimbalLockToleranceCosPitchAngle,
   // it associated proximity to gimbal-lock (in degrees) and the associated
   // max_error (in terms of machine kEpsilon = 1/2^52 ≈ 2.22E-16).
   // ---------------------------------------------------------------------------
-  //  kGimbalLockToleranceCosPitchAngle_  |  max_error
+  //  kGimbalLockToleranceCosPitchAngle  |  max_error
   // ---------------------------------------------------------------------------
-  //  0.001 ≈ 0.06°                       | (2^10 = 1024) * kEpsilon ≈ 2.274E-13
-  //  0.002 ≈ 0.11°                       |  (2^9 = 512)  * kEpsilon ≈ 1.137E-13
-  //  0.004 ≈ 0.23°                       |  (2^8 = 256)  * kEpsilon ≈ 5.684E-14
-  //  0.008 ≈ 0.46°                       |  (2^7 = 256)  * kEpsilon ≈ 2.842E-14
-  //  0.016 ≈ 0.92°                       |  (2^6 = 128)  * kEpsilon ≈ 1.421E-14
-  //  0.032 ≈ 1.83°                       |  (2^5 =  64)  * kEpsilon ≈ 7.105E-15
+  //  0.001 ≈ 0.06°                      | (2^10 = 1024) * kEpsilon ≈ 2.274E-13
+  //  0.002 ≈ 0.11°                      |  (2^9 = 512)  * kEpsilon ≈ 1.137E-13
+  //  0.004 ≈ 0.23°                      |  (2^8 = 256)  * kEpsilon ≈ 5.684E-14
+  //  0.008 ≈ 0.46°                      |  (2^7 = 128)  * kEpsilon ≈ 2.842E-14
+  //  0.016 ≈ 0.92°                      |  (2^6 =  64)  * kEpsilon ≈ 1.421E-14
+  //  0.032 ≈ 1.83°                      |  (2^5 =  32)  * kEpsilon ≈ 7.105E-15
   // ---------------------------------------------------------------------------
-  // Hence if kGimbalLockToleranceCosPitchAngle_ = 0.008 and the pitch angle is
+  // Hence if kGimbalLockToleranceCosPitchAngle = 0.008 and the pitch angle is
   // in the proximity of ≈ 0.46° of gimbal lock, there may be inaccuracies in
-  // 7 of the 52 bits in max_error's mantissa.
-  static constexpr double kGimbalLockToleranceCosPitchAngle_ = 0.008;
+  // 7 of the 52 bits in max_error's mantissa, which we deem acceptable.
+  static constexpr double kGimbalLockToleranceCosPitchAngle = 0.008;
 };
 
 /// (Deprecated), use @ref math::RollPitchYaw(quaternion).

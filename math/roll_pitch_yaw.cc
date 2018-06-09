@@ -12,7 +12,7 @@ namespace drake {
 namespace math {
 
 template <class T>
-constexpr double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle_;
+constexpr double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle;
 
 template <typename T>
 RollPitchYaw<T>::RollPitchYaw(const RotationMatrix<T>& R) :
