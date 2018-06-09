@@ -482,6 +482,12 @@ class ImplicitStribeckSolver {
   void CalcFrictionForces(const Eigen::Ref<const VectorX<T>>& vt,
                           const Eigen::Ref<const VectorX<T>>& fn);
 
+  void CalcFrictionForcesGradient(
+      const Eigen::Ref<const VectorX<T>>& fn,
+      const Eigen::Ref<const VectorX<T>>& mus,
+      const Eigen::Ref<const VectorX<T>>& t_hat,
+      const Eigen::Ref<const VectorX<T>>& v_slip);
+
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
   //         ⌊ mu                ,  x >= 1

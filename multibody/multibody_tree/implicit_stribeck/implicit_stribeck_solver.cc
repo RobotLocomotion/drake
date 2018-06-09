@@ -9,6 +9,10 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
@@ -110,6 +114,84 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
 }
 
 template <typename T>
+void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
+    const Eigen::Ref<const VectorX<T>>& fn,
+    const Eigen::Ref<const VectorX<T>>& mus,
+    const Eigen::Ref<const VectorX<T>>& t_hat,
+    const Eigen::Ref<const VectorX<T>>& v_slip) {
+  const int nc = nc_;  // Number of contact points.
+
+  // Problem data.
+  const auto& mu = *problem_data_aliases_.mu_ptr;
+
+  // Mutable reference to ∇ᵥₜfₜ(vₜ).
+  std::vector<Matrix2<T>>& Gt = variable_size_workspace_.mutable_dft_dv();
+
+  // The stiction tolerance.
+  const double v_stribeck = parameters_.stiction_tolerance;
+
+  // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
+  // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
+  for (int ic = 0; ic < nc; ++ic) {
+    const int ik = 2 * ic;
+
+    // Compute dmu/dv = (1/v_stribeck) * dmu/dx
+    // where x = v_slip / v_stribeck is the dimensionless slip velocity.
+    const T dmudv = ModifiedStribeckDerivative(
+        v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
+
+    const auto t_hat_ic = t_hat.template segment<2>(ik);
+
+    // Projection matrix. It projects in the direction of t_hat.
+    // Notice it is a symmetric 2x2 matrix.
+    const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
+
+    // Removes the projected direction along t_hat.
+    // This is also a symmetric 2x2 matrix.
+    const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
+
+    // Some notes about projection matrices P:
+    //  - They are symmetric, positive semi-definite.
+    //  - All their eigenvalues are either one or zero.
+    //  - Their rank equals the number of non-zero eigenvalues.
+    //  - From the previous item we have rank(P) = trace(P).
+    //  - If P is a projection matrix, so is (I - P).
+    // From the above we then know t_hat P and Pperp are both projection
+    // matrices of rank one (i.e. rank deficient) and are symmetric
+    // semi-positive definite. This has very important consequences for the
+    // Jacobian of the vt_error.
+
+    // We now compute the dradient with respect to the tangential velocity
+    // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
+    // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
+    //   ∇ᵥₜfₜ = -Gt = -fn * (
+    //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
+    //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+    // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
+    // have defined Gt = -∇ᵥₜfₜ.
+    // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
+    // (P and Pperp) where the coefficients of the combination are positive
+    // scalars. Therefore,
+    // IMPORTANT NOTE: Gt also PSD.
+    // IMPORTANT NOTE 2: The derivation for Gt leads to exactly the
+    // same result when using the "softened" definitions for v_slip and
+    // t_hat where each occurrence of these quantities is replaced by its
+    // softened counterpart.
+
+    // Compute Gt:
+    // Changes of vt in the direction perpendicular to t_hat.
+    Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
+
+    // Changes in the magnitude of vt (which in turns makes mu_stribeck
+    // change), in the direction of t_hat.
+    Gt[ic] += P_ic * dmudv;
+
+    // Note: Gt is a symmetric 2x2 matrix.
+    Gt[ic] *= fn(ic);
+  }
+}
+
+template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
@@ -155,7 +237,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
-  const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.v;
@@ -169,7 +250,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
   auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
-  auto Gt = variable_size_workspace_.mutable_dft_dv();
+  auto& Gt = variable_size_workspace_.mutable_dft_dv();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
@@ -182,12 +263,9 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   v = v_guess;
   vt = Jt * v;
 
-  // The stiction tolerance.
-  const double v_stribeck = parameters_.stiction_tolerance;
-
   for (int iter = 0; iter < max_iterations; ++iter) {
-    // Update:
-    //  ft, mus, t_hat, v_slip.
+    // Update ft, mus, t_hat, v_slip as a function of vt, vn and, the problem
+    // data.
     CalcFrictionForces(vt, fn);
 
     // After the previous iteration, we allow updating ft above to have its
@@ -201,65 +279,9 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Newton-Raphson residual.
     residual = M * v - p_star - dt * Jt.transpose() * ft;
 
-    // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
-    // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
-    for (int ic = 0; ic < nc; ++ic) {
-      const int ik = 2 * ic;
-
-      // Compute dmu/dv = (1/v_stribeck) * dmu/dx
-      // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      const T dmudv = ModifiedStribeckDerivative(
-          v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
-
-      const auto t_hat_ic = t_hat.template segment<2>(ik);
-
-      // Projection matrix. It projects in the direction of t_hat.
-      // Notice it is a symmetric 2x2 matrix.
-      const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
-
-      // Removes the projected direction along t_hat.
-      // This is also a symmetric 2x2 matrix.
-      const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
-
-      // Some notes about projection matrices P:
-      //  - They are symmetric, positive semi-definite.
-      //  - All their eigenvalues are either one or zero.
-      //  - Their rank equals the number of non-zero eigenvalues.
-      //  - From the previous item we have rank(P) = trace(P).
-      //  - If P is a projection matrix, so is (I - P).
-      // From the above we then know t_hat P and Pperp are both projection
-      // matrices of rank one (i.e. rank deficient) and are symmetric
-      // semi-positive definite. This has very important consequences for the
-      // Jacobian of the vt_error.
-
-      // We now compute the dradient with respect to the tangential velocity
-      // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
-      // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
-      //   ∇ᵥₜfₜ = -Gt = -fn * (
-      //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
-      //     dmu_stribeck/dx * P(t̂) / v_stribeck )
-      // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
-      // have defined Gt = -∇ᵥₜfₜ.
-      // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
-      // (P and Pperp) where the coefficients of the combination are positive
-      // scalars. Therefore,
-      // IMPORTANT NOTE: Gt also PSD.
-      // IMPORTANT NOTE 2: The derivation for Gt leads to exactly the
-      // same result when using the "softened" definitions for v_slip and
-      // t_hat where each occurrence of these quantities is replaced by its
-      // softened counterpart.
-
-      // Compute Gt:
-      // Changes of vt in the direction perpendicular to t_hat.
-      Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
-
-      // Changes in the magnitude of vt (which in turns makes mu_stribeck
-      // change), in the direction of t_hat.
-      Gt[ic] += P_ic * dmudv;
-
-      // Note: Gt is a symmetric 2x2 matrix.
-      Gt[ic] *= fn(ic);
-    }
+    // Compute gradient ∇ᵥₜfₜ(vₜ), Gt in source, as a function of fn, mus,
+    // t_hat, v_slip and, the problem data.
+    CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
 
     // Newton-Raphson Jacobian:
     //  J = M + dt Jtᵀdiag(Gt)Jt:
@@ -295,13 +317,13 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
     //                = vₜᵏ + α Jt⋅Δvᵏ
     //                = vₜᵏ + α Δvₜᵏ
-    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant t_hat we'll
+    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant that we'll
     // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
     // For multiple contact points, we choose the minimum α among all contact
     // points.
     Delta_vt = Jt * Delta_v;
 
-    // Convergence is monitored in the tangential velocties.
+    // Convergence is monitored in the tangential velocities.
     vt_error = Delta_vt.norm();
 
     // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
