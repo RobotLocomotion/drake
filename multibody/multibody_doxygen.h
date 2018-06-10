@@ -679,4 +679,7 @@ Given `M_BP_F` (@f$[M^{B/P}]_F@f$), its top left submatrix is `I_BP_F`
 (@f$[I^{B/P}]_F@f$) and position vector c = `p_PBcm_F` (@f$[^Pp^{B_{cm}}]_F@f$),
 that is, the position vector of the center of mass measured from point P and
 expressed in F. Note that if the "taken about" point is `Bcm`, then c=0.
+
+Next topic: @ref constraint_overview
+
 **/
