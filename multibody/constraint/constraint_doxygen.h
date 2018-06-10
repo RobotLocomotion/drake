@@ -1,4 +1,5 @@
 /** @defgroup constraint_overview Multibody dynamics constraints in Drake
+@ingroup multibody_concepts
 
 This documentation describes the types of multibody constraints supported in
 Drake, including specialized constraint types- namely point-based contact
@@ -30,9 +31,6 @@ This discussion will provide necessary background material in:
  - @ref constraint_types
  - @ref constraint_stabilization
  - @ref contact_surface_constraints
-
-and will delve into the constraint solver functionality in:
- - @ref discretization
 
  A prodigious number of variables will be referenced throughout the discussion
  on constraints. Variables common to both acceleration-level constraints and
