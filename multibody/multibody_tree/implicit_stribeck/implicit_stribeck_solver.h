@@ -267,6 +267,16 @@ class ImplicitStribeckSolver {
       EigenPtr<const VectorX<T>> p_star,
       EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu);
 
+  /// The problem is two-way coupled: normal forces affect friction forces and,
+  /// conversely, friction forces affect normal forces.
+  void SetTwoWayCoupledProblemData(
+      EigenPtr<const MatrixX<T>> M,
+      EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
+      EigenPtr<const VectorX<T>> p_star,
+      EigenPtr<const VectorX<T>> phi0,
+      EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
+      EigenPtr<const VectorX<T>> mu);
+
   /// Solves for the generalized velocities satisfying Eq. (3) in this class's
   /// documentation. To retrieve the solution, please refer to
   /// @ref retrieving_the_solution.
@@ -346,6 +356,22 @@ class ImplicitStribeckSolver {
       mu_ptr = mu;
     }
 
+    void Set(EigenPtr<const MatrixX<T>> M,
+             EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
+             EigenPtr<const VectorX<T>> p_star,
+             EigenPtr<const VectorX<T>> phi0,
+             EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
+             EigenPtr<const VectorX<T>> mu) {
+      M_ptr = M;
+      Jn_ptr = Jn;
+      Jt_ptr = Jt;
+      p_star_ptr = p_star;
+      phi0_ptr = phi0;
+      stiffness_ptr = phi0;
+      damping_ptr = phi0;
+      mu_ptr = mu;
+    }
+
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr{nullptr};
     // The separation velocities Jacobian.
@@ -357,7 +383,16 @@ class ImplicitStribeckSolver {
     // At each contact point ic, fn(ic) and mu(ic) store the normal contact
     // force and friction coefficient, respectively. Both have size nc, the
     // number of contact points.
+    // fn_ptr is nullptr for two-way coupled problems.
     EigenPtr<const VectorX<T>> fn_ptr{nullptr};
+    // Penetration distance. Positive when there is penetration and negative
+    // when there is separation, i.e. it is minus the signed distance function.
+    // phi0_ptr is nullptr for one-way coupled problems.
+    EigenPtr<const VectorX<T>> phi0_ptr{nullptr};
+    // Stiffness in the normal direction. nullptr for one-way coupled problems.
+    EigenPtr<const VectorX<T>> stiffness_ptr{nullptr};
+    // Damping in the normal direction. nullptr for one-way coupled problems.
+    EigenPtr<const VectorX<T>> damping_ptr{nullptr};
     EigenPtr<const VectorX<T>> mu_ptr{nullptr};
   };
 
@@ -413,6 +448,7 @@ class ImplicitStribeckSolver {
       const int nf = 2 * nc;
       // Only reallocate if sizes from previous allocations are not sufficient.
       vt_.resize(nf);
+      fn_.resize(nc);
       ft_.resize(nf);
       Delta_vt_.resize(nf);
       t_hat_.resize(nf);
@@ -441,6 +477,12 @@ class ImplicitStribeckSolver {
     /// velocity updates Δvₜ for all contact points, of size 2nc.
     Eigen::VectorBlock<VectorX<T>> mutable_delta_vt() {
       return Delta_vt_.segment(0, 2 * nc_);
+    }
+
+    /// Returns a mutable reference to the vector containing the normal
+    /// contact forces fₙ for all contact points, of size nc.
+    Eigen::VectorBlock<VectorX<T>> mutable_fn() {
+      return fn_.segment(0, nc_);
     }
 
     /// Returns a mutable reference to the vector containing the tangential
@@ -479,6 +521,7 @@ class ImplicitStribeckSolver {
     int nc_;
     VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ⋅Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
+    VectorX<T> fn_;        // fₙᵏ, in ℝⁿᶜ.
     VectorX<T> ft_;        // fₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> t_hat_;      // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
@@ -486,6 +529,14 @@ class ImplicitStribeckSolver {
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
   };
+
+  void CalcNormalForces(
+      const Eigen::Ref<const VectorX<T>>& phi,
+      const Eigen::Ref<const VectorX<T>>& vn,
+      const Eigen::Ref<const MatrixX<T>>& Jn,
+      double dt,
+      EigenPtr<VectorX<T>> fn_ptr,
+      EigenPtr<MatrixX<T>> Gn_ptr);
 
   void CalcFrictionForces(const Eigen::Ref<const VectorX<T>>& vt,
                           const Eigen::Ref<const VectorX<T>>& fn);

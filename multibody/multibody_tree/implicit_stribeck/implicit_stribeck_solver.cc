@@ -46,6 +46,27 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 }
 
 template <typename T>
+void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
+    EigenPtr<const MatrixX<T>> M,
+    EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
+    EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const VectorX<T>> phi0,
+    EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
+    EigenPtr<const VectorX<T>> mu) {
+  nc_ = phi0->size();
+  DRAKE_THROW_UNLESS(p_star->size() == nv_);
+  DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
+  DRAKE_THROW_UNLESS(Jn->rows() == nc_ && Jn->cols() == nv_);
+  DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
+  DRAKE_THROW_UNLESS(mu->size() == nc_);
+  DRAKE_THROW_UNLESS(stiffness->size() == nc_);
+  DRAKE_THROW_UNLESS(damping->size() == nc_);
+  // Keep references to the problem data.
+  problem_data_aliases_.Set(M, Jn, Jt, p_star, phi0, stiffness, damping, mu);
+  variable_size_workspace_.ResizeIfNeeded(nc_);
+}
+
+template <typename T>
 void ImplicitStribeckSolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& fn) {
@@ -191,6 +212,60 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // Note: Gt is a symmetric 2x2 matrix.
     Gt[ic] *= fn(ic);
   }
+}
+
+template <typename T>
+void ImplicitStribeckSolver<T>::CalcNormalForces(
+    const Eigen::Ref<const VectorX<T>>& phi,
+    const Eigen::Ref<const VectorX<T>>& vn,
+    const Eigen::Ref<const MatrixX<T>>& Jn,
+    double dt,
+    EigenPtr<VectorX<T>> fn_ptr,
+    EigenPtr<MatrixX<T>> Gn_ptr) {
+  using std::max;
+  const int nc = nc_;  // Number of contact points.
+
+  // Convenient aliases to problem data.
+  const VectorX<T>& stiffness = *problem_data_aliases_.stiffness_ptr;
+  const VectorX<T>& damping = *problem_data_aliases_.damping_ptr;
+
+  VectorX<T> phi_capped(nc);  // = <φ>¹
+  VectorX<T> H_phi(nc);  // = <φ>⁰ = H(φ), with H the Heaviside function.
+  VectorX<T> k_vn_capped(nc);  // = <k(vₙ)>¹ = <k⋅(1 - d⋅vₙ)>¹
+  VectorX<T> H_k_vn(nc);  // = <k(vₙ)>⁰ = H(k(vₙ)).
+
+  auto& fn = *fn_ptr;
+  for (int ic = 0; ic < nc; ++ ic) {
+    // Stiffness as a function of vn, k(vₙ) = <k⋅(1 - d⋅vₙ)>¹, where we use the
+    // Macaulay bracket <⋅>¹.
+    T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
+    k_vn_capped(ic) = max(0.0, k_vn);
+    phi_capped(ic) = max(0.0, phi(ic));
+    // fₙ = <k(vₙ)>¹⋅<φ>¹
+    fn(ic) = k_vn_capped(ic) * phi_capped(ic);
+    // Factors in the derivatives of <φ>¹ and <k(vₙ)>¹
+    H_phi(ic) = phi(ic) > 0 ? 1.0 : 0.0;
+    H_k_vn(ic) = k_vn > 0 ? 1.0 : 0.0;
+  }
+
+  // ∇ᵥ<φⁿ⁺¹>¹ = -δt⋅diag((H(φⁿ⁺¹))⋅Jₙ, with φⁿ⁺¹ = φⁿ  - δt⋅vₙⁿ⁺¹.
+  // of size nc x nv.
+  MatrixX<T> nabla_phi_capped = -dt * H_phi.asDiagonal() * Jn;
+
+  // ∇ᵥ<k(vₙⁿ⁺¹)>¹ = -diag(H(k(vₙⁿ⁺¹)))⋅diag(k)⋅diag(d)⋅Jₙ
+  // of size nc x nv.
+  MatrixX<T> nabla_k_vn_capped = -(
+      (H_k_vn.array() *
+          stiffness.array() * damping.array()).matrix().asDiagonal() * Jn);
+
+  auto& Gn = *Gn_ptr;
+
+  // fₙ = <k(vₙ)>¹⋅<φ>¹
+  // Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹) =
+  //        diag(<φ>¹)⋅∇ᵥ<k(vₙⁿ⁺¹)>¹ + diag(<k(vₙ)>¹)⋅∇ᵥ<φⁿ⁺¹>¹
+  // Gn is of size nc x nv.
+  Gn = phi_capped.asDiagonal() * nabla_k_vn_capped +
+      k_vn_capped.asDiagonal() * nabla_phi_capped;
 }
 
 template <typename T>
