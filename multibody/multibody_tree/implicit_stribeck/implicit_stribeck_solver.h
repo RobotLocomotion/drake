@@ -488,6 +488,11 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const VectorX<T>>& t_hat,
       const Eigen::Ref<const VectorX<T>>& v_slip);
 
+  void CalcJacobian(
+      const Eigen::Ref<const MatrixX<T>>& M,
+      const std::vector<Matrix2<T>>& Gt,
+      const Eigen::Ref<const MatrixX<T>>& Jt, double dt);
+
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
   //         ⌊ mu                ,  x >= 1

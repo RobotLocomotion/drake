@@ -192,6 +192,41 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 }
 
 template <typename T>
+void ImplicitStribeckSolver<T>::CalcJacobian(
+    const Eigen::Ref<const MatrixX<T>>& M,
+    const std::vector<Matrix2<T>>& Gt,
+    const Eigen::Ref<const MatrixX<T>>& Jt, double dt) {
+
+  // Problem sizes.
+  const int nv = nv_;  // Number of generalized velocities.
+  const int nc = nc_;  // Number of contact points.
+  // Size of the friction forces vector ft and tangential velocities vector vt.
+  const int nf = 2 * nc;
+
+  // The Newton-Raphson Jacobian, ∇ᵥR.
+  auto& J = fixed_size_workspace_.J;
+
+  // Newton-Raphson Jacobian:
+  //  J = M + dt Jtᵀdiag(Gt)Jt:
+  // J is an (nv x nv) symmetric positive definite matrix.
+  // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
+  // diagonal entry.
+
+  // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
+  // block diagonal.
+  MatrixX<T> diag_Gt_times_Jt(nf, nv);
+  // TODO(amcastro-tri): Only build half of the matrix since it is
+  // symmetric.
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+    diag_Gt_times_Jt.block(ik, 0, 2, nv) =
+        Gt[ic] * Jt.block(ik, 0, 2, nv);
+  }
+  // Form J = M + dt Jtᵀdiag(Gt)Jt:
+  J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+}
+
+template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
@@ -225,12 +260,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // Tolerance used to monitor the convergence of the tangential velocities.
   const double vt_tolerance =
       parameters_.tolerance * parameters_.stiction_tolerance;
-
-  // Problem sizes.
-  const int nv = nv_;  // Number of generalized velocities.
-  const int nc = nc_;  // Number of contact points.
-  // Size of the friction forces vector ft and tangential velocities vector vt.
-  const int nf = 2 * nc;
 
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
@@ -283,24 +312,9 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // t_hat, v_slip and, the problem data.
     CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
 
-    // Newton-Raphson Jacobian:
-    //  J = M + dt Jtᵀdiag(Gt)Jt:
-    // J is an (nv x nv) symmetric positive definite matrix.
-    // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
-    // diagonal entry.
-
-    // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
-    // block diagonal.
-    MatrixX<T> diag_Gt_times_Jt(nf, nv);
-    // TODO(amcastro-tri): Only build half of the matrix since it is
-    // symmetric.
-    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
-      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-      diag_Gt_times_Jt.block(ik, 0, 2, nv) =
-          Gt[ic] * Jt.block(ik, 0, 2, nv);
-    }
-    // Form J = M + dt Jtᵀdiag(Gt)Jt:
-    J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+    // Newton-Raphson Jacobian, ∇ᵥR, as a function of M, Gt, Jt, dt and, the
+    // problem data.
+    CalcJacobian(M, Gt, Jt, dt);
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
