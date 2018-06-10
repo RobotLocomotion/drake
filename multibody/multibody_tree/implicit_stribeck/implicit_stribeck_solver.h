@@ -436,30 +436,38 @@ class ImplicitStribeckSolver {
   // than the data size.
   class VariableSizeWorkspace {
    public:
-    explicit VariableSizeWorkspace(int initial_nc) {
-      ResizeIfNeeded(initial_nc);
+    explicit VariableSizeWorkspace(int initial_nc, int nv) {
+      ResizeIfNeeded(initial_nc, nv);
     }
 
     // Performs a resize of this workspace's variables only if the new size `nc`
     // is larger than capacity() in order to reuse previously allocated space.
-    void ResizeIfNeeded(int nc) {
+    void ResizeIfNeeded(int nc, int nv) {
       nc_ = nc;
+      nv_ = nv;
       if (capacity() >= nc) return;  // no-op if not needed.
       const int nf = 2 * nc;
       // Only reallocate if sizes from previous allocations are not sufficient.
+      vn_.resize(nc);
       vt_.resize(nf);
       fn_.resize(nc);
       ft_.resize(nf);
+      phi_.resize(nc);
       Delta_vt_.resize(nf);
       t_hat_.resize(nf);
       v_slip_.resize(nc);
       mus_.resize(nc);
       dft_dv_.resize(nc);
+      Gn_.resize(nc, nv);
     }
 
     // Returns the current (maximum) capacity of the workspace.
     int capacity() const {
       return vt_.size();
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_vn() {
+      return vn_.segment(0, nc_);
     }
 
     /// Returns a constant reference to the vector containing the tangential
@@ -483,6 +491,10 @@ class ImplicitStribeckSolver {
     /// contact forces fₙ for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_fn() {
       return fn_.segment(0, nc_);
+    }
+
+    Eigen::VectorBlock<VectorX<T>> mutable_phi() {
+      return phi_.segment(0, nc_);
     }
 
     /// Returns a mutable reference to the vector containing the tangential
@@ -510,6 +522,10 @@ class ImplicitStribeckSolver {
       return mus_.segment(0, nc_);
     }
 
+    Eigen::Block<MatrixX<T>> mutable_Gn() {
+      return Gn_.block(0, 0, nc_, nv_);
+    }
+
     /// Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
     /// for each contact pont, of size nc.
     std::vector<Matrix2<T>>& mutable_dft_dv() {
@@ -518,17 +534,25 @@ class ImplicitStribeckSolver {
 
    private:
     // The number of contact points. This determines sizes in this workspace.
-    int nc_;
+    int nc_, nv_;
     VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ⋅Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
+    VectorX<T> vn_;        // vₙᵏ, in ℝⁿᶜ.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> fn_;        // fₙᵏ, in ℝⁿᶜ.
     VectorX<T> ft_;        // fₜᵏ, in ℝ²ⁿᶜ.
-    VectorX<T> t_hat_;      // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
+    VectorX<T> phi_;       // φⁿ⁺¹ = φⁿ - δt vₙⁿ
+    VectorX<T> t_hat_;     // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
     VectorX<T> mus_;       // (modified) Stribeck friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
+    MatrixX<T> Gn_;
   };
+
+  // Returns true if the solver is solving the two-way coupled problem.
+  bool two_way_coupling() const {
+    return problem_data_aliases_.fn_ptr == nullptr;
+  }
 
   void CalcNormalForces(
       const Eigen::Ref<const VectorX<T>>& phi,
@@ -549,8 +573,13 @@ class ImplicitStribeckSolver {
 
   void CalcJacobian(
       const Eigen::Ref<const MatrixX<T>>& M,
-      const std::vector<Matrix2<T>>& Gt,
-      const Eigen::Ref<const MatrixX<T>>& Jt, double dt);
+      const Eigen::Ref<const MatrixX<T>>& Jn,
+      const Eigen::Ref<const MatrixX<T>>& Jt,
+      const Eigen::Ref<const MatrixX<T>>& Gn,
+      const std::vector<Matrix2<T>>& dft_dvt,
+      const Eigen::Ref<const VectorX<T>>& t_hat,
+      const Eigen::Ref<const VectorX<T>>& mus,
+      double dt);
 
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1

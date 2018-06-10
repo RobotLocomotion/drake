@@ -24,7 +24,7 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
     // Provide an initial (arbitrarily large enough for most applications)
     // workspace size so that we avoid re-allocations afterwards as much as we
     // can.
-    variable_size_workspace_(128) {
+    variable_size_workspace_(128, nv) {
   DRAKE_THROW_UNLESS(nv > 0);
 }
 
@@ -42,7 +42,7 @@ void ImplicitStribeckSolver<T>::SetProblemData(
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   // Keep references to the problem data.
   problem_data_aliases_.Set(M, Jn, Jt, p_star, fn, mu);
-  variable_size_workspace_.ResizeIfNeeded(nc_);
+  variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
 template <typename T>
@@ -63,7 +63,7 @@ void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
   DRAKE_THROW_UNLESS(damping->size() == nc_);
   // Keep references to the problem data.
   problem_data_aliases_.Set(M, Jn, Jt, p_star, phi0, stiffness, damping, mu);
-  variable_size_workspace_.ResizeIfNeeded(nc_);
+  variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
 template <typename T>
@@ -225,6 +225,12 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
+  if (!two_way_coupling()) {
+    // Copy the input normal force (i.e. it is fixed).
+    *fn_ptr = *problem_data_aliases_.fn_ptr;
+    return;
+  }
+
   // Convenient aliases to problem data.
   const VectorX<T>& stiffness = *problem_data_aliases_.stiffness_ptr;
   const VectorX<T>& damping = *problem_data_aliases_.damping_ptr;
@@ -271,8 +277,13 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 template <typename T>
 void ImplicitStribeckSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
-    const std::vector<Matrix2<T>>& Gt,
-    const Eigen::Ref<const MatrixX<T>>& Jt, double dt) {
+    const Eigen::Ref<const MatrixX<T>>& Jn,
+    const Eigen::Ref<const MatrixX<T>>& Jt,
+    const Eigen::Ref<const MatrixX<T>>& Gn,
+    const std::vector<Matrix2<T>>& dft_dvt,
+    const Eigen::Ref<const VectorX<T>>& t_hat,
+    const Eigen::Ref<const VectorX<T>>& mus,
+    double dt) {
 
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -284,23 +295,35 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   auto& J = fixed_size_workspace_.J;
 
   // Newton-Raphson Jacobian:
-  //  J = M + dt Jtᵀdiag(Gt)Jt:
+  //  J = M + dt Jtᵀdiag(dft_dvt)Jt:
   // J is an (nv x nv) symmetric positive definite matrix.
-  // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
+  // diag(dft_dvt) is the (2nc x 2nc) block diagonal matrix with dft_dvt in each 2x2
   // diagonal entry.
 
-  // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
+  // Start by multiplying diag(dft_dvt)Jt and use the fact that diag(dft_dvt) is
   // block diagonal.
-  MatrixX<T> diag_Gt_times_Jt(nf, nv);
+  MatrixX<T> Gt(nf, nv);  // ∇ᵥfₜ
   // TODO(amcastro-tri): Only build half of the matrix since it is
   // symmetric.
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-    diag_Gt_times_Jt.block(ik, 0, 2, nv) =
-        Gt[ic] * Jt.block(ik, 0, 2, nv);
+    Gt.block(ik, 0, 2, nv) =
+        -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
+
+    // Add Contribution from Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹).
+    if (two_way_coupling()) {
+      auto &t_hat_ic = t_hat.template segment<2>(ik);
+      Gt.block(ik    , 0, 1, nv) -=
+          mus(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
+      Gt.block(ik + 1, 0, 1, nv) -=
+          mus(ic) * t_hat_ic(1) * Gn.block(ic, 0, 1, nv);
+    }
   }
-  // Form J = M + dt Jtᵀdiag(Gt)Jt:
-  J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+  // Form J = M - JnᵀGn - dt JtᵀGt:
+  J = M - dt * Jt.transpose() * Gt;
+  if (two_way_coupling()) {
+    J -= dt * Jn.transpose() * Gn;
+  }
 }
 
 template <typename T>
@@ -344,7 +367,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const auto& Jn = *problem_data_aliases_.Jn_ptr;
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
-  const auto& fn = *problem_data_aliases_.fn_ptr;
 
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.v;
@@ -355,13 +377,17 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& tau_f = fixed_size_workspace_.tau_f;
 
   // Convenient aliases to variable size workspace variables.
+  auto vn = variable_size_workspace_.mutable_vn();
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
   auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
-  auto& Gt = variable_size_workspace_.mutable_dft_dv();
+  auto& dft_dvt = variable_size_workspace_.mutable_dft_dv();
+  auto Gn = variable_size_workspace_.mutable_Gn();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
+  auto fn = variable_size_workspace_.mutable_fn();
+  auto phi = variable_size_workspace_.mutable_phi();
 
   // Initialize vt_error to a value larger than tolerance so t_hat the solver at
   // least performs one iteration.
@@ -369,9 +395,17 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Initialize iteration with the provided guess.
   v = v_guess;
+  vn = Jn * v;
   vt = Jt * v;
 
+  if (two_way_coupling()) {
+    const auto& phi0 = *problem_data_aliases_.phi0_ptr;
+    phi = phi0 - dt * vn;
+  }
+
   for (int iter = 0; iter < max_iterations; ++iter) {
+    CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
+
     // Update ft, mus, t_hat, v_slip as a function of vt, vn and, the problem
     // data.
     CalcFrictionForces(vt, fn);
@@ -388,13 +422,13 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     residual =
         M * v - p_star - dt * Jn.transpose() * fn - dt * Jt.transpose() * ft;
 
-    // Compute gradient ∇ᵥₜfₜ(vₜ), Gt in source, as a function of fn, mus,
+    // Compute gradient ∇ᵥₜfₜ(vₜ), dft_dvt in source, as a function of fn, mus,
     // t_hat, v_slip and, the problem data.
     CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
 
-    // Newton-Raphson Jacobian, ∇ᵥR, as a function of M, Gt, Jt, dt and, the
+    // Newton-Raphson Jacobian, ∇ᵥR, as a function of M, dft_dvt, Jt, dt and, the
     // problem data.
-    CalcJacobian(M, Gt, Jt, dt);
+    CalcJacobian(M, Jn, Jt, Gn, dft_dvt, t_hat, mus, dt);
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
