@@ -30,16 +30,18 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
 
 template <typename T>
 void ImplicitStribeckSolver<T>::SetProblemData(
-    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jt,
+    EigenPtr<const MatrixX<T>> M,
+    EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
   nc_ = fn->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
+  DRAKE_THROW_UNLESS(Jn->rows() == nc_ && Jn->cols() == nv_);
   DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, Jt, p_star, fn, mu);
+  problem_data_aliases_.Set(M, Jn, Jt, p_star, fn, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_);
 }
 
@@ -244,6 +246,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
     fixed_size_workspace_.tau_f.setZero();
+    fixed_size_workspace_.tau.setZero();
     const auto& M = *problem_data_aliases_.M_ptr;
     const auto& p_star = *problem_data_aliases_.p_star_ptr;
     auto& v = fixed_size_workspace_.v;
@@ -263,6 +266,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
+  const auto& Jn = *problem_data_aliases_.Jn_ptr;
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
@@ -306,7 +310,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     }
 
     // Newton-Raphson residual.
-    residual = M * v - p_star - dt * Jt.transpose() * ft;
+    residual =
+        M * v - p_star - dt * Jn.transpose() * fn - dt * Jt.transpose() * ft;
 
     // Compute gradient ∇ᵥₜfₜ(vₜ), Gt in source, as a function of fn, mus,
     // t_hat, v_slip and, the problem data.

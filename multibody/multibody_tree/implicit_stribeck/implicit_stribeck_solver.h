@@ -262,7 +262,8 @@ class ImplicitStribeckSolver {
   ///      solver. In such a case, SetProblemData() and SolveWithGuess() must be
   ///      invoked again.
   void SetProblemData(
-      EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jt,
+      EigenPtr<const MatrixX<T>> M,
+      EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
       EigenPtr<const VectorX<T>> p_star,
       EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu);
 
@@ -333,10 +334,12 @@ class ImplicitStribeckSolver {
   // SetProblemData() and until SolveWithGuess() returns.
   struct ProblemDataAliases {
     // Sets the references to the data defining the problem.
-    void Set(EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jt,
+    void Set(EigenPtr<const MatrixX<T>> M,
+             EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
              EigenPtr<const VectorX<T>> p_star,
              EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
       M_ptr = M;
+      Jn_ptr = Jn;
       Jt_ptr = Jt;
       p_star_ptr = p_star;
       fn_ptr = fn;
@@ -345,6 +348,8 @@ class ImplicitStribeckSolver {
 
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr{nullptr};
+    // The separation velocities Jacobian.
+    EigenPtr<const MatrixX<T>> Jn_ptr{nullptr};
     // The tangential velocities Jacobian.
     EigenPtr<const MatrixX<T>> Jt_ptr{nullptr};
     // The generalized momementum vector **before** friction is applied.
@@ -369,6 +374,7 @@ class ImplicitStribeckSolver {
       J.resize(nv, nv);
       J_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
       tau_f.resize(nv);
+      tau.resize(nv);
     }
     // Vector of generalized velocities.
     VectorX<T> v;
@@ -380,6 +386,8 @@ class ImplicitStribeckSolver {
     VectorX<T> Delta_v;
     // Vector of generalized forces due to friction.
     VectorX<T> tau_f;
+    // Vector of generalized forces (normal + friction forces).
+    VectorX<T> tau;
     // LDLT Factorization of the Newton-Raphson Jacobian J.
     std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt;
   };

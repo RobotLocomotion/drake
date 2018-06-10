@@ -87,9 +87,13 @@ class PizzaSaver : public ::testing::Test {
     // All contact points have the same friction for this case.
     mu_ = mu * Vector3<double>::Ones();
 
+    // The generalized velocites do not affect the out-of-plane separation
+    // velocities for this problem. Normal forces are decoupled.
+    Jn_.setZero();
+
     Jt_ = ComputeTangentialJacobian(theta);
 
-    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
   void SetNoContactProblem(const Vector3<double>& v0,
@@ -101,9 +105,10 @@ class PizzaSaver : public ::testing::Test {
     // No contact points.
     fn_.resize(0);
     mu_.resize(0);
+    Jn_.resize(0, nv_);
     Jt_.resize(0, nv_);
 
-    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
  protected:
@@ -123,6 +128,9 @@ class PizzaSaver : public ::testing::Test {
 
   // Mass matrix.
   MatrixX<double> M_{nv_, nv_};
+
+  // The separation velocities Jacobian.
+  MatrixX<double> Jn_{nc_, nv_};
 
   // Tangential velocities Jacobian.
   MatrixX<double> Jt_{2 * nc_, nv_};
