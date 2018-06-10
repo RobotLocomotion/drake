@@ -4,6 +4,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/multibody/multibody_tree/implicit_stribeck/test/implicit_stribeck_solver_test_util.h"
+
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
