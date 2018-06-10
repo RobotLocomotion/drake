@@ -14,9 +14,7 @@ load(
     "drake_py_unittest",
 )
 
-package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.
