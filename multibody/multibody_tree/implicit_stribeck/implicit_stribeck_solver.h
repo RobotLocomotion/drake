@@ -292,7 +292,7 @@ class ImplicitStribeckSolver {
   /// Returns a constant reference to the last solved vector of generalized
   /// friction forces.
   const VectorX<T>& get_generalized_forces() const {
-    return fixed_size_workspace_.tau_f;
+    return fixed_size_workspace_.mutable_tau_f();
   }
 
   /// Returns a constant reference to the last solved vector of tangential
@@ -305,7 +305,7 @@ class ImplicitStribeckSolver {
   /// Returns a constant reference to the last solved vector of generalized
   /// velocities.
   const VectorX<T>& get_generalized_velocities() const {
-    return fixed_size_workspace_.v;
+    return fixed_size_workspace_.mutable_v();
   }
   /// @}
 
@@ -360,28 +360,38 @@ class ImplicitStribeckSolver {
   // nv, the number of generalized velocities.
   // The size of the variables in this workspace MUST remain fixed throghout the
   // lifetime of the solver. Do not resize any of them!.
-  struct FixedSizeWorkspace {
+  class FixedSizeWorkspace {
+   public:
     // Constructs a workspace with size only dependent on nv.
     explicit FixedSizeWorkspace(int nv) {
-      v.resize(nv);
-      residual.resize(nv);
-      Delta_v.resize(nv);
-      J.resize(nv, nv);
-      J_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
-      tau_f.resize(nv);
+      v_.resize(nv);
+      residual_.resize(nv);
+      Delta_v_.resize(nv);
+      J_.resize(nv, nv);
+      J_ldlt_ = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
+      tau_f_.resize(nv);
     }
+
+    VectorX<T>& mutable_v() { return v_; }
+    VectorX<T>& mutable_residual() { return residual_; }
+    MatrixX<T>& mutable_J() { return J_; }
+    VectorX<T>& mutable_Delta_v() { return Delta_v_; }
+    VectorX<T>& mutable_tau_f() { return tau_f_; }
+    Eigen::LDLT<MatrixX<T>>& mutable_J_ldlt() { return *J_ldlt_; }
+
+   private:
     // Vector of generalized velocities.
-    VectorX<T> v;
+    VectorX<T> v_;
     // Newton-Raphson residual.
-    VectorX<T> residual;
+    VectorX<T> residual_;
     // Newton-Raphson Jacobian, i.e. Jᵢⱼ = ∂Rᵢ/∂vⱼ.
-    MatrixX<T> J;
+    MatrixX<T> J_;
     // Solution to Newton-Raphson update, i.e. Δv = -J⁻¹⋅R.
-    VectorX<T> Delta_v;
+    VectorX<T> Delta_v_;
     // Vector of generalized forces due to friction.
-    VectorX<T> tau_f;
+    VectorX<T> tau_f_;
     // LDLT Factorization of the Newton-Raphson Jacobian J.
-    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt;
+    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt_;
   };
 
   // The variables in this workspace can change size with each invocation of

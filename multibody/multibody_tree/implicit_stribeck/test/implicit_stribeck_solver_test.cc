@@ -188,7 +188,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Therefore, here we just sanity check that Mz is at least relatively close
   // (to the value of Mz) to tau_f. In other words, with only a single time
   // step, we are still accelerating towards the final steady state slip
-  // introduce by having a finite stiction tolerance.
+  // introduced by having a finite stiction tolerance.
   EXPECT_NEAR(tau_f(2), -Mz, 5.0e-4);
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();

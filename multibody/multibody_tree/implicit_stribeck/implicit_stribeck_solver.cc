@@ -49,17 +49,17 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   using std::min;
   using std::sqrt;
 
-  // Clear statistics so t_hat we can update them with new ones for this call to
+  // Clear statistics so that we can update them with new ones for this call to
   // SolveWithGuess().
   statistics_.Reset();
 
   // If there are no contact points return a zero generalized friction forces
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
-    fixed_size_workspace_.tau_f.setZero();
+    fixed_size_workspace_.mutable_tau_f().setZero();
     const auto& M = *problem_data_aliases_.M_ptr;
     const auto& p_star = *problem_data_aliases_.p_star_ptr;
-    auto& v = fixed_size_workspace_.v;
+    auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
     // M⋅vⁿ⁺¹ = p*.
     v = M.ldlt().solve(p_star);
@@ -88,12 +88,12 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
-  auto& v = fixed_size_workspace_.v;
-  auto& Delta_v = fixed_size_workspace_.Delta_v;
-  auto& residual = fixed_size_workspace_.residual;
-  auto& J = fixed_size_workspace_.J;
-  auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
-  auto& tau_f = fixed_size_workspace_.tau_f;
+  auto& v = fixed_size_workspace_.mutable_v();
+  auto& Delta_v = fixed_size_workspace_.mutable_Delta_v();
+  auto& residual = fixed_size_workspace_.mutable_residual();
+  auto& J = fixed_size_workspace_.mutable_J();
+  auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
+  auto& tau_f = fixed_size_workspace_.mutable_tau_f();
 
   // Convenient aliases to variable size workspace variables.
   auto vt = variable_size_workspace_.mutable_vt();
@@ -104,7 +104,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
-  // Initialize vt_error to a value larger than tolerance so t_hat the solver at
+  // Initialize vt_error to a value larger than tolerance so that the solver at
   // least performs one iteration.
   T vt_error = 2 * vt_tolerance;
 
@@ -143,15 +143,17 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
     // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
     // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
-    //   fₜ(v) ≈ 2μ₀S(v)|v|
-    // where S(v) is the sign function and we have used the fact that in the
-    // limit v --> 0, μ(|v|) ≈ 2μ₀|v|. In this case case (recall this is
-    // equivalent to the solution in the limit εᵥ --> 0) fₜ(v) is linear in v.
+    //   fₜ(v) ≈ 2μ₀sgn(v)|v|
+    // where sgn(v) is the sign function, μ₀ the (constant) friction
+    // coefficient, and we have used the fact that in the limit
+    // v --> 0, μ(|v|) ≈ 2μ₀|v|.
+    // In this case (recall this is equivalent to the solution in the
+    // limit εᵥ --> 0) fₜ(v) is linear in v.
     // Now, very close to the origin, in the limit |v| << εᵥ, where the
     // "softness" of the norm is important, the limit on fₜ(v) is:
     //   fₜ(v) ≈ 2μ₀v²
     // i.e. fₜ(v) is quadratic in v.
-    // This exaplains why we have "weak" gradients in the limit of vₜ
+    // This explains why we have "weak" gradients in the limit of vₜ
     // approaching zero.
     // These observations easily extend to the general 2D case.
     for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
@@ -185,8 +187,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
       // Compute dmu/dv = (1/v_stribeck) * dmu/dx
       // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      const T dmudv = ModifiedStribeckDerivative(
-          v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
+      const T x = v_slip(ic) / v_stribeck;
+      const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
 
       const auto t_hat_ic = t_hat.template segment<2>(ik);
 
@@ -209,7 +211,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // semi-positive definite. This has very important consequences for the
       // Jacobian of the vt_error.
 
-      // We now compute the dradient with respect to the tangential velocity
+      // We now compute the gradient with respect to the tangential velocity
       // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
       // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
       //   ∇ᵥₜfₜ = -Gt = -fn * (
@@ -234,11 +236,14 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // change), in the direction of t_hat.
       Gt[ic] += P_ic * dmudv;
 
-      // Note: Gt is a symmetric 2x2 matrix.
+      // Note: Gt is a symmetric 2x2 matrix. This will imply the positive
+      // definiteness of the system's Jacobian below.
       Gt[ic] *= fn(ic);
     }
 
-    // Newton-Raphson Jacobian:
+    // Newton-Raphson Jacobian, i.e. the derivative of the residual with
+    // respect to the independent variables which, in this case, are the
+    // generalized velocities of the mechanical system.
     //  J = M + dt Jtᵀdiag(Gt)Jt:
     // J is an (nv x nv) symmetric positive definite matrix.
     // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
@@ -255,6 +260,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
           Gt[ic] * Jt.block(ik, 0, 2, nv);
     }
     // Form J = M + dt Jtᵀdiag(Gt)Jt:
+    // TODO(amcastro-tri): Unit test Jacobian idependently.
     J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
