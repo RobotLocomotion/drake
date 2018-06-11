@@ -10,9 +10,7 @@ load(
 )
 load(":forward_files.bzl", "forward_files")
 
-package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 # This determines how `PYTHONPATH` is configured, and how to install the
 # bindings.

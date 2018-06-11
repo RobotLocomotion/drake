@@ -10,9 +10,7 @@ load(
     "get_bazel_workaround_4594_libdrake_package_info",
 )
 
-package(default_visibility = [
-    "//bindings/pydrake:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 # This is placed outside of `pydrake` so that we can import this without
 # pulling in an extra copy of `pydrake`. For more information, see
