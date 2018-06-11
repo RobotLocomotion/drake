@@ -274,8 +274,10 @@ void PiecewisePolynomial<T>::Concatenate(const PiecewisePolynomial<T>& other) {
     DRAKE_THROW_UNLESS(this->rows() == other.rows());
     DRAKE_THROW_UNLESS(this->cols() == other.cols());
     const double time_offset = other.start_time() - this->end_time();
-    DRAKE_THROW_UNLESS(
-        std::abs(time_offset) < PiecewiseTrajectory<T>::kEpsilonTime);
+    // Absolute tolerance is scaled along with the time scale.
+    const double absolute_tolerance = std::max(std::abs(this->end_time()), 1.) *
+                                      std::numeric_limits<double>::epsilon();
+    DRAKE_THROW_UNLESS(std::abs(time_offset) < absolute_tolerance);
     // Gets instance breaks.
     std::vector<double>& breaks = this->get_mutable_breaks();
     // Drops first break to avoid duplication.
