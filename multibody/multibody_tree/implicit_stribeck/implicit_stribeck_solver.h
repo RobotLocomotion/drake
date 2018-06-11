@@ -339,6 +339,9 @@ class ImplicitStribeckSolver {
   }
 
  private:
+  // Helper class for unit testing.
+  friend class ImplicitStribeckSolverTester;
+
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
   // SetProblemData() and until SolveWithGuess() returns.

@@ -13,7 +13,7 @@ namespace {
 
 template <typename U>
 VectorX<U> CalcNormalForces(
-    const VectorX<double>& phi,
+    const VectorX<U>& phi,
     const VectorX<double>& stiffness, const VectorX<double>& damping,
     double dt, const VectorX<U>& vn) {
   int nc = phi.size();
@@ -21,7 +21,7 @@ VectorX<U> CalcNormalForces(
   // Compute normal force at t^{n+1}
   const VectorX<U> k_vn = stiffness * (VectorX<U>::Ones(nc) - damping.asDiagonal() * vn);
   const VectorX<U> k_vn_clamped = k_vn.template cwiseMax(VectorX<U>::Zero(nc));
-  const VectorX<U> phi_clamped = phi.template cwiseMax(VectorX<U>::Zero(nc));
+  const VectorX<U> phi_clamped = phi.cwiseMax(VectorX<U>::Zero(nc));
   const VectorX<U> fn = k_vn_clamped.asDiagonal() * phi_clamped;
   return fn;
 }
@@ -46,7 +46,7 @@ VectorX<U> CalcFrictionForces(
 
   auto ModifiedStribeck = [](U x, double mu) {
     if (x >= 1) {
-      return mu;
+      return U(mu);
     } else {
       return mu * x * (2.0 - x);
     }
@@ -88,21 +88,28 @@ VectorX<U> CalcResidualOnU(
     const VectorX<double>& p_star,
     const VectorX<double>& phi0,
     const VectorX<double>& mu,
+    const VectorX<double>& fn_data,
     const VectorX<double>& stiffness,
     const VectorX<double>& damping,
     double dt, double v_stribeck, double epsilon_v,
+    bool two_way_coupling,
     const VectorX<U>& v) {
   // Separation velocities vₙⁿ⁺¹.
   VectorX<U> vn = Jn * v;
 
-  // Compute separation distance at O(dt).
-  // φⁿ⁺¹ = φⁿ - δt⋅vₙⁿ⁺¹. The minus sign is needed because vn's are
-  // **separation** velocities, i.e. when negative, phi (penetration distance)
-  // increases. That is, φ̇ = -vₙ.
-  VectorX<U> phi = phi0 - dt * vn;
+  VectorX<U> fn;
+  if (two_way_coupling) {
+    // Compute separation distance at O(dt).
+    // φⁿ⁺¹ = φⁿ - δt⋅vₙⁿ⁺¹. The minus sign is needed because vn's are
+    // **separation** velocities, i.e. when negative, phi (penetration distance)
+    // increases. That is, φ̇ = -vₙ.
+    VectorX<U> phi = phi0 - dt * vn;
 
-  // Normal force, as a function of φⁿ⁺¹ and vₙⁿ⁺¹.
-  VectorX<U> fn = CalcNormalForces(phi, stiffness, damping, dt, vn);
+    // Normal force, as a function of φⁿ⁺¹ and vₙⁿ⁺¹.
+    fn = CalcNormalForces(phi, stiffness, damping, dt, vn);
+  } else {
+    fn = fn_data;  // Fixed to input.
+  }
 
   // Tangential velocity.
   VectorX<U> vt = Jt * v;
@@ -117,7 +124,6 @@ VectorX<U> CalcResidualOnU(
   return residual;
 }
 
-template <typename T>
 MatrixX<double> CalcJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
@@ -125,15 +131,18 @@ MatrixX<double> CalcJacobianWithAutoDiff(
     const VectorX<double>& p_star,
     const VectorX<double>& phi0,
     const VectorX<double>& mu,
+    const VectorX<double>& fn,
     const VectorX<double>& stiffness,
     const VectorX<double>& damping,
     double dt, double v_stribeck, double epsilon_v,
+    bool two_way_coupling,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
   VectorX<AutoDiffXd> residual = CalcResidualOnU(
-      M, Jn, Jt, p_star, phi0, mu, stiffness, damping,
-      dt, v_stribeck, epsilon_v, v_autodiff);
+      M, Jn, Jt, p_star, phi0, mu, fn, stiffness, damping,
+      dt, v_stribeck, epsilon_v, two_way_coupling,
+      v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }
 

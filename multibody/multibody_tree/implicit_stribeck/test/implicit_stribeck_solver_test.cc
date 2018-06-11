@@ -13,6 +13,57 @@
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
+class ImplicitStribeckSolverTester {
+ public:
+  static MatrixX<double> CalcJacobian(
+      ImplicitStribeckSolver<double>& solver,
+      const Eigen::Ref<const VectorX<double>>& v,
+      double dt) {
+    // Problem data.
+    const auto& M = *solver.problem_data_aliases_.M_ptr;
+    const auto& Jn = *solver.problem_data_aliases_.Jn_ptr;
+    const auto& Jt = *solver.problem_data_aliases_.Jt_ptr;
+
+    // Workspace with size depending on the number of contact points.
+    auto vn = solver.variable_size_workspace_.mutable_vn();
+    auto vt = solver.variable_size_workspace_.mutable_vt();
+    auto fn = solver.variable_size_workspace_.mutable_fn();
+    auto Gn = solver.variable_size_workspace_.mutable_Gn();
+    auto mus = solver.variable_size_workspace_.mutable_mu();
+    auto t_hat = solver.variable_size_workspace_.mutable_t_hat();
+    auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
+    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dv();
+    auto phi = solver.variable_size_workspace_.mutable_phi();
+
+    // Normal separation velocity.
+    vn = Jn * v;
+
+    if (solver.two_way_coupling()) {
+      const auto& phi0 = *solver.problem_data_aliases_.phi0_ptr;
+      // Penetration distance (positive when there is penetration).
+      phi = phi0 - dt * vn;
+    }
+
+    // Computes friction forces fn and gradients Gn as a funciton of phi, vn,
+    // Jn and dt.
+    solver.CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
+
+    // Tangential velocity.
+    vt = Jt * v;
+
+    // Update ft, mus, t_hat, v_slip as a function of vt, vn and, the problem
+    // data.
+    solver.CalcFrictionForces(vt, fn);
+
+    // Compute gradient ∇ᵥₜfₜ(vₜ), dft_dvt in source, as a function of fn, mus,
+    // t_hat, v_slip and, the problem data.
+    solver.CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
+
+    solver.CalcJacobian(M, Jn, Jt, Gn, dft_dvt, t_hat, mus, dt);
+
+    return solver.fixed_size_workspace_.J;
+  }
+};
 namespace {
 
 /* Top view of the pizza saver:
@@ -228,6 +279,21 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // For this problem we expect the translational velocities to be zero.
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
+
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+  PRINT_VARn(J);
+
+
+  const VectorX<double> na;  // Non-used data for one-way coupling.
+  const double v_stribeck = parameters.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters.tolerance;
+  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, na /*phi0*/, mu_, fn_,
+      na /*stiffness*/, na /*damping*/, dt, v_stribeck, epsilon_v, false, v);
+
+  PRINT_VARn(J_expected);
+
 }
 
 // Exactly the same problem as in PizzaSaver::SmallAppliedMoment but with an
@@ -352,6 +418,88 @@ TEST_F(PizzaSaver, NoContact) {
   // No contact.
   EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
+
+#if 0
+// This tests the solver when we apply a moment Mz about COM to the pizza saver.
+// If Mz < mu * m * g * R, the saver should be in stiction (within the Stribeck
+// approximation). Otherwise the saver will be sliding.
+// For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
+TEST_F(PizzaSaver, SmallAppliedMomentJacobian) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  const double dt = 1.0e-3;  // time step in seconds.
+  const double mu = 0.5;
+
+  // Some arbitrary orientation. This particular case has symmetry of
+  // revolution (meaning the result is independent of angle theta).
+  const double theta = M_PI / 5;
+
+  // External forcing.
+  const double Mz = 3.0;  // M_transition = 5.0
+  const Vector3<double> tau(0.0, 0.0, Mz);
+
+  // Initial velocity.
+  const Vector3<double> v0 = Vector3<double>::Zero();
+
+  SetProblem(v0, tau, mu, theta, dt);
+
+  Parameters parameters;  // Default parameters.
+  parameters.stiction_tolerance = 1.0e-6;
+  solver_.set_solver_parameters(parameters);
+
+  ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
+
+  const IterationStats& stats = solver_.get_iteration_statistics();
+
+  const double vt_tolerance =
+      /* Dimensionless relative (to the stiction tolerance) tolerance */
+      solver_.get_solver_parameters().tolerance *
+          solver_.get_solver_parameters().stiction_tolerance;
+  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
+
+  // For this problem we expect the x and y components of the forces due to
+  // friction to be zero.
+  EXPECT_NEAR(tau_f(0), 0.0, kTolerance);
+  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+
+  // The moment due to friction should balance the applied Mz. However, it will
+  // take several time steps until tau_f balances Mz (eventually it will).
+  // Therefore, here we just sanity check that Mz is at least relatively close
+  // (to the value of Mz) to tau_f. In other words, with only a single time
+  // step, we are still accelerating towards the final steady state slip
+  // introduce by having a finite stiction tolerance.
+  EXPECT_NEAR(tau_f(2), -Mz, 5.0e-4);
+
+  const VectorX<double>& vt = solver_.get_tangential_velocities();
+  ASSERT_EQ(vt.size(), 2 * nc_);
+
+  // The problem has symmetry of revolution. Thus, for any rotation theta,
+  // the three tangential velocities should have the same magnitude.
+  const double v_slipA = vt.segment<2>(0).norm();
+  const double v_slipB = vt.segment<2>(2).norm();
+  const double v_slipC = vt.segment<2>(4).norm();
+  EXPECT_NEAR(v_slipA, v_slipB, kTolerance);
+  EXPECT_NEAR(v_slipA, v_slipC, kTolerance);
+  EXPECT_NEAR(v_slipC, v_slipB, kTolerance);
+
+  // For this case where Mz < M_transition, we expect stiction (within the
+  // Stribeck's stiction tolerance)
+  EXPECT_LT(v_slipA, parameters.stiction_tolerance);
+  EXPECT_LT(v_slipB, parameters.stiction_tolerance);
+  EXPECT_LT(v_slipC, parameters.stiction_tolerance);
+
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // For this problem we expect the translational velocities to be zero.
+  EXPECT_NEAR(v(0), 0.0, kTolerance);
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
+}
+#endif
 
 }  // namespace
 }  // namespace implicit_stribeck
