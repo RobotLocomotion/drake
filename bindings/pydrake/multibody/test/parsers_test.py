@@ -12,6 +12,7 @@ from pydrake.multibody.rigid_body_tree import (
     AddModelInstancesFromSdfString,
     AddModelInstancesFromSdfStringSearchingInRosPackages,
     FloatingBaseType,
+    RigidBodyActuator,
     RigidBodyTree,
 )
 
@@ -45,6 +46,19 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(robot.get_num_bodies(), expected_num_bodies,
                          msg='Incorrect number of bodies: {0} vs. {1}'.format(
                              robot.get_num_bodies(), expected_num_bodies))
+
+        # Check actuators.
+        actuator = robot.GetActuator("head_pan_motor")
+        self.assertIsInstance(actuator, RigidBodyActuator)
+        self.assertEqual(actuator.name, "head_pan_motor")
+        self.assertIs(actuator.body, robot.FindBody("head_pan_link"))
+        self.assertEqual(actuator.reduction, 6.0)
+        self.assertEqual(actuator.effort_limit_min, -2.645)
+        self.assertEqual(actuator.effort_limit_max, 2.645)
+        # Check full number of actuators.
+        self.assertEqual(len(robot.actuators), robot.get_num_actuators())
+        for actuator in robot.actuators:
+            self.assertIsInstance(actuator, RigidBodyActuator)
 
     def test_sdf(self):
         sdf_file = os.path.join(
