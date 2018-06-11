@@ -172,8 +172,8 @@ class LeafSystem : public System<T> {
 
   /// Default implementation: sets all continuous state to the model vector
   /// given in DeclareContinuousState (or zero if no model vector was given) and
-  /// discrete states to zero.  This method makes no attempt to set abstract
-  /// state values.  Overrides must not change the number of state variables.
+  /// discrete states to zero. Overrides must not change the number of state
+  /// variables.
   // TODO(sherm/russt): Initialize the discrete state from the model vector
   // pending resolution of #7058.
   void SetDefaultState(const Context<T>& context,
@@ -191,6 +191,8 @@ class LeafSystem : public System<T> {
       BasicVector<T>& s = xd.get_mutable_vector(i);
       s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
+    AbstractValues& xa = state->get_mutable_abstract_state();
+    xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
 
   /// Default implementation: sets all numeric parameters to the model vector
