@@ -66,7 +66,7 @@ class ImplicitStribeckSolverTester {
   }
 };
 namespace {
-
+#if 0
 /* Top view of the pizza saver:
 
   ^ y               C
@@ -433,6 +433,7 @@ TEST_F(PizzaSaver, NoContact) {
   // No contact.
   EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
+#endif
 
 // This test verifies that the implicit stribeck solver can correctly predict
 // transitions in a problem with impact. This is a 2D problem consisting of a
@@ -454,7 +455,7 @@ TEST_F(PizzaSaver, NoContact) {
 // The equations governing the motion of the cylinder within dt of the time of
 // impact are:
 //   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
-//   (2)  m⋅Δvx = pt⋅R, Δvx = vx - vx0
+//   (2)  m⋅Δvx = pt, Δvx = vx - vx0
 //   (3)  vt = vx + ω⋅R
 //   (4)  |pt| ≤ μ⋅pn
 // where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction and the
@@ -508,27 +509,33 @@ class RollingCylinder : public ::testing::Test {
 
   void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
                         double mu, double height, double dt) {
-    // At the moment of impact the cylinder will have a vertical velocity
-    // vy = sqrt(2 * h * g).
-    const double vy = sqrt(2.0 * g_ * height);
-
-    // The non-penetration constraint implies there will be a discrete change of
-    // momentum equal to m * vy. We therefore compute a normal force so that the
-    // cylinder undergoes this finite change of momentum and comes to a stop
-    // within the discrete interval dt.
-    fn_(0) = m_ * vy / dt + m_ * g_;
-
     // Next time step generalized momentum if there are no contact forces.
     p_star_ = M_ * v0 + dt * tau;// + dt * Vector3<double>(0.0, fn_(0), 0.0);
 
     // Friction coefficient for the only contact point in the problem.
     mu_(0) = mu;
 
+    // Compute Jacobian matrices.
     N_ << 0, 1, 0;
-
     D_ = ComputeTangentialJacobian();
 
-    solver_.SetProblemData(&M_, &N_, &D_, &p_star_, &fn_, &mu_);
+    // A very small penetration allowance for practical purposes.
+    const double penetration_allowance = 1.0e-6;
+    // Initial penetration of O(dt), in tests below we use dt = 1.0e-3.
+    phi0_(0) = 1.0e-3;
+    stiffness_(0) = m_ * g_ / penetration_allowance;
+    const double omega = sqrt(stiffness_(0) / m_);
+    const double time_scale = 1.0 / omega;
+    const double damping_ratio = 1.0;
+    const double damping = damping_ratio * time_scale / penetration_allowance;
+    damping_(0) = damping;
+
+    PRINT_VAR(stiffness_);
+    PRINT_VAR(damping_);
+    PRINT_VAR(phi0_);
+
+    solver_.SetTwoWayCoupledProblemData(
+        &M_, &N_, &D_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_);
   }
 
  protected:
@@ -553,12 +560,15 @@ class RollingCylinder : public ::testing::Test {
   // Normal separation velocities Jacobian.
   MatrixX<double> N_{nc_, nv_};
 
+  VectorX<double> stiffness_{nc_};
+  VectorX<double> damping_{nc_};
+  VectorX<double> phi0_{nc_};
+
   // The implicit Stribeck solver for this problem.
   ImplicitStribeckSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
-  VectorX<double> fn_{nc_};      // Normal forces at each contact point.
   VectorX<double> mu_{nc_};      // Friction coefficient at each contact point.
 };
 
@@ -592,7 +602,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  EXPECT_EQ(info, ComputationInfo::Success);
 
   VectorX<double> tau_f = solver_.get_generalized_forces();
 
@@ -603,6 +613,9 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
       solver_.get_solver_parameters().tolerance *
           solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
+
+  PRINT_VAR(stats.num_iterations);
+  PRINT_VAR(stats.vt_residual());
 
   // Friction should only act horizontally.
   EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
@@ -616,6 +629,8 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // There should be no spurious out-of-plane tangential velocity.
   EXPECT_NEAR(vt(1), 0.0, kTolerance);
 
+  PRINT_VAR(vt(1));
+
   // We expect stiction, to within the Stribeck stiction tolerance.
   EXPECT_LT(vt(0), parameters.stiction_tolerance);
 
@@ -624,7 +639,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   // Since we imposed the normal force exactly to bring the cylinder to a stop,
   // we expect the vertical velocity to be zero.
-  EXPECT_NEAR(v(1), 0.0, kTolerance);
+  //EXPECT_NEAR(v(1), 0.0, kTolerance);
 
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
@@ -640,9 +655,10 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   const VectorX<double> na;  // Non-used data for one-way coupling.
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.tolerance;
+  const VectorX<double> not_used;  // variables not used in two-way coupling.
   MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
-      M_, N_, D_, p_star_, na /*phi0*/, mu_, fn_,
-      na /*stiffness*/, na /*damping*/, dt, v_stribeck, epsilon_v, false, v);
+      M_, N_, D_, p_star_, phi0_, mu_, not_used /* fn */,
+      stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
 
   PRINT_VARn(J_expected);
 
@@ -656,6 +672,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
+#if 0
 // Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction
 // coefficient of mu = 0.1 and initial horizontal velocity of vx0 = 1.0 m/s,
 // which leads to the cylinder to be sliding after impact.
@@ -727,87 +744,6 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   // Since we imposed the normal force exactly to bring the cylinder to a stop,
   // we expect the vertical velocity to be zero.
-  EXPECT_NEAR(v(1), 0.0, kTolerance);
-}
-
-#if 0
-// This tests the solver when we apply a moment Mz about COM to the pizza saver.
-// If Mz < mu * m * g * R, the saver should be in stiction (within the Stribeck
-// approximation). Otherwise the saver will be sliding.
-// For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
-TEST_F(PizzaSaver, SmallAppliedMomentJacobian) {
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  const double dt = 1.0e-3;  // time step in seconds.
-  const double mu = 0.5;
-
-  // Some arbitrary orientation. This particular case has symmetry of
-  // revolution (meaning the result is independent of angle theta).
-  const double theta = M_PI / 5;
-
-  // External forcing.
-  const double Mz = 3.0;  // M_transition = 5.0
-  const Vector3<double> tau(0.0, 0.0, Mz);
-
-  // Initial velocity.
-  const Vector3<double> v0 = Vector3<double>::Zero();
-
-  SetProblem(v0, tau, mu, theta, dt);
-
-  Parameters parameters;  // Default parameters.
-  parameters.stiction_tolerance = 1.0e-6;
-  solver_.set_solver_parameters(parameters);
-
-  ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
-
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
-
-  VectorX<double> tau_f = solver_.get_generalized_forces();
-
-  const IterationStats& stats = solver_.get_iteration_statistics();
-
-  const double vt_tolerance =
-      /* Dimensionless relative (to the stiction tolerance) tolerance */
-      solver_.get_solver_parameters().tolerance *
-          solver_.get_solver_parameters().stiction_tolerance;
-  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
-
-  // For this problem we expect the x and y components of the forces due to
-  // friction to be zero.
-  EXPECT_NEAR(tau_f(0), 0.0, kTolerance);
-  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
-
-  // The moment due to friction should balance the applied Mz. However, it will
-  // take several time steps until tau_f balances Mz (eventually it will).
-  // Therefore, here we just sanity check that Mz is at least relatively close
-  // (to the value of Mz) to tau_f. In other words, with only a single time
-  // step, we are still accelerating towards the final steady state slip
-  // introduce by having a finite stiction tolerance.
-  EXPECT_NEAR(tau_f(2), -Mz, 5.0e-4);
-
-  const VectorX<double>& vt = solver_.get_tangential_velocities();
-  ASSERT_EQ(vt.size(), 2 * nc_);
-
-  // The problem has symmetry of revolution. Thus, for any rotation theta,
-  // the three tangential velocities should have the same magnitude.
-  const double v_slipA = vt.segment<2>(0).norm();
-  const double v_slipB = vt.segment<2>(2).norm();
-  const double v_slipC = vt.segment<2>(4).norm();
-  EXPECT_NEAR(v_slipA, v_slipB, kTolerance);
-  EXPECT_NEAR(v_slipA, v_slipC, kTolerance);
-  EXPECT_NEAR(v_slipC, v_slipB, kTolerance);
-
-  // For this case where Mz < M_transition, we expect stiction (within the
-  // Stribeck's stiction tolerance)
-  EXPECT_LT(v_slipA, parameters.stiction_tolerance);
-  EXPECT_LT(v_slipB, parameters.stiction_tolerance);
-  EXPECT_LT(v_slipC, parameters.stiction_tolerance);
-
-  const VectorX<double>& v = solver_.get_generalized_velocities();
-  ASSERT_EQ(v.size(), nv_);
-
-  // For this problem we expect the translational velocities to be zero.
-  EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
 }
 #endif

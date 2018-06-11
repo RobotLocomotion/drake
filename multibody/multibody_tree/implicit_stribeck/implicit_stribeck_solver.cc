@@ -10,8 +10,10 @@
 #include "drake/common/extract_double.h"
 
 #include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+#define PRINT_VAR(a) (void)(a);
+#define PRINT_VARn(a) (void)(a);
 
 namespace drake {
 namespace multibody {
@@ -461,6 +463,8 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
+  PRINT_VAR(__PRETTY_FUNCTION__);
+
   if (!two_way_coupling()) {
     // Copy the input normal force (i.e. it is fixed).
     *fn_ptr = *problem_data_aliases_.fn_ptr;
@@ -481,6 +485,13 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     // Stiffness as a function of vn, k(vₙ) = <k⋅(1 - d⋅vₙ)>¹, where we use the
     // Macaulay bracket <⋅>¹.
     T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
+
+    PRINT_VAR(stiffness(ic));
+    PRINT_VAR(damping(ic));
+    PRINT_VAR(vn(ic));
+    PRINT_VAR(phi(ic));
+    PRINT_VAR(k_vn);
+
     k_vn_capped(ic) = max(0.0, k_vn);
     phi_capped(ic) = max(0.0, phi(ic));
     // fₙ = <k(vₙ)>¹⋅<φ>¹
@@ -489,6 +500,8 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     H_phi(ic) = phi(ic) > 0 ? 1.0 : 0.0;
     H_k_vn(ic) = k_vn > 0 ? 1.0 : 0.0;
   }
+
+  PRINT_VAR(fn);
 
   // ∇ᵥ<φⁿ⁺¹>¹ = -δt⋅diag((H(φⁿ⁺¹))⋅Jₙ, with φⁿ⁺¹ = φⁿ  - δt⋅vₙⁿ⁺¹.
   // of size nc x nv.
@@ -609,7 +622,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& Delta_v = fixed_size_workspace_.Delta_v;
   auto& residual = fixed_size_workspace_.residual;
   auto& J = fixed_size_workspace_.J;
-  auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
+  //auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
+  auto& J_lu = fixed_size_workspace_.J_lu;
   auto& tau_f = fixed_size_workspace_.tau_f;
 
   // Convenient aliases to variable size workspace variables.
@@ -634,12 +648,14 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   vn = Jn * v;
   vt = Jt * v;
 
-  if (two_way_coupling()) {
-    const auto& phi0 = *problem_data_aliases_.phi0_ptr;
-    phi = phi0 - dt * vn;
-  }
-
   for (int iter = 0; iter < max_iterations; ++iter) {
+
+    if (two_way_coupling()) {
+      // Update the penetration for the two-way coupling scheme.
+      const auto& phi0 = *problem_data_aliases_.phi0_ptr;
+      phi = phi0 - dt * vn;
+    }
+
     CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
 
     // Update ft, mus, t_hat, v_slip as a function of vt, vn and, the problem
@@ -658,6 +674,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     residual =
         M * v - p_star - dt * Jn.transpose() * fn - dt * Jt.transpose() * ft;
 
+    PRINT_VAR(residual.transpose());
+    PRINT_VAR(fn.transpose());
+    PRINT_VAR(ft.transpose());
+
     // Compute gradient ∇ᵥₜfₜ(vₜ), dft_dvt in source, as a function of fn, mus,
     // t_hat, v_slip and, the problem data.
     CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
@@ -671,11 +691,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    J_ldlt.compute(J);  // Update factorization.
-    if (J_ldlt.info() != Eigen::Success) {
-      return ComputationInfo::LinearSolverFailed;
-    }
-    Delta_v = J_ldlt.solve(-residual);
+    J_lu.compute(J);  // Update factorization.
+    //if (J_lu.info() != Eigen::Success) {
+     // return ComputationInfo::LinearSolverFailed;
+    //}
+    Delta_v = J_lu.solve(-residual);
 
     // Since we keep Jt constant we have t_hat:
     // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
@@ -713,6 +733,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
     v = v + alpha * Delta_v;
     vt = Jt * v;
+    vn = Jn * v;
 
     // Save iteration statistics.
     statistics_.Update(ExtractDoubleOrThrow(vt_error));

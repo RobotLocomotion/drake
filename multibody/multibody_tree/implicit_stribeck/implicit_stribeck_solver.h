@@ -515,15 +515,16 @@ class ImplicitStribeckSolver {
              EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
              EigenPtr<const VectorX<T>> p_star,
              EigenPtr<const VectorX<T>> phi0,
-             EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
+             EigenPtr<const VectorX<T>> stiffness,
+             EigenPtr<const VectorX<T>> damping,
              EigenPtr<const VectorX<T>> mu) {
       M_ptr = M;
       Jn_ptr = Jn;
       Jt_ptr = Jt;
       p_star_ptr = p_star;
       phi0_ptr = phi0;
-      stiffness_ptr = phi0;
-      damping_ptr = phi0;
+      stiffness_ptr = stiffness;
+      damping_ptr = damping;
       mu_ptr = mu;
     }
 
@@ -557,7 +558,7 @@ class ImplicitStribeckSolver {
   // lifetime of the solver. Do not resize any of them!.
   struct FixedSizeWorkspace {
     // Constructs a workspace with size only dependent on nv.
-    explicit FixedSizeWorkspace(int nv) {
+    explicit FixedSizeWorkspace(int nv) : J_lu(nv) {
       v.resize(nv);
       residual.resize(nv);
       Delta_v.resize(nv);
@@ -580,6 +581,7 @@ class ImplicitStribeckSolver {
     VectorX<T> tau;
     // LDLT Factorization of the Newton-Raphson Jacobian J.
     std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt;
+    Eigen::PartialPivLU<MatrixX<T>> J_lu;
   };
 
   // The variables in this workspace can change size with each invocation of
