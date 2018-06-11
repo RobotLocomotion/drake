@@ -52,7 +52,7 @@ MakeBouncingBallPlant(double radius, double mass,
   plant->AddForceElement<UniformGravityFieldElement>(gravity_W);
 
   // We are done creating the plant.
-  plant->Finalize();
+  plant->Finalize(scene_graph);
 
   return plant;
 }

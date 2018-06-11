@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/maliput/api/basic_id_index.h"
 #include "drake/automotive/maliput/api/branch_point.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane_data.h"
@@ -69,6 +70,8 @@ class RoadGeometry final : public api::RoadGeometry {
 
   const api::BranchPoint* do_branch_point(int index) const final;
 
+  const IdIndex& DoById() const override { return id_index_; }
+
   api::RoadPosition DoToRoadPosition(
       const api::GeoPosition& geo_position,
       const api::RoadPosition* hint,
@@ -92,6 +95,7 @@ class RoadGeometry final : public api::RoadGeometry {
   const double linear_tolerance_{};
   const double angular_tolerance_{};
   const Junction junction_;
+  api::BasicIdIndex id_index_;
 };
 
 }  // namespace dragway

@@ -1559,18 +1559,13 @@ class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
     DeclarePeriodicUnrestrictedUpdate(update_period, 0);
+    DeclareAbstractState(AbstractValue::Make<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
   }
 
   ~SystemWithAbstractState() override {}
-
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
-    std::vector<std::unique_ptr<AbstractValue>> values;
-    values.push_back({PackValue<double>(id_)});
-    return std::make_unique<AbstractValues>(std::move(values));
-  }
 
   // Abstract state is set to time + id.
   void DoCalcUnrestrictedUpdate(

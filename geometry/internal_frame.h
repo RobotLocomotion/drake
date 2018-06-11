@@ -34,9 +34,12 @@ class InternalFrame {
    @param pose_index    The position in the pose vector of this frame's last
                         known pose.
    @param parent_id     The id of the parent frame.
+   @param clique        The clique that will be used to prevent self-collision
+                        among geomtries rigidly affixed to this frame.
    */
   InternalFrame(SourceId source_id, FrameId frame_id, const std::string &name,
-                int frame_group, PoseIndex pose_index, FrameId parent_id);
+                int frame_group, PoseIndex pose_index, FrameId parent_id,
+                int clique);
 
   /** Compares two %InternalFrame instances for "equality". Two internal frames
    are considered equal if they have the same frame identifier. */
@@ -104,6 +107,9 @@ class InternalFrame {
     child_geometries_.erase(geometry_id);
   }
 
+  /** Returns the clique associated with this frame. */
+  int clique() const { return clique_; }
+
   static FrameId get_world_frame_id() { return kWorldFrame; }
 
  private:
@@ -138,6 +144,10 @@ class InternalFrame {
   // that were hung on geometries that were already rigidly affixed.
   // It does *not* include geometries hung on child frames.
   std::unordered_set<GeometryId> child_geometries_;
+
+  // The clique used to prevent self-collision among the geomtries affixed to
+  // this frame.
+  int clique_{};
 
   // The frame identifier of the world frame.
   static const FrameId kWorldFrame;
