@@ -411,8 +411,11 @@ filegroup(
     name = "test_models",
     testonly = 1,
     srcs = [
+        "test/models/background.jpg",
         "test/models/box.sdf",
+        "test/models/meshes/box2.obj",
         "test/models/meshes/box.obj",
+        "test/models/meshes/box.json",
         "test/models/meshes/box.png",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
