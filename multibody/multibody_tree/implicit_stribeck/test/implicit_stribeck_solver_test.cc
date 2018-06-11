@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/test/implicit_stribeck_solver_test_util.h"
 
 #include <iostream>
@@ -280,17 +281,30 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
 
+  // Verify the internal implementation of the solver to compute the Jacobian of
+  // the Newton-Raphson residual, against a Jacobian computed using an
+  // AutoDiffXd implementation.
   MatrixX<double> J =
       ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
   PRINT_VARn(J);
 
-
-  const VectorX<double> na;  // Non-used data for one-way coupling.
+  // Non-used data by the one-way coupling scheme.
+  const VectorX<double> not_used;
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.tolerance;
   MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, na /*phi0*/, mu_, fn_,
-      na /*stiffness*/, na /*damping*/, dt, v_stribeck, epsilon_v, false, v);
+      M_, Jn_, Jt_, p_star_, not_used /*phi0*/, mu_, fn_,
+      not_used /*stiffness*/, not_used /*damping*/,
+      dt, v_stribeck, epsilon_v, false /* two-way coupling? */, v);
+
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
+
+  PRINT_VAR(J_tolerance);
+
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 
   PRINT_VARn(J_expected);
 
@@ -323,6 +337,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
+  parameters.tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
@@ -614,6 +629,31 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
   EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+
+
+
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+  PRINT_VARn(J);
+
+
+  const VectorX<double> na;  // Non-used data for one-way coupling.
+  const double v_stribeck = parameters.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters.tolerance;
+  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
+      M_, N_, D_, p_star_, na /*phi0*/, mu_, fn_,
+      na /*stiffness*/, na /*damping*/, dt, v_stribeck, epsilon_v, false, v);
+
+  PRINT_VARn(J_expected);
+
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
+
+  PRINT_VAR(J_tolerance);
+
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 // Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction

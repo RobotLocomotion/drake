@@ -38,6 +38,7 @@ drake_cc_googletest(
     deps = [
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

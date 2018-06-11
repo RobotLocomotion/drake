@@ -324,7 +324,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
   // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * 1.0e-4;
+  const double epsilon_v = v_stribeck * parameters_.tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   // Compute 2D tangent vectors.
