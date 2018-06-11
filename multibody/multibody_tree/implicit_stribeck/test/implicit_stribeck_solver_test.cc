@@ -672,7 +672,6 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
-#if 0
 // Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction
 // coefficient of mu = 0.1 and initial horizontal velocity of vx0 = 1.0 m/s,
 // which leads to the cylinder to be sliding after impact.
@@ -742,11 +741,29 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // We expect the solver to update vt accordingly based on v before return.
   EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
 
-  // Since we imposed the normal force exactly to bring the cylinder to a stop,
-  // we expect the vertical velocity to be zero.
-  EXPECT_NEAR(v(1), 0.0, kTolerance);
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+  PRINT_VARn(J);
+
+  const VectorX<double> na;  // Non-used data for one-way coupling.
+  const double v_stribeck = parameters.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters.tolerance;
+  const VectorX<double> not_used;  // variables not used in two-way coupling.
+  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
+      M_, N_, D_, p_star_, phi0_, mu_, not_used /* fn */,
+      stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
+
+  PRINT_VARn(J_expected);
+
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
+
+  PRINT_VAR(J_tolerance);
+
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
-#endif
 
 }  // namespace
 }  // namespace implicit_stribeck
