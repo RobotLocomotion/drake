@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 using std::runtime_error;
 using std::vector;
@@ -267,13 +268,15 @@ bool PiecewisePolynomial<T>::isApprox(
 }
 
 template <typename T>
-bool PiecewisePolynomial<T>::Concatenate(
-    const PiecewisePolynomial<T>& other, double max_time_misalignment) {
+void PiecewisePolynomial<T>::Concatenate(const PiecewisePolynomial<T>& other) {
   if (!empty()) {
-    DRAKE_DEMAND(this->rows() == other.rows());
-    DRAKE_DEMAND(this->cols() == other.cols());
+    // Performs basic sanity checks.
+    DRAKE_THROW_UNLESS(this->rows() == other.rows());
+    DRAKE_THROW_UNLESS(this->cols() == other.cols());
     const double time_offset = other.start_time() - this->end_time();
-    if (std::abs(time_offset) > max_time_misalignment) return false;
+    DRAKE_THROW_UNLESS(
+        std::abs(time_offset) < PiecewiseTrajectory<T>::kEpsilonTime);
+    // Gets instance breaks.
     std::vector<double>& breaks = this->get_mutable_breaks();
     // Drops first break to avoid duplication.
     breaks.pop_back();
@@ -291,7 +294,6 @@ bool PiecewisePolynomial<T>::Concatenate(
     breaks = other.breaks();
     polynomials_ = other.polynomials_;
   }
-  return true;
 }
 
 template <typename T>

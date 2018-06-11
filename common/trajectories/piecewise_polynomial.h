@@ -401,20 +401,16 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
   /// Concatenates @p other at the end, yielding a continuous trajectory
-  /// from current start_time() to @p other end_time(). For concatenation
-  /// to succeed, this end_time() and @p other start_time() must not differ
-  /// more than the specified @p max_time_misalignment.
+  /// from current start_time() to @p other end_time().
   ///
   /// @param other PiecewisePolynomial instance to concatenate.
-  /// @param max_time_misalignment Maximum difference in time between this
-  ///                              trajectory's end time and the @p other
-  ///                              trajectory's start time that is safe to
-  ///                              align.
-  /// @return true if concatenation was successful, or false if @p other's
-  ///         start time is farther away from this instance's end time than
-  ///         the allowed @p max_time_misalignment.
-  bool Concatenate(const PiecewisePolynomial& other,
-                   double max_time_misalignment);
+  /// @throw std::runtime_error if trajectories' dimensions do not match
+  ///                           each other (either rows() or cols() does
+  ///                           not match between this and @p other).
+  /// @throw std::runtime_error if this end_time() and @p other start_time() are
+  ///                           not within PiecewiseTrajectory<T>::kEpsilonTime
+  ///                           from each other.
+  void Concatenate(const PiecewisePolynomial& other);
 
   void shiftRight(double offset);
 
