@@ -19,7 +19,9 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double tolerance) {
-  DRAKE_DEMAND(dv.size() == v.size());
+  DRAKE_ASSERT(v_stiction > 0);
+  DRAKE_ASSERT(tolerance > 0);
+  DRAKE_ASSERT(dv.size() == v.size());
 
   using std::abs;
   using std::max;
@@ -49,7 +51,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   // gradients might be close to zero (due to the "soft norms").
   if (x < tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
-    // We make |v_alpha| = v_stiction / 2.
+    // With v_alpha = v + alpha * dv, we make |v_alpha| = v_stiction / 2.
     // For this case dv ≈ v1 (v ≈ 0). Therefore:
     // alpha ≈ v_stiction / dv_norm / 2.
     return v_stiction / dv_norm / 2.0;
@@ -61,13 +63,14 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   // direction of v.
   if (x > 1.0 && x1 < tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
-    // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. After a small algebraic
-    // manipulation it turns out that:
+    // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. Using v ≈ -dv, we arrive to
+    // dv(α-1) = -vₛ/2⋅dv/‖dv‖ or:
     return 1.0 - v_stiction / 2.0 / dv_norm;
   }
 
   if (x < 1.0) {
-    // Another quick exit. Two possibilities:
+    // Another quick exit. Two possibilities (both of which yield the same
+    // action):
     // x1 < 1: we go from within the Stribeck circle back into it. Since this
     //         region has strong gradients, we allow it. i.e. alpha = 1.0
     // x1 > 1: If we go from a region of strong gradients (x < 1) to sliding
@@ -85,8 +88,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     // Case V:
     // Since v_stiction is so small, the next case very seldom happens. However,
     // it is a very common case for 1D-like problems for which tangential
-    // velocities change in sign and typically if we don't do anything we miss
-    // the zero crossing.
+    // velocities change in sign and the zero crossing might be missed.
     // Notice that since we reached this point, we know that:
     //  - x > 1.0 (we are within the scope of an if statement for x > 1)
     //  - x1 > 1.0 (we went through Case IV)
@@ -112,7 +114,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     // v_stiction. To avoid large jumps in the direction of v (typically during
     // strong impacts), we limit the maximum angle change between v to v1.
     // To this end, we find a scalar 0 < alpha < 1 such that
-    // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖)
+    // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖), see [Uchida et al., 2015].
 
     // First we compute the angle change when alpha = 1, between v1 and v.
     const T cos1 = v.dot(v1) / v_norm / v1_norm;
@@ -125,7 +127,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     } else {
       // we limit the angle change to theta_max so that:
       // cos(θₘₐₓ) = v⋅(v+αdv)/(‖v‖‖v+αdv‖)
-      // if we squared both sides of this equation, we arrive to a quadratic
+      // if we square both sides of this equation, we arrive at a quadratic
       // equation with coefficients a, b, c, for α. The math below simply is the
       // algebra to compute coefficients a, b, c and solve the quadratic
       // equation.
@@ -166,21 +168,29 @@ bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
     const Eigen::Ref<const Vector2<T>>& dv,
     const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
     double epsilon_v, double v_stiction, T* alpha_out) {
+  DRAKE_ASSERT(dv_norm > 0);
+  DRAKE_ASSERT(dv_norm2 > 0);
+  DRAKE_ASSERT(epsilon_v > 0);
+  DRAKE_ASSERT(v_stiction > 0);
   T& alpha = *alpha_out;
   if (v_dot_dv < 0.0) {  // Moving towards the origin.
     alpha = -v_dot_dv / dv_norm2;  // alpha > 0
-    if (alpha < 1.0) {  // we might have missed a cross by zero. Check.
+    if (alpha < 1.0) {  // The update might be crossing the stiction region.
       const Vector2<T> v_alpha = v + alpha * dv;  // Note: v_alpha.dot(dv) = 0.
       const T v_alpha_norm = v_alpha.norm();
       if (v_alpha_norm < epsilon_v) {
         // v_alpha is almost zero.
-        // This situation happens when dv ≈ -a v with a > 0.
+        // This situation happens when dv ≈ -a v with a > 0. Therefore we cap
+        // v_alpha to v_alpha = v / ‖v‖⋅vₛ/2. To do this, we "move" v_alpha
+        // in the direction opposite of dv/‖dv‖ by magnitude vs/2, or similarly,
+        // we substract ‖dv‖vs/2 from the previously computed alpha.
         alpha -= v_stiction / 2.0 / dv_norm;
-        return true;
+        DRAKE_ASSERT(0 < alpha && alpha <= 1);
+        return true;  // Crosses the stiction region.
       } else if (v_alpha_norm < v_stiction) {
         // v_alpha falls within the Stribeck circle but its magnitude is
         // larger than epsilon_v.
-        return true;
+        return true;  // Crosses the stiction region.
       }
     }
   }
@@ -201,6 +211,9 @@ T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     // There is only a single root to the, now linear, equation bα + c = 0.
     alpha = -c / b;
     // Note: a = 0, α > 0 => x_dot_dx = x * dx * cmin ≠ 0 => b ≠ 0
+    // We assert this even though within the scope this method is called it is
+    // not possible for b to be zero.
+    DRAKE_ASSERT(abs(b) > std::numeric_limits<double>::epsilon());
   } else {
     // The determinant, Δ = b² - 4ac, of the quadratic equation.
     const T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
@@ -223,7 +236,7 @@ T DirectionChangeLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
 
     if (alpha2 > 0 && alpha1 > 0) {
       // This branch is triggered for large angle changes (typically close
-      // to 180 degrees) between v1 and vt
+      // to 180 degrees) between v1 and vt.
       alpha = min(alpha2, alpha1);
     } else {
       // This branch is triggered for small angles changes (typically

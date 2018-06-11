@@ -67,11 +67,11 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> dvt = -vt;
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
       vt, dvt, cos_min, v_stribeck, tolerance);
-  // DirectionChangeLimiter does not allow changes from outside the stribeck
-  // circle (where friction is constant) to exactly zero velociy, since this
+  // DirectionChangeLimiter does not allow changes from outside the Stribeck
+  // circle (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
   // (not strong). The solver can recover from this, but placing the velocity
-  // within the Stribeck circle in the direction of the intial v, helps the
+  // within the Stribeck circle in the direction of the initial v, helps the
   // iterative process even more.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
   const Vector2<double> vt_alpha_expected = vt.normalized() * v_stribeck / 2.0;
@@ -153,7 +153,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
 }
 
 // Test a direction change from vt to v1 = vt + dvt that crosses through the
-// Stribeck circle. In this case the limiter will find a scalar 0< alpha < 1
+// Stribeck circle. In this case the limiter will find a scalar 0 < alpha < 1
 // such that v_alpha = vt + alpha * dvt is the closest vector to the origin.
 TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   // We construct a v_alpha expected to be within the Stribeck circle.

@@ -22,13 +22,13 @@ namespace internal {
 /// Stribeck is solving the root of a continuous function, this function has
 /// very steep gradients only within the very small regions close to where the
 /// tangential velocities are zero. These regions are circles in ℝ² of radius
-/// equal to the stiction tolerance of the solver vₛ. For short, we refer to
+/// equal to the stiction tolerance of the solver vₛ. We refer to
 /// these circular regions as the "stiction regions" and to their boundaries as
 /// the "stiction circles". We refer to the region of ℝ² outside the stiction
 /// region around the origin as the "sliding region".
 /// The implicit Stribeck solver uses the following modified Stribeck function
 /// describing the functional dependence of the Stribeck coefficient of friction
-/// μₛwith slip speed: <pre>
+/// μₛ with slip speed: <pre>
 ///     μₛ(x) = ⌈ μ⋅x⋅(2.0 - x),  x  < 1
 ///             ⌊ μ            ,  x >= 1
 /// </pre>
@@ -36,26 +36,28 @@ namespace internal {
 /// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
 /// makes no distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
-/// Since the Stribeck function used for the friction coefficient has a very
+/// Since the Stribeck function used for the friction coefficient has very
 /// steep gradients only within the stiction region and zero outside of it,
 /// gradients (that is the Jacobian of the residual) in the Newton-Raphson
 /// iteration performed by the implicit Stribeck solver are large within
 /// these small circular regions (stiction) and small outside them (slip).
 /// We say that gradients within these stiction circles are "strong" and
 /// gradients outside these regions are "weak".
-/// These regions are so small comparatively to the velocity scales dealt with
+/// These regions are so small compared to the velocity scales dealt with
 /// by the implicit Stribeck solver, that effectively, the Newton-Raphson
 /// iteration would only "see" a fixed dynamic coefficient of friction and it
 /// would never be able to predict stiction. That is, if search direction Δvₜᵏ
-/// computed within the Newton-Raphson is not limited in some way, the iteration
-/// would never fall within the stiction regions where gradients are "strong" to
-/// guide the convergence of the solution, to either stiction or sliding.
+/// computed by the Newton-Raphson algorithm is not limited in some way, the
+/// iteration would never fall within the stiction regions where gradients
+/// are "strong" to guide the convergence of the solution, to either stiction
+/// or sliding.
 ///
 /// The remedy to this situation is to limit changes in the tangential
-/// velocities at each iteration. Since the problem is purely geometric, it is
-/// possible to devise a strategy that is appropriate for this particular
-/// problem. We use the strategy outlined in [Uchida et al., 2015] and provide
-/// particulars to our implementation below.
+/// velocities at each iteration. The situation described above, in which an
+/// update  Δvₜᵏ "misses" the stiction circle can be described in purely
+/// geometric terms. We exploit this fact to devise a strategy that is
+/// appropriate for this particular problem. We use the methodology outlined in
+/// [Uchida et al., 2015] and describe particulars to our implementation below.
 ///
 /// LimitDirectionChange implements a specific strategy with knowledge of the
 /// implicit Stribeck iteration procedure. It is important to note that the
@@ -81,25 +83,28 @@ namespace internal {
 /// LimitDirectionChange. We use the observations made above.
 ///  - LimitDirectionChange first deals with the case ‖vₜ‖ < εᵥ to avoid
 ///    divisions by zero in the subsequent cases. It essentially clips vₜᵏ⁺¹
-///    to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0 while it allows small
-///    updates within the stiction region (i.e. α = 1). See implementation
-///    notes for CalcAlpha() for further details.
-///  - Transition from ‖vₜ‖ ≈ 0 (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since we
-///    are in a region of "weak" gradients, we limit the update to
-///    vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2. In other words, if the speed would grow too
-///    fast, we cap it at vₛ/2 so that at least two Newton iterations are
-///    required to go from near-0 sticking to sliding.
+///    to have magnitude vₛ/2 when the update Δvₜᵏ ≠ 0. For small updates
+///    Δvₜᵏ leading to vₜᵏ⁺¹ within the stiction region, we take  α = 1.
+///    See implementation notes for CalcAlpha() for further details.
+///  - Transition from ‖vₜ‖ < εᵥ (stiction) to ‖vₜ‖/vₛ > 1 (sliding). Since
+///    we are in a region of "weak" gradients (due to "norm softening",
+///    see discussion above), we limit the update to vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2.
+///    In other words, if the speed would grow too fast, we cap it at vₛ/2
+///    so that at least two Newton iterations are required to go from near-0
+///    sticking to sliding.
 ///  - Transition from sliding ‖vₜᵏ‖/vₛ > 1 to an almost perfect stiction with
 ///    ‖vₜᵏ⁺¹‖ < εᵥ. In an attempt to avoid weak gradients for the next
 ///    iteration, we impose the limit vₜᵏ⁺¹ = vₜᵏ/‖vₜᵏ‖⋅vₛ/2, placing the
 ///    velocity "in the same direction where it came from", within the stiction
 ///    region, but where gradients are strong.
-///  - Velocity change Δvₜᵏ intersects the stiction circle. This situation
-///    implies that most likely a stiction transition could happen but the pure
-///    Newton-Raphson would miss it. This situation is outlined in
-///    [Uchida et al., 2015]. In this case LimitDirectionChange computes α so
-///    that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the origin. This
-///    corresponds to the geometric condition dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
+///  - Velocity change Δvₜᵏ intersects the stiction circle. To be more precise,
+///    the line connecting vₜᵏ and vₜᵏ + Δvₜᵏ crosses the stiction region.
+///    This situation implies that most likely a stiction transition could
+///    happen but the pure Newton-Raphson would miss it. This situation is
+///    outlined in [Uchida et al., 2015]. In this case LimitDirectionChange
+///    computes α so that vₜᵏ⁺¹ =  vₜᵏ + αΔvₜᵏ is the closest vector to the
+///    origin. This corresponds to the geometric condition
+///    dot(vₜᵏ⁺¹, Δvₜᵏ) = 0.
 ///  - Velocity change Δvₜᵏ does not intersect the stiction circle, i.e.
 ///    changes happen in a region away from stiction (within the sliding
 ///    region). However, large angular changes (measured by the angle
@@ -124,12 +129,16 @@ struct DirectionChangeLimiter {
   /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
   /// @param[in] tolerance a value << 1 used to determine when ‖vₜ‖ ≈ 0.
+  /// Typical values lie withing the 10⁻³ - 10⁻² range. This allows us to
+  /// compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small tangential
+  /// velocity scale". This value is used to compute "soft norms" (see class's
+  /// documentation) and to detect values close to zero, ‖vₜ‖ < εᵥ.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
                      double cos_theta_max, double v_stiction, double tolerance);
 
-  /// Helper method detect when the line connecting v with v1 = v + dv
+  /// Helper method for detecting when the line connecting v with v1 = v + dv
   /// crosses the stiction region, a circle of radius `v_stiction`.
   /// All other input arguments are quantities already precomputed by
   /// CalcAlpha() and thus we reuse them.
