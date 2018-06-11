@@ -162,6 +162,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
+  parameters.tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
@@ -243,6 +244,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
+  parameters.tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
