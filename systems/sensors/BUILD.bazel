@@ -15,6 +15,15 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+vtk_test_tags = [
+    # Disable under LeakSanitizer and Valgrind Memcheck due to
+    # driver-related leaks. For more information, see #7520.
+    "no_lsan",
+    "no_memcheck",
+    # Mitigates driver-related issues when running under `bazel test`. For
+    # more information, see #7004.
+    "no-sandbox"]
+
 drake_cc_package_library(
     name = "sensors",
     deps = [
@@ -427,15 +436,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
     deps = [
         ":rgbd_camera",
         "//common:find_resource",
@@ -457,15 +458,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
@@ -480,15 +473,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",
@@ -509,11 +494,7 @@ sh_test(
     data = [
         ":test_models",
     ],
-    tags = [
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    tags = vtk_test_tags,
 )
 
 drake_cc_googletest(
