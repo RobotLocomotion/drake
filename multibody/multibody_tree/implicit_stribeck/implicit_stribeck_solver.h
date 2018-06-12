@@ -13,16 +13,16 @@ namespace implicit_stribeck {
 namespace internal {
 /// This struct implements an internal (thus within `internal::`) detail of the
 /// implicit Stribeck solver. The implicit Stribeck solver performs a
-/// Newton-Raphson iteration, and at each k-th iteration, it computes a
-/// tangential velocity update Δvₜᵏ. A standard Newton-Raphson strategy would
-/// compute the tangential velocity at the next iteration (k+1) as
-/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient typically obtained
-/// with a line search algorithm to improve the convergence rate. Line search
-/// works very well for smooth problems. However, even though the implicit
-/// Stribeck is solving the root of a continuous function, this function has
-/// very steep gradients only within the very small regions close to where the
-/// tangential velocities are zero. These regions are circles in ℝ² of radius
-/// equal to the stiction tolerance of the solver vₛ. We refer to
+/// Newton-Raphson iteration, and at each kth iteration, it computes a
+/// tangential velocity update Δvₜᵏ. One Newton strategy would be to compute
+/// the tangential velocity at the next iteration (k+1) as
+/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line
+/// search to improve convergence.
+/// Line search works very well for smooth problems. However, even though the
+/// implicit Stribeck is solving the root of a continuous function, this
+/// function has very steep gradients only within the very small regions close
+/// to where the tangential velocities are zero. These regions are circles in
+/// ℝ² of radius equal to the stiction tolerance of the solver vₛ. We refer to
 /// these circular regions as the "stiction regions" and to their boundaries as
 /// the "stiction circles". We refer to the region of ℝ² outside the stiction
 /// region around the origin as the "sliding region".
@@ -45,7 +45,7 @@ namespace internal {
 /// gradients outside these regions are "weak".
 /// These regions are so small compared to the velocity scales dealt with
 /// by the implicit Stribeck solver, that effectively, the Newton-Raphson
-/// iteration would only "see" a fixed dynamic coefficient of friction and it
+/// iterate would only "see" a fixed dynamic coefficient of friction and it
 /// would never be able to predict stiction. That is, if search direction Δvₜᵏ
 /// computed by the Newton-Raphson algorithm is not limited in some way, the
 /// iteration would never fall within the stiction regions where gradients
@@ -133,6 +133,8 @@ struct DirectionChangeLimiter {
   /// compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small tangential
   /// velocity scale". This value is used to compute "soft norms" (see class's
   /// documentation) and to detect values close to zero, ‖vₜ‖ < εᵥ.
+  /// A value close to one could cause the solver to miss transitions from/to
+  /// stiction.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
