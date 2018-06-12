@@ -47,10 +47,10 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
 
   // Adds a frame to the RigidBodyTree called "accelerometer frame" that is
   // coincident with the "box" body within the RigidBodyTree.
-  const Eigen::Matrix3d R_BA = drake::math::rpy2rotmat(rpy);
+  const math::RotationMatrix<double> R_BA(math::RollPitchYaw(rpy));
 
   Eigen::Isometry3d X_BA;  // Transform from accelerometer's to body's frames.
-  X_BA.matrix() << R_BA, xyz, 0, 0, 0, 1;
+  X_BA.matrix() << R_BA.matrix(), xyz, 0, 0, 0, 1;
 
   auto sensor_frame = std::allocate_shared<RigidBodyFrame<double>>(
       Eigen::aligned_allocator<RigidBodyFrame<double>>(), "accelerometer frame",
@@ -89,12 +89,12 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
   dut.CalcOutput(*dut_context, output.get());
 
   // The frame of the RigidBody to which the sensor is attached is coincident
-  // with the world frame.
-  const Eigen::Matrix3d R_BW = Eigen::Matrix3d::Identity();
+  // with the world frame (the default RotationMatrix constructor is identity).
+  const math::RotationMatrix<double> R_BW();
   // Since R_BA is orthogonal its inverse is equal to its transpose.
   // Eigen::Matrix3d::transpose() is used below because it's computationally
   // cheaper than Eigen::Matrix3d::inverse().
-  const auto R_AB = R_BA.transpose();
+  const math::RotationMatrix<double> R_AB = R_BA.inverse();
   Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,

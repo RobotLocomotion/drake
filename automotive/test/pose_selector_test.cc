@@ -834,22 +834,21 @@ void AddToTrafficPosesAt(int index,
       traffic_xyz.x(), traffic_xyz.y(), traffic_xyz.z());
   isometry.translate(translation_ahead);
 
-  const Rotation traffic_rotation =
-      traffic_lane->GetOrientation(srh);
+  const Rotation traffic_rotation = traffic_lane->GetOrientation(srh);
   Vector3<double> rpy = traffic_rotation.rpy().vector();
   rpy.x() = (traffic_polarity == LanePolarity::kWithS) ? rpy.x() : -rpy.x();
   rpy.y() = (traffic_polarity == LanePolarity::kWithS) ? rpy.y() : -rpy.y();
   rpy.z() -= (traffic_polarity == LanePolarity::kWithS) ? 0. : M_PI;
-  isometry.rotate(math::RollPitchYaw<double>(rpy).ToQuaternion());
+  const math::RollPitchYaw<double> roll_pitch_yaw(rpy);
+  isometry.rotate(roll_pitch_yaw.ToQuaternion());
 
   traffic_poses->set_pose(index, isometry);
 
   FrameVelocity<double> velocity_ahead{};
-  velocity_ahead.get_mutable_value().head(3) =
-      Vector3<double>::Zero();  /* ω */
-  const Eigen::Matrix3d traffic_rotmat = math::rpy2rotmat(rpy);
+  velocity_ahead.get_mutable_value().head(3) = Vector3<double>::Zero();  // ω
+  const math::RotationMatrix<double> traffic_rotmat(roll_pitch_yaw);
   velocity_ahead.get_mutable_value().tail(3) =
-      traffic_speed * traffic_rotmat.leftCols(1);  /* v */
+      traffic_speed * traffic_rotmat.matrix().leftCols(1);               // v
   traffic_poses->set_velocity(index, velocity_ahead);
 }
 

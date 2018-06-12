@@ -531,9 +531,10 @@ TEST_F(MaliputRailcarTest, NonZeroParametersAppearInOutputMonolane) {
   auto end_pose = pose_output();
   Eigen::Isometry3d expected_end_pose = Eigen::Isometry3d::Identity();
   {
-    const Eigen::Vector3d rpy(0, 0, M_PI_2);
+    const math::RollPitchYaw<double> rpy(0, 0, M_PI_2);
+    const math::RotationMatrix<double> R(rpy);
     const Eigen::Vector3d xyz(kCurvedRoadRadius - kR, kCurvedRoadRadius, kH);
-    expected_end_pose.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+    expected_end_pose.matrix() << R.matrix(), xyz, 0, 0, 0, 1;
   }
   // The following tolerance was determined empirically.
   EXPECT_TRUE(CompareMatrices(end_pose->get_isometry().matrix(),

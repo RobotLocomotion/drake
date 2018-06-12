@@ -42,10 +42,10 @@ void SetOnrampPoses(const Lane* lane, LanePolarity polarity,
   const math::RollPitchYaw<double> new_rotation(roll, pitch, yaw);
   pose->set_rotation(new_rotation.ToQuaternion());
 
-  const Matrix3<T> rotmat = math::rpy2rotmat(new_rotation.vector());
+  const math::RotationMatrix<double> rotmat(new_rotation);
   Vector6<T> velocity_vector{};
-  velocity_vector.head(3) = Vector3<T>::Zero();         /* ω */
-  velocity_vector.tail(3) = speed * rotmat.leftCols(1); /* v */
+  velocity_vector.head(3) = Vector3<T>::Zero();                   // ω
+  velocity_vector.tail(3) = speed * rotmat.matrix().leftCols(1);  // v
   velocity->set_velocity(multibody::SpatialVelocity<T>(velocity_vector));
 }
 

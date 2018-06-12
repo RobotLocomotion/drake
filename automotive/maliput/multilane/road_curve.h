@@ -31,7 +31,9 @@ class Rot3 {
 
   /// Applies the rotation to a 3-vector.
   Vector3<double> apply(const Vector3<double>& in) const {
-    return math::rpy2rotmat(rpy_) * in;
+    const math::RollPitchYaw<double> roll_pitch_yaw(rpy_);
+    const math::RotationMatrix<double> R(roll_pitch_yaw);
+    return R * in;
   }
 
   double yaw() const { return rpy_(2); }
