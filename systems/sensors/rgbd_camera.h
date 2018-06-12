@@ -127,6 +127,8 @@ class RgbdCamera final : public LeafSystem<double> {
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
@@ -173,6 +175,8 @@ class RgbdCamera final : public LeafSystem<double> {
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
+  // TODO(kunimatsu-tri) Use the information from RigidBodyTree for rendering
+  // the flat terrain.
   RgbdCamera(const std::string& name,
              const RigidBodyTree<double>& tree,
              const RigidBodyFrame<double>& frame,
