@@ -157,8 +157,8 @@ class TestEigenGeometry(unittest.TestCase):
         # Construct with quaternion.
         q = mut.Quaternion(R)
         value = mut.AngleAxis(quaternion=q)
-        self.assertTrue(
-            (value.quaternion().wxyz() == q.wxyz()).all())
+        self.assertTrue(np.allclose(
+            value.quaternion().wxyz(), q.wxyz(), atol=1e-15, rtol=0))
         value.set_quaternion(mut.Quaternion.Identity())
         self.assertTrue((value.quaternion().wxyz() == [1, 0, 0, 0]).all())
 
