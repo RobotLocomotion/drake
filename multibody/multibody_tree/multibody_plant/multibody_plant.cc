@@ -518,7 +518,7 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
 
 template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     const std::vector<PenetrationAsPointPair<T>>& point_pairs,
@@ -712,7 +712,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
