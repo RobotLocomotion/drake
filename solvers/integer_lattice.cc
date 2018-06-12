@@ -1,7 +1,10 @@
-#include <Eigen/Dense>
-#include <iostream>
-#include <algorithm>
 #include "drake/solvers/integer_lattice.h"
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+#include <Eigen/Dense>
 
 namespace {
 
@@ -140,7 +143,6 @@ Eigen::MatrixXi EnumerateIntegerSolutions(
                 const Eigen::MatrixXd & b,
                 const Eigen::VectorXi & lower_bound,
                 const Eigen::VectorXi & upper_bound) {
-
   auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
   auto ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
 

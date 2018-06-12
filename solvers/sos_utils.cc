@@ -1,7 +1,10 @@
-#include <Eigen/Core>
-#include <iostream>
-#include "drake/solvers/integer_lattice.h"
 #include "drake/solvers/sos_utils.h"
+
+#include <iostream>
+
+#include <Eigen/Core>
+
+#include "drake/solvers/integer_lattice.h"
 
 namespace {
 

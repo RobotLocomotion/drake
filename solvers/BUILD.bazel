@@ -55,6 +55,23 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "integer_lattice",
+    srcs = ["integer_lattice.cc"],
+    hdrs = ["integer_lattice.h"],
+    deps = ["//common:essential"],
+)
+
+drake_cc_library(
+    name = "sos_utils",
+    srcs = ["sos_utils.cc"],
+    hdrs = ["sos_utils.h"],
+    deps = [
+        ":integer_lattice",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "binding",
     srcs = [],
     hdrs = ["binding.h"],
