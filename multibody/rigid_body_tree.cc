@@ -2194,11 +2194,7 @@ void RigidBodyTree<T>::GeometricJacobian(const KinematicsCache<Scalar>& cache,
       J_block.noalias() = sign * element.motion_subspace_in_world;
     }
 
-<<<<<<< 82d2455f14104b04aa141420ef89c5cc28b7b817
     if (v_or_q_indices != nullptr) {
-=======
-    if (v_or_qdot_indices != nullptr) {
->>>>>>> Fix JdotTimesV Math
       int cols_block_start = in_terms_of_qdot ? body.get_position_start_index()
                                               : body.get_velocity_start_index();
       for (int j = 0; j < ncols_block; ++j) {
@@ -3579,17 +3575,11 @@ void RigidBodyTree<T>::CalcFrameSpatialVelocityJacobianInWorldFrame(
   // J_WBwo is the Jacobian of the spatial velocity of frame Bwo measured
   // and expressed in the world frame, where Bwo is rigidly attached to B and
   // instantaneously coincides with the world frame.
-<<<<<<< 82d2455f14104b04aa141420ef89c5cc28b7b817
   auto& J_WBwo = in_terms_of_qdot ?
                     cache.spatial_velocity_jacobian_temp.J_positions :
                     cache.spatial_velocity_jacobian_temp.J_velocities;
   GeometricJacobian(cache, world_index, body.get_body_index(), world_index,
                     in_terms_of_qdot, &v_or_q_indices, &J_WBwo);
-=======
-  drake::MatrixX<T> J_WBwo =
-      geometricJacobian(cache, world_index, body.get_body_index(), world_index,
-                        in_terms_of_qdot, &v_or_q_indices);
->>>>>>> Fix JdotTimesV Math
 
   J_WF->setZero();
   int col = 0;
