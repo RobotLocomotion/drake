@@ -88,7 +88,6 @@ drake_cc_googletest(
     tags = [
         "no_kcov",
         "no_lsan",
-        "no_memcheck",
         "no_tsan",
         "no_ubsan",
         "snopt",
