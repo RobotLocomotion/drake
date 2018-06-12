@@ -3320,11 +3320,11 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
     auto Jdotv = transformPointsJacobianDotTimesV(
         cache, distance_constraints[i].from_point,
         distance_constraints[i].from_body, distance_constraints[i].to_body);
-    auto v = cache.getV();
-    auto xdot = J * v;
+    const VectorX<Scalar> xdot = J * cache.getV();
+    auto norm_x = x.norm();
     ret.template middleRows<1>(6 * loops.size() + i) =
-        x.transpose() * Jdotv / x.norm() + xdot.transpose() * J * v / x.norm() -
-        xdot.transpose() * x * x.transpose() * J * v / pow(x.norm(), 3);
+        x.transpose() * Jdotv / norm_x + xdot.transpose() * xdot / norm_x -
+        xdot.transpose() * x * x.transpose() * xdot / pow(norm_x, 3);
   }
   return ret;
 }
