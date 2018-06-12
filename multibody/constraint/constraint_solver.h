@@ -87,12 +87,13 @@ class ConstraintSolver {
     std::function<MatrixX<T>(const MatrixX<T>&)> A_solve;
 
     /// A function pointer for solving linear systems using only the upper left
-    /// block of A⁻¹ in the MLCP (see @ref Velocity-level-MLCPs),
-    /// toward exploiting operations with zero blocks. For example:<pre>
-    /// A⁻¹ | b |
-    ///     | 0 |</pre> and<pre>
-    /// A⁻¹ | B |
-    ///     | 0 |
+    /// block of A⁺ in the MLCP (see @ref Velocity-level-MLCPs), where A⁺ is
+    /// a singularity-robust pseudo-inverse of A, toward exploiting operations
+    /// with zero blocks. For example:<pre>
+    /// A⁺ | b |
+    ///    | 0 |</pre> and<pre>
+    /// A⁺ | B |
+    ///    | 0 |
     /// </pre>
     /// where `b ∈ ℝⁿᵛ` is an arbitrary vector of dimension equal to the
     /// generalized velocities and `B ∈ ℝⁿᵛˣᵐ` is an arbitrary matrix with
