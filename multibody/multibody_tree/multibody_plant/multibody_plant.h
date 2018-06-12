@@ -1097,7 +1097,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // CalcContactFrictionFromSurfaceProperties().
   // The i-th entry in the returned std:vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
-  std::vector<CoulombFriction<T>> CalcCombinedFrictionCoefficients(
+  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const std::vector<geometry::PenetrationAsPointPair<T>>&
       point_pairs) const;
 
@@ -1206,7 +1206,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
         const T& speed_BcAc,
-        const CoulombFriction<T>& friction) const;
+        const CoulombFriction<double>& friction) const;
 
     /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
     /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and

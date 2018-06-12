@@ -12,13 +12,6 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
 
-#include <fstream>
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-//#define PRINT_VAR(a) (void)a;
-//#define PRINT_VARn(a) (void)a;
-
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -489,30 +482,7 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
   const geometry::QueryObject<double>& query_object =
       this->EvalAbstractInput(context, geometry_query_port_)
           ->template GetValue<geometry::QueryObject<double>>();
-  std::vector<PenetrationAsPointPair<double>> penetrations =
-      query_object.ComputePointPairPenetration();
-
-  // TODO(amcastro-tri): consider allowing this id's to belong to a third
-  // external system when they correspond to anchored geometry.
-  std::vector<PenetrationAsPointPair<double>> filtered_penetrations;
-  for (const auto& penetration : penetrations) {
-    const GeometryId geometryA_id = penetration.id_A;
-    const GeometryId geometryB_id = penetration.id_B;
-
-    // Filter visuals.
-    if (!is_collision_geometry(geometryA_id) ||
-        !is_collision_geometry(geometryB_id))
-      continue;
-
-    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-
-    // Filter out same body collisions.
-    if (bodyA_index == bodyB_index) continue;
-
-    filtered_penetrations.push_back(penetration);
-  }
-  return filtered_penetrations;
+  return query_object.ComputePointPairPenetration();
 }
 
 template<typename T>
@@ -523,10 +493,10 @@ MultibodyPlant<T>::CalcPointPairPenetrations(
 }
 
 template<typename T>
-std::vector<CoulombFriction<T>>
+std::vector<CoulombFriction<double>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
-  std::vector<CoulombFriction<T>> combined_frictions(point_pairs.size());
+  std::vector<CoulombFriction<double>> combined_frictions(point_pairs.size());
   for (size_t ic = 0; ic < point_pairs.size(); ++ic) {
     const auto& pair = point_pairs[ic];
     const GeometryId geometryA_id = pair.id_A;
@@ -541,9 +511,8 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const CoulombFriction<double> &geometryB_friction =
         default_coulomb_friction_[collision_indexB];
 
-    combined_frictions[ic] =
-        CalcContactFrictionFromSurfaceProperties(
-            geometryA_friction, geometryB_friction).template cast<T>();
+    combined_frictions[ic] = CalcContactFrictionFromSurfaceProperties(
+        geometryA_friction, geometryB_friction);
   }
   return combined_frictions;
 }
@@ -557,11 +526,11 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   if (num_collision_geometries() == 0) return;
 
-  std::vector<CoulombFriction<T>> combined_friction_pairs =
+  std::vector<CoulombFriction<double>> combined_friction_pairs =
       CalcCombinedFrictionCoefficients(point_pairs);
 
-  int ic = 0;
-  for (const auto& pair : point_pairs) {
+  for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
+    const auto& pair = point_pairs[icontact];
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
@@ -627,7 +596,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
         const T vt = sqrt(vt_squared);
         // Stribeck friction coefficient.
         const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
-            vt, combined_friction_pairs[ic]);
+            vt, combined_friction_pairs[icontact]);
         // Tangential direction.
         const Vector3<T> that_W = vt_AcBc_W / vt;
 
@@ -654,7 +623,6 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
         }
       }
     }
-    ++ic;
   }
 }
 
@@ -1012,10 +980,10 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
 template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
-    const CoulombFriction<T>& friction) const {
+    const CoulombFriction<double>& friction) const {
   DRAKE_ASSERT(speed_BcAc >= 0);
-  const T& mu_d = friction.dynamic_friction();
-  const T& mu_s = friction.static_friction();
+  const double mu_d = friction.dynamic_friction();
+  const double mu_s = friction.static_friction();
   const T v = speed_BcAc * inv_v_stiction_tolerance_;
   if (v >= 3) {
     return mu_d;
