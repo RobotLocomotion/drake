@@ -4,8 +4,6 @@
 #include <memory>
 #include <vector>
 
-#include<Eigen/IterativeLinearSolvers>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/extract_double.h"
@@ -238,14 +236,6 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
-  // Make contact solver when the plant is discrete.
-  if (is_discrete()) {
-    implicit_stribeck_solver_ =
-        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(num_velocities());
-    implicit_stribeck::Parameters solver_parameters;
-    solver_parameters.stiction_tolerance = stribeck_model_.stiction_tolerance();
-    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
-  }
 }
 
 template <typename T>
@@ -502,8 +492,6 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
   std::vector<PenetrationAsPointPair<double>> penetrations =
       query_object.ComputePointPairPenetration();
 
-  // TODO(amcastro-tri): Request SceneGraph to do this filtering for us
-  // when that capability lands.
   // TODO(amcastro-tri): consider allowing this id's to belong to a third
   // external system when they correspond to anchored geometry.
   std::vector<PenetrationAsPointPair<double>> filtered_penetrations;
@@ -528,9 +516,10 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
 }
 
 template<typename T>
-std::vector<PenetrationAsPointPair<T>> MultibodyPlant<T>::CalcPointPairPenetrations(
+std::vector<PenetrationAsPointPair<T>>
+MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("Only <double> is supported.");
+  DRAKE_ABORT_MSG("CalcPointPairPenetrations() only supports T = double.");
 }
 
 template<typename T>
@@ -564,15 +553,12 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
-    std::vector<SpatialForce<T>>* F_BBo_W_array, bool include_friction,
     const std::vector<PenetrationAsPointPair<T>>& point_pairs,
-    VectorX<T>* fn) const {
+    std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   if (num_collision_geometries() == 0) return;
 
-  std::vector<CoulombFriction<T>> combined_friction_pairs;
-  if (include_friction) {
-    combined_friction_pairs = CalcCombinedFrictionCoefficients(point_pairs);
-  }
+  std::vector<CoulombFriction<T>> combined_friction_pairs =
+      CalcCombinedFrictionCoefficients(point_pairs);
 
   int ic = 0;
   for (const auto& pair : point_pairs) {
@@ -622,39 +608,33 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const T d = penalty_method_contact_parameters_.damping;
     const T fn_AC = k * x * (1.0 + d * vn);
 
-    (*fn)(ic) = fn_AC;
-
     if (fn_AC > 0) {
       // Normal force on body A, at C, expressed in W.
       const Vector3<T> fn_AC_W = fn_AC * nhat_BA_W;
 
+      // Compute tangential velocity, that is, v_AcBc projected onto the tangent
+      // plane with normal nhat_BA:
+      const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
+      // Tangential speed (squared):
+      const T vt_squared = vt_AcBc_W.squaredNorm();
+
+      // Consider a value indistinguishable from zero if it is smaller
+      // then 1e-14 and test against that value squared.
+      const T kNonZeroSqd = 1e-14 * 1e-14;
+      // Tangential friction force on A at C, expressed in W.
       Vector3<T> ft_AC_W = Vector3<T>::Zero();
-      // Since the normal force is positive (non-zero), compute the friction
-      // force.
-      if (include_friction) {
-        // Compute tangential velocity, that is, v_AcBc projected onto the tangent
-        // plane with normal nhat_BA:
-        const Vector3<T> vt_AcBc_W = v_AcBc_W - vn * nhat_BA_W;
-        // Tangential speed (squared):
-        const T vt_squared = vt_AcBc_W.squaredNorm();
+      if (vt_squared > kNonZeroSqd) {
+        const T vt = sqrt(vt_squared);
+        // Stribeck friction coefficient.
+        const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
+            vt, combined_friction_pairs[ic]);
+        // Tangential direction.
+        const Vector3<T> that_W = vt_AcBc_W / vt;
 
-        // Consider a value indistinguishable from zero if it is smaller
-        // then 1e-14 and test against that value squared.
-        const T kNonZeroSqd = 1e-14 * 1e-14;
-        // Tangential friction force on A at C, expressed in W.
-        if (vt_squared > kNonZeroSqd) {
-          const T vt = sqrt(vt_squared);
-          // Stribeck friction coefficient.
-          const T mu_stribeck = stribeck_model_.ComputeFrictionCoefficient(
-              vt, combined_friction_pairs[ic]);
-          // Tangential direction.
-          const Vector3<T> that_W = vt_AcBc_W / vt;
-
-          // Magnitude of the friction force on A at C.
-          const T ft_AC = mu_stribeck * fn_AC;
-          ft_AC_W = ft_AC * that_W;
-        }
-      } // include friction
+        // Magnitude of the friction force on A at C.
+        const T ft_AC = mu_stribeck * fn_AC;
+        ft_AC_W = ft_AC * that_W;
+      }
 
       // Spatial force on body A at C, expressed in the world frame W.
       const SpatialForce<T> F_AC_W(Vector3<T>::Zero(),
@@ -739,11 +719,10 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // Compute contact forces on each body by penalty method.
   if (num_collision_geometries() > 0) {
-    std::vector<PenetrationAsPointPair<T>> penetrations =
+    std::vector<PenetrationAsPointPair<T>> point_pairs =
         CalcPointPairPenetrations(context);
-    VectorX<T> fn(penetrations.size());
-    CalcAndAddContactForcesByPenaltyMethod(context, pc, vc, &F_BBo_W_array,
-                                           true, penetrations, &fn);
+    CalcAndAddContactForcesByPenaltyMethod(
+        context, pc, vc, point_pairs, &F_BBo_W_array);
   }
 
   model_->CalcInverseDynamics(
@@ -772,20 +751,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
 
-  using std::sqrt;
-  using std::max;
-  using std::min;
-  using std::abs;
-  // If plant state is continuous, no discrete state to update.
-  if (!is_discrete()) return;
-
   const double dt = time_step_;  // just a shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
-
-  int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
-  (void) istep;
 
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
@@ -796,11 +765,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
   model_->CalcMassMatrixViaInverseDynamics(context0, &M0);
-  auto M0_llt = M0.llt();
+  auto M0_ldlt = M0.ldlt();
 
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
 
+  // Position and velocity kinematics at the previous time step.
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
@@ -825,16 +795,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
-      CalcPointPairPenetrations(context0);
-  const int num_contacts = point_pairs0.size();
-  VectorX<T> fn(num_contacts);
-
-  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
-  // Compute contact forces0 on each body by penalty method. No friction, only normal forces0.
+  // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
   if (num_collision_geometries() > 0) {
-    CalcAndAddContactForcesByPenaltyMethod(
-        context0, pc0, vc0, &F_BBo_W_array, false, point_pairs0, &fn);
+    throw std::runtime_error("Contact not supported in time stepping mode.");
   }
 
   // Workspace for inverse dynamics:
@@ -843,7 +806,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
-  // With vdot = 0, this computes (includes normal forces):
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
+
+  // With vdot = 0, this computes:
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
   model_->CalcInverseDynamics(
@@ -853,63 +818,14 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  // Compute discrete update before applying friction forces.
-  // We denote this state x* = [q*, v*], the "star" state.
-  // Generalized momentum "star", before friction forces are applied.
-  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
-
-  // Compute normal and tangential velocity Jacobians at t0.
-  MatrixX<T> D(2 * num_contacts, nv);
-  if (num_contacts > 0) {
-    D = CalcTangentVelocitiesJacobian(context0, point_pairs0);
-  }
-
-  // Get friction coefficient into a single vector. Dynamic friction is ignored.
-  std::vector<CoulombFriction<T>> combined_friction_pairs =
-      CalcCombinedFrictionCoefficients(point_pairs0);
-  VectorX<T> mu(num_contacts);
-  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
-                 mu.data(),
-                 [](const CoulombFriction<T>& coulomb_friction) {
-                   return coulomb_friction.static_friction();
-                 });
-
-  // Update the solver with the new data defining the problem for this update.
-  implicit_stribeck_solver_->SetProblemData(&M0, &D, &p_star, &fn, &mu);
-
-  // Solver for the generalized contact forces.
-  implicit_stribeck::ComputationInfo info = implicit_stribeck_solver_->SolveWithGuess(dt, v0);
-  DRAKE_DEMAND(info == implicit_stribeck::Success);
-  const VectorX<T>& tau_f = implicit_stribeck_solver_->get_generalized_forces();
-
-  const implicit_stribeck::IterationStats& stats =
-      implicit_stribeck_solver_->get_iteration_statistics();
-
-  const T alpha = (stats.num_iterations == 0) ? 1.0 : stats.alphas.back();
-
-  std::ofstream outfile;
-  outfile.open("nr_iteration.dat", std::ios_base::app);
-  outfile <<
-          fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e} {5:14.6e}\n",
-                      context0.get_time(), istep, stats.num_iterations,
-                      num_contacts, stats.vt_residual, alpha);
-  outfile.close();
-
-  // Compute velocity at next time step.
-  VectorX<T> v_next(this->num_velocities());
-  // Compute p_next into p_star.
-  //   p_next = p_star - dt⋅Dᵀ⋅ft
-  if (num_contacts > 0) {
-    p_star -= time_step_ * tau_f;
-  }
-  v_next = M0_llt.solve(p_star);
-
+  // Velocity at next time step.
+  VectorX<T> v_next = v0 + dt * M0_ldlt.solve(-minus_tau);
   VectorX<T> qdot_next(this->num_positions());
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
+  VectorX<T> q_next = q0 + dt * qdot_next;
 
-  // qn = q + dt*qdot.
   VectorX<T> x_next(this->num_multibody_states());
-  x_next << q0 + dt * qdot_next, v_next;
+  x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
 }
 
@@ -1115,27 +1031,6 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   DRAKE_ASSERT(0 <= x && x <= 1);
   const T x3 = x * x * x;
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
-}
-
-template <typename T>
-T MultibodyPlant<T>::StribeckModel::ModifiedStribeck(const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
-    return mu;
-  } else {
-    return mu * x * (2.0 - x);
-  }
-}
-
-template <typename T>
-T MultibodyPlant<T>::StribeckModel::ModifiedStribeckPrime(
-    const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
-    return 0;
-  } else {
-    return mu * (2 * (1 - x));
-  }
 }
 
 }  // namespace multibody_plant
