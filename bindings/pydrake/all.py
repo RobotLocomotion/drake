@@ -26,6 +26,7 @@ from .autodiffutils import *
 from .automotive import *
 from .common import *
 from .forwarddiff import *
+from .lcm import *
 from .math import *
 from .symbolic import *
 from .trajectories import *
