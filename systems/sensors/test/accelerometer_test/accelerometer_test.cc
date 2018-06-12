@@ -47,7 +47,8 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
 
   // Adds a frame to the RigidBodyTree called "accelerometer frame" that is
   // coincident with the "box" body within the RigidBodyTree.
-  const math::RotationMatrix<double> R_BA(math::RollPitchYaw(rpy));
+  const math::RollPitchYaw<double> roll_pitch_yaw(rpy);
+  const math::RotationMatrix<double> R_BA(roll_pitch_yaw);
 
   Eigen::Isometry3d X_BA;  // Transform from accelerometer's to body's frames.
   X_BA.matrix() << R_BA.matrix(), xyz, 0, 0, 0, 1;

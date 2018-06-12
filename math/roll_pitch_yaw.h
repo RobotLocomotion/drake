@@ -120,11 +120,20 @@ class RollPitchYaw {
   /// Returns the roll-angle underlying a %RollPitchYaw.
   const T& roll_angle() const { return roll_pitch_yaw_(0); }
 
+  /// Return mutable access to the roll-angle underlying a %RollPitchYaw.
+  T& roll_angle()  { return roll_pitch_yaw_(0); }
+
   /// Returns the pitch-angle underlying a %RollPitchYaw.
   const T& pitch_angle() const { return roll_pitch_yaw_(1); }
 
+  /// Return mutable access to the pitch-angle underlying a %RollPitchYaw.
+  T& pitch_angle()  { return roll_pitch_yaw_(1); }
+
   /// Returns the yaw-angle underlying a %RollPitchYaw.
   const T& yaw_angle() const { return roll_pitch_yaw_(2); }
+
+  /// Returns mutable access to the yaw-angle underlying a %RollPitchYaw.
+  T& yaw_angle() { return roll_pitch_yaw_(2); }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const {
