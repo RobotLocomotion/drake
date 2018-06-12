@@ -31,31 +31,29 @@ GTEST_TEST(RigidBodyTreeConstraintTest, TestAddDistanceConstraint) {
 
   EXPECT_EQ(dc.from_body, body1);
   EXPECT_EQ(dc.to_body, body2);
-  EXPECT_TRUE(CompareMatrices(dc.from_point, point1,
-                              1e-16, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(dc.to_point, point2,
-                              1e-16, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(dc.from_point, point1, 1e-16,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(dc.to_point, point2, 1e-16, MatrixCompareType::relative));
   EXPECT_NEAR(dc.distance, distance, 1e-16);
 }
 
 GTEST_TEST(RigidBodyTreeConstraintTest, TestPositionConstraint) {
   RigidBodyTree<double> tree;
   AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/test/rigid_body_tree/"
-          "FallingBrick.urdf"),
+      FindResourceOrThrow("drake/multibody/test/rigid_body_tree/"
+                          "FallingBrick.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
   AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow(
-          "drake/multibody/test/rigid_body_tree/"
-          "FallingBrick.urdf"),
+      FindResourceOrThrow("drake/multibody/test/rigid_body_tree/"
+                          "FallingBrick.urdf"),
       drake::multibody::joints::kRollPitchYaw, &tree);
 
   Eigen::Matrix<double, 24, 1> state;
   state << 0, 0.6, 1, 0, 0, 0,  // x_0, rpy_0
       0, -0.6, 1, 0, 0, 0,      // x_1, rpy_1
       1, 1, 1, 0, 0, 0,         // x_dot_0, omega_0
-      -1, -1, -1, 0, 0, 0;         // x_dot_1, omega_1
+      -1, -1, -1, 0, 0, 0;      // x_dot_1, omega_1
 
   Vector3<double> point1(1, 0, 0);
   Vector3<double> point2(1, 0, 0);
@@ -78,16 +76,16 @@ GTEST_TEST(RigidBodyTreeConstraintTest, TestPositionConstraint) {
 
   EXPECT_EQ(J_q.rows(), 1);
   EXPECT_EQ(J_q.cols(), 12);
-  EXPECT_TRUE(CompareMatrices(J_q, J_check,
-                              1e-16, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(J_q, J_check, 1e-16, MatrixCompareType::relative));
 
   EXPECT_EQ(J_v.rows(), 1);
   EXPECT_EQ(J_v.cols(), 12);
-  EXPECT_TRUE(CompareMatrices(J_v, J_check,
-                              1e-16, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(J_v, J_check, 1e-16, MatrixCompareType::relative));
 
   EXPECT_EQ(JdotTimesV.size(), 1);
-  EXPECT_NEAR(JdotTimesV[0], 0.0, 1e-16);
+  EXPECT_NEAR(JdotTimesV[0], 6.66666667, 1e-8);
 }
 
 }  // namespace
