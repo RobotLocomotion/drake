@@ -670,7 +670,7 @@ void ConstraintSolver<T>::FormAndSolveConstraintLCP(
   //          |              kᴳ               |
   //
 
-  // @TODO(edrumwri): Consider checking whether or not the constraints are
+  // TODO(edrumwri): Consider checking whether or not the constraints are
   // satisfied to a user-specified tolerance; a set of constraint equations that
   // are dependent upon time (e.g., prescribed motion constraints) might not be
   // fully satisfiable.

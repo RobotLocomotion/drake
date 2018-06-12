@@ -78,7 +78,7 @@ MakePendulumPlant(const PendulumParameters& params,
   plant->AddForceElement<UniformGravityFieldElement>(
       -params.g() * Vector3d::UnitZ());
 
-  plant->Finalize();
+  plant->Finalize(scene_graph);
 
   return plant;
 }

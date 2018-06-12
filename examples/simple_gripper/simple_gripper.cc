@@ -227,7 +227,7 @@ int do_main() {
   }
 
   // Now the model is complete.
-  plant.Finalize();
+  plant.Finalize(&scene_graph);
 
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);

@@ -122,7 +122,7 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
 
   // Calculate the 2nd time-derivative of rpy.
   const Vector3<T> rpyDDt =
-      rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_NB_N);
+      rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_NB_N);
 
   // Recomposing the derivatives vector.
   VectorX<T> xDt(12);

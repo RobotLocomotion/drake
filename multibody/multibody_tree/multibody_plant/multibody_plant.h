@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 #include "drake/multibody/multibody_tree/force_element.h"
@@ -614,6 +615,33 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.size();
   }
 
+  /// For each of the provided `bodies`, collects up all geometries that have
+  /// been registered to that body. Intended to be used in conjunction with
+  /// SceneGraph::ExcludeCollisionsWithin() and
+  /// SceneGraph::ExcludeCollisionsBetween() to filter collisions between the
+  /// geometries registered to the bodies.
+  ///
+  /// For example:
+  /// ```
+  /// // Don't report on collisions between geometries affixed to `body1`,
+  /// // `body2`, or `body3`.
+  /// std::vector<const RigidBody<T>*> bodies{&body1, &body2, &body3};
+  /// geometry::GeometrySet set = plant.CollectRegisteredGeometries(bodies);
+  /// scene_graph.ExcludeCollisionsWithin(set);
+  /// ```
+  ///
+  /// Note: There is a *very* specific order of operations.
+  ///   1. Bodies and geometries must be added to the %MultibodyPlant.
+  ///   2. The %MultibodyPlant must be finalized (via Finalize()).
+  ///   3. Create GeometrySet instances from bodies (via this method).
+  ///   4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  ///   5. Allocate context.
+  /// Changing the order will cause exceptions to be thrown.
+  ///
+  /// @throws std::exception if called pre-finalize.
+  geometry::GeometrySet CollectRegisteredGeometries(
+      const std::vector<const RigidBody<T>*>& bodies) const;
+
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
   /// note that we mean user-supplied per-geometry default, not something more
@@ -671,6 +699,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// pre- or post-finalize, see Finalize().
   bool geometry_source_is_registered() const {
     return !!source_id_;
+  }
+
+  /// If the body with `body_index` has geometry registered with it, it returns
+  /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
+  /// @throws if called pre-finalize.
+  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+      BodyIndex body_index) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    const auto it = body_index_to_frame_id_.find(body_index);
+    if (it == body_index_to_frame_id_.end()) {
+      return {};
+    }
+    return it->second;
   }
 
   /// If the body with `body_index` has geometry registered with it, it returns
@@ -738,11 +779,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// output ports to enable communication with that SceneGraph are declared
   /// as well.
   ///
+  /// If geometry has been registered on a SceneGraph instance, that instance
+  /// must be provided to the Finalize() method so that any geometric
+  /// implications of the finalization process can be appropriately handled.
+  ///
   /// @see is_finalized().
   ///
-  /// @throws std::logic_error if the %MultibodyPlant has already been
-  /// finalized.
-  void Finalize();
+  /// @throws std::logic_error if
+  ///          1. the %MultibodyPlant has already been finalized,
+  ///          2. `scene_graph` isn't provided when required, or
+  ///          3. a different scene_graph instance is provided than the one
+  ///             for which this plant is a geometry source.
+  void Finalize(geometry::SceneGraph<T>* scene_graph = nullptr);
 
   /// Returns `true` if this plant is modeled as a discrete system.
   /// This property of the plant is specified at construction and therefore this
@@ -921,6 +969,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
+  // Helper method to apply collision filters based on body-adjacency. By
+  // default, we don't consider collisions between geometries affixed to
+  // bodies connected by a joint.
+  void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
+
+  // This is a *temporary* method to eliminate visual geometries from collision
+  // while we wait for geometry roles to be introduced.
+  // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
+  void ExcludeCollisionsWithVisualGeometry(
+      geometry::SceneGraph<T>* scene_graph);
+
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
   optional<bool> DoHasDirectFeedthrough(int, int) const override {
@@ -990,6 +1049,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
+  // 4. The body is *not* the world body.
   geometry::GeometryId RegisterGeometry(const Body<T>& body,
                                         const Isometry3<double>& X_BG,
                                         const geometry::Shape& shape,

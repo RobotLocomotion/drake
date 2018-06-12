@@ -155,9 +155,32 @@ MultibodyPlant<T>::GetCollisionGeometriesForBody(const Body<T>& body) const {
 }
 
 template <typename T>
+geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
+    const std::vector<const RigidBody<T>*>& bodies) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+
+  geometry::GeometrySet geometry_set;
+  for (const RigidBody<T>* body : bodies) {
+    optional<FrameId> frame_id = GetBodyFrameIdIfExists(body->index());
+    if (frame_id) {
+      geometry_set.Add(frame_id.value());
+    } else if (body->index() == world_index()) {
+      // TODO(SeanCurtis-TRI): MBP shouldn't be storing these GeometryIds.
+      // Remove this when SG supports world frame id that can be mapped to
+      // MBP's world body.
+      geometry_set.Add(collision_geometries_[body->index()]);
+    }
+  }
+  return geometry_set;
+}
+
+template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape, SceneGraph<T>* scene_graph) {
+  // This should never be called with the world index.
+  DRAKE_DEMAND(body.index() != world_index());
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(scene_graph == scene_graph_);
@@ -194,8 +217,10 @@ geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
 }
 
 template<typename T>
-void MultibodyPlant<T>::Finalize() {
+void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   model_->Finalize();
+  FilterAdjacentBodies(scene_graph);
+  ExcludeCollisionsWithVisualGeometry(scene_graph);
   FinalizePlantOnly();
 }
 
@@ -220,6 +245,68 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     implicit_stribeck::Parameters solver_parameters;
     solver_parameters.stiction_tolerance = stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::FilterAdjacentBodies(SceneGraph<T>* scene_graph) {
+  if (geometry_source_is_registered()) {
+    if (scene_graph == nullptr) {
+      throw std::logic_error(
+          "This MultibodyPlant has been registered as a SceneGraph geometry "
+              "source. Finalize() should be invoked with a pointer to the "
+              "SceneGraph instance");
+    }
+
+    if (scene_graph != scene_graph_) {
+      throw std::logic_error(
+          "Finalizing on a SceneGraph instance must be performed on the SAME "
+              "instance of SceneGraph used on the first call to "
+              "RegisterAsSourceForSceneGraph()");
+    }
+    // Disallow collisions between adjacent bodies. Adjacency is implied by the
+    // existence of a joint between bodies.
+    for (JointIndex j{0}; j < model_->num_joints(); ++j) {
+      const Joint<T>& joint = model_->get_joint(j);
+      const Body<T>& child = joint.child_body();
+      const Body<T>& parent = joint.parent_body();
+      // TODO(SeanCurtis-TRI): Determine the correct action for a body
+      // joined to the world -- should it filter out collisions between the
+      // body and all *anchored* geometry? That seems really heavy-handed. So,
+      // for now, we skip the joints to the world.
+      if (parent.index() == world_index()) continue;
+      optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+      optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+
+      if (child_id && parent_id) {
+        scene_graph->ExcludeCollisionsBetween(
+            geometry::GeometrySet(*child_id),
+            geometry::GeometrySet(*parent_id));
+      }
+    }
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry(
+    geometry::SceneGraph<T>* scene_graph) {
+  if (geometry_source_is_registered()) {
+    if (scene_graph == nullptr) {
+      throw std::logic_error(
+          "This MultibodyPlant has been registered as a SceneGraph geometry "
+              "source. Finalize() should be invoked with a pointer to the "
+              "SceneGraph instance");
+    }
+    geometry::GeometrySet visual;
+    for (const auto& body_geometries : visual_geometries_) {
+      visual.Add(body_geometries);
+    }
+    geometry::GeometrySet collision;
+    for (const auto& body_geometries : collision_geometries_) {
+      collision.Add(body_geometries);
+    }
+    scene_graph->ExcludeCollisionsWithin(visual);
+    scene_graph->ExcludeCollisionsBetween(visual, collision);
   }
 }
 

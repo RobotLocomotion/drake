@@ -489,15 +489,6 @@ sh_test(
         ":test_models",
     ],
     tags = [
-        # TODO(mitiguy) Issue #8368: Test rgbd_camera_publish_lcm_test in the
-        # BUILD.bazel file in directory drake/systems/sensors cannot be run
-        # anymore due to the new RotationMatrix class which insists on being a
-        # proper orthogonal rotation matrix.  This test produces a quaternion
-        # with NANs which causes the RotationMatrix class to throw an exception
-        # in debug builds. This test is labeled with tags = "manual" so CI does
-        # not run it. This test is defective and should never have passed
-        # earlier code review.
-        "manual",
         # Mitigates driver-related issues when running under `bazel test`. For
         # more information, see #7004.
         "no-sandbox",
