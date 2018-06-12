@@ -223,7 +223,7 @@ void RgbdRendererOSPRay::Impl::ImplRenderColorImage(
     ImageRgba8U* color_image_out) const {
   // TODO(sherm1) Should evaluate VTK cache entry.
   auto& p = pipelines_[ImageType::kColor];
-
+  p->window->Render();
   vtkRenderer* renderer = p->window->GetRenderers()->GetFirstRenderer();
   int max_frames = vtkOSPRayRendererNode::GetMaxFrames(renderer);
 
@@ -272,6 +272,7 @@ RgbdRendererOSPRay::Impl::Impl(RgbdRendererOSPRay* parent,
   vtkOSPRayRendererNode::SetNorthPole(np, cp->renderer);
   vtkOSPRayRendererNode::SetEastPole(ep, cp->renderer);
   vtkOSPRayRendererNode::SetMaterialLibrary(materials_, cp->renderer);
+  vtkOSPRayRendererNode::SetMaxFrames(10, cp->renderer);
 
   const vtkSmartPointer<vtkTransform> vtk_X_WC = ConvertToVtkTransform(X_WC);
 
