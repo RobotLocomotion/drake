@@ -1095,7 +1095,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // This helper method combines the friction properties for each pair of
   // contact points in `point_pairs` according to
   // CalcContactFrictionFromSurfaceProperties().
-  // The i-th entry in the returned std:vector corresponds to the combined
+  // The i-th entry in the returned std::vector corresponds to the combined
   // friction properties for the i-th point pair in `point_pairs`.
   std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
       const std::vector<geometry::PenetrationAsPointPair<T>>&

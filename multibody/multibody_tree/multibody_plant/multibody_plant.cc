@@ -6,7 +6,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/extract_double.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
@@ -489,7 +488,7 @@ template<typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("CalcPointPairPenetrations() only supports T = double.");
+  DRAKE_ABORT_MSG("This method only supports Only T = double.");
 }
 
 template<typename T>
