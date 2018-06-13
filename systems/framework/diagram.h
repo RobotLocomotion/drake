@@ -1458,8 +1458,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
     auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
-        static_cast<const System<T>*>(this),
-        static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         &source_output_port,

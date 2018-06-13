@@ -72,7 +72,8 @@ class TestSystem : public System<double> {
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});
     auto port = std::make_unique<LeafOutputPort<double>>(
-        this, static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         assign_next_dependency_ticket(),
         kAbstractValued, 0, &cache_entry);
@@ -419,7 +420,8 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareAbstractInputPort();
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
-        this, static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         kAbstractValued, 0 /* size */,
@@ -433,7 +435,8 @@ class ValueIOTestSystem : public System<T> {
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kUniform);
     this->DeclareInputPort(kVectorValued, 1, RandomDistribution::kGaussian);
     this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
-        this, static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         OutputPortIndex(this->get_num_output_ports()),
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,

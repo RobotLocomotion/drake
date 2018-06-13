@@ -1648,7 +1648,8 @@ class LeafSystem : public System<T> {
     // the cache entry; the port's tracker will be subscribed to the cache
     // entry's tracker when a Context is created.
     auto port = std::make_unique<LeafOutputPort<T>>(
-        static_cast<const System<T>*>(this), static_cast<SystemBase*>(this),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<const SystemBase*>(this)
         oport_index, this->assign_next_dependency_ticket(),
         fixed_size == 0 ? kAbstractValued : kVectorValued, fixed_size,
         &cache_entry);
