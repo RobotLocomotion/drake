@@ -209,11 +209,29 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->num_actuators();
   }
 
+  /// Returns the number of model instances in the model.
+  /// @see AddModelInstance().
+  int num_model_instances() const {
+    return model_->num_model_instances();
+  }
+
   /// Returns the size of the generalized position vector `q` for `this` model.
   int num_positions() const { return model_->num_positions(); }
 
+  /// Returns the size of the generalized position vector `q` for a specific
+  /// model instance.
+  int num_positions(ModelInstanceIndex model_instance) const {
+    return model_->num_positions(model_instance);
+  }
+
   /// Returns the size of the generalized velocity vector `v` for `this` model.
   int num_velocities() const { return model_->num_velocities(); }
+
+  /// Returns the size of the generalized velocity vector `v` for a specific
+  /// model instance.
+  int num_velocities(ModelInstanceIndex model_instance) const {
+    return model_->num_velocities(model_instance);
+  }
 
   /// Returns the size of the multibody system state vector `x = [q; v]` for
   /// `this` model. This will equal the number of generalized positions
@@ -228,6 +246,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// That is, the vector of actuation values u has this size.
   /// See AddJointActuator().
   int num_actuated_dofs() const { return model_->num_actuated_dofs(); }
+
+  /// Returns the total number of actuated degrees of freedom for a specific
+  /// model instance.  That is, the vector of actuation values u has this size.
+  /// See AddJointActuator().
+  int num_actuated_dofs(ModelInstanceIndex model_instance) const {
+    return model_->num_actuated_dofs(model_instance);
+  }
 
   /// @name Adding new multibody elements
   /// %MultibodyPlant users will add modeling elements like bodies,
@@ -428,6 +453,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     DRAKE_THROW_UNLESS(joint.num_dofs() == 1);
     return model_->AddJointActuator(name, joint);
   }
+
+  /// Creates a new model instance.  Returns the index for the model
+  /// instance.
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new instance to be added to `this`
+  ///   model. An exception is thrown if an instance with the same name
+  ///   already exists in the model. See HasModelInstanceNamed().
+  ModelInstanceIndex AddModelInstance(const std::string& name) {
+    return model_->AddModelInstance(name);
+  }
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -455,6 +491,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @see AddJointActuator().
   bool HasJointActuatorNamed(const std::string& name) const {
     return model_->HasJointActuatorNamed(name);
+  }
+
+  /// @returns `true` if a model instance named `name` was added to the model.
+  /// @see AddModelInstance().
+  bool HasModelInstanceNamed(const std::string& name) const {
+    return model_->HasModelInstanceNamed(name);
   }
   /// @}
 
@@ -508,6 +550,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return model_->GetJointActuatorByName(name);
+  }
+
+  /// Returns the index to the model instance that is uniquely identified
+  /// by the string `name` in `this` model.
+  /// @throws std::logic_error if there is no instance with the requested name.
+  /// @see HasModelInstanceNamed() to query if there exists an instance in
+  /// `this` model with a given specified name.
+  ModelInstanceIndex GetModelInstanceByName(const std::string& name) const {
+    return model_->GetModelInstanceByName(name);
   }
   /// @}
 
