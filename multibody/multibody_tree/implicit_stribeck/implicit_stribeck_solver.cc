@@ -18,9 +18,9 @@ template <typename T>
 T DirectionChangeLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
-    double cos_theta_max, double v_stiction, double tolerance) {
+    double cos_theta_max, double v_stiction, double relative_tolerance) {
   DRAKE_ASSERT(v_stiction > 0);
-  DRAKE_ASSERT(tolerance > 0);
+  DRAKE_ASSERT(relative_tolerance > 0);
   DRAKE_ASSERT(dv.size() == v.size());
 
   using std::abs;
@@ -29,7 +29,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   using std::sqrt;
 
   // εᵥ is used to determine when a velocity is close to zero.
-  const double epsilon_v = v_stiction * tolerance;
+  const double epsilon_v = v_stiction * relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   const Vector2<T> v1 = v + dv;  // v_alpha = v + dv, when alpha = 1.
@@ -49,7 +49,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 
   // Case II: limit transition from stiction to sliding when x << 1.0 and
   // gradients might be close to zero (due to the "soft norms").
-  if (x < tolerance && x1 > 1.0) {
+  if (x < relative_tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
     // With v_alpha = v + alpha * dv, we make |v_alpha| = v_stiction / 2.
     // For this case dv ≈ v1 (v ≈ 0). Therefore:
@@ -61,7 +61,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   // We want to avoid v1 landing in a region of zero gradients so we force
   // it to land within the circle of radius v_stiction, at v_stribeck/2 in the
   // direction of v.
-  if (x > 1.0 && x1 < tolerance) {
+  if (x > 1.0 && x1 < relative_tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
     // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. Using v ≈ -dv, we arrive to
     // dv(α-1) = -vₛ/2⋅dv/‖dv‖ or:
@@ -75,13 +75,14 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     //         region has strong gradients, we allow it. i.e. alpha = 1.0
     // x1 > 1: If we go from a region of strong gradients (x < 1) to sliding
     //         (x1 > 1), we allow it. Notice that the case from weak gradients
-    //         (close to zero) when x < tolerance, was covered by Case II.
+    //         (close to zero) when x < relative_tolerance, was covered by
+    //         Case II.
     return 1.0;
   } else {  // x > 1.0
     if (x1 < 1.0) {
       // Case IV:
-      // From Case III we know that x1 > tolerance, i.e x1 falls in a region of
-      // strong gradients and thus we allow it.
+      // From Case III we know that x1 > relative_tolerance, i.e x1 falls in a
+      // region of strong gradients and thus we allow it.
       return 1.0;
     }
 

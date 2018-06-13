@@ -36,13 +36,12 @@ namespace internal {
 /// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
 /// makes no distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
-/// Since the Stribeck function used for the friction coefficient has very
-/// steep gradients only within the stiction region and zero outside of it,
-/// gradients (that is the Jacobian of the residual) in the Newton-Raphson
-/// iteration performed by the implicit Stribeck solver are large within
-/// these small circular regions (stiction) and small outside them (slip).
-/// We say that gradients within these stiction circles are "strong" and
-/// gradients outside these regions are "weak".
+/// The Stribeck function is highly nonlinear and difficult to solve with a
+/// conventional Newton-Raphson method. However, it can be partitioned into
+/// regions based on how well the local gradients can be used to find a
+/// solution. We'll describe the algorithm below in terms of "strong" gradients
+/// (∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
+/// strong during stiction and weak during sliding.
 /// These regions are so small compared to the velocity scales dealt with
 /// by the implicit Stribeck solver, that effectively, the Newton-Raphson
 /// iterate would only "see" a fixed dynamic coefficient of friction and it
@@ -128,17 +127,18 @@ struct DirectionChangeLimiter {
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
   /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
-  /// @param[in] tolerance a value << 1 used to determine when ‖vₜ‖ ≈ 0.
-  /// Typical values lie withing the 10⁻³ - 10⁻² range. This allows us to
-  /// compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small tangential
-  /// velocity scale". This value is used to compute "soft norms" (see class's
-  /// documentation) and to detect values close to zero, ‖vₜ‖ < εᵥ.
-  /// A value close to one could cause the solver to miss transitions from/to
-  /// stiction.
+  /// @param[in] relative_tolerance a value << 1 used to determine when
+  /// ‖vₜ‖ ≈ 0. Typical values lie withing the 10⁻³ - 10⁻² range. This allows
+  /// us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
+  /// tangential velocity scale". This value is used to compute "soft norms"
+  /// (see class's documentation) and to detect values close to
+  /// zero, ‖vₜ‖ < εᵥ. A value close to one could cause the solver to miss
+  /// transitions from/to stiction.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
-                     double cos_theta_max, double v_stiction, double tolerance);
+                     double cos_theta_max, double v_stiction,
+                     double relative_tolerance);
 
   /// Helper method for detecting when the line connecting v with v1 = v + dv
   /// crosses the stiction region, a circle of radius `v_stiction`.
