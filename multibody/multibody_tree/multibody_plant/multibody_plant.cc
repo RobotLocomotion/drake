@@ -495,9 +495,9 @@ template<typename T>
 std::vector<CoulombFriction<double>>
 MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
     const std::vector<PenetrationAsPointPair<T>>& point_pairs) const {
-  std::vector<CoulombFriction<double>> combined_frictions(point_pairs.size());
-  for (size_t ic = 0; ic < point_pairs.size(); ++ic) {
-    const auto& pair = point_pairs[ic];
+  std::vector<CoulombFriction<double>> combined_frictions;
+  combined_frictions.reserve(point_pairs.size());
+  for (const auto& pair : point_pairs) {
     const GeometryId geometryA_id = pair.id_A;
     const GeometryId geometryB_id = pair.id_B;
 
@@ -505,13 +505,13 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
         geometry_id_to_collision_index_.at(geometryA_id);
     const int collision_indexB =
         geometry_id_to_collision_index_.at(geometryB_id);
-    const CoulombFriction<double> &geometryA_friction =
+    const CoulombFriction<double>& geometryA_friction =
         default_coulomb_friction_[collision_indexA];
-    const CoulombFriction<double> &geometryB_friction =
+    const CoulombFriction<double>& geometryB_friction =
         default_coulomb_friction_[collision_indexB];
 
-    combined_frictions[ic] = CalcContactFrictionFromSurfaceProperties(
-        geometryA_friction, geometryB_friction);
+    combined_frictions.push_back(CalcContactFrictionFromSurfaceProperties(
+        geometryA_friction, geometryB_friction));
   }
   return combined_frictions;
 }
