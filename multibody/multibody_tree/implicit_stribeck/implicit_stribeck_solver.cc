@@ -114,6 +114,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   vt = Jt * v;
 
   // The stiction tolerance.
+  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
+  // "Stribeck function" is not a Stribeck model really.
   const double v_stribeck = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
@@ -123,6 +125,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
+  // TODO(amcastro-tri): Refactor this section of code into smaller chunks.
   for (int iter = 0; iter < max_iterations; ++iter) {
     // Compute 2D tangent vectors.
     // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
