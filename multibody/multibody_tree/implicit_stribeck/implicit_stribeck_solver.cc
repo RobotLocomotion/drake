@@ -58,13 +58,15 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   auto t_hat = *t_hat_ptr;
 
   // The stiction tolerance.
+  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
+  // "Stribeck function" is not a Stribeck model really.
   const double v_stribeck = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
-  // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
+  // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
   // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * 1.0e-4;
+  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   // Compute 2D tangent vectors.
@@ -76,26 +78,27 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   // this to redefine the slip velocity:
   //   v_slip = sqrt(vtᵀvt + v_epsilon)
   // and a "soft" tangent vector:
-  //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
+  //   t_hat = vₜ/‖vₜ‖ₛ
   // which now is not only well defined but it has well defined derivatives.
   // We use these softened quantities all throughout our derivations for
   // consistency.
   // Notes on the effect of the "soft norm":
   // Consider a 1D case for which vₜ = v, to avoid geometric complications,
   // but without loss of generality. If using a soft norm:
-  //   fₜ(v) = v/‖v‖ₛμ(‖v‖ₛ)
-  //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
+  //   fₜ(v) = μ(‖v‖ₛ)v/‖v‖ₛ
   // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
   // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
-  //   fₜ(v) ≈ 2μ₀S(v)|v|
-  // where S(v) is the sign function and we have used the fact that in the
-  // limit v --> 0, μ(|v|) ≈ 2μ₀|v|. In this case case (recall this is
-  // equivalent to the solution in the limit εᵥ --> 0) fₜ(v) is linear in v.
+  //   fₜ(v) ≈ 2μ₀sgn(v)|v|
+  // where sgn(v) is the sign function, μ₀ the (constant) friction
+  // coefficient, and we have used the fact that in the limit
+  // v --> 0, μ(|v|) ≈ 2μ₀|v|.
+  // In this case (recall this is equivalent to the solution in the
+  // limit εᵥ --> 0) fₜ(v) is linear in v.
   // Now, very close to the origin, in the limit |v| << εᵥ, where the
   // "softness" of the norm is important, the limit on fₜ(v) is:
   //   fₜ(v) ≈ 2μ₀v²
   // i.e. fₜ(v) is quadratic in v.
-  // This exaplains why we have "weak" gradients in the limit of vₜ
+  // This explains why we have "weak" gradients in the limit of vₜ
   // approaching zero.
   // These observations easily extend to the general 2D case.
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
@@ -137,8 +140,8 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 
     // Compute dmu/dv = (1/v_stribeck) * dmu/dx
     // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-    const T dmudv = ModifiedStribeckDerivative(
-        v_slip(ic) / v_stribeck, mu(ic)) / v_stribeck;
+    const T x = v_slip(ic) / v_stribeck;
+    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
 
     const auto t_hat_ic = t_hat.template segment<2>(ik);
 
@@ -146,7 +149,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // Notice it is a symmetric 2x2 matrix.
     const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
 
-    // Removes the projected direction along t_hat.
+    // Removes the component of a vector that lies in the direction of t_hat.
     // This is also a symmetric 2x2 matrix.
     const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
 
@@ -156,12 +159,12 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     //  - Their rank equals the number of non-zero eigenvalues.
     //  - From the previous item we have rank(P) = trace(P).
     //  - If P is a projection matrix, so is (I - P).
-    // From the above we then know t_hat P and Pperp are both projection
+    // From the above we then know that P and Pperp are both projection
     // matrices of rank one (i.e. rank deficient) and are symmetric
     // semi-positive definite. This has very important consequences for the
     // Jacobian of the vt_error.
 
-    // We now compute the dradient with respect to the tangential velocity
+    // We now compute the gradient with respect to the tangential velocity
     // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
     // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
     //   ∇ᵥₜfₜ = -dft_dvt = -fn * (
@@ -179,14 +182,16 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // softened counterpart.
 
     // Compute dft_dvt:
-    // Changes of vt in the direction perpendicular to t_hat.
+    // Changes of vt in the direction perpendicular to t_hat (see the full
+    // expression for dft_dvt above).
     dft_dvt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
 
     // Changes in the magnitude of vt (which in turns makes mu_stribeck
     // change), in the direction of t_hat.
     dft_dvt[ic] += P_ic * dmudv;
 
-    // Note: dft_dvt is a symmetric 2x2 matrix.
+    // Note: dft_dvt is a symmetric 2x2 matrix. This will imply the positive
+    // definiteness of the system's Jacobian below.
     dft_dvt[ic] *= fn(ic);
   }
 }
@@ -194,7 +199,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 template <typename T>
 void ImplicitStribeckSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
-    const std::vector<Matrix2<T>>& Gt,
+    const std::vector<Matrix2<T>>& dft_dvt,
     const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
     EigenPtr<MatrixX<T>> J) {
 
@@ -204,23 +209,27 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   // Size of the friction forces vector ft and tangential velocities vector vt.
   const int nf = 2 * nc;
 
-  // Newton-Raphson Jacobian:
-  //  J = M + dt Jtᵀdiag(Gt)Jt:
-  // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
-  // diagonal entry. Since Gt is SPD, so is J.
+  // Newton-Raphson Jacobian, i.e. the derivative of the residual with
+  // respect to the independent variables which, in this case, are the
+  // generalized velocities of the mechanical system.
+  //  J = M + dt Jtᵀdiag(dft_dvt)Jt:
+  // J is an (nv x nv) symmetric positive definite matrix.
+  // diag(dft_dvt) is the (2nc x 2nc) block diagonal matrix with dft_dvt in
+  // each 2x2 diagonal entry.
 
-  // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
+  // Start by multiplying diag(dft_dvt)Jt and use the fact that diag(dft_dvt) is
   // block diagonal.
-  MatrixX<T> diag_Gt_times_Jt(nf, nv);
+  MatrixX<T> diag_dft_dvt_times_Jt(nf, nv);
   // TODO(amcastro-tri): Only build half of the matrix since it is
   // symmetric.
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-    diag_Gt_times_Jt.block(ik, 0, 2, nv) =
-        Gt[ic] * Jt.block(ik, 0, 2, nv);
+    diag_dft_dvt_times_Jt.block(ik, 0, 2, nv) =
+        dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
   }
-  // Form J = M + dt Jtᵀdiag(Gt)Jt:
-  *J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+  // Form J = M + dt Jtᵀdiag(dft_dvt)Jt:
+  // TODO(amcastro-tri): Unit test Jacobian idependently.
+  *J = M + dt * Jt.transpose() * diag_dft_dvt_times_Jt;
 }
 
 template <typename T>
@@ -307,11 +316,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Newton-Raphson residual.
     residual = M * v - p_star - dt * Jt.transpose() * ft;
 
-    // Compute gradient ∇ᵥₜfₜ(vₜ), Gt in source, as a function of fn, mus,
+    // Compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ) as a function of fn, mus,
     // t_hat and v_slip.
     CalcFrictionForcesGradient(fn, mus, t_hat, v_slip, &dft_dvt);
 
-    // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, Gt, Jt, dt.
+    // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, dft_dvt, Jt, dt.
     CalcJacobian(M, dft_dvt, Jt, dt, &J);
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
