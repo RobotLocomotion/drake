@@ -105,12 +105,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   const AcrobotParameters parameters;
   unique_ptr<MultibodyPlant<double>> plant =
-      MakeAcrobotPlant(parameters, true /* Make a finalized plant. */);
-
-  // MakeAcrobotPlant() has already called Finalize() on the new acrobot plant.
-  // Therefore attempting to call this method again will throw an exception.
-  // Verify this.
-  EXPECT_THROW(plant->Finalize(), std::logic_error);
+      MakeAcrobotPlant(parameters, false /* Don't make a finalized plant. */);
 
   // Model Size. Counting the world body, there should be three bodies.
   EXPECT_EQ(plant->num_bodies(), 3);
@@ -118,10 +113,50 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_actuators(), 1);
   EXPECT_EQ(plant->num_actuated_dofs(), 1);
 
-  // State size.
-  EXPECT_EQ(plant->num_positions(), 2);
-  EXPECT_EQ(plant->num_velocities(), 2);
-  EXPECT_EQ(plant->num_multibody_states(), 4);
+  // We expect to see the default and world model instances.
+  EXPECT_EQ(plant->num_model_instances(), 2);
+
+  // Add a split pendulum to the plant.
+  const ModelInstanceIndex pendulum_model_instance =
+      AddModelFromSdfFile(FindResourceOrThrow(
+          "drake/multibody/multibody_tree/"
+          "multibody_plant/test/split_pendulum.sdf"), plant.get());
+  EXPECT_EQ(plant->num_model_instances(), 3);
+
+  plant->Finalize();
+  // We should throw an exception if finalize is called twice.  Verify this.
+  EXPECT_THROW(plant->Finalize(), std::logic_error);
+
+  // Verify the final model size for the model as a whole and for each instance.
+  EXPECT_EQ(plant->num_bodies(), 5);
+  EXPECT_EQ(plant->num_joints(), 4);
+  EXPECT_EQ(plant->num_actuators(), 2);
+  EXPECT_EQ(plant->num_actuated_dofs(), 2);
+
+    // State size.
+  EXPECT_EQ(plant->num_positions(), 3);
+  EXPECT_EQ(plant->num_velocities(), 3);
+  EXPECT_EQ(plant->num_multibody_states(), 6);
+
+  EXPECT_EQ(plant->num_actuated_dofs(default_model_instance()), 1);
+  EXPECT_EQ(plant->num_positions(default_model_instance()), 2);
+  EXPECT_EQ(plant->num_velocities(default_model_instance()), 2);
+
+  EXPECT_EQ(plant->num_actuated_dofs(pendulum_model_instance), 1);
+  EXPECT_EQ(plant->num_positions(pendulum_model_instance), 1);
+  EXPECT_EQ(plant->num_velocities(pendulum_model_instance), 1);
+
+  // Check that the input/output ports have the approptiate geometry.
+  EXPECT_THROW(plant->get_actuation_input_port(), std::runtime_error);
+  EXPECT_EQ(plant->get_actuation_input_port(
+      default_model_instance()).size(), 1);
+  EXPECT_EQ(plant->get_actuation_input_port(
+      pendulum_model_instance).size(), 1);
+  EXPECT_EQ(plant->get_continuous_state_output_port().size(), 6);
+  EXPECT_EQ(plant->get_continuous_state_output_port(
+      default_model_instance()).size(), 4);
+  EXPECT_EQ(plant->get_continuous_state_output_port(
+      pendulum_model_instance).size(), 2);
 
   // Query if elements exist in the model.
   EXPECT_TRUE(plant->HasBodyNamed(parameters.link1_name()));
@@ -138,8 +173,17 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Get links by name.
   const Body<double>& link1 = plant->GetBodyByName(parameters.link1_name());
   EXPECT_EQ(link1.name(), parameters.link1_name());
+  EXPECT_EQ(link1.model_instance(), default_model_instance());
+
   const Body<double>& link2 = plant->GetBodyByName(parameters.link2_name());
   EXPECT_EQ(link2.name(), parameters.link2_name());
+  EXPECT_EQ(link2.model_instance(), default_model_instance());
+
+  const Body<double>& upper = plant->GetBodyByName("upper_section");
+  EXPECT_EQ(upper.model_instance(), pendulum_model_instance);
+
+  const Body<double>& lower = plant->GetBodyByName("lower_section");
+  EXPECT_EQ(lower.model_instance(), pendulum_model_instance);
 
   // Attempting to retrieve a link that is not part of the model should throw
   // an exception.
@@ -149,9 +193,14 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
-  const Joint<double>& elbow_joint =
+  EXPECT_EQ(shoulder_joint.model_instance(), default_model_instance());
+    const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
+  EXPECT_EQ(elbow_joint.model_instance(), default_model_instance());
+  const Joint<double>& pin_joint =
+      plant->GetJointByName("pin");
+  EXPECT_EQ(pin_joint.model_instance(), pendulum_model_instance);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // Templatized version to obtain retrieve a particular known type of joint.
@@ -161,12 +210,16 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const RevoluteJoint<double>& elbow =
       plant->GetJointByName<RevoluteJoint>(parameters.elbow_joint_name());
   EXPECT_EQ(elbow.name(), parameters.elbow_joint_name());
+  const RevoluteJoint<double>& pin =
+      plant->GetJointByName<RevoluteJoint>("pin");
+  EXPECT_EQ(pin.name(), "pin");
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
   // MakeAcrobotPlant() has already called Finalize() on the acrobot model.
   // Therefore no more modeling elements can be added. Verify this.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant->AddRigidBody("AnotherBody", SpatialInertia<double>()),
+      plant->AddRigidBody("AnotherBody", default_model_instance(),
+                          SpatialInertia<double>()),
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "Post-finalize calls to '.*' are not allowed; "
@@ -1449,4 +1502,3 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
 }  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
-
