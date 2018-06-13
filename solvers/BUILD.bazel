@@ -1187,6 +1187,8 @@ drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
     tags = gurobi_test_tags() + [
+        # Times out with Valgrind
+        "no_memcheck",
         # Excluding tsan because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],

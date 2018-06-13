@@ -68,6 +68,8 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags() + [
+        # Takes too long to run with Valgrind.
+        "no_memcheck",
         # Excluding because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
     ],

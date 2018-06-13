@@ -227,6 +227,7 @@ test:memcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:memcheck --test_timeout=1500,7500,22500,90000  # 25x
+test:memcheck --test_verbose_timeout_warnings=true
 
 ### Memcheck everything build. ###
 build:memcheck_everything --define=WITH_GUROBI=ON
@@ -242,6 +243,7 @@ test:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 test:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
+test:memcheck_everything --test_verbose_timeout_warnings=true
 
 # Fast memcheck.
 #
