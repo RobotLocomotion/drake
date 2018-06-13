@@ -206,7 +206,7 @@ struct Parameters {
   /// A value close to one could cause the solver to miss transitions from/to
   /// stiction. Small values approaching zero will result in a higher number of
   /// iterations needed to attain the desired level of convergence.
-  /// Typical values lie withing the 10⁻³ - 10⁻² range.
+  /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 };
 
