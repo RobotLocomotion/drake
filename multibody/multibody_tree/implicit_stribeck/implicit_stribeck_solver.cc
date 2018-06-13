@@ -184,7 +184,7 @@ bool DirectionChangeLimiter<T>::CrossesTheStictionRegion(
         // This situation happens when dv ≈ -a v with a > 0. Therefore we cap
         // v_alpha to v_alpha = v / ‖v‖⋅vₛ/2. To do this, we "move" v_alpha
         // in the direction opposite of dv/‖dv‖ by magnitude vs/2, or similarly,
-        // we substract ‖dv‖vs/2 from the previously computed alpha.
+        // we subtract ‖dv‖vs/2 from the previously computed alpha.
         alpha -= v_stiction / 2.0 / dv_norm;
         DRAKE_ASSERT(0 < alpha && alpha <= 1);
         return true;  // Crosses the stiction region.
