@@ -372,7 +372,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // this to redefine the slip velocity:
     //   v_slip = sqrt(vtᵀvt + v_epsilon)
     // and a "soft" tangent vector:
-    //   t̂ = vₜ/‖vₜ‖ₛ
+    //   t_hat = vₜ/‖vₜ‖ₛ
     // which now is not only well defined but it has well defined derivatives.
     // We use these softened quantities all throughout our derivations for
     // consistency.
@@ -454,8 +454,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
       // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
       //   ∇ᵥₜfₜ = -Gt = -fn * (
-      //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
-      //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+      //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t_hat) +
+      //     dmu_stribeck/dx * P(t_hat) / v_stribeck )
       // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
       // have defined Gt = -∇ᵥₜfₜ.
       // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
