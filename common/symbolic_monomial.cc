@@ -77,7 +77,32 @@ map<Variable, int> ToMonomialPower(const Expression& e) {
   }
   return powers;
 }
+
+// Converts a pair of variables and their integer exponents into an internal
+// representation of Monomial class, a mapping from a base (Variable) to its
+// exponent (int). This function is called in the constructor taking the same
+// types of arguments.
+map<Variable, int> ToMonomialPower(
+    const Eigen::Ref<const VectorX<Variable>>& vars,
+    const Eigen::Ref<const Eigen::VectorXi>& exponents) {
+  DRAKE_DEMAND(vars.size() == exponents.size());
+  map<Variable, int> powers;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (exponents[i] > 0) {
+      powers.emplace(vars[i], exponents[i]);
+    } else if (exponents[i] < 0) {
+      throw std::runtime_error("The exponent is negative.");
+    }
+  }
+  return powers;
+}
+
 }  // namespace
+
+Monomial::Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
+                   const Eigen::Ref<const Eigen::VectorXi>& exponents)
+    : total_degree_{exponents.sum()},
+      powers_{ToMonomialPower(vars, exponents)} {}
 
 Monomial::Monomial(const Variable& var) : total_degree_{1}, powers_{{var, 1}} {}
 

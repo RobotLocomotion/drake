@@ -127,6 +127,33 @@ TEST_F(MonomialTest, ConstructFromVariable) {
   EXPECT_EQ(powers.begin()->second, 1);
 }
 
+TEST_F(MonomialTest, ConstructFromVariablesAndExponents) {
+  // [] * [] => 1.
+  const VectorX<Variable> vars(0);
+  const VectorX<int> exponents(0);
+  const Monomial one{Monomial{Expression::One()}};
+  EXPECT_EQ(Monomial(vars, exponents), one);
+
+  const Vector3<Variable> vars_xyz{var_x_, var_y_, var_z_};
+  // [x, y, z] * [0, 0, 0] => 1.
+  const Monomial m1{vars_xyz, Eigen::Vector3i{0, 0, 0}};
+  EXPECT_EQ(m1, one);
+
+  // [x, y, z] * [1, 1, 1] => xyz.
+  const Monomial m2{vars_xyz, Eigen::Vector3i{1, 1, 1}};
+  const Monomial m2_expected{x_ * y_ * z_};
+  EXPECT_EQ(m2, m2_expected);
+
+  // [x, y, z] * [2, 0, 3] => x²z³.
+  const Monomial m3{vars_xyz, Eigen::Vector3i{2, 0, 3}};
+  const Monomial m3_expected{pow(x_, 2) * pow(z_, 3)};
+  EXPECT_EQ(m3, m3_expected);
+
+  // [x, y, z] * [2, 0, -1] => Exception!
+  EXPECT_THROW(Monomial(vars_xyz, Eigen::Vector3i(2, 0, -1)),
+               std::runtime_error);
+}
+
 TEST_F(MonomialTest, GetVariables) {
   const Monomial m0{};
   EXPECT_EQ(m0.GetVariables(), Variables{});
