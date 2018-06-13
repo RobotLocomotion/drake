@@ -34,6 +34,16 @@ class Monomial {
   /** Constructs a Monomial from @p powers. */
   explicit Monomial(const std::map<Variable, int>& powers);
 
+  /** Constructs a Monomial from a vector of variables `vars` and their
+   * corresponding integer exponents `exponents`.
+   * For example, `Monomial([x, y, z], [2, 0, 1])` constructs a Monomial `x²z`.
+   *
+   * @pre The size of `vars` should be the same as the size of `exponents`.
+   * @throws std::runtime_error if `exponents` includes a negative integer.
+   */
+  Monomial(const Eigen::Ref<const VectorX<Variable>>& vars,
+           const Eigen::Ref<const Eigen::VectorXi>& exponents);
+
   /**
    * Converts an expression to a monomial if the expression is written as
    * ∏ᵢpow(xᵢ, kᵢ), otherwise throws a runtime error.
