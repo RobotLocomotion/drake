@@ -24,7 +24,7 @@ namespace {
 // must take one of the following formats:
 //
 // - Points:        points.P_ID.<forward|reverse>
-// - Connections:   connection.C_ID.<start|end>.<ref|LANE_ID>.<forward|reverse>
+// - Connections:   connections.C_ID.<start|end>.<ref|LANE_ID>.<forward|reverse>
 //
 // Where:
 // - P_ID is the ID of the Endpoint in "points" YAML map.
@@ -141,9 +141,9 @@ ComputationPolicy ParseComputationPolicy(const YAML::Node& node) {
 LaneLayout ResolveLaneLayout(const YAML::Node& node,
                              double default_left_shoulder,
                              double default_right_shoulder) {
-  int num_lanes{0};
-  int ref_lane{0};
-  double r_ref{0.};
+  int num_lanes{};
+  int ref_lane{};
+  double r_ref{};
   std::tie(num_lanes, ref_lane, r_ref) = ParseLanes(node["lanes"]);
 
   // Left and right shoulders are not required, if any of them is present it
@@ -158,14 +158,14 @@ LaneLayout ResolveLaneLayout(const YAML::Node& node,
   return LaneLayout(left_shoulder, right_shoulder, num_lanes, ref_lane, r_ref);
 }
 
-// Looks for the Endpoint in `xyz_catalog` given `ref` description. `ref` should
-// be a bare Endpoint in "points" YAML map. Either ".forward" or ".reverse"
-// keyword must be present.
+// Looks for the Endpoint in `point_catalog` given `ref` description. `ref`
+// should be a bare Endpoint in "points" YAML map. Either ".forward" or
+// ".reverse" keyword must be present.
 // @return An optional<Endpoint> with the Endpoint or nullopt if it is not
-// found inside `xyz_catalog`.
+// found inside `point_catalog`.
 optional<Endpoint> FindEndpointInCatalog(
     const std::string& ref,
-    const std::map<std::string, Endpoint>& xyz_catalog) {
+    const std::map<std::string, Endpoint>& point_catalog) {
   const std::string::size_type forward_pos = ref.rfind(kForward);
   const std::string::size_type reverse_pos = ref.rfind(kReverse);
   // Either ".forward" or ".reverse" must be present.
@@ -175,13 +175,14 @@ optional<Endpoint> FindEndpointInCatalog(
   const std::string catalog_reference = reverse_pos != std::string::npos
                                             ? ref.substr(0, reverse_pos)
                                             : ref.substr(0, forward_pos);
-  auto it = xyz_catalog.find(catalog_reference);
-  return it == xyz_catalog.end() ? nullopt : optional<Endpoint>(it->second);
+  auto it = point_catalog.find(catalog_reference);
+  return it == point_catalog.end() ? nullopt : optional<Endpoint>(it->second);
 }
 
 // Looks for the Connection in `connection_catalog` given `endpoint_key`
 // description. `endpoint_key` should be the token specified to reference a
-// connection, its curve, the end and the direction.
+// connection, its reference curve or one of its lanes, the end and the
+// direction.
 // @return An optional<const Connection*> with the Connection or nullopt if it
 // is not found inside `connection_catalog`.
 optional<const Connection*> FindConnectionInCatalog(
@@ -231,7 +232,7 @@ api::LaneEnd::Which ResolveEnd(const std::string& endpoint_key) {
 
 // Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
 // must go first and then a string that points to the Endpoint. It will be
-// looked for inside `xyz_catalog` or a Connection will be selected from
+// looked for inside `point_catalog` or a Connection will be selected from
 // `connection_catalog`.
 // @return An optional<StartRefernece::Spec> with the point information when
 // it is possible to identify. When the point refers to a Connection that is
@@ -239,7 +240,8 @@ api::LaneEnd::Which ResolveEnd(const std::string& endpoint_key) {
 // TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
 //                     are supported.
 optional<StartReference::Spec> ResolveEndpoint(
-    const YAML::Node& node, const std::map<std::string, Endpoint>& xyz_catalog,
+    const YAML::Node& node,
+    const std::map<std::string, Endpoint>& point_catalog,
     const std::map<std::string, const Connection*>& connection_catalog) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
@@ -254,7 +256,7 @@ optional<StartReference::Spec> ResolveEndpoint(
   if (point_pos != std::string::npos && point_pos == 0) {
     // Endpoint in "points".
     optional<Endpoint> endpoint =
-        FindEndpointInCatalog(endpoint_key, xyz_catalog);
+        FindEndpointInCatalog(endpoint_key, point_catalog);
     DRAKE_DEMAND(endpoint.has_value());
     return {
         StartReference().at(endpoint.value(), ResolveDirection(endpoint_key))};
@@ -284,7 +286,7 @@ optional<StartReference::Spec> ResolveEndpoint(
 // When the node has a sequence as its second element, it will be parsed as
 // an EndpointZ and Direction::kForward will be assumed. Otherwise, the second
 // element will be checked to be a scalar of string type. It must refer to
-// either a point in `xyz_catalog` or to an EndpointZ of any Connection in
+// either a point in `point_catalog` or to an EndpointZ of any Connection in
 // `connection_catalog`.
 // @return An optional<EndRefernece::Spec> with the point information when
 // it is possible to identify. When the point refers to a Connection that is
@@ -292,7 +294,8 @@ optional<StartReference::Spec> ResolveEndpoint(
 // TODO(agalbachicar)  Review return type once lane-to-lane methods in Builder
 //                     are supported.
 optional<EndReference::Spec> ResolveEndpointZ(
-    const YAML::Node& node, const std::map<std::string, Endpoint>& xyz_catalog,
+    const YAML::Node& node,
+    const std::map<std::string, Endpoint>& point_catalog,
     const std::map<std::string, const Connection*>& connection_catalog) {
   DRAKE_DEMAND(node.IsSequence());
   DRAKE_DEMAND(node.size() == 2);
@@ -309,7 +312,7 @@ optional<EndReference::Spec> ResolveEndpointZ(
     if (point_pos != std::string::npos && point_pos == 0) {
       // Endpoint in "points".
       optional<Endpoint> endpoint =
-          FindEndpointInCatalog(endpoint_key, xyz_catalog);
+          FindEndpointInCatalog(endpoint_key, point_catalog);
       DRAKE_DEMAND(endpoint.has_value());
       return {EndReference().z_at(endpoint.value().z(),
                                   ResolveDirection(endpoint_key))};
@@ -344,14 +347,14 @@ std::string PointsKey(const std::string& point_name) {
 
 // Parses `points` YAML node to resolve all the endpoints in the collection.
 // `points` must be a YAML map.
-// `xyz_catalog` will be fed with the parsed endpoints from `points`.
-// `xyz_catalog` must not be nullptr.
-void ResolveEndpointsFromPoints(const YAML::Node& points,
-                                std::map<std::string, Endpoint>* xyz_catalog) {
+// `point_catalog` will be fed with the parsed endpoints from `points`.
+// `point_catalog` must not be nullptr.
+void ParseEndpointsFromPoints(const YAML::Node& points,
+                              std::map<std::string, Endpoint>* point_catalog) {
   DRAKE_DEMAND(points.IsMap());
-  DRAKE_DEMAND(xyz_catalog != nullptr);
+  DRAKE_DEMAND(point_catalog != nullptr);
   for (const auto& p : points) {
-    (*xyz_catalog)[PointsKey(p.first.as<std::string>())] =
+    (*point_catalog)[PointsKey(p.first.as<std::string>())] =
         ParseEndpoint(p.second);
   }
 }
@@ -361,7 +364,7 @@ void ResolveEndpointsFromPoints(const YAML::Node& points,
 // connections").
 const Connection* MaybeMakeConnection(
     std::string id, const YAML::Node& node,
-    const std::map<std::string, Endpoint>& xyz_catalog,
+    const std::map<std::string, Endpoint>& point_catalog,
     const std::map<std::string, const Connection*>& connection_catalog,
     BuilderBase* builder, double default_left_shoulder,
     double default_right_shoulder) {
@@ -391,7 +394,7 @@ const Connection* MaybeMakeConnection(
   //                     segments, the return type should handle also
   //                     StartLane::Spec.
   optional<StartReference::Spec> start_spec =
-      ResolveEndpoint(node["start"], xyz_catalog, connection_catalog);
+      ResolveEndpoint(node["start"], point_catalog, connection_catalog);
   if (!start_spec.has_value()) {
     return nullptr;
   }  // "Try to resolve later."
@@ -401,7 +404,8 @@ const Connection* MaybeMakeConnection(
   //                     segments, the return type should handle also
   //                     EndLane::Spec.
   optional<EndReference::Spec> end_spec = ResolveEndpointZ(
-      node["explicit_end"] ? node["explicit_end"] : node["z_end"], xyz_catalog,
+      node["explicit_end"] ? node["explicit_end"] : node["z_end"],
+      point_catalog,
       connection_catalog);
   if (!end_spec.has_value()) {
     return nullptr;
@@ -464,8 +468,8 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
   DRAKE_DEMAND(builder != nullptr);
 
   drake::log()->debug("loading points !");
-  std::map<std::string, Endpoint> xyz_catalog;
-  ResolveEndpointsFromPoints(mmb["points"], &xyz_catalog);
+  std::map<std::string, Endpoint> point_catalog;
+  ParseEndpointsFromPoints(mmb["points"], &point_catalog);
 
   drake::log()->debug("loading raw connections !");
   YAML::Node connections = mmb["connections"];
@@ -484,7 +488,7 @@ std::unique_ptr<const api::RoadGeometry> BuildFrom(
     for (const auto& r : raw_connections) {
       const std::string id = r.first;
       const Connection* conn = MaybeMakeConnection(
-          id, r.second, xyz_catalog, cooked_connections, builder.get(),
+          id, r.second, point_catalog, cooked_connections, builder.get(),
           default_left_shoulder, default_right_shoulder);
       if (!conn) {
         drake::log()->debug("...skipping '{}'", id);

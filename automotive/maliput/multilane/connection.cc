@@ -38,7 +38,7 @@ std::ostream& operator<<(std::ostream& out, const ArcOffset& arc_offset) {
 Connection::Connection(const std::string& id, const Endpoint& start,
                        const EndpointZ& end_z, int num_lanes, double r0,
                        double lane_width, double left_shoulder,
-                       double right_shoulder, const LineOffset& line_length,
+                       double right_shoulder, const LineOffset& line_offset,
                        double linear_tolerance, double scale_length,
                        ComputationPolicy computation_policy)
     : type_(kLine),
@@ -55,7 +55,7 @@ Connection::Connection(const std::string& id, const Endpoint& start,
       linear_tolerance_(linear_tolerance),
       scale_length_(scale_length),
       computation_policy_(computation_policy),
-      line_length_(line_length.length()) {
+      line_length_(line_offset.length()) {
   DRAKE_DEMAND(num_lanes_ > 0);
   DRAKE_DEMAND(lane_width_ >= 0);
   DRAKE_DEMAND(left_shoulder_ >= 0);

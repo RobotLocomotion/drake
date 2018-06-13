@@ -694,7 +694,7 @@ GTEST_TEST(MultilaneLoaderTest, ContinuityConstraintOnReference) {
               Matches(EndReference().z_at(kZEndSpiral, Direction::kForward),
                       kLinearTolerance)));
 
-  // EndpointXy is reversed and EndpointZ is reversed and modified.
+  // EndpointXy is reversed and EndpointZ is reversed and theta_dot cleared.
   prebuild_expectations += EXPECT_CALL(
       *builder_mock,
       Connect("line",

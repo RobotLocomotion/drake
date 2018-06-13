@@ -654,6 +654,21 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
 
 // Holds common properties to create a Builder and Connections whose endpoint
 // information lacks of theta_dot so it is adjusted.
+//
+// For the tests below, let L be the curvature of the curve at the point so that
+// L_line is the curvature for a line and L_arc is the curvature for an arc. In
+// addition, let Δθ be the angle span of the arc offset.
+// Then,
+//
+// L_line = 0
+// L_arc = sign(Δθ) / radius
+//
+// And
+//
+// theta_dot = L * sin(-atan(z_dot))
+//
+// theta_dot constants in tests below where computed Octave using previous
+// expression.
 class MultilaneBuilderPrimitiveContinuityConstraintTest
     : public ::testing::Test {
  protected:
