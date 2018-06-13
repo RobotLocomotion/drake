@@ -115,7 +115,8 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
 
         # - Check that drawKinematicTree runs
-        tree.drawKinematicTree(join(os.environ["TEMP_DIR"], "test_graph.dot"))
+        tree.drawKinematicTree(
+            join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
 
     def test_frame_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
