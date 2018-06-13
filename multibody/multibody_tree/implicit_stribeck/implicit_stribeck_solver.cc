@@ -72,7 +72,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const int max_iterations = parameters_.max_iterations;
   // Tolerance used to monitor the convergence of the tangential velocities.
   const double vt_tolerance =
-      parameters_.tolerance * parameters_.stiction_tolerance;
+      parameters_.relative_tolerance * parameters_.stiction_tolerance;
 
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -96,9 +96,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& tau_f = fixed_size_workspace_.mutable_tau_f();
 
   // Convenient aliases to variable size workspace variables.
+  // Note: auto resolve to Eigen::Block (no copies).
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
-  auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
+  auto Delta_vt = variable_size_workspace_.mutable_Delta_vt();
   auto Gt = variable_size_workspace_.mutable_dft_dv();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
@@ -116,10 +117,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const double v_stribeck = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
-  // velocity v_epsilon. With v_epsilon we define a "soft norm" which we
+  // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
   // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * parameters_.tolerance;
+  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   for (int iter = 0; iter < max_iterations; ++iter) {
@@ -132,15 +133,14 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // this to redefine the slip velocity:
     //   v_slip = sqrt(vtᵀvt + v_epsilon)
     // and a "soft" tangent vector:
-    //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
+    //   t̂ = vₜ/‖vₜ‖ₛ
     // which now is not only well defined but it has well defined derivatives.
     // We use these softened quantities all throughout our derivations for
     // consistency.
     // Notes on the effect of the "soft norm":
     // Consider a 1D case for which vₜ = v, to avoid geometric complications,
     // but without loss of generality. If using a soft norm:
-    //   fₜ(v) = v/‖v‖ₛμ(‖v‖ₛ)
-    //   with ‖v‖ₛ = sqrt(v² + εᵥ²)
+    //   fₜ(v) = μ(‖v‖ₛ)v/‖v‖ₛ
     // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
     // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
     //   fₜ(v) ≈ 2μ₀sgn(v)|v|
@@ -196,7 +196,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // Notice it is a symmetric 2x2 matrix.
       const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
 
-      // Removes the projected direction along t_hat.
+      // Removes the component of a vector that lies in the direction of t_hat.
       // This is also a symmetric 2x2 matrix.
       const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
 
@@ -206,7 +206,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       //  - Their rank equals the number of non-zero eigenvalues.
       //  - From the previous item we have rank(P) = trace(P).
       //  - If P is a projection matrix, so is (I - P).
-      // From the above we then know t_hat P and Pperp are both projection
+      // From the above we then know that P and Pperp are both projection
       // matrices of rank one (i.e. rank deficient) and are symmetric
       // semi-positive definite. This has very important consequences for the
       // Jacobian of the vt_error.
@@ -229,10 +229,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // softened counterpart.
 
       // Compute Gt:
-      // Changes of vt in the direction perpendicular to t_hat.
+      // Changes of vt in the direction perpendicular to t_hat (see the full
+      // expression for Gt above).
       Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
 
-      // Changes in the magnitude of vt (which in turns makes mu_stribeck
+      // Changes in the magnitude of vt (which in turn makes mu_stribeck
       // change), in the direction of t_hat.
       Gt[ic] += P_ic * dmudv;
 
@@ -274,11 +275,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     }
     Delta_v = J_ldlt.solve(-residual);
 
-    // Since we keep Jt constant we have t_hat:
+    // Since we keep Jt constant we have that:
     // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
     //                = vₜᵏ + α Jt⋅Δvᵏ
     //                = vₜᵏ + α Δvₜᵏ
-    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant t_hat we'll
+    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant that we'll
     // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
     // For multiple contact points, we choose the minimum α among all contact
     // points.
@@ -290,7 +291,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
     // all contact points. The angle change θ is defined by the dot product
     // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
-    // We'll do so by computing a coefficient 0 < α < 1 so t_hat if the
+    // We'll do so by computing a coefficient 0 < α < 1 so that if the
     // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
     // for all contact points.
     T alpha = 1.0;  // We set α = 1 for now.
