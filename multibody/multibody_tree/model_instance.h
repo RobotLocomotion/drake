@@ -13,6 +13,7 @@ namespace drake {
 namespace multibody {
 
 /// @file
+/// @anchor model_instance
 /// Model instance information for multibody trees.
 ///
 /// A MultiBodyTree is composed of a number of MultibodyTreeElement items.  In
