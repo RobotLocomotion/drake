@@ -73,7 +73,7 @@ def _determine_linux(repository_ctx):
     distro = " ".join([x for x in lines if len(x) > 0])
 
     # Match supported Ubuntu release(s).
-    for ubuntu_release in ["16.04"]:
+    for ubuntu_release in ["16.04", "18.04"]:
         if distro == "Ubuntu " + ubuntu_release:
             return _make_result(ubuntu_release = ubuntu_release)
 
