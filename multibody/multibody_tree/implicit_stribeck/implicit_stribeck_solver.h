@@ -203,7 +203,10 @@ struct Parameters {
   /// value of the tangential velocities smaller than that of the
   /// "Stribeck stiction region" (the circle around the origin with radius
   /// stiction_tolerance).
-  /// Typical value is about 1%.
+  /// A value close to one could cause the solver to miss transitions from/to
+  /// stiction. Small values approaching zero will result in a higher number of
+  /// iterations needed to attain the desired level of convergence.
+  /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 };
 
