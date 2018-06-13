@@ -488,9 +488,9 @@ class ImplicitStribeckSolver {
     std::vector<Matrix2<T>> dft_dvt_;
   };
 
-  // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ is the
-  // "soft norm" of vₜ. In addition this method computes v_slip = ‖vₜ‖ₛ,
-  // t_hat = vₜ/‖vₜ‖ₛ and mus = μ(‖vₜ‖ₛ).
+  // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
+  // is the "soft norm" of vₜ. In addition this method computes
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mus = μ(‖vₜ‖ₛ).
   void CalcFrictionForces(
       const Eigen::Ref<const VectorX<T>>& vt,
       const Eigen::Ref<const VectorX<T>>& fn,
