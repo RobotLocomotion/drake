@@ -25,7 +25,7 @@ It is modeled as an equilateral triangle with a contact point at each of the
 legs. The total mass of the pizza saver is m and its rotational inertia about
 the triangle's barycenter is I.
 If h is the height of the triangle from any of its sides, the distance from
-any point to the triangle's center is 2h/3. The height h relates to the size
+any point to the triangle's center is 2h/3. The height h relates to the length
 a of a side by h = 3/2/sqrt(3) a.
 The generalized positions vector for this case is q = [x, y, theta], with
 theta = 0 for the triangle in the configuration shown in the schematic. */
@@ -138,13 +138,11 @@ class PizzaSaver : public ::testing::Test {
 
 // This tests the solver when we apply a moment Mz about COM to the pizza saver.
 // If Mz < mu * m * g * R, the saver should be in stiction (within the Stribeck
-// approximation). Otherwise the saver will be sliding.
+// approximation). Otherwise the saver will start sliding.
 // For this setup the transition occurs at M_transition = mu * m * g * R = 5.0
 TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-
   const double dt = 1.0e-3;  // time step in seconds.
-
   const double mu = 0.5;
 
   // Some arbitrary orientation. This particular case has symmetry of
@@ -162,6 +160,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
+  parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
@@ -172,8 +171,8 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
-      /* Dimensionless relative (to the stiction tolerance) tolerance */
-      solver_.get_solver_parameters().tolerance *
+      // Dimensionless relative (to the stiction tolerance) tolerance.
+      solver_.get_solver_parameters().relative_tolerance *
           solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
@@ -187,7 +186,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Therefore, here we just sanity check that Mz is at least relatively close
   // (to the value of Mz) to tau_f. In other words, with only a single time
   // step, we are still accelerating towards the final steady state slip
-  // introduce by having a finite stiction tolerance.
+  // introduced by having a finite stiction tolerance.
   EXPECT_NEAR(tau_f(2), -Mz, 5.0e-4);
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();
@@ -223,7 +222,6 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 // velocity given by Δω = dt⋅(Mz - Mtransition) / I.
 TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-
   const double dt = 1.0e-3;  // time step in seconds.
   const double mu = 0.5;  // Friction coefficient.
 
@@ -243,6 +241,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
+  parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
@@ -253,8 +252,8 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   const IterationStats& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
-      /* Dimensionless relative (to the stiction tolerance) tolerance */
-      solver_.get_solver_parameters().tolerance *
+      // Dimensionless relative (to the stiction tolerance) tolerance.
+      solver_.get_solver_parameters().relative_tolerance *
           solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
@@ -263,6 +262,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_NEAR(tau_f(0), 0.0, kTolerance);
   EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
   // Since we are sliding, the total moment should match M_transition.
+  // The difference with Mz is what makes the saver to start accelerating.
   EXPECT_NEAR(tau_f(2), -M_transition, 1.0e-13);
 
   const VectorX<double>& vt = solver_.get_tangential_velocities();
@@ -286,7 +286,8 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
-  // For this problem we expect the translational velocities to be zero.
+  // For this problem we expect the translational velocities for the COM to be
+  // zero. Still, there is slip at points A, B, C.
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
 
@@ -338,6 +339,12 @@ TEST_F(PizzaSaver, NoContact) {
   // No contact.
   EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
+
+// TODO(amcastro-tri): Add more unit tests including:
+// - Jacobian of the residual compared against and AutoDiff test version.
+//   - Test for the one-way coupled version (friction).
+//   - Test for the two-way coupled version (friction and normal forces).
+// - Impact problem with transition to either stiction or sliding.
 
 }  // namespace
 }  // namespace implicit_stribeck

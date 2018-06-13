@@ -3,6 +3,8 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <set>
+#include <tuple>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -11,6 +13,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -216,7 +219,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Finalize() the plant before accessing its ports for communicating with
     // SceneGraph.
-    plant_->Finalize();
+    plant_->Finalize(scene_graph_);
 
     builder.Connect(
         plant_->get_geometry_poses_output_port(),
@@ -458,6 +461,11 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
     const FrameId frame_id = plant_->GetBodyFrameIdOrThrow(body_index);
+    // Also confirm the "maybe" variant works.
+    const optional<FrameId> optional_id =
+        plant_->GetBodyFrameIdIfExists(body_index);
+    ASSERT_TRUE(optional_id.has_value());
+    EXPECT_EQ(frame_id, *optional_id);
     const Isometry3<double>& X_WB = poses.value(frame_id);
     const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
@@ -473,6 +481,315 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       std::logic_error,
       /* Verify this method is throwing for the right reasons. */
       "Body 'WorldBody' does not have geometry registered with it.");
+
+  // Similarly, the "optional" variant should return a null opt.
+  optional<FrameId> undefined_id =
+      plant_->GetBodyFrameIdIfExists(world_index());
+  EXPECT_EQ(undefined_id, nullopt);
+}
+
+// Verifies that the right errors get invoked upon finalization.
+GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
+  SceneGraph<double> scene_graph;
+
+  // Case: Finalize w/o having registered as geometry source but without
+  // providing a scene graph -- no error.
+  {
+    MultibodyPlant<double> plant;
+    EXPECT_NO_THROW(plant.Finalize());
+  }
+
+  // Case: Correct finalization -- registered as source and correct scene graph
+  // provided -- no error.
+  {
+    MultibodyPlant<double> plant;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+  }
+
+  // Case: Registered as source, but no scene graph passed to Finalize() -
+  // error.
+  {
+    MultibodyPlant<double> plant;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.Finalize(), std::logic_error,
+        "This MultibodyPlant has been registered as a SceneGraph geometry "
+        "source. Finalize\\(\\) should be invoked with a pointer to the "
+        "SceneGraph instance");
+  }
+
+  // Case: Registered as source, but *wrong* scene graph passed to Finalize() -
+  // error.
+  {
+    MultibodyPlant<double> plant;
+    plant.RegisterAsSourceForSceneGraph(&scene_graph);
+    SceneGraph<double> other_graph;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.Finalize(&other_graph), std::logic_error,
+        "Finalizing on a SceneGraph instance must be performed on the SAME "
+            "instance of SceneGraph used on the first call to "
+            "RegisterAsSourceForSceneGraph\\(\\)");
+  }
+
+  // Case: Not registered as source, but passed SceneGraph in anyways.
+  {
+    MultibodyPlant<double> plant;
+    EXPECT_NO_THROW(plant.Finalize(&scene_graph));
+  }
+}
+
+// A class for constructing a multibody plant/scenegraph system consisting of
+// a chain of spheres resting on the ground: S1 -> S2 -> S3 -> ... -> SN.
+// In the zero configurations, the spheres are overlapping. However, due to
+// adjacency filtering, no contact is reported between S1 & S2, S2 & S3, or,
+// more, generally, between Si and Si+1. But there *should* be collisions
+// between all other pairs: i.e., (S1, S3), (S1, S4), ..., (S1, SN), ...,
+// (SN-1, SN) and between the ground and all elements: (G, S1), (G, S2), ...,
+// (G, SN).
+//
+// The chain terminates with two additional bodies: one body registers a frame
+// (but has no geometry), the other has no frame at all. It will have no bearing
+// on collision tests but is used for geometry collection testing.
+//
+// Also accepts a filtering function that is applied between geometry
+// registration and context compilation.
+class SphereChainScenario {
+ public:
+  SphereChainScenario(
+      int sphere_count,
+      std::function<void(SphereChainScenario*)> apply_filters = nullptr) {
+    using std::to_string;
+    systems::DiagramBuilder<double> builder;
+    scene_graph_ = builder.AddSystem<SceneGraph<double>>();
+    plant_ = builder.AddSystem<MultibodyPlant<double>>();
+
+    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+
+    // A half-space for the ground geometry.
+    ground_id_ = plant_->RegisterCollisionGeometry(
+        plant_->world_body(),
+        // A half-space passing through the origin in the x-z plane.
+        geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+        geometry::HalfSpace(), CoulombFriction<double>(), scene_graph_);
+
+    auto make_sphere = [this](int i) {
+      const double radius = 0.5;
+      const RigidBody<double>& sphere = plant_->AddRigidBody(
+          "Sphere" + to_string(i), SpatialInertia<double>());
+      GeometryId sphere_id = plant_->RegisterCollisionGeometry(
+          sphere, Isometry3d::Identity(), geometry::Sphere(radius),
+          CoulombFriction<double>(), scene_graph_);
+      // We add visual geometry to implicitly test that they are *not* included
+      // in the collision results. We don't even save the ids for them.
+      plant_->RegisterVisualGeometry(sphere, Isometry3d::Identity(),
+                                     geometry::Sphere(radius), scene_graph_);
+      return std::make_tuple(&sphere, sphere_id);
+    };
+
+    // Add sphere bodies.
+    for (int i = 0; i < sphere_count; ++i) {
+      // TODO(SeanCurtis-TRI): Make this prettier when C++17 is available.
+      // E.g., auto [id, geometry] = make_sphere(i);
+      GeometryId id{};
+      const RigidBody<double>* body{};
+      std::tie(body, id) = make_sphere(i);
+      spheres_.push_back(body);
+      sphere_ids_.push_back(id);
+    }
+    // Add hinges between spheres.
+    for (int i = 0; i < sphere_count - 1; ++i) {
+      plant_->AddJoint<RevoluteJoint>(
+          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i], {},
+          *spheres_[i + 1], {}, Vector3d::UnitY());
+    }
+
+    // Body with no registered frame.
+    no_geometry_body_ = &plant_->AddRigidBody("NothingRegistered",
+                                              SpatialInertia<double>());
+
+    // We are done defining the model.
+    plant_->Finalize(scene_graph_);
+
+    builder.Connect(
+        plant_->get_geometry_poses_output_port(),
+        scene_graph_->get_source_pose_port(*plant_->get_source_id()));
+    builder.Connect(scene_graph_->get_query_output_port(),
+                    plant_->get_geometry_query_input_port());
+
+    if (apply_filters != nullptr) apply_filters(this);
+
+    diagram_ = builder.Build();
+    context_ = diagram_->CreateDefaultContext();
+
+    // Set the zero configuration.
+    plant_context_ =
+        &diagram_->GetMutableSubsystemContext(*plant_, context_.get());
+
+    // NOTE: Only ids for collision geometries are included.
+    for (int i = 0; i < sphere_count; ++i) {
+      unfiltered_collisions_.insert(std::make_pair(ground_id(), sphere_id(i)));
+      for (int j = i + 2; j < sphere_count; ++j) {
+        unfiltered_collisions_.insert(
+            std::make_pair(sphere_id(i), sphere_id(j)));
+      }
+    }
+  }
+
+  // Perform the pair-wise collision detection.
+  std::vector<geometry::PenetrationAsPointPair<double>>
+  ComputePointPairPenetration() const {
+    // Grab query object to test for collisions.
+    const geometry::QueryObject<double>& query_object =
+        plant_
+            ->EvalAbstractInput(
+                *plant_context_,
+                plant_->get_geometry_query_input_port().get_index())
+            ->GetValue<geometry::QueryObject<double>>();
+
+    return query_object.ComputePointPairPenetration();
+  }
+
+  const RigidBody<double>& sphere(int i) const { return *spheres_.at(i); }
+  const RigidBody<double>& no_geometry_body() const {
+    return *no_geometry_body_;
+  }
+  const GeometryId sphere_id(int i) const { return sphere_ids_.at(i); }
+  const GeometryId ground_id() const { return ground_id_; }
+  MultibodyPlant<double>* mutable_plant() { return plant_; }
+  SceneGraph<double>* mutable_scene_graph() { return scene_graph_; }
+
+  // Reports all collisions that *should* be reported when no custom filters
+  // have been applied.
+  const std::set<std::pair<GeometryId, GeometryId>>& unfiltered_collisions()
+      const {
+    return unfiltered_collisions_;
+  }
+
+ private:
+  // The diagram components.
+  std::unique_ptr<Diagram<double>> diagram_{};
+  std::unique_ptr<Context<double>> context_{};
+
+  // Convenient handles into the diagram_ and context_.
+  SceneGraph<double>* scene_graph_{};
+  MultibodyPlant<double>* plant_{};
+  systems::Context<double>* plant_context_{};
+
+  // The bodies -- body Si is at index i.
+  std::vector<const RigidBody<double>*> spheres_;
+  std::vector<GeometryId> sphere_ids_;
+  GeometryId ground_id_{};
+  // The set of expected collision pairs with *no* user-defined collision
+  // filters applied (but automatic filters -- adjacent bodies and geometries
+  // affixed to the same body -- are accounted for).
+  std::set<std::pair<GeometryId, GeometryId>> unfiltered_collisions_;
+  const RigidBody<double>* no_geometry_body_{};
+};
+
+// Tests the automatic filtering of adjacent bodies.
+// Introduces a ground plane with three spheres sitting on the plane.
+// The spheres are linked in a chain: S1 -> S2 -> S3. In the zero configuration
+// the spheres are overlapping. However, due to adjacency filtering, no
+// contact is reported between S1 & S2, or S2 & S3. But there *should* be a
+// collision between S1 & S3. Therefore, four total collisions will be reported:
+// (G, S1), (G, S2), (G, S3), (S1, S3).
+//
+// NOTE: This *implicitly* tests that visual geometries are *not* included in
+// collision because the `expected_pairs` only accounts for collision
+// geometries.
+GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
+  SphereChainScenario scenario(3);
+  std::vector<geometry::PenetrationAsPointPair<double>> contacts =
+      scenario.ComputePointPairPenetration();
+
+  // The expected collisions.
+  const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
+      scenario.unfiltered_collisions();
+  ASSERT_EQ(contacts.size(), expected_pairs.size());
+
+  auto expect_pair_in_set = [&expected_pairs](GeometryId id1, GeometryId id2) {
+    auto pair1 = std::make_pair(id1, id2);
+    auto pair2 = std::make_pair(id2, id1);
+    if (expected_pairs.count(pair1) == 0 && expected_pairs.count(pair2) == 0) {
+      GTEST_FAIL() << "The pair " << id1 << ", " << id2
+                   << " is not in the expected set";
+    }
+  };
+  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+    const auto& point_pair = contacts[i];
+    expect_pair_in_set(point_pair.id_A, point_pair.id_B);
+  }
+}
+
+// Tests the error conditions for CollectRegisteredGeometries.
+GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
+  MultibodyPlant<double> plant;
+
+  // A throw-away rigid body I can use to satisfy the function interface; it
+  // will never be used because the function will fail in a pre-requisite test.
+  RigidBody<double> body{SpatialInertia<double>()};
+  // The case where the plant has *not* been finalized.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CollectRegisteredGeometries({&body}), std::logic_error,
+      "Pre-finalize calls to 'CollectRegisteredGeometries\\(\\)' are not "
+      "allowed; you must call Finalize\\(\\) first.");
+
+  // The case where the plant has *not* been registered as a source.
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CollectRegisteredGeometries({&body}), std::runtime_error,
+      "Failure .* in CollectRegisteredGeometries.* failed.");
+}
+
+// Tests the ability to accumulate the geometries associated with a set of
+// bodies.
+// NOTE: This exploits the implementation detail of GeometrySet that a FrameId
+// is sufficient to capture one or more geometries. So, the contents of the
+// set will be *typically* only be FrameIds -- specifically, the FrameId
+// associated with each body -- even if no *geometries* are registered.
+// The exception is if the world body is included, then anchored geometry ids
+// will be included.
+GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
+  using geometry::GeometrySet;
+
+  SphereChainScenario scenario(5);
+
+  const MultibodyPlant<double>& plant = *scenario.mutable_plant();
+
+  // Case: Empty vector produces empty geometry set.
+  {
+    GeometrySet set = plant.CollectRegisteredGeometries({});
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_EQ(set.num_frames(), 0);
+  }
+
+  // Case: Single body produces single, corresponding frame.
+  {
+    GeometrySet set = plant.CollectRegisteredGeometries({&scenario.sphere(0)});
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_EQ(set.num_frames(), 1);
+    FrameId id_0 = plant.GetBodyFrameIdOrThrow(scenario.sphere(0).index());
+    EXPECT_TRUE(set.contains(id_0));
+  }
+
+  // Case: Body with no corresponding geometry frame.
+  {
+    GeometrySet set =
+        plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
+    EXPECT_EQ(set.num_geometries(), 0);
+    EXPECT_EQ(set.num_frames(), 0);
+  }
+
+  // Case: Include the world body.
+  {
+    GeometrySet set =
+        plant.CollectRegisteredGeometries(
+            {&scenario.mutable_plant()->world_body()});
+    EXPECT_EQ(set.num_geometries(), 1);
+    EXPECT_TRUE(set.contains(scenario.ground_id()));
+    EXPECT_EQ(set.num_frames(), 0);
+  }
 }
 
 // Verifies the process of collision geometry registration with a
@@ -513,7 +830,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       sphere2_friction, &scene_graph);
 
   // We are done defining the model.
-  plant.Finalize();
+  plant.Finalize(&scene_graph);
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -749,7 +1066,7 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
-  plant.Finalize();
+  plant.Finalize(&scene_graph);
 
   EXPECT_EQ(plant.num_bodies(), 4);  // It includes the world body.
   EXPECT_EQ(plant.num_visual_geometries(), 5);
@@ -830,7 +1147,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         CoulombFriction<double>(), &scene_graph_);
 
     // We are done defining the model.
-    plant_.Finalize();
+    plant_.Finalize(&scene_graph_);
 
     // Some sanity checks before proceeding.
     ASSERT_EQ(plant_.num_collision_geometries(), 2);

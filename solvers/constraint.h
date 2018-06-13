@@ -803,6 +803,11 @@ class ExpressionConstraint : public Constraint {
    */
   const VectorXDecisionVariable& vars() const { return vars_; }
 
+  /** @return the symbolic expressions. */
+  const VectorX<symbolic::Expression>& expressions() const {
+    return expressions_;
+  }
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd& y) const override;

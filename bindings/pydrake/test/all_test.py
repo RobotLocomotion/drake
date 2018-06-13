@@ -70,6 +70,8 @@ class TestAll(unittest.TestCase):
             "jacobian",
             "sin",
             "cos",
+            # lcm
+            "DrakeLcm",
             # symbolic
             "Variable",
             "Expression",

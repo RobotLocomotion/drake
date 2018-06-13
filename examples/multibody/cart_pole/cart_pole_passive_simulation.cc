@@ -68,7 +68,7 @@ int do_main() {
       -9.81 * Vector3<double>::UnitZ());
 
   // Now the model is complete.
-  cart_pole.Finalize();
+  cart_pole.Finalize(&scene_graph);
 
   // Boilerplate used to connect the plant to a SceneGraph for
   // visualization.

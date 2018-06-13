@@ -40,6 +40,14 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+# Expose shared library for (a) installed binaries, (b) Drake Python bindings,
+# and (c) downstream C++ libraries which will also provide Python bindings.
+alias(
+    name = "drake_shared_library",
+    actual = "//tools/install/libdrake:drake_shared_library",
+    visibility = ["//visibility:public"],
+)
+
 _INSTALL_TEST_COMMANDS = "install_test_commands"
 
 install(

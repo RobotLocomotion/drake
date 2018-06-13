@@ -67,6 +67,7 @@ struct Impl {
 
     // Expose protected methods for binding, no need for virtual overrides
     // (ordered by how they are bound).
+    using Base::DeclareAbstractOutputPort;
     using Base::DeclareVectorOutputPort;
     using Base::DeclarePeriodicPublish;
     using Base::DeclareContinuousState;
@@ -254,7 +255,7 @@ struct Impl {
         .def("get_num_input_ports", &System<T>::get_num_input_ports)
         .def("get_input_port",
              &System<T>::get_input_port, py_reference_internal)
-        .def("get_num_output_ports", &System<T>::get_num_input_ports)
+        .def("get_num_output_ports", &System<T>::get_num_output_ports)
         .def("get_output_port",
              &System<T>::get_output_port, py_reference_internal)
         .def(
@@ -312,6 +313,8 @@ struct Impl {
         })
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe);
 
+    using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
+    using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
 
     DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
@@ -324,6 +327,14 @@ struct Impl {
       // being used, and pass that as the converter. However, that requires an
       // old-style `py::init`, which is deprecated in Python...
       .def(py::init<SystemScalarConverter>(), py::arg("converter"))
+      .def(
+          "_DeclareAbstractOutputPort",
+          WrapCallbacks(
+              [](PyLeafSystem* self, AllocCallback arg1,
+                 CalcCallback arg2) -> auto& {
+                return self->DeclareAbstractOutputPort(arg1, arg2);
+              }),
+          py_reference_internal)
       .def(
           "_DeclareVectorOutputPort",
           WrapCallbacks(

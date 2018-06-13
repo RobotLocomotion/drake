@@ -75,6 +75,7 @@ MakeAcrobotPlantSdf() {
     "      </inertial>"
     "    </link>"
     "    <joint name='ShoulderJoint' type='revolute'>"
+    "      <pose>0 0 0.5 0 0 0</pose>"
     "      <parent>world</parent>"
     "      <child>Link1</child>"
     "      <axis>"
@@ -82,7 +83,7 @@ MakeAcrobotPlantSdf() {
     "      </axis>"
     "    </joint>"
     "    <joint name='ElbowJoint' type='revolute'>"
-    "      <pose>0 0 -1.0 0 0 0</pose>"
+    "      <pose>0 0 1.0 0 0 0</pose>"
     "      <parent>Link1</parent>"
     "      <child>Link2</child>"
     "      <axis>"
@@ -146,15 +147,15 @@ MakeAcrobotPlantSdf() {
     const sdf::Joint* joint = model->JointByIndex(joint_index);
     const sdf::JointAxis* axis = joint->Axis();
 
-    // Get the location of the joint in the model frame.
-    const Isometry3d X_MJ = ToIsometry3(joint->Pose());
+    // Get the location of the joint in the child link frame.
+    const Isometry3d X_CJ = ToIsometry3(joint->Pose());
 
     // Get the location of the child link in the model frame.
     const Isometry3d X_MC = ToIsometry3(
         model->LinkByName(joint->ChildLinkName())->Pose());
 
-    // Compute the location of the child joint in the child link's frame.
-    const Isometry3d X_CJ = X_MC.inverse() * X_MJ;
+    // Pose of the joint in the model frame.
+    const Isometry3d X_MJ = X_MC * X_CJ;
 
     // Only supporting revolute joints for now.
     if (joint->Type() == sdf::JointType::REVOLUTE) {

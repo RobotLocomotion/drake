@@ -31,7 +31,7 @@ const api::Lane* GetLaneByJunctionId(const api::RoadGeometry& rg,
   throw std::runtime_error("No matching junction name in the road network");
 }
 
-GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
+GTEST_TEST(MonolaneRoadGeometryTest, DoToRoadPosition) {
   // Define a serpentine road with multiple segments and branches.
   std::unique_ptr<monolane::Builder> rb(
       new monolane::Builder(RBounds(-kWidth, kWidth), RBounds(-kWidth, kWidth),
@@ -197,7 +197,7 @@ GTEST_TEST(MonolaneLanesTest, DoToRoadPosition) {
       kVeryExact));
 }
 
-GTEST_TEST(MonolaneLanesTest, HintWithDisconnectedLanes) {
+GTEST_TEST(MonolaneRoadGeometryTest, HintWithDisconnectedLanes) {
   // Define a road with two disconnected, diverging lanes such that there are no
   // ongoing lanes.  This tests the pathological case when a `hint` is provided
   // in a topologically isolated lane, so the code returns the default road

@@ -27,21 +27,23 @@ class TrivialRightOfWayStateProvider final
   /// Throws std::runtime_error if the dynamic state failed to be added.
   void AddState(
       const maliput::api::rules::RightOfWayRule::Id& id,
-      const maliput::api::rules::RightOfWayRule::DynamicState& initial_state);
+      const maliput::api::rules::RightOfWayRule::State::Id& initial_state);
 
   /// Sets the dynamic state of a RightOfWayRule within this provider.
   ///
   /// Throws std::out_of_range if no dynamic state with @p id exists in this
   /// provider.
   void SetState(const maliput::api::rules::RightOfWayRule::Id& id,
-                const maliput::api::rules::RightOfWayRule::DynamicState& state);
+                const maliput::api::rules::RightOfWayRule::State::Id& state);
 
  private:
-  maliput::api::rules::RightOfWayRule::DynamicState DoGetState(
-      const maliput::api::rules::RightOfWayRule::Id& id) const final;
+  drake::optional<maliput::api::rules::RightOfWayStateProvider::Result>
+      DoGetState(
+          const maliput::api::rules::RightOfWayRule::Id& id) const final;
 
-  std::unordered_map<maliput::api::rules::RightOfWayRule::Id,
-      maliput::api::rules::RightOfWayRule::DynamicState> dynamic_states_;
+  std::unordered_map<
+    maliput::api::rules::RightOfWayRule::Id,
+    maliput::api::rules::RightOfWayRule::State::Id> states_;
 };
 
 }  // namespace automotive

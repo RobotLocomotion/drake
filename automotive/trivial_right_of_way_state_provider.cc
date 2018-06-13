@@ -12,8 +12,8 @@ using maliput::api::rules::RightOfWayRule;
 
 void TrivialRightOfWayStateProvider::AddState(
     const RightOfWayRule::Id& id,
-    const RightOfWayRule::DynamicState& initial_state) {
-  auto result = dynamic_states_.emplace(id, initial_state);
+    const RightOfWayRule::State::Id& initial_state) {
+  auto result = states_.emplace(id, initial_state);
   if (!result.second) {
      throw std::logic_error(
         "Attempted to add multiple rules with id " + id.string());
@@ -22,13 +22,18 @@ void TrivialRightOfWayStateProvider::AddState(
 
 void TrivialRightOfWayStateProvider::SetState(
     const RightOfWayRule::Id& id,
-    const RightOfWayRule::DynamicState& state) {
-  dynamic_states_.at(id) = state;
+    const RightOfWayRule::State::Id& state) {
+  states_.at(id) = state;
 }
 
-RightOfWayRule::DynamicState TrivialRightOfWayStateProvider::DoGetState(
+drake::optional<maliput::api::rules::RightOfWayStateProvider::Result>
+TrivialRightOfWayStateProvider::DoGetState(
     const RightOfWayRule::Id& id) const {
-  return dynamic_states_.at(id);
+  auto it = states_.find(id);
+  if (it == states_.end()) {
+    return nullopt;
+  }
+  return Result{it->second, nullopt};
 }
 
 }  // namespace automotive

@@ -23,9 +23,13 @@ using api::rules::SpeedLimitRule;
 
 const LaneSRange kZone(LaneId("a"), {10., 20.});
 
-const RightOfWayRule kRightOfWay(RightOfWayRule::Id("rowr_id"),
-                                 LaneSRoute({kZone}),
-                                 RightOfWayRule::Type::kStopThenGo);
+const RightOfWayRule kRightOfWay(
+    RightOfWayRule::Id("rowr_id"),
+    LaneSRoute({kZone}),
+    RightOfWayRule::ZoneType::kStopExcluded,
+    {RightOfWayRule::State{RightOfWayRule::State::Id("rowr_state_id"),
+                           RightOfWayRule::State::Type::kStopThenGo,
+                           {}}});
 
 const SpeedLimitRule kSpeedLimit(SpeedLimitRule::Id("slr_id"),
                                  kZone,

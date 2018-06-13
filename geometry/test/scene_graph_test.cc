@@ -9,6 +9,7 @@
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -334,6 +335,25 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
   EXPECT_THROW(geo_context_ad->get_geometry_state().BelongsToSource(
                    GeometryId::get_new_id(), s_id),
                std::logic_error);
+}
+
+// Tests that exercising the collision filtering logic *after* allocation leads
+// to an exception being thrown.
+TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
+  AllocateContext();
+
+  GeometrySet geometry_set1{FrameId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.ExcludeCollisionsWithin(geometry_set1), std::logic_error,
+      "The call to ExcludeCollisionsWithin is invalid; a context has already "
+      "been allocated.");
+
+  GeometrySet geometry_set2{FrameId::get_new_id()};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.ExcludeCollisionsBetween(geometry_set1, geometry_set2),
+      std::logic_error,
+      "The call to ExcludeCollisionsBetween is invalid; a context has already "
+      "been allocated.");
 }
 
 // Dummy system to serve as geometry source.

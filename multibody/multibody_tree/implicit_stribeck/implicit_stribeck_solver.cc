@@ -9,10 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
@@ -237,17 +233,17 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   using std::min;
   using std::sqrt;
 
-  // Clear statistics so t_hat we can update them with new ones for this call to
+  // Clear statistics so that we can update them with new ones for this call to
   // SolveWithGuess().
   statistics_.Reset();
 
   // If there are no contact points return a zero generalized friction forces
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
-    fixed_size_workspace_.tau_f.setZero();
+    fixed_size_workspace_.mutable_tau_f().setZero();
     const auto& M = *problem_data_aliases_.M_ptr;
     const auto& p_star = *problem_data_aliases_.p_star_ptr;
-    auto& v = fixed_size_workspace_.v;
+    auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
     // M⋅vⁿ⁺¹ = p*.
     v = M.ldlt().solve(p_star);
@@ -260,26 +256,34 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const int max_iterations = parameters_.max_iterations;
   // Tolerance used to monitor the convergence of the tangential velocities.
   const double vt_tolerance =
-      parameters_.tolerance * parameters_.stiction_tolerance;
+      parameters_.relative_tolerance * parameters_.stiction_tolerance;
+
+  // Problem sizes.
+  const int nv = nv_;  // Number of generalized velocities.
+  const int nc = nc_;  // Number of contact points.
+  // Size of the friction forces vector ft and tangential velocities vector vt.
+  const int nf = 2 * nc;
 
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
+  const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
-  auto& v = fixed_size_workspace_.v;
-  auto& Delta_v = fixed_size_workspace_.Delta_v;
-  auto& residual = fixed_size_workspace_.residual;
-  auto& J = fixed_size_workspace_.J;
-  auto& J_ldlt = *fixed_size_workspace_.J_ldlt;
-  auto& tau_f = fixed_size_workspace_.tau_f;
+  auto& v = fixed_size_workspace_.mutable_v();
+  auto& Delta_v = fixed_size_workspace_.mutable_Delta_v();
+  auto& residual = fixed_size_workspace_.mutable_residual();
+  auto& J = fixed_size_workspace_.mutable_J();
+  auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
+  auto& tau_f = fixed_size_workspace_.mutable_tau_f();
 
   // Convenient aliases to variable size workspace variables.
+  // Note: auto resolve to Eigen::Block (no copies).
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
-  auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
+  auto Delta_vt = variable_size_workspace_.mutable_Delta_vt();
   auto& dft_dvt = variable_size_workspace_.mutable_dft_dvt();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
@@ -328,7 +332,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     }
     Delta_v = J_ldlt.solve(-residual);
 
-    // Since we keep Jt constant we have t_hat:
+    // Since we keep Jt constant we have that:
     // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
     //                = vₜᵏ + α Jt⋅Δvᵏ
     //                = vₜᵏ + α Δvₜᵏ
@@ -344,7 +348,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
     // all contact points. The angle change θ is defined by the dot product
     // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
-    // We'll do so by computing a coefficient 0 < α < 1 so t_hat if the
+    // We'll do so by computing a coefficient 0 < α < 1 so that if the
     // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
     // for all contact points.
     T alpha = 1.0;  // We set α = 1 for now.
