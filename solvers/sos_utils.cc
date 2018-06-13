@@ -1,12 +1,47 @@
 #include "drake/solvers/sos_utils.h"
 
 #include <iostream>
+#include <vector>
 
 #include <Eigen/Core>
 
+#include "drake/common/symbolic.h"
 #include "drake/solvers/integer_lattice.h"
 
 namespace {
+
+typedef drake::symbolic::Variable Variable;
+typedef drake::symbolic::Monomial Monomial;
+typedef drake::symbolic::Variables Variables;
+
+MonomialVector ExponentsToMonomials(const Exponent & exponents,
+                                    const Variables & indeterminates) {
+  MonomialVector monomials(exponents.rows());
+  for (int i = 0; i < exponents.rows(); i++) {
+    Monomial m = Monomial();
+    int j = 0;
+    for (auto & var : indeterminates) {
+      m = m*Monomial(var, exponents(i, j++));
+    }
+    monomials(i) = m;
+    std::cout << m << "\n";
+  }
+  return monomials;
+}
+
+ExponentList GetPolynomialExponents(const drake::symbolic::Polynomial & p) {
+  ExponentList support(p.monomial_to_coefficient_map().size(),
+                       p.indeterminates().size());
+  int row = 0;
+  for (auto & m : p.monomial_to_coefficient_map()) {
+    int col = 0;
+    for (auto & var : p.indeterminates()) {
+        support(row, col++) = m.first.degree(var);
+    }
+    row++;
+  }
+  return support;
+}
 
 ExponentList VerticalStack(const ExponentList & A, const ExponentList & B) {
   if (A.rows() == 0) {
@@ -15,7 +50,6 @@ ExponentList VerticalStack(const ExponentList & A, const ExponentList & B) {
   if (B.rows() == 0) {
     return A;
   }
-
   ExponentList Y(A.rows() + B.rows(), B.cols());
   Y << A, B;
   return Y;
@@ -25,7 +59,6 @@ ExponentList PairwiseSums(const ExponentList & points) {
   int n = points.rows();
   ExponentList sums((n*n + n)/2, points.cols());
   int cnt = 0;
-
   for (int i = 0; i < n; i++) {
     for (int j = i+1; j < n; j++) {
       sums.row(cnt++) = points.row(i) + points.row(j);
@@ -71,15 +104,14 @@ struct Hyperplanes {
 };
 
 Hyperplanes RandomSupportingHyperplanes(ExponentList points,
-             int num_hyperplanes) {
+                                        int num_hyperplanes) {
   Hyperplanes H;
-
   H.normal_vectors = Eigen::MatrixXi::Random(num_hyperplanes,
-                                       points.cols())/100000;
+                                             points.cols())/100000;
   Eigen::MatrixXi dot_products = H.normal_vectors * points.transpose();
-
   H.max_dot_product = dot_products.rowwise().maxCoeff() / 2;
   H.min_dot_product = dot_products.rowwise().minCoeff() / 2;
+
   return H;
 }
 
@@ -98,4 +130,8 @@ ExponentList ConstructMonomialBasis(const ExponentList & M) {
   return RemoveDiagonallyInconsistentExponents(M, points);
 }
 
+MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p) {
+  return ExponentsToMonomials(
+      ConstructMonomialBasis(GetPolynomialExponents(p)), p.indeterminates());
+}
 
