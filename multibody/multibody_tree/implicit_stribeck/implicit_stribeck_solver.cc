@@ -281,7 +281,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& fn,
     EigenPtr<VectorX<T>> v_slip_ptr,
     EigenPtr<VectorX<T>> t_hat_ptr,
-    EigenPtr<VectorX<T>> mus_ptr,
+    EigenPtr<VectorX<T>> mu_stribeck_ptr,
     EigenPtr<VectorX<T>> ft) {
   const int nc = nc_;  // Number of contact points.
 
@@ -289,7 +289,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases.
-  auto mus = *mus_ptr;
+  auto mu_stribeck = *mu_stribeck_ptr;
   auto v_slip = *v_slip_ptr;
   auto t_hat = *t_hat_ptr;
 
@@ -310,7 +310,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   // idea is to replace the norm in the definition of slip velocity by a
   // "soft norm":
   //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
-  // (in code εᵥ is named epsilon_v and εᵥ² is named epislon_v2). We use
+  // (in code εᵥ is named epsilon_v and εᵥ² is named epsilon_v2). We use
   // this to redefine the slip velocity:
   //   v_slip = sqrt(vtᵀvt + v_epsilon)
   // and a "soft" tangent vector:
@@ -345,16 +345,16 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<T> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
     // Friction force.
-    ft->template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
+    ft->template segment<2>(ik) = -mu_stribeck(ic) * that_ic * fn(ic);
   }
 }
 
 template <typename T>
 void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& fn,
-    const Eigen::Ref<const VectorX<T>>& mus,
+    const Eigen::Ref<const VectorX<T>>& mu_stribeck,
     const Eigen::Ref<const VectorX<T>>& t_hat,
     const Eigen::Ref<const VectorX<T>>& v_slip,
     std::vector<Matrix2<T>>* dft_dvt_ptr) {
@@ -411,7 +411,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
     // (P and Pperp) where the coefficients of the combination are positive
     // scalars. Therefore,
-    // IMPORTANT NOTE: dft_dvt also PSD.
+    // IMPORTANT NOTE: dft_dvt is also PSD.
     // IMPORTANT NOTE 2: The derivation for dft_dvt leads to exactly the
     // same result when using the "softened" definitions for v_slip and
     // t_hat where each occurrence of these quantities is replaced by its
@@ -420,9 +420,9 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // Compute dft_dvt:
     // Changes of vt in the direction perpendicular to t_hat (see the full
     // expression for dft_dvt above).
-    dft_dvt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
+    dft_dvt[ic] = Pperp_ic * mu_stribeck(ic) / v_slip(ic);
 
-    // Changes in the magnitude of vt (which in turns makes mu_stribeck
+    // Changes in the magnitude of vt (which in turn makes mu_stribeck
     // change), in the direction of t_hat.
     dft_dvt[ic] += P_ic * dmudv;
 
@@ -482,7 +482,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // SolveWithGuess().
   statistics_.Reset();
 
-  // If there are no contact points return a zero generalized friction forces
+  // If there are no contact points return a zero generalized friction force
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
     fixed_size_workspace_.mutable_tau_f().setZero();

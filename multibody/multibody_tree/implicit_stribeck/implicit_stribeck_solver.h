@@ -645,21 +645,21 @@ class ImplicitStribeckSolver {
 
   // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes
-  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mus = μ(‖vₜ‖ₛ).
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
   void CalcFrictionForces(
       const Eigen::Ref<const VectorX<T>>& vt,
       const Eigen::Ref<const VectorX<T>>& fn,
       EigenPtr<VectorX<T>> v_slip,
       EigenPtr<VectorX<T>> t_hat,
-      EigenPtr<VectorX<T>> mus,
+      EigenPtr<VectorX<T>> mu_stribeck,
       EigenPtr<VectorX<T>> ft);
 
   // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
-  // normal forces fn, friction coefficient mus, tangent versors t_hat and
+  // normal force fn, friction coefficient mu_stribeck, tangent versor t_hat and
   // (current) slip velocity v_slip.
   void CalcFrictionForcesGradient(
       const Eigen::Ref<const VectorX<T>>& fn,
-      const Eigen::Ref<const VectorX<T>>& mus,
+      const Eigen::Ref<const VectorX<T>>& mu_stribeck,
       const Eigen::Ref<const VectorX<T>>& t_hat,
       const Eigen::Ref<const VectorX<T>>& v_slip,
       std::vector<Matrix2<T>>* dft_dvt);
