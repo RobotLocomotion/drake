@@ -488,7 +488,7 @@ template<typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("This method only supports Only T = double.");
+  DRAKE_ABORT_MSG("This method only supports T = double.");
 }
 
 template<typename T>
