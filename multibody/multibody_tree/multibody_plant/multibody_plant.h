@@ -272,6 +272,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @code
   ///   MultibodyPlant<T> plant;
   ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
   ///   const RigidBody<T>& body =
   ///     plant.AddRigidBody("BodyName", model_instance, spatial_inertia);
   /// @endcode
@@ -309,7 +310,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// Creates a rigid body model with the provided name and spatial inertia.
   /// This method returns a constant reference to the body just added, which
   /// will remain valid for the lifetime of `this` %MultibodyPlant.  The body
-  /// will use the default model instance.
+  /// will use the default model instance (see @ref model_instance.h).
   ///
   /// Example of usage:
   /// @code
@@ -329,8 +330,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  /// @throws std::logic_error if additional model instances have been created
+  ///                          beyond the world and default instances.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
+    if (num_model_instances() != 2) {
+      throw std::logic_error(
+          "This model has more model instances than the default.  Please "
+          "call AddRigidBody with an explicit model instance.");
+    }
+
     return AddRigidBody(name, default_model_instance(), M_BBo_B);
   }
 
@@ -813,18 +822,58 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return it->second;
   }
 
-  /// Returns a constant reference to the input port for external actuation.
-  /// This input port is a vector valued port, which can be set with
+  /// @name Actuation input
+  ///
+  /// The input vector of actuation values can be provided either as a single
+  /// input port which describes the entire plant (in the case where only a
+  /// single model instance has actuated dofs), or through multiple input ports
+  /// which each provide the actuation values for a specific model instance.
+  /// See AddJointActuator() and num_actuators().
+  /// @{
+
+  /// Returns a constant reference to the input port for external actuation for
+  /// the case where only one model instance has actuated dofs.  This input
+  /// port is a vector valued port, which can be set with
   /// JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws if called before Finalize() or if the model does not contain any
-  /// actuators. See AddJointActuator() and num_actuators().
+  /// @throws if called before Finalize(), if the model does not contain any
+  /// actuators, or if multiple model instances have actuated dofs.
   const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
+
+  /// Returns a constant reference to the input port for external actuation for
+  /// a specific model instance.  This input port is a vector valued port, which
+  /// can be set with JointActuator::set_actuation_vector().
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws if called before Finalize() or if the model instance does not
+  /// contain any actuators.
+  /// @throws if the model instance does not exist.
+  const systems::InputPortDescriptor<T>& get_actuation_input_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// }@
+  // Closes Doxygen section "Actuation input"
+
+  /// @name Continuous state output
+  ///
+  /// Output ports are provided to access the continuous state of the whole
+  /// plant and for individual model instances.
+  /// @{
 
   /// Returns a constant reference to the output port for the full continuous
   /// state of the model.
-  /// @throws std::exception if called pre-finalize.
+  /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_continuous_state_output_port() const;
+
+  /// Returns a constant reference to the output port for the continuous
+  /// state of a specific model instance.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws if called before Finalize() or if the model instance does not
+  /// have any state.
+  /// @throws if the model instance does not exist.
+  const systems::OutputPort<T>& get_continuous_state_output_port(
+      ModelInstanceIndex model_instance) const;
+  /// }@
+  // Closes Doxygen section "Continuous state output"
 
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
@@ -1071,6 +1120,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Helper method to declare state and ports after Finalize().
   void DeclareStateAndPorts();
 
+  // Helper method to assemble actuation input vector from the appropriate
+  // ports.
+  VectorX<T> EvaluateActuationInput(
+      const systems::Context<T>& context) const;
+
   // This override gives System::AllocateContext() the chance to create a more
   // specialized context type, in this case, a MultibodyTreeContext.
   std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const override;
@@ -1155,6 +1209,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // Calc method for the continuous state vector output port.
   void CopyContinuousStateOut(
+      const systems::Context<T>& context, systems::BasicVector<T>* state) const;
+
+  // Calc method for the per-model-instance continuous state vector output
+  // port.
+  void CopyContinuousStateOut(
+      ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
 
   // Helper method to declare output ports used by this plant to communicate
@@ -1365,8 +1425,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const geometry::SceneGraph<T>* scene_graph_{nullptr};
 
   // Input/Output port indexes:
-  int actuation_port_{-1};
+  // A vector containing actuation ports for each model instance.  A value of
+  // -1 indicates that the model instance has no actuated dofs.
+  std::vector<int> instance_actuation_ports_;
+
+  // If only one model instance has actuated dofs, remember it here.
+  ModelInstanceIndex actuated_instance_;
+
   int continuous_state_output_port_{-1};
+  // A vector containing state output ports for each model instance.  A value of
+  // -1 indicates that the model instance has no state.
+  std::vector<int> instance_continuous_state_output_ports_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the
