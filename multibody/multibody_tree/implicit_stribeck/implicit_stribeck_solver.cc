@@ -46,17 +46,20 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 template <typename T>
 void ImplicitStribeckSolver<T>::CalcFrictionForces(
     const Eigen::Ref<const VectorX<T>>& vt,
-    const Eigen::Ref<const VectorX<T>>& fn) {
+    const Eigen::Ref<const VectorX<T>>& fn,
+    EigenPtr<VectorX<T>> v_slip_ptr,
+    EigenPtr<VectorX<T>> t_hat_ptr,
+    EigenPtr<VectorX<T>> mus_ptr,
+    EigenPtr<VectorX<T>> ft) {
   const int nc = nc_;  // Number of contact points.
 
-  // Convenient aliases to problem data.
+  // Aliases to vector of friction coefficients.
   const auto& mu = *problem_data_aliases_.mu_ptr;
 
-  // Convenient aliases to variable size workspace variables.
-  auto ft = variable_size_workspace_.mutable_ft();
-  auto mus = variable_size_workspace_.mutable_mu();
-  auto t_hat = variable_size_workspace_.mutable_t_hat();
-  auto v_slip = variable_size_workspace_.mutable_v_slip();
+  // Convenient aliases.
+  auto mus = *mus_ptr;
+  auto v_slip = *v_slip_ptr;
+  auto t_hat = *t_hat_ptr;
 
   // The stiction tolerance.
   const double v_stribeck = parameters_.stiction_tolerance;
@@ -109,7 +112,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     t_hat.template segment<2>(ik) = that_ic;
     mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
     // Friction force.
-    ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
+    ft->template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
   }
 }
 
@@ -118,14 +121,15 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& fn,
     const Eigen::Ref<const VectorX<T>>& mus,
     const Eigen::Ref<const VectorX<T>>& t_hat,
-    const Eigen::Ref<const VectorX<T>>& v_slip) {
+    const Eigen::Ref<const VectorX<T>>& v_slip,
+    std::vector<Matrix2<T>>* dft_dvt_ptr) {
   const int nc = nc_;  // Number of contact points.
 
   // Problem data.
   const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Mutable reference to ∇ᵥₜfₜ(vₜ).
-  std::vector<Matrix2<T>>& Gt = variable_size_workspace_.mutable_dft_dv();
+  std::vector<Matrix2<T>>& dft_dvt = *dft_dvt_ptr;
 
   // The stiction tolerance.
   const double v_stribeck = parameters_.stiction_tolerance;
@@ -164,30 +168,30 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // We now compute the dradient with respect to the tangential velocity
     // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
     // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
-    //   ∇ᵥₜfₜ = -Gt = -fn * (
+    //   ∇ᵥₜfₜ = -dft_dvt = -fn * (
     //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
     //     dmu_stribeck/dx * P(t̂) / v_stribeck )
     // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
-    // have defined Gt = -∇ᵥₜfₜ.
-    // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
+    // have defined dft_dvt = -∇ᵥₜfₜ.
+    // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
     // (P and Pperp) where the coefficients of the combination are positive
     // scalars. Therefore,
-    // IMPORTANT NOTE: Gt also PSD.
-    // IMPORTANT NOTE 2: The derivation for Gt leads to exactly the
+    // IMPORTANT NOTE: dft_dvt also PSD.
+    // IMPORTANT NOTE 2: The derivation for dft_dvt leads to exactly the
     // same result when using the "softened" definitions for v_slip and
     // t_hat where each occurrence of these quantities is replaced by its
     // softened counterpart.
 
-    // Compute Gt:
+    // Compute dft_dvt:
     // Changes of vt in the direction perpendicular to t_hat.
-    Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
+    dft_dvt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
 
     // Changes in the magnitude of vt (which in turns makes mu_stribeck
     // change), in the direction of t_hat.
-    Gt[ic] += P_ic * dmudv;
+    dft_dvt[ic] += P_ic * dmudv;
 
-    // Note: Gt is a symmetric 2x2 matrix.
-    Gt[ic] *= fn(ic);
+    // Note: dft_dvt is a symmetric 2x2 matrix.
+    dft_dvt[ic] *= fn(ic);
   }
 }
 
@@ -195,7 +199,8 @@ template <typename T>
 void ImplicitStribeckSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
     const std::vector<Matrix2<T>>& Gt,
-    const Eigen::Ref<const MatrixX<T>>& Jt, double dt) {
+    const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
+    EigenPtr<MatrixX<T>> J) {
 
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -203,14 +208,10 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   // Size of the friction forces vector ft and tangential velocities vector vt.
   const int nf = 2 * nc;
 
-  // The Newton-Raphson Jacobian, ∇ᵥR.
-  auto& J = fixed_size_workspace_.J;
-
   // Newton-Raphson Jacobian:
   //  J = M + dt Jtᵀdiag(Gt)Jt:
-  // J is an (nv x nv) symmetric positive definite matrix.
   // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
-  // diagonal entry.
+  // diagonal entry. Since Gt is SPD, so is J.
 
   // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
   // block diagonal.
@@ -223,7 +224,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
         Gt[ic] * Jt.block(ik, 0, 2, nv);
   }
   // Form J = M + dt Jtᵀdiag(Gt)Jt:
-  J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+  *J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
 }
 
 template <typename T>
@@ -279,7 +280,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
   auto Delta_vt = variable_size_workspace_.mutable_delta_vt();
-  auto& Gt = variable_size_workspace_.mutable_dft_dv();
+  auto& dft_dvt = variable_size_workspace_.mutable_dft_dvt();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
@@ -288,14 +289,15 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // least performs one iteration.
   T vt_error = 2 * vt_tolerance;
 
-  // Initialize iteration with the provided guess.
+  // Initialize iteration with the guess provided.
   v = v_guess;
-  vt = Jt * v;
 
   for (int iter = 0; iter < max_iterations; ++iter) {
-    // Update ft, mus, t_hat, v_slip as a function of vt, vn and, the problem
-    // data.
-    CalcFrictionForces(vt, fn);
+    // Update tangential velocities.
+    vt = Jt * v;
+
+    // Update v_slip, t_hat, mus and ft as a function of vt and fn.
+    CalcFrictionForces(vt, fn, &v_slip, &t_hat, &mus, &ft);
 
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
@@ -309,12 +311,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     residual = M * v - p_star - dt * Jt.transpose() * ft;
 
     // Compute gradient ∇ᵥₜfₜ(vₜ), Gt in source, as a function of fn, mus,
-    // t_hat, v_slip and, the problem data.
-    CalcFrictionForcesGradient(fn, mus, t_hat, v_slip);
+    // t_hat and v_slip.
+    CalcFrictionForcesGradient(fn, mus, t_hat, v_slip, &dft_dvt);
 
-    // Newton-Raphson Jacobian, ∇ᵥR, as a function of M, Gt, Jt, dt and, the
-    // problem data.
-    CalcJacobian(M, Gt, Jt, dt);
+    // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, Gt, Jt, dt.
+    CalcJacobian(M, dft_dvt, Jt, dt, &J);
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
@@ -348,7 +349,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // for all contact points.
     T alpha = 1.0;  // We set α = 1 for now.
     v = v + alpha * Delta_v;
-    vt = Jt * v;
 
     // Save iteration statistics.
     statistics_.Update(ExtractDoubleOrThrow(vt_error));
