@@ -1725,7 +1725,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Compute the problem data with no duplicated contacts or friction
     // directions.
-    VectorX<double> v;
     CalcConstraintAccelProblemData(dt, vel_data_.get());
 
     // Update Mv to slide to the given direction and to account for
@@ -1797,6 +1796,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // Get the generalized acceleration from the constraint forces and verify
     // that the moment is zero.
+    const VectorX<double> v = rod_->GetRodVelocity(*context_);
     VectorX<double> ga;
     solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &ga);
     EXPECT_LT(ga[2], lcp_eps_ * cf.size());
@@ -1930,7 +1930,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // First, construct the acceleration-level problem data as normal to set
     // inertia solver and external forces.
-    VectorX<double> v;
     CalcConstraintAccelProblemData(dt, vel_data_.get());
 
     // Get the original N
@@ -2017,6 +2016,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     // Verify that the vertical acceleration is zero. If the cross-constraint
     // term LM⁻¹Nᵀ is not computed properly, this acceleration might not
     // be zero.
+    const VectorX<double> v = rod_->GetRodVelocity(*context_);
     VectorX<double> vdot;
     solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
@@ -2249,7 +2249,6 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
 
     // First, construct the acceleration-level problem data as normal to set
     // inertia solver and external forces.
-    VectorX<double> v;
     CalcConstraintAccelProblemData(dt, vel_data_.get());
 
     // Construct the problem as a limit constraint preventing movement in the
@@ -2322,6 +2321,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     EXPECT_NEAR(cf[0], mg, lcp_eps_);
 
     // Verify that the vertical acceleration is zero.
+    const VectorX<double> v = rod_->GetRodVelocity(*context_);
     VectorX<double> vdot;
     solver_.ComputeGeneralizedAcceleration(*vel_data_, v, cf, dt, &vdot);
     EXPECT_NEAR(vdot[1], 0, lcp_eps_);
@@ -2353,6 +2353,8 @@ TEST_P(Constraint2DSolverTest, TwoPointNonSlidingToSlidingSign) {
   // Test sticking with applied force to the right (true) and the left (false).
   TwoPointNonSlidingToSliding(kForceAppliedToRight);
   TwoPointNonSlidingToSliding(kForceAppliedToLeft);
+  TwoPointNonSlidingToSlidingDiscretized(kForceAppliedToRight);
+  TwoPointNonSlidingToSlidingDiscretized(kForceAppliedToLeft);
 }
 
 // Tests the rod in a two-point impact which is insufficient to put the rod
@@ -2377,6 +2379,8 @@ TEST_P(Constraint2DSolverTest, TwoPointSlidingTest) {
   Sliding(kSlideLeft, false /* not upright */, kLCPSolver);
   Sliding(kSlideRight, false /* not upright */, kLinearSystemSolver);
   Sliding(kSlideLeft, false /* not upright */, kLinearSystemSolver);
+  SlidingDiscretized(kSlideRight, false /* not upright */);
+  SlidingDiscretized(kSlideLeft, false /* not upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
@@ -2387,6 +2391,8 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingTest) {
   Sliding(kSlideLeft, true /* upright */, kLCPSolver);
   Sliding(kSlideRight, true /* upright */, kLinearSystemSolver);
   Sliding(kSlideLeft, true /* upright */, kLinearSystemSolver);
+  SlidingDiscretized(kSlideRight, true /* upright */);
+  SlidingDiscretized(kSlideLeft, true /* upright */);
 }
 
 // Tests the rod in a single point sliding configuration, with sliding both
@@ -2397,6 +2403,8 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingPlusBilateralTest) {
   SlidingPlusBilateral(kSlideLeft, kLCPSolver);
   SlidingPlusBilateral(kSlideRight, kLinearSystemSolver);
   SlidingPlusBilateral(kSlideLeft, kLinearSystemSolver);
+  SlidingPlusBilateralDiscretized(kSlideRight);
+  SlidingPlusBilateralDiscretized(kSlideLeft);
 }
 
 // Tests the rod in a single point impacting configuration, with sliding both
@@ -2413,6 +2421,7 @@ TEST_P(Constraint2DSolverTest, SinglePointSlidingImpactPlusBilateralTest) {
 TEST_P(Constraint2DSolverTest, OnePointPlusLimitTest) {
   OnePointPlusLimit(kLCPSolver);
   OnePointPlusLimit(kLinearSystemSolver);
+  OnePointPlusLimitDiscretized();
 }
 
 // Tests the rod in a two-point contact configuration with both sticking and
@@ -2439,6 +2448,7 @@ TEST_P(Constraint2DSolverTest, ContactLimitCrossTermAccelTest) {
 TEST_P(Constraint2DSolverTest, TwoPointAsLimitTest) {
   TwoPointAsLimit(kLCPSolver);
   TwoPointAsLimit(kLinearSystemSolver);
+  TwoPointAsLimitDiscretized();
 }
 
 // Tests the rod in a two-point configuration, in a situation where a force

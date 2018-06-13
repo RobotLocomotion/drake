@@ -182,7 +182,7 @@ class Rod2DDAETest : public ::testing::Test {
 
     // Get the update to the generalized velocity.
     VectorX<double> delta_v;
-    contact_solver_.CalcGeneralizedVelocityChange(data, cf, &delta_v);
+    contact_solver_.ComputeGeneralizedVelocityChange(data, cf, &delta_v);
 
     // Update the velocity part of the state.
     context_->get_mutable_continuous_state().get_mutable_generalized_velocity()
