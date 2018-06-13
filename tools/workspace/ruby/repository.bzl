@@ -2,9 +2,9 @@
 
 load("@drake//tools/workspace:which.bzl", "which_repository")
 
-def protoc_repository(name):
-    # Find the protoc binary.
+def ruby_repository(name):
+    # Find the ruby binary.
     which_repository(
         name = name,
-        command = "protoc",
+        command = "ruby",
     )
