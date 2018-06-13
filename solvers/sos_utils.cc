@@ -24,7 +24,6 @@ MonomialVector ExponentsToMonomials(const Exponent & exponents,
       m = m*Monomial(var, exponents(i, j++));
     }
     monomials(i) = m;
-    std::cout << m << "\n";
   }
   return monomials;
 }
