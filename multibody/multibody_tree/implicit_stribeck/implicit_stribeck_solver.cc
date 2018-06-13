@@ -258,18 +258,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const double vt_tolerance =
       parameters_.relative_tolerance * parameters_.stiction_tolerance;
 
-  // Problem sizes.
-  const int nv = nv_;  // Number of generalized velocities.
-  const int nc = nc_;  // Number of contact points.
-  // Size of the friction forces vector ft and tangential velocities vector vt.
-  const int nf = 2 * nc;
-
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
-  const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.mutable_v();
