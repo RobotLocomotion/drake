@@ -91,12 +91,9 @@ void TestAccelerometerFreeFall(const Eigen::Vector3d& xyz,
 
   // The frame of the RigidBody to which the sensor is attached is coincident
   // with the world frame (the default RotationMatrix constructor is identity).
-  const math::RotationMatrix<double> R_BW();
-  // Since R_BA is orthogonal its inverse is equal to its transpose.
-  // Eigen::Matrix3d::transpose() is used below because it's computationally
-  // cheaper than Eigen::Matrix3d::inverse().
+  const math::RotationMatrix<double> R_BW;
   const math::RotationMatrix<double> R_AB = R_BA.inverse();
-  Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
+  const Vector3d expected_measurement = R_AB * R_BW * tree->a_grav.tail<3>();
   EXPECT_TRUE(CompareMatrices(output->get_vector_data(0)->get_value(),
                               expected_measurement, 1e-10,
                               MatrixCompareType::absolute));

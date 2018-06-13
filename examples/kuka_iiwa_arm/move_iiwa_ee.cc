@@ -103,8 +103,8 @@ class MoveDemoRunner {
       // iiwa_q) and the calculated final pose).
       ConstraintRelaxingIk::IkCartesianWaypoint wp;
       wp.pose.translation() = Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z);
-      Eigen::Vector3d rpy(FLAGS_roll, FLAGS_pitch, FLAGS_yaw);
-      wp.pose.linear() = math::rpy2rotmat(rpy);
+      const math::RollPitchYaw<double> rpy(FLAGS_roll, FLAGS_pitch, FLAGS_yaw);
+      wp.pose.linear() = rpy.ToMatrix3();
       wp.constrain_orientation = true;
       std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints;
       waypoints.push_back(wp);

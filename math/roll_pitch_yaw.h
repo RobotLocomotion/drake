@@ -114,26 +114,46 @@ class RollPitchYaw {
     return set(Vector3<T>(roll, pitch, yaw));
   }
 
-  /// Returns the Vector3 underlying a %RollPitchYaw.
+  /// Returns the Vector3 underlying `this` %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
 
-  /// Returns the roll-angle underlying a %RollPitchYaw.
+  /// Returns the roll-angle underlying `this` %RollPitchYaw.
   const T& roll_angle() const { return roll_pitch_yaw_(0); }
 
-  /// Return mutable access to the roll-angle underlying a %RollPitchYaw.
-  T& roll_angle()  { return roll_pitch_yaw_(0); }
-
-  /// Returns the pitch-angle underlying a %RollPitchYaw.
+  /// Returns the pitch-angle underlying `this` %RollPitchYaw.
   const T& pitch_angle() const { return roll_pitch_yaw_(1); }
 
-  /// Return mutable access to the pitch-angle underlying a %RollPitchYaw.
-  T& pitch_angle()  { return roll_pitch_yaw_(1); }
-
-  /// Returns the yaw-angle underlying a %RollPitchYaw.
+  /// Returns the yaw-angle underlying `this` %RollPitchYaw.
   const T& yaw_angle() const { return roll_pitch_yaw_(2); }
 
-  /// Returns mutable access to the yaw-angle underlying a %RollPitchYaw.
-  T& yaw_angle() { return roll_pitch_yaw_(2); }
+  /// Set the roll-angle underlying `this` %RollPitchYaw.
+  /// @param[in] r roll angle (in units of radians).
+  void set_roll_angle(const T& r)  { roll_pitch_yaw_(0) = r; }
+
+  /// Set the pitch-angle underlying a %RollPitchYaw.
+  /// @param[in] p pitch angle (in units of radians).
+  void set_pitch_angle(const T& p)  { roll_pitch_yaw_(1) = p; }
+
+  /// Set the yaw-angle underlying a %RollPitchYaw.
+  /// @param[in] y yaw angle (in units of radians).
+  void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
+
+  /// Set the roll-pitch-yaw angles underlying `this` %RollPitchYaw.
+  /// @param[in] rpy roll, pitch, yaw angles (units of radians).
+  /// @throws std::logic_error in debug builds if !IsValid(rpy).
+  void  set_roll_pitch_yaw(const Vector3<T>& rpy) {
+    SetOrThrowIfNotValidInDebugBuild(rpy);
+  }
+
+  /// Sets the roll, pitch, yaw angles underlying `this` %RollPitchYaw.
+  /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
+  /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
+  /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
+  /// @throws std::logic_error in debug builds if
+  /// !IsValid(Vector3<T>(roll, pitch, yaw)).
+  void set_roll_pitch_yaw(const T& roll, const T& pitch, const T& yaw) {
+    SetOrThrowIfNotValidInDebugBuild(Vector3<T>(roll, pitch, yaw));
+  }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const {
@@ -153,6 +173,12 @@ class RollPitchYaw {
     const T z = c0 * c1_s2 - s0 * s1_c2;
     return Eigen::Quaternion<T>(w, x, y, z);
   }
+
+  /// Returns the RotationMatrix representation of `this` %RollPitchYaw.
+  RotationMatrix<T> ToRotationMatrix() const;
+
+  /// Returns the 3x3 matrix representation of `this` %RollPitchYaw.
+  Matrix3<T> ToMatrix3() const;
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.

@@ -874,13 +874,13 @@ void SetDefaultOnrampPoses(const Lane* ego_lane,
   const double ego_yaw =
       ego_rotation.yaw() - ((ego_polarity == LanePolarity::kWithS) ? 0. : M_PI);
   const Rotation new_rotation = Rotation::FromRpy(ego_roll, ego_pitch, ego_yaw);
-  const Vector3<double> new_rpy = new_rotation.rpy().vector();
-  ego_pose->set_rotation(math::RollPitchYaw<double>(new_rpy).ToQuaternion());
+  const math::RollPitchYaw<double> new_rpy(new_rotation.rpy().vector());
+  ego_pose->set_rotation(new_rpy.ToQuaternion());
 
-  const Eigen::Matrix3d ego_rotmat = math::rpy2rotmat(new_rpy);
+  const math::RotationMatrix<double> ego_rotmat(new_rpy);
   drake::Vector6<double> velocity{};
-  velocity.head(3) = Vector3<double>::Zero();             /* ω */
-  velocity.tail(3) = ego_speed * ego_rotmat.leftCols(1);  /* v */
+  velocity.head(3) = Vector3<double>::Zero();                      // ω
+  velocity.tail(3) = ego_speed * ego_rotmat.matrix().leftCols(1);  // v
   ego_velocity->set_velocity(multibody::SpatialVelocity<double>(velocity));
 
   // Set the traffic car at s = Lane::length() - 1 in the traffic_lane.

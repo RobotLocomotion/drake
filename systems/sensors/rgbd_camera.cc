@@ -61,13 +61,13 @@ RgbdCamera::RgbdCamera(const std::string& name,
       color_camera_info_(width, height, fov_y),
       depth_camera_info_(width, height, fov_y),
       X_WB_initial_(
-          Eigen::Translation3d(position[0], position[1], position[2]) *
-          Eigen::Isometry3d(math::rpy2rotmat(orientation))),
+        Eigen::Translation3d(position[0], position[1], position[2]) *
+        Eigen::Isometry3d(math::RollPitchYaw<double>(orientation).ToMatrix3())),
       renderer_(new RgbdRendererVTK(
-          RenderingConfig{width, height, fov_y, z_near, z_far,
-                          show_window},
-          Eigen::Translation3d(position[0], position[1], position[2]) *
-              Eigen::Isometry3d(math::rpy2rotmat(orientation)) * X_BC_)) {
+        RenderingConfig{width, height, fov_y, z_near, z_far, show_window},
+        Eigen::Translation3d(position[0], position[1], position[2]) *
+        Eigen::Isometry3d(math::RollPitchYaw<double>(orientation).ToMatrix3())
+            * X_BC_)) {
   InitPorts(name);
   InitRenderer();
 }

@@ -15,6 +15,16 @@ template <class T>
 constexpr double RollPitchYaw<T>::kGimbalLockToleranceCosPitchAngle;
 
 template <typename T>
+RotationMatrix<T> RollPitchYaw<T>::ToRotationMatrix() const {
+  return RotationMatrix<T>(*this);
+}
+
+template <typename T>
+Matrix3<T> RollPitchYaw<T>::ToMatrix3() const {
+  return ToRotationMatrix().matrix();
+}
+
+template <typename T>
 RollPitchYaw<T>::RollPitchYaw(const RotationMatrix<T>& R) :
     RollPitchYaw(R.ToQuaternion(), R) {}
 
