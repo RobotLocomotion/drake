@@ -17,6 +17,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/number_traits.h"
+#include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -97,10 +98,8 @@ class LeafSystem : public System<T> {
   /// Shadows System<T>::AllocateContext to provide a more concrete return
   /// type LeafContext<T>.
   std::unique_ptr<LeafContext<T>> AllocateContext() const {
-    std::unique_ptr<Context<T>> context = System<T>::AllocateContext();
-    DRAKE_DEMAND(dynamic_cast<Context<T>*>(context.get()) != nullptr);
-    return std::unique_ptr<LeafContext<T>>(
-        static_cast<LeafContext<T>*>(context.release()));
+    return dynamic_pointer_cast_or_throw<LeafContext<T>>(
+        System<T>::AllocateContext());
   }
 
   // =========================================================================
@@ -173,8 +172,8 @@ class LeafSystem : public System<T> {
 
   /// Default implementation: sets all continuous state to the model vector
   /// given in DeclareContinuousState (or zero if no model vector was given) and
-  /// discrete states to zero.  This method makes no attempt to set abstract
-  /// state values.  Overrides must not change the number of state variables.
+  /// discrete states to zero. Overrides must not change the number of state
+  /// variables.
   // TODO(sherm/russt): Initialize the discrete state from the model vector
   // pending resolution of #7058.
   void SetDefaultState(const Context<T>& context,
@@ -192,6 +191,8 @@ class LeafSystem : public System<T> {
       BasicVector<T>& s = xd.get_mutable_vector(i);
       s.SetFromVector(VectorX<T>::Zero(s.size()));
     }
+    AbstractValues& xa = state->get_mutable_abstract_state();
+    xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
 
   /// Default implementation: sets all numeric parameters to the model vector

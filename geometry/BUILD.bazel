@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":geometry_ids",
         ":geometry_index",
         ":geometry_instance",
+        ":geometry_set",
         ":geometry_state",
         ":geometry_visualization",
         ":identifier",
@@ -113,6 +114,12 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "geometry_set",
+    hdrs = ["geometry_set.h"],
+    deps = [":geometry_ids"],
+)
+
+drake_cc_library(
     # NOTE: The material library and file name don't appear to match. This
     # library will eventually contain multiple types of materials (e.g.,
     # contact, rendering, depth, etc.)
@@ -132,6 +139,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_index",
         ":geometry_instance",
+        ":geometry_set",
         ":internal_frame",
         ":internal_geometry",
         ":proximity_engine",
@@ -240,6 +248,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "geometry_instance_test",
     deps = [":geometry_instance"],
+)
+
+drake_cc_googletest(
+    name = "geometry_set_test",
+    deps = [
+        ":geometry_ids",
+        ":geometry_set",
+    ],
 )
 
 drake_cc_googletest(

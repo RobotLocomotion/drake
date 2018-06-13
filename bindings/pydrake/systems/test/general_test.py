@@ -79,6 +79,14 @@ class TestGeneral(unittest.TestCase):
             rhs_port = rhs.get_output_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
 
+    def test_system_base_api(self):
+        # Test a system with a different number of inputs from outputs.
+        system = Adder(3, 10)
+        self.assertEqual(system.get_num_input_ports(), 3)
+        self.assertEqual(system.get_num_output_ports(), 1)
+        # TODO(eric.cousineau): Consolidate the main API tests for `System`
+        # to this test point.
+
     def test_instantiations(self):
         # Quick check of instantions for given types.
         # N.B. These checks are ordered according to their binding definitions
@@ -138,7 +146,7 @@ class TestGeneral(unittest.TestCase):
             def check_output(context):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput(context)
-                self.assertEquals(output.get_num_ports(), 1)
+                self.assertEqual(output.get_num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
@@ -167,7 +175,7 @@ class TestGeneral(unittest.TestCase):
             context.set_time(0.)
 
             context.set_accuracy(1e-4)
-            self.assertEquals(context.get_accuracy(), 1e-4)
+            self.assertEqual(context.get_accuracy(), 1e-4)
 
             # @note `simulator` now owns `context`.
             simulator = Simulator_[T](system, context)
@@ -222,12 +230,12 @@ class TestGeneral(unittest.TestCase):
         # Create and attach inputs.
         # TODO(eric.cousineau): Not seeing any assertions being printed if no
         # inputs are connected. Need to check this behavior.
-        input0 = BasicVector([0.1, 0.2, 0.3])
+        input0 = np.array([0.1, 0.2, 0.3])
         context.FixInputPort(0, input0)
-        input1 = BasicVector([0.02, 0.03, 0.04])
+        input1 = np.array([0.02, 0.03, 0.04])
         context.FixInputPort(1, input1)
         input2 = BasicVector([0.003, 0.004, 0.005])
-        context.FixInputPort(2, input2)
+        context.FixInputPort(2, input2)  # Test the BasicVector overload.
 
         # Initialize integrator states.
         integrator_xc = (

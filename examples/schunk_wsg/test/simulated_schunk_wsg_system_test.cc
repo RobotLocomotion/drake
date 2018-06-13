@@ -8,11 +8,15 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_plain_controller.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+
+using drake::manipulation::schunk_wsg::ControlMode;
+using drake::manipulation::schunk_wsg::SchunkWsgPlainController;
 
 namespace drake {
 namespace examples {
@@ -30,13 +34,12 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   ASSERT_NE(schunk, nullptr);
   const RigidBodyTree<double>& tree = schunk->get_rigid_body_tree();
 
-  // The simulated Schunk plant has seven links (the gripper body, two
-  // fingers, a nonphysical rotor, two nonphysical pushers, and the world
-  // link).
-  const int num_links = 7;
+  // The simulated Schunk plant has four links (the gripper body, two fingers,
+  // and the world link).
+  const int num_links = 4;
 
-  // Of these only one is actuated (the left finger).
-  const int num_actuators = 1;
+  // Of these only two are actuated (the fingers).
+  const int num_actuators = 2;
 
   // Number of movable bodies: num_links minus world and body links.
   const int num_movable_links = num_links - 2;
@@ -71,13 +74,27 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
   DRAKE_DEMAND(left_finger_actuator_index >= 0);
 
   // Set the input to a constant force.
-  Vector1d input;
+  Vector1<double> input;
   input << -1.0;  // Force, in Newtons.
+  Vector1<double> max_force{40};  // Max force, in Newtons.
   const auto source =
       builder.template AddSystem<systems::ConstantVectorSource<double>>(
           input);
   source->set_name("source");
-  builder.Connect(source->get_output_port(), schunk->get_input_port(0));
+  const auto max_force_source =
+      builder.template AddSystem<systems::ConstantVectorSource<double>>(
+          max_force);
+  source->set_name("max_force_source");
+  const auto wsg_controller =
+      builder.template AddSystem<SchunkWsgPlainController>(ControlMode::kForce);
+  builder.Connect(source->get_output_port(),
+                  wsg_controller->get_input_port_feed_forward_force());
+  builder.Connect(schunk->get_output_port(0),
+                  wsg_controller->get_input_port_estimated_state());
+  builder.Connect(max_force_source->get_output_port(),
+                  wsg_controller->get_input_port_max_force());
+  builder.Connect(wsg_controller->get_output_port_control(),
+                  schunk->get_input_port(0));
 
   // Creates and adds LCM publisher for visualization.  The test doesn't
   // require `drake_visualizer` but it is convenient to have when debugging.

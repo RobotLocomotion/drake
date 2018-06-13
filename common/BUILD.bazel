@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":is_less_than_comparable",
         ":nice_type_name",
         ":number_traits",
+        ":pointer_cast",
         ":polynomial",
         ":reset_after_move",
         ":reset_on_copy",
@@ -272,6 +273,26 @@ drake_cc_library(
     ],
 )
 
+# Provides an anchor for finding resources.
+drake_cc_binary(
+    name = "libdrake_marker.so",
+    srcs = [
+        "drake_marker.cc",
+        "drake_marker.h",
+    ],
+    linkshared = 1,
+    linkstatic = 1,
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "drake_marker_shared_library",
+    srcs = ["libdrake_marker.so"],
+    hdrs = ["drake_marker.h"],
+    tags = ["exclude_from_package"],
+    visibility = ["//tools/install/libdrake:__pkg__"],
+)
+
 drake_cc_library(
     name = "find_resource",
     srcs = [
@@ -291,6 +312,7 @@ drake_cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":drake_marker_shared_library",
         ":essential",
         "@spruce",
     ],
@@ -347,6 +369,16 @@ drake_cc_library(
 drake_cc_library(
     name = "reset_on_copy",
     hdrs = ["reset_on_copy.h"],
+)
+
+drake_cc_library(
+    name = "pointer_cast",
+    srcs = ["pointer_cast.cc"],
+    hdrs = ["pointer_cast.h"],
+    deps = [
+        ":nice_type_name",
+        "@fmt",
+    ],
 )
 
 drake_cc_library(
@@ -463,7 +495,10 @@ drake_py_binary(
 install(
     name = "install",
     install_tests = [":test/resource_tool_installed_test.py"],
-    targets = [":resource_tool"],
+    targets = [
+        ":libdrake_marker.so",
+        ":resource_tool",
+    ],
     # TODO(jwnimmer-tri) The install rule should offer more specific options
     # for programs not in bin/, and including the workspace and/or package name
     # in the installed path.  For now, we'll just specify it manually.
@@ -540,6 +575,14 @@ drake_cc_googletest(
     name = "reset_on_copy_test",
     deps = [
         ":reset_on_copy",
+    ],
+)
+
+drake_cc_googletest(
+    name = "pointer_cast_test",
+    deps = [
+        ":pointer_cast",
+        "//common/test_utilities",
     ],
 )
 
@@ -627,6 +670,25 @@ sh_test(
         "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
         "//tools/cc_toolchain:osx_cc_wrapper.sh",
     ],
+)
+
+# Utility script to indicate which compiler is being used.
+sh_binary(
+    name = "print_host_settings",
+    srcs = ["print_host_settings.sh"],
+    args = ["$(location :capture_cc.env)"],
+    data = [":capture_cc.env"],
+)
+
+# Test the above script; if CROSSTOOL is removed or changed, $(CC) may be an
+# invalid binary (related to #7763), and CI should catch this.
+# N.B. We have to use a proxy script since `print_host_settings` has `data`.
+sh_test(
+    name = "print_host_settings_test",
+    srcs = ["test/print_host_settings_test.sh"],
+    data = [":print_host_settings"],
+    # TODO(jwnimmer-tri) Temporarily disabled because it fails on macOS.
+    tags = ["manual"],
 )
 
 drake_cc_googletest(
@@ -779,8 +841,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_simplification_test",
-    # Ignored temporarily #8783
-    tags = ["no_memcheck"],
     deps = [
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",

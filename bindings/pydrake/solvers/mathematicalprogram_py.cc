@@ -463,7 +463,25 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint")
-      .def("A", &LinearConstraint::A);
+      .def("A", &LinearConstraint::A)
+      .def("UpdateCoefficients",
+          [](LinearConstraint& self, const Eigen::MatrixXd& new_A,
+             const Eigen::VectorXd& new_lb, const Eigen::VectorXd& new_ub) {
+            self.UpdateCoefficients(new_A, new_lb, new_ub);
+          }, py::arg("new_A"), py::arg("new_lb"), py::arg("new_ub"))
+      .def("UpdateLowerBound",
+          [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
+            self.UpdateLowerBound(new_lb);
+          }, py::arg("new_lb"))
+      .def("UpdateUpperBound",
+          [](LinearConstraint& self, const Eigen::VectorXd& new_ub) {
+            self.UpdateUpperBound(new_ub);
+          }, py::arg("new_ub"))
+      .def("set_bounds",
+          [](LinearConstraint& self, const Eigen::VectorXd& new_lb,
+             const Eigen::VectorXd& new_ub) {
+            self.set_bounds(new_lb, new_ub);
+          }, py::arg("new_lb"), py::arg("new_ub"));
 
   py::class_<LorentzConeConstraint, Constraint,
              std::shared_ptr<LorentzConeConstraint>>(

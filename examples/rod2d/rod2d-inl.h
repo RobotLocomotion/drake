@@ -612,7 +612,7 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute the updated velocity.
   VectorX<T> delta_v;
-  solver_.CalcGeneralizedVelocityChange(problem_data, cf, &delta_v);
+  solver_.ComputeGeneralizedVelocityChange(problem_data, cf, &delta_v);
 
   // Compute the new velocity. Note that external forces have already been
   // incorporated into v.

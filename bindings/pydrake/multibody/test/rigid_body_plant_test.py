@@ -35,45 +35,45 @@ class TestRigidBodyPlant(unittest.TestCase):
                 mut.CompliantContactModelParameters())
             plant.set_default_compliant_material(mut.CompliantMaterial())
             self.assertTrue(plant.get_rigid_body_tree() is tree)
-            self.assertEquals(plant.get_num_bodies(), tree.get_num_bodies())
+            self.assertEqual(plant.get_num_bodies(), tree.get_num_bodies())
 
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_num_positions(), tree.get_num_positions())
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_num_positions(model_id), tree.get_num_positions())
 
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_num_velocities(), tree.get_num_velocities())
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_num_velocities(model_id), tree.get_num_velocities())
 
             num_states = plant.get_num_positions() + plant.get_num_velocities()
-            self.assertEquals(plant.get_num_states(), num_states)
-            self.assertEquals(plant.get_num_states(model_id), num_states)
+            self.assertEqual(plant.get_num_states(), num_states)
+            self.assertEqual(plant.get_num_states(model_id), num_states)
 
             num_actuators = 1
-            self.assertEquals(plant.get_num_actuators(), num_actuators)
-            self.assertEquals(plant.get_num_actuators(model_id), num_actuators)
+            self.assertEqual(plant.get_num_actuators(), num_actuators)
+            self.assertEqual(plant.get_num_actuators(model_id), num_actuators)
 
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_num_model_instances(), 1)
-            self.assertEquals(
+            self.assertEqual(
                 plant.get_input_size(), plant.get_num_actuators())
-            self.assertEquals(plant.get_output_size(), plant.get_num_states())
+            self.assertEqual(plant.get_output_size(), plant.get_num_states())
 
             context = plant.CreateDefaultContext()
             x = plant.GetStateVector(context)
             plant.SetDefaultState(context, context.get_mutable_state())
             plant.set_position(context, 0, 1.)
-            self.assertEquals(x[0], 1.)
+            self.assertEqual(x[0], 1.)
             plant.set_velocity(context, 0, 2.)
-            self.assertEquals(x[1], 2.)
+            self.assertEqual(x[1], 2.)
             plant.set_state_vector(context, [3., 3.])
             self.assertTrue(np.allclose(x, [3., 3.]))
             plant.set_state_vector(context.get_mutable_state(), [4., 4.])
             self.assertTrue(np.allclose(x, [4., 4.]))
 
-            self.assertEquals(
+            self.assertEqual(
                 plant.FindInstancePositionIndexFromWorldIndex(0, 0), 0)
 
             # Existence checks.
@@ -96,15 +96,15 @@ class TestRigidBodyPlant(unittest.TestCase):
                 plant.contact_results_output_port() is not None)
 
             # Basic status.
-            self.assertEquals(plant.is_state_discrete(), is_discrete)
-            self.assertEquals(plant.get_time_step(), timestep)
+            self.assertEqual(plant.is_state_discrete(), is_discrete)
+            self.assertEqual(plant.get_time_step(), timestep)
 
     def test_contact_parameters_api(self):
         cls = mut.CompliantContactModelParameters
         param = cls()
-        self.assertEquals(
+        self.assertEqual(
             param.v_stiction_tolerance, cls.kDefaultVStictionTolerance)
-        self.assertEquals(
+        self.assertEqual(
             param.characteristic_radius, cls.kDefaultCharacteristicRadius)
         # Test simple mutuation.
         param.v_stiction_tolerance *= 2
@@ -117,7 +117,7 @@ class TestRigidBodyPlant(unittest.TestCase):
         # Test contact result bindings in isolation
         # by constructing dummy contact results
         results = mut.ContactResults()
-        self.assertEquals(results.get_num_contacts(), 0)
+        self.assertEqual(results.get_num_contacts(), 0)
         f = np.array([0., 1., 2.])
         results.set_generalized_contact_force(f)
         self.assertTrue(np.allclose(
@@ -126,12 +126,12 @@ class TestRigidBodyPlant(unittest.TestCase):
         id_1 = 42
         id_2 = 43
         info = results.AddContact(element_a=id_1, element_b=id_2)
-        self.assertEquals(results.get_num_contacts(), 1)
+        self.assertEqual(results.get_num_contacts(), 1)
         info_dup = results.get_contact_info(0)
         self.assertIsInstance(info_dup, mut.ContactInfo)
         self.assertIs(info, info_dup)
-        self.assertEquals(info.get_element_id_1(), id_1)
-        self.assertEquals(info.get_element_id_2(), id_2)
+        self.assertEqual(info.get_element_id_1(), id_1)
+        self.assertEqual(info.get_element_id_2(), id_2)
 
         pt = np.array([0.1, 0.2, 0.3])
         normal = np.array([0.0, 1.0, 0.0])
@@ -151,7 +151,7 @@ class TestRigidBodyPlant(unittest.TestCase):
         self.assertTrue(np.allclose(cf.get_normal(), normal))
 
         results.Clear()
-        self.assertEquals(results.get_num_contacts(), 0)
+        self.assertEqual(results.get_num_contacts(), 0)
 
     def test_compliant_material_api(self):
 
@@ -171,7 +171,7 @@ class TestRigidBodyPlant(unittest.TestCase):
             cls.kDefaultStaticFriction,
             cls.kDefaultDynamicFriction,
         )
-        self.assertEquals(flat_values(material), expected_default)
+        self.assertEqual(flat_values(material), expected_default)
         # Test mutation by chaining.
         # Ensure these values and the defaults do not overlap.
         expected = tuple(2*x for x in expected_default)
@@ -179,7 +179,7 @@ class TestRigidBodyPlant(unittest.TestCase):
             .set_youngs_modulus(expected[0])
             .set_dissipation(expected[1])
             .set_friction(expected[2], expected[3]))
-        self.assertEquals(flat_values(material), expected)
+        self.assertEqual(flat_values(material), expected)
         # Test mutation to default.
         material.set_youngs_modulus_to_default()
         self.assertTrue(material.youngs_modulus_is_default())
@@ -189,16 +189,16 @@ class TestRigidBodyPlant(unittest.TestCase):
         self.assertTrue(material.friction_is_default())
         # Test access with defaults.
         material_default = cls()
-        self.assertEquals(
+        self.assertEqual(
             material_default.youngs_modulus(default_value=expected[0]),
             expected[0])
-        self.assertEquals(
+        self.assertEqual(
             material_default.dissipation(default_value=expected[1]),
             expected[1])
-        self.assertEquals(
+        self.assertEqual(
             material_default.static_friction(default_value=expected[2]),
             expected[2])
-        self.assertEquals(
+        self.assertEqual(
             material_default.dynamic_friction(default_value=expected[3]),
             expected[3])
         # Test construction styles.

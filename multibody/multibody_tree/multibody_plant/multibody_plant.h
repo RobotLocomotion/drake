@@ -9,6 +9,7 @@
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
@@ -158,11 +159,35 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   /// Default constructor creates a plant with a single "world" body.
   /// Therefore, right after creation, num_bodies() returns one.
-  MultibodyPlant();
+  /// @param[in] time_step
+  ///   An optional parameter indicating whether `this` plant is modeled as a
+  ///   continuous system (`time_step = 0`) or as a discrete system with
+  ///   periodic updates of period `time_step > 0`. @default 0.0.
+  /// @throws std::exception if `time_step` is negative.
+  explicit MultibodyPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template<typename U>
-  explicit MultibodyPlant(const MultibodyPlant<U>& other);
+  MultibodyPlant(const MultibodyPlant<U>& other) :
+      systems::LeafSystem<T>(systems::SystemTypeTag<
+          drake::multibody::multibody_plant::MultibodyPlant>()) {
+    DRAKE_THROW_UNLESS(other.is_finalized());
+    model_ = other.model_->template CloneToScalar<T>();
+    time_step_ = other.time_step_;
+    // Copy of all members related with geometry registration.
+    source_id_ = other.source_id_;
+    body_index_to_frame_id_ = other.body_index_to_frame_id_;
+    geometry_id_to_body_index_ = other.geometry_id_to_body_index_;
+    geometry_id_to_visual_index_ = other.geometry_id_to_visual_index_;
+    geometry_id_to_collision_index_ = other.geometry_id_to_collision_index_;
+    visual_geometries_ = other.visual_geometries_;
+    collision_geometries_ = other.collision_geometries_;
+    // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
+    // on the new MultibodyTree on U. Therefore we only Finalize the plant's
+    // internals (and not the MultibodyTree).
+    FinalizePlantOnly();
+  }
+
 
   /// Returns the number of bodies in the model, including the "world" body,
   /// which is always part of the model.
@@ -244,10 +269,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // std::vector of geometry ids for that body. The emplace_back() below
     // resizes visual_geometries_ to store the geometry ids for the body we
     // just added.
-    // TODO(amcastro-tri): static_cast should not be needed. Update when
-    // TypeSafeIndex is fixed to support this comparison.
-    DRAKE_DEMAND(static_cast<int>(visual_geometries_.size()) == body.index());
+    // Similarly for the collision_geometries_ vector.
+    DRAKE_DEMAND(visual_geometries_.size() == body.index());
     visual_geometries_.emplace_back();
+    DRAKE_DEMAND(collision_geometries_.size() == body.index());
+    collision_geometries_.emplace_back();
     return body;
   }
 
@@ -534,6 +560,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const std::vector<geometry::GeometryId>& GetVisualGeometriesForBody(
       const Body<T>& body) const;
 
+  /// Returns the number of geometries registered for visualization.
+  /// This method can be called at any time during the lifetime of `this` plant,
+  /// either pre- or post-finalize, see Finalize().
+  /// Post-finalize calls will always return the same value.
+  int num_visual_geometries() const {
+    return static_cast<int>(geometry_id_to_visual_index_.size());
+  }
+
   /// Registers geometry in a SceneGraph with a given geometry::Shape to be
   /// used for the contact modeling of a given `body`.
   /// More than one geometry can be registered with a body, in which case the
@@ -563,21 +597,49 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph);
 
-  /// Returns the number of geometries registered for visualization.
-  /// This method can be called at any time during the lifetime of `this` plant,
-  /// either pre- or post-finalize, see Finalize().
+  /// Returns an array of GeometryId's identifying the different contact
+  /// geometries for `body` previously registered with a SceneGraph.
+  /// @note This method can be called at any time during the lifetime of `this`
+  /// plant, either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int num_visual_geometries() const {
-    return static_cast<int>(geometry_id_to_visual_index_.size());
-  }
+  /// @see RegisterCollisionGeometry(), Finalize()
+  const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
+      const Body<T>& body) const;
 
   /// Returns the number of geometries registered for contact modeling.
   /// This method can be called at any time during the lifetime of `this` plant,
   /// either pre- or post-finalize, see Finalize().
   /// Post-finalize calls will always return the same value.
-  int get_num_collision_geometries() const {
+  int num_collision_geometries() const {
     return geometry_id_to_collision_index_.size();
   }
+
+  /// For each of the provided `bodies`, collects up all geometries that have
+  /// been registered to that body. Intended to be used in conjunction with
+  /// SceneGraph::ExcludeCollisionsWithin() and
+  /// SceneGraph::ExcludeCollisionsBetween() to filter collisions between the
+  /// geometries registered to the bodies.
+  ///
+  /// For example:
+  /// ```
+  /// // Don't report on collisions between geometries affixed to `body1`,
+  /// // `body2`, or `body3`.
+  /// std::vector<const RigidBody<T>*> bodies{&body1, &body2, &body3};
+  /// geometry::GeometrySet set = plant.CollectRegisteredGeometries(bodies);
+  /// scene_graph.ExcludeCollisionsWithin(set);
+  /// ```
+  ///
+  /// Note: There is a *very* specific order of operations.
+  ///   1. Bodies and geometries must be added to the %MultibodyPlant.
+  ///   2. The %MultibodyPlant must be finalized (via Finalize()).
+  ///   3. Create GeometrySet instances from bodies (via this method).
+  ///   4. Invoke SceneGraph::ExcludeCollisions*() to filter collisions.
+  ///   5. Allocate context.
+  /// Changing the order will cause exceptions to be thrown.
+  ///
+  /// @throws std::exception if called pre-finalize.
+  geometry::GeometrySet CollectRegisteredGeometries(
+      const std::vector<const RigidBody<T>*>& bodies) const;
 
   /// Returns the friction coefficients provided during geometry registration
   /// for the given geometry `id`. We call these the "default" coefficients but
@@ -636,6 +698,19 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// pre- or post-finalize, see Finalize().
   bool geometry_source_is_registered() const {
     return !!source_id_;
+  }
+
+  /// If the body with `body_index` has geometry registered with it, it returns
+  /// the geometry::FrameId associated with it. Otherwise, it returns nullopt.
+  /// @throws if called pre-finalize.
+  optional<geometry::FrameId> GetBodyFrameIdIfExists(
+      BodyIndex body_index) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    const auto it = body_index_to_frame_id_.find(body_index);
+    if (it == body_index_to_frame_id_.end()) {
+      return {};
+    }
+    return it->second;
   }
 
   /// If the body with `body_index` has geometry registered with it, it returns
@@ -703,11 +778,31 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// output ports to enable communication with that SceneGraph are declared
   /// as well.
   ///
+  /// If geometry has been registered on a SceneGraph instance, that instance
+  /// must be provided to the Finalize() method so that any geometric
+  /// implications of the finalization process can be appropriately handled.
+  ///
   /// @see is_finalized().
   ///
-  /// @throws std::logic_error if the %MultibodyPlant has already been
-  /// finalized.
-  void Finalize();
+  /// @throws std::logic_error if
+  ///          1. the %MultibodyPlant has already been finalized,
+  ///          2. `scene_graph` isn't provided when required, or
+  ///          3. a different scene_graph instance is provided than the one
+  ///             for which this plant is a geometry source.
+  void Finalize(geometry::SceneGraph<T>* scene_graph = nullptr);
+
+  /// Returns `true` if this plant is modeled as a discrete system.
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  bool is_discrete() const { return time_step_ > 0.0; }
+
+  /// The time step (or period) used to model `this` plant as a discrete system
+  /// with periodic updates. Returns 0 (zero) if the plant is modeled as a
+  /// continuous system.
+  /// This property of the plant is specified at construction and therefore this
+  /// query can be performed either pre- or post- finalize, see Finalize().
+  /// @see MultibodyPlant::MultibodyPlant(double)
+  double time_step() const { return time_step_; }
 
   /// @anchor mbp_penalty_method
   /// @name Contact by penalty method
@@ -856,6 +951,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // scalar conversion.
   template <typename U> friend class MultibodyPlant;
 
+  // Friend class to facilitate testing.
+  friend class MultibodyPlantTester;
+
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
   // that the error message can include that detail.
@@ -869,6 +967,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Helper method that is used to finalize the plant's internals after
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
+
+  // Helper method to apply collision filters based on body-adjacency. By
+  // default, we don't consider collisions between geometries affixed to
+  // bodies connected by a joint.
+  void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
+
+  // This is a *temporary* method to eliminate visual geometries from collision
+  // while we wait for geometry roles to be introduced.
+  // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
+  void ExcludeCollisionsWithVisualGeometry(
+      geometry::SceneGraph<T>* scene_graph);
 
   // No inputs implies no feedthrough; this makes it explicit.
   // TODO(amcastro-tri): add input ports for actuators.
@@ -887,6 +996,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
+
+  // If the plant is modeled as a discrete system with periodic updates (see
+  // is_discrete()), this method computes the periodic updates of the state
+  // using a semi-explicit Euler strategy, that is:
+  //   vⁿ⁺¹ = vⁿ + dt v̇ⁿ
+  //   qⁿ⁺¹ = qⁿ + dt N(qⁿ) vⁿ⁺¹
+  // This semi-explicit update inherits some of the nice properties of the
+  // semi-implicit Euler scheme (which uses v̇ⁿ⁺¹ for the v updated instead) when
+  // there are no velocity-dependent forces (including Coriolis and gyroscopic
+  // terms). The semi-implicit Euler scheme is a symplectic integrator, which
+  // for a Hamiltonian system has the nice property of nearly conserving energy
+  // (in many cases we can write a "modified energy functional" which can be
+  // shown to be exactly conserved and to be within O(dt) of the real energy of
+  // the mechanical system.)
+  // TODO(amcastro-tri): Update this docs when contact is added.
+  void DoCalcDiscreteVariableUpdates(
+      const drake::systems::Context<T>& context0,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+      drake::systems::DiscreteValues<T>* updates) const override;
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -920,6 +1048,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // 2. RegisterAsSourceForSceneGraph() was called on `this` plant.
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
+  // 4. The body is *not* the world body.
   geometry::GeometryId RegisterGeometry(const Body<T>& body,
                                         const Isometry3<double>& X_BG,
                                         const geometry::Shape& shape,
@@ -957,13 +1086,69 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
+  // Helper method to compute penetration point pairs for a given `context`.
+  // Having this as a separate method allows us to control specializations for
+  // different scalar types.
+  std::vector<geometry::PenetrationAsPointPair<T>>
+  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+
+  // This helper method combines the friction properties for each pair of
+  // contact points in `point_pairs` according to
+  // CalcContactFrictionFromSurfaceProperties().
+  // The i-th entry in the returned std::vector corresponds to the combined
+  // friction properties for the i-th point pair in `point_pairs`.
+  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs) const;
+
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Given a set of point pairs in `point_pairs_set`, this method computes the
+  // Jacobian N(q) such that:
+  //   vn = N(q) v
+  // where the i-th component of vn corresponds to the "separation velocity"
+  // for the i-th point pair in the set. The i-th separation velocity is defined
+  // positive for when the depth in the i-th point pair (
+  // PenetrationAsPointPair::depth) is decreasing. Since for contact problems
+  // the (positive) depth in PenetrationAsPointPair is defined so that it
+  // corresponds to interpenetrating body geometries, a positive separation
+  // velocity corresponds to bodies moving apart.
+  MatrixX<T> CalcNormalSeparationVelocitiesJacobian(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs_set) const;
+
+  // Given a set of nc point pairs in `point_pairs_set`, this method computes
+  // the tangential velocities Jacobian D(q) such that:
+  //   vt = D(q) v
+  // where v ∈ ℝⁿᵛ is the vector of generalized velocities, D(q) is a matrix of
+  // size 2⋅nc×nv and vt is a vector of size 2⋅nc.
+  // This method defines a contact frame C with orientation R_WC in the world
+  // frame W such that Cz_W = nhat_BA_W, the normal direction in the point
+  // pair (PenetrationAsPointPair::nhat_BA_W).
+  // With this definition, the first two columns of R_WC correspond to
+  // orthogonal versors Cx = that1 and Cy = that2 which span the tangent plane
+  // to nhat_BA_W.
+  // vt is defined such that its i-th and (i+1)-th entries correspond to
+  // relative velocity of the i-th point pair in these two orthogonal
+  // directions. That is:
+  //   vt(2 * i)     = vx_AB_C = Cx ⋅ v_AB
+  //   vt(2 * i + 1) = vy_AB_C = Cy ⋅ v_AB
+  //
+  // If the optional output argument R_WC_set is provided with a valid non
+  // nullptr vector, on output the i-th entry of R_WC_set will contain the
+  // orientation R_WC of the i-th point pair in the set.
+  MatrixX<T> CalcTangentVelocitiesJacobian(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
+      std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
 
   // The entire multibody model.
   std::unique_ptr<drake::multibody::MultibodyTree<T>> model_;
@@ -1021,7 +1206,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
         const T& speed_BcAc,
-        const CoulombFriction<T>& friction) const;
+        const CoulombFriction<double>& friction) const;
 
     /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
     /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
@@ -1072,6 +1257,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // geometries for body with index body_index.
   std::vector<std::vector<geometry::GeometryId>> visual_geometries_;
 
+  // Per-body arrays of collision geometries indexed by BodyIndex.
+  // That is, collision_geometries_[body_index] corresponds to the array of
+  // collision geometries for body with index body_index.
+  std::vector<std::vector<geometry::GeometryId>> collision_geometries_;
+
   // Maps a GeometryId with a collision index. This allows, for instance, to
   // find out collision properties (such as friction coefficient) for a given
   // geometry.
@@ -1094,6 +1284,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Input/Output port indexes:
   int actuation_port_{-1};
   int continuous_state_output_port_{-1};
+
+  // If the plant is modeled as a discrete system with periodic updates,
+  // time_step_ corresponds to the period of those updates. Otherwise, if the
+  // plant is modeled as a continuous system, it is exactly zero.
+  double time_step_{0};
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

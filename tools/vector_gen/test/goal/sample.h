@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -22,12 +23,13 @@ namespace test {
 /// Describes the row indices of a Sample.
 struct SampleIndices {
   /// The total number of rows (coordinates).
-  static const int kNumCoordinates = 3;
+  static const int kNumCoordinates = 4;
 
   // The index of each individual coordinate.
   static const int kX = 0;
   static const int kTwoWord = 1;
   static const int kAbsone = 2;
+  static const int kUnset = 3;
 
   /// Returns a vector containing the names of each coordinate within this
   /// class. The indices within the returned vector matches that of this class.
@@ -38,7 +40,7 @@ struct SampleIndices {
 
 /// Specializes BasicVector with specific getters and setters.
 template <typename T>
-class Sample : public drake::systems::BasicVector<T> {
+class Sample final : public drake::systems::BasicVector<T> {
  public:
   /// An abbreviation for our row index constants.
   typedef SampleIndices K;
@@ -47,10 +49,12 @@ class Sample : public drake::systems::BasicVector<T> {
   /// @arg @c x defaults to 42.0 m/s.
   /// @arg @c two_word defaults to 0.0 with unknown units.
   /// @arg @c absone defaults to 0.0 with unknown units.
+  /// @arg @c unset defaults to a dummy value with unknown units.
   Sample() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_x(42.0);
     this->set_two_word(0.0);
     this->set_absone(0.0);
+    this->set_unset(drake::dummy_value<T>::get());
   }
 
   /// Create a symbolic::Variable for each element with the known variable
@@ -61,9 +65,10 @@ class Sample : public drake::systems::BasicVector<T> {
     this->set_x(symbolic::Variable("x"));
     this->set_two_word(symbolic::Variable("two_word"));
     this->set_absone(symbolic::Variable("absone"));
+    this->set_unset(symbolic::Variable("unset"));
   }
 
-  Sample<T>* DoClone() const override { return new Sample; }
+  Sample<T>* DoClone() const final { return new Sample; }
 
   /// @name Getters and Setters
   //@{
@@ -82,6 +87,9 @@ class Sample : public drake::systems::BasicVector<T> {
   /// @note @c absone has a limited domain of [-1.0, 1.0].
   const T& absone() const { return this->GetAtIndex(K::kAbsone); }
   void set_absone(const T& absone) { this->SetAtIndex(K::kAbsone, absone); }
+  /// A value that is unset by default
+  const T& unset() const { return this->GetAtIndex(K::kUnset); }
+  void set_unset(const T& unset) { this->SetAtIndex(K::kUnset, unset); }
   //@}
 
   /// See SampleIndices::GetCoordinateNames().
@@ -99,11 +107,12 @@ class Sample : public drake::systems::BasicVector<T> {
     result = result && !isnan(absone());
     result = result && (absone() >= T(-1.0));
     result = result && (absone() <= T(1.0));
+    result = result && !isnan(unset());
     return result;
   }
 
   // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const override {
+  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
     value->resize(3);
     (*value)[0] = x() - T(0.0);
     (*value)[1] = absone() - T(-1.0);

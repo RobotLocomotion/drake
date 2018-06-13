@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -29,7 +30,9 @@ using geometry::Shape;
 using geometry::Sphere;
 using math::RollPitchYaw;
 using math::RotationMatrix;
+using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
+using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
 using multibody::parsing::detail::MakeShapeFromSdfGeometry;
 using std::make_unique;
 using std::unique_ptr;
@@ -100,6 +103,43 @@ unique_ptr<sdf::Visual> MakeSdfVisualFromString(
   auto sdf_visual = make_unique<sdf::Visual>();
   sdf_visual->Load(visual_element);
   return sdf_visual;
+}
+
+// Helper to create an sdf::Collision object from its SDF specification given
+// as a string. Example of what the string should contain:
+//       <collision name = 'some_link_collision'>
+//         <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>
+//         <geometry>
+//           <cylinder>
+//             <radius>0.5</radius>
+//             <length>1.2</length>
+//           </cylinder>
+//         </geometry>
+//         <drake_friction>
+//           <static_friction>0.8</static_friction>
+//           <dynamic_friction>0.3</dynamic_friction>
+//         </drake_friction>
+//       </collision>
+unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
+    const std::string& collision_spec) {
+  const std::string sdf_str =
+      "<?xml version='1.0'?>"
+          "<sdf version='1.6'>"
+          "  <model name='my_model'>"
+          "    <link name='link'>"
+          + collision_spec +
+          "    </link>"
+          "  </model>"
+          "</sdf>";
+  sdf::SDFPtr sdf_parsed(new sdf::SDF());
+  sdf::init(sdf_parsed);
+  sdf::readString(sdf_str, sdf_parsed);
+  sdf::ElementPtr collision_element =
+      sdf_parsed->Root()->GetElement("model")->
+          GetElement("link")->GetElement("collision");
+  auto sdf_collision = make_unique<sdf::Collision>();
+  sdf_collision->Load(collision_element);
+  return sdf_collision;
 }
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
@@ -272,6 +312,229 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
   EXPECT_EQ(geometry_instance, nullptr);
+}
+
+// Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
+// frame G in the link frame L.
+// Since we test MakeShapeFromSdfGeometry separately, there is no need to unit
+// test every combination of a <collision> with a different <geometry>.
+GTEST_TEST(SceneGraphParserDetail, MakeGeometryPoseFromSdfCollision) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>1.0 2.0 3.0 3.14 6.28 1.57</pose>"
+      "  <geometry>"
+      "    <sphere/>"
+      "  </geometry>"
+      "</collision>");
+  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+
+  // These are the expected values as specified by the string above.
+  const Vector3d expected_rpy(3.14, 6.28, 1.57);
+  const Matrix3d R_LG_expected =
+      RotationMatrix<double>(RollPitchYaw<double>(expected_rpy)).matrix();
+  const Vector3d p_LGo_expected(1.0, 2.0, 3.0);
+
+  // Verify results to precision given by kTolerance.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_LG.translation(), p_LGo_expected,
+                              kTolerance, MatrixCompareType::relative));
+}
+
+// Verify MakeGeometryPoseFromSdfCollision can make the pose X_LG of the
+// geometry frame G in the link frame L when the specified shape is a plane.
+// We test this case separately since, while geometry::HalfSpace is defined in a
+// canonical frame C whose pose needs to be specified at a GeometryInstance
+// level, the SDF specification does not define this pose at the <geometry>
+// level but at the <collision> level.
+GTEST_TEST(SceneGraphParserDetail,
+           MakeGeometryPoseFromSdfCollisionForHalfSpace) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "</collision>");
+  const Isometry3d X_LG = MakeGeometryPoseFromSdfCollision(*sdf_collision);
+
+  // The expected coordinates of the normal vector in the link frame L.
+  const Vector3d normal_L_expected = Vector3d(1.0, 2.0, 3.0).normalized();
+
+  // The expected orientation of the canonical frame C (in which the plane's
+  // normal aligns with Cz) in the link frame L.
+  const Matrix3d R_LG_expected =
+      HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).linear();
+
+  // Verify results to precision given by kTolerance.
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_LG.linear(), R_LG_expected,
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_LG.translation(), Vector3d::Zero(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
+// Verify we can parse friction coefficients from an <ode> element in
+// <collision><surface><friction>. Drake understands <mu> to be the static
+// coefficient and <mu2> the dynamic coefficient of friction.
+GTEST_TEST(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.8</mu>"
+      "        <mu2>0.3</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  const CoulombFriction<double> friction =
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
+  EXPECT_EQ(friction.static_friction(), 0.8);
+  EXPECT_EQ(friction.dynamic_friction(), 0.3);
+}
+
+// Verify MakeCoulombFrictionFromSdfCollisionOde() throws an exception if
+// provided a dynamic friction coefficient larger than the static friction
+// coefficient.
+// We do not need testing for each possible case of an invalid input such as:
+// - negative coefficients.
+// - dynamic > static.
+// - only one coefficient is negative.
+// Since class CoulombFriction performs these tests at construction and its unit
+// tests provide coverage for these cases. In that regard, this following
+// test is not needed but we provide it just to show how the exception message
+// thrown from CoulombFriction gets concatenated and re-thrown by
+// MakeCoulombFrictionFromSdfCollisionOde().
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_DynamicLargerThanStatic) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.3</mu>"
+      "        <mu2>0.8</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::logic_error,
+      "The given dynamic friction \\(.*\\) is greater than the given static "
+      "friction \\(.*\\); dynamic friction must be less than or equal to "
+      "static friction.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_MuMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu2>0.8</mu2>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::runtime_error,
+      "Element <mu> is required within element <ode>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_Mu2Missing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <friction>"
+      "      <ode>"
+      "        <mu>0.8</mu>"
+      "      </ode>"
+      "    </friction>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::runtime_error,
+      "Element <mu2> is required within element <ode>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_FrictionMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+      "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+      "  <geometry>"
+      "    <plane>"
+      "      <normal>1.0 2.0 3.0</normal>"
+      "    </plane>"
+      "  </geometry>"
+      "  <surface>"
+      "    <ode>"
+      "      <mu>0.3</mu>"
+      "      <mu2>0.8</mu2>"
+      "    </ode>"
+      "  </surface>"
+      "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::runtime_error,
+      "Element <friction> not found nested within element <surface>.");
+}
+
+GTEST_TEST(SceneGraphParserDetail,
+           MakeCoulombFrictionFromSdfCollisionOde_OdeMissing) {
+  unique_ptr<sdf::Collision> sdf_collision = MakeSdfCollisionFromString(
+      "<collision name = 'some_link_collision'>"
+          "  <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>"
+          "  <geometry>"
+          "    <plane>"
+          "      <normal>1.0 2.0 3.0</normal>"
+          "    </plane>"
+          "  </geometry>"
+          "  <surface>"
+          "    <friction>"
+          "      <mu>0.3</mu>"
+          "      <mu2>0.8</mu2>"
+          "    </friction>"
+          "  </surface>"
+          "</collision>");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      std::runtime_error,
+      "Element <ode> not found nested within element <friction>.");
 }
 
 }  // namespace

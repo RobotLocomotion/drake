@@ -28,7 +28,7 @@ class TestSystem : public LeafSystem<T> {
  public:
   TestSystem() {
     this->set_name("TestSystem");
-    this->DeclareNumericParameter(BasicVector<T>(Vector2<T>(13.0, 7.0)));
+    this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
   }
   ~TestSystem() override {}
@@ -631,7 +631,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     this->DeclareNumericParameter(*MyVector2d::Make(1.1, 2.2));
   }
 
-  const BasicVector<double>& expected_basic() const { return *expected_basic_; }
+  const BasicVector<double>& expected_basic() const { return expected_basic_; }
   const MyVector4d& expected_myvector() const { return *expected_myvector_; }
 
  private:
@@ -657,8 +657,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
     *out = "concrete string";
   }
 
-  std::unique_ptr<BasicVector<double>> expected_basic_{
-      BasicVector<double>::Make(1., .5, .25)};
+  const BasicVector<double> expected_basic_{1., .5, .25};
   std::unique_ptr<MyVector4d> expected_myvector_{
       MyVector4d::Make(4., 3., 2., 1.)};
 };
@@ -827,10 +826,30 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   };
 
   DeclaredModelAbstractStateSystem dut;
-  auto context = dut.CreateDefaultContext();
 
+  // Allocate the resources that were created on system construction.
+  auto context = dut.AllocateContext();
+
+  // Check that the allocations were made and with the correct type
+  EXPECT_NO_THROW(context->get_abstract_state<int>(0));
+  EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
+
+  // Mess with the abstract values on the context.
+  drake::systems::AbstractValues& values =
+      context->get_mutable_abstract_state();
+  drake::systems::AbstractValue& value = values.get_mutable_value(1);
+  EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
+  EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
+
+  // Ask it to reset to the defaults specified on system construction.
+  dut.SetDefaultContext(context.get());
   EXPECT_EQ(context->get_abstract_state<int>(0), 1);
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "wow");
+
+  // Just create a default context directly.
+  auto default_context = dut.CreateDefaultContext();
+  EXPECT_EQ(default_context->get_abstract_state<int>(0), 1);
+  EXPECT_EQ(default_context->get_abstract_state<std::string>(1), "wow");
 }
 
 
@@ -1738,9 +1757,9 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
-  auto input = std::make_unique<InputVector>();
-  input->SetAtIndex(0, 3.0);
-  context->FixInputPort(0, std::move(input));
+  InputVector input;
+  input.SetAtIndex(0, 3.0);
+  context->FixInputPort(0, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
