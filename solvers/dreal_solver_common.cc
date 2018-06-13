@@ -6,9 +6,6 @@
 
 // This file contains implementations that are common to both the available and
 // unavailable flavor of this class.
-//
-// Note that (for now) _only_ the unavailable flavor of this class exists.
-// TODO(jwnimmer-tri) Remove this comment when the available flavor is added.
 
 namespace drake {
 namespace solvers {

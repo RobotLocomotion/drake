@@ -18,9 +18,13 @@ namespace {
 
 const LaneSRange kZone(LaneId("some_lane"), {10., 20.});
 
-const RightOfWayRule kRightOfWay(RightOfWayRule::Id("rowr_id"),
-                                 LaneSRoute({kZone}),
-                                 RightOfWayRule::Type::kStopThenGo);
+const RightOfWayRule kRightOfWay(
+    RightOfWayRule::Id("rowr_id"),
+    LaneSRoute({kZone}), RightOfWayRule::ZoneType::kStopExcluded,
+    {RightOfWayRule::State(
+        RightOfWayRule::State::Id("green"),
+        RightOfWayRule::State::Type::kGo,
+        {})});
 
 const SpeedLimitRule kSpeedLimit(SpeedLimitRule::Id("slr_id"),
                                  kZone,

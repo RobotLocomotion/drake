@@ -68,7 +68,8 @@ RgbdCamera::RgbdCamera(const std::string& name,
                           show_window},
           Eigen::Translation3d(position[0], position[1], position[2]) *
               Eigen::Isometry3d(math::rpy2rotmat(orientation)) * X_BC_)) {
-  Init(name);
+  InitPorts(name);
+  InitRenderer();
 }
 
 RgbdCamera::RgbdCamera(const std::string& name,
@@ -85,10 +86,11 @@ RgbdCamera::RgbdCamera(const std::string& name,
           new RgbdRendererVTK(RenderingConfig{width, height, fov_y,
                                               z_near, z_far, show_window},
                               Eigen::Isometry3d::Identity())) {
-  Init(name);
+  InitPorts(name);
+  InitRenderer();
 }
 
-void RgbdCamera::Init(const std::string& name) {
+void RgbdCamera::InitPorts(const std::string& name) {
   set_name(name);
   const int kVecNum =
       tree_.get_num_positions() + tree_.get_num_velocities();
@@ -112,7 +114,9 @@ void RgbdCamera::Init(const std::string& name) {
 
   camera_base_pose_port_ = &this->DeclareVectorOutputPort(
       rendering::PoseVector<double>(), &RgbdCamera::OutputPoseVector);
+}
 
+void RgbdCamera::InitRenderer() {
   // Creates rendering world.
   for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {

@@ -48,6 +48,7 @@ python-protobuf
 python-pygame
 python-sphinx
 python-tk
+ruby
 unzip
 valgrind
 zip

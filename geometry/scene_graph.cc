@@ -27,6 +27,8 @@ using systems::Value;
 using std::make_unique;
 using std::vector;
 
+// TODO(SeanCurtis-TRI): Fix this so that it's invocation ends with ();.
+// https://github.com/RobotLocomotion/drake/issues/8959
 #define GS_THROW_IF_CONTEXT_ALLOCATED ThrowIfContextAllocated(__FUNCTION__);
 
 namespace {
@@ -100,7 +102,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   }
   context_has_been_allocated_ = other.context_has_been_allocated_;
 
-  // We need to guarantee that the same source ids map to the same port indexes.
+  // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
   // order. This is predicated on several principles:
   //   1. Port indices monotonically increase.
@@ -184,6 +186,19 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
+}
+
+template <typename T>
+void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->ExcludeCollisionsWithin(geometry_set);
+}
+
+template <typename T>
+void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
+                                             const GeometrySet& setB) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->ExcludeCollisionsBetween(setA, setB);
 }
 
 template <typename T>

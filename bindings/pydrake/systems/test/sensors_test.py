@@ -41,40 +41,40 @@ class TestSensors(unittest.TestCase):
     def test_image_traits(self):
         # Test instantiations of ImageTraits<>.
         t = mut.ImageTraits[pt.kRgba8U]
-        self.assertEquals(t.kNumChannels, 4)
-        self.assertEquals(t.ChannelType, np.uint8)
-        self.assertEquals(t.kPixelFormat, pf.kRgba)
+        self.assertEqual(t.kNumChannels, 4)
+        self.assertEqual(t.ChannelType, np.uint8)
+        self.assertEqual(t.kPixelFormat, pf.kRgba)
 
         t = mut.ImageTraits[pt.kDepth32F]
-        self.assertEquals(t.kNumChannels, 1)
-        self.assertEquals(t.ChannelType, np.float32)
-        self.assertEquals(t.kPixelFormat, pf.kDepth)
+        self.assertEqual(t.kNumChannels, 1)
+        self.assertEqual(t.ChannelType, np.float32)
+        self.assertEqual(t.kPixelFormat, pf.kDepth)
 
         t = mut.ImageTraits[pt.kLabel16I]
-        self.assertEquals(t.kNumChannels, 1)
-        self.assertEquals(t.ChannelType, np.int16)
-        self.assertEquals(t.kPixelFormat, pf.kLabel)
+        self.assertEqual(t.kNumChannels, 1)
+        self.assertEqual(t.ChannelType, np.int16)
+        self.assertEqual(t.kPixelFormat, pf.kLabel)
 
     def test_image_types(self):
         # Test instantiations of Image<>.
         for pixel_type, image_type_alias in (
                 zip(pixel_types, image_type_aliases)):
             ImageT = mut.Image[pixel_type]
-            self.assertEquals(ImageT.Traits, mut.ImageTraits[pixel_type])
-            self.assertEquals(ImageT, image_type_alias)
+            self.assertEqual(ImageT.Traits, mut.ImageTraits[pixel_type])
+            self.assertEqual(ImageT, image_type_alias)
 
             w = 640
             h = 480
             nc = ImageT.Traits.kNumChannels
             image = ImageT(w, h)
-            self.assertEquals(image.width(), w)
-            self.assertEquals(image.height(), h)
-            self.assertEquals(image.size(), h * w * nc)
+            self.assertEqual(image.width(), w)
+            self.assertEqual(image.height(), h)
+            self.assertEqual(image.size(), h * w * nc)
             # N.B. Since `shape` is a custom-Python extension, it's defined as
             # a property (not a function).
-            self.assertEquals(image.shape, (h, w, nc))
-            self.assertEquals(image.data.shape, image.shape)
-            self.assertEquals(image.data.dtype, ImageT.Traits.ChannelType)
+            self.assertEqual(image.shape, (h, w, nc))
+            self.assertEqual(image.data.shape, image.shape)
+            self.assertEqual(image.data.dtype, ImageT.Traits.ChannelType)
 
             w /= 2
             h /= 2
@@ -82,7 +82,7 @@ class TestSensors(unittest.TestCase):
             # `image.data` will cause `image.data` + `image.mutable_data` to be
             # invalid.
             image.resize(w, h)
-            self.assertEquals(image.shape, (h, w, nc))
+            self.assertEqual(image.shape, (h, w, nc))
 
     def test_image_data(self):
         # Test data mapping.
@@ -96,13 +96,13 @@ class TestSensors(unittest.TestCase):
             nc = ImageT.Traits.kNumChannels
 
             # Test default initialization.
-            self.assertEquals(image.at(0, 0)[0], channel_default)
+            self.assertEqual(image.at(0, 0)[0], channel_default)
             self.assertTrue(np.allclose(image.data, channel_default))
 
             # Test pixel / channel mutation and access.
             image.at(0, 0)[0] = 2
             # - Also test named arguments.
-            self.assertEquals(image.at(x=0, y=0)[0], 2)
+            self.assertEqual(image.at(x=0, y=0)[0], 2)
 
             bad_coords = [
                 # Bad X
@@ -126,12 +126,12 @@ class TestSensors(unittest.TestCase):
 
             # Test numpy views, access and mutation.
             image.mutable_data[:] = 3
-            self.assertEquals(image.at(0, 0)[0], 3)
+            self.assertEqual(image.at(0, 0)[0], 3)
             self.assertTrue(np.allclose(image.data, 3))
             self.assertTrue(np.allclose(image.mutable_data, 3))
 
             # Ensure that each dimension of the image array is unique.
-            self.assertEquals(len(set(image.shape)), 3)
+            self.assertEqual(len(set(image.shape)), 3)
             # Ensure indices match as expected. Fill each channel at each pixel
             # with unique values, and ensure that pixel / channels map
             # appropriately.
@@ -173,12 +173,12 @@ class TestSensors(unittest.TestCase):
         ]
 
         for info in infos:
-            self.assertEquals(info.width(), width)
-            self.assertEquals(info.height(), height)
-            self.assertEquals(info.focal_x(), focal_x)
-            self.assertEquals(info.focal_y(), focal_y)
-            self.assertEquals(info.center_x(), center_x)
-            self.assertEquals(info.center_y(), center_y)
+            self.assertEqual(info.width(), width)
+            self.assertEqual(info.height(), height)
+            self.assertEqual(info.focal_x(), focal_x)
+            self.assertEqual(info.focal_y(), focal_y)
+            self.assertEqual(info.center_x(), center_x)
+            self.assertEqual(info.center_y(), center_y)
             self.assertTrue(
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
 
@@ -227,7 +227,7 @@ class TestSensors(unittest.TestCase):
         self.assertIsInstance(camera.depth_camera_optical_pose(), Isometry3)
         self.assertTrue(camera.tree() is tree)
         # N.B. `RgbdCamera` copies the input frame.
-        self.assertEquals(camera.frame().get_name(), frame.get_name())
+        self.assertEqual(camera.frame().get_name(), frame.get_name())
         self._check_ports(camera)
 
         # Test discrete camera.
@@ -236,7 +236,7 @@ class TestSensors(unittest.TestCase):
             camera=camera, period=period, render_label_image=True)
         self.assertTrue(discrete.camera() is camera)
         self.assertTrue(discrete.mutable_camera() is camera)
-        self.assertEquals(discrete.period(), period)
+        self.assertEqual(discrete.period(), period)
         self._check_ports(discrete)
 
         # That we can access the state as images.

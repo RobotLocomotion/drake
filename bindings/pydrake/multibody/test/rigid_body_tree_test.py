@@ -173,7 +173,7 @@ class TestRigidBodyTree(unittest.TestCase):
 
         num_q = num_v = 7
         num_u = tree.get_num_actuators()
-        self.assertEquals(num_u, 1)
+        self.assertEqual(num_u, 1)
         q = np.zeros(num_q)
         v = np.zeros(num_v)
         # Update kinematics.
@@ -184,29 +184,29 @@ class TestRigidBodyTree(unittest.TestCase):
         kinsol_ad = tree.doKinematics(q_ad, v_ad)
         # Sanity checks:
         # - Actuator map.
-        self.assertEquals(tree.B.shape, (num_v, num_u))
+        self.assertEqual(tree.B.shape, (num_v, num_u))
         B_expected = np.zeros((num_v, num_u))
         B_expected[-1] = 1
         self.assertTrue(np.allclose(tree.B, B_expected))
         # - Mass matrix.
         H = tree.massMatrix(kinsol)
         H_ad = tree.massMatrix(kinsol_ad)
-        self.assertEquals(H.shape, (num_v, num_v))
-        self.assertEquals(H_ad.shape, (num_v, num_v))
+        self.assertEqual(H.shape, (num_v, num_v))
+        self.assertEqual(H_ad.shape, (num_v, num_v))
         assert_sane(H)
         self.assertTrue(np.allclose(H[-1, -1], 0.25))
         # - Bias terms.
         C = tree.dynamicsBiasTerm(kinsol, {})
         C_ad = tree.dynamicsBiasTerm(kinsol_ad, {})
-        self.assertEquals(C.shape, (num_v,))
-        self.assertEquals(C_ad.shape, (num_v,))
+        self.assertEqual(C.shape, (num_v,))
+        self.assertEqual(C_ad.shape, (num_v,))
         assert_sane(C)
         # - Inverse dynamics.
         vd = np.zeros(num_v)
         tau = tree.inverseDynamics(kinsol, {}, vd)
         tau_ad = tree.inverseDynamics(kinsol_ad, {}, vd)
-        self.assertEquals(tau.shape, (num_v,))
-        self.assertEquals(tau_ad.shape, (num_v,))
+        self.assertEqual(tau.shape, (num_v,))
+        self.assertEqual(tau_ad.shape, (num_v,))
         assert_sane(tau)
         # - Friction torques.
         friction_torques = tree.frictionTorques(v)

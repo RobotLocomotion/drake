@@ -199,6 +199,12 @@ class BuilderBase {
   /// Gets `angular_tolerance` value.
   virtual double get_angular_tolerance() const = 0;
 
+  /// Gets `scale_length` value.
+  virtual double get_scale_length() const = 0;
+
+  /// Gets `computation_policy` value.
+  virtual ComputationPolicy get_computation_policy() const = 0;
+
   /// Connects `start_spec`'s Endpoint to an end-point linearly displaced from
   /// `start_spec`'s Endpoint.
   ///
@@ -272,11 +278,13 @@ class BuilderFactoryBase {
 
   /// Creates a BuilderBase instance.
   ///
-  /// `lane_width`, `elevation_bounds`, `linear_tolerance` and
-  /// `angular_tolerance` are BuilderBase properties.
+  /// `lane_width`, `elevation_bounds`, `linear_tolerance`,
+  /// `angular_tolerance`, `scale_length` and `computation_policy` are
+  /// BuilderBase properties.
   virtual std::unique_ptr<BuilderBase> Make(
       double lane_width, const api::HBounds& elevation_bounds,
-      double linear_tolerance, double angular_tolerance) const = 0;
+      double linear_tolerance, double angular_tolerance,
+      double scale_length, ComputationPolicy computation_policy) const = 0;
 };
 
 /// Convenient builder class which makes it easy to construct a multilane road
@@ -329,9 +337,12 @@ class Builder : public BuilderBase {
   /// left and right shoulders, number of lanes and lane spacing. The
   /// `elevation_bounds` is applied uniformly to all lanes of every segment.
   /// `linear_tolerance` and `angular_tolerance` specify the respective
-  /// tolerances for the resulting RoadGeometry.
+  /// tolerances for the resulting RoadGeometry. `scale_length` constrains
+  /// the maximum level of detail captured by the resulting RoadGeometry.
+  /// `computation_policy` sets the speed vs. accuracy balance for computations.
   Builder(double lane_width, const api::HBounds& elevation_bounds,
-          double linear_tolerance, double angular_tolerance);
+          double linear_tolerance, double angular_tolerance,
+          double scale_length, ComputationPolicy computation_policy);
 
   /// Gets `lane_width` value.
   double get_lane_width() const override { return lane_width_; }
@@ -346,6 +357,12 @@ class Builder : public BuilderBase {
 
   /// Gets `angular_tolerance` value.
   double get_angular_tolerance() const override { return angular_tolerance_; }
+
+  double get_scale_length() const override { return scale_length_; }
+
+  ComputationPolicy get_computation_policy() const override {
+    return computation_policy_;
+  }
 
   const Connection* Connect(const std::string& id,
                             const LaneLayout& lane_layout,
@@ -465,6 +482,8 @@ class Builder : public BuilderBase {
   api::HBounds elevation_bounds_;
   double linear_tolerance_{};
   double angular_tolerance_{};
+  double scale_length_{};
+  ComputationPolicy computation_policy_{};
   std::vector<std::unique_ptr<Connection>> connections_;
   std::vector<DefaultBranch> default_branches_;
   std::vector<std::unique_ptr<Group>> groups_;
@@ -477,12 +496,13 @@ class BuilderFactory : public BuilderFactoryBase {
 
   BuilderFactory() = default;
 
-  std::unique_ptr<BuilderBase> Make(double lane_width,
-                                    const api::HBounds& elevation_bounds,
-                                    double linear_tolerance,
-                                    double angular_tolerance) const override {
+  std::unique_ptr<BuilderBase> Make(
+      double lane_width, const api::HBounds& elevation_bounds,
+      double linear_tolerance, double angular_tolerance, double scale_length,
+      ComputationPolicy computation_policy) const override {
     return std::make_unique<Builder>(lane_width, elevation_bounds,
-                                     linear_tolerance, angular_tolerance);
+                                     linear_tolerance, angular_tolerance,
+                                     scale_length, computation_policy);
   }
 };
 

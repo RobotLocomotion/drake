@@ -23,20 +23,20 @@ class TestAutoDiffXd(unittest.TestCase):
     def _check_scalar(self, actual, expected):
         if isinstance(actual, bool):
             self.assertTrue(isinstance(expected, bool))
-            self.assertEquals(actual, expected)
+            self.assertEqual(actual, expected)
         elif isinstance(actual, float):
             self.assertTrue(isinstance(expected, float))
-            self.assertEquals(actual, expected)
+            self.assertEqual(actual, expected)
         else:
-            self.assertAlmostEquals(actual.value(), expected.value())
+            self.assertAlmostEqual(actual.value(), expected.value())
             self.assertTrue(
                 (actual.derivatives() == expected.derivatives()).all(),
                 (actual.derivatives(), expected.derivatives()))
 
     def _check_array(self, actual, expected):
         expected = np.array(expected)
-        self.assertEquals(actual.dtype, expected.dtype)
-        self.assertEquals(actual.shape, expected.shape)
+        self.assertEqual(actual.dtype, expected.dtype)
+        self.assertEqual(actual.shape, expected.shape)
         if actual.dtype == object:
             for a, b in zip(actual.flat, expected.flat):
                 self._check_scalar(a, b)
@@ -45,10 +45,10 @@ class TestAutoDiffXd(unittest.TestCase):
 
     def test_scalar_api(self):
         a = AD(1, [1., 0])
-        self.assertEquals(a.value(), 1.)
+        self.assertEqual(a.value(), 1.)
         self.assertTrue((a.derivatives() == [1., 0]).all())
-        self.assertEquals(str(a), "AD{1.0, nderiv=2}")
-        self.assertEquals(repr(a), "<AutoDiffXd 1.0 nderiv=2>")
+        self.assertEqual(str(a), "AD{1.0, nderiv=2}")
+        self.assertEqual(repr(a), "<AutoDiffXd 1.0 nderiv=2>")
         self._check_scalar(a, a)
         # Test construction from `float` and `int`.
         self._check_scalar(AD(1), AD(1., []))
@@ -65,7 +65,7 @@ class TestAutoDiffXd(unittest.TestCase):
         a = AD(1, [1., 0])
         b = AD(2, [0, 1.])
         x = np.array([a, b])
-        self.assertEquals(x.dtype, object)
+        self.assertEqual(x.dtype, object)
         # Idempotent check.
         self._check_array(x, x)
         # Conversion.
@@ -146,7 +146,7 @@ class TestAutoDiffXd(unittest.TestCase):
         ceil_a = algebra.ceil(a)
         floor_a = algebra.floor(a)
         if isinstance(algebra, VectorizedAlgebra):
-            self.assertEquals(ceil_a.dtype, object)
+            self.assertEqual(ceil_a.dtype, object)
             self.assertIsInstance(ceil_a[0], float)
             ceil_a = ceil_a.astype(float)
             floor_a = floor_a.astype(float)
@@ -159,12 +159,12 @@ class TestAutoDiffXd(unittest.TestCase):
         a = self._check_algebra(
             ScalarAlgebra(
                 self._check_scalar, scalar_to_float=lambda x: x.value()))
-        self.assertEquals(type(a), AD)
+        self.assertEqual(type(a), AD)
 
     def test_array_algebra(self):
         a = self._check_algebra(
             VectorizedAlgebra(
                 self._check_array,
                 scalar_to_float=lambda x: x.value()))
-        self.assertEquals(type(a), np.ndarray)
-        self.assertEquals(a.shape, (2,))
+        self.assertEqual(type(a), np.ndarray)
+        self.assertEqual(a.shape, (2,))

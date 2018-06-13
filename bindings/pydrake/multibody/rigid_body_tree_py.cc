@@ -13,6 +13,7 @@
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_actuator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
@@ -152,7 +153,18 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         }, py::arg("body"), py::arg("group_name")="")
     .def_readonly("B", &RigidBodyTree<double>::B)
     .def_readonly("joint_limit_min", &RigidBodyTree<double>::joint_limit_min)
-    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max);
+    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max)
+    // N.B. This will return *copies* of the actuators.
+    // N.B. `def_readonly` implicitly adds `reference_internal` to the getter,
+    // which is necessary since an actuator references a `RigidBody` that is
+    // most likely owned by this tree.
+    .def_readonly("actuators", &RigidBodyTree<double>::actuators)
+    .def("GetActuator", &RigidBodyTree<double>::GetActuator,
+         py_reference_internal)
+    .def("FindBaseBodies", &RigidBodyTree<double>::FindBaseBodies,
+         py::arg("model_instance_id") = -1)
+    .def("Clone", &RigidBodyTree<double>::Clone)
+    .def("__copy__", &RigidBodyTree<double>::Clone);
 
   // This lambda defines RigidBodyTree methods which are defined for a given
   // templated type. The methods are either (a) direct explicit template
@@ -329,6 +341,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   m.def("AddFlatTerrainToWorld", &multibody::AddFlatTerrainToWorld,
         py::arg("tree"), py::arg("box_size") = 1000,
         py::arg("box_depth") = 10);
+
+  py::class_<RigidBodyActuator>(m, "RigidBodyActuator")
+    .def_readonly("name", &RigidBodyActuator::name_)
+    .def_readonly("body", &RigidBodyActuator::body_)
+    .def_readonly("reduction", &RigidBodyActuator::reduction_)
+    .def_readonly("effort_limit_min", &RigidBodyActuator::effort_limit_min_)
+    .def_readonly("effort_limit_max", &RigidBodyActuator::effort_limit_max_);
 }
 
 }  // namespace pydrake

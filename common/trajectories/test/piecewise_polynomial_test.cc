@@ -1,6 +1,5 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
-#include <iostream>
 #include <random>
 #include <vector>
 
@@ -92,6 +91,12 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise2 =
         test::MakeRandomPiecewisePolynomial<CoefficientType>(
             rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise3_not_matching_rows =
+        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+            rows + 1, cols, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise4_not_matching_cols =
+        test::MakeRandomPiecewisePolynomial<CoefficientType>(
+            rows, cols + 1, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
@@ -105,6 +110,36 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
     piecewise1_shifted.shiftRight(shift);
     PiecewisePolynomialType product = piecewise1 * piecewise2;
+
+    const double total_time = segment_times.back() - segment_times.front();
+    PiecewisePolynomialType piecewise2_twice = piecewise2;
+    PiecewisePolynomialType piecewise2_shifted = piecewise2;
+    piecewise2_shifted.shiftRight(total_time);
+
+    // Checks that concatenation of trajectories that are not time
+    // aligned at the connecting ends is a failure.
+    PiecewisePolynomialType piecewise2_shifted_twice = piecewise2;
+    piecewise2_shifted_twice.shiftRight(2. * total_time);
+    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
+        piecewise2_shifted_twice), std::runtime_error);
+
+    // Checks that concatenation of trajectories that have different
+    // row counts is a failure.
+    PiecewisePolynomialType piecewise3_not_matching_rows_shifted =
+        piecewise3_not_matching_rows;
+    piecewise3_not_matching_rows_shifted.shiftRight(total_time);
+    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
+        piecewise3_not_matching_rows_shifted), std::runtime_error);
+
+    // Checks that concatenation of trajectories that have different
+    // col counts is a failure.
+    PiecewisePolynomialType piecewise4_not_matching_cols_shifted =
+        piecewise4_not_matching_cols;
+    piecewise4_not_matching_cols_shifted.shiftRight(total_time);
+    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
+        piecewise4_not_matching_cols_shifted), std::runtime_error);
+
+    piecewise2_twice.ConcatenateInTime(piecewise2_shifted);
 
     uniform_real_distribution<double> uniform(piecewise1.start_time(),
                                               piecewise1.end_time());
@@ -133,6 +168,17 @@ void testBasicFunctionality() {
     EXPECT_TRUE(CompareMatrices(
         product.value(t),
         (piecewise1.value(t).array() * piecewise2.value(t).array()).matrix(),
+        1e-8, MatrixCompareType::absolute));
+
+    // Checks that `piecewise2_twice` is effectively the concatenation of
+    // `piecewise2` and a copy of `piecewise2` that is shifted to the right
+    // (i.e. towards increasing values of t) by an amount equal to its entire
+    // time length. To this end, it verifies that R(tₓ) = R(tₓ + d), where
+    // R(t) = P(t) for t0 <= t <= t1, R(t) = Q(t) for t1 <= t <= t2,
+    // Q(t) = P(t - d) for t1 <= t <= t2, d = t1 - t0 = t2 - t1 and
+    // t0 < tₓ < t1, with P, Q and R functions being piecewise polynomials.
+    EXPECT_TRUE(CompareMatrices(
+        piecewise2_twice.value(t), piecewise2_twice.value(t + total_time),
         1e-8, MatrixCompareType::absolute));
   }
 }

@@ -28,12 +28,10 @@ constexpr double kTime = 12.0;
 
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
-  SystemWithAbstractState() {}
-  ~SystemWithAbstractState() override {}
-
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
-    return std::make_unique<AbstractValues>(PackValue(42));
+  SystemWithAbstractState() {
+    DeclareAbstractState(AbstractValue::Make<int>(42));
   }
+  ~SystemWithAbstractState() override {}
 };
 
 class SystemWithNumericParameters : public LeafSystem<double> {

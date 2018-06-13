@@ -1,6 +1,6 @@
 # -*- python -*-
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 load(
     "@drake//tools/install:install.bzl",
@@ -16,6 +16,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("//tools:drake.bzl", "drake_cc_binary")
 
+# TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
+# such that no downstream users can use it?
 cmake_config(
     cps_file_name = "drake.cps",
     package = "drake",
@@ -40,7 +42,6 @@ drake_cc_binary(
 # Gather all of libdrake.so's dependent headers.
 drake_transitive_installed_hdrs_filegroup(
     name = "libdrake_headers",
-    visibility = [],
     deps = LIBDRAKE_COMPONENTS,
 )
 
@@ -52,6 +53,7 @@ install(
     hdrs = [":libdrake_headers"],
     hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
+    visibility = ["//:__pkg__"],
     deps = [
         ":install_cmake_config",
     ],
@@ -60,7 +62,6 @@ install(
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
-    visibility = [],
     deps = select({
         "//tools:with_gurobi": ["@gurobi"],
         "//conditions:default": [],
@@ -70,7 +71,6 @@ cc_library(
 # Depend on Mosek's shared library iff Mosek is enabled.
 cc_library(
     name = "mosek_deps",
-    visibility = [],
     deps = select({
         "//tools:with_mosek": ["@mosek"],
         "//conditions:default": [],
@@ -80,7 +80,6 @@ cc_library(
 # Depend on the subset of VTK's shared libraries that Drake uses.
 cc_library(
     name = "vtk_deps",
-    visibility = [],
     deps = [
         # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
         # by //sensors.  We should find a way for ":drake_shared_library" to be
@@ -99,7 +98,9 @@ cc_library(
 
 # Provide a cc_library target that provides libdrake.so, its headers, its
 # header-only dependencies, and its required *.so's that are WORKSPACE
-# downloads (such as VTK, Gurobi, etc).
+# downloads (such as VTK, Gurobi, etc). This is aliased by
+# `//:drake_shared_library`, which is what downstream users will consume if
+# they wish to link to `libdrake.so`.
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
 # *.so files for us, without us having to know up-front here which dependencies
@@ -110,18 +111,20 @@ cc_library(
 # write out the "list of libraries directly mentioned in Drake headers" below.
 cc_library(
     name = "drake_shared_library",
+    srcs = [":libdrake.so"],
     hdrs = [":libdrake_headers"],
+    # N.B. To pull in transitive `data` dependencies, we must list
+    # `libdrake.so` as a data target.
+    data = [":libdrake.so"],
     include_prefix = "drake",
     strip_include_prefix = "/",
-    visibility = [
-        "//bindings:__subpackages__",
-        "//examples:__subpackages__",
-    ],
+    visibility = ["//:__pkg__"],
     deps = [
         # The list of depended-on *.so files.
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
+        "//common:drake_marker_shared_library",
         "@dreal",
         "@ignition_math",
         "@ignition_rndf",
@@ -131,8 +134,10 @@ cc_library(
         "@scs//:scsdir",
         "@tinyxml2",
     ] + [
-        # The list of libraries directly mentioned in Drake headers.
+        # The list of depended-on header-only libraries.
+        "@eigen",
         "@fmt",
+        "@stx",
     ],
 )
 

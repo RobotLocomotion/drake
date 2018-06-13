@@ -11,6 +11,10 @@ namespace automotive {
 namespace {
 
 static constexpr double kArcRadius = 25.;
+static constexpr double kLinearTolerance{
+  std::numeric_limits<double>::epsilon()};
+static constexpr double kAngularTolerance{
+  std::numeric_limits<double>::epsilon()};
 
 using maliput::api::GeoPosition;
 using maliput::api::RoadGeometryId;
@@ -22,6 +26,7 @@ using maliput::multilane::EndpointZ;
 using maliput::multilane::EndReference;
 using maliput::multilane::LaneLayout;
 using maliput::multilane::StartReference;
+using maliput::multilane::ComputationPolicy;
 
 class PurePursuitTest : public ::testing::Test {
  protected:
@@ -30,9 +35,7 @@ class PurePursuitTest : public ::testing::Test {
     road_.reset(new maliput::dragway::RoadGeometry(
         maliput::api::RoadGeometryId("Single-Lane Dragway"), 1 /* num_lanes */,
         100 /* length */, 4. /* lane_width */, 0. /* shoulder_width */,
-        5. /* maximum_height */,
-        std::numeric_limits<double>::epsilon() /* linear_tolerance */,
-        std::numeric_limits<double>::epsilon() /* angular_tolerance */));
+        5. /* maximum_height */, kLinearTolerance, kAngularTolerance));
   }
 
   void MakeQuarterCircleRoad() {
@@ -42,7 +45,10 @@ class PurePursuitTest : public ::testing::Test {
     const ArcOffset kCounterClockwiseArc(kArcRadius, M_PI /* arc angle */);
     const EndpointZ kFlat(0., 0., 0., 0.);
     const Endpoint kStartEndpoint{{0., 0., 0.}, kFlat};
-    Builder builder(4. /* lane width */, {0., 5.}, 0.01, 0.01 * M_PI);
+    const double kScaleLength{1.0};
+    Builder builder(
+        4. /* lane width */, {0., 5.}, 0.01, 0.01 * M_PI,
+        kScaleLength, ComputationPolicy::kPreferSpeed);
     builder.Connect("0", kLaneLayout,
                     StartReference().at(kStartEndpoint, Direction::kForward),
                     kCounterClockwiseArc,

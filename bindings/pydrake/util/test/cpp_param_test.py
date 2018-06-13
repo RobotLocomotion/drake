@@ -36,7 +36,7 @@ class TestCppParam(unittest.TestCase):
     def _check_names(self, name_canonical, aliases):
         for alias in aliases:
             actual = get_param_names([alias])[0]
-            self.assertEquals(actual, name_canonical)
+            self.assertEqual(actual, name_canonical)
 
     def test_idempotent(self):
         # Check idempotent mapping for unaliased types.
