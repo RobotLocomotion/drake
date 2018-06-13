@@ -289,6 +289,12 @@ struct ConstraintVelProblemData {
   /// Constructs velocity problem data for a system with a @p gv_dim dimensional
   /// generalized velocity.
   explicit ConstraintVelProblemData(int gv_dim) {
+    Reinitialize(gv_dim);
+  }
+
+  /// Reinitializes the constraint problem data using the specified dimension
+  /// of the generalized velocities.
+  void Reinitialize(int gv_dim) {
     // Set default for non-transpose operators- returns an empty vector.
     auto zero_fn = [](const VectorX<T>&) -> VectorX<T> {
       return VectorX<T>(0);

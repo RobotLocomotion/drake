@@ -37,7 +37,7 @@ drake_cc_library(
     ],
     deps = [
         ":constraint_problem_data",
-        "//solvers:mathematical_program",
+        "//solvers:moby_lcp_solver",
     ],
 )
 
@@ -48,6 +48,8 @@ drake_cc_googletest(
     deps = [
         ":constraint_solver",
         "//examples/rod2d",
+        "//solvers:moby_lcp_solver",
+        "//solvers:unrevised_lemke_solver",
     ],
 )
 
