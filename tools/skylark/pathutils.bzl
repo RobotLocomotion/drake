@@ -36,12 +36,12 @@ def __remove_prefix(path, prefix):
         if prefix[n] == path[n]:
             continue
 
-            # Single-glob matches any (one) path component.
-        elif prefix[n] == "*":
+        # Single-glob matches any (one) path component.
+        if prefix[n] == "*":
             continue
 
-            # Mulit-glob matches one or more components.
-        elif prefix[n] == "**":
+        # Mulit-glob matches one or more components.
+        if prefix[n] == "**":
             # If multi-glob is at the end of the prefix, return the last path
             # component.
             if n + 1 == len(prefix):
@@ -63,9 +63,8 @@ def __remove_prefix(path, prefix):
             # Multi-glob failed to match.
             return None
 
-        else:
-            # Components did not match.
-            return None
+        # Components did not match.
+        return None
 
     return "/".join(path[len(prefix):])
 
