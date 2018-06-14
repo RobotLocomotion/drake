@@ -208,6 +208,8 @@ struct Parameters {
   /// iterations needed to attain the desired level of convergence.
   /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
+
+  double theta_max{M_PI / 3.0};
 };
 
 /// Struct used to store information about the iteration process performed by
@@ -434,7 +436,7 @@ class ImplicitStribeckSolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess);
+  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
   /// @name Retrieving the solution
@@ -477,6 +479,9 @@ class ImplicitStribeckSolver {
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
   void set_solver_parameters(const Parameters parameters) {
+    // cos_theta_max must be updated consistently with the new value of
+    // theta_max.
+    cos_theta_max_ = std::cos(parameters.theta_max);
     parameters_ = parameters;
   }
 
@@ -652,7 +657,7 @@ class ImplicitStribeckSolver {
       EigenPtr<VectorX<T>> v_slip,
       EigenPtr<VectorX<T>> t_hat,
       EigenPtr<VectorX<T>> mu_stribeck,
-      EigenPtr<VectorX<T>> ft);
+      EigenPtr<VectorX<T>> ft) const;
 
   // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
   // normal force fn, friction coefficient mu_stribeck, tangent versor t_hat and
@@ -662,7 +667,7 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const VectorX<T>>& mu_stribeck,
       const Eigen::Ref<const VectorX<T>>& t_hat,
       const Eigen::Ref<const VectorX<T>>& v_slip,
-      std::vector<Matrix2<T>>* dft_dvt);
+      std::vector<Matrix2<T>>* dft_dvt) const;
 
   // Helper method to compute the Newton-Raphson Jacobian, ∇ᵥR, as a function
   // of M, Gt, Jt and dt.
@@ -670,7 +675,16 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const MatrixX<T>>& M,
       const std::vector<Matrix2<T>>& Gt,
       const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
-      EigenPtr<MatrixX<T>> J);
+      EigenPtr<MatrixX<T>> J) const;
+
+  // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
+  // all contact points. The angle change θ is defined by the dot product
+  // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
+  // We'll do so by computing a coefficient 0 < α < 1 so that if the
+  // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
+  // for all contact points.
+  T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
+              const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
 
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
@@ -701,6 +715,9 @@ class ImplicitStribeckSolver {
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
+
+  // Precomputed value of cos(theta_max), used by DirectionChangeLimiter.
+  double cos_theta_max_{std::cos(parameters_.theta_max)};
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
