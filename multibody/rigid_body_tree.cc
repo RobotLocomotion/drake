@@ -3187,13 +3187,13 @@ std::string RigidBodyTree<T>::getBodyOrFrameName(int body_or_frame_id) const {
 }
 
 template <typename T>
-void RigidBodyTree<T>::addDistanceConstraint(int bodyA_index,
-                                             const Eigen::Vector3d& r_AP,
-                                             int bodyB_index,
-                                             const Eigen::Vector3d& r_BQ,
-                                             double distance) {
-  RigidBodyDistanceConstraint dc(bodyA_index, r_AP, bodyB_index, r_BQ,
-                                 distance);
+void RigidBodyTree<T>::addDistanceConstraint(int bodyA_index_in,
+                                             const Eigen::Vector3d& r_AP_in,
+                                             int bodyB_index_in,
+                                             const Eigen::Vector3d& r_BQ_in,
+                                             double distance_in) {
+  RigidBodyDistanceConstraint dc(bodyA_index_in, r_AP_in, bodyB_index_in,
+                                 r_BQ_in, distance_in);
   distance_constraints.push_back(dc);
 }
 
@@ -3223,14 +3223,16 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
   // Constraint is of the form: f = |x| - d* where x is the distance between
   // the two points and d* is the constrained distance.
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
+    // Compute the displacement from point Q (a point on body B) to point P (a
+    // point on body A).
     auto r_QP_B =
         transformPoints(cache,
-                        distance_constraints[i].r_AP_.template cast<Scalar>(),
-                        distance_constraints[i].bodyA_index_,
-                        distance_constraints[i].bodyB_index_) -
-        distance_constraints[i].r_BQ_.template cast<Scalar>();
+                        distance_constraints[i].r_AP.template cast<Scalar>(),
+                        distance_constraints[i].bodyA_index,
+                        distance_constraints[i].bodyB_index) -
+        distance_constraints[i].r_BQ.template cast<Scalar>();
     ret(6 * loops.size() + i) =
-        r_QP_B.norm() - distance_constraints[i].distance_;
+        r_QP_B.norm() - distance_constraints[i].distance;
   }
   return ret;
 }
@@ -3262,16 +3264,18 @@ RigidBodyTree<T>::positionConstraintsJacobian(
   // Relative Distance Constraint
   // Jacobian of the constraint is: ∂f/∂q = (xᵀ J) / |x| where J = ∂x/∂q
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
+    // Compute the displacement from point Q (a point on body B) to point P (a
+    // point on body A).
     auto r_QP_B =
         transformPoints(cache,
-                        distance_constraints[i].r_AP_.template cast<Scalar>(),
-                        distance_constraints[i].bodyA_index_,
-                        distance_constraints[i].bodyB_index_) -
-        distance_constraints[i].r_BQ_.template cast<Scalar>();
+                        distance_constraints[i].r_AP.template cast<Scalar>(),
+                        distance_constraints[i].bodyA_index,
+                        distance_constraints[i].bodyB_index) -
+        distance_constraints[i].r_BQ.template cast<Scalar>();
     auto J = transformPointsJacobian(
-        cache, distance_constraints[i].r_AP_.template cast<Scalar>(),
-        distance_constraints[i].bodyA_index_,
-        distance_constraints[i].bodyB_index_, in_terms_of_qdot);
+        cache, distance_constraints[i].r_AP.template cast<Scalar>(),
+        distance_constraints[i].bodyA_index,
+        distance_constraints[i].bodyB_index, in_terms_of_qdot);
     ret.template middleRows<1>(6 * loops.size() + i) =
         (r_QP_B.transpose() / r_QP_B.norm()) * J;
   }
@@ -3303,20 +3307,22 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
   // = xᵀ/|x| * d(J)/dt * v + d(xᵀ)/dt * J*v/|x| + xᵀ*J*v * d(1/|x|)/dt
   // = xᵀJ̇v/|x| + ẋᵀJv/|x| - ẋᵀxxᵀJv/|x|^3
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
+    // Compute the displacement from point Q (a point on body B) to point P (a
+    // point on body A).
     auto r_QP_B =
         transformPoints(cache,
-                        distance_constraints[i].r_AP_.template cast<Scalar>(),
-                        distance_constraints[i].bodyA_index_,
-                        distance_constraints[i].bodyB_index_) -
-        distance_constraints[i].r_BQ_.template cast<Scalar>();
+                        distance_constraints[i].r_AP.template cast<Scalar>(),
+                        distance_constraints[i].bodyA_index,
+                        distance_constraints[i].bodyB_index) -
+        distance_constraints[i].r_BQ.template cast<Scalar>();
     auto J = transformPointsJacobian(
-        cache, distance_constraints[i].r_AP_.template cast<Scalar>(),
-        distance_constraints[i].bodyA_index_,
-        distance_constraints[i].bodyB_index_, false);
+        cache, distance_constraints[i].r_AP.template cast<Scalar>(),
+        distance_constraints[i].bodyA_index,
+        distance_constraints[i].bodyB_index, false);
     auto Jdotv =
-        transformPointsJacobianDotTimesV(cache, distance_constraints[i].r_AP_,
-                                         distance_constraints[i].bodyA_index_,
-                                         distance_constraints[i].bodyB_index_);
+        transformPointsJacobianDotTimesV(cache, distance_constraints[i].r_AP,
+                                         distance_constraints[i].bodyA_index,
+                                         distance_constraints[i].bodyB_index);
     const VectorX<Scalar> v_QP_B = J * cache.getV();
     auto norm_r_QP_B = r_QP_B.norm();
     ret.template middleRows<1>(6 * loops.size() + i) =

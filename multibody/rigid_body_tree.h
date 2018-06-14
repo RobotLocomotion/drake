@@ -1481,9 +1481,10 @@ class RigidBodyTree {
       Eigen::Transform<Scalar, 3, Eigen::Isometry>* Tframe) const;
   int parseBodyOrFrameID(const int body_or_frame_id) const;
 
-  void addDistanceConstraint(int bodyA_index, const Eigen::Vector3d& r_AP,
-                             int bodyB_index, const Eigen::Vector3d& r_BQ,
-                             double distance);
+  /// For details on parameters see RigidBodyDistanceContraint.
+  void addDistanceConstraint(int bodyA_index_in, const Eigen::Vector3d& r_AP_in,
+                             int bodyB_index_in, const Eigen::Vector3d& r_BQ_in,
+                             double distance_in);
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(

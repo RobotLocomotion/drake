@@ -27,15 +27,13 @@ GTEST_TEST(RigidBodyTreeConstraintTest, TestAddDistanceConstraint) {
   tree->addDistanceConstraint(body1, point1, body2, point2, distance);
   EXPECT_EQ(tree->getNumPositionConstraints(), 1);
 
-  auto dc = tree->distance_constraints[0];
+  const auto& dc = tree->distance_constraints[0];
 
-  EXPECT_EQ(dc.bodyA_index_, body1);
-  EXPECT_EQ(dc.bodyB_index_, body2);
-  EXPECT_TRUE(
-      CompareMatrices(dc.r_AP_, point1, 1e-16, MatrixCompareType::relative));
-  EXPECT_TRUE(
-      CompareMatrices(dc.r_BQ_, point2, 1e-16, MatrixCompareType::relative));
-  EXPECT_NEAR(dc.distance_, distance, 1e-16);
+  EXPECT_EQ(dc.bodyA_index, body1);
+  EXPECT_EQ(dc.bodyB_index, body2);
+  EXPECT_EQ(dc.r_AP, point1);
+  EXPECT_EQ(dc.r_BQ, point2);
+  EXPECT_EQ(dc.distance, distance);
 }
 
 GTEST_TEST(RigidBodyTreeConstraintTest, TestPositionConstraint) {

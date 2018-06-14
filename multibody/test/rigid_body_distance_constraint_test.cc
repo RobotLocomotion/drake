@@ -17,11 +17,11 @@ GTEST_TEST(RigidBodyDistanceConstraintTest, TestInitialization) {
   double distance = 0.5;
 
   RigidBodyDistanceConstraint dc(body1, point1, body2, point2, distance);
-  EXPECT_EQ(dc.bodyA_index_, body1);
-  EXPECT_EQ(dc.bodyB_index_, body2);
-  EXPECT_EQ(dc.r_AP_, point1);
-  EXPECT_EQ(dc.r_BQ_, point2);
-  EXPECT_EQ(dc.distance_, distance);
+  EXPECT_EQ(dc.bodyA_index, body1);
+  EXPECT_EQ(dc.bodyB_index, body2);
+  EXPECT_EQ(dc.r_AP, point1);
+  EXPECT_EQ(dc.r_BQ, point2);
+  EXPECT_EQ(dc.distance, distance);
 }
 
 }  // namespace
