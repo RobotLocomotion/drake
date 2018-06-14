@@ -85,7 +85,7 @@ class CacheEntry {
   @see drake::systems::SystemBase::DeclareCacheEntry() */
   // All the nontrivial parameters here are moved to the CacheEntry which is
   // why they aren't references.
-  CacheEntry(const internal::SystemMessageInterface* owning_subsystem,
+  CacheEntry(const internal::SystemMessageInterface* owning_system,
              CacheIndex index, DependencyTicket ticket, std::string description,
              AllocCallback alloc_function, CalcCallback calc_function,
              std::set<DependencyTicket> prerequisites_of_calc);
@@ -297,7 +297,7 @@ class CacheEntry {
   // Provides an identifying prefix for error messages.
   std::string FormatName(const char* api) const;
 
-  const internal::SystemMessageInterface* const owning_subsystem_;
+  const internal::SystemMessageInterface* const owning_system_;
   const CacheIndex cache_index_;
   const DependencyTicket ticket_;
 

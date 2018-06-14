@@ -1457,6 +1457,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
+    // TODO(sherm1) Use implicit_cast when available (from abseil).
     auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<SystemBase*>(this)

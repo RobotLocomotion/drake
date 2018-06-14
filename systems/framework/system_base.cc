@@ -76,11 +76,7 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
   // Create the output port trackers yᵢ here. Nothing in this System may
   // depend on them; subscribers will be input ports from peer subsystems or
   // an exported output port in the parent Diagram. The associated cache entries
-  // were just created above. If the output port's prerequisite is just a
-  // cache entry in this subsystem, set up that dependency here. For output
-  // ports that have been exported from a child subsystem, defer setting up the
-  // dependency until we're doing inter-subsystem dependencies later in the
-  // Context-allocation process.
+  // were just created above. Any intra-system prerequisites are set up now.
   for (const auto& oport : output_ports_) {
     context.AddOutputPort(oport->get_index(), oport->ticket(),
                           oport->GetPrerequisite());
@@ -106,11 +102,11 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
   }
 }
 
-// The only way for a subsystem to evaluate its own input port is if that
+// The only way for a system to evaluate its own input port is if that
 // port is fixed. In that case the port's value is in the corresponding
 // subcontext and we can just return it. Otherwise, the port obtains its value
-// from some other subsystem and we need our parent's help to get access to
-// that subsystem.
+// from some other system and we need our parent's help to get access to
+// that system.
 const AbstractValue* SystemBase::EvalAbstractInputImpl(
     const char* func, const ContextBase& context,
     InputPortIndex port_index) const {
@@ -138,7 +134,7 @@ void SystemBase::ThrowNegativePortIndex(const char* func,
                                         int port_index) const {
   DRAKE_DEMAND(port_index < 0);
   throw std::out_of_range(
-      fmt::format("{}: negative port index {} is illegal. (Subsystem {})",
+      fmt::format("{}: negative port index {} is illegal. (System {})",
                   FmtFunc(func), port_index, GetSystemPathname()));
 }
 
@@ -146,7 +142,7 @@ void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
                                                InputPortIndex port) const {
   throw std::out_of_range(fmt::format(
       "{}: there is no input port with index {} because there "
-      "are only {} input ports in subsystem {}.",
+      "are only {} input ports in system {}.",
       FmtFunc(func), port, get_num_input_ports(), GetSystemPathname()));
 }
 
@@ -154,7 +150,7 @@ void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
                                                 OutputPortIndex port) const {
   throw std::out_of_range(fmt::format(
       "{}: there is no output port with index {} because there "
-      "are only {} output ports in subsystem {}.",
+      "are only {} output ports in system {}.",
       FmtFunc(func), port, get_num_output_ports(), GetSystemPathname()));
 }
 
@@ -164,7 +160,7 @@ void SystemBase::ThrowNotAVectorInputPort(const char* func,
       "{}: vector port required, but input port[{}] was declared abstract. "
           "Even if the actual value is a vector, use EvalInputValue<V> "
           "instead for an abstract port containing a vector of type V. "
-          "(Subsystem {})",
+          "(System {})",
       FmtFunc(func), port, GetSystemPathname()));
 }
 
@@ -173,7 +169,7 @@ void SystemBase::ThrowInputPortHasWrongType(
     const std::string& actual_type) const {
   throw std::logic_error(fmt::format(
       "{}: expected value of type {} for input port[{}] "
-          "but the actual type was {}. (Subsystem {})",
+          "but the actual type was {}. (System {})",
       FmtFunc(func), expected_type, port, actual_type, GetSystemPathname()));
 }
 
@@ -181,7 +177,7 @@ void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                                             InputPortIndex port) const {
   throw std::logic_error(
       fmt::format("{}: input port[{}] is neither connected nor fixed so "
-                      "cannot be evaluated. (Subsystem {})",
+                      "cannot be evaluated. (System {})",
                   FmtFunc(func), port, GetSystemPathname()));
 }
 

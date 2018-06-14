@@ -188,7 +188,7 @@ class OutputPort : public OutputPortBase {
   /** This is useful for error messages and produces a human-readable
   identification of an offending output port. */
   std::string GetPortIdString() const {
-    return fmt::format("OutputPort[{}] of subsystem {} ({})",
+    return fmt::format("OutputPort[{}] of System {} ({})",
                        this->get_index(),
                        this->get_system_base().GetSystemPathname(),
                        NiceTypeName::RemoveNamespaces(
@@ -265,8 +265,8 @@ template <typename ValueType>
 void OutputPort<T>::ThrowBadValueType(const char* func_name,
                                       const AbstractValue& abstract) const {
   throw std::logic_error(
-      fmt::format("OutputPort::{}(): wrong value type <{}> "
-                  "specified but actual type was <{}> for {}.",
+      fmt::format("OutputPort::{}(): wrong value type {} "
+                  "specified but actual type was {} for {}.",
                   func_name, NiceTypeName::Get<ValueType>(),
                   abstract.GetNiceTypeName(), GetPortIdString()));
 }

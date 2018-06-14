@@ -1647,6 +1647,7 @@ class LeafSystem : public System<T> {
     // Create and install the port. Note that it has a separate ticket from
     // the cache entry; the port's tracker will be subscribed to the cache
     // entry's tracker when a Context is created.
+    // TODO(sherm1) Use implicit_cast when available (from abseil).
     auto port = std::make_unique<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)

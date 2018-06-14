@@ -9,15 +9,15 @@ namespace systems {
 OutputPortBase::~OutputPortBase() = default;
 
 OutputPortBase::OutputPortBase(
-    SystemBase* owning_subsystem,
+    SystemBase* owning_system,
     OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
     int size)
-    : owning_subsystem_(*owning_subsystem),
+    : owning_system_(*owning_system),
       index_(index),
       ticket_(ticket),
       data_type_(data_type),
       size_(size) {
-  DRAKE_DEMAND(owning_subsystem != nullptr);
+  DRAKE_DEMAND(owning_system != nullptr);
   if (size_ == kAutoSize)
     DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
 }

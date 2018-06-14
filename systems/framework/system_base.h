@@ -49,7 +49,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // intent that the label could be used programmatically.
   const std::string& get_name() const { return name_; }
 
-  /** Returns a human-readable name for this subsystem, for use in messages and
+  /** Returns a human-readable name for this system, for use in messages and
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
   currently just "_" (a lone underscore). */
@@ -418,9 +418,9 @@ class SystemBase : public internal::SystemMessageInterface {
 
   Use these tickets to declare well-known sources as prerequisites of a
   downstream computation such as an output port, derivative, update, or cache
-  entry. The ticket numbers for these sources are the same for all subsystems.
+  entry. The ticket numbers for these sources are the same for all systems.
   For time and accuracy they refer to the same global resource; otherwise they
-  refer to the specified sources within the referencing subsystem.
+  refer to the specified sources within the referencing system.
 
   A dependency ticket for a more specific resource (a particular input or
   output port, a discrete variable group, abstract state variable, a parameter,
@@ -445,13 +445,13 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating dependence on time. This is the same ticket
-  for all subsystems and refers to the same time value. */
+  for all systems and refers to the same time value. */
   static DependencyTicket time_ticket() {
     return DependencyTicket(internal::kTimeTicket);
   }
 
   /** Returns a ticket indicating dependence on the accuracy setting in the
-  Context. This is the same ticket for all subsystems and refers to the same
+  Context. This is the same ticket for all systems and refers to the same
   accuracy value. */
   static DependencyTicket accuracy_ticket() {
     return DependencyTicket(internal::kAccuracyTicket);
@@ -495,7 +495,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating dependence on _all_ state variables x in this
-  subsystem, including continuous variables xc, discrete (numeric) variables xd,
+  system, including continuous variables xc, discrete (numeric) variables xd,
   and abstract state variables xa. This does not imply dependence on time,
   parameters, or inputs; those must be specified separately. If you mean to
   express dependence on all possible value sources, use all_sources_ticket()
@@ -543,13 +543,13 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating dependence on _all_ parameters p in this
-  subsystem, including numeric parameters pn, and abstract parameters pa. */
+  system, including numeric parameters pn, and abstract parameters pa. */
   static DependencyTicket all_parameters_ticket() {
     return DependencyTicket(internal::kAllParametersTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ input ports u of this
-  subsystem. */
+  system. */
   static DependencyTicket all_input_ports_ticket() {
     return DependencyTicket(internal::kAllInputPortsTicket);
   }
@@ -580,11 +580,13 @@ class SystemBase : public internal::SystemMessageInterface {
   //@}
 
  protected:
+  /** (Internal use only) Default constructor. */
   SystemBase() = default;
 
-  /** Adds an already-constructed input port to this System. Insists that the
-  port already contains a reference to this System, and that the port's index is
-  already set to the next available input port index for this System. */
+  /** (Internal use only) Adds an already-constructed input port to this System.
+  Insists that the port already contains a reference to this System, and that
+  the port's index is already set to the next available input port index for
+  this System. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddInputPort(std::unique_ptr<InputPortBase> port) {
@@ -594,9 +596,10 @@ class SystemBase : public internal::SystemMessageInterface {
     input_ports_.push_back(std::move(port));
   }
 
-  /** Adds an already-constructed output port to this System. Insists that the
-  port already contains a reference to this System, and that the port's index is
-  already set to the next available output port index for this System. */
+  /** (Internal use only) Adds an already-constructed output port to this
+  System. Insists that the port already contains a reference to this System, and
+  that the port's index is already set to the next available output port index
+  for this System. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
@@ -606,22 +609,22 @@ class SystemBase : public internal::SystemMessageInterface {
     output_ports_.push_back(std::move(port));
   }
 
-  /** Returns a pointer to the service interface of the immediately enclosing
-  Diagram if one has been set, otherwise nullptr. */
+  /** (Internal use only) Returns a pointer to the service interface of the
+  immediately enclosing Diagram if one has been set, otherwise nullptr. */
   const internal::SystemParentServiceInterface* get_parent_service() const {
     return parent_service_;
   }
 
-  /** Assigns the next unused dependency ticket number, unique only within a
-  particular subsystem. Each call to this method increments the ticket
-  number. */
+  /** (Internal use only) Assigns the next unused dependency ticket number,
+  unique only within a particular system. Each call to this method increments
+  the ticket number. */
   DependencyTicket assign_next_dependency_ticket() {
     return next_available_ticket_++;
   }
 
-  /** Declares that `parent_service` is the service interface of the Diagram
-  that owns this subsystem. Aborts if the parent service has already been set to
-  something else. */
+  /** (Internal use only) Declares that `parent_service` is the service
+  interface of the Diagram that owns this subsystem. Aborts if the parent
+  service has already been set to something else. */
   // Use static method so Diagram can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
@@ -632,22 +635,22 @@ class SystemBase : public internal::SystemMessageInterface {
     child->set_parent_service(parent_service);
   }
 
-  /** Allows Diagram to use private MakeContext() to invoke the same method
-  on its children. */
+  /** (Internal use only) Allows Diagram to use private MakeContext() to invoke
+  the same method on its children. */
   static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
     return system.MakeContext();
   }
 
-  /** Allows Diagram to use its private ValidateAllocatedContext() to invoke the
-  same method on its children. */
+  /** (Internal use only) Allows Diagram to use its private
+  ValidateAllocatedContext() to invoke the same method on its children. */
   static void ValidateAllocatedContext(const SystemBase& system,
                                        const ContextBase& context) {
     system.ValidateAllocatedContext(context);
   }
 
-  /** Shared code for updating an input port and returning a pointer to its
-  abstract value, or nullptr if the port is not connected. `func` should
-  be the user-visible API function name obtained with __func__. */
+  /** (Internal use only) Shared code for updating an input port and returning a
+  pointer to its abstract value, or nullptr if the port is not connected. `func`
+  should be the user-visible API function name obtained with __func__. */
   const AbstractValue* EvalAbstractInputImpl(const char* func,
                                              const ContextBase& context,
                                              InputPortIndex port_index) const;
@@ -688,10 +691,10 @@ class SystemBase : public internal::SystemMessageInterface {
   [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
                                                InputPortIndex port_index) const;
 
-  /** Returns the InputPortBase at index `port_index`, throwing
-  std::out_of_range we don't like the port index. The name of the public API
-  method that received the bad index is provided in `func` and is included
-  in the error message. */
+  /** (Internal use only) Returns the InputPortBase at index `port_index`,
+  throwing std::out_of_range we don't like the port index. The name of the
+  public API method that received the bad index is provided in `func` and is
+  included in the error message. */
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
                                                int port_index) const {
     if (port_index < 0)
@@ -702,10 +705,10 @@ class SystemBase : public internal::SystemMessageInterface {
     return *input_ports_[port];
   }
 
-  /** Returns the OutputPortBase at index `port_index`, throwing
-  std::out_of_range we don't like the port index. The name of the public API
-  method that received the bad index is provided in `func` and is included
-  in the error message. */
+  /** (Internal use only) Returns the OutputPortBase at index `port_index`,
+  throwing std::out_of_range we don't like the port index. The name of the
+  public API method that received the bad index is provided in `func` and is
+  included in the error message. */
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
                                                  int port_index) const {
     if (port_index < 0)
@@ -783,7 +786,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // The enclosing Diagram. Null/invalid when this is the root system.
   const internal::SystemParentServiceInterface* parent_service_{nullptr};
 
-  // Name of this subsystem.
+  // Name of this system.
   std::string name_;
 };
 

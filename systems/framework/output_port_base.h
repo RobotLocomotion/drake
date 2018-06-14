@@ -43,7 +43,7 @@ class OutputPortBase {
   for a diagram output port this will be the diagram, not the leaf system whose
   output port was forwarded. */
   const SystemBase& get_system_base() const {
-    return owning_subsystem_;
+    return owning_system_;
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -58,7 +58,7 @@ class OutputPortBase {
   /** Provides derived classes the ability to set the base class members at
   construction.
 
-  @param owning_subsystem
+  @param owning_system
     The System that owns this output port.
   @param index
     The index to be assigned to this OutputPort.
@@ -69,12 +69,12 @@ class OutputPortBase {
   @param size
     If the port described is vector-valued, the number of elements expected,
     otherwise ignored. */
-  OutputPortBase(SystemBase* owning_subsystem,
+  OutputPortBase(SystemBase* owning_system,
                  OutputPortIndex index, DependencyTicket ticket,
                  PortDataType data_type, int size);
 
   SystemBase& get_mutable_system_base() {
-    return owning_subsystem_;
+    return owning_system_;
   }
 
   /** Concrete output ports must implement this to return the prerequisite
@@ -84,7 +84,7 @@ class OutputPortBase {
 
  private:
   // Associated System and System resources.
-  SystemBase& owning_subsystem_;
+  SystemBase& owning_system_;
   const OutputPortIndex index_;
   const DependencyTicket ticket_;
 

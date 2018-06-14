@@ -24,6 +24,11 @@ namespace {
 
 const int kSize = 3;
 
+// Note that Systems in this file are derived directly from drake::System for
+// testing purposes. User Systems should be derived only from LeafSystem which
+// handles much of the bookkeeping you'll see here, and won't need to call
+// methods that are intended only for internal use.
+
 // A shell System to test the default implementations.
 class TestSystem : public System<double> {
  public:
@@ -71,6 +76,8 @@ class TestSystem : public System<double> {
         "null output port",
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});
+    // TODO(sherm1) Use implicit_cast when available (from abseil). Several
+    // places in this test.
     auto port = std::make_unique<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
