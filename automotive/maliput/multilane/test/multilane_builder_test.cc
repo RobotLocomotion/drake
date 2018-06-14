@@ -667,7 +667,7 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
 //
 // theta_dot = L * sin(-atan(z_dot))
 //
-// theta_dot constants in tests below where computed Octave using previous
+// theta_dot constants in tests below where computed in Octave using previous
 // expression.
 class MultilaneBuilderPrimitiveContinuityConstraintTest
     : public ::testing::Test {

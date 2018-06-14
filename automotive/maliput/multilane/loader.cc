@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include <map>
+#include <regex>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -20,23 +21,29 @@ namespace maliput {
 namespace multilane {
 namespace {
 
-// String literals used several times to parse endpoints. The string reference
-// must take one of the following formats:
-//
-// - Points:        points.P_ID.<forward|reverse>
-// - Connections:   connections.C_ID.<start|end>.<ref|LANE_ID>.<forward|reverse>
-//
-// Where:
-// - P_ID is the ID of the Endpoint in "points" YAML map.
-// - C_ID is the ID of the Connection.
-// - LANE_ID is a non negative integer that refers to C_ID Connection's lane.
-const char kConnections[]{"connections."};
-const char kPoints[]{"points."};
-const char kReference[]{".ref."};
-const char kStartKey[]{".start."};
-const char kEndKey[]{".end."};
-const char kForward[]{".forward"};
-const char kReverse[]{".reverse"};
+// Defines if the endpoint refers to "points" map or one of the connection
+// points.
+enum class ReferenceType {
+  kPoint,
+  kConnection,
+};
+
+// Holds the parsed information of point reference.
+struct ParsedReference {
+  // Type of endpoint.
+  ReferenceType type;
+  // When `type` == kPoint, it is ID of an Endpoint in "points".
+  // When `type` == kConnection, it is the ID of a Connection.
+  std::string id;
+  // Endpoint's direction.
+  Direction direction;
+  // When `type` == kConnection, is one of the extents of the Connection.
+  // Otherwise, it must be nullopt.
+  optional<api::LaneEnd::Which> end;
+  // When `type` == kConnection, is `id` connection's lane index. Otherwise, it
+  // must be nullopt.
+  optional<int> lane_id;
+};
 
 // Converts `degrees` angle into radians.
 double deg_to_rad(double degrees) { return degrees * M_PI / 180.; }
@@ -158,76 +165,97 @@ LaneLayout ResolveLaneLayout(const YAML::Node& node,
   return LaneLayout(left_shoulder, right_shoulder, num_lanes, ref_lane, r_ref);
 }
 
-// Looks for the Endpoint in `point_catalog` given `ref` description. `ref`
-// should be a bare Endpoint in "points" YAML map. Either ".forward" or
-// ".reverse" keyword must be present.
+// Looks for the Endpoint in `point_catalog` given `endpoint_key` description.
+// `endpoint_key` should be a bare Endpoint in "points" YAML map. Either
+// ".forward" or ".reverse" keyword must be present.
 // @return An optional<Endpoint> with the Endpoint or nullopt if it is not
 // found inside `point_catalog`.
 optional<Endpoint> FindEndpointInCatalog(
-    const std::string& ref,
+    const std::string& endpoint_key,
     const std::map<std::string, Endpoint>& point_catalog) {
-  const std::string::size_type forward_pos = ref.rfind(kForward);
-  const std::string::size_type reverse_pos = ref.rfind(kReverse);
-  // Either ".forward" or ".reverse" must be present.
-  DRAKE_DEMAND((reverse_pos != std::string::npos) !=
-               (forward_pos != std::string::npos));
-
-  const std::string catalog_reference = reverse_pos != std::string::npos
-                                            ? ref.substr(0, reverse_pos)
-                                            : ref.substr(0, forward_pos);
-  auto it = point_catalog.find(catalog_reference);
+  auto it = point_catalog.find(endpoint_key);
   return it == point_catalog.end() ? nullopt : optional<Endpoint>(it->second);
 }
 
-// Looks for the Connection in `connection_catalog` given `endpoint_key`
-// description. `endpoint_key` should be the token specified to reference a
+// Looks for the Connection in `connection_catalog` given `connection_key`
+// description. `connection_key` should be the token specified to reference a
 // connection, its reference curve or one of its lanes, the end and the
 // direction.
 // @return An optional<const Connection*> with the Connection or nullopt if it
 // is not found inside `connection_catalog`.
 optional<const Connection*> FindConnectionInCatalog(
-    const std::string& endpoint_key,
+    const std::string& connection_key,
     const std::map<std::string, const Connection*>& connection_catalog) {
-  const std::string::size_type connection_pos = endpoint_key.find(kConnections);
-  DRAKE_DEMAND(connection_pos != std::string::npos);
-
-  const std::string::size_type start_pos = endpoint_key.find(kStartKey);
-  const std::string::size_type end_pos = endpoint_key.find(kEndKey);
-  // Either ".start." or ".end." must be present.
-  DRAKE_DEMAND((start_pos != std::string::npos) !=
-               (end_pos != std::string::npos));
-  const std::string::size_type end_connection_id_pos =
-      std::string::npos != start_pos ? start_pos : end_pos;
-
-  const std::string connection_id =
-      endpoint_key.substr(std::strlen(kConnections),
-                          end_connection_id_pos - std::strlen(kConnections));
-  return connection_catalog.find(connection_id) == connection_catalog.end()
+  return connection_catalog.find(connection_key) == connection_catalog.end()
              ? nullopt
              : optional<const Connection*>(
-                   connection_catalog.at(connection_id));
+                   connection_catalog.at(connection_key));
 }
 
-// Returns the Direction that `endpoint_key` sets to the Endpoint / EndpointZ.
-Direction ResolveDirection(const std::string& endpoint_key) {
-  const std::string::size_type forward_pos = endpoint_key.rfind(kForward);
-  const std::string::size_type reverse_pos = endpoint_key.rfind(kReverse);
-  // Either ".forward" or ".reverse" must be present.
-  DRAKE_DEMAND((reverse_pos != std::string::npos) !=
-               (forward_pos != std::string::npos));
-  return forward_pos != std::string::npos ? Direction::kForward
-                                          : Direction::kReverse;
+// Returns the Direction that `direction_key` sets to the Endpoint / EndpointZ.
+Direction ResolveDirection(const std::string& direction_key) {
+  if (direction_key == "forward") {
+    return Direction::kForward;
+  } else if (direction_key == "reverse") {
+    return Direction::kReverse;
+  } else {
+    DRAKE_ABORT();
+  }
 }
 
-// Returns the Direction that `endpoint_key` sets to the Endpoint / EndpointZ.
-api::LaneEnd::Which ResolveEnd(const std::string& endpoint_key) {
-  const std::string::size_type start_pos = endpoint_key.find(kStartKey);
-  const std::string::size_type end_pos = endpoint_key.find(kEndKey);
-  // Either ".start." or ".end." must be present.
-  DRAKE_DEMAND((start_pos != std::string::npos) !=
-               (end_pos != std::string::npos));
-  return start_pos != std::string::npos ? api::LaneEnd::Which::kStart
-                                        : api::LaneEnd::Which::kFinish;
+// Returns the Direction that `end_key` sets to the Endpoint / EndpointZ.
+api::LaneEnd::Which ResolveEnd(const std::string& end_key) {
+  if (end_key == "start.") {
+    return api::LaneEnd::Which::kStart;
+  } else if (end_key == "end.") {
+    return api::LaneEnd::Which::kFinish;
+  } else {
+    DRAKE_ABORT();
+  }
+}
+
+// Returns a ParsedReference structure by extracting keywords from
+// `endpoint_key`.
+//
+// `endpoint_key` must match one of the following formats:
+//
+// - Points:        points.P_ID.<forward|reverse>
+// - Connections:   connections.C_ID.<start|end>.<ref|LANE_ID>.<forward|reverse>
+//
+// Where:
+// - P_ID is the ID of the Endpoint in "points" YAML map.
+// - C_ID is the ID of the Connection.
+// - LANE_ID is a non negative integer that refers to C_ID Connection's lane.
+ParsedReference ResolveEndpointReference(const std::string& endpoint_key) {
+  ParsedReference parsed_reference{};
+  static const std::regex kPointsPattern{
+      "^(points.)((?:[\\w\\-_]+\\.)+)(forward|reverse)$",
+      std::regex::ECMAScript};
+  static const std::regex kConnectionsPattern{
+      "^(connections.)((?:[\\w\\-_]+\\.)+)(start.|end.)((ref|\\d+)\\.)+"
+      "(forward|reverse)$",
+      std::regex::ECMAScript};
+  std::smatch pieces_match;
+  if (std::regex_match(endpoint_key, pieces_match, kPointsPattern)) {
+    parsed_reference.type = ReferenceType::kPoint;
+    parsed_reference.id =
+        pieces_match[2].str().substr(0, pieces_match[2].str().size() - 1);
+    parsed_reference.direction = ResolveDirection(pieces_match[3].str());
+  } else if (std::regex_match(endpoint_key, pieces_match,
+                              kConnectionsPattern)) {
+    parsed_reference.type = ReferenceType::kConnection;
+    parsed_reference.id =
+        pieces_match[2].str().substr(0, pieces_match[2].str().size() - 1);
+    parsed_reference.direction = ResolveDirection(pieces_match[6].str());
+    parsed_reference.end = {ResolveEnd(pieces_match[3].str())};
+    // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
+    //                       the lane ID.
+    DRAKE_DEMAND(pieces_match[4].str() == "ref.");
+    parsed_reference.lane_id = {};
+  } else {
+    DRAKE_ABORT();
+  }
+  return parsed_reference;
 }
 
 // Checks that `node` is a sequence of two elements. "ref" or "lane.NB"
@@ -249,33 +277,27 @@ optional<StartReference::Spec> ResolveEndpoint(
   //                       lane ID.
   DRAKE_DEMAND(node[0].as<std::string>() == "ref");
   DRAKE_DEMAND(node[1].IsScalar());
-  const std::string endpoint_key = node[1].as<std::string>();
 
-  // Identifies if it's querying an Endpoint from "points" or from a Connection.
-  const std::string::size_type point_pos = endpoint_key.find(kPoints);
-  if (point_pos != std::string::npos && point_pos == 0) {
-    // Endpoint in "points".
+  const std::string endpoint_key = node[1].as<std::string>();
+  const ParsedReference parsed_reference =
+      ResolveEndpointReference(endpoint_key);
+
+  if (parsed_reference.type == ReferenceType::kPoint) {
     optional<Endpoint> endpoint =
-        FindEndpointInCatalog(endpoint_key, point_catalog);
+        FindEndpointInCatalog(parsed_reference.id, point_catalog);
     DRAKE_DEMAND(endpoint.has_value());
-    return {
-        StartReference().at(endpoint.value(), ResolveDirection(endpoint_key))};
-  }
-  const std::string::size_type connection_pos = endpoint_key.find(kConnections);
-  if (connection_pos != std::string::npos && connection_pos == 0) {
-    // Endpoint from a connection.
+    return {StartReference().at(endpoint.value(), parsed_reference.direction)};
+  } else if (parsed_reference.type == ReferenceType::kConnection) {
     optional<const Connection*> connection =
-        FindConnectionInCatalog(endpoint_key, connection_catalog);
+        FindConnectionInCatalog(parsed_reference.id, connection_catalog);
     if (!connection) {
       return {};
     }
-    const std::string::size_type reference_pos = endpoint_key.find(kReference);
     // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
     //                       the lane ID.
-    DRAKE_DEMAND(reference_pos != std::string::npos);
-
-    return {StartReference().at(*connection.value(), ResolveEnd(endpoint_key),
-                                ResolveDirection(endpoint_key))};
+    return {StartReference().at(*connection.value(),
+                                parsed_reference.end.value(),
+                                parsed_reference.direction)};
   }
   DRAKE_ABORT();
 }
@@ -306,43 +328,29 @@ optional<EndReference::Spec> ResolveEndpointZ(
     return {EndReference().z_at(ParseEndpointZ(node[1]), Direction::kForward)};
   } else if (node[1].IsScalar()) {
     const std::string endpoint_key = node[1].as<std::string>();
-    // Identifies if it's querying an Endpoint from "points" or from a
-    // Connection.
-    const std::string::size_type point_pos = endpoint_key.find(kPoints);
-    if (point_pos != std::string::npos && point_pos == 0) {
-      // Endpoint in "points".
+    const ParsedReference parsed_reference =
+        ResolveEndpointReference(endpoint_key);
+
+    if (parsed_reference.type == ReferenceType::kPoint) {
       optional<Endpoint> endpoint =
-          FindEndpointInCatalog(endpoint_key, point_catalog);
+          FindEndpointInCatalog(parsed_reference.id, point_catalog);
       DRAKE_DEMAND(endpoint.has_value());
       return {EndReference().z_at(endpoint.value().z(),
-                                  ResolveDirection(endpoint_key))};
-    }
-    const std::string::size_type connection_pos =
-        endpoint_key.find(kConnections);
-    if (connection_pos != std::string::npos && connection_pos == 0) {
-      // Endpoint from a connection.
+                                  parsed_reference.direction)};
+    } else if (parsed_reference.type == ReferenceType::kConnection) {
       optional<const Connection*> connection =
-          FindConnectionInCatalog(endpoint_key, connection_catalog);
+          FindConnectionInCatalog(parsed_reference.id, connection_catalog);
       if (!connection) {
         return {};
       }
-      const std::string::size_type reference_pos =
-          endpoint_key.find(kReference);
       // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
       //                       the lane ID.
-      DRAKE_DEMAND(reference_pos != std::string::npos);
-      return {EndReference().z_at(*connection.value(), ResolveEnd(endpoint_key),
-                                  ResolveDirection(endpoint_key))};
+      return {EndReference().z_at(*connection.value(),
+                                  parsed_reference.end.value(),
+                                  parsed_reference.direction)};
     }
   }
   DRAKE_ABORT();
-}
-
-// Returns a string with the following format:
-//
-// points.<`point_name`>
-std::string PointsKey(const std::string& point_name) {
-  return kPoints + point_name;
 }
 
 // Parses `points` YAML node to resolve all the endpoints in the collection.
@@ -354,8 +362,7 @@ void ParseEndpointsFromPoints(const YAML::Node& points,
   DRAKE_DEMAND(points.IsMap());
   DRAKE_DEMAND(point_catalog != nullptr);
   for (const auto& p : points) {
-    (*point_catalog)[PointsKey(p.first.as<std::string>())] =
-        ParseEndpoint(p.second);
+    (*point_catalog)[p.first.as<std::string>()] = ParseEndpoint(p.second);
   }
 }
 
@@ -405,8 +412,7 @@ const Connection* MaybeMakeConnection(
   //                     EndLane::Spec.
   optional<EndReference::Spec> end_spec = ResolveEndpointZ(
       node["explicit_end"] ? node["explicit_end"] : node["z_end"],
-      point_catalog,
-      connection_catalog);
+      point_catalog, connection_catalog);
   if (!end_spec.has_value()) {
     return nullptr;
   }  // "Try to resolve later."

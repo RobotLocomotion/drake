@@ -444,9 +444,8 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
           "s5", Matches(LaneLayout(kDefaultLeftShoulder, kDefaultRightShoulder,
                                    kTwoLanes, kRefLane, -5.),
                         kZeroTolerance),
-          Matches(
-              StartReference().at(kEndpointB, Direction::kForward),
-              kLinearTolerance),
+          Matches(StartReference().at(kEndpointB, Direction::kForward),
+                  kLinearTolerance),
           Matches(ArcOffset(20., -M_PI), kLinearTolerance, kAngularTolerance),
           Matches(
               EndReference().z_at(kFlatZWithoutThetaDot, Direction::kForward),
