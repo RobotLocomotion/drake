@@ -209,6 +209,19 @@ struct Parameters {
   /// Typical values lie within the 10⁻³ - 10⁻² range.
   double relative_tolerance{1.0e-2};
 
+  /// (Advanced) ImplicitStribeckSolver limits large angular changes between
+  /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
+  /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+  /// To aid convergence, ImplicitStribeckSolver, limits this angular change to
+  /// `theta_max`. Please refer to the documentation for ImplicitStribeckSolver
+  /// for further details.
+  /// Small values of `theta_max` will result in a larger number of iterations
+  /// of the solver for situations in which large angular changes occur (sudden
+  /// transients or impacts). Values of `theta_max` close to π/2 allow for a
+  /// faster convergence for problems with sudden transitions to/from stiction.
+  /// Large values of `theta_max` however might lead to non-convergence of the
+  /// solver. We choose a conservative number by default that we found to work
+  /// well in most practical problems of interest.
   double theta_max{M_PI / 3.0};
 };
 
