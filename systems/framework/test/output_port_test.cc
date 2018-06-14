@@ -73,14 +73,17 @@ class LeafOutputPortTest : public ::testing::Test {
  protected:
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
+  // TODO(sherm1) Use implicit_cast when available (from abseil).
   LeafOutputPort<double> absport_general_{
-      &dummy_, static_cast<SystemBase*>(&dummy_),
+      &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
+      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry(
           "absport", alloc_string, calc_string)};
   LeafOutputPort<double> vecport_general_{
-      &dummy_, static_cast<SystemBase*>(&dummy_),
+      &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
+      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
       &dummy_.DeclareCacheEntry(
@@ -136,8 +139,10 @@ unique_ptr<AbstractValue> alloc_null() {
 // The null check is done in all builds.
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
+  // TODO(sherm1) Use implicit_cast when available (from abseil).
   LeafOutputPort<double> null_port{
-      &dummy_, static_cast<SystemBase*>(&dummy_),
+      &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
+      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,
@@ -158,7 +163,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
-      "OutputPort::Calc(): expected.*std::string.*got.*int.*");
+      "OutputPort::Calc().*expected.*std::string.*got.*int.*");
 
   // The vector port is a MyVector<3,double>, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();

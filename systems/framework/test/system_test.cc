@@ -71,6 +71,8 @@ class TestSystem : public System<double> {
         "null output port",
         [] { return Value<int>::Make(0); },
         [](const ContextBase&, AbstractValue*) {});
+    // TODO(sherm1) Use implicit_cast when available (from abseil). Several
+    // places in this test.
     auto port = std::make_unique<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
