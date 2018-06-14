@@ -470,7 +470,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "rigid_body_distance_constraint_test",
-    srcs = ["test/rigid_body_distance_constraint_test.cc"],
     deps = [
         ":rigid_body_distance_constraint",
         "//common/test_utilities:eigen_matrix_compare",
