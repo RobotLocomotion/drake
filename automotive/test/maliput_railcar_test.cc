@@ -463,7 +463,7 @@ TEST_F(MaliputRailcarTest, StateAppearsInOutputMonolane) {
     const double expected_x = kCurvedRoadRadius * std::sin(45. / 180. * M_PI);
     const double expected_y = kCurvedRoadRadius -
         kCurvedRoadRadius * std::cos(45. / 180. * M_PI);
-    const RollPitchYaw<double> rpy(0, 0, M_PI_4);
+    const math::RollPitchYaw<double> rpy(0, 0, M_PI_4);
     const Eigen::Vector3d xyz(expected_x, expected_y, 0 /* expected z */);
     expected_pose.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
   }
