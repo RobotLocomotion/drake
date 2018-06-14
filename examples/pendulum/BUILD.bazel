@@ -137,7 +137,6 @@ drake_cc_binary(
     deps = [
         ":pendulum_plant",
         ":pendulum_vector_types",
-        "@fmt",
     ],
 )
 
