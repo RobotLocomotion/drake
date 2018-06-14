@@ -1,0 +1,57 @@
+namespace : "drake::automotive"
+
+# The values below are representative of the Stanford X1 research testbed
+# vehicle (from Bobier 2012).
+
+element {
+    name: "mass"
+    doc: "Mass of X1 vehicle."
+    doc_units: "kg" default_value : "1823.0"
+}
+element {
+    name: "izz"
+    doc: "moment of inertia."
+    doc_units: "kgm^2"
+    default_value: "2000.0"
+}
+element {
+    name: "c_alpha_f"
+    doc: "Front cornering stiffness."
+    doc_units: "N/rad"
+    default_value: "115000"
+}
+element {
+    name: "c_alpha_r"
+    doc: "Rear cornering stiffness."
+    doc_units: "N/rad"
+    default_value: "155000"
+}
+element {
+    name: "mu"
+    doc: "Coefficient of friction between tire and road surface."
+    doc_units: "-"
+    default_value: "0.55"
+}
+element {
+    name: "Lf"
+    doc: "Distance from front axle to control point."
+    doc_units: "m"
+    default_value: "1.54"
+}
+element {
+    name: "Lb"
+    doc: "Distance from rear axle to control point."
+    doc_units: "m"
+    default_value: "1.21"
+}
+element {
+    name: "h_cm"
+    doc: "height of vehicle COM (unmeasured value)."
+    doc_units: "m"
+    default_value: "0.30"
+}
+element {
+    name: "gravity"
+    doc: "An approximate value for gravitational acceleration."
+    doc_units: "m/s^2" default_value : "9.81"
+}

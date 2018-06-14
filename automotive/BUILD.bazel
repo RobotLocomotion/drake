@@ -82,6 +82,9 @@ drake_cc_vector_gen_library(
         "pure_pursuit_params.named_vector",
         "simple_car_params.named_vector",
         "trajectory_car_params.named_vector",
+        "dynamic_bicycle_car_state.named_vector",
+        "dynamic_bicycle_car_input.named_vector",
+        "dynamic_bicycle_car_params.named_vector",
     ] + _LCM_ENABLED_NAMED_VECTORS,
 )
 
@@ -112,7 +115,6 @@ drake_cc_library(
     hdrs = ["bicycle_car.h"],
     deps = [
         ":generated_vectors",
-        "//common:symbolic",
         "//systems/framework:leaf_system",
     ],
 )
@@ -185,6 +187,17 @@ drake_cc_library(
         ":generated_vectors",
         "//common:default_scalars",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "dynamic_bicycle_car",
+    srcs = ["dynamic_bicycle_car.cc"],
+    hdrs = ["dynamic_bicycle_car.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":generated_vectors",
+        "//systems/framework",
     ],
 )
 
@@ -639,6 +652,16 @@ drake_cc_googletest(
         "//systems/framework/test_utilities",
     ],
 )
+
+drake_cc_googletest(
+    name = "dynamic_bicycle_car_test",
+    deps = [
+        ":dynamic_bicycle_car",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+# === test/ ===
 
 drake_cc_googletest(
     name = "maliput_railcar_test",
