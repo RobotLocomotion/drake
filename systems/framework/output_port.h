@@ -265,8 +265,8 @@ template <typename ValueType>
 void OutputPort<T>::ThrowBadValueType(const char* func_name,
                                       const AbstractValue& abstract) const {
   throw std::logic_error(
-      fmt::format("OutputPort::{}(): wrong value type <{}> "
-                  "specified but actual type was <{}> for {}.",
+      fmt::format("OutputPort::{}(): wrong value type {} "
+                  "specified but actual type was {} for {}.",
                   func_name, NiceTypeName::Get<ValueType>(),
                   abstract.GetNiceTypeName(), GetPortIdString()));
 }

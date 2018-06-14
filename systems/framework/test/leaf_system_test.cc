@@ -870,6 +870,7 @@ class DummyVec2 : public BasicVector<double> {
   }
   DummyVec2() : DummyVec2(100., 200.) {}
 
+ private:
   // Note that the actual data is copied by the BasicVector base class.
   DummyVec2* DoClone() const override { return new DummyVec2; }
 };
@@ -914,8 +915,13 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
   }
 
+  int calc_dummy_vec2_calls() const { return count_calc_dummy_vec2_; }
+  int calc_string_calls() const { return count_calc_string_; }
+  int calc_POD_calls() const { return count_calc_POD_; }
+
  private:
   void CalcDummyVec2(const Context<double>&, DummyVec2* out) const {
+    ++count_calc_dummy_vec2_;
     ASSERT_NE(out, nullptr);
     EXPECT_EQ(out->size(), 2);
     out->get_mutable_value() = Eigen::Vector2d(-100., -200);
@@ -927,18 +933,25 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   }
 
   void CalcString(const Context<double>&, std::string* out) const {
+    ++count_calc_string_;
     ASSERT_NE(out, nullptr);
     *out = "calc'ed string";
   }
 
   void CalcPOD(const Context<double>&, SomePOD* out) const {
+    ++count_calc_POD_;
     ASSERT_NE(out, nullptr);
     *out = {-10, 3.25};
   }
+
+  // Call counters for caching checks.
+  mutable int count_calc_dummy_vec2_{0};
+  mutable int count_calc_string_{0};
+  mutable int count_calc_POD_{0};
 };
 
-// Tests that non-model based Declare{Vector,Abstract}OutputPort generate
-// the expected output port allocators, and that their calc functions work.
+// Tests that non-model based Declare{Vector,Abstract}OutputPort generate the
+// expected output port allocators, and that their Calc and Eval functions work.
 GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   DeclaredNonModelOutputSystem dut;
   auto context = dut.CreateDefaultContext();
@@ -959,6 +972,16 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
   EXPECT_EQ(out4.get_data_type(), kAbstractValued);
 
+  // Sanity check output port prerequisites. Leaf ports should not designate
+  // a subsystem since they are resolved internally. We don't know the right
+  // dependency ticket, but at least it should be valid.
+  for (OutputPortIndex i(0); i < dut.get_num_output_ports(); ++i) {
+    internal::OutputPortPrerequisite prereq =
+        dut.get_output_port(i).GetPrerequisite();
+    EXPECT_FALSE(prereq.child_subsystem.has_value());
+    EXPECT_TRUE(prereq.dependency.is_valid());
+  }
+
   // Check that DummyVec2 came out, default constructed to (100,200).
   auto output0 = system_output->GetMutableVectorData(0);
   ASSERT_NE(output0, nullptr);
@@ -969,6 +992,15 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out0.Calc(*context, system_output->GetMutableData(0));
   EXPECT_EQ(out0_dummy->get_value(), Eigen::Vector2d(-100., -200.));
 
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 1);
+  EXPECT_EQ(out0.Eval<BasicVector<double>>(*context).get_value(),
+            out0_dummy->get_value());
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);
+  // Verify that caching is currently disabled.
+  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
+  out0.Eval<BasicVector<double>>(*context);
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 3);  // Will be 2 with caching.
+
   // Check that Value<string>() came out, default initialized to empty.
   auto output1 = system_output->GetMutableData(1);
   ASSERT_NE(output1, nullptr);
@@ -977,6 +1009,14 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_TRUE(downcast_output1->empty());
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
+
+  EXPECT_EQ(dut.calc_string_calls(), 1);
+  EXPECT_EQ(out1.Eval<std::string>(*context), *downcast_output1);
+  EXPECT_EQ(dut.calc_string_calls(), 2);
+  // Verify that caching is currently disabled.
+  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
+  out1.Eval<std::string>(*context);
+  EXPECT_EQ(dut.calc_string_calls(), 3);  // Will be 2 with caching.
 
   // Check that Value<int> came out, default initialized to -2.
   auto output2 = system_output->GetMutableData(2);
@@ -1008,6 +1048,16 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out4.Calc(*context, output4);
   EXPECT_EQ(downcast_output4->some_int, -10);
   EXPECT_EQ(downcast_output4->some_double, 3.25);
+
+  EXPECT_EQ(dut.calc_POD_calls(), 1);
+  const auto& eval_out = out4.Eval<SomePOD>(*context);
+  EXPECT_EQ(eval_out.some_int, -10);
+  EXPECT_EQ(eval_out.some_double, 3.25);
+  EXPECT_EQ(dut.calc_POD_calls(), 2);
+  // Verify that caching is currently disabled.
+  // TODO(sherm1) Verify that caching is working as soon as it is enabled.
+  out4.Eval<SomePOD>(*context);
+  EXPECT_EQ(dut.calc_POD_calls(), 3);  // Will be 2 with caching.
 }
 
 // Tests both that an unrestricted update callback is called and that
