@@ -61,11 +61,11 @@ void CacheEntry::CheckValidAbstractValue(const AbstractValue& proposed) const {
   //              need to pass in a ContextBase.
   auto good_ptr = Allocate();  // Very expensive!
   const AbstractValue& good = *good_ptr;
-  if (typeid(proposed) != typeid(good)) {
+  if (proposed.type_info() != good.type_info()) {
     throw std::logic_error(FormatName("Calc") +
                            "expected AbstractValue output type " +
-                           NiceTypeName::Get(good) + " but got " +
-                           NiceTypeName::Get(proposed) + ".");
+                           good.GetNiceTypeName() + " but got " +
+                           proposed.GetNiceTypeName() + ".");
   }
 }
 

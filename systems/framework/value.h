@@ -118,9 +118,8 @@ class AbstractValue {
   /// Release builds.
   virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
-  /// Returns typeid(T) for the contained object of underlying type T. If T is
-  /// polymorphic, this returns the typeid of the most-derived type of the
-  /// contained object.
+  /// Returns typeid of the contained object of type T. If T is polymorphic,
+  /// this returns the typeid of the most-derived type of the contained object.
   virtual const std::type_info& type_info() const = 0;
 
   /// Returns a human-readable name for the underlying type T. This may be

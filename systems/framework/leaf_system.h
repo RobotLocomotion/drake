@@ -1598,7 +1598,7 @@ class LeafSystem : public System<T> {
             "An output port calculation required a {} object for its result "
             "but got a {} object instead.",
             NiceTypeName::Get<Value<BasicVector<T>>>(),
-            NiceTypeName::Get(*abstract)));
+            abstract->GetNiceTypeName()));
       }
       vector_calculator(context, &value->get_mutable_value());
     };

@@ -229,7 +229,7 @@ void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
     throw std::logic_error(
         fmt::format("OutputPort::Allocate(): expected BasicVector output type "
                     "but got {} for {}.",
-                    NiceTypeName::Get(proposed), GetPortIdString()));
+                    proposed.GetNiceTypeName(), GetPortIdString()));
   }
 
   if (this->size() == kAutoSize) return;  // Any size is acceptable.
@@ -253,9 +253,9 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
   auto good = DoAllocate();  // Expensive!
   if (proposed.type_info() != good->type_info()) {
     throw std::logic_error(
-        fmt::format("OutputPort::Calc(): expected AbstractValue output type "
-                        "{} but got {} for {}.",
-                    NiceTypeName::Get(*good), NiceTypeName::Get(proposed),
+        fmt::format("OutputPort::Calc(): expected output type {} "
+                    "but got {} for {}.",
+                    good->GetNiceTypeName(), proposed.GetNiceTypeName(),
                     GetPortIdString()));
   }
 }

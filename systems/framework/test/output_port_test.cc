@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -155,15 +156,17 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
   EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
-  EXPECT_THROW(absport_general_.Calc(*context_, bad_out.get()),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
+      "OutputPort::Calc(): expected.*std::string.*got.*int.*");
 
-  // The vector port is a MyVector<3,double>, we'll give it a shorter one.
+  // The vector port is a MyVector<3,double>, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));
-  EXPECT_THROW(vecport_general_.Calc(*context_, bad_vec.get()),
-               std::logic_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
+      "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
 }
 #endif
 
