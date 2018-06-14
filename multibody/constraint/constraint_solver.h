@@ -433,8 +433,11 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due to both external forces
   /// and constraint forces.
+  /// @param problem_data The acceleration-level constraint data.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
+  /// @param[out] generalized_acceleration The generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
@@ -449,11 +452,15 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due *only* to constraint
   /// forces.
+  /// @param problem_data The velocity-level constraint data.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
   /// @param v  The system generalized velocity at time t.
-  /// @param dt The discretization time constant used to take the system's
-  ///           generalized velocities from time t to time t + `dt`.
+  /// @param dt The discretization time constant (i.e., the "time step" for
+  ///           simulations) used to take the system's generalized velocities
+  ///           from time t to time t + `dt`.
+  /// @param[out] generalized_acceleration The generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if `generalized_acceleration` is null,
   ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
   static void ComputeGeneralizedAcceleration(
@@ -528,8 +535,9 @@ class ConstraintSolver {
   /// Gets the contact forces expressed in each contact frame *for 2D contact
   /// problems* from a "packed" solution returned by, e.g.,
   /// SolveImpactProblem().  If the constraint forces are impulsive, the contact
-  /// forces are impulsive; similarly, if the constraint forces are
-  /// non-impulsive, the contact forces will be non-impulsive.
+  /// forces are impulsive (with units of Ns); similarly, if the constraint
+  /// forces are non-impulsive, the contact forces will be non-impulsive (with
+  /// units of N).
   /// @param cf the constraint forces in packed format.
   /// @param problem_data the problem data input to SolveImpactProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
@@ -2275,14 +2283,17 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
     VectorX<T>* generalized_acceleration) {
   DRAKE_DEMAND(dt > 0);
 
+  // Keep from allocating storage by reusing `generalized_acceleration`; at
+  // first, it will hold the generalized acceleration due only to constraint
+  // forces.
   ComputeGeneralizedAccelerationFromConstraintForces(problem_data, cf,
                                                      generalized_acceleration);
 
-  // The new velocity is v(t+dt) = v(t) + dt*accel.
-  //                             = inv(M)*M*(v(t) + dt*fext) + dt*ga
-  //                             = inv(M)*Mv + dt*ga
+  // Using a first-order approximation to velocity, the new velocity is:
+  // v(t+dt) = v(t) + dt * ga
+  //         = inv(M) * (M * v(t)) + dt * ga
   // Note: we have no way to break apart the Mv term. But, we can instead
-  // compute v(t+dt) and then solve for accel.
+  // compute v(t+dt) and then solve for the acceleration.
   const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv) +
       dt * (*generalized_acceleration);
   *generalized_acceleration = (vplus - v)/dt;
