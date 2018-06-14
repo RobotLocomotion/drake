@@ -574,7 +574,7 @@ class ImplicitStribeckSolver {
       t_hat_.resize(nf);
       v_slip_.resize(nc);
       mus_.resize(nc);
-      dft_dv_.resize(nc);
+      dft_dvt_.resize(nc);
     }
 
     /// Returns the current (maximum) capacity of the workspace.
@@ -626,8 +626,8 @@ class ImplicitStribeckSolver {
 
     /// Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
     /// for each contact pont, of size nc.
-    std::vector<Matrix2<T>>& mutable_dft_dv() {
-      return dft_dv_;
+    std::vector<Matrix2<T>>& mutable_dft_dvt() {
+      return dft_dvt_;
     }
 
    private:
@@ -640,8 +640,37 @@ class ImplicitStribeckSolver {
     VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
     VectorX<T> mus_;       // (modified) Stribeck friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
-    std::vector<Matrix2<T>> dft_dv_;
+    std::vector<Matrix2<T>> dft_dvt_;
   };
+
+  // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
+  // is the "soft norm" of vₜ. In addition this method computes
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
+  void CalcFrictionForces(
+      const Eigen::Ref<const VectorX<T>>& vt,
+      const Eigen::Ref<const VectorX<T>>& fn,
+      EigenPtr<VectorX<T>> v_slip,
+      EigenPtr<VectorX<T>> t_hat,
+      EigenPtr<VectorX<T>> mu_stribeck,
+      EigenPtr<VectorX<T>> ft);
+
+  // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
+  // normal force fn, friction coefficient mu_stribeck, tangent versor t_hat and
+  // (current) slip velocity v_slip.
+  void CalcFrictionForcesGradient(
+      const Eigen::Ref<const VectorX<T>>& fn,
+      const Eigen::Ref<const VectorX<T>>& mu_stribeck,
+      const Eigen::Ref<const VectorX<T>>& t_hat,
+      const Eigen::Ref<const VectorX<T>>& v_slip,
+      std::vector<Matrix2<T>>* dft_dvt);
+
+  // Helper method to compute the Newton-Raphson Jacobian, ∇ᵥR, as a function
+  // of M, Gt, Jt and dt.
+  void CalcJacobian(
+      const Eigen::Ref<const MatrixX<T>>& M,
+      const std::vector<Matrix2<T>>& Gt,
+      const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
+      EigenPtr<MatrixX<T>> J);
 
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1

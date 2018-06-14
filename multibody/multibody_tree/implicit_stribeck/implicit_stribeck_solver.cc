@@ -276,6 +276,199 @@ void ImplicitStribeckSolver<T>::SetProblemData(
 }
 
 template <typename T>
+void ImplicitStribeckSolver<T>::CalcFrictionForces(
+    const Eigen::Ref<const VectorX<T>>& vt,
+    const Eigen::Ref<const VectorX<T>>& fn,
+    EigenPtr<VectorX<T>> v_slip_ptr,
+    EigenPtr<VectorX<T>> t_hat_ptr,
+    EigenPtr<VectorX<T>> mu_stribeck_ptr,
+    EigenPtr<VectorX<T>> ft) {
+  const int nc = nc_;  // Number of contact points.
+
+  // Aliases to vector of friction coefficients.
+  const auto& mu = *problem_data_aliases_.mu_ptr;
+
+  // Convenient aliases.
+  auto mu_stribeck = *mu_stribeck_ptr;
+  auto v_slip = *v_slip_ptr;
+  auto t_hat = *t_hat_ptr;
+
+  // The stiction tolerance.
+  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
+  // "Stribeck function" is not a Stribeck model really.
+  const double v_stribeck = parameters_.stiction_tolerance;
+
+  // We use the stiction tolerance as a reference scale to estimate a small
+  // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
+  // use to compute "soft" tangent vectors to avoid a division by zero
+  // singularity when tangential velocities are zero.
+  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
+  const double epsilon_v2 = epsilon_v * epsilon_v;
+
+  // Compute 2D tangent vectors.
+  // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
+  // idea is to replace the norm in the definition of slip velocity by a
+  // "soft norm":
+  //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
+  // (in code εᵥ is named epsilon_v and εᵥ² is named epsilon_v2). We use
+  // this to redefine the slip velocity:
+  //   v_slip = sqrt(vtᵀvt + v_epsilon)
+  // and a "soft" tangent vector:
+  //   t_hat = vₜ/‖vₜ‖ₛ
+  // which now is not only well defined but it has well defined derivatives.
+  // We use these softened quantities all throughout our derivations for
+  // consistency.
+  // Notes on the effect of the "soft norm":
+  // Consider a 1D case for which vₜ = v, to avoid geometric complications,
+  // but without loss of generality. If using a soft norm:
+  //   fₜ(v) = μ(‖v‖ₛ)v/‖v‖ₛ
+  // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
+  // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
+  //   fₜ(v) ≈ 2μ₀sgn(v)|v|
+  // where sgn(v) is the sign function, μ₀ the (constant) friction
+  // coefficient, and we have used the fact that in the limit
+  // v --> 0, μ(|v|) ≈ 2μ₀|v|.
+  // In this case (recall this is equivalent to the solution in the
+  // limit εᵥ --> 0) fₜ(v) is linear in v.
+  // Now, very close to the origin, in the limit |v| << εᵥ, where the
+  // "softness" of the norm is important, the limit on fₜ(v) is:
+  //   fₜ(v) ≈ 2μ₀v²
+  // i.e. fₜ(v) is quadratic in v.
+  // This explains why we have "weak" gradients in the limit of vₜ
+  // approaching zero.
+  // These observations easily extend to the general 2D case.
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+    const auto vt_ic = vt.template segment<2>(ik);
+    // "soft norm":
+    v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
+    // "soft" tangent vector:
+    const Vector2<T> that_ic = vt_ic / v_slip(ic);
+    t_hat.template segment<2>(ik) = that_ic;
+    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    // Friction force.
+    ft->template segment<2>(ik) = -mu_stribeck(ic) * that_ic * fn(ic);
+  }
+}
+
+template <typename T>
+void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
+    const Eigen::Ref<const VectorX<T>>& fn,
+    const Eigen::Ref<const VectorX<T>>& mu_stribeck,
+    const Eigen::Ref<const VectorX<T>>& t_hat,
+    const Eigen::Ref<const VectorX<T>>& v_slip,
+    std::vector<Matrix2<T>>* dft_dvt_ptr) {
+  const int nc = nc_;  // Number of contact points.
+
+  // Problem data.
+  const auto& mu = *problem_data_aliases_.mu_ptr;
+
+  // Mutable reference to ∇ᵥₜfₜ(vₜ).
+  std::vector<Matrix2<T>>& dft_dvt = *dft_dvt_ptr;
+
+  // The stiction tolerance.
+  const double v_stribeck = parameters_.stiction_tolerance;
+
+  // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
+  // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
+  for (int ic = 0; ic < nc; ++ic) {
+    const int ik = 2 * ic;
+
+    // Compute dmu/dv = (1/v_stribeck) * dmu/dx
+    // where x = v_slip / v_stribeck is the dimensionless slip velocity.
+    const T x = v_slip(ic) / v_stribeck;
+    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
+
+    const auto t_hat_ic = t_hat.template segment<2>(ik);
+
+    // Projection matrix. It projects in the direction of t_hat.
+    // Notice it is a symmetric 2x2 matrix.
+    const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
+
+    // Removes the component of a vector that lies in the direction of t_hat.
+    // This is also a symmetric 2x2 matrix.
+    const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
+
+    // Some notes about projection matrices P:
+    //  - They are symmetric, positive semi-definite.
+    //  - All their eigenvalues are either one or zero.
+    //  - Their rank equals the number of non-zero eigenvalues.
+    //  - From the previous item we have rank(P) = trace(P).
+    //  - If P is a projection matrix, so is (I - P).
+    // From the above we then know that P and Pperp are both projection
+    // matrices of rank one (i.e. rank deficient) and are symmetric
+    // semi-positive definite. This has very important consequences for the
+    // Jacobian of the vt_error.
+
+    // We now compute the gradient with respect to the tangential velocity
+    // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
+    // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
+    //   ∇ᵥₜfₜ = -dft_dvt = -fn * (
+    //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
+    //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+    // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
+    // have defined dft_dvt = -∇ᵥₜfₜ.
+    // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
+    // (P and Pperp) where the coefficients of the combination are positive
+    // scalars. Therefore,
+    // IMPORTANT NOTE: dft_dvt is also PSD.
+    // IMPORTANT NOTE 2: The derivation for dft_dvt leads to exactly the
+    // same result when using the "softened" definitions for v_slip and
+    // t_hat where each occurrence of these quantities is replaced by its
+    // softened counterpart.
+
+    // Compute dft_dvt:
+    // Changes of vt in the direction perpendicular to t_hat (see the full
+    // expression for dft_dvt above).
+    dft_dvt[ic] = Pperp_ic * mu_stribeck(ic) / v_slip(ic);
+
+    // Changes in the magnitude of vt (which in turn makes mu_stribeck
+    // change), in the direction of t_hat.
+    dft_dvt[ic] += P_ic * dmudv;
+
+    // Note: dft_dvt is a symmetric 2x2 matrix. This will imply the positive
+    // definiteness of the system's Jacobian below.
+    dft_dvt[ic] *= fn(ic);
+  }
+}
+
+template <typename T>
+void ImplicitStribeckSolver<T>::CalcJacobian(
+    const Eigen::Ref<const MatrixX<T>>& M,
+    const std::vector<Matrix2<T>>& dft_dvt,
+    const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
+    EigenPtr<MatrixX<T>> J) {
+
+  // Problem sizes.
+  const int nv = nv_;  // Number of generalized velocities.
+  const int nc = nc_;  // Number of contact points.
+  // Size of the friction forces vector ft and tangential velocities vector vt.
+  const int nf = 2 * nc;
+
+  // Newton-Raphson Jacobian, i.e. the derivative of the residual with
+  // respect to the independent variables which, in this case, are the
+  // generalized velocities of the mechanical system.
+  //  J = M + dt Jtᵀdiag(dft_dvt)Jt:
+  // J is an (nv x nv) symmetric positive definite matrix.
+  // diag(dft_dvt) is the (2nc x 2nc) block diagonal matrix with dft_dvt in
+  // each 2x2 diagonal entry.
+
+  // Start by multiplying diag(dft_dvt)Jt and use the fact that diag(dft_dvt) is
+  // block diagonal.
+  MatrixX<T> diag_dft_dvt_times_Jt(nf, nv);
+  // TODO(amcastro-tri): Only build half of the matrix since it is
+  // symmetric.
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+    diag_dft_dvt_times_Jt.block(ik, 0, 2, nv) =
+        dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
+  }
+  // Form J = M + dt Jtᵀdiag(dft_dvt)Jt:
+  // TODO(amcastro-tri): Unit test Jacobian idependently.
+  *J = M + dt * Jt.transpose() * diag_dft_dvt_times_Jt;
+}
+
+template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
@@ -289,7 +482,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   // SolveWithGuess().
   statistics_.Reset();
 
-  // If there are no contact points return a zero generalized friction forces
+  // If there are no contact points return a zero generalized friction force
   // vector, i.e. tau_f = 0.
   if (nc_ == 0) {
     fixed_size_workspace_.mutable_tau_f().setZero();
@@ -310,18 +503,11 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   const double vt_tolerance =
       parameters_.relative_tolerance * parameters_.stiction_tolerance;
 
-  // Problem sizes.
-  const int nv = nv_;  // Number of generalized velocities.
-  const int nc = nc_;  // Number of contact points.
-  // Size of the friction forces vector ft and tangential velocities vector vt.
-  const int nf = 2 * nc;
-
   // Convenient aliases to problem data.
   const auto& M = *problem_data_aliases_.M_ptr;
   const auto& Jt = *problem_data_aliases_.Jt_ptr;
   const auto& p_star = *problem_data_aliases_.p_star_ptr;
   const auto& fn = *problem_data_aliases_.fn_ptr;
-  const auto& mu = *problem_data_aliases_.mu_ptr;
 
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.mutable_v();
@@ -336,77 +522,24 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto vt = variable_size_workspace_.mutable_vt();
   auto ft = variable_size_workspace_.mutable_ft();
   auto Delta_vt = variable_size_workspace_.mutable_Delta_vt();
-  auto Gt = variable_size_workspace_.mutable_dft_dv();
+  auto& dft_dvt = variable_size_workspace_.mutable_dft_dvt();
   auto mus = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
-  // Initialize vt_error to a value larger than tolerance so that the solver at
+  // Initialize vt_error to a value larger than tolerance so t_hat the solver at
   // least performs one iteration.
   T vt_error = 2 * vt_tolerance;
 
-  // Initialize iteration with the provided guess.
+  // Initialize iteration with the guess provided.
   v = v_guess;
-  vt = Jt * v;
 
-  // The stiction tolerance.
-  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
-  // "Stribeck function" is not a Stribeck model really.
-  const double v_stribeck = parameters_.stiction_tolerance;
-
-  // We use the stiction tolerance as a reference scale to estimate a small
-  // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
-  // use to compute "soft" tangent vectors to avoid a division by zero
-  // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
-  const double epsilon_v2 = epsilon_v * epsilon_v;
-
-  // TODO(amcastro-tri): Refactor this section of code into smaller chunks.
   for (int iter = 0; iter < max_iterations; ++iter) {
-    // Compute 2D tangent vectors.
-    // To avoid the singularity at v_slip = ‖vt‖ = 0 we use a "soft norm". The
-    // idea is to replace the norm in the definition of slip velocity by a
-    // "soft norm":
-    //    ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)
-    // (in code εᵥ is named epsilon_v and εᵥ² is named epislon_v2). We use
-    // this to redefine the slip velocity:
-    //   v_slip = sqrt(vtᵀvt + v_epsilon)
-    // and a "soft" tangent vector:
-    //   t_hat = vₜ/‖vₜ‖ₛ
-    // which now is not only well defined but it has well defined derivatives.
-    // We use these softened quantities all throughout our derivations for
-    // consistency.
-    // Notes on the effect of the "soft norm":
-    // Consider a 1D case for which vₜ = v, to avoid geometric complications,
-    // but without loss of generality. If using a soft norm:
-    //   fₜ(v) = μ(‖v‖ₛ)v/‖v‖ₛ
-    // Now, consider the case εᵥ << v << vₛ (or equivalently, 0 < v << vₛ
-    // in the limit to εᵥ --> 0). Approximating fₜ(v) in this limit leads to:
-    //   fₜ(v) ≈ 2μ₀sgn(v)|v|
-    // where sgn(v) is the sign function, μ₀ the (constant) friction
-    // coefficient, and we have used the fact that in the limit
-    // v --> 0, μ(|v|) ≈ 2μ₀|v|.
-    // In this case (recall this is equivalent to the solution in the
-    // limit εᵥ --> 0) fₜ(v) is linear in v.
-    // Now, very close to the origin, in the limit |v| << εᵥ, where the
-    // "softness" of the norm is important, the limit on fₜ(v) is:
-    //   fₜ(v) ≈ 2μ₀v²
-    // i.e. fₜ(v) is quadratic in v.
-    // This explains why we have "weak" gradients in the limit of vₜ
-    // approaching zero.
-    // These observations easily extend to the general 2D case.
-    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
-      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-      const auto vt_ic = vt.template segment<2>(ik);
-      // "soft norm":
-      v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
-      // "soft" tangent vector:
-      const Vector2<T> that_ic = vt_ic / v_slip(ic);
-      t_hat.template segment<2>(ik) = that_ic;
-      mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
-      // Friction force.
-      ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
-    }
+    // Update tangential velocities.
+    vt = Jt * v;
+
+    // Update v_slip, t_hat, mus and ft as a function of vt and fn.
+    CalcFrictionForces(vt, fn, &v_slip, &t_hat, &mus, &ft);
 
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
@@ -419,89 +552,12 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Newton-Raphson residual.
     residual = M * v - p_star - dt * Jt.transpose() * ft;
 
-    // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
-    // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
-    for (int ic = 0; ic < nc; ++ic) {
-      const int ik = 2 * ic;
+    // Compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ) as a function of fn, mus,
+    // t_hat and v_slip.
+    CalcFrictionForcesGradient(fn, mus, t_hat, v_slip, &dft_dvt);
 
-      // Compute dmu/dv = (1/v_stribeck) * dmu/dx
-      // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-      const T x = v_slip(ic) / v_stribeck;
-      const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
-
-      const auto t_hat_ic = t_hat.template segment<2>(ik);
-
-      // Projection matrix. It projects in the direction of t_hat.
-      // Notice it is a symmetric 2x2 matrix.
-      const Matrix2<T> P_ic = t_hat_ic * t_hat_ic.transpose();
-
-      // Removes the component of a vector that lies in the direction of t_hat.
-      // This is also a symmetric 2x2 matrix.
-      const Matrix2<T> Pperp_ic = Matrix2<T>::Identity() - P_ic;
-
-      // Some notes about projection matrices P:
-      //  - They are symmetric, positive semi-definite.
-      //  - All their eigenvalues are either one or zero.
-      //  - Their rank equals the number of non-zero eigenvalues.
-      //  - From the previous item we have rank(P) = trace(P).
-      //  - If P is a projection matrix, so is (I - P).
-      // From the above we then know that P and Pperp are both projection
-      // matrices of rank one (i.e. rank deficient) and are symmetric
-      // semi-positive definite. This has very important consequences for the
-      // Jacobian of the vt_error.
-
-      // We now compute the gradient with respect to the tangential velocity
-      // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
-      // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
-      //   ∇ᵥₜfₜ = -Gt = -fn * (
-      //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t_hat) +
-      //     dmu_stribeck/dx * P(t_hat) / v_stribeck )
-      // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
-      // have defined Gt = -∇ᵥₜfₜ.
-      // Therefore Gt (in ℝ²ˣ²) is a linear combination of PSD matrices
-      // (P and Pperp) where the coefficients of the combination are positive
-      // scalars. Therefore,
-      // IMPORTANT NOTE: Gt also PSD.
-      // IMPORTANT NOTE 2: The derivation for Gt leads to exactly the
-      // same result when using the "softened" definitions for v_slip and
-      // t_hat where each occurrence of these quantities is replaced by its
-      // softened counterpart.
-
-      // Compute Gt:
-      // Changes of vt in the direction perpendicular to t_hat (see the full
-      // expression for Gt above).
-      Gt[ic] = Pperp_ic * mus(ic) / v_slip(ic);
-
-      // Changes in the magnitude of vt (which in turn makes mu_stribeck
-      // change), in the direction of t_hat.
-      Gt[ic] += P_ic * dmudv;
-
-      // Note: Gt is a symmetric 2x2 matrix. This will imply the positive
-      // definiteness of the system's Jacobian below.
-      Gt[ic] *= fn(ic);
-    }
-
-    // Newton-Raphson Jacobian, i.e. the derivative of the residual with
-    // respect to the independent variables which, in this case, are the
-    // generalized velocities of the mechanical system.
-    //  J = M + dt Jtᵀdiag(Gt)Jt:
-    // J is an (nv x nv) symmetric positive definite matrix.
-    // diag(Gt) is the (2nc x 2nc) block diagonal matrix with Gt in each 2x2
-    // diagonal entry.
-
-    // Start by multiplying diag(Gt)Jt and use the fact that diag(Gt) is
-    // block diagonal.
-    MatrixX<T> diag_Gt_times_Jt(nf, nv);
-    // TODO(amcastro-tri): Only build half of the matrix since it is
-    // symmetric.
-    for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
-      const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-      diag_Gt_times_Jt.block(ik, 0, 2, nv) =
-          Gt[ic] * Jt.block(ik, 0, 2, nv);
-    }
-    // Form J = M + dt Jtᵀdiag(Gt)Jt:
-    // TODO(amcastro-tri): Unit test Jacobian idependently.
-    J = M + dt * Jt.transpose() * diag_Gt_times_Jt;
+    // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, dft_dvt, Jt, dt.
+    CalcJacobian(M, dft_dvt, Jt, dt, &J);
 
     // TODO(amcastro-tri): Consider using a cheap iterative solver like CG.
     // Since we are in a non-linear iteration, an approximate cheap solution
@@ -524,7 +580,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // points.
     Delta_vt = Jt * Delta_v;
 
-    // Convergence is monitored in the tangential velocties.
+    // Convergence is monitored in the tangential velocities.
     vt_error = Delta_vt.norm();
 
     // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
@@ -535,7 +591,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // for all contact points.
     T alpha = 1.0;  // We set α = 1 for now.
     v = v + alpha * Delta_v;
-    vt = Jt * v;
 
     // Save iteration statistics.
     statistics_.Update(ExtractDoubleOrThrow(vt_error));
