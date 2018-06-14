@@ -665,7 +665,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   EXPECT_NO_THROW(system_.EvalInputValue<BasicVector<double>>(*context_, 1));
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<int>(*context_, 1), std::logic_error,
-      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*BasicVector.*");
+      ".*EvalInputValue.*expected.*int.*input port.*1.*actual.*MyVector.*");
 
   // Now induce errors that only apply to abstract-valued input ports.
 

@@ -823,6 +823,7 @@ drake_cc_googletest(
     deps = [
         ":value",
         "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 

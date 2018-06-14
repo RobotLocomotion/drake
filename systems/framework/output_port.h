@@ -205,14 +205,6 @@ class OutputPort : public OutputPortBase {
   // (Very expensive; use in Debug only.)
   void CheckValidOutputType(const AbstractValue&) const;
 
-  // Check that both type-erased arguments have the same underlying type.
-  void CheckValidAbstractValue(const AbstractValue& good,
-                               const AbstractValue& proposed) const;
-
-  // Check that both BasicVector arguments have the same underlying type.
-  void CheckValidBasicVector(const BasicVector<T>& good,
-                             const BasicVector<T>& proposed) const;
-
   // User said output port would have a particular concrete type but it doesn't.
   template <typename ValueType>
   [[noreturn]] void ThrowBadValueType(const char* func,
@@ -259,37 +251,11 @@ void OutputPort<T>::CheckValidOutputType(const AbstractValue& proposed) const {
   // have to allocate one here. If so could also store a precomputed
   // type_index there for further savings. Would need to pass in a Context.
   auto good = DoAllocate();  // Expensive!
-  // Attempt to interpret these as BasicVectors.
-  auto proposed_vec = dynamic_cast<const Value<BasicVector<T>>*>(&proposed);
-  auto good_vec = dynamic_cast<const Value<BasicVector<T>>*>(good.get());
-  if (proposed_vec && good_vec) {
-    CheckValidBasicVector(good_vec->get_value(), proposed_vec->get_value());
-  } else {
-    // At least one is not a BasicVector.
-    CheckValidAbstractValue(*good, proposed);
-  }
-}
-
-template <typename T>
-void OutputPort<T>::CheckValidAbstractValue(
-    const AbstractValue& good, const AbstractValue& proposed) const {
-  if (typeid(proposed) != typeid(good)) {
+  if (proposed.type_info() != good->type_info()) {
     throw std::logic_error(
         fmt::format("OutputPort::Calc(): expected AbstractValue output type "
-                    "{} but got {} for {}.",
-                    NiceTypeName::Get(good), NiceTypeName::Get(proposed),
-                    GetPortIdString()));
-  }
-}
-
-template <typename T>
-void OutputPort<T>::CheckValidBasicVector(
-    const BasicVector<T>& good, const BasicVector<T>& proposed) const {
-  if (typeid(proposed) != typeid(good)) {
-    throw std::logic_error(
-        fmt::format("OutputPort::Calc(): expected BasicVector output type "
-                    "{} but got {} for {}.",
-                    NiceTypeName::Get(good), NiceTypeName::Get(proposed),
+                        "{} but got {} for {}.",
+                    NiceTypeName::Get(*good), NiceTypeName::Get(proposed),
                     GetPortIdString()));
   }
 }
