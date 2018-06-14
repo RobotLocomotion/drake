@@ -693,8 +693,8 @@ class ImplicitStribeckSolver {
   // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
   // all contact points. The angle change θ is defined by the dot product
   // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
-  // We'll do so by computing a coefficient 0 < α < 1 so that if the
-  // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
+  // We'll do so by computing a coefficient 0 < α ≤ 1 so that if the
+  // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ ≤ θₘₐₓ
   // for all contact points.
   T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
               const Eigen::Ref<const VectorX<T>>& Delta_vt) const;

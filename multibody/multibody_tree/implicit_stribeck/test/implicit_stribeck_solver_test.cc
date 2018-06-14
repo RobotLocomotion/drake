@@ -639,22 +639,26 @@ TEST_F(PizzaSaver, NoContact) {
 }
 
 // This test verifies that the implicit stribeck solver can correctly predict
-// transitions in a problem with impact. This is a 2D problem consisting of a
-// cylinder of radius R, mass m, and rotational inertia I, initially at height
-// z0 = h0 + R from a flat ground.
+// transitions in a problem with impact. A cylinder's COM is constrained to move
+// in the x-y plane with its axis aligned with the z-axis. Therefore, the
+// cylinder only has three degrees of freedom (DOFs); two translational DOFs in
+// the x-y plane and a rotational DOF about its axis. The cylinder has radius R,
+// mass m, and rotational inertia I, and it is initially at height z0 = h0 + R
+// from a flat ground.
 // At t = 0, the cylinder is given an initial horizontal velocity vx0 and zero
 // vertical velocity vy0 = 0. The cylinder will undergo a parabolic free flight
 // towards the ground until the moment of impact at which the vertical velocity
 // goes to zero (a purely inelastic collision). Since we know the initial
 // height, we therefore know that the vertical velocity at the time of impact
-// will be vy = -sqrt(m⋅g⋅h₀), with g the acceleration of gravity. Therefore the
+// will be vy = -sqrt(2⋅g⋅h0), with g the acceleration of gravity. Therefore the
 // change of momentum, in the vertical direction, at the time of impact will be
 // py = m * vy.
 // The implicit Stribeck solver needs to know the normal forces in advance. We
 // compute the normal force in order to exactly bring the cylinder to a stop in
-// the vertical direction within a time interval dt. That is, we set the normal
-// force to fn = -m * vy / dt + m * g, where the small contribution due to
-// gravity is needed to exactly bring the cylinder's vertical velocity to zero.
+// the vertical direction within a time interval dt from the time that the
+// bodies first make contact. That is, we set the normal force to
+// fn = -m * vy / dt + m * g, where the small contribution due to gravity is
+// needed to exactly bring the cylinder's vertical velocity to zero.
 // The equations governing the motion for the cylinder during impact are:
 //   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
 //   (2)  m⋅Δvx = pt⋅R, Δvx = vx - vx0

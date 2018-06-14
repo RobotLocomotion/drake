@@ -473,8 +473,8 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
   using std::min;
   T alpha = 1.0;
   double v_stribeck = parameters_.stiction_tolerance;
-  for (int ic = 0; ic < nc_; ++ic) {
-    const int ik = 2 * ic;
+  for (int ic = 0; ic < nc_; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     auto vt_ic = vt.template segment<2>(ik);
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
     alpha = min(
@@ -483,6 +483,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
             vt_ic, dvt_ic,
             cos_theta_max_, v_stribeck, parameters_.relative_tolerance));
   }
+  DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
   return alpha;
 }
 
