@@ -3,11 +3,10 @@
 load("@drake//tools/install:install.bzl", "install")
 
 def install_data(
-    name = "models",
-    prod_models_prefix = "prod_",
-    test_models_prefix = "test_",
-    extra_prod_models = [],
-):
+        name = "models",
+        prod_models_prefix = "prod_",
+        test_models_prefix = "test_",
+        extra_prod_models = []):
     """Install data
 
     This macro creates 3 filegroups:
@@ -48,7 +47,9 @@ def install_data(
     exclude_patterns = ["**/test/*", "**/test*"]
     prod_models_include = ["**/*.{}".format(x) for x in models_extensions]
     test_models_include = [
-        p + m for p in exclude_patterns for m in models_extensions
+        p + m
+        for p in exclude_patterns
+        for m in models_extensions
     ]
     native.filegroup(
         name = prod_models_prefix + name,

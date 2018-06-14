@@ -23,7 +23,8 @@ def library_lint(
     # lint problems, we will append arguments here that will be passed along to
     # the helper.
     library_lint_reporter_args = [
-        "--package-name", package_name,
+        "--package-name",
+        package_name,
     ]
     library_lint_reporter_data = []
 
@@ -35,11 +36,14 @@ def library_lint(
         # We only want cc_library.
         if one_rule["kind"] != "cc_library":
             continue
+
         # Ignore magic private libraries.
         if one_rule["name"].startswith("_"):
             continue
+
         # Found a cc_library.
         cc_library_rules.append(one_rule)
+
         # Is it a package_library?
         if "drake_cc_package_library" in one_rule["tags"]:
             not package_library_rule or fail("Two package libraries?")
@@ -56,7 +60,8 @@ def library_lint(
 
     # Sanity check the package_library_rule name.
     if package_library_rule and (
-            package_library_rule["name"] != short_package_name):
+        package_library_rule["name"] != short_package_name
+    ):
         fail("drake_cc_package_library should not allow wrong-names?!")
 
     # Unless the package_library rule exists and is testonly, then we should
@@ -78,20 +83,28 @@ def library_lint(
         "({})".format(all_libraries),
         # Remove items that have opted-out of the package_library.
         "except attr(tags, '{}', {})".format(
-            _TAG_EXCLUDE_FROM_PACKAGE, all_libraries),
+            _TAG_EXCLUDE_FROM_PACKAGE,
+            all_libraries,
+        ),
         # Maybe remove libraries tagged testonly = 1.
         "except attr(testonly, 1, {})".format(
-            all_libraries) if exclude_testonly else "",
+            all_libraries,
+        ) if exclude_testonly else "",
     ])
 
     # Find libraries that are deps of the package_library but shouldn't be.
     extra_deps_expression = "deps({}, 1) except ({})".format(
-        package_name, correct_deps_expression)
+        package_name,
+        correct_deps_expression,
+    )
+
     # Find libraries that should be deps of the package_library but aren't.
     # Note that our library_lint_reporter.py tool filters out some false
     # positives from this report.
     missing_deps_expression = "({}) except deps({}, 1) ".format(
-        correct_deps_expression, package_name)
+        correct_deps_expression,
+        package_name,
+    )
 
     # If there was a package_library rule, ensure its deps are comprehensive.
     if package_library_rule:
@@ -142,8 +155,10 @@ def library_lint(
             ":library_lint_extra_deps",
         ]
         library_lint_reporter_args += [
-            "--missing-deps", "$(location :library_lint_missing_deps)",
-            "--extra-deps", "$(location :library_lint_extra_deps)",
+            "--missing-deps",
+            "$(location :library_lint_missing_deps)",
+            "--extra-deps",
+            "$(location :library_lint_extra_deps)",
         ]
 
     # Report all of the library_lint results.

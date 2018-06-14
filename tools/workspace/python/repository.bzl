@@ -35,11 +35,13 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     python_config = which(repository_ctx, "python{}-config".format(
-        repository_ctx.attr.version))
+        repository_ctx.attr.version,
+    ))
 
     if not python_config:
         fail("Could NOT find python{}-config".format(
-            repository_ctx.attr.version))
+            repository_ctx.attr.version,
+        ))
 
     result = repository_ctx.execute([python_config, "--includes"])
 
@@ -86,7 +88,8 @@ def _impl(repository_ctx):
     if os_result.is_macos:
         for i in reversed(range(len(linkopts))):
             if linkopts[i].find("python{}".format(
-                    repository_ctx.attr.version)) != -1:
+                repository_ctx.attr.version,
+            )) != -1:
                 linkopts.pop(i)
         linkopts = ["-undefined dynamic_lookup"] + linkopts
 
@@ -127,8 +130,11 @@ cc_library(
 )
     """.format(includes, linkopts, linkopts_direct_link)
 
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 python_repository = repository_rule(
     _impl,

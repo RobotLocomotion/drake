@@ -22,7 +22,8 @@ def _impl(repo_ctx):
     else:
         repo_ctx.symlink(
             Label("@drake//tools/workspace/blas:package-macos.BUILD.bazel"),
-            "BUILD.bazel")
+            "BUILD.bazel",
+        )
 
 blas_repository = repository_rule(
     # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
