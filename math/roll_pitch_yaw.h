@@ -104,7 +104,7 @@ class RollPitchYaw {
     return SetOrThrowIfNotValidInDebugBuild(rpy);
   }
 
-  /// Sets `this` %RollPitchYaw from roll, pitch, yaw angles (radian units).
+  /// Sets `this` %RollPitchYaw from roll, pitch, yaw angles (units of radians).
   /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
@@ -137,23 +137,6 @@ class RollPitchYaw {
   /// Set the yaw-angle underlying a %RollPitchYaw.
   /// @param[in] y yaw angle (in units of radians).
   void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
-
-  /// Set the roll-pitch-yaw angles underlying `this` %RollPitchYaw.
-  /// @param[in] rpy roll, pitch, yaw angles (units of radians).
-  /// @throws std::logic_error in debug builds if !IsValid(rpy).
-  void  set_roll_pitch_yaw(const Vector3<T>& rpy) {
-    SetOrThrowIfNotValidInDebugBuild(rpy);
-  }
-
-  /// Sets the roll, pitch, yaw angles underlying `this` %RollPitchYaw.
-  /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
-  /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
-  /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
-  /// @throws std::logic_error in debug builds if
-  /// !IsValid(Vector3<T>(roll, pitch, yaw)).
-  void set_roll_pitch_yaw(const T& roll, const T& pitch, const T& yaw) {
-    SetOrThrowIfNotValidInDebugBuild(Vector3<T>(roll, pitch, yaw));
-  }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const {
