@@ -511,6 +511,7 @@ drake_cc_googletest(
     name = "signal_logger_test",
     deps = [
         ":affine_system",
+        ":constant_vector_source",
         ":linear_system",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
