@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":create_trajectory_params",
         ":curve2",
         ":driving_command_mux",
+        ":dynamic_bicycle_car",
         ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
@@ -195,7 +196,6 @@ drake_cc_library(
     name = "dynamic_bicycle_car",
     srcs = ["dynamic_bicycle_car.cc"],
     hdrs = ["dynamic_bicycle_car.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":generated_vectors",
         "//systems/framework",
@@ -657,7 +657,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "dynamic_bicycle_car_test",
     deps = [
-        ":dynamic_bicycle_car",
+        "//automotive:dynamic_bicycle_car",
         "//systems/framework/test_utilities",
     ],
 )
