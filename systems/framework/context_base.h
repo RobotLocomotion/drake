@@ -150,6 +150,18 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(output_port_tickets_.size());
   }
 
+  /** Returns the dependency ticket associated with a particular input port. */
+  DependencyTicket input_port_ticket(InputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_input_ports());
+    return input_port_tickets_[port_num];
+  }
+
+  /** Returns the dependency ticket associated with a particular output port. */
+  DependencyTicket output_port_ticket(OutputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_output_ports());
+    return output_port_tickets_[port_num];
+  }
+
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value

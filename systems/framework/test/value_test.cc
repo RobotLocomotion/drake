@@ -152,15 +152,11 @@ TYPED_TEST(TypedValueTest, Make) {
 GTEST_TEST(ValueTest, NiceTypeName) {
   auto double_value = AbstractValue::Make<double>(3.);
   auto string_value = AbstractValue::Make<std::string>("hello");
-  auto derived_value =
-      std::make_unique<Value<MyVector2d>>(MyVector2d::Make(1., 2.));
   auto base_value =
       std::make_unique<Value<BasicVector<double>>>(MyVector2d::Make(1., 2.));
 
   EXPECT_EQ(double_value->GetNiceTypeName(), "double");
   EXPECT_EQ(string_value->GetNiceTypeName(), "std::string");
-  EXPECT_EQ(derived_value->GetNiceTypeName(),
-            "drake::systems::MyVector<2,double>");
 
   // Must return the name of the most-derived type.
   EXPECT_EQ(base_value->GetNiceTypeName(),
@@ -170,14 +166,11 @@ GTEST_TEST(ValueTest, NiceTypeName) {
 GTEST_TEST(ValueTest, TypeInfo) {
   auto double_value = AbstractValue::Make<double>(3.);
   auto string_value = AbstractValue::Make<std::string>("hello");
-  auto derived_value =
-      std::make_unique<Value<MyVector2d>>(MyVector2d::Make(1., 2.));
   auto base_value =
       std::make_unique<Value<BasicVector<double>>>(MyVector2d::Make(1., 2.));
 
   EXPECT_EQ(double_value->type_info(), typeid(double));
   EXPECT_EQ(string_value->type_info(), typeid(std::string));
-  EXPECT_EQ(derived_value->type_info(), typeid(MyVector2d));
 
   // Must return the typeid of the most-derived type.
   EXPECT_EQ(base_value->type_info(), typeid(MyVector2d));

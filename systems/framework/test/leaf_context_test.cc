@@ -23,6 +23,7 @@ namespace systems {
 
 constexpr int kNumInputPorts = 2;
 constexpr int kInputSize[kNumInputPorts] = {1, 2};
+constexpr int kNumOutputPorts = 3;
 constexpr int kContinuousStateSize = 5;
 constexpr int kGeneralizedPositionSize = 2;
 constexpr int kGeneralizedVelocitySize = 2;
@@ -42,8 +43,9 @@ class LeafContextTest : public ::testing::Test {
   void SetUp() override {
     context_.set_time(kTime);
 
-    // Input
-    SetNumInputPorts(kNumInputPorts, &context_);
+    // Set up slots for input and output ports.
+    AddInputPorts(kNumInputPorts, &context_);
+    AddOutputPorts(kNumOutputPorts, &context_);
 
     // Fixed input values get new tickets -- manually update the ticket
     // counter here so this test can add more ticketed things later.
@@ -121,17 +123,40 @@ class LeafContextTest : public ::testing::Test {
   }
 
   // Mocks up some input ports sufficient to allow us to give them fixed values.
-  // This code mimics SystemBase::CreateSourceTrackers.
   template <typename T>
-  void SetNumInputPorts(int n, Context<T>* context) {
+  void AddInputPorts(int n, Context<T>* context) {
     for (InputPortIndex i(0); i < n; ++i) {
+      input_port_tickets_.push_back(next_ticket_);
       context->AddInputPort(i, next_ticket_++);
+    }
+  }
+
+  // Mocks up some output ports sufficient to check that they are installed and
+  // wired up properly. (We can't evaluate output ports without a System.)
+  // This code mimics SystemBase::MakeContext().
+  template <typename T>
+  void AddOutputPorts(int n, Context<T>* context) {
+    // Pretend the first output port has an external dependency (so tracking
+    // should be deferred) while the rest are dependent on a built-in tracker.
+    output_port_tickets_.push_back(next_ticket_);
+    context->AddOutputPort(OutputPortIndex(0), next_ticket_++,
+                           {SubsystemIndex(1), DependencyTicket(0)});
+
+    for (OutputPortIndex i(1); i < n; ++i) {
+      output_port_tickets_.push_back(next_ticket_);
+      context->AddOutputPort(
+          i, next_ticket_++,
+          {nullopt, DependencyTicket(internal::kAllSourcesTicket)});
     }
   }
 
   DependencyTicket next_ticket_{internal::kNextAvailableTicket};
   LeafContext<double> context_;
   std::unique_ptr<AbstractValue> abstract_state_;
+
+  // Track assigned tickets for sanity checking.
+  std::vector<DependencyTicket> input_port_tickets_;
+  std::vector<DependencyTicket> output_port_tickets_;
 };
 
 // Verifies that @p state is a clone of the state constructed in
@@ -191,8 +216,41 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(8.0, xc.get_misc_continuous_state().GetAtIndex(0));
 }
 
-TEST_F(LeafContextTest, GetNumInputPorts) {
+TEST_F(LeafContextTest, CheckPorts) {
   ASSERT_EQ(kNumInputPorts, context_.get_num_input_ports());
+  ASSERT_EQ(kNumOutputPorts, context_.get_num_output_ports());
+
+  // The "all inputs" tracker should have been subscribed to each of the
+  // input ports.
+  // TODO(sherm1) And each input port should have subscribed to its fixed
+  // input value.
+  auto& u_tracker =
+      context_.get_tracker(DependencyTicket(internal::kAllInputPortsTicket));
+  for (InputPortIndex i(0); i < kNumInputPorts; ++i) {
+    EXPECT_EQ(context_.input_port_ticket(i), input_port_tickets_[i]);
+    auto& tracker = context_.get_tracker(input_port_tickets_[i]);
+    // TODO(sherm1) The fixed input value should be a prerequisite.
+    EXPECT_EQ(tracker.num_prerequisites(), 0);
+    EXPECT_EQ(tracker.num_subscribers(), 1);
+    EXPECT_TRUE(u_tracker.HasPrerequisite(tracker));
+  }
+
+  // All output ports but port 0 should be subscribed to the "all sources"
+  // tracker (just for testing -- would normally be subscribed to a cache
+  // entry tracker).
+  auto& all_sources_tracker =
+      context_.get_tracker(DependencyTicket(internal::kAllSourcesTicket));
+  for (OutputPortIndex i(0); i < kNumOutputPorts; ++i) {
+    EXPECT_EQ(context_.output_port_ticket(i), output_port_tickets_[i]);
+    auto& tracker = context_.get_tracker(output_port_tickets_[i]);
+    EXPECT_EQ(tracker.num_subscribers(), 0);
+    if (i == 0) {
+      EXPECT_EQ(tracker.num_prerequisites(), 0);
+    } else {
+      EXPECT_EQ(tracker.num_prerequisites(), 1);
+      EXPECT_TRUE(all_sources_tracker.HasSubscriber(tracker));
+    }
+  }
 }
 
 TEST_F(LeafContextTest, GetNumDiscreteStateGroups) {
@@ -250,7 +308,7 @@ TEST_F(LeafContextTest, GetNumStates) {
 
 TEST_F(LeafContextTest, GetVectorInput) {
   LeafContext<double> context;
-  SetNumInputPorts(2, &context);
+  AddInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, {5.0, 6.0});
@@ -266,7 +324,7 @@ TEST_F(LeafContextTest, GetVectorInput) {
 
 TEST_F(LeafContextTest, GetAbstractInput) {
   LeafContext<double> context;
-  SetNumInputPorts(2, &context);
+  AddInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
   context.FixInputPort(0, Value<std::string>("foo"));

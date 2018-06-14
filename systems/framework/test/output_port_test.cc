@@ -158,7 +158,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
   EXPECT_NO_THROW(absport_general_.Calc(*context_, good_out.get()));
   DRAKE_EXPECT_THROWS_MESSAGE(
       absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
-      "OutputPort::Calc(): expected.*std::string.*got.*int.*");
+      "OutputPort::Calc().*expected.*std::string.*got.*int.*");
 
   // The vector port is a MyVector<3,double>, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();
