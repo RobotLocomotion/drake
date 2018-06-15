@@ -37,11 +37,11 @@ VectorX<U> CalcFrictionForces(
   VectorX<U> that(2 * nc);
   VectorX<U> v_slip(nc);
 
-  auto ModifiedStribeck = [](U x, double mu) {
+  auto ModifiedStribeck = [](U x, double friction_coefficient) {
     if (x >= 1) {
-      return U(mu);
+      return U(friction_coefficient);
     } else {
-      return mu * x * (2.0 - x);
+      return friction_coefficient * x * (2.0 - x);
     }
   };
 
@@ -55,7 +55,7 @@ VectorX<U> CalcFrictionForces(
   // and a "soft" tangent vector:
   //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
   // which now is not only well defined but it has well defined derivatives.
-  // We use these softened quantities all throuout our derivations for
+  // We use these softened quantities all throughout our derivations for
   // consistency.
   for (int ic = 0; ic < nc; ++ic) {
     const int ik = 2 * ic;
