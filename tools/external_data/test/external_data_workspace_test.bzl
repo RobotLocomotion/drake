@@ -4,8 +4,8 @@ load(
 )
 load(
     "//tools/external_data/test:workspace_test.bzl",
-    "workspace_test",
     "ARGS_DEFAULT",
+    "workspace_test",
 )
 
 _workspace_list = [
@@ -59,8 +59,10 @@ def collect_external_data_lint_files():
     packages = ["//tools/external_data"]
     for workspace in _workspace_list:
         package = "@" + workspace + "//"
+
         # Prepare to expose all files recursively.
         packages.append(package)
+
     # Join files for linting, to permit $(locations ...) expansion directly
     # on transitive file dependencies.
     for name in ["bazel_lint_files", "python_lint_files"]:
@@ -75,6 +77,7 @@ def add_external_data_test_repositories(workspace_dir):
     Adds test workspace directories as repositories so that their files can be
     consumed and their tests can be ignored by `bazel test ...` from Drake.
     """
+
     # WARNING: Bazel also craps out here if `workspace_dir + path` is used
     # rather than just `path`.
     # N.B. This error is *stateful*. You will get different behavior depending
