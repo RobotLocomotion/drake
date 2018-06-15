@@ -282,7 +282,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     EigenPtr<VectorX<T>> v_slip_ptr,
     EigenPtr<VectorX<T>> t_hat_ptr,
     EigenPtr<VectorX<T>> mu_stribeck_ptr,
-    EigenPtr<VectorX<T>> ft) {
+    EigenPtr<VectorX<T>> ft) const {
   const int nc = nc_;  // Number of contact points.
 
   // Aliases to vector of friction coefficients.
@@ -357,7 +357,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& mu_stribeck,
     const Eigen::Ref<const VectorX<T>>& t_hat,
     const Eigen::Ref<const VectorX<T>>& v_slip,
-    std::vector<Matrix2<T>>* dft_dvt_ptr) {
+    std::vector<Matrix2<T>>* dft_dvt_ptr) const {
   const int nc = nc_;  // Number of contact points.
 
   // Problem data.
@@ -437,7 +437,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& M,
     const std::vector<Matrix2<T>>& dft_dvt,
     const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
-    EigenPtr<MatrixX<T>> J) {
+    EigenPtr<MatrixX<T>> J) const {
 
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -470,7 +470,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 
 template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
-    double dt, const VectorX<T>& v_guess) {
+    double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
   using std::abs;

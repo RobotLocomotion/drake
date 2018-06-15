@@ -434,7 +434,7 @@ class ImplicitStribeckSolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess);
+  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
   /// @name Retrieving the solution
@@ -481,6 +481,9 @@ class ImplicitStribeckSolver {
   }
 
  private:
+  // Helper class for unit testing.
+  friend class ImplicitStribeckSolverTester;
+
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
   // SetProblemData() and until SolveWithGuess() returns.
@@ -652,7 +655,7 @@ class ImplicitStribeckSolver {
       EigenPtr<VectorX<T>> v_slip,
       EigenPtr<VectorX<T>> t_hat,
       EigenPtr<VectorX<T>> mu_stribeck,
-      EigenPtr<VectorX<T>> ft);
+      EigenPtr<VectorX<T>> ft) const;
 
   // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
   // normal force fn, friction coefficient mu_stribeck, tangent versor t_hat and
@@ -662,7 +665,7 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const VectorX<T>>& mu_stribeck,
       const Eigen::Ref<const VectorX<T>>& t_hat,
       const Eigen::Ref<const VectorX<T>>& v_slip,
-      std::vector<Matrix2<T>>* dft_dvt);
+      std::vector<Matrix2<T>>* dft_dvt) const;
 
   // Helper method to compute the Newton-Raphson Jacobian, ∇ᵥR, as a function
   // of M, Gt, Jt and dt.
@@ -670,7 +673,7 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const MatrixX<T>>& M,
       const std::vector<Matrix2<T>>& Gt,
       const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
-      EigenPtr<MatrixX<T>> J);
+      EigenPtr<MatrixX<T>> J) const;
 
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1

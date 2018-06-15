@@ -6,10 +6,49 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/multibody_tree/implicit_stribeck/test/implicit_stribeck_solver_test_util.h"
 
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
+class ImplicitStribeckSolverTester {
+ public:
+  static MatrixX<double> CalcJacobian(
+      const ImplicitStribeckSolver<double>& solver,
+      const Eigen::Ref<const VectorX<double>>& v,
+      double dt) {
+    const int nv = solver.nv_;
+
+    // Problem data.
+    const auto& M = *solver.problem_data_aliases_.M_ptr;
+    const auto& fn = *solver.problem_data_aliases_.fn_ptr;
+    const auto& Jt = *solver.problem_data_aliases_.Jt_ptr;
+
+    // Workspace with size depending on the number of contact points.
+    auto vt = solver.variable_size_workspace_.mutable_vt();
+    auto ft = solver.variable_size_workspace_.mutable_ft();
+    auto mus = solver.variable_size_workspace_.mutable_mu();
+    auto t_hat = solver.variable_size_workspace_.mutable_t_hat();
+    auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
+    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dvt();
+
+    // Tangential velocity.
+    vt = Jt * v;
+
+    // Update v_slip, t_hat, mus and ft as a function of vt and fn.
+    solver.CalcFrictionForces(vt, fn, &v_slip, &t_hat, &mus, &ft);
+
+    // Compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ) as a function of fn, mus,
+    // t_hat and v_slip.
+    solver.CalcFrictionForcesGradient(fn, mus, t_hat, v_slip, &dft_dvt);
+
+    // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, dft_dvt, Jt, dt.
+    MatrixX<double> J(nv, nv);
+    solver.CalcJacobian(M, dft_dvt, Jt, dt, &J);
+
+    return J;
+  }
+};
 namespace {
 
 // A test fixture to test DirectionChangeLimiter for a very standard
@@ -511,6 +550,26 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // For this problem we expect the translational velocities to be zero.
   EXPECT_NEAR(v(0), 0.0, kTolerance);
   EXPECT_NEAR(v(1), 0.0, kTolerance);
+
+  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+  // solver's internal implementation.
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
+  const double v_stribeck = parameters.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
+      M_, Jt_, p_star_, mu_, fn_, dt, v_stribeck, epsilon_v, v);
+
+  // We use a tolerance scaled by the norm and size of the matrix.
+  const double J_tolerance = J_expected.rows() * J_expected.norm() *
+      std::numeric_limits<double>::epsilon();
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 // Exactly the same problem as in PizzaSaver::SmallAppliedMoment but with an
@@ -596,6 +655,26 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   EXPECT_NEAR(v_slipA, R_ * omega, kTolerance);
   EXPECT_NEAR(v_slipB, R_ * omega, kTolerance);
   EXPECT_NEAR(v_slipC, R_ * omega, kTolerance);
+
+  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+  // solver's internal implementation.
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
+  const double v_stribeck = parameters.stiction_tolerance;
+  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
+      M_, Jt_, p_star_, mu_, fn_, dt, v_stribeck, epsilon_v, v);
+
+  // We use a tolerance scaled by the norm and size of the matrix.
+  const double J_tolerance = J_expected.rows() * J_expected.norm() *
+      std::numeric_limits<double>::epsilon();
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 // Verify the solver behaves correctly when the problem data contains no
