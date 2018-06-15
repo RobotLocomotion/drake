@@ -133,3 +133,55 @@ class TestEigenGeometry(unittest.TestCase):
         value = test_util.create_translation()
         self.assertEqual(value.shape, (3,))
         test_util.check_translation(value)
+
+    def test_angle_axis(self):
+        value_identity = mut.AngleAxis.Identity()
+        self.assertEqual(value_identity.angle(), 0)
+        self.assertTrue((value_identity.axis() == [1, 0, 0]).all())
+
+        # Construct with rotation matrix.
+        R = np.array([
+            [0., 1, 0],
+            [-1, 0, 0],
+            [0, 0, 1]])
+        value = mut.AngleAxis(rotation=R)
+        self.assertTrue(np.allclose(value.rotation(), R, atol=1e-15, rtol=0))
+        self.assertTrue(np.allclose(
+            value.inverse().rotation(), R.T, atol=1e-15, rtol=0))
+        self.assertTrue(np.allclose(
+            value.multiply(value.inverse()).rotation(), np.eye(3),
+            atol=1e-15, rtol=0))
+        value.set_rotation(np.eye(3))
+        self.assertTrue((value.rotation() == np.eye(3)).all())
+
+        # Construct with quaternion.
+        q = mut.Quaternion(R)
+        value = mut.AngleAxis(quaternion=q)
+        self.assertTrue(np.allclose(
+            value.quaternion().wxyz(), q.wxyz(), atol=1e-15, rtol=0))
+        value.set_quaternion(mut.Quaternion.Identity())
+        self.assertTrue((value.quaternion().wxyz() == [1, 0, 0, 0]).all())
+
+        # Test setters.
+        value = mut.AngleAxis(value_identity)
+        value.set_angle(np.pi / 4)
+        v = normalize(np.array([0.1, 0.2, 0.3]))
+        with self.assertRaises(RuntimeError):
+            value.set_axis([0.1, 0.2, 0.3])
+        value.set_axis(v)
+        self.assertEqual(value.angle(), np.pi / 4)
+        self.assertTrue((value.axis() == v).all())
+
+        # Test symmetry based on accessors.
+        # N.B. `Eigen::AngleAxis` does not disambiguate by restricting internal
+        # angles and axes to a half-plane.
+        angle = np.pi / 6
+        axis = normalize([0.1, 0.2, 0.3])
+        value = mut.AngleAxis(angle=angle, axis=axis)
+        value_sym = mut.AngleAxis(angle=-angle, axis=-axis)
+        self.assertTrue(np.allclose(
+            value.rotation(), value_sym.rotation(), atol=1e-15, rtol=0))
+        self.assertTrue(np.allclose(
+            value.angle(), -value_sym.angle(), atol=1e-15, rtol=0))
+        self.assertTrue(np.allclose(
+            value.axis(), -value_sym.axis(), atol=1e-15, rtol=0))

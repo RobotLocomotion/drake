@@ -52,6 +52,11 @@ and will delve into the constraint solver functionality in:
           friction cone. (nr ≥ 2 for contacts between three-dimensional bodies,
           nr = 1 for contacts between two-dimensional bodies).
 - nc      The number of contact surface constraint equations.
+- nck     The total number of edges in the polygonal approximations to the
+          nc friction cones corresponding to the nc point contacts. Note that
+          nck = 2ncr (where ncr is defined immediately below).
+- ncr     *Half* the total number of edges in the polygonal approximations to the
+          nc friction cones corresponding to the nc point contacts.
 - nv      The dimension of the system generalized velocity / force.
 - nq      The dimension of the system generalized coordinates.
 - v       The system's generalized velocity vector (of dimension nv), which is a
