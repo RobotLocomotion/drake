@@ -105,4 +105,5 @@ def pypi_archive(
         sha256 = sha256,
         strip_prefix = strip_prefix,
         urls = urls,
-        **kwargs)
+        **kwargs
+    )

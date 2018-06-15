@@ -375,7 +375,6 @@ drake_cc_library(
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
-        "@fmt",
     ],
 )
 

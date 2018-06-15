@@ -1086,12 +1086,28 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return geometry_id_to_collision_index_.count(id) > 0;
   }
 
+  // Helper method to compute penetration point pairs for a given `context`.
+  // Having this as a separate method allows us to control specializations for
+  // different scalar types.
+  std::vector<geometry::PenetrationAsPointPair<T>>
+  CalcPointPairPenetrations(const systems::Context<T>& context) const;
+
+  // This helper method combines the friction properties for each pair of
+  // contact points in `point_pairs` according to
+  // CalcContactFrictionFromSurfaceProperties().
+  // The i-th entry in the returned std::vector corresponds to the combined
+  // friction properties for the i-th point pair in `point_pairs`.
+  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
+      const std::vector<geometry::PenetrationAsPointPair<T>>&
+      point_pairs) const;
+
   // Helper method to compute contact forces in the normal direction using a
   // penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
   // Given a set of point pairs in `point_pairs_set`, this method computes the
@@ -1190,7 +1206,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     /// See contact_model_doxygen.h @section tangent_force for details.
     T ComputeFrictionCoefficient(
         const T& speed_BcAc,
-        const CoulombFriction<T>& friction) const;
+        const CoulombFriction<double>& friction) const;
 
     /// Evaluates an S-shaped quintic curve, f(x), mapping the domain [0, 1] to
     /// the range [0, 1] where f(0) = f''(0) = f''(1) = f'(0) = f'(1) = 0 and
