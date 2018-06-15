@@ -76,6 +76,7 @@ drake_cc_library(
     ],
     deps = [
         "@eigen",
+        "@fmt",
         "@spdlog",
         "@stx",
     ],
@@ -218,7 +219,6 @@ drake_cc_library(
         ":number_traits",
         ":polynomial",
         "//math:matrix_util",
-        "@fmt",
     ],
 )
 
@@ -377,7 +377,6 @@ drake_cc_library(
     hdrs = ["pointer_cast.h"],
     deps = [
         ":nice_type_name",
-        "@fmt",
     ],
 )
 

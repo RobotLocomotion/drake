@@ -36,7 +36,6 @@ drake_cc_library(
     deps = [
         "//automotive/maliput/api",
         "//math:geometric_transform",
-        "@fmt",
     ],
 )
 
