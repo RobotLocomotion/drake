@@ -62,7 +62,8 @@ def bitbucket_archive(
             urls = urls,
             sha256 = sha256,
             strip_prefix = strip_prefix,
-            **kwargs)
+            **kwargs
+        )
     else:
         native.new_http_archive(
             name = name,
@@ -70,4 +71,5 @@ def bitbucket_archive(
             sha256 = sha256,
             build_file = build_file,
             strip_prefix = strip_prefix,
-            **kwargs)
+            **kwargs
+        )

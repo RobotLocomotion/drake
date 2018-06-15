@@ -127,8 +127,11 @@ install_files(
 )
 """
 
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 drake_visualizer_repository = repository_rule(
     attrs = {

@@ -37,8 +37,10 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         repository_ctx.symlink("/usr/include/expat.h", "include/expat.h")
-        repository_ctx.symlink("/usr/include/expat_external.h",
-                               "include/expat_external.h")
+        repository_ctx.symlink(
+            "/usr/include/expat_external.h",
+            "include/expat_external.h",
+        )
 
         file_content = """# -*- python -*-
 
@@ -58,8 +60,11 @@ cc_library(
 )
 """
 
-        repository_ctx.file("BUILD.bazel", content = file_content,
-                            executable = False)
+        repository_ctx.file(
+            "BUILD.bazel",
+            content = file_content,
+            executable = False,
+        )
     else:
         error = setup_pkg_config_repository(repository_ctx).error
 

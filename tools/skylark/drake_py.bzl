@@ -5,12 +5,14 @@ def drake_py_library(
         deps = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     native.py_library(
         name = name,
         deps = deps,
-        **kwargs)
+        **kwargs
+    )
 
 def _disable_test_impl(ctx):
     info = dict(
@@ -51,6 +53,7 @@ def _py_target_isolated(
     # See #8041 for more details.
     if py_target == None:
         fail("Must supply macro function for defining `py_target`.")
+
     # Do not isolate targets that are already isolated. This generally happens
     # when linting tests (which are isolated) are invoked for isolated Python
     # targets. Without this check, the actual test turns into
@@ -58,6 +61,7 @@ def _py_target_isolated(
     prefix = "py/"
     if isolate and not name.startswith(prefix):
         actual = prefix + name
+
         # Preserve original functionality.
         if not main:
             main = name + ".py"
@@ -68,9 +72,12 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
-            **kwargs)
+            **kwargs
+        )
+
         # Disable and redirect original name.
         package_prefix = "//" + native.package_name() + ":"
+
         # N.B. We make the disabled rule a test, even if the original was not.
         # This ensures that developers will see the redirect using both
         # `bazel run` or `bazel test`.
@@ -87,7 +94,8 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
-            **kwargs)
+            **kwargs
+        )
 
 def drake_py_binary(
         name,
@@ -102,6 +110,7 @@ def drake_py_binary(
         library code. This prevents submodules from leaking in as top-level
         submodules. For more detail, see #8041.
     """
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     _py_target_isolated(
@@ -110,7 +119,8 @@ def drake_py_binary(
         isolate = isolate,
         srcs = srcs,
         deps = deps,
-        **kwargs)
+        **kwargs
+    )
 
 def drake_py_unittest(
         name,
@@ -131,7 +141,8 @@ def drake_py_unittest(
         srcs = srcs + [helper],
         main = helper,
         allow_import_unittest = True,
-        **kwargs)
+        **kwargs
+    )
 
 def drake_py_test(
         name,
@@ -162,6 +173,7 @@ def drake_py_test(
         size = "small"
     if srcs == None:
         srcs = ["test/%s.py" % name]
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     if not allow_import_unittest:
@@ -173,7 +185,8 @@ def drake_py_test(
         size = size,
         srcs = srcs,
         deps = deps,
-        **kwargs)
+        **kwargs
+    )
 
 def py_test_isolated(
         name,
@@ -185,4 +198,5 @@ def py_test_isolated(
         name = name,
         py_target = native.py_test,
         isolate = True,
-        **kwargs)
+        **kwargs
+    )

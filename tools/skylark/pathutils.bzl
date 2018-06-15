@@ -36,11 +36,11 @@ def __remove_prefix(path, prefix):
         if prefix[n] == path[n]:
             continue
 
-        # Single-glob matches any (one) path component.
+            # Single-glob matches any (one) path component.
         elif prefix[n] == "*":
             continue
 
-        # Mulit-glob matches one or more components.
+            # Mulit-glob matches one or more components.
         elif prefix[n] == "**":
             # If multi-glob is at the end of the prefix, return the last path
             # component.

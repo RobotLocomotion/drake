@@ -64,6 +64,7 @@ def expose_all_files(
     @param sub_dirs
         Any directories that are not packages.
     """
+
     # @note It'd be nice if this could respect *ignore files, but meh.
     # Also, it'd be **super** nice if Bazel did not let `**` globs leak into
     # other packages and then error out.
@@ -76,7 +77,9 @@ def expose_all_files(
         srcs = native.glob(patterns)
         for sub_dir in sub_dirs:
             srcs += native.glob([
-                sub_dir + "/" + pattern for pattern in patterns])
+                sub_dir + "/" + pattern
+                for pattern in patterns
+            ])
         native.filegroup(
             name = name,
             srcs = srcs,
@@ -84,9 +87,12 @@ def expose_all_files(
             # runfiles, but not for expansion via `$(locations...)`.
             visibility = visibility,
         )
+
         # Expose all files recursively (from one level).
-        deps = [package_prefix + sub_package + ":" + name + "_recursive"
-                for sub_package in sub_packages]
+        deps = [
+            package_prefix + sub_package + ":" + name + "_recursive"
+            for sub_package in sub_packages
+        ]
         recursive_filegroup(
             name = name + "_recursive",
             data = [name] + deps,

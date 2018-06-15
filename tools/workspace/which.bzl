@@ -7,10 +7,13 @@ def _impl(repository_ctx):
     found_command = which(
         repository_ctx,
         command,
-        repository_ctx.attr.additional_search_paths)
+        repository_ctx.attr.additional_search_paths,
+    )
     if not found_command:
         fail("Could not find {} on PATH={}".format(
-            command, path(repository_ctx)))
+            command,
+            path(repository_ctx),
+        ))
     repository_ctx.symlink(found_command, command)
     build_file_content = """# -*- python -*-
 
@@ -19,8 +22,11 @@ def _impl(repository_ctx):
 # A symlink to {}.
 exports_files(["{}"])
 """.format(found_command, command)
-    repository_ctx.file("BUILD.bazel", content = build_file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = build_file_content,
+        executable = False,
+    )
 
 which_repository = repository_rule(
     attrs = {

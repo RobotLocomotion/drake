@@ -29,6 +29,7 @@ def _vector_gen_outs(srcs, kind):
     or "lcm" (lcmt_foo_t.lcm).  For compatiblity with past practice, C++
     output will appear under a "gen" folder, but *.lcm output will not.
     """
+
     # Find and remove the dirname and extension shared by all srcs.
     # For srcs in the current directory, the dirname will be ".".
     subdir, _ = _relative_dirname_basename(srcs[0])
@@ -78,11 +79,15 @@ def _vector_gen_impl(ctx):
         inputs = ctx.files.srcs,
         outputs = ctx.outputs.outs,
         arguments = [
-            "--src=%s" % src.path for src in ctx.files.srcs
+            "--src=%s" % src.path
+            for src in ctx.files.srcs
         ] + [
-            "--out=%s" % out.path for out in ctx.outputs.outs
+            "--out=%s" % out.path
+            for out in ctx.outputs.outs
         ] + [
-            "--include_prefix=%s" % x for x in [ctx.attr.include_prefix] if x
+            "--include_prefix=%s" % x
+            for x in [ctx.attr.include_prefix]
+            if x
         ],
         env = ctx.attr.env,
         executable = ctx.executable.lcm_vector_gen,
@@ -141,7 +146,8 @@ def drake_cc_vector_gen(
         outs = outs.srcs + outs.hdrs,
         include_prefix = include_prefix,
         visibility = visibility,
-        env = hermetic_python_env())
+        env = hermetic_python_env(),
+    )
     return struct(
         srcs = outs.srcs,
         hdrs = outs.hdrs,
@@ -150,7 +156,7 @@ def drake_cc_vector_gen(
             "//common:dummy_value",
             "//common:essential",
             "//common:symbolic",
-        ]]
+        ]],
     )
 
 def drake_cc_vector_gen_library(
@@ -174,7 +180,8 @@ def drake_cc_vector_gen_library(
         srcs = generated.srcs,
         hdrs = generated.hdrs,
         deps = deps + generated.deps,
-        **kwargs)
+        **kwargs
+    )
 
 def drake_cc_vector_gen_translator_library(
         name,
@@ -195,7 +202,8 @@ def drake_cc_vector_gen_translator_library(
         outs = outs.srcs + outs.hdrs,
         include_prefix = "drake",
         visibility = [],
-        env = hermetic_python_env())
+        env = hermetic_python_env(),
+    )
     drake_cc_library(
         name = name,
         srcs = outs.srcs,
@@ -204,7 +212,8 @@ def drake_cc_vector_gen_translator_library(
             "//common:essential",
             "//systems/lcm:translator",
         ],
-        **kwargs)
+        **kwargs
+    )
 
 def drake_vector_gen_lcm_sources(
         name,
@@ -220,4 +229,5 @@ def drake_vector_gen_lcm_sources(
         srcs = srcs,
         outs = outs.outs,
         env = hermetic_python_env(),
-        **kwargs)
+        **kwargs
+    )
