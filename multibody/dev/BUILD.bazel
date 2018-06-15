@@ -36,7 +36,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags() + [
-        # Takes too long (~2300 s) to run with Valgrind.
+        # Takes too long to run with Valgrind.
         "no_memcheck",
         # Excluding because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
@@ -54,7 +54,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags() + [
-        # Takes too long (~7500 s) to run with Valgrind.
+        # Takes too long to run with Valgrind.
         "no_memcheck",
         # Excluding because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
@@ -72,7 +72,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     tags = gurobi_test_tags() + [
-        # Takes too long (~3200 s) to run with Valgrind.
+        # Takes too long to run with Valgrind.
         "no_memcheck",
         # Excluding because an assertion fails in LLVM code. Issue #6179.
         "no_tsan",
@@ -91,7 +91,7 @@ drake_cc_googletest(
     ],
     tags = gurobi_test_tags() + [
         "no_asan",
-        # Times out with Valgrind
+        # Takes too long to run with Valgrind.
         "no_memcheck",
         "no_tsan",
     ],
