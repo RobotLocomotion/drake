@@ -43,8 +43,8 @@ def _impl(repository_ctx):
         )
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
-    url = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2".format(
-        # noqa
+    template = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2"  # noqa
+    url = template.format(
         mosek_major_version,
         mosek_minor_version,
         mosek_patch_version,

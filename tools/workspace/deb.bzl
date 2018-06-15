@@ -47,7 +47,11 @@ def setup_new_deb_archive(repo_ctx):
 def _impl(repo_ctx):
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
-        fail("Unable to complete setup for @{} repository: {}".format(repo_ctx.name, result.error))
+        fail("Unable to complete setup for @{} repository: {}".format(
+            # (forced line break)
+            repo_ctx.name,
+            result.error,
+        ))
 
 new_deb_archive = repository_rule(
     attrs = {

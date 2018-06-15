@@ -38,11 +38,19 @@ def _impl(repo_ctx):
     if os_result.is_macos:
         result = setup_pkg_config_repository(repo_ctx)
         if result.error != None:
-            fail("Unable to complete setup for @{} repository: {}".format(repo_ctx.name, result.error))
+            fail("Unable to complete setup for @{} repository: {}".format(
+                # (forced line break)
+                repo_ctx.name,
+                result.error,
+            ))
         return
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
-        fail("Unable to complete setup for @{} repository: {}".format(repo_ctx.name, result.error))
+        fail("Unable to complete setup for @{} repository: {}".format(
+            # (forced line break)
+            repo_ctx.name,
+            result.error,
+        ))
 
     # Avoid using upstream library names for our custom build.
     _rename_so(

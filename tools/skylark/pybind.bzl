@@ -213,7 +213,11 @@ def _get_package_info(base_package, sub_package = None):
         sub_package = sub_package.lstrip("//")
     base_package_pre = base_package + "/"
     if not sub_package.startswith(base_package_pre):
-        fail("Invalid sub_package '{}' (not a child of '{}')".format(sub_package, base_package))
+        fail("Invalid sub_package '{}' (not a child of '{}')".format(
+            # (forced line break)
+            sub_package,
+            base_package,
+        ))
     sub_path_rel = sub_package[len(base_package_pre):]
 
     # Count the number of pieces.

@@ -249,7 +249,11 @@ def setup_pkg_config_repository(repository_ctx):
 def _impl(repository_ctx):
     result = setup_pkg_config_repository(repository_ctx)
     if result.error != None:
-        fail("Unable to complete pkg-config setup for @{} repository: {}".format(repository_ctx.name, result.error))
+        fail("Unable to complete pkg-config setup for " +
+             "@{} repository: {}".format(
+                 repository_ctx.name,
+                 result.error,
+             ))
 
 pkg_config_repository = repository_rule(
     # TODO(jamiesnape): Make licenses mandatory.

@@ -45,11 +45,15 @@ def _make_result(
         ubuntu_release = None,
         macos_release = None):
     """Return a fully-populated struct result for determine_os, below."""
+    if ubuntu_release != None:
+        distribution = "ubuntu"
+    elif macos_release != None:
+        distribution = "macos"
+    else:
+        distribution = None
     return struct(
         error = error,
-        distribution = (
-            "ubuntu" if (ubuntu_release != None) else "macos" if (macos_release != None) else None
-        ),
+        distribution = distribution,
         is_macos = (macos_release != None),
         is_ubuntu = (ubuntu_release != None),
         ubuntu_release = ubuntu_release,

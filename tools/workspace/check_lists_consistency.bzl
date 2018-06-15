@@ -21,6 +21,5 @@ def check_lists_consistency(
     all_headers = native.glob(glob)
     unknown_headers = [x for x in all_headers if x not in file_list]
     if len(unknown_headers) != 0:
-        fail(
-            "Inconsistent file lists. Unknown file(s): {}".format(unknown_headers),
-        )
+        fail("Inconsistent file lists. Unknown file(s): " +
+             str(unknown_headers))

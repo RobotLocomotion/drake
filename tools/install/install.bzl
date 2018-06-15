@@ -77,11 +77,17 @@ def _guess_files(target, candidates, scope, attr_name):
         return candidates
 
     elif scope == "WORKSPACE":
-        return [f for f in candidates if target.label.workspace_root == f.owner.workspace_root]
+        return [
+            f for f in candidates
+            if target.label.workspace_root == f.owner.workspace_root
+        ]
 
     elif scope == "PACKAGE":
-        return [f for f in candidates if target.label.workspace_root == f.owner.workspace_root and
-                                         target.label.package == f.owner.package]
+        return [
+            f for f in candidates
+            if (target.label.workspace_root == f.owner.workspace_root and
+                target.label.package == f.owner.package)
+        ]
 
     else:
         msg_fmt = "'install' given unknown '%s' value '%s'"
