@@ -14,14 +14,7 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
-# TODO(jwnimmer-tri) Update the required version of Bazel to 0.14.1 (to match
-# our documentation) once our CI images have all been upgraded.
-if(APPLE)
-  set(MINIMUM_BAZEL_VERSION 0.12.0)
-else()
-  set(MINIMUM_BAZEL_VERSION 0.12.0)
-endif()
-
+set(MINIMUM_BAZEL_VERSION 0.14.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)

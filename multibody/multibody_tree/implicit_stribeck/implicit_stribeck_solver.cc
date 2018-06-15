@@ -22,9 +22,6 @@ T DirectionChangeLimiter<T>::CalcAlpha(
   DRAKE_ASSERT(relative_tolerance > 0);
   DRAKE_ASSERT(dv.size() == v.size());
 
-  using std::abs;
-  using std::max;
-  using std::min;
   using std::sqrt;
 
   // εᵥ is used to determine when a velocity is close to zero.
@@ -283,6 +280,8 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     EigenPtr<VectorX<T>> t_hat_ptr,
     EigenPtr<VectorX<T>> mu_stribeck_ptr,
     EigenPtr<VectorX<T>> ft) const {
+  using std::sqrt;
+
   const int nc = nc_;  // Number of contact points.
 
   // Aliases to vector of friction coefficients.
@@ -438,7 +437,6 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     const std::vector<Matrix2<T>>& dft_dvt,
     const Eigen::Ref<const MatrixX<T>>& Jt, double dt,
     EigenPtr<MatrixX<T>> J) const {
-
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
   const int nc = nc_;  // Number of contact points.
@@ -469,14 +467,30 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 }
 
 template <typename T>
+T ImplicitStribeckSolver<T>::CalcAlpha(
+    const Eigen::Ref<const VectorX<T>>& vt,
+    const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
+  using std::min;
+  T alpha = 1.0;
+  double v_stribeck = parameters_.stiction_tolerance;
+  for (int ic = 0; ic < nc_; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
+    auto vt_ic = vt.template segment<2>(ik);
+    const auto dvt_ic = Delta_vt.template segment<2>(ik);
+    alpha = min(
+        alpha,
+        internal::DirectionChangeLimiter<T>::CalcAlpha(
+            vt_ic, dvt_ic,
+            cos_theta_max_, v_stribeck, parameters_.relative_tolerance));
+  }
+  DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
+  return alpha;
+}
+
+template <typename T>
 ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
-
-  using std::abs;
-  using std::max;
-  using std::min;
-  using std::sqrt;
 
   // Clear statistics so that we can update them with new ones for this call to
   // SolveWithGuess().
@@ -583,13 +597,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Convergence is monitored in the tangential velocities.
     vt_error = Delta_vt.norm();
 
-    // TODO(amcastro-tri): Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
-    // all contact points. The angle change θ is defined by the dot product
-    // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
-    // We'll do so by computing a coefficient 0 < α < 1 so that if the
-    // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ < θₘₐₓ
-    // for all contact points.
-    T alpha = 1.0;  // We set α = 1 for now.
+    // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
+    T alpha = CalcAlpha(vt, Delta_vt);
+
+    // Update generalized velocity vector.
     v = v + alpha * Delta_v;
 
     // Save iteration statistics.

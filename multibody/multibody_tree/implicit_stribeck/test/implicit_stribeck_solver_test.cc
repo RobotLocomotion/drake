@@ -717,11 +717,294 @@ TEST_F(PizzaSaver, NoContact) {
   EXPECT_EQ(solver_.get_tangential_velocities().size(), 0);
 }
 
+// This test verifies that the implicit stribeck solver can correctly predict
+// transitions in a problem with impact. In this test the y axis is in the "up"
+// vertical direction, the x axis points to the right and the z axis comes out
+// of the x-y plane forming a right handed basis. Gravity points in the minus
+// y direction. The x-z plane is the ground.
+// In this test a cylinder moves parallel to the ground with its revolute axis
+// parallel to the z axis at all times. The cylinder's COM is constrained to
+// move in the x-y plane. Therefore, the cylinder's motions are described by
+// three degrees of freedom (DOFs); two translational DOFs in the x-y plane and
+// a rotational DOF about its revolute axis. The cylinder has radius R,
+// mass m, and rotational inertia I, and it is initially at height y0 = h0 + R
+// from a flat ground.
+// At t = 0, the cylinder is given an initial horizontal velocity vx0 and zero
+// vertical velocity vy0 = 0. The cylinder will undergo a parabolic free flight
+// towards the ground until the moment of impact at which the vertical velocity
+// goes to zero (a purely inelastic collision). Since we know the initial
+// height, we therefore know that the vertical velocity at the time of impact
+// will be vy = -sqrt(2⋅g⋅h0), with g the acceleration of gravity. Therefore the
+// change of momentum, in the vertical direction, at the time of impact will be
+// py = m * vy.
+// The implicit Stribeck solver needs to know the normal forces in advance. We
+// compute the normal force in order to exactly bring the cylinder to a stop in
+// the vertical direction within a time interval dt from the time that the
+// bodies first make contact. That is, we set the normal force to
+// fn = -m * vy / dt + m * g, where the small contribution due to gravity is
+// needed to exactly bring the cylinder's vertical velocity to zero. The solver
+// keeps this value constant througout the computation.
+// The equations governing the motion for the cylinder during impact are:
+//   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
+//   (2)  m⋅Δvx = pt ,  Δvx = vx - vx0
+//   (3)  vt = vx + ω⋅R
+//   (4)  |pt| ≤ μ⋅pn
+// where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction (in the
+// tangential direction) and due to the normal force, respectively.
+// The problem above can be solved analytically for vx, ω and ft. We will find
+// the condition for either stiction or sliding after impact by solving the
+// easier stiction problem and subsequently verifying the condition given by
+// Eq. (4).
+//
+//                  Stiction After Impact, vt = 0.
+// Setting vt = 0 in Eq. (3), solving for ω and substituting the result in
+// Eq. (1) leads now, together with Eq. (2), to a system of equations in vx and
+// pt. We solve it for pt to find:
+//   pt = -m⋅vx0 / (1 + m⋅R²/I)
+// From Eq. (4), stiction occurs if vx0 < vx_transition, with vx_transition
+// defined as:
+//   vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
+// Otherwise the cylinder will be sliding after impact.
+class RollingCylinder : public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Mass matrix corresponding to free (in 2D) cylinder.
+    // Generalized velocities are v = [vx, vy, ω].
+    M_ << m_,  0,  0,
+           0, m_,  0,
+           0,  0,  I_;
+  }
+
+  // Computes tangential velocity Jacobian s.t. vt = Jt * v.
+  // Where vt is a vector in ℝ². Its first component corresponds to the
+  // tangential velocity along the x-axis and its second component corresponds
+  // to the out-of-plane (z-axis) tangential velocity. Since the problem is 2D,
+  // the second component along the z axis is zero always.
+  MatrixX<double> ComputeTangentialJacobian() {
+    MatrixX<double> D(2 * nc_, nv_);
+    // vt = vx + w * R = [1, 0, R] * v
+    D << 1.0, 0.0, R_,   // Along the x axis
+        0.0, 0.0, 0.0;  // Along the z axis out of the plane.
+    return D;
+  }
+
+  // Sets the ImplicitStribeckSolver to solve this cylinder case from the
+  // input data:
+  //   v0: velocity right before impact.
+  //   tau: vector of externally applied generalized forces.
+  //   mu: friction coefficient between the cylinder and the ground.
+  //   height: the initial height the cylinder is dropped from.
+  //   dt: time step used by the solver.
+  void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
+                        double mu, double height, double dt) {
+    // At the moment of impact the cylinder will have a vertical velocity
+    // vy = sqrt(2 * h * g).
+    const double vy = sqrt(2.0 * g_ * height);
+
+    // The non-penetration constraint implies there will be a discrete change of
+    // momentum equal to m * vy. We therefore compute a normal force so that the
+    // cylinder undergoes this finite change of momentum and comes to a stop
+    // within the discrete interval dt.
+    fn_(0) = m_ * vy / dt + m_ * g_;
+
+    // Next time step generalized momentum if there are no friction forces.
+    p_star_ = M_ * v0 + dt * tau + dt * Vector3<double>(0.0, fn_(0), 0.0);
+
+    // Friction coefficient for the only contact point in the problem.
+    mu_vector_(0) = mu;
+
+    D_ = ComputeTangentialJacobian();
+
+    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_vector_);
+  }
+
+ protected:
+  // For this unit test we have:
+  //   R = 1.0
+  //   m = 1.0
+  //   I = 1.0
+  //   h0 = 1 / 2
+  //   g = 9.0
+  //   mu = 0.1
+  // With this set of parameters we have:
+  //   vy = -3.0 m/s (velocity at impact).
+  //   pn = 3.0 Ns
+  //   vx_transition = 0.6 m/s
+  // with pn = -m⋅vy = m⋅sqrt(2⋅g⋅h0) and vx_transition determined from
+  // vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m as described in the documentation of
+  // this test fixture.
+  const double m_{1.0};   // Mass of the cylinder, kg.
+  const double R_{1.0};   // Radius of the cylinder, m.
+  const double g_{9.0};   // Acceleration of gravity, m/s².
+  // For a thin cylindrical shell the moment of inertia is I = m⋅R². We use this
+  // inertia so that numbers are simpler for debugging purposes
+  // (I = 1.0 kg⋅m² in this case).
+  const double I_{R_ * R_ * m_};  // kg⋅m².
+  const double mu_{0.1};  // Coefficient of friction, dimensionless.
+
+  // Problem sizes.
+  const int nv_{3};  // number of generalized velocities.
+  const int nc_{1};  // number of contact points.
+
+  // Mass matrix.
+  MatrixX<double> M_{nv_, nv_};
+
+  // Tangential velocities Jacobian.
+  MatrixX<double> D_{2 * nc_, nv_};
+
+  // The implicit Stribeck solver for this problem.
+  ImplicitStribeckSolver<double> solver_{nv_};
+
+  // Additional solver data that must outlive solver_ during solution.
+  VectorX<double> p_star_{nv_};  // Generalized momentum.
+  VectorX<double> fn_{nc_};      // Normal forces at each contact point.
+  // Friction coefficient at each contact point.
+  VectorX<double> mu_vector_{nc_};
+};
+
+// This is a case for which the initial horizontal velocity is
+// vx0 < vx_transition and therefore we expect rolling after impact.
+TEST_F(RollingCylinder, StictionAfterImpact) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  const double dt = 1.0e-3;  // time step in seconds.
+
+  // Other than normal contact forces, external forcing for this problem
+  // includes gravity.
+  const Vector3<double> tau(0.0, -m_ * g_, 0.0);
+
+  // Initial height. We choose it so that vy at impact is exactly 3.0 m/s.
+  const double h0 = 0.5;
+
+  // Vertical velocity at the moment of impact.
+  const double vy0 = -sqrt(2.0 * g_ * h0);
+
+  // Initial horizontal velocity (recall vx_transition = 0.6 m/s)
+  const double vx0 = 0.5;  // m/s.
+
+  // Initial velocity.
+  const Vector3<double> v0(vx0, vy0, 0.0);
+
+  SetImpactProblem(v0, tau, mu_, h0, dt);
+
+  Parameters parameters;  // Default parameters.
+  parameters.stiction_tolerance = 1.0e-6;
+  solver_.set_solver_parameters(parameters);
+
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
+
+  const IterationStats& stats = solver_.get_iteration_statistics();
+
+  const double vt_tolerance =
+      solver_.get_solver_parameters().relative_tolerance *
+          solver_.get_solver_parameters().stiction_tolerance;
+  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
+
+  // Friction should only act horizontally.
+  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+
+  // The moment due to friction Mf should exactly match R * ft.
+  EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
+
+  const VectorX<double>& vt = solver_.get_tangential_velocities();
+  ASSERT_EQ(vt.size(), 2 * nc_);
+
+  // There should be no spurious out-of-plane tangential velocity.
+  EXPECT_NEAR(vt(1), 0.0, kTolerance);
+
+  // We expect stiction, to within the stiction tolerance.
+  EXPECT_LT(std::abs(vt(0)), parameters.stiction_tolerance);
+
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // Since we imposed the normal force exactly to bring the cylinder to a stop,
+  // we expect the vertical velocity to be zero.
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
+
+  // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
+  // tolerance.
+  EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+}
+
+// This is a case for which the initial horizontal velocity is
+// vx0 > vx_transition and therefore we expect sliding after impact.
+TEST_F(RollingCylinder, SlidingAfterImpact) {
+  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+
+  const double dt = 1.0e-3;  // time step in seconds.
+
+  // Other than normal contact forces, external forcing for this problem
+  // includes gravity.
+  const Vector3<double> tau(0.0, -m_ * g_, 0.0);
+
+  // Initial height. We choose it so that vy at impact is exactly 3.0 m/s.
+  const double h0 = 0.5;
+
+  // Vertical velocity at the moment of impact.
+  const double vy0 = -sqrt(2.0 * g_ * h0);
+
+  // Initial horizontal velocity (vx_transition = 0.6 m/s).
+  const double vx0 = 0.7;  // m/s.
+
+  // Initial velocity.
+  const Vector3<double> v0(vx0, vy0, 0.0);
+
+  SetImpactProblem(v0, tau, mu_, h0, dt);
+
+  Parameters parameters;  // Default parameters.
+  parameters.stiction_tolerance = 1.0e-6;
+  solver_.set_solver_parameters(parameters);
+
+  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ComputationInfo::Success);
+
+  VectorX<double> tau_f = solver_.get_generalized_forces();
+
+  const IterationStats& stats = solver_.get_iteration_statistics();
+
+  const double vt_tolerance =
+      solver_.get_solver_parameters().relative_tolerance *
+          solver_.get_solver_parameters().stiction_tolerance;
+  EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
+
+  // Friction should only act horizontally.
+  EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
+
+  // The moment due to friction Mf should exactly match R * ft.
+  EXPECT_NEAR(tau_f(2), R_ * tau_f(0), kTolerance);
+
+  const VectorX<double>& vt = solver_.get_tangential_velocities();
+  ASSERT_EQ(vt.size(), 2 * nc_);
+
+  // There should be no spurious out-of-plane tangential velocity.
+  EXPECT_NEAR(vt(1), 0.0, kTolerance);
+
+  // We expect sliding, i.e. a (positive) sliding velocity larger than the
+  // stiction tolerance.
+  EXPECT_GT(vt(0), parameters.stiction_tolerance);
+
+  const VectorX<double>& v = solver_.get_generalized_velocities();
+  ASSERT_EQ(v.size(), nv_);
+
+  // Even though not rolling, the cylinder should be rotating clockwise.
+  EXPECT_TRUE(v(2) < 0.0);
+
+  // We expect the solver to update vt accordingly based on v before return.
+  EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
+
+  // Since we imposed the normal force exactly to bring the cylinder to a stop,
+  // we expect the vertical velocity to be zero.
+  EXPECT_NEAR(v(1), 0.0, kTolerance);
+}
+
 // TODO(amcastro-tri): Add more unit tests including:
 // - Jacobian of the residual compared against and AutoDiff test version.
 //   - Test for the one-way coupled version (friction).
 //   - Test for the two-way coupled version (friction and normal forces).
-// - Impact problem with transition to either stiction or sliding.
 
 }  // namespace
 }  // namespace implicit_stribeck

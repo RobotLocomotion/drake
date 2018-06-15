@@ -102,6 +102,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
     .def("compile", &RigidBodyTree<double>::compile)
+    .def("drawKinematicTree", &RigidBodyTree<double>::drawKinematicTree)
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
       std::default_random_engine generator(std::random_device {}());
       return tree.getRandomConfiguration(generator);
