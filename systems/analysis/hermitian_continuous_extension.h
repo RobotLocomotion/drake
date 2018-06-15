@@ -15,13 +15,14 @@
 namespace drake {
 namespace systems {
 
-/// An StepwiseContinuousExtension class implementation using Hermitian
-/// interpolators. For every integration step, state 𝐱 and state time
-/// derivative d𝐱/dt are required at both ends. Hermite cubic polynomials
-/// are then constructed for each, yielding a C1 extension to the solution 𝐱(t).
+/// A StepwiseContinuousExtension class implementation using Hermitian
+/// interpolators. Updates take the form of integration steps, for which
+/// state 𝐱 and state time derivative d𝐱/dt are known at least at both ends
+/// of the step. Hermite cubic polynomials are then constructed upon
+/// consolidation, yielding a C1 extension of the solution 𝐱(t).
 ///
-/// Hermitian continuous extensions show the same error bound as that of the
-/// integration scheme being used for up to 3rd order schemes (see
+/// Hermitian continuous extensions exhibit the same truncation error as that of
+/// the integration scheme being used for up to 3rd order schemes (see
 /// [Hairer, 1993]).
 ///
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
@@ -35,13 +36,18 @@ template <typename T,
 class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
  public:
   /// An integration step representation class, holding just enough
-  /// for hermitian interpolation i.e. three (3) related sets containing
-  /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ , step states
-  /// {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ∈ ℝⁿ,  and state derivatives
-  /// {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ}.where d𝐱/dtᵢ ∈ ℝⁿ.
+  /// for Hermitian interpolation i.e. three (3) related sets containing
+  /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
+  /// {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ ∈ ℝⁿ, and state derivatives
+  /// {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ} where d𝐱/dtᵢ ∈ ℝⁿ.
+  ///
+  /// This step definition allows for intermediate time, state and state
+  /// derivative triplets (e.g. the integrator internal stages) to improve
+  /// interpolation.
   class IntegrationStep {
    public:
-    /// Constructs a zero length step by copy from column matrices.
+    /// Constructs a zero length step (i.e. a step containing a single time,
+    /// state and state derivative triplet) by copy from column matrices.
     ///
     /// @param initial_time Initial time t₀ where the step starts.
     /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
@@ -57,20 +63,23 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     explicit IntegrationStep(const T& initial_time,
                              const MatrixX<T>& initial_state,
                              const MatrixX<T>& initial_state_derivative) {
-      ValidateOrThrow(initial_time, initial_state, initial_state_derivative);
+      ValidateStepExtendTripletOrThrow(initial_time, initial_state,
+                                       initial_state_derivative);
       times_.push_back(initial_time);
       states_.push_back(initial_state);
       state_derivatives_.push_back(initial_state_derivative);
     }
 
-    /// Constructs a zero length step by move from column matrices.
+    /// Constructs a zero length step (i.e. a step containing a single time,
+    /// state and state derivative triplet) by move from column matrices.
     ///
     /// @copydetails IntegrationStep(const T&,const MatrixX<T>&,
     ///                              const MatrixX<T>&)
     explicit IntegrationStep(const T& initial_time,
                              MatrixX<T>&& initial_state,
                              MatrixX<T>&& initial_state_derivative) {
-      ValidateOrThrow(initial_time, initial_state, initial_state_derivative);
+      ValidateStepExtendTripletOrThrow(initial_time, initial_state,
+                                       initial_state_derivative);
       times_.push_back(initial_time);
       states_.push_back(std::move(initial_state));
       state_derivatives_.push_back(std::move(initial_state_derivative));
@@ -78,7 +87,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
 
     /// Extends the step forward in time by copy from column matrices.
     ///
-    /// @param time Time tᵢto extend the step to.
+    /// @param time Time tᵢ to extend the step to.
     /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
     /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
     ///                         as a column matrix.
@@ -89,11 +98,11 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///   the step.<br>
     ///   if given @p state 𝐱ᵢ dimension does not match the dimension of the
     ///   previous state 𝐱ᵢ₋₁.<br>
-    ///   if given @p state 𝐱ᵢand @p state_derivative d𝐱/dtᵢ do not match each
+    ///   if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not match each
     ///   other's dimension.
     void Extend(const T& time, const MatrixX<T>& state,
                 const MatrixX<T>& state_derivative) {
-      ValidateOrThrow(time, state, state_derivative);
+      ValidateStepExtendTripletOrThrow(time, state, state_derivative);
       times_.push_back(time);
       states_.push_back(state);
       state_derivatives_.push_back(state_derivative);
@@ -104,7 +113,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     /// @copydetails Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
     void Extend(const T& time, MatrixX<T>&& state,
                 MatrixX<T>&& state_derivative) {
-      ValidateOrThrow(time, state, state_derivative);
+      ValidateStepExtendTripletOrThrow(time, state, state_derivative);
       times_.push_back(time);
       states_.push_back(std::move(state));
       state_derivatives_.push_back(std::move(state_derivative));
@@ -139,9 +148,10 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     // Validates step update triplet for consistency between the triplet
     // and with current step content.
     //
-    // @see Extend(const T&, const MatrixX<T>&, const MatrixX<T>&
-    void ValidateOrThrow(const T& time, const MatrixX<T>& state,
-                         const MatrixX<T>& state_derivative) {
+    // @see Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
+    void ValidateStepExtendTripletOrThrow(
+        const T& time, const MatrixX<T>& state,
+        const MatrixX<T>& state_derivative) {
       if (state.cols() != 1) {
         throw std::runtime_error("Provided state for step is "
                                  "not a column matrix.");
@@ -227,7 +237,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   ///   if given @p step dimensions does not match this continuous
   ///   extension dimensions.
   void Update(const IntegrationStep& step) {
-    ValidateOrThrow(step);
+    ValidateStepCanBeConsolidatedOrThrow(step);
     raw_steps_.push_back(step);
   }
 
@@ -235,7 +245,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   ///
   /// @copydetails Update(const IntegrationStep&)
   void Update(IntegrationStep&& step) {
-    ValidateOrThrow(step);
+    ValidateStepCanBeConsolidatedOrThrow(step);
     raw_steps_.push_back(step);
   }
 
@@ -268,7 +278,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   // Validates that the provided @p step can be consolidated
   // into this continuous extension.
   // @see Update(const IntegrationStep&)
-  void ValidateOrThrow(const IntegrationStep& step) {
+  void ValidateStepCanBeConsolidatedOrThrow(const IntegrationStep& step) {
     if (step.get_start_time() == step.get_end_time()) {
       throw std::runtime_error("Provided step has zero length "
                                "i.e. start time and end time "
@@ -276,18 +286,18 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     }
     if (!raw_steps_.empty()) {
       const IntegrationStep& last_raw_step = raw_steps_.back();
-      EnsureConsistencyOrThrow(step, last_raw_step.get_end_time(),
+      EnsureExtensionConsistencyOrThrow(step, last_raw_step.get_end_time(),
                                last_raw_step.get_states().back(),
                                last_raw_step.get_state_derivatives().back());
     } else if (!continuous_trajectory_.empty()) {
-      EnsureConsistencyOrThrow(
+      EnsureExtensionConsistencyOrThrow(
           step, end_time_, continuous_trajectory_.value(end_time_),
           continuous_trajectory_.derivative().value(end_time_));
     }
   }
 
-  // Ensures the provided @p step is consistent with the given
-  // continuous extension quantities evaluated at its end.
+  // Ensures that the continuous extension would remain consistent if the
+  // provided @p step were to be consolidated at its end.
   // @param step Integration step to be taken.
   // @param end_time Continuous extension end time.
   // @param end_state Continuous extension end state.
@@ -297,9 +307,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   //   of this continuous extension.<br>
   //   if given @p step dimension does not match this continuous
   //   extension dimension.
-  void EnsureConsistencyOrThrow(const IntegrationStep& step,
-                                const T& end_time, const MatrixX<T>& end_state,
-                                const MatrixX<T>& end_state_derivative) {
+  void EnsureExtensionConsistencyOrThrow(
+      const IntegrationStep& step, const T& end_time,
+      const MatrixX<T>& end_state, const MatrixX<T>& end_state_derivative) {
     if (end_state.rows() != step.get_dimensions()) {
       throw std::runtime_error("Provided step dimension and continuous"
                                " extension (inferred) dimension do not match.");

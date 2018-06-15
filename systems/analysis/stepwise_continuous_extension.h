@@ -6,12 +6,15 @@ namespace drake {
 namespace systems {
 
 /// A ContinuousExtension class interface extension, geared towards
-/// step-wise construction processes. Steps can be rolled back one by
-/// one on a last-input-first-output basis until consolidation takes place.
+/// step-wise construction procedures. Extensions of this kind are to be
+/// built incrementally by means of discrete updates that extend its domain.
+/// To allow for rectification, the actual construction procedure is deferred
+/// to a consolidation step. In between consolidations, updates can be rolled
+/// back (i.e. discarded) one by one on a last-input-first-output basis.
 /// Implementations are thus encouraged to keep recent updates in a light weight
 /// form, deferring heavier computations and construction of a better suited
-/// form for evaluation to the consolidation step. The exact form of the updates
-/// remains implementation specific.
+/// form for evaluation to the consolidation step (and thus the name). Nature of
+/// an update remains implementation specific.
 ///
 /// @tparam T A valid Eigen scalar type.
 template <typename T>

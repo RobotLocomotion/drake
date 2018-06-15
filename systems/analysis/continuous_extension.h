@@ -10,11 +10,12 @@ namespace systems {
 /// them numerically (see IntegratorBase class documentation).
 ///
 /// This continuous extension concept can be formally stated as follows: given
-/// a solution 𝐱(t) ∈ ℝⁿ to an ODE or DAE system that is known at a discrete
-/// set of points {t₁ ... tₚ} where tₚ ∈ ℝ (e.g. as a result of numerical
-/// integration), a continuous extension of 𝐱(t) is another function  𝐰(t) ∈ ℝⁿ
-/// defined for t ∈ [t₁, tₚ] such that 𝐰(tᵢ) = 𝐱(tᵢ) for every
-/// tᵢ ∈ {t₁ ... tₚ} and that approximates 𝐱(t) for the value in between.
+/// a solution 𝐱(t) ∈ ℝⁿ to an ODE or DAE system that is approximated at a
+/// discrete set of points 𝐲(tₖ) ∈ ℝⁿ where tₖ ∈ {t₁, ..., tᵢ} with tᵢ ∈ ℝ
+/// (e.g. as a result of numerical integration), a continuous extension of
+/// 𝐱(t) is another function 𝐳(t) ∈ ℝⁿ defined for t ∈ [t₁, tᵢ] such that
+/// 𝐳(tₖ) = 𝐲(tₖ) and that approximates 𝐱(t) for every value in the closed
+/// interval [t₁, tᵢ].
 ///
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
@@ -22,16 +23,16 @@ class ContinuousExtension {
  public:
   virtual ~ContinuousExtension() {}
 
-  /// Evaluates extension at the given time @p t.
+  /// Evaluates the extension function at the given time @p t.
   /// @param t Time to evaluate extension at.
-  /// @return Extension vector value.
+  /// @return Extension function vector value.
   /// @pre Extension is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions are not met.
   /// @throw std::runtime_error if the extension is not defined for the
   ///                           given @p t.
   virtual VectorX<T> Evaluate(const T& t) const = 0;
 
-  /// Returns the extension dimensions i.e. of its vector value.
+  /// Returns the extension dimension `n`.
   /// @pre Extension is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual int get_dimensions() const = 0;
