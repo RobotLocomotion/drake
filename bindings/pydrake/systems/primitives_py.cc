@@ -3,6 +3,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/bindings/pydrake/util/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
