@@ -86,6 +86,7 @@ dreal_repository = repository_rule(
         "mirrors": attr.string_list(
             default = [
                 "https://drake-apt.csail.mit.edu/xenial/pool/main",
+                "https://s3.amazonaws.com/drake-apt/xenial/pool/main",
             ],
         ),
         "filenames": attr.string_list(
