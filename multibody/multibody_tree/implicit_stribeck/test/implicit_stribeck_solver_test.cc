@@ -639,11 +639,16 @@ TEST_F(PizzaSaver, NoContact) {
 }
 
 // This test verifies that the implicit stribeck solver can correctly predict
-// transitions in a problem with impact. A cylinder's COM is constrained to move
-// in the x-y plane with its axis aligned with the z-axis. Therefore, the
-// cylinder only has three degrees of freedom (DOFs); two translational DOFs in
-// the x-y plane and a rotational DOF about its axis. The cylinder has radius R,
-// mass m, and rotational inertia I, and it is initially at height z0 = h0 + R
+// transitions in a problem with impact. In this test the y axis is in the "up"
+// vertical direction, the x axis points to the right and the z axis comes out
+// of the x-y plane forming a right handed basis. Gravity points in the minus
+// y direction. The x-z plane is the ground.
+// In this test a cylinder moves parallel to the ground with its revolute axis
+// parallel to the z axis at all times. The cylinder's COM is constrained to
+// move in the x-y plane. Therefore, the cylinder's motions are described by
+// three degrees of freedom (DOFs); two translational DOFs in the x-y plane and
+// a rotational DOF about its revolute axis. The cylinder has radius R,
+// mass m, and rotational inertia I, and it is initially at height y0 = h0 + R
 // from a flat ground.
 // At t = 0, the cylinder is given an initial horizontal velocity vx0 and zero
 // vertical velocity vy0 = 0. The cylinder will undergo a parabolic free flight
