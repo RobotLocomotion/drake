@@ -95,7 +95,7 @@ TestValues GetParamsCurve() {
   test_values.expected_lateral_force_front = 4327.83846;
   test_values.expected_lateral_force_rear = 0;
 
-  // Expected derivative values initialized to zero.
+  // Expected derivative values.
   test_values.expected_v_LCp_x = 10;
   test_values.expected_v_LCp_y = 0;
   test_values.expected_yawDt_LC = 0;
@@ -142,12 +142,12 @@ TestValues GetParamsCurveNegative() {
 class DynamicBicycleCarTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    test_car = std::make_unique<DynamicBicycleCar<double>>();
-    test_car_params = std::make_unique<DynamicBicycleCarParams<double>>();
-    context_ = test_car->CreateDefaultContext();
-    output_ = test_car->AllocateOutput(*context_);
-    derivatives_ = test_car->AllocateTimeDerivatives();
-    system_output_ = test_car->AllocateOutput(*context_);
+    test_car_ = std::make_unique<DynamicBicycleCar<double>>();
+    test_car_params_ = std::make_unique<DynamicBicycleCarParams<double>>();
+    context_ = test_car_->CreateDefaultContext();
+    output_ = test_car_->AllocateOutput(*context_);
+    derivatives_ = test_car_->AllocateTimeDerivatives();
+    system_output_ = test_car_->AllocateOutput(*context_);
   }
 
   // Returns a pointer to the state vector.
@@ -169,10 +169,10 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // values contained in the input struct.
   void TestTireSlipAngle(TestValues test_values) {
     const double tire_slip_angle_front =
-        test_car->CalcTireSlip(*continuous_state(), *test_car_params,
+        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
                                test_values.steer_angle, front_tire);
     const double tire_slip_angle_rear =
-        test_car->CalcTireSlip(*continuous_state(), *test_car_params,
+        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
                                test_values.steer_angle, rear_tire);
 
     EXPECT_NEAR(tire_slip_angle_front,
@@ -185,10 +185,10 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // Tests the normal forces on the front and rear tires based on the expected
   // values contained in the input struct.
   void TestNormalLoad(TestValues test_values) {
-    const double normal_load_front = test_car->CalcNormalTireForce(
-        *test_car_params, test_values.f_Cp_x, front_tire);
-    const double normal_load_rear = test_car->CalcNormalTireForce(
-        *test_car_params, test_values.f_Cp_x, rear_tire);
+    const double normal_load_front = test_car_->CalcNormalTireForce(
+        *test_car_params_, test_values.f_Cp_x, front_tire);
+    const double normal_load_rear = test_car_->CalcNormalTireForce(
+        *test_car_params_, test_values.f_Cp_x, rear_tire);
 
     EXPECT_NEAR(normal_load_front, test_values.expected_normal_load_front,
                 test_values.tolerance);
@@ -202,27 +202,27 @@ class DynamicBicycleCarTest : public ::testing::Test {
     // Compute the slip angles of the tires to be used in the lateral force
     // calculation.
     const double tire_slip_angle_front =
-        test_car->CalcTireSlip(*continuous_state(), *test_car_params,
+        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
                                test_values.steer_angle, front_tire);
     const double tire_slip_angle_rear =
-        test_car->CalcTireSlip(*continuous_state(), *test_car_params,
+        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
                                test_values.steer_angle, rear_tire);
 
     // Compute the normal forces on the tires to be used in the lateral force
     // calculation.
-    const double normal_load_front = test_car->CalcNormalTireForce(
-        *test_car_params, test_values.f_Cp_x, front_tire);
-    const double normal_load_rear = test_car->CalcNormalTireForce(
-        *test_car_params, test_values.f_Cp_x, rear_tire);
+    const double normal_load_front = test_car_->CalcNormalTireForce(
+        *test_car_params_, test_values.f_Cp_x, front_tire);
+    const double normal_load_rear = test_car_->CalcNormalTireForce(
+        *test_car_params_, test_values.f_Cp_x, rear_tire);
 
     // Compute the lateral forces on the tires and compare against expected
     // values.
-    const double lateral_force_front = test_car->CalcLateralTireForce(
-        tire_slip_angle_front, test_car_params->c_alpha_f(), normal_load_front,
-        test_car_params->mu());
-    const double lateral_force_rear = test_car->CalcLateralTireForce(
-        tire_slip_angle_rear, test_car_params->c_alpha_r(), normal_load_rear,
-        test_car_params->mu());
+    const double lateral_force_front = test_car_->CalcLateralTireForce(
+        tire_slip_angle_front, test_car_params_->c_alpha_f(), normal_load_front,
+        test_car_params_->mu());
+    const double lateral_force_rear = test_car_->CalcLateralTireForce(
+        tire_slip_angle_rear, test_car_params_->c_alpha_r(), normal_load_rear,
+        test_car_params_->mu());
 
     EXPECT_NEAR(lateral_force_front, test_values.expected_lateral_force_front,
                 test_values.tolerance);
@@ -233,7 +233,7 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // Test the computation of the state derivatives based on the expected values
   // contained in the input struct.
   void TestCalcDerivatives(TestValues test_values) {
-    test_car->CalcTimeDerivatives(*context_, derivatives_.get());
+    test_car_->CalcTimeDerivatives(*context_, derivatives_.get());
 
     EXPECT_NEAR(state_derivatives()->p_LoCp_x(), test_values.expected_v_LCp_x,
                 test_values.tolerance);
@@ -250,8 +250,8 @@ class DynamicBicycleCarTest : public ::testing::Test {
   }
 
   std::unique_ptr<DynamicBicycleCar<double>>
-      test_car;  // This is the model we are testing.
-  std::unique_ptr<DynamicBicycleCarParams<double>> test_car_params;
+      test_car_;  // This is the model we are testing.
+  std::unique_ptr<DynamicBicycleCarParams<double>> test_car_params_;
   std::unique_ptr<systems::Context<double>> context_;
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
@@ -261,26 +261,32 @@ class DynamicBicycleCarTest : public ::testing::Test {
 };
 
 TEST_F(DynamicBicycleCarTest, Construction) {
-  // Asserts zero inputs for this case.
-  EXPECT_EQ(1, test_car->get_num_input_ports());
-  EXPECT_EQ(1, test_car->get_num_output_ports());
+  // Test that the system has one input port and one output port.
+  EXPECT_EQ(1, test_car_->get_num_input_ports());
+  EXPECT_EQ(1, test_car_->get_num_output_ports());
+
+  // Test if the input and output ports are vectors of Eigen scalars.
+  EXPECT_EQ(systems::kVectorValued,
+            test_car_->get_input_port().get_data_type());
+  EXPECT_EQ(systems::kVectorValued,
+            test_car_->get_output_port().get_data_type());
 }
 
 // Tests whether DynamicBicycleCar of type DynamicBicycleCar<double> can be
 // converted to use AutoDiffXd as its scalar type.
 TEST_F(DynamicBicycleCarTest, ToAutoDiff) {
-  EXPECT_TRUE(is_autodiffxd_convertible(*test_car));
+  EXPECT_TRUE(is_autodiffxd_convertible(*test_car_));
 }
 
 // Tests whether DynamicBicycleCar of type DynamicBicycleCar<double> can be
 // converted to use symbolic::Expression as its scalar type.
 TEST_F(DynamicBicycleCarTest, ToSymbolic) {
-  EXPECT_TRUE(is_symbolic_convertible(*test_car));
+  EXPECT_TRUE(is_symbolic_convertible(*test_car_));
 }
 
 // Tests to make sure the inputs don't directly pass to the outputs.
 TEST_F(DynamicBicycleCarTest, DirectFeedthrough) {
-  EXPECT_FALSE(test_car->HasAnyDirectFeedthrough());
+  EXPECT_FALSE(test_car_->HasAnyDirectFeedthrough());
 }
 
 // Test that the state is passed through to the output.
@@ -290,11 +296,12 @@ TEST_F(DynamicBicycleCarTest, Output) {
   test_state << 1.0, 3.0, 5.0, 2.0, 4.0, 6.0;
   continuous_state()->SetFromVector(test_state);
 
-  test_car->CalcOutput(*context_, system_output_.get());
+  test_car_->CalcOutput(*context_, system_output_.get());
 
-  const DynamicBicycleCarState<double>* bike_out =
-      dynamic_cast<const DynamicBicycleCarState<double>*>(
-          system_output_->get_vector_data(0));
+  const DynamicBicycleCarState<double>* bike_out;
+  EXPECT_EQ(nullptr, bike_out);
+  bike_out = dynamic_cast<const DynamicBicycleCarState<double>*>(
+    system_output_->get_vector_data(0));
 
   EXPECT_EQ(1.0, bike_out->p_LoCp_x());
   EXPECT_EQ(3.0, bike_out->p_LoCp_y());

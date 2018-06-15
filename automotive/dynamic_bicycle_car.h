@@ -17,8 +17,8 @@ namespace drake {
 namespace automotive {
 
 /// DynamicBicycleCar implements a planar rigid body bicycle model of an
-/// automobile with a non-linear brush tire model from Bobier (2012). This is a
-/// simplified model that assumes a vehicle that has two wheels: one at the
+/// automobile with a non-linear brush tire model from Bobier (2012) [1]. This
+/// is a simplified model that assumes a vehicle that has two wheels: one at the
 /// front, and one at the rear. Also, this three-DOF model captures the dynamics
 /// in the lateral (Cy), longitudinal (Cx), and yaw (about Cz) directions but
 /// not the roll (about Cx) and pitch (about Cy) directions.
@@ -60,9 +60,11 @@ namespace automotive {
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
 ///
-/// [Bobier 2012] C. Bobier. A Phase Portrait Approach to Vehicle Stability
-///                 and Envelope Control.
-///                 Ph. D. thesis (Stanford University), 2012.
+/// [1] C. Bobier. A Phase Portrait Approach to Vehicle Stability
+///     and Envelope Control. Ph. D. thesis (Stanford University), 2012.
+///
+/// [2] H. Pacejka, Tire and vehicle dynamics, 3rd ed. Society of Automotive
+///     Engineers and Butterworth-Heinemann, 2012.
 ///
 /// @ingroup automotive_plants
 template <typename T>
@@ -84,11 +86,11 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
   /// Returns the input port to the tire angle and applied longitudinal force.
   const systems::InputPortDescriptor<T>& get_input_port() const;
 
-  static const DynamicBicycleCarState<T>& get_state(
-      const systems::Context<T>& context);
+  const DynamicBicycleCarState<T>& get_state(
+      const systems::Context<T>& context) const;
 
-  static DynamicBicycleCarState<T>& get_mutable_state(
-      systems::Context<T>* context);
+  DynamicBicycleCarState<T>& get_mutable_state(
+      systems::Context<T>* context) const;
 
   /// Calculate tire slip angle of front or rear tires.
   const T CalcTireSlip(const DynamicBicycleCarState<T>& state,
@@ -97,11 +99,11 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
 
   /// Calculate the normal forces on the front or rear tires.
   const T CalcNormalTireForce(const DynamicBicycleCarParams<T>& params,
-                              const T f_x, bool tire) const;
+                              const T& f_x, bool tire) const;
 
   /// Calculate the lateral tire forces on the front or rear tires.
-  const T CalcLateralTireForce(const T tire_slip_angle, const T c_alpha,
-                               const T f_z, const T mu) const;
+  const T CalcLateralTireForce(const T& tire_slip_angle, const T& c_alpha,
+                               const T& f_z, const T& mu) const;
 
  private:
   // Evaluates the input port and returns the scalar value of the steering

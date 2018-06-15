@@ -34,7 +34,7 @@ const systems::InputPortDescriptor<T>& DynamicBicycleCar<T>::get_input_port()
 
 template <typename T>
 const DynamicBicycleCarState<T>& DynamicBicycleCar<T>::get_state(
-    const systems::Context<T>& context) {
+    const systems::Context<T>& context) const {
   const systems::ContinuousState<T>& cstate = context.get_continuous_state();
   // Casts the continuous state vector from a VectorBase to a
   // DynamicBicycleState vector.
@@ -43,7 +43,7 @@ const DynamicBicycleCarState<T>& DynamicBicycleCar<T>::get_state(
 
 template <typename T>
 DynamicBicycleCarState<T>& DynamicBicycleCar<T>::get_mutable_state(
-    systems::Context<T>* context) {
+    systems::Context<T>* context) const {
   systems::ContinuousState<T>* cstate =
       &context->get_mutable_continuous_state();
   return dynamic_cast<DynamicBicycleCarState<T>&>(cstate->get_mutable_vector());
@@ -66,7 +66,8 @@ const T DynamicBicycleCar<T>::CalcTireSlip(
   if (tire) {
     // Front tire slip angle.
     return atan2(state.v_LCp_y() + params.Lf() * state.yawDt_LC(),
-                 state.v_LCp_x()) - steer_angle;
+                 state.v_LCp_x()) -
+           steer_angle;
   } else {
     // Rear tire slip angle.
     return atan2(state.v_LCp_y() - params.Lb() * state.yawDt_LC(),
@@ -76,14 +77,15 @@ const T DynamicBicycleCar<T>::CalcTireSlip(
 
 template <typename T>
 const T DynamicBicycleCar<T>::CalcNormalTireForce(
-    const DynamicBicycleCarParams<T>& params, const T f_Cp_x, bool tire) const {
-  if (tire) {
-    // Normal force for the front tires.
+    const DynamicBicycleCarParams<T>& params, const T& f_Cp_x,
+    bool tire_select) const {
+  if (tire_select) {
+    // Front tire normal force.
     return (1 / (params.Lf() + params.Lb())) *
            (params.mass() * params.Lb() * params.gravity() -
             params.h_cm() * f_Cp_x);
   } else {
-    // Normal force for the rear tires.
+    // Rear tire normal force.
     return (1 / (params.Lf() + params.Lb())) *
            (params.mass() * params.Lf() * params.gravity() +
             params.h_cm() * f_Cp_x);
@@ -91,22 +93,24 @@ const T DynamicBicycleCar<T>::CalcNormalTireForce(
 }
 
 template <typename T>
-const T DynamicBicycleCar<T>::CalcLateralTireForce(const T tire_slip_angle,
-                                                   const T c_alpha, const T f_z,
-                                                   const T mu) const {
-  // Based on Fiala non-linear brush tire model as presented by Pacejka.
+const T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
+                                                   const T& c_alpha,
+                                                   const T& f_z,
+                                                   const T& mu) const {
+  // Based on Fiala non-linear brush tire model as presented by Pacejka [2].
   using std::pow;
   using std::tan;
   using std::abs;
   using std::atan2;
 
-  T f_y_non_saturated_tire = -c_alpha * tan(tire_slip_angle) +
-                            ((c_alpha * c_alpha) / (3 * mu * f_z)) *
-                                abs(tan(tire_slip_angle)) *
-                                tan(tire_slip_angle) -
-                            (pow(c_alpha, 3) / (27 * (mu * mu) * (f_z * f_z))) *
-                                pow(tan(tire_slip_angle), 3);
-  T f_y_saturated_tire = -mu * f_z * abs(tire_slip_angle) / tire_slip_angle;
+  const T f_y_non_saturated_tire =
+      -c_alpha * tan(tire_slip_angle) +
+      ((c_alpha * c_alpha) / (3 * mu * f_z)) * abs(tan(tire_slip_angle)) *
+          tan(tire_slip_angle) -
+      (pow(c_alpha, 3) / (27 * (mu * mu) * (f_z * f_z))) *
+          pow(tan(tire_slip_angle), 3);
+  const T f_y_saturated_tire =
+      -mu * f_z * abs(tire_slip_angle) / tire_slip_angle;
 
   // Note: the cond function is used as an if-else statement in order to make
   // the conditional symbolic::Expression capable.
@@ -128,7 +132,6 @@ void DynamicBicycleCar<T>::DoCalcTimeDerivatives(
   const DynamicBicycleCarParams<T>& params =
       this->template GetNumericParameter<DynamicBicycleCarParams>(context, 0);
 
-  // Get the inputs.
   const T steer_CD = get_steer(context);
   const T f_Cp_x = get_longitudinal_force(context);
 
@@ -136,10 +139,8 @@ void DynamicBicycleCar<T>::DoCalcTimeDerivatives(
   const bool rear_tire = false;
 
   // Calculate tire slip angles.
-  const T tire_slip_angle_f =
-      CalcTireSlip(state, params, steer_CD, front_tire);
-  const T tire_slip_angle_r =
-      CalcTireSlip(state, params, steer_CD, rear_tire);
+  const T tire_slip_angle_f = CalcTireSlip(state, params, steer_CD, front_tire);
+  const T tire_slip_angle_r = CalcTireSlip(state, params, steer_CD, rear_tire);
 
   // Calculate tire forces.
   const T f_z_f = CalcNormalTireForce(params, f_Cp_x, front_tire);
@@ -162,11 +163,10 @@ void DynamicBicycleCar<T>::DoCalcTimeDerivatives(
   derivative_state.set_p_LoCp_x(state.v_LCp_x());
   derivative_state.set_p_LoCp_y(state.v_LCp_y());
   derivative_state.set_yaw_LC(state.yawDt_LC());
-  derivative_state.set_v_LCp_x(
-      (f_Cp_x / params.mass()) + state.yawDt_LC() * state.v_LCp_x() * sideslip);
-  derivative_state.set_v_LCp_y((f_y_f * cos(steer_CD) + f_y_r) /
-                                      params.mass() -
-                                  state.yawDt_LC() * state.v_LCp_x());
+  derivative_state.set_v_LCp_x((f_Cp_x / params.mass()) +
+                               state.yawDt_LC() * state.v_LCp_x() * sideslip);
+  derivative_state.set_v_LCp_y((f_y_f * cos(steer_CD) + f_y_r) / params.mass() -
+                               state.yawDt_LC() * state.v_LCp_x());
   derivative_state.set_yawDt_LC(
       (params.Lf() * f_y_f * cos(steer_CD) - params.Lb() * f_y_r) /
       params.izz());
@@ -175,6 +175,6 @@ void DynamicBicycleCar<T>::DoCalcTimeDerivatives(
 }  // namespace automotive
 }  // namespace drake
 
-// Explicitly instantiate on non-symbolic scalar types.
+// Explicitly instantiate on default scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::automotive::DynamicBicycleCar)
