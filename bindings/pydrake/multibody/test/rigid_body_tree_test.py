@@ -101,6 +101,34 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(J_default.shape[1], num_v)
         self.assertEqual(len(v_indices_default), num_v)
 
+        # - Check QDotToVelocity and VelocityToQDot methods
+        q = tree.getZeroConfiguration()
+        v_real = np.zeros(num_v)
+
+        kinsol = tree.doKinematics(q)
+        qd = tree.transformVelocityToQDot(kinsol, v_real)
+        v = tree.transformQDotToVelocity(kinsol, qd)
+        self.assertEqual(qd.shape, (num_q, ))
+        self.assertEqual(v.shape, (num_v, ))
+
+        v_to_qdot = tree.GetVelocityToQDotMapping(kinsol)
+        qdot_to_v = tree.GetQDotToVelocityMapping(kinsol)
+        self.assertEqual(v_to_qdot.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v.shape, (num_v, num_q))
+
+        v_map = tree.transformVelocityMappingToQDotMapping(kinsol,
+                                                           np.eye(num_v))
+        qd_map = tree.transformQDotMappingToVelocityMapping(kinsol,
+                                                            np.eye(num_q))
+        self.assertEqual(v_map.shape, (num_v, num_q))
+        self.assertEqual(qd_map.shape, (num_q, num_v))
+
+        # - Check ChildOfJoint methods
+        body = tree.FindChildBodyOfJoint("theta")
+        self.assertIsInstance(body, RigidBody)
+        self.assertEqual(body.get_name(), "arm")
+        self.assertEqual(tree.FindIndexOfChildBodyOfJoint("theta"), 2)
+
         # - Check that default value for in_terms_of_qdot is false.
         J_not_in_terms_of_q_dot, v_indices_not_in_terms_of_qdot = \
             tree.geometricJacobian(kinsol, 0, 2, 0, False)
