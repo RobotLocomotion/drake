@@ -458,6 +458,8 @@ drake_cc_googletest(
     data = [
         ":test_models",
     ],
+    # TODO(kunimatsu-tri) Remove this once #8978 is resolved.
+    local = 1,
     tags = vtk_test_tags,
     deps = [
         ":rgbd_renderer",
