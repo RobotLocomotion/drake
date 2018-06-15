@@ -3225,7 +3225,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::positionConstraints(
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
     // Compute the displacement from point Q (a point on body B) to point P (a
     // point on body A).
-    auto r_QP_B =
+    Eigen::Matrix<Scalar, 3, 1> r_QP_B =
         transformPoints(cache,
                         distance_constraints[i].r_AP.template cast<Scalar>(),
                         distance_constraints[i].bodyA_index,
@@ -3266,7 +3266,7 @@ RigidBodyTree<T>::positionConstraintsJacobian(
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
     // Compute the displacement from point Q (a point on body B) to point P (a
     // point on body A).
-    auto r_QP_B =
+    Eigen::Matrix<Scalar, 3, 1> r_QP_B =
         transformPoints(cache,
                         distance_constraints[i].r_AP.template cast<Scalar>(),
                         distance_constraints[i].bodyA_index,
@@ -3309,7 +3309,7 @@ RigidBodyTree<T>::positionConstraintsJacDotTimesV(
   for (size_t i = 0; i < distance_constraints.size(); ++i) {
     // Compute the displacement from point Q (a point on body B) to point P (a
     // point on body A).
-    auto r_QP_B =
+    Eigen::Matrix<Scalar, 3, 1> r_QP_B =
         transformPoints(cache,
                         distance_constraints[i].r_AP.template cast<Scalar>(),
                         distance_constraints[i].bodyA_index,
