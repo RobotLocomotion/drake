@@ -66,8 +66,7 @@ const T DynamicBicycleCar<T>::CalcTireSlip(
   if (tire) {
     // Front tire slip angle.
     return atan2(state.v_LCp_y() + params.Lf() * state.yawDt_LC(),
-                 state.v_LCp_x()) -
-           steer_angle;
+                 state.v_LCp_x()) - steer_angle;
   } else {
     // Rear tire slip angle.
     return atan2(state.v_LCp_y() - params.Lb() * state.yawDt_LC(),
