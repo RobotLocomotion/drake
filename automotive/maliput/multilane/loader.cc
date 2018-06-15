@@ -40,8 +40,8 @@ struct ParsedReference {
   // When `type` == kConnection, is one of the extents of the Connection.
   // Otherwise, it must be nullopt.
   optional<api::LaneEnd::Which> end;
-  // When `type` == kConnection, is `id` connection's lane index. Otherwise, it
-  // must be nullopt.
+  // When `type` == kConnection, is `id` connection's lane index", or nullopt
+  // if referring to a connection's reference curve.
   optional<int> lane_id;
 };
 
@@ -205,9 +205,9 @@ Direction ResolveDirection(const std::string& direction_key) {
 
 // Returns the Direction that `end_key` sets to the Endpoint / EndpointZ.
 api::LaneEnd::Which ResolveEnd(const std::string& end_key) {
-  if (end_key == "start.") {
+  if (end_key == "start") {
     return api::LaneEnd::Which::kStart;
-  } else if (end_key == "end.") {
+  } else if (end_key == "end") {
     return api::LaneEnd::Which::kFinish;
   } else {
     DRAKE_ABORT();
@@ -229,28 +229,24 @@ api::LaneEnd::Which ResolveEnd(const std::string& end_key) {
 ParsedReference ResolveEndpointReference(const std::string& endpoint_key) {
   ParsedReference parsed_reference{};
   static const std::regex kPointsPattern{
-      "^(points.)((?:[\\w\\-_]+\\.)+)(forward|reverse)$",
-      std::regex::ECMAScript};
+      "^points[.](.*)[.](forward|reverse)$", std::regex::ECMAScript};
   static const std::regex kConnectionsPattern{
-      "^(connections.)((?:[\\w\\-_]+\\.)+)(start.|end.)((ref|\\d+)\\.)+"
-      "(forward|reverse)$",
+      "^connections[.](.*)[.](start|end)[.](ref|[0-9]*)[.](forward|reverse)$",
       std::regex::ECMAScript};
   std::smatch pieces_match;
   if (std::regex_match(endpoint_key, pieces_match, kPointsPattern)) {
     parsed_reference.type = ReferenceType::kPoint;
-    parsed_reference.id =
-        pieces_match[2].str().substr(0, pieces_match[2].str().size() - 1);
-    parsed_reference.direction = ResolveDirection(pieces_match[3].str());
+    parsed_reference.id = pieces_match[1].str();
+    parsed_reference.direction = ResolveDirection(pieces_match[2].str());
   } else if (std::regex_match(endpoint_key, pieces_match,
                               kConnectionsPattern)) {
     parsed_reference.type = ReferenceType::kConnection;
-    parsed_reference.id =
-        pieces_match[2].str().substr(0, pieces_match[2].str().size() - 1);
-    parsed_reference.direction = ResolveDirection(pieces_match[6].str());
-    parsed_reference.end = {ResolveEnd(pieces_match[3].str())};
-    // TODO(agalbachicar)    Provide support for "lane.NB" so as to reference
-    //                       the lane ID.
-    DRAKE_DEMAND(pieces_match[4].str() == "ref.");
+    parsed_reference.id = pieces_match[1].str();
+    parsed_reference.direction = ResolveDirection(pieces_match[4].str());
+    parsed_reference.end = {ResolveEnd(pieces_match[2].str())};
+    // TODO(agalbachicar)    Provide support for "lane_number" so as to
+    //                       reference the lane ID.
+    DRAKE_DEMAND(pieces_match[3].str() == "ref");
     parsed_reference.lane_id = {};
   } else {
     DRAKE_ABORT();
