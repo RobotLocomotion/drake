@@ -658,10 +658,11 @@ TEST_F(PizzaSaver, NoContact) {
 // the vertical direction within a time interval dt from the time that the
 // bodies first make contact. That is, we set the normal force to
 // fn = -m * vy / dt + m * g, where the small contribution due to gravity is
-// needed to exactly bring the cylinder's vertical velocity to zero.
+// needed to exactly bring the cylinder's vertical velocity to zero. The solver
+// keeps this value constant througout the computation.
 // The equations governing the motion for the cylinder during impact are:
 //   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
-//   (2)  m⋅Δvx = pt⋅R, Δvx = vx - vx0
+//   (2)  m⋅Δvx = pt ,  Δvx = vx - vx0
 //   (3)  vt = vx + ω⋅R
 //   (4)  |pt| ≤ μ⋅pn
 // where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction (in the
@@ -676,8 +677,9 @@ TEST_F(PizzaSaver, NoContact) {
 // Eq. (1) leads now, together with Eq. (2), to a system of equations in vx and
 // pt. We solve it for pt to find:
 //   pt = -m⋅vx0 / (1 + m⋅R²/I)
-// From Eq. (4), stiction occurs if vx0 is smaller than:
-//   vx0 ≤ vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
+// From Eq. (4), stiction occurs if vx0 < vx_transition, with vx_transition
+// defined as:
+//   vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
 // Otherwise the cylinder will be sliding after impact.
 class RollingCylinder : public ::testing::Test {
  public:
@@ -690,7 +692,7 @@ class RollingCylinder : public ::testing::Test {
   }
 
   // Computes tangential velocity Jacobian s.t. vt = Jt * v.
-  // Where vt is a vector in ℝ². Its firs component corresponds to the
+  // Where vt is a vector in ℝ². Its first component corresponds to the
   // tangential velocity along the x-axis and its second component corresponds
   // to the out-of-plane (z-axis) tangential velocity. Since the problem is 2D,
   // the second component along the z axis is zero always.
@@ -744,6 +746,9 @@ class RollingCylinder : public ::testing::Test {
   //   vy = -3.0 m/s (velocity at impact).
   //   pn = 3.0 Ns
   //   vx_transition = 0.6 m/s
+  // with pn = -m⋅vy = m⋅sqrt(2⋅g⋅h0) and vx_transition determined from
+  // vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m as described in the documentation of
+  // this test fixture.
   const double m_{1.0};   // Mass of the cylinder, kg.
   const double R_{1.0};   // Radius of the cylinder, m.
   const double g_{9.0};   // Acceleration of gravity, m/s².
