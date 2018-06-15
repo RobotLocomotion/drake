@@ -35,8 +35,10 @@ is included in the external documentation.
 @warning Drake is under development and these concepts have not yet been
 adopted consistently throughout the code. New code uses these concepts and
 older code will be retrofitted over time. The documentation here applies to
-the new `MultibodyTree` family of classes; there are some differences from the
-earlier `RigidBodyTree` family.
+the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
+@ref drake::multibody::multibody_plant::MultibodyPlant "MultibodyPlant"
+family of classes; there are some differences from the earlier `RigidBodyTree`
+family.
 
 <em><b>Developers</b>: you can link directly to specific discussion topics here
 from your Doxygen comments; instructions are at the top of the source file used
