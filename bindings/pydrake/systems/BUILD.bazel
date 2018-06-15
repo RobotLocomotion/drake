@@ -44,6 +44,7 @@ drake_py_library(
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
