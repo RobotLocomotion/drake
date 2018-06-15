@@ -50,9 +50,11 @@ def pybind_py_library(
     py_name = name
     if not cc_so_name:
         cc_so_name = name
+
     # TODO(eric.cousineau): See if we can keep non-`*.so` target name, but
     # output a *.so, so that the target name is similar to what is provided.
     cc_so_target = cc_so_name + ".so"
+
     # Add C++ shared library.
     cc_binary_rule(
         name = cc_so_target,
@@ -67,6 +69,7 @@ def pybind_py_library(
         testonly = testonly,
         visibility = visibility,
     )
+
     # Add Python library.
     py_library_rule(
         name = py_name,
@@ -144,6 +147,7 @@ def drake_pybind_library(
         testonly = testonly,
         visibility = visibility,
     )
+
     # Add installation target for C++ and Python bits.
     if add_install:
         install(
@@ -187,36 +191,46 @@ def get_pybind_package_info(base_package, sub_package = None):
         py_imports,  # Directories to add to `PYTHONPATH` with `py_library`.
         py_dest)  # Installation directory for use with `install()`.
     """
+
     # Use relative package path, as `py_library` does not like absolute package
     # paths.
     package_info = _get_package_info(base_package, sub_package)
     return struct(
         py_imports = [package_info.base_path_rel],
         py_dest = "lib/python{}/site-packages/{}".format(
-            _PY_VERSION, package_info.sub_path_rel))
+            _PY_VERSION,
+            package_info.sub_path_rel,
+        ),
+    )
 
 def _get_package_info(base_package, sub_package = None):
     # TODO(eric.cousineau): Move this to `python.bzl` or somewhere more
     # general?
-    base_package = base_package.lstrip('//')
+    base_package = base_package.lstrip("//")
     if sub_package == None:
         sub_package = native.package_name()
     else:
-        sub_package = sub_package.lstrip('//')
+        sub_package = sub_package.lstrip("//")
     base_package_pre = base_package + "/"
     if not sub_package.startswith(base_package_pre):
-        fail("Invalid sub_package '{}' (not a child of '{}')"
-             .format(sub_package, base_package))
+        fail("Invalid sub_package '{}' (not a child of '{}')".format(
+            # (forced line break)
+            sub_package,
+            base_package,
+        ))
     sub_path_rel = sub_package[len(base_package_pre):]
+
     # Count the number of pieces.
     num_pieces = len(sub_path_rel.split("/"))
+
     # Make the number of parent directories.
     base_path_rel = "/".join([".."] * num_pieces)
     return struct(
         # Base package's path relative to sub-package's path.
         base_path_rel = base_path_rel,
         # Sub-package's path relative to base package's path.
-        sub_path_rel = sub_path_rel)
+        sub_path_rel = sub_path_rel,
+    )
 
 def drake_pybind_cc_googletest(
         name,
@@ -246,6 +260,7 @@ def drake_pybind_cc_googletest(
     )
 
     py_name = name + "_py"
+
     # Expose as library, to make it easier to expose Bazel environment for
     # external tools.
     drake_py_library(
