@@ -450,8 +450,8 @@ class ConstraintSolver {
         problem_data.tau);
   }
 
-  /// Computes the system generalized acceleration due *only* to constraint
-  /// forces.
+  /// Computes a first-order approximation of generalized acceleration due
+  /// *only* to constraint forces.
   /// @param problem_data The velocity-level constraint data.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
@@ -2284,18 +2284,18 @@ void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
   DRAKE_DEMAND(dt > 0);
 
   // Keep from allocating storage by reusing `generalized_acceleration`; at
-  // first, it will hold the generalized acceleration due only to constraint
-  // forces.
-  ComputeGeneralizedAccelerationFromConstraintForces(problem_data, cf,
-                                                     generalized_acceleration);
+  // first, it will hold the generalized force from constraint forces.
+  ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
+                                              generalized_acceleration);
 
   // Using a first-order approximation to velocity, the new velocity is:
   // v(t+dt) = v(t) + dt * ga
-  //         = inv(M) * (M * v(t)) + dt * ga
+  //         = inv(M) * (M * v(t) + dt * gf)
+  // where ga is the generalized acceleration and gf is the generalized force.
   // Note: we have no way to break apart the Mv term. But, we can instead
   // compute v(t+dt) and then solve for the acceleration.
-  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv) +
-      dt * (*generalized_acceleration);
+  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv +
+      dt * (*generalized_acceleration));
   *generalized_acceleration = (vplus - v)/dt;
 }
 
