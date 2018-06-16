@@ -30,7 +30,7 @@
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/symbolic_extraction.h"
-
+#include "drake/solvers/sos_utils.h"
 // Note that the file mathematical_program_api.cc also contains some of the
 // implementation of mathematical_program.h
 
@@ -773,7 +773,7 @@ MathematicalProgram::AddSosConstraint(
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
   return AddSosConstraint(
-      p, MonomialBasis(p.indeterminates(), p.TotalDegree() / 2));
+      p, ConstructMonomialBasis(p));
 }
 
 pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>

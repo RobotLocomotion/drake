@@ -1,6 +1,5 @@
 #include "drake/solvers/sos_utils.h"
 
-#include <iostream>
 #include <vector>
 
 #include <Eigen/Core>
