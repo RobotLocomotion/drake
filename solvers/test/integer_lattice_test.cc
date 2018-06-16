@@ -28,8 +28,6 @@ IntegerSet MatrixToSet(Eigen::MatrixXi M) {
   return M_set;
 }
 
-
-
 class IntegerLatticeTest : public ::testing::Test {
  public:
   void CheckEnumeration(IntegerSet ref) {

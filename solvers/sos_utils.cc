@@ -8,11 +8,17 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/integer_lattice.h"
 
+namespace drake {
+namespace solvers {
 namespace {
-
+// Anonymous namespace containing collection of utility functions
 typedef drake::symbolic::Variable Variable;
 typedef drake::symbolic::Monomial Monomial;
 typedef drake::symbolic::Variables Variables;
+typedef drake::VectorX<symbolic::Monomial> MonomialVector;
+
+typedef Eigen::MatrixXi Exponent;
+typedef Eigen::MatrixXi ExponentList;
 
 MonomialVector ExponentsToMonomials(const Exponent & exponents,
                                     const drake::VectorX<Variable> & vars) {
@@ -108,8 +114,8 @@ Hyperplanes RandomSupportingHyperplanes(ExponentList points,
 
   return H;
 }
-
 }  // namespace
+
 
 ExponentList ConstructMonomialBasis(const ExponentList & M) {
   Eigen::VectorXi lower_bounds = M.colwise().minCoeff()/2;
@@ -117,7 +123,7 @@ ExponentList ConstructMonomialBasis(const ExponentList & M) {
 
   Hyperplanes hyperplanes = RandomSupportingHyperplanes(M, 10);
 
-  ExponentList points = EnumerateIntegerSolutions(
+  ExponentList points = drake::solvers::EnumerateIntegerSolutions(
       hyperplanes.normal_vectors, hyperplanes.max_dot_product,
       lower_bounds, upper_bounds);
 
@@ -133,6 +139,5 @@ MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p) {
   return ExponentsToMonomials(
       ConstructMonomialBasis(GetPolynomialExponents(p)), vars);
 }
-
-
-
+} // namespace solvers
+} // namespace drake

@@ -6,7 +6,9 @@
 
 #include <Eigen/Dense>
 
-namespace {
+namespace drake{
+namespace solvers{
+namespace integer_programming{
 
 typedef std::vector<std::vector<int>> IntegerList;
 
@@ -90,7 +92,7 @@ Eigen::MatrixXi FeasiblePoints(
     const IntegerList & column_alphabets,
     const std::vector<ColumnType> & ordering) {
 
-  assert(A.cols() == column_alphabets.size());
+  //assert(A.cols() == column_alphabets.size());
   Eigen::MatrixXi output;
 
   for (auto & value : column_alphabets.at(0)) {
@@ -136,32 +138,7 @@ IntegerList BuildAlphabetFromBounds(
   return alphabet;
 }
 
-}  // namespace
-
-Eigen::MatrixXi EnumerateIntegerSolutions(
-                const Eigen::MatrixXd & A,
-                const Eigen::MatrixXd & b,
-                const Eigen::VectorXi & lower_bound,
-                const Eigen::VectorXi & upper_bound) {
-  auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
-  auto ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
-
-  return FeasiblePoints<Eigen::MatrixXd>(A, b, alphabet, ordering);
-}
-
-Eigen::MatrixXi EnumerateIntegerSolutions(
-    const Eigen::MatrixXi & A,
-    const Eigen::MatrixXi & b,
-    const Eigen::VectorXi & lower_bound,
-    const Eigen::VectorXi & upper_bound) {
-
-  auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
-  auto ordering = ProcessInputs<Eigen::MatrixXi>(A, &alphabet);
-
-  return FeasiblePoints<Eigen::MatrixXi>(A, b, alphabet, ordering);
-}
-
-bool unit_tests() {
+bool InternalUnitTests() {
   Eigen::MatrixXd A(4, 3);
   Eigen::VectorXd b(4, 1);
   b << 0, 0, 100, 100;
@@ -185,3 +162,37 @@ bool unit_tests() {
   ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
   return true;
 }
+
+
+}  // namespace
+
+using drake::solvers::integer_programming::BuildAlphabetFromBounds;
+using drake::solvers::integer_programming::ProcessInputs;
+
+Eigen::MatrixXi EnumerateIntegerSolutions(
+                const Eigen::MatrixXd & A,
+                const Eigen::MatrixXd & b,
+                const Eigen::VectorXi & lower_bound,
+                const Eigen::VectorXi & upper_bound) {
+  auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
+  auto ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
+
+  return drake::solvers::integer_programming::
+         FeasiblePoints<Eigen::MatrixXd>(A, b, alphabet, ordering);
+}
+
+Eigen::MatrixXi EnumerateIntegerSolutions(
+    const Eigen::MatrixXi & A,
+    const Eigen::MatrixXi & b,
+    const Eigen::VectorXi & lower_bound,
+    const Eigen::VectorXi & upper_bound) {
+
+  auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
+  auto ordering = ProcessInputs<Eigen::MatrixXi>(A, &alphabet);
+
+  return drake::solvers::integer_programming::
+         FeasiblePoints<Eigen::MatrixXi>(A, b, alphabet, ordering);
+}
+
+} // namespace solvers
+} // namespace drake 

@@ -21,7 +21,7 @@ typedef std::set<Monomial,
                 drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>
                 MonomialSet;
 
-MonomialSet VectorToSet(MonomialVector x) {
+MonomialSet VectorToSet(const drake::VectorX<Monomial> & x) {
   MonomialSet x_set;
   for (int i = 0; i < x.size(); i++) {
     x_set.insert(x(i));
@@ -32,7 +32,7 @@ MonomialSet VectorToSet(MonomialVector x) {
 class SosUtilsTest : public ::testing::Test {
  public:
   void CheckMonomialBasis(symbolic::Polynomial poly, MonomialSet basis_ref) {
-    MonomialVector basis = ConstructMonomialBasis(poly);
+    drake::VectorX<Monomial> basis = ConstructMonomialBasis(poly);
     MonomialSet basis_set = VectorToSet(basis);
     EXPECT_EQ(basis_set, basis_ref);
   }

@@ -6,11 +6,18 @@
 
 #include "drake/common/symbolic.h"
 
-typedef Eigen::MatrixXi Exponent;
-typedef Eigen::MatrixXi ExponentList;
-typedef Eigen::Matrix<drake::symbolic::Monomial, Eigen::Dynamic, 1>
-        MonomialVector;
+namespace drake {
+namespace solvers {
 
-ExponentList ConstructMonomialBasis(const ExponentList & M);
-MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p);
+/*
+ * Given input polynomial p, outputs a set M of monomials with the following
+ * guarantee: if p = \sum^n_{i=1} f_i * f_i for some (unknown) polynomials
+ * f_1,...,f_n, then the span of M contains each f_i.  Given M, one can
+ * then find the polynomials f_i using semidefinite programming; see, e.g.,
+ * Chapter 3 of Semidefinite Optimization and Convex Algebraic Geometry
+ * by G. Blekherman, P. Parrilo, R. Thomas.
+*/
+drake::VectorX<symbolic::Monomial> ConstructMonomialBasis(const drake::symbolic::Polynomial & p);
+} // namespace drake
+} // namespace solvers
 
