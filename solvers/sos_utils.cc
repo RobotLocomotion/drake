@@ -15,15 +15,10 @@ typedef drake::symbolic::Monomial Monomial;
 typedef drake::symbolic::Variables Variables;
 
 MonomialVector ExponentsToMonomials(const Exponent & exponents,
-                                    const Variables & indeterminates) {
+                                    const drake::VectorX<Variable> & vars) {
   MonomialVector monomials(exponents.rows());
   for (int i = 0; i < exponents.rows(); i++) {
-    Monomial m = Monomial();
-    int j = 0;
-    for (auto & var : indeterminates) {
-      m = m*Monomial(var, exponents(i, j++));
-    }
-    monomials(i) = m;
+    monomials(i) = Monomial(vars, exponents.row(i));
   }
   return monomials;
 }
@@ -130,7 +125,18 @@ ExponentList ConstructMonomialBasis(const ExponentList & M) {
 }
 
 MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p) {
+  drake::VectorX<Variable> vars(p.indeterminates().size());
+  int cnt = 0;
+  for (auto & var : p.indeterminates()) {
+    vars(cnt++) = var;
+  }
   return ExponentsToMonomials(
-      ConstructMonomialBasis(GetPolynomialExponents(p)), p.indeterminates());
+      ConstructMonomialBasis(GetPolynomialExponents(p)), vars);
 }
 
+
+
+int main() {
+
+
+}
