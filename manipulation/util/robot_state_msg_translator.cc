@@ -250,7 +250,7 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
       Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
 
       X_JB.translation() = q.segment<3>(position_start);
-      X_JB.linear() = rpy.ToMatrix3();
+      X_JB.linear() = rpy.ToMatrix3ViaRotationMatrix();
       X_JB.makeAffine();
 
       Matrix3<double> phi = Matrix3<double>::Zero();

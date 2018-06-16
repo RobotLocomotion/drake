@@ -68,7 +68,7 @@ typedef uint32_t RollPitchYawLimits;
 ///   kPitch_NegPI_2_to_PI_2 (over 0_to_PI)
 /// because it adds one more constraint (when combined with constraints on roll
 /// and yaw).
-/// Note: The Roll-Pitch-Yaw angles follow the convention in @RollPitchYaw,
+/// Note: The Roll-Pitch-Yaw angles follow the convention in RollPitchYaw,
 /// namely extrinsic rotations about Space-fixed x-y-z axes, respectively.
 void AddBoundingBoxConstraintsImpliedByRollPitchYawLimits(
     MathematicalProgram* prog,

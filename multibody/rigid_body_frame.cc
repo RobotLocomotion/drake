@@ -17,7 +17,8 @@ RigidBodyFrame<T>::RigidBodyFrame(const std::string& name, RigidBody<T>* body,
                                const Eigen::Vector3d& rpy)
     : name_(name), body_(body) {
   const drake::math::RollPitchYaw<double> roll_pitch_yaw(rpy);
-  transform_to_body_.matrix() << roll_pitch_yaw.ToMatrix3(), xyz, 0, 0, 0, 1;
+  transform_to_body_.matrix() << roll_pitch_yaw.ToMatrix3ViaRotationMatrix(),
+                                 xyz, 0, 0, 0, 1;
 }
 
 template <typename T>

@@ -198,7 +198,7 @@ void originAttributesToTransform(
   parseVectorAttribute(node, "rpy", rpy);
 
   const drake::math::RollPitchYaw<double> roll_pitch_yaw(rpy);
-  T.matrix() << roll_pitch_yaw.ToMatrix3(), xyz, 0, 0, 0, 1;
+  T.matrix() << roll_pitch_yaw.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
 }
 
 void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
@@ -214,7 +214,7 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
   }
 
   const drake::math::RollPitchYaw<double> roll_pitch_yaw(rpy);
-  T.matrix() << roll_pitch_yaw.ToMatrix3(), xyz, 0, 0, 0, 1;
+  T.matrix() << roll_pitch_yaw.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
 
   const char* attr = node->Attribute("frame");
   if (attr && strlen(attr) > 0) {

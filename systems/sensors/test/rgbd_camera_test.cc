@@ -279,8 +279,7 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
     EXPECT_TRUE(CompareMatrices(position.matrix(),
                                 actual.translation().matrix(), kTolerance));
     const math::RollPitchYaw<double> rpy(orientation);
-    const math::RotationMatrix<double> R(rpy);
-    EXPECT_TRUE(CompareMatrices(R.matrix(),
+    EXPECT_TRUE(CompareMatrices(rpy.ToMatrix3ViaRotationMatrix(),
                                 actual.linear().matrix(), kTolerance));
   }
 }

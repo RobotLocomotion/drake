@@ -104,7 +104,7 @@ class MoveDemoRunner {
       ConstraintRelaxingIk::IkCartesianWaypoint wp;
       wp.pose.translation() = Eigen::Vector3d(FLAGS_x, FLAGS_y, FLAGS_z);
       const math::RollPitchYaw<double> rpy(FLAGS_roll, FLAGS_pitch, FLAGS_yaw);
-      wp.pose.linear() = rpy.ToMatrix3();
+      wp.pose.linear() = rpy.ToMatrix3ViaRotationMatrix();
       wp.constrain_orientation = true;
       std::vector<ConstraintRelaxingIk::IkCartesianWaypoint> waypoints;
       waypoints.push_back(wp);

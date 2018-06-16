@@ -115,7 +115,7 @@ TEST_F(CarVisApplicatorTest, InputOutput) {
   {
     const drake::math::RollPitchYaw<double> rpy(0.1, 0.5, 1.57);
     const Eigen::Vector3d xyz(4, -5, 6);
-    test_pose.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
+    test_pose.matrix() << rpy.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
   }
 
   PoseBundle<double> input_poses(1 /* num poses */);
@@ -144,7 +144,7 @@ TEST_F(CarVisApplicatorTest, BadInput) {
   {
     const drake::math::RollPitchYaw<double> rpy(0.1, 0.5, 1.57);
     const Eigen::Vector3d xyz(4, -5, 6);
-    test_pose.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
+    test_pose.matrix() << rpy.ToMatrix3ViaRotationMatrix(), xyz, 0, 0, 0, 1;
   }
 
   // Use a model instance ID that doesn't match the visualizer's ID.

@@ -131,7 +131,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
 
       const Isometry3<double>& offset_pose = offset_vis_poses.get_pose(i);
       const Isometry3<double> expected_pose =
-           rpy.ToMatrix3() * origin_vis_poses.get_pose(i);
+           rpy.ToMatrix3ViaRotationMatrix() * origin_vis_poses.get_pose(i);
       ASSERT_TRUE(CompareMatrices(offset_pose.linear(),
                                   expected_pose.linear(), 1e-15,
                                   MatrixCompareType::absolute));

@@ -130,11 +130,11 @@ class RollPitchYaw {
   /// @param[in] r roll angle (in units of radians).
   void set_roll_angle(const T& r)  { roll_pitch_yaw_(0) = r; }
 
-  /// Set the pitch-angle underlying a %RollPitchYaw.
+  /// Set the pitch-angle underlying `this` %RollPitchYaw.
   /// @param[in] p pitch angle (in units of radians).
   void set_pitch_angle(const T& p)  { roll_pitch_yaw_(1) = p; }
 
-  /// Set the yaw-angle underlying a %RollPitchYaw.
+  /// Set the yaw-angle underlying `this` %RollPitchYaw.
   /// @param[in] y yaw angle (in units of radians).
   void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
 
@@ -160,8 +160,12 @@ class RollPitchYaw {
   /// Returns the RotationMatrix representation of `this` %RollPitchYaw.
   RotationMatrix<T> ToRotationMatrix() const;
 
-  /// Returns the 3x3 matrix representation of `this` %RollPitchYaw.
-  Matrix3<T> ToMatrix3() const;
+  /// Returns the 3x3 matrix representation of the %RotationMatrix that
+  /// corresponds to `this` %RollPitchYaw.  This is a convenient "sugar" method
+  /// that is exactly equivalent to RotationMatrix(rpy).ToMatrix3().
+  Matrix3<T> ToMatrix3ViaRotationMatrix() const {
+    return ToRotationMatrix().matrix();
+  }
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
@@ -599,6 +603,9 @@ DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
 Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
   return RollPitchYaw<T>(quaternion).vector();
 }
+
+// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
+using RollPitchYawd = RollPitchYaw<double>;
 
 /// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.

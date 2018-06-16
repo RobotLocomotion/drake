@@ -48,14 +48,14 @@ TEST_F(KinematicsResultsTest, PoseTest) {
   const RigidBody<double>& body = *robot_->FindBody("link1");
   Isometry3<double> pose = kinematics_result_->get_pose_in_world(body);
   const math::RollPitchYaw<double> rpy(q_.segment<3>(3));
-  const math::RotationMatrix<double> R(rpy);
 
   // Position and orientation get from kinematics result = quantities directly
   // computed from q and v.
   EXPECT_TRUE(drake::CompareMatrices(q_.segment<3>(0), pose.translation(),
                                      1e-14,
                                      drake::MatrixCompareType::absolute));
-  EXPECT_TRUE(drake::CompareMatrices(R.matrix(), pose.linear(), 1e-14,
+  EXPECT_TRUE(drake::CompareMatrices(rpy.ToMatrix3ViaRotationMatrix(),
+                                     pose.linear(), 1e-14,
                                      drake::MatrixCompareType::absolute));
 }
 

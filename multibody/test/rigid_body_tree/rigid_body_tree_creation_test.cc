@@ -121,9 +121,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
   // world at offset x = 1, y = 1, z = 1.
   Eigen::Isometry3d T_r1and2_to_world;
   {
+    const drake::math::RotationMatrix<double> R_identity;
     const Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
-    const math::RollPitchYaw<double> rpy(Eigen::Vector3d::Zero());
-    T_r1and2_to_world.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
+    T_r1and2_to_world.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
   }
 
   r1b1->add_joint(&tree_->world(),
@@ -161,9 +161,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   Eigen::Isometry3d T_r2_to_r1;
   {
-    const drake::math::RollPitchYaw<double> rpy(Eigen::Vector3d::Zero());
+    const drake::math::RotationMatrix<double> R_identity;
     const Eigen::Vector3d xyz = Eigen::Vector3d::Ones();
-    T_r2_to_r1.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
+    T_r2_to_r1.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
   }
 
   r2b1->add_joint(&tree_->world(),
@@ -177,9 +177,9 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
 
   Eigen::Isometry3d T_r3_and_r4_to_r2;
   {
+    const drake::math::RotationMatrix<double> R_identity;
     const Eigen::Vector3d xyz(2, 2, 2);
-    const drake::math::RollPitchYaw<double> rpy(Eigen::Vector3d::Zero());
-    T_r3_and_r4_to_r2.matrix() << rpy.ToMatrix3(), xyz, 0, 0, 0, 1;
+    T_r3_and_r4_to_r2.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
   }
 
   auto r3b1_and_r4b1_weld = std::allocate_shared<RigidBodyFrame<double>>(

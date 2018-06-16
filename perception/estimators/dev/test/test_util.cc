@@ -187,9 +187,8 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       // Define a generic pose in the world.
       const Vector3d xyz(0.1, 0.2, 0.3);
       const math::RollPitchYaw<double> rpy(kPi / 3, kPi / 11, kPi / 12);
-      const math::RotationMatrix<double> R(rpy);
       setup->X_WB.setIdentity();
-      setup->X_WB.linear() << R.matrix();
+      setup->X_WB.linear() << rpy.ToMatrix3ViaRotationMatrix();
       setup->X_WB.translation() << xyz;
       break;
     }
