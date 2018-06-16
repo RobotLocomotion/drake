@@ -39,6 +39,7 @@
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/unused.h"
 #include "drake/systems/sensors/depth_shaders.h"
 #include "drake/systems/sensors/vtk_util.h"
 
@@ -239,12 +240,14 @@ void RgbdRendererOSPRay::Impl::ImplRenderColorImage(
 void RgbdRendererOSPRay::Impl::ImplRenderDepthImage(
     ImageDepth32F* depth_image_out) const {
   // TODO(kunimatsu-tri) Implement this.
+  drake::unused(depth_image_out);
   throw std::runtime_error("Not implemented.");
 }
 
 void RgbdRendererOSPRay::Impl::ImplRenderLabelImage(
     ImageLabel16I* label_image_out) const {
   // TODO(kunimatsu-tri) Implement this.
+  drake::unused(label_image_out);
   throw std::runtime_error("Not implemented.");
 }
 
