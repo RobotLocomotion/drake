@@ -78,13 +78,15 @@ def _guess_files(target, candidates, scope, attr_name):
 
     elif scope == "WORKSPACE":
         return [
-            f for f in candidates
+            f
+            for f in candidates
             if target.label.workspace_root == f.owner.workspace_root
         ]
 
     elif scope == "PACKAGE":
         return [
-            f for f in candidates
+            f
+            for f in candidates
             if (target.label.workspace_root == f.owner.workspace_root and
                 target.label.package == f.owner.package)
         ]
@@ -848,7 +850,8 @@ def install_test(
     `install()` rule.
     """
     if native.package_name():
-        fail("This command should be called only once, when the main installation step occurs.")
+        fail("This command should be called only once, " +
+             "when the main installation step occurs.")
 
     src = "//tools/install:install_test.py"
 
