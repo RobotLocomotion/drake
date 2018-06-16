@@ -136,7 +136,3 @@ MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p) {
 
 
 
-int main() {
-
-
-}
