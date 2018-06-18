@@ -80,6 +80,9 @@ class TestAll(unittest.TestCase):
             "RoadGeometry",
             # - dragway
             "create_dragway",
+            # manipulation
+            # - planner
+            "DoDifferentialInverseKinematics",
             # multibody
             # - parsers
             "PackageMap",
