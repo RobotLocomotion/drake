@@ -3722,15 +3722,18 @@ template VectorX<double         > RigidBodyTree<double>::inverseDynamics<double 
 template pair<Vector3d, double> RigidBodyTree<double>::resolveCenterOfPressure<Vector3d, Vector3d>(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement>> const&, Eigen::MatrixBase<Vector3d> const&, Eigen::MatrixBase<Vector3d> const&) const;  // NOLINT
 
 // Explicit template instantiations for transformVelocityMappingToQDotMapping.
-template MatrixX<double> RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd          >(const KinematicsCache<double>&, const Eigen::MatrixBase<VectorXd          >&);  // NOLINT
-template MatrixX<double> RigidBodyTree<double>::transformVelocityMappingToQDotMapping<Eigen::RowVectorXd>(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::RowVectorXd>&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformVelocityMappingToQDotMapping<VectorXd           >(const KinematicsCache<double>&,     const Eigen::MatrixBase<VectorXd           >&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformVelocityMappingToQDotMapping<Eigen::RowVectorXd >(const KinematicsCache<double>&,     const Eigen::MatrixBase<Eigen::RowVectorXd >&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformVelocityMappingToQDotMapping<MatrixXd           >(const KinematicsCache<double>&,     const Eigen::MatrixBase<MatrixXd           >&);  // NOLINT
+template MatrixX<AutoDiffXd> RigidBodyTree<double>::transformVelocityMappingToQDotMapping<MatrixX<AutoDiffXd>>(const KinematicsCache<AutoDiffXd>&, const Eigen::MatrixBase<MatrixX<AutoDiffXd>>&);  // NOLINT
 
 // Explicit template instantiations for transformQDotMappingToVelocityMapping.
-template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<VectorXd                  >(const KinematicsCache<double>&, const Eigen::MatrixBase<VectorXd                  >&);  // NOLINT
-template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::RowVectorXd        >(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::RowVectorXd        >&);  // NOLINT
-template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<MatrixXd                  >(const KinematicsCache<double>&, const Eigen::MatrixBase<MatrixXd                  >&);  // NOLINT
-template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd const>>(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>&);  // NOLINT
-template MatrixX<double> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd      >>(const KinematicsCache<double>&, const Eigen::MatrixBase<Eigen::Map<MatrixXd      >>&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformQDotMappingToVelocityMapping<VectorXd                  >(const KinematicsCache<double>&,     const Eigen::MatrixBase<VectorXd                  >&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::RowVectorXd        >(const KinematicsCache<double>&,     const Eigen::MatrixBase<Eigen::RowVectorXd        >&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformQDotMappingToVelocityMapping<MatrixXd                  >(const KinematicsCache<double>&,     const Eigen::MatrixBase<MatrixXd                  >&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd const>>(const KinematicsCache<double>&,     const Eigen::MatrixBase<Eigen::Map<MatrixXd const>>&);  // NOLINT
+template MatrixX<double>     RigidBodyTree<double>::transformQDotMappingToVelocityMapping<Eigen::Map<MatrixXd      >>(const KinematicsCache<double>&,     const Eigen::MatrixBase<Eigen::Map<MatrixXd      >>&);  // NOLINT
+template MatrixX<AutoDiffXd> RigidBodyTree<double>::transformQDotMappingToVelocityMapping<MatrixX<AutoDiffXd       >>(const KinematicsCache<AutoDiffXd>&, const Eigen::MatrixBase<MatrixX<AutoDiffXd       >>&);  // NOLINT
 
 #endif
 #if DRAKE_RBT_SHARD == 1
