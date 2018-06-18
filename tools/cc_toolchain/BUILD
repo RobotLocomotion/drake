@@ -119,20 +119,18 @@ config_setting(
 
 config_setting(
     name = "apple_debug",
-    values = {
-        "compilation_mode": "dbg",
-        "cpu": "darwin_x86_64",
-    },
+    constraint_values = ["@bazel_tools//platforms:osx"],
+    values = {"compilation_mode": "dbg"},
 )
 
 config_setting(
     name = "linux",
-    values = {"cpu": "k8"},
+    constraint_values = ["@bazel_tools//platforms:linux"],
 )
 
 config_setting(
     name = "apple",
-    values = {"cpu": "darwin"},
+    constraint_values = ["@bazel_tools//platforms:osx"],
 )
 
 config_setting(
