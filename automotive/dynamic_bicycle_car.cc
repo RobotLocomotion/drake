@@ -60,10 +60,10 @@ template <typename T>
 const T DynamicBicycleCar<T>::CalcTireSlip(
     const DynamicBicycleCarState<T>& state,
     const DynamicBicycleCarParams<T>& params, const T& steer_angle,
-    bool tire) const {
+    bool tire_select) const {
   using std::atan2;
 
-  if (tire) {
+  if (tire_select) {
     // Front tire slip angle.
     return atan2(state.v_LCp_y() + params.Lf() * state.yawDt_LC(),
                  state.v_LCp_x()) - steer_angle;
