@@ -1,5 +1,7 @@
 # -*- python -*-
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 def github_archive(
         name,
         repository = None,
@@ -75,20 +77,11 @@ def github_archive(
             )
         return
 
-    if build_file == None:
-        native.http_archive(
-            name = name,
-            urls = urls,
-            sha256 = sha256,
-            strip_prefix = strip_prefix,
-            **kwargs
-        )
-    else:
-        native.new_http_archive(
-            name = name,
-            urls = urls,
-            sha256 = sha256,
-            build_file = build_file,
-            strip_prefix = strip_prefix,
-            **kwargs
-        )
+    http_archive(
+        name = name,
+        urls = urls,
+        sha256 = sha256,
+        build_file = build_file,
+        strip_prefix = strip_prefix,
+        **kwargs
+    )
