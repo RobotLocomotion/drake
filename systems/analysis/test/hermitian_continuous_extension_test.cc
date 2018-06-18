@@ -44,9 +44,9 @@ class HermitianContinuousExtensionTest : public ::testing::Test {
     (MatrixX<T>(4, 1) << 1., 0., 1., 0.).finished()};
   const MatrixX<T> kFinalStateDerivativeNotAVector{
     (MatrixX<T>(2, 2) << 0., 1., 0., 1.).finished()};
-  const double kAccuracy{1e-12};
 };
 
+// HermitianContinuousExtension types to test.
 typedef ::testing::Types<double> ExtensionTypes;
 
 TYPED_TEST_CASE(HermitianContinuousExtensionTest, ExtensionTypes);
@@ -105,8 +105,8 @@ TYPED_TEST(HermitianContinuousExtensionTest, ExtensionConsistency) {
   EXPECT_THROW(continuous_extension.Evaluate(this->kInvalidTime),
                std::runtime_error);
 
-  // Verifies that step updates that would disrupt the extension
-  // continuity fail.
+  // Verifies that steps updates that would disrupt the extension continuity
+  // fail.
   typename HermitianContinuousExtension<TypeParam>::IntegrationStep second_step(
       (this->kFinalTime + this->kMidTime) / 2.,
       this->kMidState, this->kMidStateDerivative);
@@ -245,12 +245,13 @@ TYPED_TEST(HermitianContinuousExtensionTest, CorrectEvaluation) {
   // Consolidates all previous updates.
   continuous_extension.Consolidate();
   // Verifies that continuous extensions and Hermite spline match.
+  const double kAccuracy{1e-12};
   EXPECT_FALSE(continuous_extension.is_empty());
   for (TypeParam t = this->kInitialTime;
        t <= this->kFinalTime; t += this->kTimeStep) {
     EXPECT_TRUE(CompareMatrices(continuous_extension.Evaluate(t),
                                 hermite_spline.value(t),
-                                this->kAccuracy));
+                                kAccuracy));
   }
 }
 

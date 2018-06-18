@@ -87,6 +87,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
 
     /// Extends the step forward in time by copy from column matrices.
     ///
+    /// Provided @p time, @p state and @p state_derivative are appended
+    /// to the current step, effectively increasing its time length.
+    ///
     /// @param time Time tᵢ to extend the step to.
     /// @param state State vector 𝐱ᵢ at @p time tᵢ as a column matrix.
     /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ
@@ -119,12 +122,16 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       state_derivatives_.push_back(std::move(state_derivative));
     }
 
-    /// Returns step start time t₀, which may coincide with its
-    /// end time tᵢ if the step has zero length.
+    /// Returns step start time t₀ (that of the first time, state and state
+    /// derivative triplet), which may coincide with its end time tᵢ (that of
+    /// the last time, state and state derivative triplet) if the step has zero
+    /// length (i.e. it contains a single triplet).
     const T& get_start_time() const { return times_.front(); }
 
-    /// Returns step end time tᵢ, which may coincide with its
-    /// start time t₀ if the step has zero length.
+    /// Returns step end time tᵢ (that of the first time, state and state
+    /// derivative triplet), which may coincide with its start time t₀ (that of
+    /// the last time, state and state derivative triplet) if the step has zero
+    /// length (i.e. it contains a single triplet).
     const T& get_end_time() const { return times_.back(); }
 
     /// Returns the step state 𝐱 dimensions.
@@ -229,6 +236,11 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   }
 
   /// Update extension with the given @p step by copy.
+  ///
+  /// Provided @p step is queued for later consolidation. Note that
+  /// the time the @p step extends cannot be readily evaluated (see
+  /// StepwiseContinuousExtension class documentation).
+  ///
   /// @param step Integration step to update this extension with.
   /// @throw std::runtime_error
   ///   if given @p step has zero length.<br>
@@ -314,9 +326,12 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
       throw std::runtime_error("Provided step dimension and continuous"
                                " extension (inferred) dimension do not match.");
     }
-    const T time_misalignment = std::abs(
-        end_time - step.get_start_time());
-    if (time_misalignment > kAllowedTimeMisalignment) {
+    // Maximum time misalignment between step and continuous extension that can
+    // still be disregarded as a discontinuity in time.
+    const T allowed_time_misalignment = std::max(std::abs(end_time), 1.) *
+                                        std::numeric_limits<T>::epsilon();
+    const T time_misalignment = std::abs(end_time - step.get_start_time());
+    if (time_misalignment > allowed_time_misalignment) {
       throw std::runtime_error("Provided step start time and continuous"
                                " extension end time differ.");
     }
@@ -340,10 +355,6 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   std::vector<IntegrationStep> raw_steps_{};
   // The underlying PiecewisePolynomial continuous trajectory.
   trajectories::PiecewisePolynomial<T> continuous_trajectory_{};
-  // Maximum time misalignment between steps that it is safe to align
-  // to ensure continuity.
-  static constexpr T kAllowedTimeMisalignment{
-    std::numeric_limits<T>::epsilon()};
 };
 
 }  // namespace systems

@@ -8,26 +8,30 @@ namespace systems {
 /// A ContinuousExtension class interface extension, geared towards
 /// step-wise construction procedures. Extensions of this kind are to be
 /// built incrementally by means of discrete updates that extend its domain.
-/// To allow for rectification, the actual construction procedure is deferred
-/// to a consolidation step. In between consolidations, updates can be rolled
-/// back (i.e. discarded) one by one on a last-input-first-output basis.
-/// Implementations are thus encouraged to keep recent updates in a light weight
-/// form, deferring heavier computations and construction of a better suited
-/// form for evaluation to the consolidation step (and thus the name). Nature of
-/// an update remains implementation specific.
+/// Nature of an update remains implementation specific.
+///
+/// To allow for update rectification (i.e. drop and replacement), in case it
+/// fails to meet certain criteria (e.g. not within tolerances), construction
+/// can be deferred to a consolidation step. In between consolidations, updates
+/// can be rolled back (i.e. discarded) one by one on a last-input-first-output
+/// basis. Implementations are thus encouraged to keep recent updates in a light
+/// weight form, deferring heavier computations and construction of a better
+/// suited representation for evaluation. As such, evaluation is bound to
+/// succeed only after consolidation.
 ///
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
 class StepwiseContinuousExtension : public ContinuousExtension<T> {
  public:
-  /// Rolls back the last update.
+  /// Rolls back (i.e. drops) the last update.
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
   ///      consolidation (via Consolidate()).
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual void Rollback() = 0;
 
-  /// Consolidates latest updates.
+  /// Consolidates latest updates i.e. puts all updates since last
+  /// call or construction into a form that is suitable for evaluation.
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
   ///      consolidation.
