@@ -1,6 +1,6 @@
 /* clang-format off to disable clang-format-includes */
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/sos_utils.h"
+#include "drake/solvers/sos_basis_generator.h"
 #include "drake/common/symbolic_monomial_util.h"
 /* clang-format on */
 
@@ -29,7 +29,7 @@ MonomialSet VectorToSet(const drake::VectorX<Monomial> & x) {
   return x_set;
 }
 
-class SosUtilsTest : public ::testing::Test {
+class SosBasisGeneratorTest : public ::testing::Test {
  public:
   void CheckMonomialBasis(symbolic::Polynomial poly, MonomialSet basis_ref) {
     drake::VectorX<Monomial> basis = ConstructMonomialBasis(poly);
@@ -46,7 +46,7 @@ class SosUtilsTest : public ::testing::Test {
   VectorIndeterminate<3> x_;
 };
 
-TEST_F(SosUtilsTest, MotzkinPoly) {
+TEST_F(SosBasisGeneratorTest, MotzkinPoly) {
   const symbolic::Polynomial poly{
     pow(x_(0), 2)*pow(x_(1), 4)  +
     pow(x_(0), 4)*pow(x_(1), 2)  +
@@ -61,7 +61,7 @@ TEST_F(SosUtilsTest, MotzkinPoly) {
   CheckMonomialBasis(poly, basis_ref);
 }
 
-TEST_F(SosUtilsTest, Univariate) {
+TEST_F(SosBasisGeneratorTest, Univariate) {
   const symbolic::Polynomial poly{
     1 + pow(x_(0), 1) + pow(x_(0), 2) + pow(x_(0), 8)};
   MonomialSet basis_ref;
@@ -74,13 +74,13 @@ TEST_F(SosUtilsTest, Univariate) {
 }
 
 
-TEST_F(SosUtilsTest, Empty) {
+TEST_F(SosBasisGeneratorTest, Empty) {
   const symbolic::Polynomial poly{ pow(x_(0), 3) };
   MonomialSet basis_ref;
   CheckMonomialBasis(poly, basis_ref);
 }
 
-TEST_F(SosUtilsTest, Singleton) {
+TEST_F(SosBasisGeneratorTest, Singleton) {
   const symbolic::Polynomial poly{1 + pow(x_(0), 1) };
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());

@@ -1,4 +1,4 @@
-#include "drake/solvers/sos_utils.h"
+#include "drake/solvers/sos_basis_generator.h"
 
 #include <vector>
 

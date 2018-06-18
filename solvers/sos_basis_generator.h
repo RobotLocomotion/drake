@@ -11,9 +11,9 @@ namespace solvers {
 
 /**
   * Given input polynomial p, outputs a set M of monomials with the following
-  * guarantee: if p = \sum^n_{i=1} f_i * f_i for some (unknown) polynomials
-  * f_1,...,f_n, then the span of M contains each f_i.  Given M, one can
-  * then find the polynomials f_i using semidefinite programming; see, e.g.,
+  * guarantee: if p = f1*f1 + f2*f2 + ... + fn*fn for some (unknown) polynomials
+  * f1, f2, ..., fn, then the span of M contains f1, f2, ..., fn,  Given M, one can
+  * then find the polynomials fi using semidefinite programming; see, e.g.,
   * Chapter 3 of Semidefinite Optimization and Convex Algebraic Geometry
   * by G. Blekherman, P. Parrilo, R. Thomas.
   * @param p A polynomial
