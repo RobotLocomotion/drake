@@ -11,6 +11,9 @@
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
+
+// This class has friend access to ImplicitStribeckSolver so that we can test
+// its internals.
 class ImplicitStribeckSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
@@ -49,6 +52,7 @@ class ImplicitStribeckSolverTester {
     return J;
   }
 };
+
 namespace {
 
 // A test fixture to test DirectionChangeLimiter for a very standard
@@ -61,10 +65,10 @@ class DirectionLimiter : public ::testing::Test {
   }
 
   // Limiter parameters. See DirectionChangeLimiter for further details.
-  const double v_stribeck = 1.0e-4;  // m/s
+  const double v_stiction = 1.0e-4;  // m/s
   const double theta_max = M_PI / 6.0;  // radians.
   const double cos_min = std::cos(theta_max);
-  const double tolerance = 0.01;  // Dimensionless. A factor of v_stribeck.
+  const double tolerance = 0.01;  // Dimensionless. A factor of v_stiction.
   // Tolerance to perform comparisons close to machine precision.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 };
@@ -74,7 +78,7 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -82,9 +86,9 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
 // to within the Stribeck circle.
 TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
-  const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stribeck;
+  const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -93,8 +97,8 @@ TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
-  const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stribeck / 2.0;
+      vt, dvt, cos_min, v_stiction, tolerance);
+  const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stiction / 2.0;
   const Vector2<double> vt_alpha = vt + alpha * dvt;
   EXPECT_TRUE(CompareMatrices(
       vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
@@ -105,7 +109,7 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   // DirectionChangeLimiter does not allow changes from outside the Stribeck
   // circle (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
@@ -113,7 +117,7 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   // within the Stribeck circle in the direction of the initial v, helps the
   // iterative process even more.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
-  const Vector2<double> vt_alpha_expected = vt.normalized() * v_stribeck / 2.0;
+  const Vector2<double> vt_alpha_expected = vt.normalized() * v_stiction / 2.0;
   EXPECT_TRUE(CompareMatrices(
       vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
 }
@@ -124,10 +128,10 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
 TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
   const Vector2<double> vt = Vector2<double>(1.2, 0.4);
   const Vector2<double> vt_alpha_expected =
-      Vector2<double>(-0.3, 0.45) * v_stribeck;
+      Vector2<double>(-0.3, 0.45) * v_stiction;
   const Vector2<double> dvt = vt_alpha_expected - vt;
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -135,28 +139,28 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
 // region (but not to zero) is updated to a sliding configuration. Since vt
 // falls in a region of strong gradients, the limiter allows it.
 TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
-  const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stribeck;
+  const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
 // Similar to test ZeroVtoSlidingRegion, but vt is not exactly zero
-// but negligibly small with norm/v_stribeck < tolerance.
+// but negligibly small with norm/v_stiction < tolerance.
 TEST_F(DirectionLimiter, StictionToSliding) {
   const Vector2<double> vt =
-      Vector2<double>(-0.5, 0.3) * v_stribeck * tolerance;
+      Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const Vector2<double> dvt(0.3, 0.15);
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   // For this case DirectionChangeLimiter neglects the very small initial vt
   // (since we always have tolerance << 1.0) so that:
   // vα = vt + αΔvt ≈ αΔvt = Δvt/‖Δvt‖⋅vₛ/2.
   // Therefore we expect α = 1 / ‖Δvt‖⋅vₛ/2.
-  double alpha_expected = 1.0 / dvt.norm() * v_stribeck / 2.0;
+  double alpha_expected = 1.0 / dvt.norm() * v_stiction / 2.0;
 
   EXPECT_NEAR(alpha, alpha_expected, kTolerance);
 }
@@ -165,9 +169,9 @@ TEST_F(DirectionLimiter, StictionToSliding) {
 TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> vt(0.1, 0.05);
   const Vector2<double> dvt =
-      Vector2<double>(-0.5, 0.3) * v_stribeck * tolerance;
+      Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -179,11 +183,11 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   // Since the change crosses zero exactly, we expect
   // v_alpha = v + alpha * dv = v/‖v‖⋅vₛ/2.
-  const Vector2<double> vt_alpha_expected = vt.normalized() * v_stribeck / 2.0;
+  const Vector2<double> vt_alpha_expected = vt.normalized() * v_stiction / 2.0;
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -197,7 +201,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
 TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   // We construct a v_alpha expected to be within the Stribeck circle.
   const Vector2<double> vt_alpha_expected =
-      Vector2<double>(0.3, 0.2) * v_stribeck;
+      Vector2<double>(0.3, 0.2) * v_stiction;
 
   // A unit vector normal to vt_alpha_expected.
   const Vector2<double> vt_normal =
@@ -217,7 +221,7 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   // Verify the result from the limiter.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -242,7 +246,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -268,7 +272,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -301,7 +305,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -334,7 +338,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   ASSERT_GT(theta1, theta_max);
 
   const double alpha = internal::DirectionChangeLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stribeck, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance);
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -558,10 +562,10 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
-  const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jt_, p_star_, mu_, fn_, dt, v_stribeck, epsilon_v, v);
+      M_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance = J_expected.rows() * J_expected.norm() *
@@ -663,10 +667,10 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
-  const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jt_, p_star_, mu_, fn_, dt, v_stribeck, epsilon_v, v);
+      M_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance = J_expected.rows() * J_expected.norm() *

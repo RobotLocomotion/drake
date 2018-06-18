@@ -1,7 +1,7 @@
 #pragma once
 
 // This file implements a method to compute the  Newton-Raphson Jacobian
-// J = ∇ᵥR of the residual for the ImplicitStribecSolver using automatic
+// J = ∇ᵥR of the residual for the ImplicitStribeckSolver using automatic
 // differentiation. This separate implementation is used to verify the
 // analytical (and faster) Jacobian computed by the internal implementation of
 // the solver.
@@ -21,9 +21,11 @@ namespace test {
 // for given friction coefficient mu and normal force fn.
 template <typename U>
 VectorX<U> CalcFrictionForces(
-    double v_stribeck, double epsilon_v,
+    double v_stiction, double epsilon_v,
     const VectorX<double> mu,
     const VectorX<U>& vt, const VectorX<U>& fn) {
+  using std::sqrt;
+
   const int nc = mu.size();  // Number of contact points.
 
   // We use the stiction tolerance as a reference scale to estimate a small
@@ -33,8 +35,8 @@ VectorX<U> CalcFrictionForces(
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   VectorX<U> ft(2 * nc);
-  VectorX<U> mus(nc);
-  VectorX<U> that(2 * nc);
+  VectorX<U> mu_vt(nc);  // = μ(‖vₜ‖)
+  VectorX<U> t_hat(2 * nc);
   VectorX<U> v_slip(nc);
 
   auto ModifiedStribeck = [](U x, double friction_coefficient) {
@@ -57,17 +59,17 @@ VectorX<U> CalcFrictionForces(
   // which now is not only well defined but it has well defined derivatives.
   // We use these softened quantities all throughout our derivations for
   // consistency.
-  for (int ic = 0; ic < nc; ++ic) {
-    const int ik = 2 * ic;
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     const auto vt_ic = vt.template segment<2>(ik);
     // "soft norm":
     v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
     // "soft" tangent vector:
     const Vector2<U> that_ic = vt_ic / v_slip(ic);
-    that.template segment<2>(ik) = that_ic;
-    mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    t_hat.template segment<2>(ik) = that_ic;
+    mu_vt(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
-    ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
+    ft.template segment<2>(ik) = -mu_vt(ic) * that_ic * fn(ic);
   }
   return ft;
 }
@@ -76,13 +78,13 @@ VectorX<U> CalcFrictionForces(
 // solver. This templated method is used to automatically differentiate the
 // residual and compute its Jacobian J = ∇ᵥR.
 template <typename U>
-VectorX<U> CalcResidualOnU(
+VectorX<U> CalcResidual(
     const MatrixX<double>& M,
     const MatrixX<double>& Jt,
     const VectorX<double>& p_star,
     const VectorX<double>& mu,
     const VectorX<double>& fn_data,
-    double dt, double v_stribeck, double epsilon_v,
+    double dt, double v_stiction, double epsilon_v,
     const VectorX<U>& v) {
   // Tangential velocity.
   VectorX<U> vt = Jt * v;
@@ -90,11 +92,11 @@ VectorX<U> CalcResidualOnU(
   // Normal forces.
   // TODO(amcastro-tri): Modify this (now constant) term to implicitly include
   // the dependence on generalized velocities so that we can test the two-way
-  // coupling schem (which also computes normal forces implicitly).
-  const VectorX<U>& fn = fn_data;
+  // coupling scheme (which also computes normal forces implicitly).
+  const VectorX<U> fn = fn_data;
 
   // Friction forces.
-  VectorX<U> ft = CalcFrictionForces(v_stribeck, epsilon_v, mu, vt, fn);
+  VectorX<U> ft = CalcFrictionForces(v_stiction, epsilon_v, mu, vt, fn);
 
   // Newton-Raphson residual
   VectorX<U> residual = M * v - p_star - dt * Jt.transpose() * ft;
@@ -102,7 +104,7 @@ VectorX<U> CalcResidualOnU(
   return residual;
 }
 
-// Computes the Jacobian J = ∇ᵥR of the residual for the ImplicitStribecSolver
+// Computes the Jacobian J = ∇ᵥR of the residual for the ImplicitStribeckSolver
 // using automatic differentiation.
 MatrixX<double> CalcJacobianWithAutoDiff(
     const MatrixX<double>& M,
@@ -110,12 +112,12 @@ MatrixX<double> CalcJacobianWithAutoDiff(
     const VectorX<double>& p_star,
     const VectorX<double>& mu,
     const VectorX<double>& fn,
-    double dt, double v_stribeck, double epsilon_v,
+    double dt, double v_stiction, double epsilon_v,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
-  VectorX<AutoDiffXd> residual = CalcResidualOnU(
-      M, Jt, p_star, mu, fn, dt, v_stribeck, epsilon_v, v_autodiff);
+  VectorX<AutoDiffXd> residual = CalcResidual(
+      M, Jt, p_star, mu, fn, dt, v_stiction, epsilon_v, v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }
 
