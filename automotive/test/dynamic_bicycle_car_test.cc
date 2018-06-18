@@ -298,7 +298,7 @@ TEST_F(DynamicBicycleCarTest, Output) {
 
   test_car_->CalcOutput(*context_, system_output_.get());
 
-  const DynamicBicycleCarState<double>* bike_out;
+  const DynamicBicycleCarState<double>* bike_out = nullptr;
   EXPECT_EQ(nullptr, bike_out);
   bike_out = dynamic_cast<const DynamicBicycleCarState<double>*>(
     system_output_->get_vector_data(0));
