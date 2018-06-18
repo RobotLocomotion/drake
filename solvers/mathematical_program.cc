@@ -29,8 +29,8 @@
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/snopt_solver.h"
-#include "drake/solvers/symbolic_extraction.h"
 #include "drake/solvers/sos_utils.h"
+#include "drake/solvers/symbolic_extraction.h"
 // Note that the file mathematical_program_api.cc also contains some of the
 // implementation of mathematical_program.h
 

@@ -5,7 +5,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/symbolic.h"
-#include "drake/solvers/integer_lattice.h"
+#include "drake/solvers/integer_inequality_solver.h"
 
 namespace drake {
 namespace solvers {
@@ -138,5 +138,5 @@ MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial & p) {
   return ExponentsToMonomials(
       ConstructMonomialBasis(GetPolynomialExponents(p)), vars);
 }
-} // namespace solvers
-} // namespace drake
+}  // namespace solvers
+}  // namespace drake

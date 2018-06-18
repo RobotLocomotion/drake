@@ -1,7 +1,7 @@
 /* clang-format off to disable clang-format-includes */
 /* clang-format on */
 
-#include "drake/solvers/integer_lattice.h"
+#include "drake/solvers/integer_inequality_solver.h"
 
 #include <gtest/gtest.h>
 namespace drake {

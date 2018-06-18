@@ -55,9 +55,9 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
-    name = "integer_lattice",
-    srcs = ["integer_lattice.cc"],
-    hdrs = ["integer_lattice.h"],
+    name = "integer_inequality_solver",
+    srcs = ["integer_inequality_solver.cc"],
+    hdrs = ["integer_inequality_solver.h"],
     deps = ["//common:essential"],
 )
 
@@ -66,7 +66,7 @@ drake_cc_library(
     srcs = ["sos_utils.cc"],
     hdrs = ["sos_utils.h"],
     deps = [
-        ":integer_lattice",
+        ":integer_inequality_solver",
         "//common:essential",
         "//common:polynomial",
         "//common:symbolic",
@@ -251,7 +251,6 @@ drake_cc_library(
         ":indeterminate",
         ":ipopt_solver",
         ":linear_system_solver",
-        ":sos_utils",
         ":mathematical_program_api",
         ":moby_lcp_solver",
         ":mosek_solver",
@@ -260,6 +259,7 @@ drake_cc_library(
         ":scs_solver",
         ":snopt_solver",
         ":solver_id",
+        ":sos_utils",
         ":symbolic_extraction",
         ":unrevised_lemke_solver",
         "//common:autodiff",
@@ -1293,9 +1293,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "integer_lattice_test",
+    name = "integer_inequality_solver_test",
     deps = [
-        ":integer_lattice",
+        ":integer_inequality_solver",
     ],
 )
 

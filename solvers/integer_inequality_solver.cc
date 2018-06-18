@@ -1,4 +1,4 @@
-#include "drake/solvers/integer_lattice.h"
+#include "drake/solvers/integer_inequality_solver.h"
 
 #include <algorithm>
 #include <iostream>
@@ -6,9 +6,11 @@
 
 #include <Eigen/Dense>
 
-namespace drake{
-namespace solvers{
-namespace integer_programming{
+#include "drake/common/drake_assert.h"
+
+namespace drake {
+namespace solvers {
+namespace integer_programming {
 
 typedef std::vector<std::vector<int>> IntegerList;
 
@@ -43,7 +45,7 @@ std::vector<ColumnType> ProcessInputs(
     const T & A,
     IntegerList * alphabet) {
 
-  assert(alphabet != NULL);
+  DRAKE_DEMAND(alphabet != NULL);
   int cnt = 0;
   std::vector<ColumnType> ordering(A.cols());
 
@@ -92,7 +94,6 @@ Eigen::MatrixXi FeasiblePoints(
     const IntegerList & column_alphabets,
     const std::vector<ColumnType> & ordering) {
 
-  //assert(A.cols() == column_alphabets.size());
   Eigen::MatrixXi output;
 
   for (auto & value : column_alphabets.at(0)) {
@@ -122,12 +123,12 @@ IntegerList BuildAlphabetFromBounds(
     const Eigen::VectorXi & lower_bound,
     const Eigen::VectorXi & upper_bound) {
 
-  assert(lower_bound.size() == upper_bound.size());
+  DRAKE_DEMAND(lower_bound.size() == upper_bound.size());
 
   IntegerList alphabet(lower_bound.size()); int cnt = 0;
 
   for (auto & col_alphabet : alphabet) {
-    assert(lower_bound(cnt) <= upper_bound(cnt));
+    DRAKE_DEMAND(lower_bound(cnt) <= upper_bound(cnt));
 
     for (int i = lower_bound(cnt); i <= upper_bound(cnt); i++) {
       col_alphabet.push_back(i);
@@ -138,33 +139,7 @@ IntegerList BuildAlphabetFromBounds(
   return alphabet;
 }
 
-bool InternalUnitTests() {
-  Eigen::MatrixXd A(4, 3);
-  Eigen::VectorXd b(4, 1);
-  b << 0, 0, 100, 100;
-
-  A << 1, -2, 3,
-       1, -5, -3,
-       1, -3, 1,
-       1, -3, 3;
-
-  std::vector<std::vector<int>> alphabet(A.cols());
-  alphabet.at(0) = {1, 2, 3};
-  alphabet.at(1) = {1, 2, 8, 9};
-  alphabet.at(2) = {1, 2, 0};
-
-  auto ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
-  assert(std::is_sorted(alphabet.at(0).begin(), alphabet.at(0).end()));
-  assert(ordering.at(0) == ColumnType::Nonnegative);
-  assert(ordering.at(1) == ColumnType::Nonpositive);
-  assert(ordering.at(2) == ColumnType::Indefinite);
-
-  ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
-  return true;
-}
-
-
-}  // namespace
+}  // namespace integer_programming
 
 using drake::solvers::integer_programming::BuildAlphabetFromBounds;
 using drake::solvers::integer_programming::ProcessInputs;
@@ -194,5 +169,5 @@ Eigen::MatrixXi EnumerateIntegerSolutions(
          FeasiblePoints<Eigen::MatrixXi>(A, b, alphabet, ordering);
 }
 
-} // namespace solvers
-} // namespace drake 
+}  // namespace solvers
+}  // namespace drake
