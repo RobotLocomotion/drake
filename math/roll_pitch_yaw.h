@@ -604,7 +604,8 @@ Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
   return RollPitchYaw<T>(quaternion).vector();
 }
 
-// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
+/// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
+/// @relates RollPitchYaw
 using RollPitchYawd = RollPitchYaw<double>;
 
 /// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().

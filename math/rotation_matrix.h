@@ -678,7 +678,8 @@ class RotationMatrix {
   Matrix3<T> R_AB_{Matrix3<T>::Identity()};
 };
 
-// Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
+/// Abbreviation (alias/typedef) for a RotationMatrix double scalar type.
+/// @relates RotationMatrix
 using RotationMatrixd = RotationMatrix<double>;
 
 // TODO(mitiguy) Delete this code after:
