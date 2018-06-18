@@ -131,7 +131,7 @@ GTEST_TEST(RotationMatrix, RotationMatrixZ) {
 
 // Test making a rotation matrix from a RollPitchYaw rotation sequence (which is
 // equivalent to a Body-fixed Z-Y-X or a Space-fixed X-Y-Z rotation sequence).
-// Also tests method IsExactlyEqualTo().
+// Also tests method IsExactlyEqualTo() and typedef (using) RotationMatrixd.
 GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
   const double r(0.5), p(0.4), y(0.3);
   const RollPitchYaw<double> rpy(r, p, y);
@@ -142,10 +142,10 @@ GTEST_TEST(RotationMatrix, ConstructorWithRollPitchYaw) {
   const RotationMatrix<double> R_rpy(rpy);
   EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
 
-  RotationMatrix<double> R1 = RotationMatrix<double>::MakeZRotation(y);
-  RotationMatrix<double> R2 = RotationMatrix<double>::MakeYRotation(p);
-  RotationMatrix<double> R3 = RotationMatrix<double>::MakeXRotation(r);
-  RotationMatrix<double> R_expected = R1 * R2 * R3;
+  RotationMatrixd R1 = RotationMatrix<double>::MakeZRotation(y);
+  RotationMatrixd R2 = RotationMatrix<double>::MakeYRotation(p);
+  RotationMatrixd R3 = RotationMatrix<double>::MakeXRotation(r);
+  RotationMatrixd R_expected = R1 * R2 * R3;
   EXPECT_TRUE(R_rpy.IsExactlyEqualTo(R_expected));
 }
 

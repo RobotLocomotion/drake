@@ -115,8 +115,8 @@ GTEST_TEST(PriusVisTest, BasicTest) {
     };
 
   for (const auto& rotation : rotation_offsets) {
-    Eigen::Isometry3d X_WM_W_offset =
-        math::RollPitchYaw<double>(rotation).ToQuaternion() * X_WM_W_origin;
+    const math::RollPitchYaw<double> rpy(rotation);
+    Eigen::Isometry3d X_WM_W_offset = rpy.ToQuaternion() * X_WM_W_origin;
     PoseBundle<double> offset_vis_poses = dut.CalcPoses(X_WM_W_offset);
     EXPECT_EQ(offset_vis_poses.get_num_poses(), kNumBodies);
     ASSERT_EQ(origin_vis_poses.get_num_poses(),
@@ -131,7 +131,7 @@ GTEST_TEST(PriusVisTest, BasicTest) {
 
       const Isometry3<double>& offset_pose = offset_vis_poses.get_pose(i);
       const Isometry3<double> expected_pose =
-           math::rpy2rotmat(rotation) * origin_vis_poses.get_pose(i);
+           rpy.ToMatrix3ViaRotationMatrix() * origin_vis_poses.get_pose(i);
       ASSERT_TRUE(CompareMatrices(offset_pose.linear(),
                                   expected_pose.linear(), 1e-15,
                                   MatrixCompareType::absolute));

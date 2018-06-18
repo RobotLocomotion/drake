@@ -310,9 +310,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Eigen::Isometry3d joint_transform;
     {
-      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const drake::math::RotationMatrix<double> R_identity;
       const Eigen::Vector3d xyz(1, 0, 0);
-      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+      joint_transform.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
@@ -341,9 +341,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Eigen::Isometry3d joint_transform;
     {
-      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const drake::math::RotationMatrix<double> R_identity;
       const Eigen::Vector3d xyz(2, 0, 0);
-      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+      joint_transform.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
@@ -372,9 +372,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Eigen::Isometry3d joint_transform;
     {
-      Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const drake::math::RotationMatrix<double> R_identity;
       Eigen::Vector3d xyz(-1, 0, 0);
-      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+      joint_transform.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
@@ -405,9 +405,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Eigen::Isometry3d joint_transform;
     {
-      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const drake::math::RotationMatrix<double> R_identity;
       const Eigen::Vector3d xyz(0, -2, 0);
-      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+      joint_transform.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(
@@ -436,9 +436,9 @@ unique_ptr<RigidBodyTree<double>> CreateRigidBodyTree() {
 
     Eigen::Isometry3d joint_transform;
     {
-      const Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+      const drake::math::RotationMatrix<double> R_identity;
       const Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
-      joint_transform.matrix() << drake::math::rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+      joint_transform.matrix() << R_identity.matrix(), xyz, 0, 0, 0, 1;
     }
 
     auto joint = make_unique<RollPitchYawFloatingJoint>(

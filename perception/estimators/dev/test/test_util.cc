@@ -186,9 +186,9 @@ void GetObjectTestSetup(ObjectTestType type, ObjectTestSetup *setup) {
       setup->points_B = GenerateBoxPointCloud(spacing, box);
       // Define a generic pose in the world.
       const Vector3d xyz(0.1, 0.2, 0.3);
-      const Vector3d rpy(kPi / 3, kPi / 11, kPi / 12);
+      const math::RollPitchYaw<double> rpy(kPi / 3, kPi / 11, kPi / 12);
       setup->X_WB.setIdentity();
-      setup->X_WB.linear() << drake::math::rpy2rotmat(rpy);
+      setup->X_WB.linear() << rpy.ToMatrix3ViaRotationMatrix();
       setup->X_WB.translation() << xyz;
       break;
     }

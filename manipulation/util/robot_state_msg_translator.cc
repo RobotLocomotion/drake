@@ -246,15 +246,16 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
 
     if (root_joint.get_num_positions() == 6) {
       // RPY
-      Vector3<double> rpy = q.segment<3>(position_start + 3);
+      const math::RollPitchYaw<double> rpy(q.segment<3>(position_start + 3));
       Vector3<double> rpydot = v.segment<3>(velocity_start + 3);
 
       X_JB.translation() = q.segment<3>(position_start);
-      X_JB.linear() = math::rpy2rotmat(rpy);
+      X_JB.linear() = rpy.ToMatrix3ViaRotationMatrix();
       X_JB.makeAffine();
 
       Matrix3<double> phi = Matrix3<double>::Zero();
-      angularvel2rpydotMatrix(rpy, phi, static_cast<Matrix3<double>*>(nullptr),
+      angularvel2rpydotMatrix(rpy.vector(), phi,
+                              static_cast<Matrix3<double>*>(nullptr),
                               static_cast<Matrix3<double>*>(nullptr));
 
       auto decomp = Eigen::ColPivHouseholderQR<Matrix3<double>>(phi);
