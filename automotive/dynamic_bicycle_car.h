@@ -1,16 +1,8 @@
 #pragma once
 
-#include <cmath>
-#include <memory>
-
 #include "drake/automotive/gen/dynamic_bicycle_car_input.h"
 #include "drake/automotive/gen/dynamic_bicycle_car_params.h"
 #include "drake/automotive/gen/dynamic_bicycle_car_state.h"
-#include "drake/common/autodiff.h"
-#include "drake/common/cond.h"
-#include "drake/common/default_scalars.h"
-#include "drake/common/symbolic.h"
-#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
@@ -30,10 +22,9 @@ namespace automotive {
 /// origin Do located at the front axle along the center line of the vehicle.
 /// Note that the point Co is also referred to as the control point Cp, and
 /// although the location of the vehicle's center of mass Ccm can move depending
-/// on weight transfer dynamics, it is assumed that the location of Ccm is a
-/// distance Lf from the front axle when static. L is a right handed coordinate
-/// system with the Lx, Ly, and Lz vectors aligned with local East, North, and
-/// Up (ENU), respectively.
+/// on weight transfer dynamics, it is assumed that the location of Ccm is
+/// coincident with Co and Ccp. L is a cartesian, right handed coordinate system
+/// with Lz being gravity aligned (gravity acts in the negative Lz direction).
 ///
 /// The states of the model are:
 ///   - Lx measure of the location of Cp from Lo `p_LoCp_x` [m]
@@ -62,11 +53,24 @@ namespace automotive {
 ///
 /// [1] C. Bobier. A Phase Portrait Approach to Vehicle Stability
 ///     and Envelope Control. Ph. D. thesis (Stanford University), 2012.
+///     pp. 22 - 25, pp. 35.
 ///
 /// [2] H. Pacejka, Tire and vehicle dynamics, 3rd ed. Society of Automotive
 ///     Engineers and Butterworth-Heinemann, 2012.
 ///
+/// [3] G. Heydinger, R. Bixel, W. Garrott, M. Pyne, J. Howe and D. Guenther,
+///     "Measured Vehicle Inertial Parameters-NHTSA’s Data Through November
+///     1998", SAE Technical Paper Series, 1999. p. 24.
+///
 /// @ingroup automotive_plants
+
+/// Specifies whether to use the front or rear tire for calculating various
+/// parameters.
+enum class Tire : bool {
+  kFrontTire = true,
+  kRearTire = false,
+};
+
 template <typename T>
 class DynamicBicycleCar final : public systems::LeafSystem<T> {
  public:
@@ -92,30 +96,33 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
   DynamicBicycleCarState<T>& get_mutable_state(
       systems::Context<T>* context) const;
 
-  /// Calculate tire slip angle of front or rear tires.
-  const T CalcTireSlip(const DynamicBicycleCarState<T>& state,
-                       const DynamicBicycleCarParams<T>& params,
-                       const T& steer_angle, bool tire) const;
+  /// Slip angle of front or rear tires.
+  static const T CalcTireSlip(const DynamicBicycleCarState<T>& state,
+                              const DynamicBicycleCarParams<T>& params,
+                              const T& steer_angle, Tire tire_select);
 
-  /// Calculate the normal forces on the front or rear tires.
-  const T CalcNormalTireForce(const DynamicBicycleCarParams<T>& params,
-                              const T& f_x, bool tire) const;
+  /// Normal forces on the front or rear tires.
+  static const T CalcNormalTireForce(const DynamicBicycleCarParams<T>& params,
+                                     const T& f_x, Tire tire_select);
 
-  /// Calculate the lateral tire forces on the front or rear tires.
-  const T CalcLateralTireForce(const T& tire_slip_angle, const T& c_alpha,
-                               const T& f_z, const T& mu) const;
+  /// Lateral tire forces on the front or rear tires.
+  static const T CalcLateralTireForce(const T& tire_slip_angle,
+                                      const T& c_alpha, const T& f_z,
+                                      const T& mu);
 
  private:
   // Evaluates the input port and returns the scalar value of the steering
   // angle.
   const T get_steer(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)->GetAtIndex(0);
+    return this->EvalVectorInput(context, 0)
+        ->GetAtIndex(DynamicBicycleCarInputIndices::kSteerCd);
   }
 
   // Evaluates the input port and returns the scalar value of the longitudinal
   // force.
   const T get_longitudinal_force(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)->GetAtIndex(1);
+    return this->EvalVectorInput(context, 0)
+        ->GetAtIndex(DynamicBicycleCarInputIndices::kFCpX);
   }
 
   // Copies the state out to the output port.

@@ -152,9 +152,9 @@ class DynamicBicycleCarTest : public ::testing::Test {
 
   // Returns a pointer to the state vector.
   DynamicBicycleCarState<double>* continuous_state() {
-    auto& xc = context_->get_mutable_continuous_state_vector();
-    auto state = dynamic_cast<DynamicBicycleCarState<double>*>(&xc);
-    return state;
+    DynamicBicycleCarState<double>& state =
+        test_car_->get_mutable_state(context_.get());
+    return &state;
   }
 
   // Returns a pointer to the state derivatives vector.
@@ -170,10 +170,10 @@ class DynamicBicycleCarTest : public ::testing::Test {
   void TestTireSlipAngle(TestValues test_values) {
     const double tire_slip_angle_front =
         test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, front_tire);
+                               test_values.steer_angle, Tire::kFrontTire);
     const double tire_slip_angle_rear =
         test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, rear_tire);
+                               test_values.steer_angle, Tire::kRearTire);
 
     EXPECT_NEAR(tire_slip_angle_front,
                 test_values.expected_tire_slip_angle_front,
@@ -186,9 +186,9 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // values contained in the input struct.
   void TestNormalLoad(TestValues test_values) {
     const double normal_load_front = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, front_tire);
+        *test_car_params_, test_values.f_Cp_x, Tire::kFrontTire);
     const double normal_load_rear = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, rear_tire);
+        *test_car_params_, test_values.f_Cp_x, Tire::kRearTire);
 
     EXPECT_NEAR(normal_load_front, test_values.expected_normal_load_front,
                 test_values.tolerance);
@@ -203,17 +203,17 @@ class DynamicBicycleCarTest : public ::testing::Test {
     // calculation.
     const double tire_slip_angle_front =
         test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, front_tire);
+                               test_values.steer_angle, Tire::kFrontTire);
     const double tire_slip_angle_rear =
         test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, rear_tire);
+                               test_values.steer_angle, Tire::kRearTire);
 
     // Compute the normal forces on the tires to be used in the lateral force
     // calculation.
     const double normal_load_front = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, front_tire);
+        *test_car_params_, test_values.f_Cp_x, Tire::kFrontTire);
     const double normal_load_rear = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, rear_tire);
+        *test_car_params_, test_values.f_Cp_x, Tire::kRearTire);
 
     // Compute the lateral forces on the tires and compare against expected
     // values.
@@ -256,8 +256,6 @@ class DynamicBicycleCarTest : public ::testing::Test {
   std::unique_ptr<systems::SystemOutput<double>> output_;
   std::unique_ptr<systems::ContinuousState<double>> derivatives_;
   std::unique_ptr<systems::SystemOutput<double>> system_output_;
-  bool front_tire = true;
-  bool rear_tire = false;
 };
 
 TEST_F(DynamicBicycleCarTest, Construction) {
