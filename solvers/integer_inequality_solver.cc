@@ -14,9 +14,7 @@ namespace integer_programming {
 
 using IntegerVectorList = std::vector<std::vector<int>>;
 
-// todo: use more specific templating
-template <typename T>
-bool IsElementwiseNonnegative(const T& A) {
+bool IsElementwiseNonnegative(const Eigen::MatrixXi & A) {
   for (int i = 0; i < A.rows(); i++) {
     for (int j = 0; j < A.cols(); j++) {
       if (A(i, j) < 0) {
@@ -27,8 +25,7 @@ bool IsElementwiseNonnegative(const T& A) {
   return true;
 }
 
-template <typename T>
-bool IsElementwiseNonpositive(const T& A) {
+bool IsElementwiseNonpositive(const Eigen::MatrixXi & A) {
   for (int i = 0; i < A.rows(); i++) {
     for (int j = 0; j < A.cols(); j++) {
       if (A(i, j) > 0) {
@@ -39,27 +36,51 @@ bool IsElementwiseNonpositive(const T& A) {
   return true;
 }
 
+
+/* Construct finite-set of admissible values, i.e., an alphabet, for each
+ * coordinate from specified upper and lower bounds, e.g., a lower-bound and
+ * upperbound of -1,2 translates to the alphabet [-1,0,1,2]. This function
+ * exists only to simplify the external interface.
+*/
+IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
+                                          const Eigen::VectorXi& upper_bound) {
+  DRAKE_DEMAND(lower_bound.size() == upper_bound.size());
+
+  IntegerVectorList alphabet(lower_bound.size());
+  int cnt = 0;
+
+  for (auto& col_alphabet : alphabet) {
+    DRAKE_DEMAND(lower_bound(cnt) <= upper_bound(cnt));
+
+    for (int i = lower_bound(cnt); i <= upper_bound(cnt); i++) {
+      col_alphabet.push_back(i);
+    }
+    cnt++;
+  }
+
+  return alphabet;
+}
+
+
 /* If a column Ai of A is nonnegative (resp. nonpositive),
  * then  \{ Ai z : z \in Qi } is totally ordered, where Qi is the alphabet
  * for the i^th component.  This allows for infeasibility propagation
  * in the recursive enumeration of integer solutions.  This function
  * detects when \{ Ai z : z \in Qi } is totally ordered and then sorts the
- * alphabet
- * using this ordering.
+ * alphabet using this ordering.
  */
 enum ColumnType { Nonnegative, Nonpositive, Indefinite };
-template <typename T>
-std::vector<ColumnType> ProcessInputs(const T& A, IntegerVectorList* alphabet) {
+std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi & A, IntegerVectorList* alphabet) {
   DRAKE_DEMAND(alphabet != NULL);
   int cnt = 0;
   std::vector<ColumnType> ordering(A.cols());
 
   for (auto& col_alphabet : *alphabet) {
     ordering.at(cnt) = ColumnType::Indefinite;
-    if (IsElementwiseNonnegative<T>(A.col(cnt))) {
+    if (IsElementwiseNonnegative(A.col(cnt))) {
       std::sort(col_alphabet.begin(), col_alphabet.end());
       ordering.at(cnt) = ColumnType::Nonnegative;
-    } else if (IsElementwiseNonpositive<T>(A.col(cnt))) {
+    } else if (IsElementwiseNonpositive(A.col(cnt))) {
       std::sort(col_alphabet.begin(), col_alphabet.end());
       std::reverse(col_alphabet.begin(), col_alphabet.end());
       ordering.at(cnt) = ColumnType::Nonpositive;
@@ -101,10 +122,10 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
  * larger than z (in the ordering).  We assume the function "ProcessInputs"
  * was previously called to sort the alphabet in ascending order.)
  */
-template <typename T>
-Eigen::MatrixXi FeasiblePoints(const T& A, const T& b,
+Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi & A, const Eigen::VectorXi & b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& ordering) {
+  
   Eigen::MatrixXi feasible_points;
 
   for (auto& value : column_alphabets.at(0)) {
@@ -118,7 +139,7 @@ Eigen::MatrixXi FeasiblePoints(const T& A, const T& b,
     } else {
       new_feasible_points = CartesianProduct(
           value,
-          FeasiblePoints<T>(
+          FeasiblePoints(
               A.block(0, 1, A.rows(), A.cols() - 1), b - A.col(0) * value,
               IntegerVectorList(column_alphabets.begin() + 1,
                                 column_alphabets.end()),
@@ -137,51 +158,28 @@ Eigen::MatrixXi FeasiblePoints(const T& A, const T& b,
   return feasible_points;
 }
 
-IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
-                                          const Eigen::VectorXi& upper_bound) {
-  DRAKE_DEMAND(lower_bound.size() == upper_bound.size());
-
-  IntegerVectorList alphabet(lower_bound.size());
-  int cnt = 0;
-
-  for (auto& col_alphabet : alphabet) {
-    DRAKE_DEMAND(lower_bound(cnt) <= upper_bound(cnt));
-
-    for (int i = lower_bound(cnt); i <= upper_bound(cnt); i++) {
-      col_alphabet.push_back(i);
-    }
-    cnt++;
-  }
-
-  return alphabet;
-}
 
 }  // namespace integer_programming
 
 using drake::solvers::integer_programming::BuildAlphabetFromBounds;
 using drake::solvers::integer_programming::ProcessInputs;
 
-Eigen::MatrixXi EnumerateIntegerSolutions(const Eigen::MatrixXd& A,
-                                          const Eigen::MatrixXd& b,
-                                          const Eigen::VectorXi& lower_bound,
-                                          const Eigen::VectorXi& upper_bound) {
-  auto alphabet = BuildAlphabetFromBounds(lower_bound, upper_bound);
-  auto ordering = ProcessInputs<Eigen::MatrixXd>(A, &alphabet);
-
-  return drake::solvers::integer_programming::FeasiblePoints<Eigen::MatrixXd>(
-      A, b, alphabet, ordering);
-}
-
 Eigen::MatrixXi EnumerateIntegerSolutions(const Eigen::MatrixXi& A,
-                                          const Eigen::MatrixXi& b,
+                                          const Eigen::VectorXi& b,
                                           const Eigen::VectorXi& lower_bound,
                                           const Eigen::VectorXi& upper_bound) {
+
+  DRAKE_DEMAND(A.rows() == b.rows());
+  DRAKE_DEMAND(A.cols() == lower_bound.size());
+  DRAKE_DEMAND(A.cols() == upper_bound.size());
+
+
   auto variable_alphabets = BuildAlphabetFromBounds(lower_bound, upper_bound);
   // Returns type (nonnegative, nonpositive, or indefinite) of A's
   // columns and sorts the variable alphabet accordingly.
-  auto column_type = ProcessInputs<Eigen::MatrixXi>(A, &variable_alphabets);
+  auto column_type = ProcessInputs(A, &variable_alphabets);
 
-  return drake::solvers::integer_programming::FeasiblePoints<Eigen::MatrixXi>(
+  return drake::solvers::integer_programming::FeasiblePoints(
       A, b, variable_alphabets, column_type);
 }
 
