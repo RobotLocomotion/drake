@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
@@ -648,7 +649,8 @@ class ImplicitStribeckSolver {
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
   // SetProblemData() and until SolveWithGuess() returns.
-  struct ProblemDataAliases {
+  class ProblemDataAliases {
+   public:
     // Sets the references to the data defining a one-way coupled problem.
     void Set(EigenPtr<const MatrixX<T>> M,
              EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -680,6 +682,38 @@ class ImplicitStribeckSolver {
       mu_ptr = mu;
     }
 
+    // Returns true if this class contains the data for a two-way coupled
+    // problem.
+    bool two_way_coupling_data() const {
+      return fn_ptr == nullptr;
+    }
+
+    Eigen::Ref<const MatrixX<T>> M() const { return *M_ptr; }
+    Eigen::Ref<const MatrixX<T>> Jn() const { return *Jn_ptr; }
+    Eigen::Ref<const MatrixX<T>> Jt() const { return *Jt_ptr; }
+    Eigen::Ref<const VectorX<T>> p_star() const { return *p_star_ptr; }
+    Eigen::Ref<const VectorX<T>> fn() const {
+      DRAKE_DEMAND(fn_ptr != nullptr);
+      return *fn_ptr;
+    }
+    Eigen::Ref<const VectorX<T>> phi0() const {
+      DRAKE_DEMAND(phi0_ptr != nullptr);
+      return *phi0_ptr;
+    }
+    Eigen::Ref<const VectorX<T>> stiffness() const {
+      DRAKE_DEMAND(stiffness_ptr != nullptr);
+      return *stiffness_ptr;
+    }
+    Eigen::Ref<const VectorX<T>> damping() const {
+      DRAKE_DEMAND(damping_ptr != nullptr);
+      return *damping_ptr;
+    }
+    Eigen::Ref<const VectorX<T>> mu() const {
+      DRAKE_DEMAND(mu_ptr != nullptr);
+      return *mu_ptr;
+    }
+
+   private:
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr{nullptr};
     // The normal separation velocities Jacobian.
@@ -876,7 +910,7 @@ class ImplicitStribeckSolver {
 
   // Returns true if the solver is solving the two-way coupled problem.
   bool two_way_coupling() const {
-    return problem_data_aliases_.fn_ptr == nullptr;
+    return problem_data_aliases_.two_way_coupling_data();
   }
 
   // Helper method to compute, into fn_ptr, the normal force at each contact

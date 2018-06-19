@@ -308,7 +308,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   const int nc = nc_;  // Number of contact points.
 
   // Aliases to vector of friction coefficients.
-  const auto& mu = *problem_data_aliases_.mu_ptr;
+  const auto& mu = problem_data_aliases_.mu();
 
   // Convenient aliases.
   auto mu_stribeck = *mu_stribeck_ptr;
@@ -384,7 +384,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
   const int nc = nc_;  // Number of contact points.
 
   // Problem data.
-  const auto& mu = *problem_data_aliases_.mu_ptr;
+  const auto& mu = problem_data_aliases_.mu();
 
   // Mutable reference to ∇ᵥₜfₜ(vₜ).
   std::vector<Matrix2<T>>& dft_dvt = *dft_dvt_ptr;
@@ -468,13 +468,13 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 
   if (!two_way_coupling()) {
     // Copy the input normal force (i.e. it is fixed).
-    *fn_ptr = *problem_data_aliases_.fn_ptr;
+    *fn_ptr = problem_data_aliases_.fn();
     return;
   }
 
   // Convenient aliases to problem data.
-  const VectorX<T>& stiffness = *problem_data_aliases_.stiffness_ptr;
-  const VectorX<T>& damping = *problem_data_aliases_.damping_ptr;
+  const auto& stiffness = problem_data_aliases_.stiffness();
+  const auto& damping = problem_data_aliases_.damping();
 
   VectorX<T> phi_capped(nc);  // = <φ>¹
   VectorX<T> H_phi(nc);  // = <φ>⁰ = H(φ), with H the Heaviside function.
@@ -601,8 +601,8 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   if (nc_ == 0) {
     fixed_size_workspace_.mutable_tau_f().setZero();
     fixed_size_workspace_.mutable_tau().setZero();
-    const auto& M = *problem_data_aliases_.M_ptr;
-    const auto& p_star = *problem_data_aliases_.p_star_ptr;
+    const auto M = problem_data_aliases_.M();
+    const auto p_star = problem_data_aliases_.p_star();
     auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
     // M⋅vⁿ⁺¹ = p*.
@@ -619,10 +619,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       parameters_.relative_tolerance * parameters_.stiction_tolerance;
 
   // Convenient aliases to problem data.
-  const auto& M = *problem_data_aliases_.M_ptr;
-  const auto& Jn = *problem_data_aliases_.Jn_ptr;
-  const auto& Jt = *problem_data_aliases_.Jt_ptr;
-  const auto& p_star = *problem_data_aliases_.p_star_ptr;
+  const auto M = problem_data_aliases_.M();
+  const auto Jn = problem_data_aliases_.Jn();
+  const auto Jt = problem_data_aliases_.Jt();
+  const auto p_star = problem_data_aliases_.p_star();
 
   // Convenient aliases to fixed size workspace variables.
   auto& v = fixed_size_workspace_.mutable_v();
@@ -662,7 +662,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
     if (two_way_coupling()) {
       // Update the penetration for the two-way coupling scheme.
-      const auto& phi0 = *problem_data_aliases_.phi0_ptr;
+      const auto& phi0 = problem_data_aliases_.phi0();
       phi = phi0 - dt * vn;
     }
 

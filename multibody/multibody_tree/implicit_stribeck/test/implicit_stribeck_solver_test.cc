@@ -26,9 +26,9 @@ class ImplicitStribeckSolverTester {
     const int nv = solver.nv_;
 
     // Problem data.
-    const auto& M = *solver.problem_data_aliases_.M_ptr;
-    const auto& Jn = *solver.problem_data_aliases_.Jn_ptr;
-    const auto& Jt = *solver.problem_data_aliases_.Jt_ptr;
+    const auto& M = solver.problem_data_aliases_.M();
+    const auto& Jn = solver.problem_data_aliases_.Jn();
+    const auto& Jt = solver.problem_data_aliases_.Jt();
 
     // Workspace with size depending on the number of contact points.
     auto vn = solver.variable_size_workspace_.mutable_vn();
@@ -46,7 +46,7 @@ class ImplicitStribeckSolverTester {
     vn = Jn * v;
 
     if (solver.two_way_coupling()) {
-      const auto& phi0 = *solver.problem_data_aliases_.phi0_ptr;
+      const auto phi0 = solver.problem_data_aliases_.phi0();
       // Penetration distance (positive when there is penetration).
       phi = phi0 - dt * vn;
     }
