@@ -278,7 +278,8 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
     const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
     EXPECT_TRUE(CompareMatrices(position.matrix(),
                                 actual.translation().matrix(), kTolerance));
-    EXPECT_TRUE(CompareMatrices(math::rpy2rotmat(orientation).matrix(),
+    const math::RollPitchYaw<double> rpy(orientation);
+    EXPECT_TRUE(CompareMatrices(rpy.ToMatrix3ViaRotationMatrix(),
                                 actual.linear().matrix(), kTolerance));
   }
 }

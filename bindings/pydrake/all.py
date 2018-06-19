@@ -34,6 +34,7 @@ from .trajectories import *
 # Submodules.
 # - `examples` does not offer public Drake symbols.
 from .maliput.all import *
+from .manipulation.all import *
 from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *

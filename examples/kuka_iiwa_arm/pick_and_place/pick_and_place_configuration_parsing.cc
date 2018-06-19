@@ -20,7 +20,6 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
 using manipulation::util::WorldSimTreeBuilder;
-using math::rpy2rotmat;
 using pick_and_place::RobotBaseIndex;
 using pick_and_place::TargetIndex;
 

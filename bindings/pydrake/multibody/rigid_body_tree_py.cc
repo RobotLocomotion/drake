@@ -138,6 +138,15 @@ PYBIND11_MODULE(rigid_body_tree, m) {
        py::arg("model_name") = "",
        py::arg("model_id") = -1,
        py::return_value_policy::reference)
+    .def("FindChildBodyOfJoint", [](const RigidBodyTree<double>& self,
+                        const std::string& joint_name,
+                        int model_id) {
+      return self.FindChildBodyOfJoint(joint_name, model_id);
+    }, py::arg("joint_name"), py::arg("model_id") = -1,
+       py::return_value_policy::reference)
+    .def("FindIndexOfChildBodyOfJoint",
+         &RigidBodyTree<double>::FindIndexOfChildBodyOfJoint,
+         py::arg("joint_name"), py::arg("model_id") = -1)
     .def("world",
          static_cast<RigidBody<double>& (RigidBodyTree<double>::*)()>(
              &RigidBodyTree<double>::world),
@@ -186,10 +195,24 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          py::arg("cache"),
          py::arg("model_instance_id_set") =
            RigidBodyTreeConstants::default_model_instance_id_set)
-      // transformVelocityToQDot
-      // transformQDotToVelocity
-      // GetVelocityToQDotMapping
-      // GetQDotToVelocityMapping
+      .def("transformVelocityToQDot", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache,
+                                          const VectorX<T>& v) {
+             return tree.transformVelocityToQDot(cache, v);
+           })
+      .def("transformQDotToVelocity", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache,
+                                          const VectorX<T>& qdot) {
+             return tree.transformQDotToVelocity(cache, qdot);
+           })
+      .def("GetVelocityToQDotMapping", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache) {
+             return tree.GetVelocityToQDotMapping(cache);
+           })
+      .def("GetQDotToVelocityMapping", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache) {
+             return tree.GetQDotToVelocityMapping(cache);
+           })
       .def("dynamicsBiasTerm", &RigidBodyTree<double>::dynamicsBiasTerm<T>,
            py::arg("cache"), py::arg("external_wrenches"),
            py::arg("include_velocity_terms") = true)
@@ -244,8 +267,18 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("vd"),
            py::arg("include_velocity_terms") = true)
       // resolveCenterOfPressure
-      // transformVelocityMappingToQDotMapping
-      // transformQDotMappingToVelocityMapping
+      .def("transformVelocityMappingToQDotMapping",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const MatrixX<T>& Av) {
+             return tree.transformVelocityMappingToQDotMapping(cache, Av);
+           })
+      .def("transformQDotMappingToVelocityMapping",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const MatrixX<T>& Ap) {
+             return tree.transformQDotMappingToVelocityMapping(cache, Ap);
+           })
       // DoTransformPointsJacobian
       // DoTransformPointsJacobianDotTimesV
       // relativeQuaternionJacobian

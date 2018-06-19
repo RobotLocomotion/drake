@@ -16,6 +16,16 @@ namespace drake {
 namespace maliput {
 namespace multilane {
 
+std::ostream& operator<<(std::ostream& out,
+                         const StartReference::Spec& start_spec) {
+  return out << "(endpoint: " << start_spec.endpoint() << ")";
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const EndReference::Spec& end_spec) {
+  return out << "(endpoint_z: " << end_spec.endpoint_z() << ")";
+}
+
 std::ostream& operator<<(std::ostream& out, const LaneLayout& lane_layout) {
   return out << "(left_shoulder: " << lane_layout.left_shoulder()
              << ", right_shoulder: " << lane_layout.right_shoulder()
@@ -38,6 +48,29 @@ Builder::Builder(double lane_width, const api::HBounds& elevation_bounds,
   DRAKE_DEMAND(angular_tolerance_ >= 0.);
 }
 
+namespace {
+// Let theta_dot_A, z_dot_A, K_A be the rate of change in superelevation with
+// respect to arc length of the reference path, grade (rate of change of
+// elevation with respect to arc length of the reference path) and the
+// curvature at one end point of connection's curve A. And let theta_dot_B,
+// z_dot_B, K_B be the same values at one end point of connection's curve
+// B. Then, if we want to connect both curves at their respective end points A
+// and B, making:
+//
+// theta_dot_A - (K_A * sin(-atan(z_dot_A))) = 0
+// theta_dot_B - (K_B * sin(-atan(z_dot_B))) = 0
+//
+// It is enough to make the connection joint be G1. Given that, `curvature` is
+// K and `endpointz` is z_dot. `endpointz.theta_dot` is computed as:
+//
+// theta_dot = K * sin(-atan(z_dot))
+void ComputeContinuityConstraint(double curvature, EndpointZ* endpointz) {
+  DRAKE_DEMAND(endpointz != nullptr);
+  endpointz->get_mutable_theta_dot() =
+      curvature * std::sin(-std::atan(endpointz->z_dot()));
+}
+}  // namespace
+
 const Connection* Builder::Connect(const std::string& id,
                                    const LaneLayout& lane_layout,
                                    const StartReference::Spec& start_spec,
@@ -48,10 +81,20 @@ const Connection* Builder::Connect(const std::string& id,
   //                       methods, r_ref will refer to any lane and will not be
   //                       r0.
   DRAKE_DEMAND(lane_layout.ref_lane() == 0);
+
+  const double curvature{0.};
+  Endpoint start_endpoint = start_spec.endpoint();
+  if (!start_endpoint.z().theta_dot()) {
+    ComputeContinuityConstraint(curvature, &(start_endpoint.get_mutable_z()));
+  }
+  EndpointZ end_endpoint_z = end_spec.endpoint_z();
+  if (!end_endpoint_z.theta_dot()) {
+    ComputeContinuityConstraint(curvature, &end_endpoint_z);
+  }
   connections_.push_back(std::make_unique<Connection>(
-      id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
+      id, start_endpoint, end_endpoint_z, lane_layout.num_lanes(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
-      lane_layout.right_shoulder(), line_offset.length(), linear_tolerance_,
+      lane_layout.right_shoulder(), line_offset, linear_tolerance_,
       scale_length_, computation_policy_));
   return connections_.back().get();
 }
@@ -66,8 +109,20 @@ const Connection* Builder::Connect(const std::string& id,
   //                       methods, r_ref will refer to any lane and will not be
   //                       r0.
   DRAKE_DEMAND(lane_layout.ref_lane() == 0);
+
+  const double curvature =
+      std::copysign(1., arc_offset.d_theta()) / arc_offset.radius();
+
+  Endpoint start_endpoint = start_spec.endpoint();
+  if (!start_endpoint.z().theta_dot()) {
+    ComputeContinuityConstraint(curvature, &(start_endpoint.get_mutable_z()));
+  }
+  EndpointZ end_endpoint_z = end_spec.endpoint_z();
+  if (!end_endpoint_z.theta_dot()) {
+    ComputeContinuityConstraint(curvature, &end_endpoint_z);
+  }
   connections_.push_back(std::make_unique<Connection>(
-      id, start_spec.endpoint(), end_spec.endpoint_z(), lane_layout.num_lanes(),
+      id, start_endpoint, end_endpoint_z, lane_layout.num_lanes(),
       lane_layout.ref_r0(), lane_width_, lane_layout.left_shoulder(),
       lane_layout.right_shoulder(), arc_offset, linear_tolerance_,
       scale_length_, computation_policy_));

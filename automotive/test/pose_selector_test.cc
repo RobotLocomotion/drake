@@ -834,22 +834,21 @@ void AddToTrafficPosesAt(int index,
       traffic_xyz.x(), traffic_xyz.y(), traffic_xyz.z());
   isometry.translate(translation_ahead);
 
-  const Rotation traffic_rotation =
-      traffic_lane->GetOrientation(srh);
+  const Rotation traffic_rotation = traffic_lane->GetOrientation(srh);
   Vector3<double> rpy = traffic_rotation.rpy().vector();
   rpy.x() = (traffic_polarity == LanePolarity::kWithS) ? rpy.x() : -rpy.x();
   rpy.y() = (traffic_polarity == LanePolarity::kWithS) ? rpy.y() : -rpy.y();
   rpy.z() -= (traffic_polarity == LanePolarity::kWithS) ? 0. : M_PI;
-  isometry.rotate(math::RollPitchYaw<double>(rpy).ToQuaternion());
+  const math::RollPitchYaw<double> roll_pitch_yaw(rpy);
+  isometry.rotate(roll_pitch_yaw.ToQuaternion());
 
   traffic_poses->set_pose(index, isometry);
 
   FrameVelocity<double> velocity_ahead{};
-  velocity_ahead.get_mutable_value().head(3) =
-      Vector3<double>::Zero();  /* ω */
-  const Eigen::Matrix3d traffic_rotmat = math::rpy2rotmat(rpy);
+  velocity_ahead.get_mutable_value().head(3) = Vector3<double>::Zero();  // ω
+  const math::RotationMatrix<double> traffic_rotmat(roll_pitch_yaw);
   velocity_ahead.get_mutable_value().tail(3) =
-      traffic_speed * traffic_rotmat.leftCols(1);  /* v */
+      traffic_speed * traffic_rotmat.matrix().leftCols(1);               // v
   traffic_poses->set_velocity(index, velocity_ahead);
 }
 
@@ -875,13 +874,13 @@ void SetDefaultOnrampPoses(const Lane* ego_lane,
   const double ego_yaw =
       ego_rotation.yaw() - ((ego_polarity == LanePolarity::kWithS) ? 0. : M_PI);
   const Rotation new_rotation = Rotation::FromRpy(ego_roll, ego_pitch, ego_yaw);
-  const Vector3<double> new_rpy = new_rotation.rpy().vector();
-  ego_pose->set_rotation(math::RollPitchYaw<double>(new_rpy).ToQuaternion());
+  const math::RollPitchYaw<double> new_rpy(new_rotation.rpy().vector());
+  ego_pose->set_rotation(new_rpy.ToQuaternion());
 
-  const Eigen::Matrix3d ego_rotmat = math::rpy2rotmat(new_rpy);
+  const math::RotationMatrix<double> ego_rotmat(new_rpy);
   drake::Vector6<double> velocity{};
-  velocity.head(3) = Vector3<double>::Zero();             /* ω */
-  velocity.tail(3) = ego_speed * ego_rotmat.leftCols(1);  /* v */
+  velocity.head(3) = Vector3<double>::Zero();                      // ω
+  velocity.tail(3) = ego_speed * ego_rotmat.matrix().leftCols(1);  // v
   ego_velocity->set_velocity(multibody::SpatialVelocity<double>(velocity));
 
   // Set the traffic car at s = Lane::length() - 1 in the traffic_lane.

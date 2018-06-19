@@ -90,16 +90,28 @@ namespace test {
                     ", tolerance = " +
                     std::to_string(tolerance) + "\n";
   }
-  delta = std::abs(z1.theta_dot() - z2.theta_dot());
-  if (delta > tolerance) {
+  if (z1.theta_dot().has_value() && z2.theta_dot().has_value()) {
+    delta = std::abs(*z1.theta_dot() - *z2.theta_dot());
+    if (delta > tolerance) {
+      fails = true;
+      error_message =
+          error_message + "EndpointZ are different at theta_dot. " +
+          "z1.theta_dot(): " + std::to_string(*z1.theta_dot()) +
+          " vs. z2.theta_dot(): " + std::to_string(*z2.theta_dot()) +
+          ", diff = " + std::to_string(delta) +
+          ", tolerance = " + std::to_string(tolerance) + "\n";
+    }
+  } else if (z1.theta_dot().has_value() && !z2.theta_dot().has_value()) {
     fails = true;
-    error_message = error_message +
-                    "EndpointZ are different at theta_dot. " +
-                    "z1.theta_dot(): " + std::to_string(z1.theta_dot()) +
-                    " vs. z2.theta_dot(): " + std::to_string(z2.theta_dot()) +
-                    ", diff = " + std::to_string(delta) +
-                    ", tolerance = " + std::to_string(tolerance) + "\n";
+    error_message = error_message + "EndpointZ are different at theta_dot. " +
+                    "z1.theta_dot() has value but z2.theta_dot does not.\n";
+  } else if (!z1.theta_dot().has_value() && z2.theta_dot().has_value()) {
+    fails = true;
+    error_message = error_message + "EndpointZ are different at theta_dot. " +
+                    "z1.theta_dot() does not have a value but " +
+                    "z2.theta_dot does.\n";
   }
+
   if (fails) {
     return ::testing::AssertionFailure() << error_message;
   }
