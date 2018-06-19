@@ -37,8 +37,8 @@ bool IsElementwiseNonpositive(const Eigen::MatrixXi& A) {
 }
 
 /* Construct finite-set of admissible values, i.e., an alphabet, for each
- * coordinate from specified upper and lower bounds, e.g., a lower-bound and
- * upperbound of -1,2 translates to the alphabet [-1,0,1,2]. This function
+ * coordinate from specified upper and lower bounds, e.g., a lower bound and
+ * upper bound of -1, 2 translates to the alphabet [-1, 0, 1, 2]. This function
  * exists only to simplify the external interface.
 */
 IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
