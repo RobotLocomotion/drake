@@ -933,13 +933,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // - to an input port of this Diagram,
   // - or not connected at all in which case we return null.
   const AbstractValue* EvalConnectedSubsystemInputPort(
-      const ContextBase& context,
+      const ContextBase& context_base,
       const InputPortBase& input_port_base) const final {
     auto& diagram_context =
-        dynamic_cast<const DiagramContext<T>&>(context);
-    auto& input_port =
-        dynamic_cast<const InputPortDescriptor<T>&>(input_port_base);
-    const InputPortLocator id{input_port.get_system(), input_port.get_index()};
+        dynamic_cast<const DiagramContext<T>&>(context_base);
+    auto& system =
+        dynamic_cast<const System<T>&>(input_port_base.get_system_base());
+    const InputPortLocator id{&system, input_port_base.get_index()};
 
     // Find if this input port is exported (connected to an input port of this
     // containing diagram).
@@ -1457,11 +1457,15 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const System<T>* const sys = port.first;
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
+    // TODO(sherm1) Use implicit_cast when available (from abseil).
     auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
-        *this, *this, OutputPortIndex(this->get_num_output_ports()),
+        this,  // implicit_cast<const System<T>*>(this)
+        this,  // implicit_cast<SystemBase*>(this)
+        OutputPortIndex(this->get_num_output_ports()),
+        this->assign_next_dependency_ticket(),
         &source_output_port,
         GetSystemIndexOrAbort(&source_output_port.get_system()));
-    this->CreateOutputPort(std::move(diagram_port));
+    this->AddOutputPort(std::move(diagram_port));
   }
 
   // Returns a reference to the value in the given context, of the specified
