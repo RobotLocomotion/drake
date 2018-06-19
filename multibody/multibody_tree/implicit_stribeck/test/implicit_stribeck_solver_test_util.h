@@ -160,6 +160,26 @@ MatrixX<double> CalcJacobianWithAutoDiff(
   return math::autoDiffToGradientMatrix(residual);
 }
 
+MatrixX<double> CalcJacobianWithAutoDiff(
+    const MatrixX<double>& M,
+    const MatrixX<double>& Jn,
+    const MatrixX<double>& Jt,
+    const VectorX<double>& p_star,
+    const VectorX<double>& mu,
+    const VectorX<double>& fn,
+    double dt, double v_stribeck, double epsilon_v,
+    const VectorX<double>& v) {
+  VectorX<AutoDiffXd> v_autodiff(v.size());
+  math::initializeAutoDiff(v, v_autodiff);
+  // Empty vector for variables not used in one-way coupling.
+  const VectorX<double> not_used;
+  VectorX<AutoDiffXd> residual = CalcResidual(
+      M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
+      dt, v_stribeck, epsilon_v, false,
+      v_autodiff);
+  return math::autoDiffToGradientMatrix(residual);
+}
+
 }  // namespace test
 }  // namespace implicit_stribeck
 }  // namespace multibody

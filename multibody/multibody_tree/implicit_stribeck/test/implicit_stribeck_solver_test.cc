@@ -31,11 +31,12 @@ class ImplicitStribeckSolverTester {
     auto vn = solver.variable_size_workspace_.mutable_vn();
     auto vt = solver.variable_size_workspace_.mutable_vt();
     auto fn = solver.variable_size_workspace_.mutable_fn();
+    auto ft = solver.variable_size_workspace_.mutable_ft();
     auto Gn = solver.variable_size_workspace_.mutable_Gn();
     auto mus = solver.variable_size_workspace_.mutable_mu();
     auto t_hat = solver.variable_size_workspace_.mutable_t_hat();
     auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
-    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dv();
+    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dvt();
     auto phi = solver.variable_size_workspace_.mutable_phi();
 
     // Normal separation velocity.
@@ -589,8 +590,8 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
-  const double epsilon_v = v_stiction * parameters.tolerance;
-  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
+  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, not_used /*phi0*/, mu_, fn_,
       not_used /*stiffness*/, not_used /*damping*/,
       dt, v_stiction, epsilon_v, false /* two-way coupling? */, v);
@@ -703,7 +704,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
+      M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance = J_expected.rows() * J_expected.norm() *
@@ -838,7 +839,7 @@ class RollingCylinder : public ::testing::Test {
     p_star_ = M_ * v0 + dt * tau;// + dt * Vector3<double>(0.0, fn_(0), 0.0);
 
     // Friction coefficient for the only contact point in the problem.
-    mu_(0) = mu;
+    mu_vector_(0) = mu;
 
     // Compute Jacobian matrices.
     N_ << 0, 1, 0;
@@ -860,7 +861,7 @@ class RollingCylinder : public ::testing::Test {
     PRINT_VAR(phi0_);
 
     solver_.SetTwoWayCoupledProblemData(
-        &M_, &N_, &D_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_);
+        &M_, &N_, &D_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_vector_);
   }
 
  protected:
@@ -909,7 +910,7 @@ class RollingCylinder : public ::testing::Test {
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
-  VectorX<double> mu_{nc_};      // Friction coefficient at each contact point.
+  VectorX<double> mu_vector_{nc_};  // Friction at each contact point.
 };
 
 TEST_F(RollingCylinder, StictionAfterImpact) {
@@ -991,10 +992,10 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   const VectorX<double> na;  // Non-used data for one-way coupling.
   const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.tolerance;
+  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
   const VectorX<double> not_used;  // variables not used in two-way coupling.
-  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
-      M_, N_, D_, p_star_, phi0_, mu_, not_used /* fn */,
+  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
+      M_, N_, D_, p_star_, phi0_, mu_vector_, not_used /* fn */,
       stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
 
   PRINT_VARn(J_expected);
@@ -1085,10 +1086,10 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   const VectorX<double> na;  // Non-used data for one-way coupling.
   const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.tolerance;
+  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
   const VectorX<double> not_used;  // variables not used in two-way coupling.
-  MatrixX<double> J_expected = CalcJacobianWithAutoDiff(
-      M_, N_, D_, p_star_, phi0_, mu_, not_used /* fn */,
+  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
+      M_, N_, D_, p_star_, phi0_, mu_vector_, not_used /* fn */,
       stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
 
   PRINT_VARn(J_expected);

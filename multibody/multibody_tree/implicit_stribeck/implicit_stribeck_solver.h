@@ -576,15 +576,16 @@ class ImplicitStribeckSolver {
   // The size of the variables in this workspace MUST remain fixed throghout the
   // lifetime of the solver. Do not resize any of them!.
   class FixedSizeWorkspace {
+   public:
     // Constructs a workspace with size only dependent on nv.
-    explicit FixedSizeWorkspace(int nv) : J_lu(nv) {
-      v.resize(nv);
-      residual.resize(nv);
-      Delta_v.resize(nv);
-      J.resize(nv, nv);
-      J_ldlt = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
-      tau_f.resize(nv);
-      tau.resize(nv);
+    explicit FixedSizeWorkspace(int nv) : J_lu_(nv) {
+      v_.resize(nv);
+      residual_.resize(nv);
+      Delta_v_.resize(nv);
+      J_.resize(nv, nv);
+      J_ldlt_ = std::make_unique<Eigen::LDLT<MatrixX<T>>>(nv);
+      tau_f_.resize(nv);
+      tau_.resize(nv);
     }
     VectorX<T>& mutable_v() { return v_; }
     VectorX<T>& mutable_residual() { return residual_; }
@@ -746,7 +747,7 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const MatrixX<T>>& Jn,
       double dt,
       EigenPtr<VectorX<T>> fn_ptr,
-      EigenPtr<MatrixX<T>> Gn_ptr);
+      EigenPtr<MatrixX<T>> Gn_ptr) const;
 
   // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes

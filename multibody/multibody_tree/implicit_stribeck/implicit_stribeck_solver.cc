@@ -468,7 +468,7 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     const Eigen::Ref<const MatrixX<T>>& Jn,
     double dt,
     EigenPtr<VectorX<T>> fn_ptr,
-    EigenPtr<MatrixX<T>> Gn_ptr) {
+    EigenPtr<MatrixX<T>> Gn_ptr) const {
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
@@ -541,7 +541,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     const std::vector<Matrix2<T>>& dft_dvt,
     const Eigen::Ref<const VectorX<T>>& t_hat,
     const Eigen::Ref<const VectorX<T>>& mus, double dt,
-    EigenPtr<MatrixX<T>> J) {
+    EigenPtr<MatrixX<T>> J) const {
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
   const int nc = nc_;  // Number of contact points.
