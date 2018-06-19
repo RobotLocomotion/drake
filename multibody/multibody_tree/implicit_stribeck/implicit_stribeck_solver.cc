@@ -9,12 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-#define PRINT_VAR(a) (void)(a);
-#define PRINT_VARn(a) (void)(a);
-
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
@@ -472,8 +466,6 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
-  PRINT_VAR(__PRETTY_FUNCTION__);
-
   if (!two_way_coupling()) {
     // Copy the input normal force (i.e. it is fixed).
     *fn_ptr = *problem_data_aliases_.fn_ptr;
@@ -495,12 +487,6 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     // Macaulay bracket <⋅>¹.
     T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
 
-    PRINT_VAR(stiffness(ic));
-    PRINT_VAR(damping(ic));
-    PRINT_VAR(vn(ic));
-    PRINT_VAR(phi(ic));
-    PRINT_VAR(k_vn);
-
     k_vn_capped(ic) = max(0.0, k_vn);
     phi_capped(ic) = max(0.0, phi(ic));
     // fₙ = <k(vₙ)>¹⋅<φ>¹
@@ -509,8 +495,6 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     H_phi(ic) = phi(ic) > 0 ? 1.0 : 0.0;
     H_k_vn(ic) = k_vn > 0 ? 1.0 : 0.0;
   }
-
-  PRINT_VAR(fn);
 
   // ∇ᵥ<φⁿ⁺¹>¹ = -δt⋅diag((H(φⁿ⁺¹))⋅Jₙ, with φⁿ⁺¹ = φⁿ  - δt⋅vₙⁿ⁺¹.
   // of size nc x nv.
@@ -700,10 +684,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // Newton-Raphson residual.
     residual =
         M * v - p_star - dt * Jn.transpose() * fn - dt * Jt.transpose() * ft;
-
-    PRINT_VAR(residual.transpose());
-    PRINT_VAR(fn.transpose());
-    PRINT_VAR(ft.transpose());
 
     // Compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ) as a function of fn, mus,
     // t_hat and v_slip.
