@@ -29,6 +29,8 @@ struct CollisionData {
 bool CollisionCallback(fcl::CollisionObjectd* fcl_object_A,
                        fcl::CollisionObjectd* fcl_object_B,
                        void* callback_data) {
+
+    std::cout << "called FCL CollisionCallback...\n"; 
   // Retrieve the drake::multibody::collision::Element object associated with
   // each FCL collision object.
   auto element_A = static_cast<const Element*>(fcl_object_A->getUserData());
@@ -79,6 +81,7 @@ bool CollisionCallback(fcl::CollisionObjectd* fcl_object_A,
 }  // namespace
 
 void FclModel::DoAddElement(const Element& element) {
+    std::cout << "called FCL add element\n";
   ElementId id = element.getId();
 
   // Create the fcl::CollisionObject. Store it as a shared_ptr for use with the
@@ -153,11 +156,15 @@ bool FclModel::ClosestPointsAllToAll(
 
 bool FclModel::ComputeMaximumDepthCollisionPoints(
     bool, std::vector<PointPair<double>>* points) {
+        std::cout << "called FCL...\n"; 
   CollisionData collision_data;
   collision_data.closest_points = points;
   collision_data.request.enable_contact = true;
   broadphase_manager_.collide(static_cast<void*>(&collision_data),
                               CollisionCallback);
+    for(auto &pp : *collision_data.closest_points){
+        std::cout << pp.distance << std::endl; 
+    }
   return true;
 }
 

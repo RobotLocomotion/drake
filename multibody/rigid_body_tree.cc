@@ -953,6 +953,24 @@ void RigidBodyTree<T>::updateDynamicCollisionElements(
   collision_model_->UpdateModel();
 }
 
+template <>
+template <>
+void RigidBodyTree<double>::updateDynamicCollisionElements(
+    const KinematicsCache<double>& cache, bool throw_if_missing_gradient) {
+  CheckCacheValidity(cache);
+  // todo: this is currently getting called many times with the same cache
+  // object.  and it's presumably somewhat expensive.
+  for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
+    const RigidBody<double>& body = **it;
+    if (body.has_parent_body()) {
+      updateCollisionElements(
+          body, cache.get_element(body.get_body_index()).transform_to_world,
+          throw_if_missing_gradient);
+    }
+  }
+  collision_model_->UpdateModel();
+}
+
 template <typename T>
 void RigidBodyTree<T>::getTerrainContactPoints(
     const RigidBody<T>& body,

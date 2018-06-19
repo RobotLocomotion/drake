@@ -1061,7 +1061,6 @@ class RigidBodyTree {
   template <typename U>
   void updateDynamicCollisionElements(const KinematicsCache<U>& kin_cache,
                                       bool throw_if_missing_gradient = true);
-
   /**
    * Gets the contact points defined by a body's collision elements.
    *
