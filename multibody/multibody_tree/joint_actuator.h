@@ -84,10 +84,10 @@ class JointActuator final
       const T& tau,
       MultibodyForces<T>* forces) const;
 
-  /// Given the actuation values u_a for `this` actuator, this method
+  /// Given the actuation values u_instance for `this` actuator, this method
   /// sets the actuation vector u for the entire MultibodyTree model
   /// to which this actuator belongs to.
-  /// @param[in] u_a
+  /// @param[in] u_instance
   ///   Actuation values for `this` actuator. It must be of size equal to the
   ///   number of degrees of freedom of the actuated Joint, see
   ///   Joint::num_dofs(). For units and sign conventions refer to the specific
@@ -99,7 +99,8 @@ class JointActuator final
   /// @throws if u is nullptr.
   /// @throws if `u.size() != this->get_parent_tree().num_actuated_dofs()`.
   void set_actuation_vector(
-      const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const;
+      const Eigen::Ref<const VectorX<T>>& u_instance,
+      EigenPtr<VectorX<T>> u) const;
 
   /// @cond
   // For internal use only.
