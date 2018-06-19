@@ -219,7 +219,8 @@ test:ubsan_everything --test_timeout=120,600,1800,7200
 
 ### Memcheck build. ###
 build:memcheck --copt -g
-build:memcheck --copt -O1
+# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
+build:memcheck --copt -O2
 test:memcheck --run_under=//tools/dynamic_analysis:valgrind
 test:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-no_memcheck
 test:memcheck --test_lang_filters=-sh,-py
@@ -232,7 +233,8 @@ build:memcheck_everything --define=WITH_GUROBI=ON
 build:memcheck_everything --define=WITH_MOSEK=ON
 build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -g
-build:memcheck_everything --copt -O1
+# https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
+build:memcheck_everything --copt -O2
 
 test:memcheck_everything --test_tag_filters=-no_memcheck
 test:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
