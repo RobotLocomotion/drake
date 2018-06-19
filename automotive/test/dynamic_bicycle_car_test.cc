@@ -168,12 +168,12 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // Tests the slip angle of the front and rear tires based on the expected
   // values contained in the input struct.
   void TestTireSlipAngle(TestValues test_values) {
-    const double tire_slip_angle_front =
-        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, Tire::kFrontTire);
-    const double tire_slip_angle_rear =
-        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, Tire::kRearTire);
+    const double tire_slip_angle_front = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<double>::Tire::kFrontTire);
+    const double tire_slip_angle_rear = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<double>::Tire::kRearTire);
 
     EXPECT_NEAR(tire_slip_angle_front,
                 test_values.expected_tire_slip_angle_front,
@@ -186,9 +186,11 @@ class DynamicBicycleCarTest : public ::testing::Test {
   // values contained in the input struct.
   void TestNormalLoad(TestValues test_values) {
     const double normal_load_front = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, Tire::kFrontTire);
+        *test_car_params_, test_values.f_Cp_x,
+        DynamicBicycleCar<double>::Tire::kFrontTire);
     const double normal_load_rear = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, Tire::kRearTire);
+        *test_car_params_, test_values.f_Cp_x,
+        DynamicBicycleCar<double>::Tire::kRearTire);
 
     EXPECT_NEAR(normal_load_front, test_values.expected_normal_load_front,
                 test_values.tolerance);
@@ -201,19 +203,21 @@ class DynamicBicycleCarTest : public ::testing::Test {
   void TestLateralTireForce(TestValues test_values) {
     // Compute the slip angles of the tires to be used in the lateral force
     // calculation.
-    const double tire_slip_angle_front =
-        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, Tire::kFrontTire);
-    const double tire_slip_angle_rear =
-        test_car_->CalcTireSlip(*continuous_state(), *test_car_params_,
-                               test_values.steer_angle, Tire::kRearTire);
+    const double tire_slip_angle_front = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<double>::Tire::kFrontTire);
+    const double tire_slip_angle_rear = test_car_->CalcTireSlip(
+        *continuous_state(), *test_car_params_, test_values.steer_angle,
+        DynamicBicycleCar<double>::Tire::kRearTire);
 
     // Compute the normal forces on the tires to be used in the lateral force
     // calculation.
     const double normal_load_front = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, Tire::kFrontTire);
+        *test_car_params_, test_values.f_Cp_x,
+        DynamicBicycleCar<double>::Tire::kFrontTire);
     const double normal_load_rear = test_car_->CalcNormalTireForce(
-        *test_car_params_, test_values.f_Cp_x, Tire::kRearTire);
+        *test_car_params_, test_values.f_Cp_x,
+        DynamicBicycleCar<double>::Tire::kRearTire);
 
     // Compute the lateral forces on the tires and compare against expected
     // values.

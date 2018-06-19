@@ -64,13 +64,6 @@ namespace automotive {
 ///
 /// @ingroup automotive_plants
 
-/// Specifies whether to use the front or rear tire for calculating various
-/// parameters.
-enum class Tire : bool {
-  kFrontTire = true,
-  kRearTire = false,
-};
-
 template <typename T>
 class DynamicBicycleCar final : public systems::LeafSystem<T> {
  public:
@@ -83,6 +76,13 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
   template <typename U>
   explicit DynamicBicycleCar(const DynamicBicycleCar<U>&)
       : DynamicBicycleCar<T>() {}
+
+  /// Specifies whether to use the front or rear tire for calculating various
+  /// parameters.
+  enum class Tire {
+    kFrontTire,
+    kRearTire,
+  };
 
   /// Returns the port to output the state.
   const systems::OutputPort<T>& get_output_port() const;
@@ -97,16 +97,16 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
       systems::Context<T>* context) const;
 
   /// Slip angle of front or rear tires.
-  static const T CalcTireSlip(const DynamicBicycleCarState<T>& state,
+  static T CalcTireSlip(const DynamicBicycleCarState<T>& state,
                               const DynamicBicycleCarParams<T>& params,
                               const T& steer_angle, Tire tire_select);
 
   /// Normal forces on the front or rear tires.
-  static const T CalcNormalTireForce(const DynamicBicycleCarParams<T>& params,
+  static T CalcNormalTireForce(const DynamicBicycleCarParams<T>& params,
                                      const T& f_x, Tire tire_select);
 
   /// Lateral tire forces on the front or rear tires.
-  static const T CalcLateralTireForce(const T& tire_slip_angle,
+  static T CalcLateralTireForce(const T& tire_slip_angle,
                                       const T& c_alpha, const T& f_z,
                                       const T& mu);
 

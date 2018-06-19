@@ -63,13 +63,12 @@ void DynamicBicycleCar<T>::CopyStateOut(
 }
 
 template <typename T>
-const T DynamicBicycleCar<T>::CalcTireSlip(
-    const DynamicBicycleCarState<T>& state,
-    const DynamicBicycleCarParams<T>& params, const T& steer_angle,
-    Tire tire_select) {
+T DynamicBicycleCar<T>::CalcTireSlip(const DynamicBicycleCarState<T>& state,
+                                     const DynamicBicycleCarParams<T>& params,
+                                     const T& steer_angle, Tire tire_select) {
   using std::atan2;
 
-  if (static_cast<bool>(tire_select)) {
+  if (tire_select == Tire::kFrontTire) {
     // Front tire slip angle.
     return atan2(state.v_LCp_y() + params.Lf() * state.yawDt_LC(),
                  state.v_LCp_x()) -
@@ -82,10 +81,10 @@ const T DynamicBicycleCar<T>::CalcTireSlip(
 }
 
 template <typename T>
-const T DynamicBicycleCar<T>::CalcNormalTireForce(
+T DynamicBicycleCar<T>::CalcNormalTireForce(
     const DynamicBicycleCarParams<T>& params, const T& f_Cp_x,
     Tire tire_select) {
-  if (static_cast<bool>(tire_select)) {
+  if (tire_select == Tire::kFrontTire) {
     // Front tire normal force.
     return (1 / (params.Lf() + params.Lb())) *
            (params.mass() * params.Lb() * params.gravity() -
@@ -99,9 +98,9 @@ const T DynamicBicycleCar<T>::CalcNormalTireForce(
 }
 
 template <typename T>
-const T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
-                                                   const T& c_alpha,
-                                                   const T& f_z, const T& mu) {
+T DynamicBicycleCar<T>::CalcLateralTireForce(const T& tire_slip_angle,
+                                             const T& c_alpha, const T& f_z,
+                                             const T& mu) {
   // Based on Fiala non-linear brush tire model as presented by Pacejka [2].
 
   DRAKE_ASSERT(c_alpha >= 0.0);
