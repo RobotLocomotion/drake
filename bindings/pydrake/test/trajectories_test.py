@@ -44,3 +44,16 @@ class TestTrajectories(unittest.TestCase):
         pp1 = PiecewisePolynomial.Cubic(t, x)
         pp2 = PiecewisePolynomial.Cubic(t, x, np.identity(3))
         pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0., 0.], [0., 0., 0.])
+
+    def test_slice_and_shift(self):
+        x = np.array([[10.], [20.], [30.]]).transpose()
+        pp = PiecewisePolynomial.FirstOrderHold([0., 1., 2.], x)
+        pp_sub = pp.slice(start_segment_index=1, num_segments=1)
+        self.assertEqual(pp_sub.get_number_of_segments(), 1)
+        self.assertEqual(pp_sub.start_time(), 1.)
+        self.assertEqual(pp_sub.end_time(), 2.)
+        values_sub = np.array(map(pp_sub.value, [1., 2.]))
+        self.assertTrue((values_sub == [[[20.]], [[30.]]]).all())
+        pp_sub.shiftRight(10.)
+        self.assertEqual(pp_sub.start_time(), 11.)
+        self.assertEqual(pp_sub.end_time(), 12.)
