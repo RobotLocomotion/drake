@@ -43,13 +43,13 @@ bool IsElementwiseNonpositive(const Eigen::MatrixXi& A) {
 */
 IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
                                           const Eigen::VectorXi& upper_bound) {
-  DRAKE_DEMAND(lower_bound.size() == upper_bound.size());
+  DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
 
   IntegerVectorList alphabet(lower_bound.size());
   int cnt = 0;
 
   for (auto& col_alphabet : alphabet) {
-    DRAKE_DEMAND(lower_bound(cnt) <= upper_bound(cnt));
+    DRAKE_ASSERT(lower_bound(cnt) <= upper_bound(cnt));
 
     for (int i = lower_bound(cnt); i <= upper_bound(cnt); i++) {
       col_alphabet.push_back(i);
@@ -70,7 +70,7 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
 enum ColumnType { Nonnegative, Nonpositive, Indefinite };
 std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
                                       IntegerVectorList* alphabet) {
-  DRAKE_DEMAND(alphabet != NULL);
+  DRAKE_ASSERT(alphabet != NULL);
   int cnt = 0;
   std::vector<ColumnType> ordering(A.cols());
 
@@ -101,13 +101,15 @@ Eigen::MatrixXi CartesianProduct(int z, const Eigen::MatrixXi& V) {
 
 Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
                               const Eigen::MatrixXi& B) {
-  if (A.rows() == 0) return B;
-
-  if (B.rows() == 0) return A;
-
-  Eigen::MatrixXi Y(A.rows() + B.rows(), A.cols());
+  DRAKE_ASSERT(A.cols() == B.cols());
+  if (A.rows() == 0) {
+    return B;
+  }
+  if (B.rows() == 0) {
+    return A;
+  }
+  Eigen::MatrixXi Y(A.rows() + B.rows(), B.cols());
   Y << A, B;
-
   return Y;
 }
 
@@ -125,10 +127,10 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& column_type) {
-  Eigen::MatrixXi feasible_points;
+  Eigen::MatrixXi feasible_points(0, A.cols());
 
   for (auto& value : column_alphabets.at(0)) {
-    Eigen::MatrixXi new_feasible_points;
+    Eigen::MatrixXi new_feasible_points(0, A.cols());
 
     if (A.cols() == 1) {
       if (IsElementwiseNonnegative(b - A * value)) {
