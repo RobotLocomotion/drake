@@ -14,6 +14,9 @@
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
+
+// This class has friend access to ImplicitStribeckSolver so that we can test
+// its internals.
 class ImplicitStribeckSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
@@ -591,10 +594,8 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, not_used /*phi0*/, mu_, fn_,
-      not_used /*stiffness*/, not_used /*damping*/,
-      dt, v_stiction, epsilon_v, false /* two-way coupling? */, v);
+  MatrixX<double> J_expected = test::CalcOneWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =
@@ -703,7 +704,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
+  MatrixX<double> J_expected = test::CalcOneWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
@@ -842,8 +843,8 @@ class RollingCylinder : public ::testing::Test {
     mu_vector_(0) = mu;
 
     // Compute Jacobian matrices.
-    N_ << 0, 1, 0;
-    D_ = ComputeTangentialJacobian();
+    Jn_ << 0, 1, 0;
+    Jt_ = ComputeTangentialJacobian();
 
     // A very small penetration allowance for practical purposes.
     const double penetration_allowance = 1.0e-6;
@@ -861,7 +862,7 @@ class RollingCylinder : public ::testing::Test {
     PRINT_VAR(phi0_);
 
     solver_.SetTwoWayCoupledProblemData(
-        &M_, &N_, &D_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_vector_);
+        &M_, &Jn_, &Jt_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_vector_);
   }
 
  protected:
@@ -896,10 +897,10 @@ class RollingCylinder : public ::testing::Test {
   MatrixX<double> M_{nv_, nv_};
 
   // Tangential velocities Jacobian.
-  MatrixX<double> D_{2 * nc_, nv_};
+  MatrixX<double> Jt_{2 * nc_, nv_};
 
   // Normal separation velocities Jacobian.
-  MatrixX<double> N_{nc_, nv_};
+  MatrixX<double> Jn_{nc_, nv_};
 
   VectorX<double> stiffness_{nc_};
   VectorX<double> damping_{nc_};
@@ -994,9 +995,9 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.relative_tolerance;
   const VectorX<double> not_used;  // variables not used in two-way coupling.
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, N_, D_, p_star_, phi0_, mu_vector_, not_used /* fn */,
-      stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
+  MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
+      stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
 
   PRINT_VARn(J_expected);
 
@@ -1088,9 +1089,9 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.relative_tolerance;
   const VectorX<double> not_used;  // variables not used in two-way coupling.
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, N_, D_, p_star_, phi0_, mu_vector_, not_used /* fn */,
-      stiffness_, damping_, dt, v_stribeck, epsilon_v, true, v);
+  MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
+      stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
 
   PRINT_VARn(J_expected);
 

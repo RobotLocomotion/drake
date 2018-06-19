@@ -138,29 +138,29 @@ VectorX<U> CalcResidual(
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the ImplicitStribeckSolver
 // using automatic differentiation.
-MatrixX<double> CalcJacobianWithAutoDiff(
+MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
     const MatrixX<double>& Jt,
     const VectorX<double>& p_star,
     const VectorX<double>& phi0,
     const VectorX<double>& mu,
-    const VectorX<double>& fn,
     const VectorX<double>& stiffness,
     const VectorX<double>& damping,
     double dt, double v_stribeck, double epsilon_v,
-    bool two_way_coupling,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
+  // Empty vector for data not used by the two-way coupled scheme.
+  const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
-      M, Jn, Jt, p_star, phi0, mu, fn, stiffness, damping,
-      dt, v_stribeck, epsilon_v, two_way_coupling,
+      M, Jn, Jt, p_star, phi0, mu, not_used, stiffness, damping,
+      dt, v_stribeck, epsilon_v, true,
       v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }
 
-MatrixX<double> CalcJacobianWithAutoDiff(
+MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
     const MatrixX<double>& Jt,
@@ -171,7 +171,7 @@ MatrixX<double> CalcJacobianWithAutoDiff(
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
-  // Empty vector for variables not used in one-way coupling.
+  // Empty vector for data not used by the one-way coupled scheme.
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
