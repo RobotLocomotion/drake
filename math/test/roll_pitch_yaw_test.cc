@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -38,6 +39,22 @@ GTEST_TEST(RollPitchYaw, testAcessMethods) {
   EXPECT_TRUE(v(0) == roll && roll == 0.12);
   EXPECT_TRUE(v(1) == pitch && pitch == 0.34);
   EXPECT_TRUE(v(2) == yaw && yaw == -0.56);
+}
+
+// Test whether or not pitch angle is near gimbal lock.
+GTEST_TEST(RollPitchYaw, testDoesPitchAngleViolateGimbalLock) {
+  RollPitchYaw<double> rpy(-2.1, 0, 5.7);
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
+  rpy.set(-2.1, M_PI_2, 5.7);
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
+  rpy.set(M_PI_2, 1, M_PI_2);
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
+  rpy.set(2.3, -M_PI_2, 4.5);
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
+  rpy.set(-9 * M_PI_2, 90, M_PI_2);
+  EXPECT_FALSE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
+  rpy.set(2.3, 91 * M_PI_2, 4.5);
+  EXPECT_TRUE(rpy.DoesPitchAngleViolateGimbalLockTolerance());
 }
 
 // This tests the RollPitchYaw.ToQuaternion() method.
@@ -92,7 +109,7 @@ GTEST_TEST(RollPitchYaw, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
 // For a RollPitchYaw R_AD(rpy) that relates frame D's orientation to frame A,
 // calculate conversion from rpy and its time-derivative rpyDt to w_AD_A
 // (D's angular velocity in A, expressed in A).
-GTEST_TEST(RollPitchYaw, RollPitchYawDtToAngularVelocityExpressedInA) {
+GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
   const Vector3d rpyDt(-2.1, 3.3, 5.7);
   const Vector3d w_AD_A = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
@@ -116,6 +133,104 @@ GTEST_TEST(RollPitchYaw, RollPitchYawDtToAngularVelocityExpressedInA) {
       rpy.CalcRpyDtFromAngularVelocityInParent(w_AD_A);
   EXPECT_TRUE(CompareMatrices(rpyDt_calculated, rpyDt, 16 * kEpsilon,
                               MatrixCompareType::absolute));
+
+  // Check for some throw conditions.
+  const char* expected_message =
+      "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*gimbal-lock.*";
+  const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+
+  const RollPitchYaw<double> rpyB(0.2, -M_PI / 2, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyB.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+
+  const RollPitchYaw<double> rpyC(0.2, 3 * M_PI / 2, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyC.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+
+  const RollPitchYaw<double> rpyD(0.2, -3 * M_PI / 2, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyD.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+
+  const RollPitchYaw<double> rpyE(0.2, 3 * M_PI / 2 + 1E-8, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyE.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+
+  const RollPitchYaw<double> rpyF(0.2, -3 * M_PI / 2 + 1E-8, 0.4);
+  DRAKE_EXPECT_THROWS_MESSAGE(rpyF.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
+                              std::logic_error, expected_message);
+}
+
+// Test accuracy of back-and-forth conversion from angular velocity to rpyDt
+// (time-derivative of roll-pitch-yaw angles) and back to angular velocity as a
+// way to understand how many digits of precision are lost near gimbal-lock.
+GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
+  const Vector3d wA(1, 1, 1);
+  const Vector3d alphaA(1, 1, 1);
+  const double tolerance =
+      RollPitchYaw<double>::GimbalLockPitchAngleTolerance();
+  int number_of_precise_cases = 0, number_of_imprecise_cases = 0;
+  // Note: The for-loop logic is designed to only test a few imprecises cases.
+  for (double i = -2.00; i <= 2.001; i += (-0.9 <= i && i <= 0.8) ? 1 : 0.05) {
+    const double difference_from_gimbal_lock = i * tolerance;
+    const double pitch_angle = M_PI / 2 + difference_from_gimbal_lock;
+    const RollPitchYaw<double> rpy(1, pitch_angle, 1);
+    const bool is_imprecise = rpy.DoesPitchAngleViolateGimbalLockTolerance();
+
+    // Calculate rpyDt from angular velocity.
+    Vector3d rpyDt, rpyDDt;
+    if (is_imprecise) {
+      ++number_of_imprecise_cases;
+      const char* expected_message =
+          "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent().*gimbal-lock.*";
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA),
+          std::logic_error, expected_message);
+      expected_message =
+          "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*gimbal-"
+          "lock.*";
+      DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
+        rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
+        std::logic_error, expected_message);
+    } else {
+      ++number_of_precise_cases;
+      rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
+      rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA);
+
+      const double max_rpyDt = rpyDt.template lpNorm<Eigen::Infinity>();
+      const double max_rpyDDt = rpyDDt.template lpNorm<Eigen::Infinity>();
+
+      // max_rpyDt scales with 1/cos(pitch_angle) multiplied by angular velocity
+      // wA = (1, 1, 1).  Check that max_rpyDt has a range that is within
+      // a reasonable multiplier (1000) of that scale.
+      // max_rpyDDt scales with 1/cos(pitch_angle)² multipled by angular
+      // acceleration alphaA = (1, 1, 1).  Check that max_rpyDDt has a range
+      // that is within a reasonable multiplier (1000²) of that scale.
+      EXPECT_TRUE(1E-3 / tolerance <= max_rpyDt &&
+                  max_rpyDt <= 1E3 / tolerance);
+      EXPECT_TRUE(1E-6 / (tolerance * tolerance) <= max_rpyDDt &&
+                  max_rpyDDt <= 1E6 / (tolerance * tolerance));
+
+      // Now, reverse procedure by calculating angular velocity from rpyDt.
+      const Vector3d wB = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
+
+      // Compare the given and calculated angular velocities.
+      const Vector3d w_diff = wB - wA;
+      const Vector3d w_error(w_diff(0) / wA(0),
+                             w_diff(1) / wA(1),
+                             w_diff(2) / wA(2));
+      const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
+
+      // Since RollPitchYaw::kGimbalLockToleranceCosPitchAngle = 0.008,
+      // we expect max_error <= (2^7 = 128) * kEpsilon ≈ 2.842E-14.
+      // This test uses (2^8 = 256) * kEpsilon in the unlikely event that a
+      // compiler, operating system, ... inadvertently loses an extra bit.
+      // For details, see documentation for kGimbalLockToleranceCosPitchAngle.
+      EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
+    }
+  }
+  EXPECT_TRUE(number_of_precise_cases > 0  &&  number_of_imprecise_cases > 0);
 }
 
 
@@ -144,32 +259,78 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityInChildFromRpyDt) {
 
 // For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,
 // calculate conversion from alpha_AD_A (D's angular acceleration in A,
-// expressed in A) to rpyDDt (2nd time-derivative of rpy).
-GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccelInParent) {
-  const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
+// expressed in A) to rpyDDt (2nd time-derivative of rpy), i.e., `[r̈, p̈, ÿ]`.
+// Cross-validate with `[r̈, p̈, ÿ]` calculated from alpha_AD_D (D's angular
+// acceleration in A, expressed in D).
+GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
   const Vector3d rpyDt(-2.1, 3.3, 5.7);
   const Vector3d alpha_AD_A(0.5, 0.7, 0.9);
-  const Vector3d rpyDDt =
-      rpy.CalcRpyDDtFromAngularAccelInParent(rpyDt, alpha_AD_A);
 
-  // Results generated by MotionGenesis.
-  const double p = rpy.pitch_angle();
-  const double y = rpy.yaw_angle();
-  const double rDt = rpyDt(0), pDt = rpyDt(1), yDt = rpyDt(2);
-  const double alfAx = alpha_AD_A(0);
-  const double alfAy = alpha_AD_A(1);
-  const double alfAz = alpha_AD_A(2);
-  using std::cos;
-  using std::sin;
-  const double rDDt = (alfAx * cos(y) + alfAy * sin(y)
-                     + pDt * yDt + sin(p) * pDt * rDt) / cos(p);
-  const double pDDt =  alfAy * cos(y) - alfAx * sin(y) - cos(p) * rDt * yDt;
-  const double yDDt = alfAz + cos(p) * pDt * rDt + tan(p) * (alfAx * cos(y)
-                    + alfAy * sin(y) + pDt * yDt + sin(p) * pDt * rDt);
-  const Vector3d rpyDDt_expected(rDDt, pDDt, yDDt);
+  // Set up to test a reasonable range of values.
+  // Note: tol helps ensure that each for-loop's end-value is reached.
+  const double tol = 64 * kEpsilon * M_PI;
+  const double deg = M_PI / 180;
+  for (double roll = -M_PI; roll <= M_PI + tol; roll += 10 * deg) {
+    for (double pitch = -M_PI/2; pitch <= M_PI/2 + tol; pitch += 2 * deg) {
+      for (double yaw = -M_PI; yaw <= M_PI + tol; yaw += 10 * deg) {
+        const RollPitchYaw<double> rpy(roll, pitch, yaw);
 
-  EXPECT_TRUE(CompareMatrices(rpyDDt, rpyDDt_expected, 16 * kEpsilon,
+        // Calculate [r̈, p̈, ÿ] from alpha_AD_A which is
+        // D's angular acceleration in A, expressed in A.
+        // Also calculate [r̈, p̈, ÿ] from alpha_AD_D which is
+        // D's angular acceleration in A, expressed in D.
+        const RotationMatrix<double> R_AD(rpy);
+        const Vector3d alpha_AD_D = R_AD.inverse() * alpha_AD_A;
+        Vector3d rpyDDt, rpyDDt_verify;
+        if (rpy.DoesPitchAngleViolateGimbalLockTolerance()) {
+          const char* expected_message =
+              "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent().*"
+              "gimbal-lock.*";
+          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
+             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
+             std::logic_error, expected_message);
+          expected_message =
+              "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild().*"
+                  "gimbal-lock.*";
+          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
+             rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
+             std::logic_error, expected_message);
+          continue;
+        }
+
+        rpyDDt =
+          rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
+        rpyDDt_verify =
+            rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
+
+        // These two calculations should produce identical answers.
+        const double rpyDDt_norm = rpyDDt.norm();
+        const double reasonable_value = rpyDDt_norm > 1E-5 ? rpyDDt_norm : 1E-5;
+        const double tolerance = 16 * kEpsilon * reasonable_value;
+        EXPECT_TRUE(CompareMatrices(rpyDDt, rpyDDt_verify, tolerance,
+                                    MatrixCompareType::absolute));
+
+        // Cross-validate with results generated by MotionGenesis.
+        using std::cos;
+        using std::sin;
+        const double p = rpy.pitch_angle();
+        const double y = rpy.yaw_angle();
+        const double rDt = rpyDt(0), pDt = rpyDt(1), yDt = rpyDt(2);
+        const double alfAx = alpha_AD_A(0);
+        const double alfAy = alpha_AD_A(1);
+        const double alfAz = alpha_AD_A(2);
+        const double rDDt = (alfAx * cos(y) + alfAy * sin(y)
+                          + pDt * yDt + sin(p) * pDt * rDt) / cos(p);
+        const double pDDt =  alfAy * cos(y) - alfAx * sin(y)
+                          - cos(p) * rDt * yDt;
+        const double yDDt = alfAz + cos(p) * pDt * rDt + tan(p) *
+             (alfAx * cos(y) + alfAy * sin(y) + pDt * yDt + sin(p) * pDt * rDt);
+        const Vector3d rpyDDt_expected(rDDt, pDDt, yDDt);
+        EXPECT_TRUE(CompareMatrices(rpyDDt, rpyDDt_expected, tolerance,
                               MatrixCompareType::absolute));
+      }
+    }
+  }
 }
 
 }  // namespace

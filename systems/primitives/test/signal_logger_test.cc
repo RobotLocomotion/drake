@@ -8,24 +8,26 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
+namespace systems {
 namespace {
 
 // Log the output of a simple linear system (with a known solution).
 GTEST_TEST(TestSignalLogger, LinearSystemTest) {
-  systems::DiagramBuilder<double> builder;
+  DiagramBuilder<double> builder;
 
   // xdot = -x.  y = x.  (No inputs).
-  auto plant = builder.AddSystem<systems::LinearSystem<double>>(
+  auto plant = builder.AddSystem<LinearSystem<double>>(
       Vector1d::Constant(-1.0),      // A.
       Eigen::MatrixXd::Zero(1, 0),   // B.
       Vector1d::Constant(1.0),       // C.
       Eigen::MatrixXd::Zero(1, 0));  // D.
   plant->set_name("plant");
 
-  auto logger = builder.AddSystem<systems::SignalLogger<double>>(1);
+  auto logger = builder.AddSystem<SignalLogger<double>>(1);
   logger->set_name("logger");
   builder.Cascade(*plant, *logger);
 
@@ -35,8 +37,8 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   auto diagram = builder.Build();
 
   // Simulate the simple system from x(0) = 1.0.
-  systems::Simulator<double> simulator(*diagram);
-  systems::Context<double>& context = simulator.get_mutable_context();
+  Simulator<double> simulator(*diagram);
+  Context<double>& context = simulator.get_mutable_context();
   context.get_mutable_continuous_state_vector().SetAtIndex(0, 1.0);
 
   // Make the integrator tolerance sufficiently tight for the test to pass.
@@ -77,5 +79,27 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   EXPECT_EQ(logger->data().cols(), logger->sample_times().size());
 }
 
+// Test that set_publish_period triggers properly even for logging a constant
+// signal.
+GTEST_TEST(TestSignalLogger, SetPublishPeriod) {
+  // Add System and Connect
+  DiagramBuilder<double> builder;
+  auto system = builder.AddSystem<ConstantVectorSource<double>>(2.0);
+  auto logger = LogOutput(system->get_output_port(), &builder);
+  logger->set_publish_period(0.1);
+  auto diagram = builder.Build();
+
+  // Construct Simulator
+  Simulator<double> simulator(*diagram);
+  simulator.set_publish_every_time_step(false);
+
+  // Run simulation
+  simulator.StepTo(1);
+
+  EXPECT_EQ(simulator.get_num_publishes(), 11);
+}
+
 }  // namespace
+
+}  // namespace systems
 }  // namespace drake

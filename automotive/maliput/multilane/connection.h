@@ -229,10 +229,17 @@ class Connection {
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
+  ///
+  /// `scale_length` constrains the maximum level of detail captured by the
+  /// underlying RoadCurve.
+  ///
+  /// `linear_tolerance` and `computation_policy` set the efficiency vs. speed
+  /// balance for computations in the underlying RoadCurve.
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             double line_length);
+             double line_length, double linear_tolerance, double scale_length,
+             ComputationPolicy computation_policy);
 
   /// Constructs an arc-segment connection.
   ///
@@ -253,10 +260,20 @@ class Connection {
   /// `left_shoulder` and `right_shoulder` are extra spaces added to the right
   /// and left side of the first and last lanes of the Segment. They will be
   /// added to Segment's bounds and must be greater or equal to zero.
+  ///
+  /// `linear_tolerance` applies to all RoadCurve-level computations. It must be
+  /// positive.
+  ///
+  /// `scale_length` constrains the maximum level of detail captured by the
+  /// underlying RoadCurve. It must be positive.
+  ///
+  /// `computation_policy` sets the speed vs. accuracy for computations in the
+  /// underlying RoadCurve.
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             const ArcOffset& arc_offset);
+             const ArcOffset& arc_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
 
   /// Returns the geometric type of the path.
   Type type() const { return type_; }
@@ -321,6 +338,21 @@ class Connection {
   /// Segment.
   double r_max() const { return r_max_; }
 
+  /// Returns the linear tolerance, in meters, that applies to RoadCurve
+  /// instances as constructed by this Connection. Refer to RoadCurve class
+  /// documentation for further details.
+  double linear_tolerance() const { return linear_tolerance_; }
+
+  /// Returns the scale length, in meters, that applies to RoadCurve instances
+  /// as constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  double scale_length() const { return scale_length_; }
+
+  /// Returns the computation policy that applies to RoadCurve instances as
+  /// constructed by this Connection. Refer to RoadCurve class documentation
+  /// for further details.
+  ComputationPolicy computation_policy() const { return computation_policy_; }
+
   /// Returns an Endpoint describing the start of the `lane_index` lane.
   Endpoint LaneStart(int lane_index) const;
 
@@ -342,6 +374,9 @@ class Connection {
   const double right_shoulder_{};
   const double r_min_{};
   const double r_max_{};
+  const double linear_tolerance_{};
+  const double scale_length_{};
+  const ComputationPolicy computation_policy_;
   std::unique_ptr<RoadCurve> road_curve_;
   // Bits specific to type_ == kLine:
   double line_length_{};

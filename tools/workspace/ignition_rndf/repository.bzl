@@ -5,6 +5,8 @@ load("//tools/workspace:bitbucket.bzl", "bitbucket_archive")
 def ignition_rndf_repository(
         name,
         mirrors = None):
+    # When updating this commit, also remember to adjust the PROJECT_*
+    # constants in ./package.BUILD.bazel to match the new version number.
     commit = "0e7c72e6f5f4"
     bitbucket_archive(
         name = name,

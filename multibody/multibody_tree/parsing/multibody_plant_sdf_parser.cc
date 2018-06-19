@@ -49,7 +49,7 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
   // ALWAYS is in the inertial frame Bi, regardless of how a user might have
   // specified frames in the sdf file. That is, that it always returns
   // M_BBcm_Bi.
-  const ignition::math::Matrix3d I = inertial.MassMatrix().MOI();
+  const ignition::math::Matrix3d I = inertial.MassMatrix().Moi();
   return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
                                    I(1, 0), I(2, 0), I(2, 1));
 }

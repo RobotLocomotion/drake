@@ -172,7 +172,7 @@ class MultibodyPlantSdfParser : public ::testing::Test {
   // geometries for both visualization and contact modeling.
   void LoadMultibodyPlantAndSceneGraph() {
     AddModelFromSdfFile(full_name_, &plant_, &scene_graph_);
-    plant_.Finalize();
+    plant_.Finalize(&scene_graph_);
   }
 
  protected:

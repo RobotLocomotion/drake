@@ -16,6 +16,7 @@ def gurobi_test_tags(gurobi_required = True):
     must have the tag "no-sandbox". For the moment, we also require the tag
     "exclusive" to rate-limit license servers with a small number of licenses.
     """
+
     # TODO(david-german-tri): Find a better fix for the license server problem.
     nominal_tags = [
         "exclusive",  # implies "local"

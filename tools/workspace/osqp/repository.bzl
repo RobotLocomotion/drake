@@ -8,8 +8,8 @@ def osqp_repository(
     github_archive(
         name = name,
         repository = "oxfordcontrol/osqp",
-        commit = "v0.3.0",
-        sha256 = "6fc0c4578f665aef8bdf1a8c8c3b474ce34f8782b100c7d06069da3435672c69",  # noqa
+        commit = "v0.3.1",
+        sha256 = "6aefbec4fa4c210e14e8bb396b28e0ba089610444df830586848e124ba773cab",  # noqa
         build_file = "@drake//tools/workspace/osqp:package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -1,5 +1,11 @@
 #pragma once
 
+// This file implements a method to compute the  Newton-Raphson Jacobian
+// J = ∇ᵥR of the residual for the ImplicitStribeckSolver using automatic
+// differentiation. This separate implementation is used to verify the
+// analytical (and faster) Jacobian computed by the internal implementation of
+// the solver.
+
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -9,7 +15,7 @@
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
-namespace {
+namespace test {
 
 template <typename U>
 VectorX<U> CalcNormalForces(
@@ -26,11 +32,15 @@ VectorX<U> CalcNormalForces(
   return fn;
 }
 
+// Returns the friction forces ft as a function of the tangential velocity vt,
+// for given friction coefficient mu and normal force fn.
 template <typename U>
 VectorX<U> CalcFrictionForces(
-    double v_stribeck, double epsilon_v,
+    double v_stiction, double epsilon_v,
     const VectorX<double> mu,
     const VectorX<U>& vt, const VectorX<U>& fn) {
+  using std::sqrt;
+
   const int nc = mu.size();  // Number of contact points.
 
   // We use the stiction tolerance as a reference scale to estimate a small
@@ -40,15 +50,15 @@ VectorX<U> CalcFrictionForces(
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   VectorX<U> ft(2 * nc);
-  VectorX<U> mus(nc);
-  VectorX<U> that(2 * nc);
+  VectorX<U> mu_vt(nc);  // = μ(‖vₜ‖)
+  VectorX<U> t_hat(2 * nc);
   VectorX<U> v_slip(nc);
 
-  auto ModifiedStribeck = [](U x, double mu) {
+  auto ModifiedStribeck = [](U x, double friction_coefficient) {
     if (x >= 1) {
-      return U(mu);
+      return U(friction_coefficient);
     } else {
-      return mu * x * (2.0 - x);
+      return friction_coefficient * x * (2.0 - x);
     }
   };
 
@@ -62,26 +72,28 @@ VectorX<U> CalcFrictionForces(
   // and a "soft" tangent vector:
   //   t̂ = vₜ / sqrt(vₜᵀvₜ + εᵥ²)
   // which now is not only well defined but it has well defined derivatives.
-  // We use these softened quantities all throuout our derivations for
+  // We use these softened quantities all throughout our derivations for
   // consistency.
-  for (int ic = 0; ic < nc; ++ic) {
-    const int ik = 2 * ic;
+  for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
+    const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     const auto vt_ic = vt.template segment<2>(ik);
     // "soft norm":
     v_slip(ic) = sqrt(vt_ic.squaredNorm() + epsilon_v2);
     // "soft" tangent vector:
     const Vector2<U> that_ic = vt_ic / v_slip(ic);
-    that.template segment<2>(ik) = that_ic;
-    mus(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    t_hat.template segment<2>(ik) = that_ic;
+    mu_vt(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
-    ft.template segment<2>(ik) = -mus(ic) * that_ic * fn(ic);
+    ft.template segment<2>(ik) = -mu_vt(ic) * that_ic * fn(ic);
   }
   return ft;
 }
 
-
+// Computes and returns the Newton-Raphson residual for the implicit Stribeck
+// solver. This templated method is used to automatically differentiate the
+// residual and compute its Jacobian J = ∇ᵥR.
 template <typename U>
-VectorX<U> CalcResidualOnU(
+VectorX<U> CalcResidual(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
     const MatrixX<double>& Jt,
@@ -124,6 +136,8 @@ VectorX<U> CalcResidualOnU(
   return residual;
 }
 
+// Computes the Jacobian J = ∇ᵥR of the residual for the ImplicitStribeckSolver
+// using automatic differentiation.
 MatrixX<double> CalcJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
@@ -139,14 +153,14 @@ MatrixX<double> CalcJacobianWithAutoDiff(
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
-  VectorX<AutoDiffXd> residual = CalcResidualOnU(
+  VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, phi0, mu, fn, stiffness, damping,
       dt, v_stribeck, epsilon_v, two_way_coupling,
       v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }
 
-}  // namespace
+}  // namespace test
 }  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake

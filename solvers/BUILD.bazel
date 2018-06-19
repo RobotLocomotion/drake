@@ -535,7 +535,6 @@ drake_cc_library(
     srcs = [
         "dreal_solver.cc",
         "dreal_solver_common.cc",
-        "no_dreal.cc",
     ],
     hdrs = ["dreal_solver.h"],
     deps = [
@@ -892,6 +891,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "dreal_solver_test",
+    timeout = "moderate",
     tags = [
         # For most of floating-point operations, Valgrind only supports the
         # IEEE default mode (round to nearest) while dReal uses to +infinity
@@ -904,6 +904,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":dreal_solver",
+        ":generic_trivial_constraint",
+        ":generic_trivial_cost",
+        ":mathematical_program",
     ],
 )
 

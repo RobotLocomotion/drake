@@ -882,6 +882,7 @@ class IntegratorBase {
    * achieve the required accuracy but not much more. We'll be more precise
    * about this below.
    *
+   * @anchor quasi_coordinates
    * <h4>Some subtleties for second-order dynamic systems</h4>
    *
    * Systems governed by 2nd-order differential equations are typically split

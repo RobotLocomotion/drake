@@ -4,6 +4,7 @@
 
 #include "drake/common/unused.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 namespace drake {
 namespace systems {

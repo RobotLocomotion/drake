@@ -12,13 +12,29 @@ namespace rules {
 namespace test {
 
 
-/// Predicate-formatter which tests equality of RightOfWayRule::Type.
+/// Predicate-formatter which tests equality of RightOfWayRule::ZoneType.
 // TODO(maddog@tri.global)  This should be replaced by a generic predicate
 //                          which handles anything with operator==.
 ::testing::AssertionResult IsEqual(const char* a_expression,
                                    const char* b_expression,
-                                   rules::RightOfWayRule::Type a,
-                                   rules::RightOfWayRule::Type b);
+                                   rules::RightOfWayRule::ZoneType a,
+                                   rules::RightOfWayRule::ZoneType b);
+
+
+/// Predicate-formatter which tests equality of RightOfWayRule::State::Type.
+// TODO(maddog@tri.global)  This should be replaced by a generic predicate
+//                          which handles anything with operator==.
+::testing::AssertionResult IsEqual(const char* a_expression,
+                                   const char* b_expression,
+                                   rules::RightOfWayRule::State::Type a,
+                                   rules::RightOfWayRule::State::Type b);
+
+
+/// Predicate-formatter which tests equality of RightOfWayRule::State.
+::testing::AssertionResult IsEqual(const char* a_expression,
+                                   const char* b_expression,
+                                   const rules::RightOfWayRule::State& a,
+                                   const rules::RightOfWayRule::State& b);
 
 
 /// Predicate-formatter which tests equality of RightOfWayRule.
@@ -26,6 +42,14 @@ namespace test {
                                    const char* b_expression,
                                    const rules::RightOfWayRule& a,
                                    const rules::RightOfWayRule& b);
+
+
+/// Predicate-formatter which tests equality of RightOfWayStateProvider::Result.
+::testing::AssertionResult IsEqual(
+     const char* a_expression,
+     const char* b_expression,
+     const rules::RightOfWayStateProvider::Result& a,
+     const rules::RightOfWayStateProvider::Result& b);
 
 
 }  // namespace test

@@ -1,11 +1,13 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
+#include "drake/automotive/maliput/api/road_geometry.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/automotive/maliput/multilane/cubic_polynomial.h"
 #include "drake/automotive/maliput/multilane/lane.h"
@@ -23,7 +25,7 @@ class LineLane;
 /// An api::Segment implementation.
 class Segment : public api::Segment {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Segment);
 
   /// Constructs a new Segment.
   ///
@@ -31,6 +33,8 @@ class Segment : public api::Segment {
   /// once. `junction` must remain valid for the lifetime of this class.
   /// @param id Segment's ID.
   /// @param junction Parent junction.
+  /// @param register_lane will be called on any new Lane instance created as
+  /// a child of the Segment.
   /// @param road_curve A curve that defines the reference trajectory over the
   /// segment. A child Lane object will be constructed from an offset of the
   /// road_curve's reference curve.
@@ -41,11 +45,13 @@ class Segment : public api::Segment {
   /// from where Segment's surface ends. It should be greater or equal than
   /// `r_min`.
   /// @param elevation_bounds The height bounds over the segment' surface.
-  Segment(const api::SegmentId& id, api::Junction* junction,
+  Segment(const api::SegmentId& id, const api::Junction* junction,
+          const std::function<void(const api::Lane*)>& register_lane,
           std::unique_ptr<RoadCurve> road_curve, double r_min, double r_max,
           const api::HBounds& elevation_bounds)
       : id_(id),
         junction_(junction),
+        register_lane_(register_lane),
         road_curve_(std::move(road_curve)),
         r_min_(r_min),
         r_max_(r_max),
@@ -53,6 +59,8 @@ class Segment : public api::Segment {
     DRAKE_DEMAND(road_curve_.get() != nullptr);
     DRAKE_DEMAND(r_min <= r_max);
     DRAKE_DEMAND(road_curve_->IsValid(r_min_, r_max_, elevation_bounds_));
+    DRAKE_DEMAND(junction_->road_geometry()->linear_tolerance() ==
+                 road_curve_->linear_tolerance());
   }
 
   /// Creates a new Lane object.
@@ -85,7 +93,8 @@ class Segment : public api::Segment {
   // Segment's ID.
   api::SegmentId id_;
   // Parent junction.
-  api::Junction* junction_{};
+  const api::Junction* junction_{};
+  std::function<void(const api::Lane*)> register_lane_;
   // Child Lane vector.
   std::vector<std::unique_ptr<Lane>> lanes_;
   // Reference trajectory over the Segment's surface.

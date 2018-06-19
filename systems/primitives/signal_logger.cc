@@ -12,6 +12,11 @@ SignalLogger<T>::SignalLogger(int input_size, int batch_allocation_size)
 }
 
 template <typename T>
+void SignalLogger<T>::set_publish_period(double period) {
+  this->DeclarePeriodicPublish(period);
+}
+
+template <typename T>
 void SignalLogger<T>::DoPublish(const Context<T>& context,
                                 const std::vector<const PublishEvent<T>*>&)
                                 const {

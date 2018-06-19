@@ -40,21 +40,19 @@ class ArcRoadCurve : public RoadCurve {
   /// towards speed, computations will make use of analytical expressions even
   /// if not actually correct for the curve as specified.
   /// @throw std::runtime_error if @p radius is not a positive number.
+  /// @throw std::runtime_error if @p linear_tolerance is not a positive number.
+  /// @throw std::runtime_error if @p scale_length is not a positive number.
   explicit ArcRoadCurve(
       const Vector2<double>& center, double radius,
       double theta0, double d_theta,
       const CubicPolynomial& elevation,
       const CubicPolynomial& superelevation,
-      double linear_tolerance = 0.01, double scale_length = 1.0,
-      const ComputationPolicy computation_policy =
-            ComputationPolicy::kPreferAccuracy)
+      double linear_tolerance, double scale_length,
+      ComputationPolicy computation_policy)
       : RoadCurve(linear_tolerance, scale_length,
                   elevation, superelevation,
                   computation_policy),
         center_(center), radius_(radius), theta0_(theta0), d_theta_(d_theta) {
-    // TODO(hidmic): Remove default values in trailing arguments, which were
-    // added in the first place to defer the need to propagate changes upwards
-    // in the class hierarchy.
     DRAKE_THROW_UNLESS(radius > 0.0);
   }
 

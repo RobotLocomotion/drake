@@ -37,5 +37,5 @@ Provides information on the external fork of `pybind11` used by `pydrake`.
 repository = {repository}
 commit = {commit}
 sha256 = {sha256}
-'''.format(**vars)
+'''.format(**vars),
     )

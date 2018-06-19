@@ -21,11 +21,11 @@ config_setting(
     visibility = ["//visibility:private"],
 )
 
-# Generates glob_opts.h based on the defines= we want in Drake.
+# Generates osqp_configure.h based on the defines= we want in Drake.
 cmake_configure_file(
-    name = "glob_opts",
-    src = "configure/glob_opts.h.in",
-    out = "include/glob_opts.h",
+    name = "configure_file",
+    src = "configure/osqp_configure.h.in",
+    out = "include/osqp_configure.h",
     defines = [
         "PRINTING",
         "PROFILING",
@@ -53,7 +53,7 @@ cc_binary(
         "lin_sys/direct/suitesparse/ldl/include/*.h",
         "include/*.h",
         "src/*.c",
-    ]) + ["include/glob_opts.h"],
+    ]) + ["include/osqp_configure.h"],
     includes = [
         "include",
         "lin_sys",
@@ -75,7 +75,7 @@ cc_library(
     srcs = [":libdrake_osqp.so"],
     hdrs = glob([
         "include/*.h",
-    ]) + ["include/glob_opts.h"],
+    ]) + ["include/osqp_configure.h"],
     includes = [
         "include",
     ],

@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":car_vis_applicator",
         ":create_trajectory_params",
         ":curve2",
+        ":driving_command_mux",
         ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
@@ -173,6 +174,17 @@ drake_cc_library(
         ":generated_vectors",
         "//common:autodiff",
         "//common:autodiffxd_make_coherent",
+    ],
+)
+
+drake_cc_library(
+    name = "driving_command_mux",
+    srcs = ["driving_command_mux.cc"],
+    hdrs = ["driving_command_mux.h"],
+    deps = [
+        ":generated_vectors",
+        "//common:default_scalars",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -448,6 +460,7 @@ drake_cc_library(
     hdrs = ["automotive_simulator.h"],
     deps = [
         ":car_vis_applicator",
+        ":driving_command_mux",
         ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
@@ -469,7 +482,6 @@ drake_cc_library(
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:lcmt_drake_signal_translator",
         "//systems/primitives:constant_value_source",
-        "//systems/primitives:multiplexer",
         "//systems/rendering:pose_aggregator",
         "//systems/rendering:pose_bundle_to_draw_message",
     ],
@@ -616,6 +628,15 @@ drake_cc_googletest(
     name = "curve2_test",
     deps = [
         "//automotive:curve2",
+    ],
+)
+
+drake_cc_googletest(
+    name = "driving_command_mux_test",
+    deps = [
+        ":driving_command_mux",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -794,6 +815,7 @@ drake_cc_googletest(
     name = "trivial_right_of_way_state_provider_test",
     deps = [
         ":trivial_right_of_way_state_provider",
+        "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )
 

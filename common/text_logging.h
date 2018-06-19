@@ -73,7 +73,18 @@ printed without any special handling.
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 /* clang-format on */
-#endif
+
+#else  /* HAVE_SPDLOG */
+
+// We always want text_logging.h to provide fmt support to those who include
+// it, even if spdlog is disabled.
+
+/* clang-format off */
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+/* clang-format on */
+
+#endif  /* HAVE_SPDLOG */
 
 #include "drake/common/drake_copyable.h"
 

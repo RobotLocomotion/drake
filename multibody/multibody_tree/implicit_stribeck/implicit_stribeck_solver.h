@@ -12,16 +12,16 @@ namespace implicit_stribeck {
 namespace internal {
 /// This struct implements an internal (thus within `internal::`) detail of the
 /// implicit Stribeck solver. The implicit Stribeck solver performs a
-/// Newton-Raphson iteration, and at each k-th iteration, it computes a
-/// tangential velocity update Δvₜᵏ. A standard Newton-Raphson strategy would
-/// compute the tangential velocity at the next iteration (k+1) as
-/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient typically obtained
-/// with a line search algorithm to improve the convergence rate. Line search
-/// works very well for smooth problems. However, even though the implicit
-/// Stribeck is solving the root of a continuous function, this function has
-/// very steep gradients only within the very small regions close to where the
-/// tangential velocities are zero. These regions are circles in ℝ² of radius
-/// equal to the stiction tolerance of the solver vₛ. We refer to
+/// Newton-Raphson iteration, and at each kth iteration, it computes a
+/// tangential velocity update Δvₜᵏ. One Newton strategy would be to compute
+/// the tangential velocity at the next iteration (k+1) as
+/// vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, where 0 < α < 1, is a coefficient obtained by line
+/// search to improve convergence.
+/// Line search works very well for smooth problems. However, even though the
+/// implicit Stribeck is solving the root of a continuous function, this
+/// function has very steep gradients only within the very small regions close
+/// to where the tangential velocities are zero. These regions are circles in
+/// ℝ² of radius equal to the stiction tolerance of the solver vₛ. We refer to
 /// these circular regions as the "stiction regions" and to their boundaries as
 /// the "stiction circles". We refer to the region of ℝ² outside the stiction
 /// region around the origin as the "sliding region".
@@ -35,16 +35,15 @@ namespace internal {
 /// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
 /// makes no distinction between static and dynamic coefficients of friction and
 /// therefore a single coefficient μ needs to be specified.
-/// Since the Stribeck function used for the friction coefficient has very
-/// steep gradients only within the stiction region and zero outside of it,
-/// gradients (that is the Jacobian of the residual) in the Newton-Raphson
-/// iteration performed by the implicit Stribeck solver are large within
-/// these small circular regions (stiction) and small outside them (slip).
-/// We say that gradients within these stiction circles are "strong" and
-/// gradients outside these regions are "weak".
+/// The Stribeck function is highly nonlinear and difficult to solve with a
+/// conventional Newton-Raphson method. However, it can be partitioned into
+/// regions based on how well the local gradients can be used to find a
+/// solution. We'll describe the algorithm below in terms of "strong" gradients
+/// (∂μ/∂v >> 0) and "weak" gradients (∂μ/∂v ≈ 0). Roughly, the gradients are
+/// strong during stiction and weak during sliding.
 /// These regions are so small compared to the velocity scales dealt with
 /// by the implicit Stribeck solver, that effectively, the Newton-Raphson
-/// iteration would only "see" a fixed dynamic coefficient of friction and it
+/// iterate would only "see" a fixed dynamic coefficient of friction and it
 /// would never be able to predict stiction. That is, if search direction Δvₜᵏ
 /// computed by the Newton-Raphson algorithm is not limited in some way, the
 /// iteration would never fall within the stiction regions where gradients
@@ -127,15 +126,18 @@ struct DirectionChangeLimiter {
   /// @param[in] dv the k-th iteration tangential velocity update Δvₜᵏ, in m/s.
   /// @param[in] cos_theta_max precomputed value of cos(θₘₐₓ).
   /// @param[in] v_stiction the stiction tolerance vₛ, in m/s.
-  /// @param[in] tolerance a value << 1 used to determine when ‖vₜ‖ ≈ 0.
-  /// Typical values lie withing the 10⁻³ - 10⁻² range. This allows us to
-  /// compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small tangential
-  /// velocity scale". This value is used to compute "soft norms" (see class's
-  /// documentation) and to detect values close to zero, ‖vₜ‖ < εᵥ.
+  /// @param[in] relative_tolerance a value << 1 used to determine when
+  /// ‖vₜ‖ ≈ 0. Typical values lie withing the 10⁻³ - 10⁻² range. This allows
+  /// us to compute `εᵥ = tolerance⋅vₛ` (in m/s) which defines a "small
+  /// tangential velocity scale". This value is used to compute "soft norms"
+  /// (see class's documentation) and to detect values close to
+  /// zero, ‖vₜ‖ < εᵥ. A value close to one could cause the solver to miss
+  /// transitions from/to stiction.
   /// @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
   static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
                      const Eigen::Ref<const Vector2<T>>& dv,
-                     double cos_theta_max, double v_stiction, double tolerance);
+                     double cos_theta_max, double v_stiction,
+                     double relative_tolerance);
 
   /// Helper method for detecting when the line connecting v with v1 = v + dv
   /// crosses the stiction region, a circle of radius `v_stiction`.
@@ -175,13 +177,9 @@ enum ComputationInfo {
   LinearSolverFailed = 2
 };
 
-/// These are the paramters controlling the iteration process of the
+/// These are the parameters controlling the iteration process of the
 /// ImplicitStribeckSolver solver.
 struct Parameters {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parameters);
-
-  Parameters() = default;
-
   /// The stiction tolerance vₛ for the slip velocity in the Stribeck
   /// function, in m/s. Roughly, for an externally applied tangential forcing
   /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
@@ -205,18 +203,44 @@ struct Parameters {
   /// value of the tangential velocities smaller than that of the
   /// "Stribeck stiction region" (the circle around the origin with radius
   /// stiction_tolerance).
-  /// Typical value is about 1%.
-  double tolerance{1.0e-2};
+  /// A value close to one could cause the solver to miss transitions from/to
+  /// stiction. Small values approaching zero will result in a higher number of
+  /// iterations needed to attain the desired level of convergence.
+  /// Typical values lie within the 10⁻³ - 10⁻² range.
+  double relative_tolerance{1.0e-2};
 
+  /// (Advanced) ImplicitStribeckSolver limits large angular changes between
+  /// tangential velocities at two successive iterations vₜᵏ⁺¹ and vₜᵏ. This
+  /// change is measured by the angle θ = acos(vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖)).
+  /// To aid convergence, ImplicitStribeckSolver, limits this angular change to
+  /// `theta_max`. Please refer to the documentation for ImplicitStribeckSolver
+  /// for further details.
+  /// Small values of `theta_max` will result in a larger number of iterations
+  /// of the solver for situations in which large angular changes occur (sudden
+  /// transients or impacts). Values of `theta_max` close to π/2 allow for a
+  /// faster convergence for problems with sudden transitions to/from stiction.
+  /// Large values of `theta_max` however might lead to non-convergence of the
+  /// solver. We choose a conservative number by default that we found to work
+  /// well in most practical problems of interest.
   double theta_max{M_PI / 3.0};
 };
 
 /// Struct used to store information about the iteration process performed by
 /// ImplicitStribeckSolver.
 struct IterationStats {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IterationStats);
+  /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
+  void Reset() {
+    num_iterations = 0;
+    // Clear does not change a std::vector "capacity", and therefore there's
+    // no reallocation (or deallocation) that could affect performance.
+    residuals.clear();
+  }
 
-  IterationStats() = default;
+  /// (Internal) Used by ImplicitStribeckSolver to update statistics.
+  void Update(double iteration_residual) {
+    ++num_iterations;
+    residuals.push_back(iteration_residual);
+  }
 
   /// The number of iterations performed by the last ImplicitStribeckSolver
   /// solve.
@@ -235,42 +259,34 @@ struct IterationStats {
   /// The last entry in this vector, `residuals[num_iterations-1]`, corresponds
   /// to the residual upon completion of the solver, i.e. vt_residual.
   std::vector<double> residuals;
-
-  /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
-  void Reset() {
-    num_iterations = 0;
-    // Clear does not change a std::vector "capacity", and therefore there's
-    // no reallocation (or deallocation) that could affect performance.
-    residuals.clear();
-  }
-
-  /// (Internal) Used by ImplicitStribeckSolver to update statistics.
-  void Update(double iteration_residual) {
-    ++num_iterations;
-    residuals.push_back(iteration_residual);
-  }
 };
 
 /// %ImplicitStribeckSolver solves the equations below for mechanical systems
 /// with contact using a modified Stribeck model of friction: <pre>
-///             q̇ = N(q) v
-///   (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(v)
+///             q̇ = N(q)⋅v
+///   (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(q, v)
 /// </pre>
 /// where `v ∈ ℝⁿᵛ` is the vector of generalized velocities, `M(q) ∈ ℝⁿᵛˣⁿᵛ` is
-/// the mass matrix, `Jₙᵀ(q) ∈ ℝⁿᶜˣⁿᵛ` is the Jacobian of normal separation
-/// velocities, `Jₜᵀ(q) ∈ ℝ²ⁿᶜˣⁿᵛ` is the Jacobian of tangent velocities,
+/// the mass matrix, `Jₙ(q) ∈ ℝⁿᶜˣⁿᵛ` is the Jacobian of normal separation
+/// velocities, `Jₜ(q) ∈ ℝ²ⁿᶜˣⁿᵛ` is the Jacobian of tangent velocities,
 /// `fₙ ∈ ℝⁿᶜ` is the vector of normal contact forces, `fₜ ∈ ℝ²ⁿᶜ` is the
 /// vector of tangent friction forces and τ ∈ ℝⁿᵛ is a vector of generalized
 /// forces containing all other applied forces (e.g., Coriolis, gyroscopic
-/// terms, actuator forces, etc.) but contact forces. Since
-/// %ImplicitStribeckSolver uses a Stribeck model for friction, `fₜ(v)`
-/// implicitly depends on the vector of generalized velocities.
+/// terms, actuator forces, etc.) but contact forces.
+/// This solver assumes a compliant law for the normal forces `fₙ(q, v)` and
+/// therefore the functional dependence of `fₙ(q, v)` with q and v is stated
+/// explicitly.
+/// Since %ImplicitStribeckSolver uses a modified Stribeck model for friction,
+/// we explicitly emphasize the functional dependence of `fₜ(q, v)` with the
+/// generalized velocities. The functional dependence of `fₜ(q, v)` with the
+/// generalized positions stems from its direct dependence with the normal
+/// forces `fₙ(q, v)`.
 ///
 /// Equations (1) is discretized in time using a first order semi-implicit Euler
 /// scheme with time step `δt` as: <pre>
 ///              qⁿ⁺¹ = qⁿ + δt N(qⁿ)⋅vⁿ⁺¹
 ///   (2)  M(qⁿ)⋅vⁿ⁺¹ =
-///            M(qⁿ)⋅vⁿ + δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
+///          M(qⁿ)⋅vⁿ + δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ) + Jₜᵀ(qⁿ)⋅fₜ(qⁿ, vⁿ⁺¹))
 /// </pre>
 /// Please see details in the @ref time_discretization "Discretization in Time"
 /// section.
@@ -292,9 +308,7 @@ struct IterationStats {
 /// k-th Newton-Raphson iteration. Once `Δvᵏ` is computed, the solver limits the
 /// change in the tangential velocities `Δvₜᵏ = Jₜᵀ⋅Δvᵏ` using the approach
 /// described in [Uchida et al., 2015]. This approach limits the maximum angle
-/// change θ between two successive iterations in the tangential velocity. The
-/// maximum angle change between iterations is given by the parameter
-/// Parameters::theta_max.
+/// change θ between two successive iterations in the tangential velocity.
 ///
 /// Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 ///   Making a meaningful impact: modelling simultaneous frictional collisions
@@ -309,10 +323,10 @@ struct IterationStats {
 /// we can discretize Eq. (1) in time using a first order semi-implicit Euler
 /// scheme in velocities: <pre>
 ///   (4)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
-///           δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₁(δt²)
+///           δt (τⁿ⁺¹ + Jₙᵀ(qⁿ)⋅fₙ(qⁿ, vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) + O₁(δt²)
 /// </pre>
 /// where the equality holds strictly since we included the leading terms in
-/// `O(δt²)`. We use `τⁿ = τ(tⁿ, qⁿ, vⁿ⁺¹)` for brevity in Eq. (4).
+/// `O(δt²)`. We use `τⁿ⁺¹ = τ(tⁿ, qⁿ, vⁿ⁺¹)` for brevity in Eq. (4).
 /// When moving from the continuous Eq. (1) to the discrete version Eq. (4), we
 /// lost the nice property that our compliant normal forces are decoupled from
 /// the friction forces (both depend on the same unknown vⁿ⁺¹ in Eq (4)). The
@@ -330,7 +344,8 @@ struct IterationStats {
 ///   (7)  fₙ(qⁿ, vⁿ⁺¹) = fₙ(qⁿ, vⁿ) + ∇ᵥfₙ(qⁿ,vⁿ)⋅O₄(δt) + O₅(δt²)
 ///                     = fₙ(qⁿ, vⁿ) + O₆(δt)
 /// </pre>
-/// where `O₅(δt²) = O₂(‖vⁿ⁺¹-vⁿ‖²) = O₂(‖O₄(δt)‖²)`.
+/// where `O₅(δt²) = O₂(‖vⁿ⁺¹-vⁿ‖²) = O₂(‖O₄(δt)‖²)`. A similar argument for
+/// τⁿ⁺¹ shows it also differs in O(δt) from τⁿ = τ(tⁿ, qⁿ, vⁿ).
 /// We can now use Eq. (7) into Eq. (4) to arrive to: <pre>
 ///   (8)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
 ///         δt (τⁿ + Jₙᵀ(qⁿ)⋅(fₙ(qⁿ, vⁿ) + O₆(δt)) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹)) +
@@ -395,10 +410,10 @@ class ImplicitStribeckSolver {
   /// @param[in] M
   ///   The mass matrix of the system, of size `nv x nv`.
   /// @param[in] Jt
-  ///   The tangential velocities Jacobian, of sice `2nc x nv`.
+  ///   The tangential velocities Jacobian, of size `2nc x nv`.
   /// @param[in] p_star
   ///   The generalized momentum the system would have at `n + 1` if friction
-  ///   forces where zero.
+  ///   forces were zero.
   /// @param[in] fn
   ///   A vector of size `nc` containing the normal force at each contact point.
   /// @param[in] mu
@@ -429,9 +444,10 @@ class ImplicitStribeckSolver {
       EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
       EigenPtr<const VectorX<T>> mu);
 
-  /// Solves for the generalized velocities satisfying Eq. (3) in this class's
-  /// documentation. To retrieve the solution, please refer to
-  /// @ref retrieving_the_solution.
+  /// Given an initial guess `v_guess`, this method uses a Newton-Raphson
+  /// iteration to find a solution for the generalized velocities satisfying
+  /// Eq. (3) in this class's documentation. To retrieve the solution, please
+  /// refer to @ref retrieving_the_solution.
   /// @returns ComputationInfo::Success if the iteration converges. All other
   /// values of ComputationInfo report different failure modes.
   /// Uses `this` solver accessors to retrieve the last computed solution.
@@ -440,11 +456,11 @@ class ImplicitStribeckSolver {
   ///
   /// @param[in] dt The time step used advance the solution in time.
   /// @param[in] v_guess The initial guess used in by the Newton-Raphson
-  /// iteration.
+  /// iteration. Typically, the previous time step velocities.
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess);
+  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
   /// @name Retrieving the solution
@@ -455,7 +471,7 @@ class ImplicitStribeckSolver {
   /// Returns a constant reference to the last solved vector of generalized
   /// friction forces.
   const VectorX<T>& get_generalized_forces() const {
-    return fixed_size_workspace_.tau_f;
+    return fixed_size_workspace_.mutable_tau_f();
   }
 
   /// Returns a constant reference to the last solved vector of tangential
@@ -468,7 +484,7 @@ class ImplicitStribeckSolver {
   /// Returns a constant reference to the last solved vector of generalized
   /// velocities.
   const VectorX<T>& get_generalized_velocities() const {
-    return fixed_size_workspace_.v;
+    return fixed_size_workspace_.mutable_v();
   }
   /// @}
 
@@ -487,6 +503,9 @@ class ImplicitStribeckSolver {
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
   void set_solver_parameters(const Parameters parameters) {
+    // cos_theta_max must be updated consistently with the new value of
+    // theta_max.
+    cos_theta_max_ = std::cos(parameters.theta_max);
     parameters_ = parameters;
   }
 
@@ -530,7 +549,7 @@ class ImplicitStribeckSolver {
 
     // The mass matrix of the system.
     EigenPtr<const MatrixX<T>> M_ptr{nullptr};
-    // The separation velocities Jacobian.
+    // The normal separation velocities Jacobian.
     EigenPtr<const MatrixX<T>> Jn_ptr{nullptr};
     // The tangential velocities Jacobian.
     EigenPtr<const MatrixX<T>> Jt_ptr{nullptr};
@@ -556,7 +575,7 @@ class ImplicitStribeckSolver {
   // nv, the number of generalized velocities.
   // The size of the variables in this workspace MUST remain fixed throghout the
   // lifetime of the solver. Do not resize any of them!.
-  struct FixedSizeWorkspace {
+  class FixedSizeWorkspace {
     // Constructs a workspace with size only dependent on nv.
     explicit FixedSizeWorkspace(int nv) : J_lu(nv) {
       v.resize(nv);
@@ -567,21 +586,31 @@ class ImplicitStribeckSolver {
       tau_f.resize(nv);
       tau.resize(nv);
     }
+    VectorX<T>& mutable_v() { return v_; }
+    VectorX<T>& mutable_residual() { return residual_; }
+    MatrixX<T>& mutable_J() { return J_; }
+    VectorX<T>& mutable_Delta_v() { return Delta_v_; }
+    VectorX<T>& mutable_tau_f() { return tau_f_; }
+    VectorX<T>& mutable_tau() { return tau_; }
+    Eigen::LDLT<MatrixX<T>>& mutable_J_ldlt() { return *J_ldlt_; }
+    Eigen::PartialPivLU<MatrixX<T>>& mutable_J_lu() { return J_lu_; }
+
+   private:
     // Vector of generalized velocities.
-    VectorX<T> v;
+    VectorX<T> v_;
     // Newton-Raphson residual.
-    VectorX<T> residual;
+    VectorX<T> residual_;
     // Newton-Raphson Jacobian, i.e. Jᵢⱼ = ∂Rᵢ/∂vⱼ.
-    MatrixX<T> J;
+    MatrixX<T> J_;
     // Solution to Newton-Raphson update, i.e. Δv = -J⁻¹⋅R.
-    VectorX<T> Delta_v;
+    VectorX<T> Delta_v_;
     // Vector of generalized forces due to friction.
-    VectorX<T> tau_f;
+    VectorX<T> tau_f_;
     // Vector of generalized forces (normal + friction forces).
-    VectorX<T> tau;
+    VectorX<T> tau_;
     // LDLT Factorization of the Newton-Raphson Jacobian J.
-    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt;
-    Eigen::PartialPivLU<MatrixX<T>> J_lu;
+    std::unique_ptr<Eigen::LDLT<MatrixX<T>>> J_ldlt_;
+    Eigen::PartialPivLU<MatrixX<T>> J_lu_;
   };
 
   // The variables in this workspace can change size with each invocation of
@@ -640,7 +669,7 @@ class ImplicitStribeckSolver {
 
     /// Returns a mutable reference to the vector containing the tangential
     /// velocity updates Δvₜ for all contact points, of size 2nc.
-    Eigen::VectorBlock<VectorX<T>> mutable_delta_vt() {
+    Eigen::VectorBlock<VectorX<T>> mutable_Delta_vt() {
       return Delta_vt_.segment(0, 2 * nc_);
     }
 
@@ -667,7 +696,7 @@ class ImplicitStribeckSolver {
     }
 
     /// Returns a mutable reference to the vector containing the slip velocity
-    /// , vₛ = ‖vₜ‖, at each contact point, of size nc.
+    /// vₛ = ‖vₜ‖, at each contact point, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_v_slip() {
       return v_slip_.segment(0, nc_);
     }
@@ -685,7 +714,7 @@ class ImplicitStribeckSolver {
 
     /// Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
     /// for each contact pont, of size nc.
-    std::vector<Matrix2<T>>& mutable_dft_dv() {
+    std::vector<Matrix2<T>>& mutable_dft_dvt() {
       return dft_dv_;
     }
 
@@ -719,15 +748,29 @@ class ImplicitStribeckSolver {
       EigenPtr<VectorX<T>> fn_ptr,
       EigenPtr<MatrixX<T>> Gn_ptr);
 
-  void CalcFrictionForces(const Eigen::Ref<const VectorX<T>>& vt,
-                          const Eigen::Ref<const VectorX<T>>& fn);
+  // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
+  // is the "soft norm" of vₜ. In addition this method computes
+  // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
+  void CalcFrictionForces(
+      const Eigen::Ref<const VectorX<T>>& vt,
+      const Eigen::Ref<const VectorX<T>>& fn,
+      EigenPtr<VectorX<T>> v_slip,
+      EigenPtr<VectorX<T>> t_hat,
+      EigenPtr<VectorX<T>> mu_stribeck,
+      EigenPtr<VectorX<T>> ft) const;
 
+  // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
+  // normal force fn, friction coefficient mu_vt (μ(‖vₜ‖)), tangent versor
+  // t_hat and (current) slip velocity v_slip.
   void CalcFrictionForcesGradient(
       const Eigen::Ref<const VectorX<T>>& fn,
-      const Eigen::Ref<const VectorX<T>>& mus,
+      const Eigen::Ref<const VectorX<T>>& mu_vt,
       const Eigen::Ref<const VectorX<T>>& t_hat,
-      const Eigen::Ref<const VectorX<T>>& v_slip);
+      const Eigen::Ref<const VectorX<T>>& v_slip,
+      std::vector<Matrix2<T>>* dft_dvt) const;
 
+  // Helper method to compute the Newton-Raphson Jacobian, ∇ᵥR, as a function
+  // of M, Gt, Jt and dt.
   void CalcJacobian(
       const Eigen::Ref<const MatrixX<T>>& M,
       const Eigen::Ref<const MatrixX<T>>& Jn,
@@ -735,8 +778,17 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const MatrixX<T>>& Gn,
       const std::vector<Matrix2<T>>& dft_dvt,
       const Eigen::Ref<const VectorX<T>>& t_hat,
-      const Eigen::Ref<const VectorX<T>>& mus,
-      double dt);
+      const Eigen::Ref<const VectorX<T>>& mus, double dt,
+      EigenPtr<MatrixX<T>> J) const;
+
+  // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for
+  // all contact points. The angle change θ is defined by the dot product
+  // between vₜᵏ⁺¹ and vₜᵏ as: cos(θ) = vₜᵏ⁺¹⋅vₜᵏ/(‖vₜᵏ⁺¹‖‖vₜᵏ‖).
+  // We'll do so by computing a coefficient 0 < α ≤ 1 so that if the
+  // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ ≤ θₘₐₓ
+  // for all contact points.
+  T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
+              const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
 
   // Dimensionless modified Stribeck function defined as:
   // ms(x) = ⌈ mu * x * (2.0 - x),  x  < 1
@@ -753,8 +805,8 @@ class ImplicitStribeckSolver {
   static T ModifiedStribeck(const T& x, const T& mu);
 
   // Derivative of the dimensionless modified Stribeck function:
-  // ms(x) = ⌈ mu * (2 * (1 - x)),  x  < 1
-  //         ⌊ 0                 ,  x >= 1
+  // d/dx ms(x) = ⌈ mu * (2 * (1 - x)),  x  < 1
+  //              ⌊ 0                 ,  x >= 1
   // where x corresponds to the dimensionless tangential speed
   // x = v / v_stribeck.
   static T ModifiedStribeckDerivative(const T& speed_BcAc, const T& mu);
@@ -767,6 +819,9 @@ class ImplicitStribeckSolver {
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
+
+  // Precomputed value of cos(theta_max), used by DirectionChangeLimiter.
+  double cos_theta_max_{std::cos(parameters_.theta_max)};
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.

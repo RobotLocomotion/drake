@@ -36,3 +36,5 @@ drake_py_unittest(
     name = "install_test_helper_test",
     deps = [":install_test_helper"],
 )
+
+add_lint_tests()

@@ -30,7 +30,8 @@ load("@drake//tools/workspace:execute.bzl", "which")
 
 def _impl(repository_ctx):
     python = which(repository_ctx, "python{}".format(
-        repository_ctx.attr.python_version))
+        repository_ctx.attr.python_version,
+    ))
 
     if not python:
         fail("Could NOT find python{}".format(repository_ctx.attr.version))
@@ -69,8 +70,11 @@ cc_library(
 )
     """
 
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 numpy_repository = repository_rule(
     _impl,

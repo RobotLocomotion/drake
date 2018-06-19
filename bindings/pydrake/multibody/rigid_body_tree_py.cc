@@ -13,6 +13,7 @@
 #include "drake/multibody/parsers/package_map.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_actuator.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 
@@ -101,6 +102,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         py::arg("urdf_filename"), py::arg("joint_type") = "ROLLPITCHYAW"
       )
     .def("compile", &RigidBodyTree<double>::compile)
+    .def("drawKinematicTree", &RigidBodyTree<double>::drawKinematicTree)
     .def("getRandomConfiguration", [](const RigidBodyTree<double>& tree) {
       std::default_random_engine generator(std::random_device {}());
       return tree.getRandomConfiguration(generator);
@@ -136,6 +138,15 @@ PYBIND11_MODULE(rigid_body_tree, m) {
        py::arg("model_name") = "",
        py::arg("model_id") = -1,
        py::return_value_policy::reference)
+    .def("FindChildBodyOfJoint", [](const RigidBodyTree<double>& self,
+                        const std::string& joint_name,
+                        int model_id) {
+      return self.FindChildBodyOfJoint(joint_name, model_id);
+    }, py::arg("joint_name"), py::arg("model_id") = -1,
+       py::return_value_policy::reference)
+    .def("FindIndexOfChildBodyOfJoint",
+         &RigidBodyTree<double>::FindIndexOfChildBodyOfJoint,
+         py::arg("joint_name"), py::arg("model_id") = -1)
     .def("world",
          static_cast<RigidBody<double>& (RigidBodyTree<double>::*)()>(
              &RigidBodyTree<double>::world),
@@ -152,7 +163,18 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         }, py::arg("body"), py::arg("group_name")="")
     .def_readonly("B", &RigidBodyTree<double>::B)
     .def_readonly("joint_limit_min", &RigidBodyTree<double>::joint_limit_min)
-    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max);
+    .def_readonly("joint_limit_max", &RigidBodyTree<double>::joint_limit_max)
+    // N.B. This will return *copies* of the actuators.
+    // N.B. `def_readonly` implicitly adds `reference_internal` to the getter,
+    // which is necessary since an actuator references a `RigidBody` that is
+    // most likely owned by this tree.
+    .def_readonly("actuators", &RigidBodyTree<double>::actuators)
+    .def("GetActuator", &RigidBodyTree<double>::GetActuator,
+         py_reference_internal)
+    .def("FindBaseBodies", &RigidBodyTree<double>::FindBaseBodies,
+         py::arg("model_instance_id") = -1)
+    .def("Clone", &RigidBodyTree<double>::Clone)
+    .def("__copy__", &RigidBodyTree<double>::Clone);
 
   // This lambda defines RigidBodyTree methods which are defined for a given
   // templated type. The methods are either (a) direct explicit template
@@ -173,10 +195,24 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          py::arg("cache"),
          py::arg("model_instance_id_set") =
            RigidBodyTreeConstants::default_model_instance_id_set)
-      // transformVelocityToQDot
-      // transformQDotToVelocity
-      // GetVelocityToQDotMapping
-      // GetQDotToVelocityMapping
+      .def("transformVelocityToQDot", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache,
+                                          const VectorX<T>& v) {
+             return tree.transformVelocityToQDot(cache, v);
+           })
+      .def("transformQDotToVelocity", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache,
+                                          const VectorX<T>& qdot) {
+             return tree.transformQDotToVelocity(cache, qdot);
+           })
+      .def("GetVelocityToQDotMapping", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache) {
+             return tree.GetVelocityToQDotMapping(cache);
+           })
+      .def("GetQDotToVelocityMapping", [](const RigidBodyTree<double>& tree,
+                                          const KinematicsCache<T>& cache) {
+             return tree.GetQDotToVelocityMapping(cache);
+           })
       .def("dynamicsBiasTerm", &RigidBodyTree<double>::dynamicsBiasTerm<T>,
            py::arg("cache"), py::arg("external_wrenches"),
            py::arg("include_velocity_terms") = true)
@@ -231,8 +267,18 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("vd"),
            py::arg("include_velocity_terms") = true)
       // resolveCenterOfPressure
-      // transformVelocityMappingToQDotMapping
-      // transformQDotMappingToVelocityMapping
+      .def("transformVelocityMappingToQDotMapping",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const MatrixX<T>& Av) {
+             return tree.transformVelocityMappingToQDotMapping(cache, Av);
+           })
+      .def("transformQDotMappingToVelocityMapping",
+           [](const RigidBodyTree<double>& tree,
+              const KinematicsCache<T>& cache,
+              const MatrixX<T>& Ap) {
+             return tree.transformQDotMappingToVelocityMapping(cache, Ap);
+           })
       // DoTransformPointsJacobian
       // DoTransformPointsJacobianDotTimesV
       // relativeQuaternionJacobian
@@ -329,6 +375,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   m.def("AddFlatTerrainToWorld", &multibody::AddFlatTerrainToWorld,
         py::arg("tree"), py::arg("box_size") = 1000,
         py::arg("box_depth") = 10);
+
+  py::class_<RigidBodyActuator>(m, "RigidBodyActuator")
+    .def_readonly("name", &RigidBodyActuator::name_)
+    .def_readonly("body", &RigidBodyActuator::body_)
+    .def_readonly("reduction", &RigidBodyActuator::reduction_)
+    .def_readonly("effort_limit_min", &RigidBodyActuator::effort_limit_min_)
+    .def_readonly("effort_limit_max", &RigidBodyActuator::effort_limit_max_);
 }
 
 }  // namespace pydrake

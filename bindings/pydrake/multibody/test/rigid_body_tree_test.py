@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
+from os.path import join
 import unittest
 
 import pydrake
@@ -100,6 +101,51 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(J_default.shape[1], num_v)
         self.assertEqual(len(v_indices_default), num_v)
 
+        # - Check QDotToVelocity and VelocityToQDot methods
+        q = tree.getZeroConfiguration()
+        v_real = np.zeros(num_v)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_real_ad = np.array(map(AutoDiffXd, v_real))
+
+        kinsol = tree.doKinematics(q)
+        kinsol_ad = tree.doKinematics(q_ad)
+        qd = tree.transformVelocityToQDot(kinsol, v_real)
+        v = tree.transformQDotToVelocity(kinsol, qd)
+        qd_ad = tree.transformVelocityToQDot(kinsol_ad, v_real_ad)
+        v_ad = tree.transformQDotToVelocity(kinsol_ad, qd_ad)
+        self.assertEqual(qd.shape, (num_q, ))
+        self.assertEqual(v.shape, (num_v, ))
+        self.assertEqual(qd_ad.shape, (num_q, ))
+        self.assertEqual(v_ad.shape, (num_v, ))
+
+        v_to_qdot = tree.GetVelocityToQDotMapping(kinsol)
+        qdot_to_v = tree.GetQDotToVelocityMapping(kinsol)
+        v_to_qdot_ad = tree.GetVelocityToQDotMapping(kinsol_ad)
+        qdot_to_v_ad = tree.GetQDotToVelocityMapping(kinsol_ad)
+        self.assertEqual(v_to_qdot.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v.shape, (num_v, num_q))
+        self.assertEqual(v_to_qdot_ad.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v_ad.shape, (num_v, num_q))
+
+        v_map = tree.transformVelocityMappingToQDotMapping(kinsol,
+                                                           np.eye(num_v))
+        qd_map = tree.transformQDotMappingToVelocityMapping(kinsol,
+                                                            np.eye(num_q))
+        v_map_ad = tree.transformVelocityMappingToQDotMapping(kinsol_ad,
+                                                              np.eye(num_v))
+        qd_map_ad = tree.transformQDotMappingToVelocityMapping(kinsol_ad,
+                                                               np.eye(num_q))
+        self.assertEqual(v_map.shape, (num_v, num_q))
+        self.assertEqual(qd_map.shape, (num_q, num_v))
+        self.assertEqual(v_map_ad.shape, (num_v, num_q))
+        self.assertEqual(qd_map_ad.shape, (num_q, num_v))
+
+        # - Check ChildOfJoint methods
+        body = tree.FindChildBodyOfJoint("theta")
+        self.assertIsInstance(body, RigidBody)
+        self.assertEqual(body.get_name(), "arm")
+        self.assertEqual(tree.FindIndexOfChildBodyOfJoint("theta"), 2)
+
         # - Check that default value for in_terms_of_qdot is false.
         J_not_in_terms_of_q_dot, v_indices_not_in_terms_of_qdot = \
             tree.geometricJacobian(kinsol, 0, 2, 0, False)
@@ -112,6 +158,10 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(J_in_terms_of_q_dot.shape[0], 6)
         self.assertEqual(J_in_terms_of_q_dot.shape[1], num_q)
         self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
+
+        # - Check that drawKinematicTree runs
+        tree.drawKinematicTree(
+            join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
 
     def test_frame_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
@@ -173,7 +223,7 @@ class TestRigidBodyTree(unittest.TestCase):
 
         num_q = num_v = 7
         num_u = tree.get_num_actuators()
-        self.assertEquals(num_u, 1)
+        self.assertEqual(num_u, 1)
         q = np.zeros(num_q)
         v = np.zeros(num_v)
         # Update kinematics.
@@ -184,29 +234,29 @@ class TestRigidBodyTree(unittest.TestCase):
         kinsol_ad = tree.doKinematics(q_ad, v_ad)
         # Sanity checks:
         # - Actuator map.
-        self.assertEquals(tree.B.shape, (num_v, num_u))
+        self.assertEqual(tree.B.shape, (num_v, num_u))
         B_expected = np.zeros((num_v, num_u))
         B_expected[-1] = 1
         self.assertTrue(np.allclose(tree.B, B_expected))
         # - Mass matrix.
         H = tree.massMatrix(kinsol)
         H_ad = tree.massMatrix(kinsol_ad)
-        self.assertEquals(H.shape, (num_v, num_v))
-        self.assertEquals(H_ad.shape, (num_v, num_v))
+        self.assertEqual(H.shape, (num_v, num_v))
+        self.assertEqual(H_ad.shape, (num_v, num_v))
         assert_sane(H)
         self.assertTrue(np.allclose(H[-1, -1], 0.25))
         # - Bias terms.
         C = tree.dynamicsBiasTerm(kinsol, {})
         C_ad = tree.dynamicsBiasTerm(kinsol_ad, {})
-        self.assertEquals(C.shape, (num_v,))
-        self.assertEquals(C_ad.shape, (num_v,))
+        self.assertEqual(C.shape, (num_v,))
+        self.assertEqual(C_ad.shape, (num_v,))
         assert_sane(C)
         # - Inverse dynamics.
         vd = np.zeros(num_v)
         tau = tree.inverseDynamics(kinsol, {}, vd)
         tau_ad = tree.inverseDynamics(kinsol_ad, {}, vd)
-        self.assertEquals(tau.shape, (num_v,))
-        self.assertEquals(tau_ad.shape, (num_v,))
+        self.assertEqual(tau.shape, (num_v,))
+        self.assertEqual(tau_ad.shape, (num_v,))
         assert_sane(tau)
         # - Friction torques.
         friction_torques = tree.frictionTorques(v)

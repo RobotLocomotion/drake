@@ -6,6 +6,14 @@
       <pose>0 0 0 0 0 0</pose>
         <inertial>
           <mass>5.</mass>
+          <inertia>
+            <ixx>0.00208333333</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00208333333</iyy>
+            <iyz>0</iyz>
+            <izz>0.00208333333</izz>
+          </inertia>
         </inertial>
       <visual name="box">
         <pose>0 0 0 0 0 0</pose>
