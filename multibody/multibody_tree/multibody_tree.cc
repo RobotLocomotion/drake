@@ -74,8 +74,9 @@ MultibodyTree<T>::MultibodyTree() {
 template <typename T>
 void MultibodyTree<T>::set_actuation_vector(
     ModelInstanceIndex model_instance,
-    const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const {
-  model_instances_.at(model_instance)->set_actuation_vector(u_a, u);
+    const Eigen::Ref<const VectorX<T>>& u_instance,
+    EigenPtr<VectorX<T>> u) const {
+  model_instances_.at(model_instance)->set_actuation_vector(u_instance, u);
 }
 
 template <typename T>

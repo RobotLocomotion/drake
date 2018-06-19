@@ -101,18 +101,19 @@ class ModelInstance :
     joint_actuators_.push_back(joint_actuator);
   }
 
-  /// Given the actuation values @p u_a for all actuators in `this` model
+  /// Given the actuation values @p u_instance for all actuators in `this` model
   /// instance, this method sets the portion of the actuation vector @p u (which
   /// is the actuation vector for the entire MultibodyTee) corresponding to the
   /// actuators for this model instance.
-  /// @param[in] u_a Actuation values for the actuators. It must be of size
-  ///   equal to the number of degrees of freedom of all of the actuated
+  /// @param[in] u_instance Actuation values for the actuators. It must be of
+  ///   size equal to the number of degrees of freedom of all of the actuated
   ///   joints in this model instance.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree
   ///   model to which `this` actuator belongs to.
   void set_actuation_vector(
-      const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const;
+      const Eigen::Ref<const VectorX<T>>& u_instance,
+      EigenPtr<VectorX<T>> u) const;
 
   /// Returns a const Eigen expression of the vector of generalized positions
   /// for `this` model instance from a vector `q_array` of generalized

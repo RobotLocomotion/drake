@@ -10,16 +10,18 @@ namespace internal {
 
 template <typename T>
 void ModelInstance<T>::set_actuation_vector(
-    const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const {
+    const Eigen::Ref<const VectorX<T>>& u_instance,
+    EigenPtr<VectorX<T>> u) const {
   DRAKE_DEMAND(u != nullptr);
   DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
-  DRAKE_DEMAND(u_a.size() == num_actuated_dofs_);
-  int u_a_offset = 0;
+  DRAKE_DEMAND(u_instance.size() == num_actuated_dofs_);
+  int u_instance_offset = 0;
   for (const JointActuator<T>* actuator : joint_actuators_) {
     const int num_dofs = actuator->joint().num_dofs();
-    actuator->set_actuation_vector(u_a.segment(u_a_offset, num_dofs), u);
-    u_a_offset += num_dofs;
-    DRAKE_DEMAND(u_a_offset <= u->size());
+    actuator->set_actuation_vector(
+        u_instance.segment(u_instance_offset, num_dofs), u);
+    u_instance_offset += num_dofs;
+    DRAKE_DEMAND(u_instance_offset <= u->size());
   }
 }
 
