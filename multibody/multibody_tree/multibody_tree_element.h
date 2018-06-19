@@ -172,10 +172,6 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // therefore it can set the owning parent tree and unique index in that tree.
   friend class MultibodyTree<T>;
 
-  // JointImplementationBuilder is a friend so that it can set the
-  // model indexes appropriately when building joint implementations.
-  friend class internal::JointImplementationBuilder<T>;
-
   const MultibodyTree<T>* parent_tree_{nullptr};
 
   // The default index value is *invalid*. This must be set to a valid index

@@ -32,17 +32,20 @@ template <typename T>
 class JointImplementationBuilder {
  public:
   JointImplementationBuilder() = delete;
-  static void Build(Joint<T>* joint, MultibodyTree<T>* tree) {
+  static std::vector<Mobilizer<T>*> Build(
+      Joint<T>* joint, MultibodyTree<T>* tree) {
+    std::vector<Mobilizer<T>*> mobilizers;
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
     DRAKE_DEMAND(implementation->num_mobilizers() != 0);
     for (auto& mobilizer : blue_print->mobilizers_) {
-      mobilizer->set_model_instance(joint->model_instance());
+      mobilizers.push_back(mobilizer.get());
       tree->AddMobilizer(std::move(mobilizer));
     }
     // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
     joint->OwnImplementation(std::move(implementation));
+    return mobilizers;
   }
  private:
   typedef typename Joint<T>::BluePrint JointBluePrint;
@@ -205,7 +208,11 @@ void MultibodyTree<T>::Finalize() {
   // changes are NOT allowed after Finalize(), joint implementations MUST be
   // assembled BEFORE the tree's topology is finalized.
   for (auto& joint : owned_joints_) {
-    internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    std::vector<Mobilizer<T>*> mobilizers =
+        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    for (Mobilizer<T>* mobilizer : mobilizers) {
+      mobilizer->set_model_instance(joint->model_instance());
+    }
   }
   // It is VERY important to add quaternions if needed only AFTER joints had a
   // chance to get implemented with mobilizers. This is because joints's
