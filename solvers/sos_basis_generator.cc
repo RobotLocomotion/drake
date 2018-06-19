@@ -1,6 +1,7 @@
 #include "drake/solvers/sos_basis_generator.h"
 
 #include <vector>
+
 #include <Eigen/Core>
 
 #include "drake/common/symbolic.h"
@@ -121,7 +122,7 @@ struct Hyperplanes {
 /* Finding random supporting hyperplanes of 1/2 P, where P is the Newton
  * polytope of the polynomial p (i.e., the convex hull of its exponents).
 */
-Hyperplanes RandomSupportingHyperplanes(ExponentList exponents_of_p,
+Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
                                         int num_hyperplanes) {
   Hyperplanes H;
 
