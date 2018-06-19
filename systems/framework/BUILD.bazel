@@ -295,6 +295,7 @@ drake_cc_library(
     srcs = ["output_port_value.cc"],
     hdrs = ["output_port_value.h"],
     deps = [
+        ":framework_common",
         ":value",
         ":value_checker",
         ":vector",
@@ -782,6 +783,7 @@ drake_cc_googletest(
     deps = [
         ":output_port_value",
         "//common:essential",
+        "//systems/framework/test_utilities",
     ],
 )
 

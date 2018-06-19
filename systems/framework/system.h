@@ -134,10 +134,20 @@ class System : public SystemBase {
   /// output ports. It is sized with the number of output ports and uses each
   /// output port's allocation method to provide an object of the right type
   /// for that port.
-  // TODO(sherm1) Get rid of context parameter. We are stuck with it for now
-  // because of the way DiagramOutput is implemented. Fixed in caching branch.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const = 0;
+  std::unique_ptr<SystemOutput<T>> AllocateOutput() const {
+    std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      const OutputPort<T>& port = this->get_output_port(i);
+      output->add_port(port.Allocate());
+    }
+    return std::move(output);
+  }
+
+  /// (Deprecated) Context is ignored.
+  // TODO(sherm1) Get rid of this.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(const Context<T>&) const {
+    return AllocateOutput();
+  }
 
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
@@ -417,7 +427,8 @@ class System : public SystemBase {
 
     const BasicVector<T>* const basic_value =
         EvalBasicVectorInputImpl(__func__, context, iport_index);
-    if (basic_value == nullptr) return nullptr;  // An unconnected port.
+    if (basic_value == nullptr)
+      return nullptr;  // An unconnected port.
 
     // It's a BasicVector, but we're fussy about the subtype here.
     const Vec<T>* const value = dynamic_cast<const Vec<T>*>(basic_value);
@@ -627,7 +638,7 @@ class System : public SystemBase {
   }
 
   /// This method forces an unrestricted update on the system given a
-  /// @p context, and the updated state is stored in @p discrete_state. The
+  /// @p context, and the updated state is stored in @p state. The
   /// unrestricted update event will have a trigger type of kForced, with no
   /// additional data, attribute or custom callback.
   ///
@@ -741,8 +752,11 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
     for (OutputPortIndex i(0); i < get_num_output_ports(); ++i) {
-      get_output_port(i).Calc(
-          context, outputs->get_mutable_port_value(i)->GetMutableData());
+      // TODO(sherm1) Would be better to use Eval() here but we don't have
+      // a generic abstract assignment capability that would allow us to
+      // copy into existing memory in `outputs` (rather than clone). User
+      // code depends on memory stability in SystemOutput.
+      get_output_port(i).Calc(context, outputs->GetMutableData(i));
     }
   }
 
