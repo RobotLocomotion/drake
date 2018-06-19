@@ -1015,17 +1015,18 @@ class MultibodyTree {
   /// those vectors which apply to a single model instance only.
   /// @{
 
-  /// Given the actuation values @p u_a for all actuators in @p model_instance,
-  /// this method sets the actuation vector u for the entire MultibodyTree model
-  /// to which this actuator belongs to.
-  /// @param[in] u_a Actuation values for the actuators. It must be of size
-  ///   equal to the number of degrees of freedom of all of the actuated
+  /// Given the actuation values @p u_instance for all actuators in @p
+  /// model_instance, this method sets the actuation vector u for the entire
+  /// MultibodyTree model to which this actuator belongs to.
+  /// @param[in] u_instance Actuation values for the actuators. It must be of
+  ///   size equal to the number of degrees of freedom of all of the actuated
   ///   joints in @p model_instance.
   /// @param[out] u
   ///   The vector containing the actuation values for the entire MultibodyTree.
   void set_actuation_vector(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& u_a, EigenPtr<VectorX<T>> u) const;
+      const Eigen::Ref<const VectorX<T>>& u_instance,
+      EigenPtr<VectorX<T>> u) const;
 
   /// Returns a vector of generalized positions for @p model_instance from a
   /// vector `q_array` of generalized positions for the entire MultibodyTree
