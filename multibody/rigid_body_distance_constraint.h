@@ -1,8 +1,5 @@
 #pragma once
 
-#include <iostream>
-#include <memory>
-
 #include <Eigen/Dense>
 
 /// Defines a "relative distance constraint" that models a constraint between

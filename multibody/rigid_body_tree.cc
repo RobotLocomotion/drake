@@ -3192,9 +3192,8 @@ void RigidBodyTree<T>::addDistanceConstraint(int bodyA_index_in,
                                              int bodyB_index_in,
                                              const Eigen::Vector3d& r_BQ_in,
                                              double distance_in) {
-  RigidBodyDistanceConstraint dc(bodyA_index_in, r_AP_in, bodyB_index_in,
-                                 r_BQ_in, distance_in);
-  distance_constraints.push_back(dc);
+  distance_constraints.emplace_back(bodyA_index_in, r_AP_in, bodyB_index_in,
+                                    r_BQ_in, distance_in);
 }
 
 template <typename T>
