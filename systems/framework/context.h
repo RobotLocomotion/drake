@@ -274,24 +274,38 @@ class Context : public ContextBase {
   // =========================================================================
   // Accessors and Mutators for Parameters.
 
-  virtual const Parameters<T>& get_parameters() const = 0;
-  virtual Parameters<T>& get_mutable_parameters() = 0;
+  /// Returns a const reference to this %Context's parameters.
+  const Parameters<T>& get_parameters() const { return *parameters_; }
+
+  /// Returns a mutable reference to this %Context's parameters.
+  Parameters<T>& get_mutable_parameters() {
+    return *parameters_;
+  }
+
+  /// Sets the parameters to @p params, deleting whatever was there before.
+  /// You must supply a Parameters object; null is not acceptable.
+  // TODO(sherm1) Shouldn't be user-callable, especially for Diagrams!
+  void set_parameters(std::unique_ptr<Parameters<T>> params) {
+    DRAKE_DEMAND(params != nullptr);
+    parameters_ = std::move(params);
+  }
 
   /// Returns the number of vector-valued parameters.
   int num_numeric_parameters() const {
-    return get_parameters().num_numeric_parameters();
+    return parameters_->num_numeric_parameters();
   }
 
   /// Returns a const reference to the vector-valued parameter at @p index.
-  /// Asserts if @p index doesn't exist.
+  /// @pre @p index must identify an existing parameter.
   const BasicVector<T>& get_numeric_parameter(int index) const {
-    return get_parameters().get_numeric_parameter(index);
+    return parameters_->get_numeric_parameter(index);
   }
 
   /// Returns a mutable reference to element @p index of the vector-valued
-  /// parameters. Asserts if @p index doesn't exist.
+  /// parameters.
+  /// @pre @p index must identify an existing parameter.
   BasicVector<T>& get_mutable_numeric_parameter(int index) {
-    return get_mutable_parameters().get_mutable_numeric_parameter(index);
+    return parameters_->get_mutable_numeric_parameter(index);
   }
 
   /// Returns the number of abstract-valued parameters.
@@ -300,13 +314,14 @@ class Context : public ContextBase {
   }
 
   /// Returns a const reference to the abstract-valued parameter at @p index.
-  /// Asserts if @p index doesn't exist.
+  /// @pre @p index must identify an existing parameter.
   const AbstractValue& get_abstract_parameter(int index) const {
     return get_parameters().get_abstract_parameter(index);
   }
 
   /// Returns a mutable reference to element @p index of the abstract-valued
-  /// parameters. Asserts if @p index doesn't exist.
+  /// parameters.
+  /// @pre @p index must identify an existing parameter.
   AbstractValue& get_mutable_abstract_parameter(int index) {
     return get_mutable_parameters().get_mutable_abstract_parameter(index);
   }
@@ -405,6 +420,10 @@ class Context : public ContextBase {
 
   // Accuracy setting.
   optional<double> accuracy_;
+
+  // The parameter values p for this System; this is never null.
+  copyable_unique_ptr<Parameters<T>> parameters_{
+      std::make_unique<Parameters<T>>()};
 };
 
 }  // namespace systems

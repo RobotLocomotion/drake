@@ -233,10 +233,10 @@ class DiagramContext final : public Context<T> {
             &subparams.get_mutable_abstract_parameter(i));
       }
     }
-    parameters_ = std::make_unique<Parameters<T>>();
-    parameters_->set_numeric_parameters(
+    Parameters<T>& params = this->get_mutable_parameters();
+    params.set_numeric_parameters(
         std::make_unique<DiscreteValues<T>>(numeric_params));
-    parameters_->set_abstract_parameters(
+    params.set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
   }
 
@@ -300,14 +300,6 @@ class DiagramContext final : public Context<T> {
     return *state_;
   }
 
-  const Parameters<T>& get_parameters() const final {
-    return *parameters_;
-  }
-
-  Parameters<T>& get_mutable_parameters() final {
-    return *parameters_;
-  }
-
  protected:
   /// Protected copy constructor takes care of the local data members and
   /// all base class members, but doesn't update base class pointers so is
@@ -367,9 +359,6 @@ class DiagramContext final : public Context<T> {
 
   // The internal state of the Diagram, which includes all its subsystem states.
   std::unique_ptr<DiagramState<T>> state_;
-
-  // The parameters of the Diagram, which includes all subsystem parameters.
-  std::unique_ptr<Parameters<T>> parameters_;
 };
 
 }  // namespace systems
