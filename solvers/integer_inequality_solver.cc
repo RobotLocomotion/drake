@@ -124,7 +124,7 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
 Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
-                               const std::vector<ColumnType>& ordering) {
+                               const std::vector<ColumnType>& column_type) {
   Eigen::MatrixXi feasible_points;
 
   for (auto& value : column_alphabets.at(0)) {
@@ -137,12 +137,12 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
       }
     } else {
       new_feasible_points = CartesianProduct(
-          value,
-          FeasiblePoints(
-              A.block(0, 1, A.rows(), A.cols() - 1), b - A.col(0) * value,
-              IntegerVectorList(column_alphabets.begin() + 1,
-                                column_alphabets.end()),
-              std::vector<ColumnType>(ordering.begin() + 1, ordering.end())));
+          value, FeasiblePoints(A.block(0, 1, A.rows(), A.cols() - 1),
+                                b - A.col(0) * value,
+                                IntegerVectorList(column_alphabets.begin() + 1,
+                                                  column_alphabets.end()),
+                                std::vector<ColumnType>(column_type.begin() + 1,
+                                                        column_type.end())));
     }
 
     if (new_feasible_points.rows() > 0)
@@ -150,7 +150,7 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
     else
         //  Propagate infeasibility: if this test passes, then no feasible
         //  points exist for remaining values in the alphabet.
-        if (ordering.at(0) != ColumnType::Indefinite)
+        if (column_type.at(0) != ColumnType::Indefinite)
       return feasible_points;
   }
 
