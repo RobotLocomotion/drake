@@ -1,7 +1,7 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/sos_basis_generator.h"
 #include "drake/common/symbolic_monomial_util.h"
+#include "drake/solvers/mathematical_program.h"
 /* clang-format on */
 
 #include <gtest/gtest.h>
@@ -18,10 +18,10 @@ using drake::symbolic::Variables;
 using drake::symbolic::Monomial;
 
 typedef std::set<Monomial,
-                drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>
-                MonomialSet;
+                 drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>
+    MonomialSet;
 
-MonomialSet VectorToSet(const drake::VectorX<Monomial> & x) {
+MonomialSet VectorToSet(const drake::VectorX<Monomial>& x) {
   MonomialSet x_set;
   for (int i = 0; i < x.size(); i++) {
     x_set.insert(x(i));
@@ -38,32 +38,27 @@ class SosBasisGeneratorTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() override {
-    x_ = prog_.NewIndeterminates<3>();
-  }
+  void SetUp() override { x_ = prog_.NewIndeterminates<3>(); }
 
   MathematicalProgram prog_;
   VectorIndeterminate<3> x_;
 };
 
 TEST_F(SosBasisGeneratorTest, MotzkinPoly) {
-  const symbolic::Polynomial poly{
-    pow(x_(0), 2)*pow(x_(1), 4)  +
-    pow(x_(0), 4)*pow(x_(1), 2)  +
-    pow(x_(0), 2)*pow(x_(1), 2)  +
-    + 1
-  };
+  const symbolic::Polynomial poly{pow(x_(0), 2) * pow(x_(1), 4) +
+                                  pow(x_(0), 4) * pow(x_(1), 2) +
+                                  pow(x_(0), 2) * pow(x_(1), 2) + +1};
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());
-  basis_ref.insert(Monomial(pow(x_(0), 1)*pow(x_(1), 1)));
-  basis_ref.insert(Monomial(pow(x_(0), 2)*pow(x_(1), 1)));
-  basis_ref.insert(Monomial(pow(x_(0), 1)*pow(x_(1), 2)));
+  basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 1)));
+  basis_ref.insert(Monomial(pow(x_(0), 2) * pow(x_(1), 1)));
+  basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 2)));
   CheckMonomialBasis(poly, basis_ref);
 }
 
 TEST_F(SosBasisGeneratorTest, Univariate) {
-  const symbolic::Polynomial poly{
-    1 + pow(x_(0), 1) + pow(x_(0), 2) + pow(x_(0), 8)};
+  const symbolic::Polynomial poly{1 + pow(x_(0), 1) + pow(x_(0), 2) +
+                                  pow(x_(0), 8)};
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());
   basis_ref.insert(Monomial(pow(x_(0), 1)));
@@ -73,15 +68,14 @@ TEST_F(SosBasisGeneratorTest, Univariate) {
   CheckMonomialBasis(poly, basis_ref);
 }
 
-
 TEST_F(SosBasisGeneratorTest, Empty) {
-  const symbolic::Polynomial poly{ pow(x_(0), 3) };
+  const symbolic::Polynomial poly{pow(x_(0), 3)};
   MonomialSet basis_ref;
   CheckMonomialBasis(poly, basis_ref);
 }
 
 TEST_F(SosBasisGeneratorTest, Singleton) {
-  const symbolic::Polynomial poly{1 + pow(x_(0), 1) };
+  const symbolic::Polynomial poly{1 + pow(x_(0), 1)};
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());
   CheckMonomialBasis(poly, basis_ref);
@@ -90,6 +84,3 @@ TEST_F(SosBasisGeneratorTest, Singleton) {
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
-
-
-

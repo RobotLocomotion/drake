@@ -9,7 +9,7 @@ namespace solvers {
 namespace {
 
 struct VectorLexCompare {
-  bool operator() (Eigen::VectorXi v, Eigen::VectorXi w) const {
+  bool operator()(Eigen::VectorXi v, Eigen::VectorXi w) const {
     for (int i = 0; i < v.size(); ++i) {
       if (v(i) < w(i)) return true;
       if (v(i) > w(i)) return false;
@@ -18,7 +18,7 @@ struct VectorLexCompare {
   }
 };
 
-typedef std::set<Eigen::VectorXi, VectorLexCompare>  IntegerSet;
+typedef std::set<Eigen::VectorXi, VectorLexCompare> IntegerSet;
 
 IntegerSet MatrixToSet(Eigen::MatrixXi M) {
   IntegerSet M_set;
@@ -31,17 +31,19 @@ IntegerSet MatrixToSet(Eigen::MatrixXi M) {
 class IntegerLatticeTest : public ::testing::Test {
  public:
   void CheckEnumeration(IntegerSet ref) {
-      auto y = EnumerateIntegerSolutions(A_, b_, lower_bound_, upper_bound_);
-      auto y_set = MatrixToSet(y);
-      EXPECT_EQ(y_set, ref);
+    auto y = EnumerateIntegerSolutions(A_, b_, lower_bound_, upper_bound_);
+    auto y_set = MatrixToSet(y);
+    EXPECT_EQ(y_set, ref);
   }
   void SetDimensions(int num_ineq, int num_var) {
-    int m = num_ineq; int n = num_var;
+    int m = num_ineq;
+    int n = num_var;
     A_.resize(m, n);
     b_.resize(m);
     lower_bound_.resize(n);
     upper_bound_.resize(n);
   }
+
  protected:
   Eigen::MatrixXi A_;
   Eigen::VectorXi b_;
@@ -49,11 +51,9 @@ class IntegerLatticeTest : public ::testing::Test {
   Eigen::VectorXi upper_bound_;
 };
 
-
 TEST_F(IntegerLatticeTest, EqualComponents) {
   SetDimensions(2, 2);
-  A_ << 1, -1,
-       -1, 1;
+  A_ << 1, -1, -1, 1;
 
   b_ << 0, 0;
 
@@ -69,21 +69,16 @@ TEST_F(IntegerLatticeTest, EqualComponents) {
 
 TEST_F(IntegerLatticeTest, SumToConstant) {
   SetDimensions(2, 2);
-  A_ << 1, 1,
-      -1, -1;
-  b_ << 2,
-       -2;
+  A_ << 1, 1, -1, -1;
+  b_ << 2, -2;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 2, 2;
   Eigen::MatrixXi ref_mat(3, 2);
-  ref_mat << 0, 2,
-             2, 0,
-             1, 1;
+  ref_mat << 0, 2, 2, 0, 1, 1;
 
   CheckEnumeration(MatrixToSet(ref_mat));
 }
-
 
 TEST_F(IntegerLatticeTest, Empty) {
   SetDimensions(1, 2);
@@ -97,11 +92,6 @@ TEST_F(IntegerLatticeTest, Empty) {
   CheckEnumeration(ref);
 }
 
-
-
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
-
-
-
