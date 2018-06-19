@@ -117,11 +117,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "b2bc97da2d21dda16775de50638ffeaa4070673dcc01aaee88311f09678a36bc"  # noqa
+            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
+            sha256 = "77c4bd6eb41fa23c2c7421eeca70e761fc699aaed6cc4804e3d3a73dff16a0fb"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64.tar.gz"
-            sha256 = "3f61705139f2475bd035ccdd3d52920f2308b3581ca044a6a4bc535ceea9cc71"  # noqa
+            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64-1.tar.gz"
+            sha256 = "7c05576eb918fcf85934659d920e4a97bf2c5f034eda296d941495f0008e22b3"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
