@@ -449,7 +449,7 @@ class PizzaSaver : public ::testing::Test {
 
     Jt_ = ComputeTangentialJacobian(theta);
 
-    solver_.SetProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetOneWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
   void SetNoContactProblem(const Vector3<double>& v0,
@@ -464,7 +464,7 @@ class PizzaSaver : public ::testing::Test {
     Jn_.resize(0, nv_);
     Jt_.resize(0, nv_);
 
-    solver_.SetProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetOneWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
  protected:

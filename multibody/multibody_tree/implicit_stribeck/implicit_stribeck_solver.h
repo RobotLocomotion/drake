@@ -495,6 +495,7 @@ class ImplicitStribeckSolver {
   /// @throws std::exception if nv is non-positive.
   explicit ImplicitStribeckSolver(int nv);
 
+  // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
   /// class's documentation: <pre>
   ///   M⋅v = p* + δt Jₙᵀ⋅fₙ +  δt Jₜᵀ⋅fₜ(v)
@@ -525,9 +526,9 @@ class ImplicitStribeckSolver {
   /// vectors passed as arguments. Therefore
   ///   1. they must outlive this class and,
   ///   2. changes to the problem data invalidate any solution performed by this
-  ///      solver. In such a case, SetProblemData() and SolveWithGuess() must be
-  ///      invoked again.
-  void SetProblemData(
+  ///      solver. In such a case, SetOneWayCoupledProblemData() and
+  ///      SolveWithGuess() must be invoked again.
+  void SetOneWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M,
       EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
       EigenPtr<const VectorX<T>> p_star,
@@ -570,8 +571,8 @@ class ImplicitStribeckSolver {
   /// vectors passed as arguments. Therefore
   ///   1. they must outlive this class and,
   ///   2. changes to the problem data invalidate any solution performed by this
-  ///      solver. In such a case, SetProblemData() and SolveWithGuess() must be
-  ///      invoked again.
+  ///      solver. In such a case, SetOneWayCoupledProblemData() and
+  ///      SolveWithGuess() must be invoked again.
   void SetTwoWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M,
       EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -613,7 +614,8 @@ class ImplicitStribeckSolver {
 
   /// Returns a constant reference to the last solved vector of tangential
   /// forces. This method returns an `Eigen::VectorBlock` referencing a vector
-  /// of size `nc` in accordance to the data last set with SetProblemData().
+  /// of size `nc` in accordance to the data last set with
+  /// SetOneWayCoupledProblemData().
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
@@ -652,7 +654,7 @@ class ImplicitStribeckSolver {
 
   // Contains all the references that define the problem to be solved.
   // These references must remain valid at least from the time they are set with
-  // SetProblemData() and until SolveWithGuess() returns.
+  // SetOneWayCoupledProblemData() and until SolveWithGuess() returns.
   class ProblemDataAliases {
    public:
     // Sets the references to the data defining a one-way coupled problem.
@@ -787,7 +789,7 @@ class ImplicitStribeckSolver {
   };
 
   // The variables in this workspace can change size with each invocation of
-  // SetProblemData() since the number of contact points nc can change.
+  // SetOneWayCoupledProblemData() since the number of contact points nc can change.
   // The workspace only performs re-allocations if needed, meaning that previous
   // storage is re-used if large enough for the next problem data set.
   // This class provides accessors that return Eigen blocks of size consistent
