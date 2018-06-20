@@ -289,10 +289,12 @@ coupling scheme" which solves for the friction forces given the normal
 forces are known. That is, normal forces affect the computation of the
 friction forces however, the normal forces are kept constant during the
 solution procedure.
-A "two-way coupling scheme" solves for both the normal and friction forces
-with a fully implicit scheme in which normal forces affect friction forces
-and, conversely, friction forces couple back to the computation of the
-normal forces.
+
+A "two-way coupling scheme" treats both the normal and friction forces
+implicitly in the generalized velocities resulting in a numerical strategy
+in which normal forces affect friction forces and, conversely, friction forces
+couple back to the computation of the normal forces.
+
 The two-way coupled scheme provides a more stable and therefore robust
 solution to the problem stated in Eq. (1) with just a small increase of the
 computational cost compared to the one-way coupled scheme. The one-way
@@ -331,22 +333,23 @@ implicit Euler scheme with time step `δt` as:
 @verbatim
              qⁿ⁺¹ = qⁿ + δt N(qⁿ)⋅vⁿ⁺¹
   (4)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
-          δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙ(φⁿ⁺¹, vₙⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(fₙⁿ⁺¹, vₜⁿ⁺¹))
+          δt (τⁿ + Jₙᵀ(qⁿ)⋅fₙⁿ⁺¹ + Jₜᵀ(qⁿ)⋅fₜ(fₙⁿ⁺¹, vₜⁿ⁺¹))
 @endverbatim
 This implicit scheme variation evaluates Jacobian matrices Jₙ and Jₜ as
 well as the kinematic mapping N(q) at the previous time step.
-Equation (4) is more explicit about the functional dependence of fₙ
-with φⁿ⁺¹ = φ(qⁿ⁺¹), the signed penetration distance (defined positive when
-bodies overlap) between contact point pairs and the separation velocities
-vₙⁿ⁺¹ = Jₙ(qⁿ)⋅vⁿ⁺¹. Also the functional dependence of fₜ with fₙ and vₜ
-is highlighted in Eq. (4). More precisely, the two-way coupling scheme uses
-a normal force law for each contact pair of the form:
+In Eq. (4) we have fₙⁿ⁺¹ = fₙ(φⁿ⁺¹, vₙⁿ⁺¹) with φⁿ⁺¹ = φ(qⁿ⁺¹), the signed
+penetration distance (defined positive when bodies overlap) between contact
+point pairs and the separation velocities vₙⁿ⁺¹ = Jₙ(qⁿ)⋅vⁿ⁺¹. Also the
+functional dependence of fₜ with fₙ and vₜ is highlighted in Eq. (4). More
+precisely, the two-way coupling scheme uses a normal force law for each contact
+pair of the form:
 @verbatim
   (5)  fₙ(φ, vₙ) = <k(vₙ)>¹⋅<φ>¹
   (6)      k(vₙ) = <k⋅(1 - d⋅vₙ)>¹
 @endverbatim
-where `<⋅>¹` is the Macaulay bracket and `k` and d are the stiffness and damping
-coefficients for a given contact point, respectively.
+where `<⋅>¹` is the Macaulay bracket (<x>¹ = x if x ≥ 0 and <x>¹ = 0 otherwise)
+and `k` and d are the stiffness and damping coefficients for a given contact
+point, respectively.
 The two-way coupling scheme uses a first order approximation to the signed
 distance functions vector:
 @verbatim
@@ -372,6 +375,7 @@ velocities as:
   (9)  fₜ(fₙⁿ⁺¹, vₜⁿ⁺¹) = fₜ(fₙ(φ(vⁿ⁺¹), vₙ(vⁿ⁺¹)), vₜ((vⁿ⁺¹)))
                         = fₜ(vⁿ⁺¹)
 @endverbatim
+where we write φ(vⁿ⁺¹) =  φⁿ - δt Jₙ(qⁿ)⋅vⁿ⁺¹.
 Finally, Eqs. (8) and (9) are used into Eq. (4) to obtain an expression in
 vⁿ⁺¹:
 @verbatim
@@ -404,7 +408,7 @@ Uchida, T.K., Sherman, M.A. and Delp, S.L., 2015.
 In this section we provide a detailed derivation of the first order time
 stepping approach in Eq. (2). We start from the continuous Eq. (1):
 @verbatim
-  (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(v)
+  (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(q, v)
 @endverbatim
 we can discretize Eq. (1) in time using a first order semi-implicit Euler
 scheme in velocities:
