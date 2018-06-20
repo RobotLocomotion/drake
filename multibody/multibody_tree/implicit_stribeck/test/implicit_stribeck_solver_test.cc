@@ -27,6 +27,7 @@ class ImplicitStribeckSolverTester {
     const auto& Jt = solver.problem_data_aliases_.Jt();
 
     // Workspace with size depending on the number of contact points.
+    // Note: "auto" below resolves to Eigen::Block.
     auto vn = solver.variable_size_workspace_.mutable_vn();
     auto vt = solver.variable_size_workspace_.mutable_vt();
     auto fn = solver.variable_size_workspace_.mutable_fn();
@@ -35,19 +36,20 @@ class ImplicitStribeckSolverTester {
     auto mus = solver.variable_size_workspace_.mutable_mu();
     auto t_hat = solver.variable_size_workspace_.mutable_t_hat();
     auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
-    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dvt();
+    std::vector<Matrix2<double>>& dft_dvt =
+        solver.variable_size_workspace_.mutable_dft_dvt();
     auto phi = solver.variable_size_workspace_.mutable_phi();
 
     // Normal separation velocity.
     vn = Jn * v;
 
-    if (solver.two_way_coupling()) {
+    if (solver.has_two_way_coupling()) {
       const auto phi0 = solver.problem_data_aliases_.phi0();
       // Penetration distance (positive when there is penetration).
       phi = phi0 - dt * vn;
     }
 
-    // Computes friction forces fn and gradients Gn as a funciton of phi, vn,
+    // Computes friction forces fn and gradients Gn as a function of phi, vn,
     // Jn and dt.
     solver.CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
 
@@ -901,7 +903,6 @@ class RollingCylinder : public ::testing::Test {
 
 TEST_F(RollingCylinder, StictionAfterImpact) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  (void) kTolerance;
 
   const double dt = 1.0e-3;  // time step in seconds.
   const double mu = 0.1;  // Friction coefficient.
@@ -969,11 +970,11 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
-  const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
-      stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
+      stiffness_, damping_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =
@@ -1062,11 +1063,11 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
-  const double v_stribeck = parameters.stiction_tolerance;
-  const double epsilon_v = v_stribeck * parameters.relative_tolerance;
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
-      stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
+      stiffness_, damping_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =

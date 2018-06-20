@@ -328,8 +328,8 @@ of the state.
 @anchor two_way_coupling_scheme
 <h2>Two-Way Coupling Scheme</h2>
 
-Equation (1) is discretized in time using a variation on the fully
-implicit Euler scheme with time step `δt` as:
+Equation (1) is discretized in time using a variation on the
+semi-implicit Euler scheme with time step `δt` as:
 @verbatim
              qⁿ⁺¹ = qⁿ + δt N(qⁿ)⋅vⁿ⁺¹
   (4)  M(qⁿ)⋅vⁿ⁺¹ = M(qⁿ)⋅vⁿ +
@@ -358,7 +358,9 @@ distance functions vector:
 where the minus sign is needed given that dφ/dt = -vₙ.
 This approximation is used in Eq. (5) to obtain a numerical scheme that
 implicitly couples normal forces through their functional dependence on the
-signed penetration distance.
+signed penetration distance. Notice that, according to Eq. (5), normal forces
+at each contact point are decoupled from each other. However their values are
+coupled given the choice of a common variable, the generalized velocity v.
 Equation (7) is used into Eq. (5) to obtain an expression of the normal
 force in terms of the generalized velocity vⁿ⁺¹ at the next time step:
 @verbatim
@@ -498,7 +500,7 @@ class ImplicitStribeckSolver {
   // TODO(amcastro-tri): submit a separate reformat PR changing /// by /**.
   /// Sets data for the problem to be solved as outlined by Eq. (3) in this
   /// class's documentation: <pre>
-  ///   M⋅v = p* + δt Jₙᵀ⋅fₙ +  δt Jₜᵀ⋅fₜ(v)
+  ///   (3)  M⋅v = p* + δt Jₙᵀ⋅fₙ +  δt Jₜᵀ⋅fₜ(v)
   /// </pre>
   /// Refer to this class's documentation for further details on the structure
   /// of the problem and the solution strategy.
@@ -512,7 +514,7 @@ class ImplicitStribeckSolver {
   /// @param[in] Jt
   ///   The tangential velocities Jacobian, of size `2nc x nv`.
   /// @param[in] p_star
-  ///   The generalized momentum the system would have at `n + 1` if friction
+  ///   The generalized momentum the system would have at `n + 1` if contact
   ///   forces were zero.
   /// @param[in] fn
   ///   A vector of size `nc` containing the normal force at each contact point.
@@ -536,7 +538,7 @@ class ImplicitStribeckSolver {
 
   /// Sets the problem data to solve the problem outlined in Eq. (10) in this
   /// class's documentation using a two-way coupled approach: <pre>
-  ///   M(qⁿ)⋅vⁿ⁺¹ = p* + δt (Jₙᵀ(qⁿ)⋅fₙ(vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
+  ///   (10)  M(qⁿ)⋅vⁿ⁺¹ = p* + δt (Jₙᵀ(qⁿ)⋅fₙ(vⁿ⁺¹) + Jₜᵀ(qⁿ)⋅fₜ(vⁿ⁺¹))
   /// </pre>
   /// Refer to this class's documentation for further details on the structure
   /// of the problem and the solution strategy.
@@ -550,7 +552,7 @@ class ImplicitStribeckSolver {
   /// @param[in] Jt
   ///   The tangential velocities Jacobian, of size `2nc x nv`.
   /// @param[in] p_star
-  ///   The generalized momentum the system would have at `n + 1` if friction
+  ///   The generalized momentum the system would have at `n + 1` if contact
   ///   forces were zero.
   /// @param[in] phi0
   ///   The signed penetration distance at the previous time step. It is defined
@@ -573,6 +575,8 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  // TODO(amcastro-tri): rework the entire math again to make phi to actually be
+  // the signed distance function (instead of the signed penetration distance).
   void SetTwoWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M,
       EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -658,10 +662,17 @@ class ImplicitStribeckSolver {
   class ProblemDataAliases {
    public:
     // Sets the references to the data defining a one-way coupled problem.
-    void Set(EigenPtr<const MatrixX<T>> M,
-             EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
-             EigenPtr<const VectorX<T>> p_star,
-             EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+    void SetOneWayCoupledData(
+        EigenPtr<const MatrixX<T>> M,
+        EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
+        EigenPtr<const VectorX<T>> p_star,
+        EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
+      DRAKE_DEMAND(M != nullptr);
+      DRAKE_DEMAND(Jn != nullptr);
+      DRAKE_DEMAND(Jt != nullptr);
+      DRAKE_DEMAND(p_star != nullptr);
+      DRAKE_DEMAND(fn != nullptr);
+      DRAKE_DEMAND(mu != nullptr);
       M_ptr = M;
       Jn_ptr = Jn;
       Jt_ptr = Jt;
@@ -671,13 +682,21 @@ class ImplicitStribeckSolver {
     }
 
     // Sets the references to the data defining a two-way coupled problem.
-    void Set(EigenPtr<const MatrixX<T>> M,
-             EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
-             EigenPtr<const VectorX<T>> p_star,
-             EigenPtr<const VectorX<T>> phi0,
-             EigenPtr<const VectorX<T>> stiffness,
-             EigenPtr<const VectorX<T>> damping,
-             EigenPtr<const VectorX<T>> mu) {
+    void SetTwoWayCoupledData(
+        EigenPtr<const MatrixX<T>> M,
+        EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
+        EigenPtr<const VectorX<T>> p_star,
+        EigenPtr<const VectorX<T>> phi0,
+        EigenPtr<const VectorX<T>> stiffness,
+        EigenPtr<const VectorX<T>> damping, EigenPtr<const VectorX<T>> mu) {
+      DRAKE_DEMAND(M != nullptr);
+      DRAKE_DEMAND(Jn != nullptr);
+      DRAKE_DEMAND(Jt != nullptr);
+      DRAKE_DEMAND(p_star != nullptr);
+      DRAKE_DEMAND(phi0 != nullptr);
+      DRAKE_DEMAND(stiffness != nullptr);
+      DRAKE_DEMAND(damping != nullptr);
+      DRAKE_DEMAND(mu != nullptr);
       M_ptr = M;
       Jn_ptr = Jn;
       Jt_ptr = Jt;
@@ -690,7 +709,7 @@ class ImplicitStribeckSolver {
 
     // Returns true if this class contains the data for a two-way coupled
     // problem.
-    bool two_way_coupling_data() const {
+    bool has_two_way_coupling_data() const {
       return fn_ptr == nullptr;
     }
 
@@ -698,24 +717,40 @@ class ImplicitStribeckSolver {
     Eigen::Ref<const MatrixX<T>> Jn() const { return *Jn_ptr; }
     Eigen::Ref<const MatrixX<T>> Jt() const { return *Jt_ptr; }
     Eigen::Ref<const VectorX<T>> p_star() const { return *p_star_ptr; }
+
+    // For the one-way coupled scheme, it returns a constant reference to the
+    // data for the normal forces. It aborts if called on data for the two-way
+    // coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> fn() const {
       DRAKE_DEMAND(fn_ptr != nullptr);
       return *fn_ptr;
     }
+
+    // For the two-way coupled scheme, it returns a constant reference to the
+    // data for the penetration distance. It aborts if called on data for the
+    // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> phi0() const {
       DRAKE_DEMAND(phi0_ptr != nullptr);
       return *phi0_ptr;
     }
+
+    // For the two-way coupled scheme, it returns a constant reference to the
+    // data for the stiffness. It aborts if called on data for the
+    // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> stiffness() const {
       DRAKE_DEMAND(stiffness_ptr != nullptr);
       return *stiffness_ptr;
     }
+
+    // For the two-way coupled scheme, it returns a constant reference to the
+    // data for the damping. It aborts if called on data for the
+    // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> damping() const {
       DRAKE_DEMAND(damping_ptr != nullptr);
       return *damping_ptr;
     }
+
     Eigen::Ref<const VectorX<T>> mu() const {
-      DRAKE_DEMAND(mu_ptr != nullptr);
       return *mu_ptr;
     }
 
@@ -726,7 +761,7 @@ class ImplicitStribeckSolver {
     EigenPtr<const MatrixX<T>> Jn_ptr{nullptr};
     // The tangential velocities Jacobian.
     EigenPtr<const MatrixX<T>> Jt_ptr{nullptr};
-    // The generalized momementum vector **before** friction is applied.
+    // The generalized momentum vector **before** contact is applied.
     EigenPtr<const VectorX<T>> p_star_ptr{nullptr};
     // Normal force at each contact point. fn_ptr is nullptr for two-way
     // coupled problems.
@@ -789,7 +824,8 @@ class ImplicitStribeckSolver {
   };
 
   // The variables in this workspace can change size with each invocation of
-  // SetOneWayCoupledProblemData() since the number of contact points nc can change.
+  // SetOneWayCoupledProblemData() since the number of contact points nc can
+  // change.
   // The workspace only performs re-allocations if needed, meaning that previous
   // storage is re-used if large enough for the next problem data set.
   // This class provides accessors that return Eigen blocks of size consistent
@@ -827,72 +863,74 @@ class ImplicitStribeckSolver {
       return vt_.size();
     }
 
-    /// Returns a mutable reference to the vector of separation velocities in
-    /// the normal direction, of size nc.
+    // Returns a mutable reference to the vector of separation velocities in
+    // the normal direction, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_vn() {
       return vn_.segment(0, nc_);
     }
 
-    /// Returns a constant reference to the vector containing the tangential
-    /// velocities vₜ for all contact points, of size 2nc.
+    // Returns a constant reference to the vector containing the tangential
+    // velocities vₜ for all contact points, of size 2nc.
     Eigen::VectorBlock<const VectorX<T>> vt() const {
       return vt_.segment(0, 2 * nc_);
     }
 
-    /// Mutable version of vt().
+    // Mutable version of vt().
     Eigen::VectorBlock<VectorX<T>> mutable_vt() {
       return vt_.segment(0, 2 * nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the tangential
-    /// velocity updates Δvₜ for all contact points, of size 2nc.
+    // Returns a mutable reference to the vector containing the tangential
+    // velocity updates Δvₜ for all contact points, of size 2nc.
     Eigen::VectorBlock<VectorX<T>> mutable_Delta_vt() {
       return Delta_vt_.segment(0, 2 * nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the normal
-    /// contact forces fₙ for all contact points, of size nc.
+    // Returns a mutable reference to the vector containing the normal
+    // contact forces fₙ for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_fn() {
       return fn_.segment(0, nc_);
     }
 
+    // Returns a mutable reference to the vector containing the penetration
+    // depths for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_phi() {
       return phi_.segment(0, nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the tangential
-    /// friction forces fₜ for all contact points, of size 2nc.
+    // Returns a mutable reference to the vector containing the tangential
+    // friction forces fₜ for all contact points, of size 2nc.
     Eigen::VectorBlock<VectorX<T>> mutable_ft() {
       return ft_.segment(0, 2 * nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the tangential
-    /// directions t̂ᵏ for all contact points, of size 2nc.
+    // Returns a mutable reference to the vector containing the tangential
+    // directions t̂ᵏ for all contact points, of size 2nc.
     Eigen::VectorBlock<VectorX<T>> mutable_t_hat() {
       return t_hat_.segment(0, 2 * nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the slip velocity
-    /// vₛ = ‖vₜ‖, at each contact point, of size nc.
+    // Returns a mutable reference to the vector containing the slip velocity
+    // vₛ = ‖vₜ‖, at each contact point, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_v_slip() {
       return v_slip_.segment(0, nc_);
     }
 
-    /// Returns a mutable reference to the vector containing the stribeck
-    /// friction, function of the slip velocity, at each contact point, of
-    /// size nc.
+    // Returns a mutable reference to the vector containing the stribeck
+    // friction, function of the slip velocity, at each contact point, of
+    // size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_mu() {
       return mus_.segment(0, nc_);
     }
 
-    /// Returns a mutable reference to the gradient Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹)
-    /// with respect to the generalized velocites v.
+    // Returns a mutable reference to the gradient Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹)
+    // with respect to the generalized velocites v.
     Eigen::Block<MatrixX<T>> mutable_Gn() {
       return Gn_.block(0, 0, nc_, nv_);
     }
 
-    /// Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
-    /// for each contact pont, of size nc.
+    // Returns a mutable reference to the vector storing ∂fₜ/∂vₜ (in ℝ²ˣ²)
+    // for each contact pont, of size nc.
     std::vector<Matrix2<T>>& mutable_dft_dvt() {
       return dft_dv_;
     }
@@ -915,8 +953,8 @@ class ImplicitStribeckSolver {
   };
 
   // Returns true if the solver is solving the two-way coupled problem.
-  bool two_way_coupling() const {
-    return problem_data_aliases_.two_way_coupling_data();
+  bool has_two_way_coupling() const {
+    return problem_data_aliases_.has_two_way_coupling_data();
   }
 
   // Helper method to compute, into fn, the normal force at each contact

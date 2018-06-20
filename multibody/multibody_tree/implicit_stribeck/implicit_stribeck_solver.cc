@@ -258,7 +258,7 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetProblemData(
+void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M,
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
@@ -270,7 +270,7 @@ void ImplicitStribeckSolver<T>::SetProblemData(
   DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, Jn, Jt, p_star, fn, mu);
+  problem_data_aliases_.SetOneWayCoupledData(M, Jn, Jt, p_star, fn, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
@@ -291,7 +291,8 @@ void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
   DRAKE_THROW_UNLESS(stiffness->size() == nc_);
   DRAKE_THROW_UNLESS(damping->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, Jn, Jt, p_star, phi0, stiffness, damping, mu);
+  problem_data_aliases_.SetTwoWayCoupledData(
+      M, Jn, Jt, p_star, phi0, stiffness, damping, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
@@ -466,7 +467,7 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
-  if (!two_way_coupling()) {
+  if (!has_two_way_coupling()) {
     // Copy the input normal force (i.e. it is fixed).
     *fn_ptr = problem_data_aliases_.fn();
     return;
@@ -549,7 +550,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   // (2nc x 2nc) block diagonal matrix with dft_dvt in each 2x2 diagonal entry.
   // Gfn(ft) is the gradient of the friction forces with respect to the normal
   // forces. Thus, Gfn(ft)⋅Jₙ is nothing but the chain rule of differentiation
-  // to copute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
+  // to compute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
   // the functional dependence of the normal forces with v.
   // Notice that Gfn(ft) is zero for the one-way coupled scheme.
 
@@ -564,7 +565,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 
     // Add Contribution from Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹). Only for the two-way
     // coupled scheme.
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       auto& t_hat_ic = t_hat.template segment<2>(ik);
       Gt.block(ik    , 0, 1, nv) -=
           mu_vt(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
@@ -575,7 +576,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 
   // Form J = M - JnᵀGn - dt JtᵀGt:
   *J = M - dt * Jt.transpose() * Gt;
-  if (two_way_coupling()) {
+  if (has_two_way_coupling()) {
     *J -= dt * Jn.transpose() * Gn;
   }
 }
@@ -672,7 +673,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     vn = Jn * v;
     vt = Jt * v;
 
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       // Update the penetration for the two-way coupling scheme.
       const auto& phi0 = problem_data_aliases_.phi0();
       phi = phi0 - dt * vn;
@@ -709,7 +710,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       auto& J_lu = fixed_size_workspace_.mutable_J_lu();
       J_lu.compute(J);  // Update factorization.
       Delta_v = J_lu.solve(-residual);
