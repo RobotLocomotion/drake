@@ -282,14 +282,6 @@ class Context : public ContextBase {
     return *parameters_;
   }
 
-  /// Sets the parameters to @p params, deleting whatever was there before.
-  /// You must supply a Parameters object; null is not acceptable.
-  // TODO(sherm1) Shouldn't be user-callable, especially for Diagrams!
-  void set_parameters(std::unique_ptr<Parameters<T>> params) {
-    DRAKE_DEMAND(params != nullptr);
-    parameters_ = std::move(params);
-  }
-
   /// Returns the number of vector-valued parameters.
   int num_numeric_parameters() const {
     return parameters_->num_numeric_parameters();
@@ -414,6 +406,13 @@ class Context : public ContextBase {
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }
 
+  /// Provides storage for declared parameters, deleting whatever was there
+  /// before. You must supply a Parameters object; null is not acceptable.
+  void init_parameters(std::unique_ptr<Parameters<T>> params) {
+    DRAKE_DEMAND(params != nullptr);
+    parameters_ = std::move(params);
+  }
+
  private:
   // Current time and step information.
   StepInfo<T> step_info_;
@@ -421,7 +420,7 @@ class Context : public ContextBase {
   // Accuracy setting.
   optional<double> accuracy_;
 
-  // The parameter values p for this System; this is never null.
+  // The parameter values (p) for this Context; this is never null.
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };

@@ -46,6 +46,17 @@ class LeafContext : public Context<T> {
     return *state_.get();
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // Temporarily promoting this to public so that LeafSystem and testing
+  // code can construct a LeafContext with parameters. Users should never
+  // call this because parameters should not be resized once allocated (or at
+  // least should be done under Framework control so that dependency tracking
+  // can be correctly revised).
+  // TODO(sherm1) Make this inaccessible to users, along with other dangerous
+  // context resource sizing methods. See discussion in PR #9029.
+  using Context<T>::init_parameters;
+#endif
+
  protected:
   /// Protected copy constructor takes care of the local data members and
   /// all base class members, but doesn't update base class pointers so is
@@ -84,7 +95,7 @@ class LeafContext : public Context<T> {
   }
 
  private:
-  // The internal state (x) of this LeafSystem.
+  // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };
 

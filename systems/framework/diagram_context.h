@@ -233,11 +233,12 @@ class DiagramContext final : public Context<T> {
             &subparams.get_mutable_abstract_parameter(i));
       }
     }
-    Parameters<T>& params = this->get_mutable_parameters();
-    params.set_numeric_parameters(
+    auto params = std::make_unique<Parameters<T>>();
+    params->set_numeric_parameters(
         std::make_unique<DiscreteValues<T>>(numeric_params));
-    params.set_abstract_parameters(
+    params->set_abstract_parameters(
         std::make_unique<AbstractValues>(abstract_params));
+    this->init_parameters(std::move(params));
   }
 
   /// Returns the output structure for a given constituent system at @p index.

@@ -134,8 +134,9 @@ class LeafSystem : public System<T> {
     // Reserve discrete state via delegation to subclass.
     context->set_discrete_state(this->AllocateDiscreteState());
     context->set_abstract_state(this->AllocateAbstractState());
+
     // Reserve parameters via delegation to subclass.
-    context->set_parameters(this->AllocateParameters());
+    context->init_parameters(this->AllocateParameters());
 
     // Note that the outputs are not part of the Context, but instead are
     // checked by LeafSystemOutput::add_port.
