@@ -17,6 +17,12 @@ namespace multibody {
 namespace implicit_stribeck {
 namespace test {
 
+// Computes the normal force as a function of the signed penetration depth phi
+// and separation velocity vn using a compliant law of the form:
+//   fₙ(φ, vₙ) = <k(vₙ)>¹⋅<φ>¹
+//       k(vₙ) = <k⋅(1 - d⋅vₙ)>¹
+// where `<⋅>¹` is the Macaulay bracket and k and d are the stiffness and
+// damping coefficients for a given contact point, respectively.
 template <typename U>
 VectorX<U> CalcNormalForces(
     const VectorX<U>& phi,
@@ -25,7 +31,8 @@ VectorX<U> CalcNormalForces(
   int nc = phi.size();
 
   // Compute normal force at t^{n+1}
-  const VectorX<U> k_vn = stiffness * (VectorX<U>::Ones(nc) - damping.asDiagonal() * vn);
+  const VectorX<U> k_vn =
+      stiffness * (VectorX<U>::Ones(nc) - damping.asDiagonal() * vn);
   const VectorX<U> k_vn_clamped = k_vn.template cwiseMax(VectorX<U>::Zero(nc));
   const VectorX<U> phi_clamped = phi.cwiseMax(VectorX<U>::Zero(nc));
   const VectorX<U> fn = k_vn_clamped.asDiagonal() * phi_clamped;
@@ -92,6 +99,13 @@ VectorX<U> CalcFrictionForces(
 // Computes and returns the Newton-Raphson residual for the implicit Stribeck
 // solver. This templated method is used to automatically differentiate the
 // residual and compute its Jacobian J = ∇ᵥR.
+// This same method is used to evaluate the residual for both the one-way (
+// normal forces are fixed) and two-way coupled schemes. two_way_coupling = true
+// indicates to compute the residual for the two-way coupled scheme. Call with
+// two_way_coupling = false to compute the residual for the one-way coupled
+// scheme.
+// When two_way_coupling = true fn_data is not used.
+// When two_way_coupling = false phi0, stiffness and damping are not used.
 template <typename U>
 VectorX<U> CalcResidual(
     const MatrixX<double>& M,
@@ -136,8 +150,8 @@ VectorX<U> CalcResidual(
   return residual;
 }
 
-// Computes the Jacobian J = ∇ᵥR of the residual for the ImplicitStribeckSolver
-// using automatic differentiation.
+// Computes the Jacobian J = ∇ᵥR of the residual for the two-way coupled scheme
+// of ImplicitStribeckSolver using automatic differentiation.
 MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
@@ -160,6 +174,8 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
   return math::autoDiffToGradientMatrix(residual);
 }
 
+// Computes the Jacobian J = ∇ᵥR of the residual for the one-way coupled scheme
+// of ImplicitStribeckSolver using automatic differentiation.
 MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,

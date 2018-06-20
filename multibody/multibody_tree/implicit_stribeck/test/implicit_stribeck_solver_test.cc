@@ -7,10 +7,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/test/implicit_stribeck_solver_test_util.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 namespace multibody {
 namespace implicit_stribeck {
@@ -586,10 +582,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // solver's internal implementation.
   MatrixX<double> J =
       ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
-  PRINT_VARn(J);
 
-  // Non-used data by the one-way coupling scheme.
-  const VectorX<double> not_used;
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
@@ -602,13 +595,9 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
       J_expected.rows() * J_expected.norm() *
           std::numeric_limits<double>::epsilon();
 
-  PRINT_VAR(J_tolerance);
-
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
-
-  PRINT_VARn(J_expected);
 }
 
 // Exactly the same problem as in PizzaSaver::SmallAppliedMoment but with an
@@ -857,10 +846,6 @@ class RollingCylinder : public ::testing::Test {
     const double damping = damping_ratio * time_scale / penetration_allowance;
     damping_(0) = damping;
 
-    PRINT_VAR(stiffness_);
-    PRINT_VAR(damping_);
-    PRINT_VAR(phi0_);
-
     solver_.SetTwoWayCoupledProblemData(
         &M_, &Jn_, &Jt_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_vector_);
   }
@@ -955,9 +940,6 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
           solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
-  PRINT_VAR(stats.num_iterations);
-  PRINT_VAR(stats.vt_residual());
-
   // Friction should only act horizontally.
   EXPECT_NEAR(tau_f(1), 0.0, kTolerance);
 
@@ -970,43 +952,35 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // There should be no spurious out-of-plane tangential velocity.
   EXPECT_NEAR(vt(1), 0.0, kTolerance);
 
-  PRINT_VAR(vt(1));
-
   // We expect stiction, to within the stiction tolerance.
   EXPECT_LT(std::abs(vt(0)), parameters.stiction_tolerance);
 
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
-  // Since we imposed the normal force exactly to bring the cylinder to a stop,
-  // we expect the vertical velocity to be zero.
-  //EXPECT_NEAR(v(1), 0.0, kTolerance);
-
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
   EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
 
+  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+  // solver's internal implementation.
   MatrixX<double> J =
       ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
-  PRINT_VARn(J);
 
-
-  const VectorX<double> na;  // Non-used data for one-way coupling.
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.relative_tolerance;
-  const VectorX<double> not_used;  // variables not used in two-way coupling.
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
       stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
 
-  PRINT_VARn(J_expected);
-
+  // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =
       J_expected.rows() * J_expected.norm() *
           std::numeric_limits<double>::epsilon();
 
-  PRINT_VAR(J_tolerance);
-
+  // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
@@ -1081,26 +1055,25 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // We expect the solver to update vt accordingly based on v before return.
   EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
 
+  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+  // solver's internal implementation.
   MatrixX<double> J =
       ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
-  PRINT_VARn(J);
 
-  const VectorX<double> na;  // Non-used data for one-way coupling.
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
   const double v_stribeck = parameters.stiction_tolerance;
   const double epsilon_v = v_stribeck * parameters.relative_tolerance;
-  const VectorX<double> not_used;  // variables not used in two-way coupling.
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
       stiffness_, damping_, dt, v_stribeck, epsilon_v, v);
 
-  PRINT_VARn(J_expected);
-
+  // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =
       J_expected.rows() * J_expected.norm() *
           std::numeric_limits<double>::epsilon();
 
-  PRINT_VAR(J_tolerance);
-
+  // Verify the result.
   EXPECT_TRUE(CompareMatrices(
       J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
