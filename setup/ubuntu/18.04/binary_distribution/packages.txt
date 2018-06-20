@@ -29,8 +29,11 @@ libyaml-cpp0.5v5
 openjdk-8-jre
 python
 python-lxml
+python-matplotlib
 python-numpy
+python-pydot
 python-scipy
+python-tk
 python-yaml
 qtbase5-dev
 zlib1g
