@@ -17,13 +17,12 @@ genrule(
 )
 
 GUROBI_C_HDRS = glob([
-    "gurobi-distro/include/gurobi_c.h"
+    "gurobi-distro/include/gurobi_c.h",
 ]) or [":error-message.h"]
 
 GUROBI_CXX_HDRS = glob([
-    "gurobi-distro/include/gurobi_c++.h"
+    "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
-
 
 # In the Gurobi package, libgurobi80.so is a symlink to libgurobi.so.8.0.0.
 # However, if we use libgurobi.so.8.0.0 in srcs, executables that link this
@@ -33,18 +32,18 @@ GUROBI_CXX_HDRS = glob([
 # might be a Bazel bug.
 
 GUROBI_C_SRCS = glob([
-    "gurobi-distro/lib/libgurobi80.so"
+    "gurobi-distro/lib/libgurobi80.so",
 ]) or [":error-message.h"]
 
 GUROBI_CXX_SRCS = glob([
     "gurobi-distro/lib/libgurobi80.so",
-    "gurobi-distro/lib/libgurobi_g++5.2.a"
+    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
     "gurobi-distro/lib/libgurobi.so.8.0.0",
     "gurobi-distro/lib/libgurobi80.so",
-    "gurobi-distro/lib/libgurobi_g++5.2.a"
+    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_DOCS = glob([
@@ -70,8 +69,8 @@ cc_library(
 )
 
 alias(
-    name="gurobi",
-    actual=":c",
+    name = "gurobi",
+    actual = ":c",
     visibility = ["//visibility:public"],
 )
 

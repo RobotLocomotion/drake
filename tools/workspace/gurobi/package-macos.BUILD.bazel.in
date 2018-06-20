@@ -35,21 +35,21 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# cc_library(
-#     name = "cxx",
-#     hdrs = GUROBI_CXX_HDRS,
-#     includes = ["gurobi-distro/include"],
-#     linkopts = [
-#         "-L{gurobi_path}/lib",
-#         "-lgurobi80",
-#         "-lgurobi_stdc++" # the documentation says to link libgurobi_stdc++.a for MacOS with -stdlib=libstdc++, I'm not sure about this syntax
-#     ],
-#     visibility = ["//visibility:public"],
-# )
+cc_library(
+    name = "cxx",
+    hdrs = GUROBI_CXX_HDRS,
+    includes = ["gurobi-distro/include"],
+    linkopts = [
+        "-L{gurobi_path}/lib",
+        "-lgurobi80",
+        "-lgurobi_stdc++",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 alias(
     name = "gurobi",
-    actual = "c"
+    actual = "c",
 )
 
 # For macOS, the Drake install step does not need any additional actions to
