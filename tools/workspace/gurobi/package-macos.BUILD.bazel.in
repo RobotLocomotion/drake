@@ -49,7 +49,8 @@ cc_library(
 
 alias(
     name = "gurobi",
-    actual = "c",
+    actual = ":c",
+    visibility = ["//visibility:public"],
 )
 
 # For macOS, the Drake install step does not need any additional actions to
