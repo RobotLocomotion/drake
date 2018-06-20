@@ -16,7 +16,7 @@ namespace implicit_stribeck {
 class ImplicitStribeckSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
-      ImplicitStribeckSolver<double>& solver,
+      const ImplicitStribeckSolver<double>& solver,
       const Eigen::Ref<const VectorX<double>>& v,
       double dt) {
     const int nv = solver.nv_;
@@ -826,7 +826,7 @@ class RollingCylinder : public ::testing::Test {
   void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
                         double mu, double height, double dt) {
     // Next time step generalized momentum if there are no contact forces.
-    p_star_ = M_ * v0 + dt * tau;// + dt * Vector3<double>(0.0, fn_(0), 0.0);
+    p_star_ = M_ * v0 + dt * tau;
 
     // Friction coefficient for the only contact point in the problem.
     mu_vector_(0) = mu;

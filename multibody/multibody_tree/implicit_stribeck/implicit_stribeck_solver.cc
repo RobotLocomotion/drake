@@ -482,9 +482,9 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   VectorX<T> H_k_vn(nc);  // = <k(vₙ)>⁰ = H(k(vₙ)).
 
   auto& fn = *fn_ptr;
-  for (int ic = 0; ic < nc; ++ ic) {
-    // Stiffness as a function of vn, k(vₙ) = <k⋅(1 - d⋅vₙ)>¹, where we use the
-    // Macaulay bracket <⋅>¹.
+  for (int ic = 0; ic < nc; ++ic) {
+    // Stiffness as a function of vn, k(vₙ) = <k⋅(1 - d⋅vₙ)>¹, where we
+    // use the Macaulay bracket <⋅>¹.
     T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
 
     k_vn_capped(ic) = max(0.0, k_vn);
@@ -643,8 +643,6 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto& Delta_v = fixed_size_workspace_.mutable_Delta_v();
   auto& residual = fixed_size_workspace_.mutable_residual();
   auto& J = fixed_size_workspace_.mutable_J();
-  //auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
-  //auto& J_lu = fixed_size_workspace_.J_lu;
   auto& tau_f = fixed_size_workspace_.mutable_tau_f();
   auto& tau = fixed_size_workspace_.mutable_tau();
 
@@ -711,12 +709,9 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    if(two_way_coupling()) {
+    if (two_way_coupling()) {
       auto& J_lu = fixed_size_workspace_.mutable_J_lu();
       J_lu.compute(J);  // Update factorization.
-      //if (J_lu.info() != Eigen::Success) {
-      // return ComputationInfo::LinearSolverFailed;
-      //}
       Delta_v = J_lu.solve(-residual);
     } else {
       auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
