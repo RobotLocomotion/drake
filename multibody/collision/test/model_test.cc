@@ -13,7 +13,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/collision/drake_collision.h"
 
-#define DRAKE_DISABLE_FCL 0
+// #define DRAKE_DISABLE_FCL 1
+#undef DRAKE_DISABLE_FCL
 
 using Eigen::AngleAxisd;
 using Eigen::Isometry3d;
@@ -22,8 +23,6 @@ using Eigen::Matrix3Xd;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
-
-
 
 namespace drake {
 namespace multibody {
