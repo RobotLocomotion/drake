@@ -15,6 +15,15 @@
 namespace drake {
 namespace systems {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+// This provides LeafSystem<T> and LeafContextTest limited "friend" access to
+// Context<T>.
+template <typename T>
+class LeafSystemContextAttorney;
+}  // namespace detail
+#endif
+
 /// Contains information about the independent variable including time and
 /// step number.
 // TODO(sherm1) Add step information.
@@ -282,14 +291,6 @@ class Context : public ContextBase {
     return *parameters_;
   }
 
-  /// Sets the parameters to @p params, deleting whatever was there before.
-  /// You must supply a Parameters object; null is not acceptable.
-  // TODO(sherm1) Shouldn't be user-callable, especially for Diagrams!
-  void set_parameters(std::unique_ptr<Parameters<T>> params) {
-    DRAKE_DEMAND(params != nullptr);
-    parameters_ = std::move(params);
-  }
-
   /// Returns the number of vector-valued parameters.
   int num_numeric_parameters() const {
     return parameters_->num_numeric_parameters();
@@ -414,17 +415,52 @@ class Context : public ContextBase {
   /// Returns a const reference to current time and step information.
   const StepInfo<T>& get_step_info() const { return step_info_; }
 
+  /// Provides storage for declared parameters, deleting whatever was there
+  /// before. You must supply a Parameters object; null is not acceptable.
+  void init_parameters(std::unique_ptr<Parameters<T>> params) {
+    DRAKE_DEMAND(params != nullptr);
+    parameters_ = std::move(params);
+  }
+
  private:
+  friend class detail::LeafSystemContextAttorney<T>;
+
   // Current time and step information.
   StepInfo<T> step_info_;
 
   // Accuracy setting.
   optional<double> accuracy_;
 
-  // The parameter values p for this System; this is never null.
+  // The parameter values (p) for this Context; this is never null.
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T> class LeafSystem;
+class LeafContextTest;
+namespace detail {
+
+// This is an attorney-client pattern class providing LeafSystem<T> with access
+// to certain specific Context<T> access-limited methods, and nothing else.
+template <typename T>
+class LeafSystemContextAttorney {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafSystemContextAttorney)
+  LeafSystemContextAttorney() = delete;
+
+ private:
+  friend class drake::systems::LeafSystem<T>;
+  friend class drake::systems::LeafContextTest;
+  static void init_parameters(Context<T>* context,
+                              std::unique_ptr<Parameters<T>> params) {
+    DRAKE_DEMAND(context != nullptr);
+    context->init_parameters(std::move(params));
+  }
+};
+
+}  // namespace detail
+#endif
 
 }  // namespace systems
 }  // namespace drake

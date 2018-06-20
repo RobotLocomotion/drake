@@ -91,9 +91,11 @@ class LeafContextTest : public ::testing::Test {
     vector_params.push_back(BasicVector<double>::Make({8.0, 16.0, 32.0, 64.0}));
     std::vector<std::unique_ptr<AbstractValue>> abstract_params;
     abstract_params.push_back(std::make_unique<Value<TestAbstractType>>());
-    context_.set_parameters(std::make_unique<Parameters<double>>(
-        std::move(vector_params),
-        std::move(abstract_params)));
+
+    // LeafContextTest has attorney-client privilege to do this.
+    detail::LeafSystemContextAttorney<double>::init_parameters(
+        &context_, std::make_unique<Parameters<double>>(
+                       std::move(vector_params), std::move(abstract_params)));
   }
 
   // Reads a FixedInputPortValue connected to @p context at @p index.

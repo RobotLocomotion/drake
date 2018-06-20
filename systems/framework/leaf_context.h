@@ -84,7 +84,7 @@ class LeafContext : public Context<T> {
   }
 
  private:
-  // The internal state (x) of this LeafSystem.
+  // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };
 
