@@ -173,6 +173,15 @@ PYBIND11_MODULE(rigid_body_tree, m) {
          py_reference_internal)
     .def("FindBaseBodies", &RigidBodyTree<double>::FindBaseBodies,
          py::arg("model_instance_id") = -1)
+    .def("addDistanceConstraint",
+         &RigidBodyTree<double>::addDistanceConstraint,
+         py::arg("bodyA_index_in"),
+         py::arg("r_AP_in"),
+         py::arg("bodyB_index_in"),
+         py::arg("r_BQ_in"),
+         py::arg("distance_in"))
+    .def("getNumPositionConstraints",
+         &RigidBodyTree<double>::getNumPositionConstraints)
     .def("Clone", &RigidBodyTree<double>::Clone)
     .def("__copy__", &RigidBodyTree<double>::Clone);
 
@@ -247,11 +256,22 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       // centroidalMomentumMatrix
       // forwardKinPositionGradient
       // geometricJacobianDotTimesV
-      // centerOfMassJacobianDotTimesV
+      .def("centerOfMassJacobianDotTimesV",
+           &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<T>,
+           py::arg("cache"),
+           py::arg("model_instance_id_set") =
+             RigidBodyTreeConstants::default_model_instance_id_set)
       // centroidalMomentumMatrixDotTimesV
-      // positionConstraints
-      // positionConstraintsJacobian
-      // positionConstraintsJacDotTimesV
+      .def("positionConstraints",
+           &RigidBodyTree<double>::positionConstraints<T>,
+           py::arg("cache"))
+      .def("positionConstraintsJacobian",
+           &RigidBodyTree<double>::positionConstraintsJacobian<T>,
+           py::arg("cache"),
+           py::arg("in_terms_of_qdot") = true)
+      .def("positionConstraintsJacDotTimesV",
+           &RigidBodyTree<double>::positionConstraintsJacDotTimesV<T>,
+           py::arg("cache"))
       // jointLimitConstriants
       // relativeTwist
       // worldMomentumMatrix
