@@ -275,6 +275,32 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
           CoulombFriction<double>(0.5, 0.5)));
 }
+// Verifies model instances are correctly created in the plant.
+TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant_.num_model_instances(), 2);
+
+  ModelInstanceIndex instance1_idx =
+      AddModelFromSdfFile(full_name_, "instance1", &plant_);
+
+  const std::string acrobot_sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  int instance2_idx = AddModelFromSdfFile(acrobot_sdf_name, &plant_);
+
+  // TODO(sam.creasey) Check that we can add multiple copies of the same model
+  // with different names once that's supported.
+
+  // Check that a duplicate model names are not allowed.
+  EXPECT_THROW(AddModelFromSdfFile(full_name_, "instance1", &plant_),
+               std::logic_error);
+
+  // We are done adding models.
+  plant_.Finalize();
+
+  ASSERT_EQ(plant_.num_model_instances(), 4);
+  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1_idx);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), instance2_idx);
+}
 
 }  // namespace
 }  // namespace multibody_plant

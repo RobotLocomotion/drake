@@ -258,8 +258,9 @@ void AddJointFromSpecification(
 }
 }  // namespace
 
-void AddModelFromSdfFile(
+ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
+    const std::string& model_name_in,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -273,7 +274,7 @@ void AddModelFromSdfFile(
 
   // Check for any errors.
   if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfString():\n");
+    std::string error_accumulation("From AddModelFromSdfFile():\n");
     for (const auto& e : errors)
       error_accumulation += "Error: " + e.Message() + "\n";
     throw std::runtime_error(error_accumulation);
@@ -302,6 +303,11 @@ void AddModelFromSdfFile(
   parsers::PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_path);
 
+  const std::string model_name =
+      model_name_in.empty() ? model.Name() : model_name_in;
+  const ModelInstanceIndex model_instance =
+      plant->AddModelInstance(model_name);
+
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
@@ -318,7 +324,8 @@ void AddModelFromSdfFile(
         ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
-    const RigidBody<double>& body = plant->AddRigidBody(link.Name(), M_BBo_B);
+    const RigidBody<double>& body =
+        plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -362,6 +369,15 @@ void AddModelFromSdfFile(
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(model, joint, plant);
   }
+
+  return model_instance;
+}
+
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  return AddModelFromSdfFile(file_name, "", plant, scene_graph);
 }
 
 }  // namespace parsing
