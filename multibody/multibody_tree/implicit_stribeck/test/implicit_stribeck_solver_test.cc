@@ -1056,8 +1056,8 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // We expect the solver to update vt accordingly based on v before return.
   EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
 
-  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
-  // solver's internal implementation.
+  // Compute the Newton-Raphson Jacobian of the (two-way coupled)
+  // residual J = ∇ᵥR using the solver's internal implementation.
   MatrixX<double> J =
       ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
 
