@@ -15,7 +15,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
