@@ -32,6 +32,7 @@ namespace inclined_plane {
 std::unique_ptr<multibody_plant::MultibodyPlant<double>> MakeInclinedPlanePlant(
     double radius, double mass, double slope,
     const multibody_plant::CoulombFriction<double>& surface_friction,
+    double time_step,
     double gravity, geometry::SceneGraph<double>* scene_graph);
 
 }  // namespace inclined_plane

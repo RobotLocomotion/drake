@@ -11,6 +11,12 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) (void)a;
+//#define PRINT_VARn(a) (void)a;
+
 namespace drake {
 
 using geometry::SceneGraph;
@@ -25,11 +31,20 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
+class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
+ public:
+  void SetUp() override {
+
+  }
+ protected:
+
+};
+
 // This test creates a simple multibody model of a sphere rolling down an
 // inclined plane. After simulating the model for a given length of time, this
 // test verifies the numerical solution against analytical results obtained from
 // an energy conservation analysis.
-GTEST_TEST(MultibodyPlant, RollingSphereTest) {
+TEST_P(InclinedPlaneTest, RollingSphereTest) {
   DiagramBuilder<double> builder;
 
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
@@ -47,17 +62,19 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double g = 9.81;        // Acceleration of gravity, [m/s²]
   const double slope = 15.0 / 180 * M_PI;  // Inclined plane's slope, [rad]
+  const bool time_stepping = GetParam();
+  const double time_step = time_stepping ? 5.0e-4 : 0.0;
   const CoulombFriction<double> surface_friction(
       1.0 /* static friction */, 0.5 /* dynamic friction */);
 
   // Contact parameters. Results converge to the analytical solution as the
   // penetration allowance and the stiction tolerance go to zero.
-  const double penetration_allowance = 0.001;  // [m]
+  const double penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;  // [m]
   // Stribeck approximation stiction velocity tolerance, [m/s].
-  const double stiction_tolerance = 0.001;
+  const double stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
-      radius, mass, slope, surface_friction, g, &scene_graph));
+      radius, mass, slope, surface_friction, g, time_step, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance);
@@ -67,8 +84,8 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   // Hint the integrator's time step based on the contact time scale.
   // A fraction of this time scale is used which is chosen so that the fixed
   // time step integrators are stable.
-  const double max_time_step =
-      plant.get_contact_penalty_method_time_scale() / 30;
+  //const double max_time_step =
+    //  plant.get_contact_penalty_method_time_scale() / 30;
 
   // Sanity check for the model's size.
   DRAKE_DEMAND(plant.num_velocities() == 6);
@@ -99,7 +116,6 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
-  integrator->set_maximum_step_size(max_time_step);
   integrator->set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
@@ -139,7 +155,24 @@ GTEST_TEST(MultibodyPlant, RollingSphereTest) {
   EXPECT_TRUE(std::abs(speed - speed_expected) / speed_expected < 0.01);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
                   / angular_velocity_expected < 0.01);
+
+  PRINT_VAR(ke_WB);
+  PRINT_VAR(ke_WB_expected);
+  PRINT_VAR(std::abs(ke_WB - ke_WB_expected) / ke_WB);
+
+  PRINT_VAR(speed);
+  PRINT_VAR(speed_expected);
+  PRINT_VAR(std::abs(speed - speed_expected) / speed_expected);
+
+  PRINT_VAR(angular_velocity);
+  PRINT_VAR(angular_velocity_expected);
+  PRINT_VAR(std::abs(angular_velocity - angular_velocity_expected)
+                / angular_velocity_expected);
 }
+
+// Instantiate the tests.
+INSTANTIATE_TEST_CASE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
+                        ::testing::Bool());
 
 }  // namespace
 }  // namespace multibody_plant
