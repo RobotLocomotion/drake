@@ -15,20 +15,41 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
-GUROBI_HDRS = glob([
+GUROBI_C_HDRS = glob([
+    "gurobi-distro/include/gurobi_c++.h",
+]) or [":error-message.h"]
+
+GUROBI_CXX_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
     "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
 
 cc_library(
-    name = "gurobi",
-    hdrs = GUROBI_HDRS,
+    name = "c",
+    hdrs = GUROBI_C_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_path}/lib",
         "-lgurobi80",
     ],
     visibility = ["//visibility:public"],
+)
+
+# cc_library(
+#     name = "cxx",
+#     hdrs = GUROBI_CXX_HDRS,
+#     includes = ["gurobi-distro/include"],
+#     linkopts = [
+#         "-L{gurobi_path}/lib",
+#         "-lgurobi80",
+#         "-lgurobi_stdc++" # the documentation says to link libgurobi_stdc++.a for MacOS with -stdlib=libstdc++, I'm not sure about this syntax
+#     ],
+#     visibility = ["//visibility:public"],
+# )
+
+alias(
+    name = "gurobi",
+    actual = "c"
 )
 
 # For macOS, the Drake install step does not need any additional actions to
