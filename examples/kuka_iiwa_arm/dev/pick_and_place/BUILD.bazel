@@ -31,7 +31,6 @@ drake_cc_library(
         "//manipulation/util:world_sim_tree_builder",
         "//multibody/rigid_body_plant",
         "//systems/framework:diagram_builder",
-        "//systems/sensors:optitrack_encoder",
         "//systems/sensors:optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],

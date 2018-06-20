@@ -10,6 +10,7 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 
 namespace drake {
 namespace maliput {
@@ -66,21 +67,24 @@ std::ostream& operator<<(std::ostream& out, const EndpointXy& endpoint_xy);
 ///  - theta: superelevation (rotation of road surface around r = 0 centerline;
 ///           when theta > 0, elevation at r > 0 is above elevation at r < 0)
 ///  - theta_dot: rate of change of superelevation with respect to arc length
-///               of the reference path
+///               of the reference path. It is optional because it may be
+///               unknown when building a RoadGeometry and the Builder may need
+///               to adjust it to force the same orientation for all r at a
+///               certain s coordinate of the Segment surface.
 class EndpointZ {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EndpointZ)
   // Constructs an EndpointZ with all zero parameters.
   EndpointZ() = default;
 
-  EndpointZ(double z, double z_dot, double theta, double theta_dot)
+  EndpointZ(double z, double z_dot, double theta, optional<double> theta_dot)
       : z_(z), z_dot_(z_dot), theta_(theta), theta_dot_(theta_dot) {}
 
   /// Returns an EndpointZ with reversed direction.
   ///
   /// Reversing direction is equivalent to rotating s (and along with it, r)
   /// around the h-axis by 180 degrees, thus flipping the signs of z_dot
-  /// and theta.
+  /// and theta. theta_dot will remain the same.
   EndpointZ reverse() const {
     return EndpointZ(z_, -z_dot_, -theta_, theta_dot_);
   }
@@ -91,14 +95,16 @@ class EndpointZ {
 
   double theta() const { return theta_; }
 
-  double theta_dot() const { return theta_dot_; }
+  const optional<double>& theta_dot() const { return theta_dot_; }
+
+  optional<double>& get_mutable_theta_dot() { return theta_dot_; }
 
  private:
   double z_{};
   double z_dot_{};
 
   double theta_{};
-  double theta_dot_{};
+  optional<double> theta_dot_{};
 };
 
 /// Streams a string representation of `endpoint_z` into `out`. Returns
@@ -128,6 +134,8 @@ class Endpoint {
   /// Returns the subset of parameters pertaining to out-of-ground-plane
   /// aspects.
   const EndpointZ& z() const { return z_; }
+
+  EndpointZ& get_mutable_z() { return z_; }
 
  private:
   EndpointXy xy_;
@@ -215,11 +223,12 @@ class Connection {
   /// Constructs a line-segment connection.
   ///
   /// Segment's reference curve begins at `start` and extends on the plane
-  /// z=0 `line_length` distance with `start.xy().heading()` heading angle.
+  /// z=0 `line_offset.length()` distance with `start.xy().heading()` heading
+  /// angle.
   /// `end_z` will be used to build elevation and superelevation information of
   /// the road.
   ///
-  /// `line_length` must be non negative.
+  /// `line_offset` holds the length of the line.
   ///
   /// Segments will contain `num_lanes` lanes, which must be greater than zero.
   /// First Lane centerline will be placed at `r0` distance from the reference
@@ -238,8 +247,8 @@ class Connection {
   Connection(const std::string& id, const Endpoint& start,
              const EndpointZ& end_z, int num_lanes, double r0,
              double lane_width, double left_shoulder, double right_shoulder,
-             double line_length, double linear_tolerance, double scale_length,
-             ComputationPolicy computation_policy);
+             const LineOffset& line_offset, double linear_tolerance,
+             double scale_length, ComputationPolicy computation_policy);
 
   /// Constructs an arc-segment connection.
   ///

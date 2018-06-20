@@ -156,7 +156,10 @@ PYBIND11_MODULE(eigen_geometry, m) {
       // operator so that operations are similar to those of arrays.
       .def("multiply", [](const Class& self, const Class& other) {
         return self * other;
-      })
+      }, py::arg("other"))
+      .def("multiply", [](const Class& self, const Vector3<T>& position) {
+        return self * position;
+      }, py::arg("position"))
       .def("inverse", [](const Class* self) {
         return self->inverse();
       });
@@ -239,6 +242,9 @@ PYBIND11_MODULE(eigen_geometry, m) {
       .def("multiply", [](const Class& self, const Class& other) {
         return self * other;
       })
+      .def("multiply", [](const Class& self, const Vector3<T>& position) {
+        return self * position;
+      }, py::arg("position"))
       .def("inverse", [](const Class* self) {
         return self->inverse();
       });

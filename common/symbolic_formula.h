@@ -118,6 +118,11 @@ class Formula {
   /** Default constructor. */
   Formula() { *this = True(); }
 
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Formula(std::nullptr_t) : Formula() {}
+
   explicit Formula(std::shared_ptr<FormulaCell> ptr);
 
   /** Constructs a formula from @p var.

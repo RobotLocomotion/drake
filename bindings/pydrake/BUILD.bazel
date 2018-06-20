@@ -162,6 +162,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":trajectories_py",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/maliput",
+    "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/solvers",
     "//bindings/pydrake/systems",

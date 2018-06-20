@@ -69,6 +69,8 @@ class TestEigenGeometry(unittest.TestCase):
 
         # Operations.
         q = mut.Quaternion(wxyz=[0.5, 0.5, 0.5, 0.5])
+        self.assertTrue(
+            (q.multiply(position=[1, 2, 3]) == [3, 1, 2]).all())
         q_I = q.inverse().multiply(q)
         self.assertTrue(np.allclose(q_I.wxyz(), [1, 0, 0, 0]))
 
@@ -127,6 +129,8 @@ class TestEigenGeometry(unittest.TestCase):
         transform = mut.Isometry3(rotation=R, translation=p)
         transform_I = transform.inverse().multiply(transform)
         self.assertTrue(np.allclose(transform_I.matrix(), np.eye(4)))
+        self.assertTrue((
+            transform.multiply(position=[10, 20, 30]) == [21, -8, 33]).all())
 
     def test_translation(self):
         # Test `type_caster`s.

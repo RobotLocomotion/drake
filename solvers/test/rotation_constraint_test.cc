@@ -69,7 +69,8 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
     for (double roll = rmin; roll <= rmax; roll += M_PI / 6) {
       for (double pitch = pmin; pitch <= pmax; pitch += M_PI / 6) {
         for (double yaw = ymin; yaw <= ymax; yaw += M_PI / 6) {
-          Matrix3d R = drake::math::rpy2rotmat(Vector3d(roll, pitch, yaw));
+          const drake::math::RollPitchYaw<double> rpy(roll, pitch, yaw);
+          Matrix3d R = rpy.ToMatrix3ViaRotationMatrix();
           Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
           prog.SetInitialGuessForAllVariables(vecR);
           for (const auto& b : bb_constraints) {
