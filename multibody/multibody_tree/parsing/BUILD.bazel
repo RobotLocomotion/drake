@@ -87,7 +87,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant_sdf_parser",
         "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],

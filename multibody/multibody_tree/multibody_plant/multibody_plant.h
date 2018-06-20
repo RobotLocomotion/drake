@@ -274,6 +274,49 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   MultibodyPlant<T> plant;
   ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
   ///   const RigidBody<T>& body =
+  ///     plant.AddRigidBody("BodyName", model_instance, spatial_inertia);
+  /// @endcode
+  ///
+  /// @param[in] name
+  ///   A string that uniquely identifies the new body to be added to `this`
+  ///   model. A std::runtime_error is thrown if a body named `name` already is
+  ///   part of the model. See HasBodyNamed(), Body::name().
+  /// @param[in] model_instance
+  ///   A model instance index which this body is part of.
+  /// @param[in] M_BBo_B
+  ///   The SpatialInertia of the new rigid body to be added to `this` model,
+  ///   computed about the body frame origin `Bo` and expressed in the body
+  ///   frame B.
+  /// @returns A constant reference to the new RigidBody just added, which will
+  ///          remain valid for the lifetime of `this` %MultibodyPlant.
+  const RigidBody<T>& AddRigidBody(
+      const std::string& name, ModelInstanceIndex model_instance,
+      const SpatialInertia<double>& M_BBo_B) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    const RigidBody<T>& body = model_->AddRigidBody(
+        name, model_instance, M_BBo_B);
+    // Each entry of visual_geometries_, ordered by body index, contains a
+    // std::vector of geometry ids for that body. The emplace_back() below
+    // resizes visual_geometries_ to store the geometry ids for the body we
+    // just added.
+    // Similarly for the collision_geometries_ vector.
+    DRAKE_DEMAND(visual_geometries_.size() == body.index());
+    visual_geometries_.emplace_back();
+    DRAKE_DEMAND(collision_geometries_.size() == body.index());
+    collision_geometries_.emplace_back();
+    return body;
+  }
+
+  /// Creates a rigid body model with the provided name and spatial inertia.
+  /// This method returns a constant reference to the body just added, which
+  /// will remain valid for the lifetime of `this` %MultibodyPlant.  The body
+  /// will use the default model instance.
+  ///
+  /// Example of usage:
+  /// @code
+  ///   MultibodyPlant<T> plant;
+  ///   // ... Code to define spatial_inertia, a SpatialInertia<T> object ...
+  ///   const RigidBody<T>& body =
   ///     plant.AddRigidBody("BodyName", spatial_inertia);
   /// @endcode
   ///
@@ -289,20 +332,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
-    // TODO(sam.creasey) Expose model instances through MultibodyPlant.
-    const RigidBody<T>& body = model_->AddRigidBody(
-        name, default_model_instance(), M_BBo_B);
-    // Each entry of visual_geometries_, ordered by body index, contains a
-    // std::vector of geometry ids for that body. The emplace_back() below
-    // resizes visual_geometries_ to store the geometry ids for the body we
-    // just added.
-    // Similarly for the collision_geometries_ vector.
-    DRAKE_DEMAND(visual_geometries_.size() == body.index());
-    visual_geometries_.emplace_back();
-    DRAKE_DEMAND(collision_geometries_.size() == body.index());
-    collision_geometries_.emplace_back();
-    return body;
+    return AddRigidBody(name, default_model_instance(), M_BBo_B);
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
