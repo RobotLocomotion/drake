@@ -31,13 +31,33 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
+// This parametrized fixture allows us to run inclined planes tests using either
+// a continuous plant model or a discrete plant model.
 class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
  public:
   void SetUp() override {
+    // If "true" the plant is modeled as a discrete system with periodic
+    // updates.
+    const bool time_stepping = GetParam();
 
+    // The period of the periodic updates for the discrete plant model or zero
+    // when the plant is modeled as a continuous system.
+    const double time_step = time_stepping ? 5.0e-4 : 0.0;
+
+    // Contact parameters. Results converge to the analytical solution as the
+    // penetration allowance and the stiction tolerance go to zero.
+    // Since the discrete system uses an implicit scheme, we can use much
+    // tighter contact parameters than those used with a continuous plant model.
+
+    // The penetration allowance in meters.
+    const double penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;
+    // The stiction tolerance in meters per second.
+    const double stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
+
+    (void) time_step;
+    (void) penetration_allowance;
+    (void) stiction_tolerance;
   }
- protected:
-
 };
 
 // This test creates a simple multibody model of a sphere rolling down an
