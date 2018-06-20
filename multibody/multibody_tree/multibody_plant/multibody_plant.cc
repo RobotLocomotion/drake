@@ -6,10 +6,18 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/extract_double.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
+
+#include <fstream>
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+//#define PRINT_VAR(a) (void)a;
+//#define PRINT_VARn(a) (void)a;
 
 namespace drake {
 namespace multibody {
@@ -228,6 +236,16 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
+  // Make a contact solver when the plant is modeled as a discrete system.
+  if (is_discrete()) {
+    implicit_stribeck_solver_ =
+        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(
+            num_velocities());
+    implicit_stribeck::Parameters solver_parameters;
+    solver_parameters.stiction_tolerance =
+        stribeck_model_.stiction_tolerance();
+    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+  }
 }
 
 template <typename T>
@@ -723,6 +741,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
 
+  int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
+  (void) istep;
+
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
@@ -737,7 +758,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
 
-  // Position and velocity kinematics at the previous time step.
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
@@ -762,17 +782,15 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
-  if (num_collision_geometries() > 0) {
-    throw std::runtime_error("Contact not supported in time stepping mode.");
-  }
+  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
+      CalcPointPairPenetrations(context0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
-
+  // Body forces (alias to forces0).
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
 
   // With vdot = 0, this computes:
@@ -785,8 +803,71 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  // Velocity at next time step.
-  VectorX<T> v_next = v0 + dt * M0_ldlt.solve(-minus_tau);
+  // Compute discrete update before applying friction forces.
+  // We denote this state x* = [q*, v*], the "star" state.
+  // Generalized momentum "star", before friction forces are applied.
+  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
+
+  // Compute normal and tangential velocity Jacobians at t0.
+  const int num_contacts = point_pairs0.size();
+  MatrixX<T> Jn(num_contacts, nv);
+  MatrixX<T> Jt(2 * num_contacts, nv);
+  if (num_contacts > 0) {
+    Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
+    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0);
+  }
+
+  // Get friction coefficient into a single vector. Dynamic friction is ignored
+  // by the time stepping scheme.
+  std::vector<CoulombFriction<double>> combined_friction_pairs =
+      CalcCombinedFrictionCoefficients(point_pairs0);
+  VectorX<T> mu(num_contacts);
+  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
+                 mu.data(),
+                 [](const CoulombFriction<double>& coulomb_friction) {
+                   return coulomb_friction.static_friction();
+                 });
+
+  // Place all the penetration depths within a single vector as required by
+  // the solver.
+  VectorX<T> phi0(num_contacts);
+  std::transform(point_pairs0.begin(), point_pairs0.end(),
+                 phi0.data(),
+                 [](const PenetrationAsPointPair<T>& pair) {
+                   return pair.depth;
+                 });
+
+  // TODO(amcastro-tri): Consider using different penalty parameters at each
+  // contact point.
+  // Compliance parameters used by the solver for each contact point.
+  VectorX<T> stiffness = VectorX<T>::Constant(
+      num_contacts, penalty_method_contact_parameters_.stiffness);
+  VectorX<T> damping = VectorX<T>::Constant(
+      num_contacts, penalty_method_contact_parameters_.damping);
+
+  // Update the solver with the new data defining the problem for this update.
+  implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+      &M0, &Jn, &Jt, &p_star, &phi0, &stiffness, &damping, &mu);
+
+  // Solve for v and the contact forces.
+  implicit_stribeck::ComputationInfo info =
+      implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  DRAKE_DEMAND(info == implicit_stribeck::Success);
+
+  const implicit_stribeck::IterationStats& stats =
+      implicit_stribeck_solver_->get_iteration_statistics();
+
+  std::ofstream outfile;
+  outfile.open("nr_iteration.dat", std::ios_base::app);
+  outfile <<
+          fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e}\n",
+                      context0.get_time(), istep, stats.num_iterations,
+                      num_contacts, stats.vt_residual());
+  outfile.close();
+
+  // Retrieve the solution velocity for the next time step.
+  VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();
+
   VectorX<T> qdot_next(this->num_positions());
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
   VectorX<T> q_next = q0 + dt * qdot_next;

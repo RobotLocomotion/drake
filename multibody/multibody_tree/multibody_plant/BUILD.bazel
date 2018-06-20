@@ -37,6 +37,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:orthonormal_basis",
         "//multibody/multibody_tree",
+        "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",
         "//systems/framework:leaf_system",
     ],
 )
