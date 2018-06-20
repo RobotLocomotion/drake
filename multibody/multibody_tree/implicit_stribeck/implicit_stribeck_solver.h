@@ -913,11 +913,11 @@ class ImplicitStribeckSolver {
     return problem_data_aliases_.two_way_coupling_data();
   }
 
-  // Helper method to compute, into fn_ptr, the normal force at each contact
+  // Helper method to compute, into fn, the normal force at each contact
   // point pair according to the law:
   //   fₙ(φ, vₙ) = <k(vₙ)>¹⋅<φ>¹
   //       k(vₙ) = <k⋅(1 - d⋅vₙ)>¹
-  // where `<⋅>¹` is the Macaulay bracket and `k` and d are the stiffness and
+  // where `<⋅>¹` is the Macaulay bracket and k and d are the stiffness and
   // damping coefficients for a given contact point, respectively.
   // In addition, this method also computes the gradient
   // Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹).
@@ -926,8 +926,8 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const VectorX<T>>& vn,
       const Eigen::Ref<const MatrixX<T>>& Jn,
       double dt,
-      EigenPtr<VectorX<T>> fn_ptr,
-      EigenPtr<MatrixX<T>> Gn_ptr) const;
+      EigenPtr<VectorX<T>> fn,
+      EigenPtr<MatrixX<T>> Gn) const;
 
   // Helper to compute fₜ(vₜ) = -vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes
@@ -940,9 +940,12 @@ class ImplicitStribeckSolver {
       EigenPtr<VectorX<T>> mu_stribeck,
       EigenPtr<VectorX<T>> ft) const;
 
-  // Helper to compute gradient dft_dvt = ∇ᵥₜfₜ(vₜ), as a function of the
+  // Helper to compute gradient dft_dvt = -∇ᵥₜfₜ(vₜ), as a function of the
   // normal force fn, friction coefficient mu_vt (μ(‖vₜ‖)), tangent versor
   // t_hat and (current) slip velocity v_slip.
+  // We define dft_dvt as minus the gradient of the friction forces, ie.
+  // dft_dvt = -∇ᵥₜfₜ(vₜ), so that dft_dvt is PSD, which is convenient for
+  // stability analysis of the time stepping method.
   void CalcFrictionForcesGradient(
       const Eigen::Ref<const VectorX<T>>& fn,
       const Eigen::Ref<const VectorX<T>>& mu_vt,
@@ -950,8 +953,8 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const VectorX<T>>& v_slip,
       std::vector<Matrix2<T>>* dft_dvt) const;
 
-  // Helper method to compute the Newton-Raphson Jacobian, ∇ᵥR, as a function
-  // of M, Gt, Jt and dt.
+  // Helper method to compute the Newton-Raphson Jacobian, J = ∇ᵥR, as a
+  // function of M, Jn, Jt, Gn, dft_dvt, t_hat, mu_vt and dt.
   void CalcJacobian(
       const Eigen::Ref<const MatrixX<T>>& M,
       const Eigen::Ref<const MatrixX<T>>& Jn,
@@ -959,7 +962,7 @@ class ImplicitStribeckSolver {
       const Eigen::Ref<const MatrixX<T>>& Gn,
       const std::vector<Matrix2<T>>& dft_dvt,
       const Eigen::Ref<const VectorX<T>>& t_hat,
-      const Eigen::Ref<const VectorX<T>>& mus, double dt,
+      const Eigen::Ref<const VectorX<T>>& mu_vt, double dt,
       EigenPtr<MatrixX<T>> J) const;
 
   // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for

@@ -524,7 +524,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     const Eigen::Ref<const MatrixX<T>>& Gn,
     const std::vector<Matrix2<T>>& dft_dvt,
     const Eigen::Ref<const VectorX<T>>& t_hat,
-    const Eigen::Ref<const VectorX<T>>& mus, double dt,
+    const Eigen::Ref<const VectorX<T>>& mu_vt, double dt,
     EigenPtr<MatrixX<T>> J) const {
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
@@ -533,29 +533,43 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   const int nf = 2 * nc;
 
   // Newton-Raphson Jacobian, i.e. the derivative of the residual with
-  // respect to the independent variables which, in this case, are the
-  // generalized velocities of the mechanical system.
-  //  J = M + dt Jtᵀdiag(dft_dvt)Jt:
-  // J is an (nv x nv) symmetric positive definite matrix.
-  // diag(dft_dvt) is the (2nc x 2nc) block diagonal matrix with dft_dvt in
-  // each 2x2 diagonal entry.
+  // respect to the independent variable which, in this case, is the vector
+  // of generalized velocities vⁿ⁺¹ at the next time step. We just use v for
+  // brevity here.
+  // Analytical differentiation of the residual with respect to v leads to:
+  //   J = ∇ᵥR = M - δt Jₙᵀ⋅Gn - δt Jₜᵀ⋅Gt
+  // where Gn = Gn = ∇ᵥfₙ(∇ᵥfₙ(φ(v), vₙ(v))) (of size nc x nv) and
+  // Gt = ∇ᵥfₜ(vₜ(v)) (of size 2nc x nv) are the gradients with respect to v
+  // of the normal and friction forces, respectively. The gradient of the normal
+  // forces is an input to this method while the gradient of the tangential
+  // forces can be computed in terms of dft_dvt and Gn as:
+  //   Gt = ∇ᵥfₜ = -diag(dft_dvt)⋅Jₜ - Gfn(ft)⋅Jₙ
+  // recall that dft_dvt = -∇ᵥₜfₜ so that dft_dvt is defined PSD.
+  // For each contact point dft_dvt is a 2x2 PSD matrix. diag(dft_dvt) is the
+  // (2nc x 2nc) block diagonal matrix with dft_dvt in each 2x2 diagonal entry.
+  // Gfn(ft) is the gradient of the friction forces with respect to the normal
+  // forces. Thus, Gfn(ft)⋅Jₙ is nothing but the chain rule of differentiation
+  // to copute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
+  // the functional dependence of the normal forces with v.
+  // Notice that Gfn(ft) is zero for the one-way coupled scheme.
 
-  // Compute Gt = ∇ᵥfₜ (gradient of the friction forces with respect to the
-  // generalized velocities) as Gt = diag(dft_dvt)Jt and use the fact that
+  // Compute Gt = -∇ᵥfₜ (gradient of the friction forces with respect to the
+  // generalized velocities) as Gt = -diag(dft_dvt)Jt and use the fact that
   // diag(dft_dvt) is block diagonal.
-  MatrixX<T> Gt(nf, nv);  // ∇ᵥfₜ
+  MatrixX<T> Gt(nf, nv);  // -∇ᵥfₜ
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     Gt.block(ik, 0, 2, nv) =
         -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
 
-    // Add Contribution from Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹).
+    // Add Contribution from Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹). Only for the two-way
+    // coupled scheme.
     if (two_way_coupling()) {
-      auto &t_hat_ic = t_hat.template segment<2>(ik);
+      auto& t_hat_ic = t_hat.template segment<2>(ik);
       Gt.block(ik    , 0, 1, nv) -=
-          mus(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
+          mu_vt(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
       Gt.block(ik + 1, 0, 1, nv) -=
-          mus(ic) * t_hat_ic(1) * Gn.block(ic, 0, 1, nv);
+          mu_vt(ic) * t_hat_ic(1) * Gn.block(ic, 0, 1, nv);
     }
   }
 
