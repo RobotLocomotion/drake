@@ -26,9 +26,9 @@
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/witness_function.h"
 

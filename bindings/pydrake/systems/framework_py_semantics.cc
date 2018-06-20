@@ -13,7 +13,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 
 using std::string;
 using std::unique_ptr;
