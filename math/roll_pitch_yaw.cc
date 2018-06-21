@@ -175,7 +175,7 @@ RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
   // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
   const RollPitchYaw<T> rpy(roll_pitch_yaw_);
   const RotationMatrix<T> R_rpy = RotationMatrix<T>(rpy);
-  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(rotation_matrix, 20 * kEpsilon));
+  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(rotation_matrix, 20 * kEpsilon).value());
 #endif
 }
 
@@ -188,7 +188,7 @@ bool RollPitchYaw<T>::IsNearlySameOrientation(const RollPitchYaw<T>& other,
   // angles' values should be able to be accurately reproduced.
   const RotationMatrix<T> R1(*this);
   const RotationMatrix<T> R2(other);
-  return R1.IsNearlyEqualTo(R2, tolerance);
+  return R1.IsNearlyEqualTo(R2, tolerance).value();
 }
 
 template <typename T>
