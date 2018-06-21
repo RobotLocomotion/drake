@@ -10,7 +10,7 @@ namespace math {
 
 template<typename T>
 template <typename S>
-typename std::enable_if<is_numeric<S>::value>::type
+typename std::enable_if<is_numeric<S>::value, void>::type
 RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
   if (!R.allFinite()) {
     throw std::logic_error(
