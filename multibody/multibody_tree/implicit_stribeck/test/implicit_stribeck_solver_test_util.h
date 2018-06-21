@@ -17,25 +17,25 @@ namespace multibody {
 namespace implicit_stribeck {
 namespace test {
 
-// Computes the normal force as a function of the signed penetration depth phi
+// Computes the normal force as a function of the signed penetration depth x
 // and separation velocity vn using a compliant law of the form:
-//   fₙ(φ, vₙ) = <k(vₙ)>¹⋅<φ>¹
-//       k(vₙ) = <k⋅(1 - d⋅vₙ)>¹
-// where `<⋅>¹` is the Macaulay bracket and k and d are the stiffness and
+//   fₙ(x, vₙ) = k(vₙ)₊ x₊
+//       k(vₙ) = k (1 − d⋅vₙ)₊
+// where `x₊ = max(x, 0)` and k and d are the stiffness and
 // dissipation coefficients for a given contact point, respectively.
 template <typename U>
 VectorX<U> CalcNormalForces(
-    const VectorX<U>& phi,
+    const VectorX<U>& x,
     const VectorX<double>& stiffness, const VectorX<double>& dissipation,
     double dt, const VectorX<U>& vn) {
-  int nc = phi.size();
+  int nc = x.size();
 
-  // Compute normal force at t^{n+1}
+  // Compute normal force at tˢ⁺¹.
   const VectorX<U> k_vn =
       stiffness * (VectorX<U>::Ones(nc) - dissipation.asDiagonal() * vn);
   const VectorX<U> k_vn_clamped = k_vn.template cwiseMax(VectorX<U>::Zero(nc));
-  const VectorX<U> phi_clamped = phi.cwiseMax(VectorX<U>::Zero(nc));
-  const VectorX<U> fn = k_vn_clamped.asDiagonal() * phi_clamped;
+  const VectorX<U> x_clamped = x.cwiseMax(VectorX<U>::Zero(nc));
+  const VectorX<U> fn = k_vn_clamped.asDiagonal() * x_clamped;
   return fn;
 }
 
@@ -105,14 +105,14 @@ VectorX<U> CalcFrictionForces(
 // coupled scheme. Call with two_way_coupling = false to compute the residual
 // for the one-way coupled scheme.
 // When two_way_coupling = true fn_data is not used.
-// When two_way_coupling = false phi0, stiffness and dissipation are not used.
+// When two_way_coupling = false x0, stiffness and dissipation are not used.
 template <typename U>
 VectorX<U> CalcResidual(
     const MatrixX<double>& M,
     const MatrixX<double>& Jn,
     const MatrixX<double>& Jt,
     const VectorX<double>& p_star,
-    const VectorX<double>& phi0,
+    const VectorX<double>& x0,
     const VectorX<double>& mu,
     const VectorX<double>& fn_data,
     const VectorX<double>& stiffness,
@@ -120,19 +120,19 @@ VectorX<U> CalcResidual(
     double dt, double v_stiction, double epsilon_v,
     bool two_way_coupling,
     const VectorX<U>& v) {
-  // Separation velocities vₙⁿ⁺¹ ( = vn in code below).
+  // Separation velocities vₙˢ⁺¹ ( = vn in code below).
   VectorX<U> vn = Jn * v;
 
   VectorX<U> fn;
   if (two_way_coupling) {
     // Compute separation distance at O(dt).
-    // φⁿ⁺¹ = φⁿ - δt⋅vₙⁿ⁺¹. The minus sign is needed because vn's are
-    // **separation** velocities, i.e. when negative, phi (penetration distance)
-    // increases. That is, φ̇ = -vₙ.
-    VectorX<U> phi = phi0 - dt * vn;
+    // xˢ⁺¹ = xˢ − δt vₙˢ⁺¹. The minus sign is needed because vn's are
+    // **separation** velocities, i.e. when negative, x (penetration distance)
+    // increases. That is, ẋ = −vₙ.
+    VectorX<U> x = x0 - dt * vn;
 
-    // Normal force, as a function of φⁿ⁺¹ and vₙⁿ⁺¹.
-    fn = CalcNormalForces(phi, stiffness, dissipation, dt, vn);
+    // Normal force, as a function of xˢ⁺¹ and vₙˢ⁺¹.
+    fn = CalcNormalForces(x, stiffness, dissipation, dt, vn);
   } else {
     fn = fn_data;  // Fixed to input.
   }
@@ -157,7 +157,7 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
     const MatrixX<double>& Jn,
     const MatrixX<double>& Jt,
     const VectorX<double>& p_star,
-    const VectorX<double>& phi0,
+    const VectorX<double>& x0,
     const VectorX<double>& mu,
     const VectorX<double>& stiffness,
     const VectorX<double>& dissipation,
@@ -168,7 +168,7 @@ MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
   // Empty vector for data not used by the two-way coupled scheme.
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
-      M, Jn, Jt, p_star, phi0, mu, not_used, stiffness, dissipation,
+      M, Jn, Jt, p_star, x0, mu, not_used, stiffness, dissipation,
       dt, v_stiction, epsilon_v, true,
       v_autodiff);
   return math::autoDiffToGradientMatrix(residual);

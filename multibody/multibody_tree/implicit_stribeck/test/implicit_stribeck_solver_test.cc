@@ -38,20 +38,20 @@ class ImplicitStribeckSolverTester {
     auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
     std::vector<Matrix2<double>>& dft_dvt =
         solver.variable_size_workspace_.mutable_dft_dvt();
-    auto phi = solver.variable_size_workspace_.mutable_phi();
+    auto x = solver.variable_size_workspace_.mutable_x();
 
     // Normal separation velocity.
     vn = Jn * v;
 
     if (solver.has_two_way_coupling()) {
-      const auto phi0 = solver.problem_data_aliases_.phi0();
+      const auto x0 = solver.problem_data_aliases_.x0();
       // Penetration distance (positive when there is penetration).
-      phi = phi0 - dt * vn;
+      x = x0 - dt * vn;
     }
 
-    // Computes friction forces fn and gradients Gn as a function of phi, vn,
+    // Computes friction forces fn and gradients Gn as a function of x, vn,
     // Jn and dt.
-    solver.CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
+    solver.CalcNormalForces(x, vn, Jn, dt, &fn, &Gn);
 
     // Tangential velocity.
     vt = Jt * v;
@@ -840,7 +840,7 @@ class RollingCylinder : public ::testing::Test {
     // A very small penetration allowance for practical purposes.
     const double penetration_allowance = 1.0e-6;
     // Initial penetration of O(dt), in tests below we use dt = 1.0e-3.
-    phi0_(0) = 1.0e-3;
+    x0_(0) = 1.0e-3;
     stiffness_(0) = m_ * g_ / penetration_allowance;
     const double omega = sqrt(stiffness_(0) / m_);
     const double time_scale = 1.0 / omega;
@@ -849,7 +849,7 @@ class RollingCylinder : public ::testing::Test {
     damping_(0) = damping;
 
     solver_.SetTwoWayCoupledProblemData(
-        &M_, &Jn_, &Jt_, &p_star_, &phi0_, &stiffness_, &damping_, &mu_vector_);
+        &M_, &Jn_, &Jt_, &p_star_, &x0_, &stiffness_, &damping_, &mu_vector_);
   }
 
  protected:
@@ -891,7 +891,7 @@ class RollingCylinder : public ::testing::Test {
 
   VectorX<double> stiffness_{nc_};
   VectorX<double> damping_{nc_};
-  VectorX<double> phi0_{nc_};
+  VectorX<double> x0_{nc_};
 
   // The implicit Stribeck solver for this problem.
   ImplicitStribeckSolver<double> solver_{nv_};
@@ -973,7 +973,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
+      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
       stiffness_, damping_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
@@ -1066,7 +1066,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, phi0_, mu_vector_,
+      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
       stiffness_, damping_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
