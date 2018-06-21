@@ -200,7 +200,7 @@ bool RollPitchYaw<T>::IsNearlySameOrientation(const RollPitchYaw<T>& other,
   // angles' values should be able to be accurately reproduced.
   const RotationMatrix<T> R1(*this);
   const RotationMatrix<T> R2(other);
-  return R1.IsNearlyEqualTo(R2, tolerance);
+  return R1.IsNearlyEqualTo(R2, tolerance).value();
 }
 
 template <typename T>

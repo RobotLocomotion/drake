@@ -78,7 +78,7 @@ GTEST_TEST(RollPitchYaw, ToRotationMatrix) {
                           * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
   const RotationMatrix<double> R_eigen(m_eigen);
   const RotationMatrix<double> R_rpy = rpy.ToRotationMatrix();
-  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
+  EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon).value());
 
   // Also test associated convenience "sugar" method that returns 3x3 matrix.
   const Matrix3d m_rpy = rpy.ToMatrix3ViaRotationMatrix();
@@ -107,7 +107,7 @@ GTEST_TEST(RollPitchYaw, testToQuaternion) {
   const Eigen::Quaterniond quat = rpy.ToQuaternion();
   const RotationMatrix<double> R1(rpy);
   const RotationMatrix<double> R2(quat);
-  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon));
+  EXPECT_TRUE(R1.IsNearlyEqualTo(R2, kEpsilon).value());
 
   // Test SetFromQuaternion.
   RollPitchYaw<double> rpy2(0, 0, 0);
