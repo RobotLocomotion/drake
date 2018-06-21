@@ -458,6 +458,8 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     double dt,
+    // We change from fn/Gn in the header to fn_ptr, Gn_ptr here to avoid name
+    // clashes with local variables.
     EigenPtr<VectorX<T>> fn_ptr,
     EigenPtr<MatrixX<T>> Gn_ptr) const {
   using std::max;
