@@ -55,7 +55,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 
   // Case III: Transition to an almost exact stiction from sliding.
   // We want to avoid v1 landing in a region of zero gradients so we force
-  // it to land within the circle of radius v_stiction, at v_stribeck/2 in the
+  // it to land within the circle of radius v_stiction, at v_stiction/2 in the
   // direction of v.
   if (x > 1.0 && x1 < relative_tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
@@ -315,15 +315,15 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   auto t_hat = *t_hat_ptr;
 
   // The stiction tolerance.
-  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
+  // TODO(amcastro-tri): rename v_stiction to v_stiction, since our
   // "Stribeck function" is not a Stribeck model really.
-  const double v_stribeck = parameters_.stiction_tolerance;
+  const double v_stiction = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
   // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
   // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
+  const double epsilon_v = v_stiction * parameters_.relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   // Compute 2D tangent vectors.
@@ -366,7 +366,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<T> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
     ft->template segment<2>(ik) = -mu_stribeck(ic) * that_ic * fn(ic);
   }
@@ -389,17 +389,17 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
   std::vector<Matrix2<T>>& dft_dvt = *dft_dvt_ptr;
 
   // The stiction tolerance.
-  const double v_stribeck = parameters_.stiction_tolerance;
+  const double v_stiction = parameters_.stiction_tolerance;
 
   // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
   // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
   for (int ic = 0; ic < nc; ++ic) {
     const int ik = 2 * ic;
 
-    // Compute dmu/dv = (1/v_stribeck) * dmu/dx
-    // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-    const T x = v_slip(ic) / v_stribeck;
-    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
+    // Compute dmu/dv = (1/v_stiction) * dmu/dx
+    // where x = v_slip / v_stiction is the dimensionless slip velocity.
+    const T x = v_slip(ic) / v_stiction;
+    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stiction;
 
     const auto t_hat_ic = t_hat.template segment<2>(ik);
 
@@ -427,7 +427,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
     //   ∇ᵥₜfₜ = −dft_dvt = −fn * (
     //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
-    //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+    //     dmu_stribeck/dx * P(t̂) / v_stiction )
     // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
     // have defined dft_dvt = −∇ᵥₜfₜ.
     // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
@@ -585,7 +585,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
   T alpha = 1.0;
-  double v_stribeck = parameters_.stiction_tolerance;
+  double v_stiction = parameters_.stiction_tolerance;
   for (int ic = 0; ic < nc_; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     auto vt_ic = vt.template segment<2>(ik);
@@ -594,7 +594,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
         alpha,
         internal::DirectionChangeLimiter<T>::CalcAlpha(
             vt_ic, dvt_ic,
-            cos_theta_max_, v_stribeck, parameters_.relative_tolerance));
+            cos_theta_max_, v_stiction, parameters_.relative_tolerance));
   }
   DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
   return alpha;

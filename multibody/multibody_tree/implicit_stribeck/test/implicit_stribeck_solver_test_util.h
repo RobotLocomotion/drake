@@ -117,7 +117,7 @@ VectorX<U> CalcResidual(
     const VectorX<double>& fn_data,
     const VectorX<double>& stiffness,
     const VectorX<double>& dissipation,
-    double dt, double v_stribeck, double epsilon_v,
+    double dt, double v_stiction, double epsilon_v,
     bool two_way_coupling,
     const VectorX<U>& v) {
   // Separation velocities vₙˢ⁺¹ ( = vn in code below).
@@ -141,7 +141,7 @@ VectorX<U> CalcResidual(
   VectorX<U> vt = Jt * v;
 
   // Friction forces.
-  VectorX<U> ft = CalcFrictionForces(v_stribeck, epsilon_v, mu, vt, fn);
+  VectorX<U> ft = CalcFrictionForces(v_stiction, epsilon_v, mu, vt, fn);
 
   // Newton-Raphson residual
   VectorX<U> residual =
@@ -183,7 +183,7 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const VectorX<double>& p_star,
     const VectorX<double>& mu,
     const VectorX<double>& fn,
-    double dt, double v_stribeck, double epsilon_v,
+    double dt, double v_stiction, double epsilon_v,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
@@ -191,7 +191,7 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
-      dt, v_stribeck, epsilon_v, false,
+      dt, v_stiction, epsilon_v, false,
       v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }
