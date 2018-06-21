@@ -844,6 +844,15 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
+
+  /// Computes the generalized forces that correspond to joint springs.
+  ///
+  /// Spring forces are computed joint-by-joint and are a function of position
+  /// only (they do not couple between joints)
+  template <typename Scalar>
+  drake::VectorX<Scalar> CalcGeneralizedSpringForces(
+      const drake::VectorX<Scalar>& q) const;
+
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
