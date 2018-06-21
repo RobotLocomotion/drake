@@ -218,7 +218,8 @@ GTEST_TEST(RotationMatrix, OperatorMultiplyAndIsNearlyEqualTo) {
   const RotationMatrix<double> R_CA_manual_multiply(m_CA);
 
   // Test operator *().
-  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_manual_multiply, 10 * kEpsilon));
+  EXPECT_TRUE(
+      R_CA.IsNearlyEqualTo(R_CA_manual_multiply, 10 * kEpsilon).value());
 
   // Also test IsNearlyEqualTo.
   EXPECT_FALSE(R_CA.IsNearlyEqualTo(R_CB, 10000 * kEpsilon).value());

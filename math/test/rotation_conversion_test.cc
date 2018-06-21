@@ -372,7 +372,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
         AreQuaternionsEqualForOrientation(quat_drake, quat_eigen, kTolerance));
     // Ensure the calculated quaternion produces the same rotation matrix.
     const RotationMatrix<double> rotmat(quat_drake);
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 256 * kEpsilon));
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 256 * kEpsilon).value());
   }
 }
 
@@ -381,7 +381,7 @@ TEST_F(RotationConversionTest, rotmat2rpyTest) {
     const RollPitchYaw<double> rpy(Ri);
     const RotationMatrix<double> rotmat_expected(rpy);
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon));
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon).value());
     EXPECT_TRUE(rpy.IsRollPitchYawInCanonicalRange());
   }
 }
@@ -399,7 +399,8 @@ TEST_F(RotationConversionTest, rpy2rotmatTest) {
     // Compute rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
     // then compare the result with RotationMatrix(RollPitchYaw).
     const RotationMatrix<double> R_from_rpy(rpyi);
-    EXPECT_TRUE(R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon));
+    EXPECT_TRUE(
+        R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon).value());
 
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
     const RollPitchYaw<double> rpy_expected(R_from_rpy);
