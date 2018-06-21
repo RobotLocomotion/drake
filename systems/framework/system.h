@@ -135,12 +135,12 @@ class System : public SystemBase {
   /// output port's allocation method to provide an object of the right type
   /// for that port.
   std::unique_ptr<SystemOutput<T>> AllocateOutput() const {
-    std::unique_ptr<SystemOutput<T>> output(new SystemOutput<T>);
+    auto output = std::make_unique<SystemOutput<T>>();
     for (int i = 0; i < this->get_num_output_ports(); ++i) {
       const OutputPort<T>& port = this->get_output_port(i);
       output->add_port(port.Allocate());
     }
-    return std::move(output);
+    return output;
   }
 
   /// (Deprecated) Context is ignored.

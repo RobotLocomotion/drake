@@ -840,7 +840,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   // copyable_unique_ptr does just that, so is suitable for capture by the
   // allocator functor here.
   copyable_unique_ptr<AbstractValue> owned_model(
-      new Value<ValueType>(model_value));
+      std::make_unique<Value<ValueType>>(model_value));
   auto alloc_callback = [model = std::move(owned_model)]() {
     return model->Clone();
   };

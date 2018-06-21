@@ -158,7 +158,7 @@ class DiagramContext final : public Context<T> {
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
   // TODO(sherm1) Consider a better name for this when it is fully implemented,
-  // like SubscribeExportedPortToDiagramPort().
+  // like SubscribeExportedInputPortToDiagramPort().
   void ExportInput(InputPortIndex input_port_index,
                    const InputPortIdentifier& subsystem_input_port) {
     // Identify and validate the destination input port.
@@ -179,6 +179,8 @@ class DiagramContext final : public Context<T> {
   ///
   /// User code should not call this method. It is for use during Diagram
   /// context allocation only.
+  // TODO(sherm1) Consider a better name for this when it is fully implemented,
+  // like SubscribeDiagramPortToExportedOutputPort().
   void ExportOutput(OutputPortIndex output_port_index,
                     const OutputPortIdentifier& subsystem_output_port) {
     // Identify and validate the source output port.
@@ -201,7 +203,9 @@ class DiagramContext final : public Context<T> {
   /// also possible for both ports to belong to the same subsystem).
   ///
   /// User code should not call this method. It is for use during Diagram
-  /// context allocation and cloning only.
+  /// context allocation only.
+  // TODO(sherm1) Consider a better name for this when it is fully implemented,
+  // like SubscribeInputPortToOutputPort().
   void Connect(const OutputPortIdentifier& output_port,
                const InputPortIdentifier& input_port) {
     // Identify and validate the source output port.

@@ -253,7 +253,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       sub_derivatives.push_back(system->AllocateTimeDerivatives());
     }
     return std::unique_ptr<ContinuousState<T>>(
-        new DiagramContinuousState<T>(std::move(sub_derivatives)));
+        std::make_unique<DiagramContinuousState<T>>(
+            std::move(sub_derivatives)));
   }
 
   /// Aggregates the discrete update variables from each subsystem into a
@@ -265,7 +266,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       sub_discretes.push_back(system->AllocateDiscreteVariables());
     }
     return std::unique_ptr<DiscreteValues<T>>(
-        new DiagramDiscreteValues<T>(std::move(sub_discretes)));
+        std::make_unique<DiagramDiscreteValues<T>>(std::move(sub_discretes)));
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -978,7 +979,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
           allocater_func(registered_systems_[i].get());
       ret->set_and_own_subevent_collection(i, std::move(subevent_collection));
     }
-    return std::move(ret);
+    return ret;
   }
 
   // For each subsystem, if there is a publish event in its corresponding

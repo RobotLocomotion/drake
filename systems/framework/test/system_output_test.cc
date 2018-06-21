@@ -5,13 +5,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
-
 
 class SystemOutputTest : public ::testing::Test {
  protected:
@@ -59,27 +59,25 @@ TEST_F(SystemOutputTest, Mutation) {
 
 // Tests that a copy of a SystemOutput has a deep copy of the data.
 TEST_F(SystemOutputTest, Copy) {
-  auto clone(output_);
-  // Changes to the original port should not affect the clone.
+  SystemOutput<double> copy(output_);
+  // Changes to the original port should not affect the copy.
   output_.GetMutableVectorData(0)->get_mutable_value() << 7, 8;
   output_.GetMutableData(2)->GetMutableValue<std::string>() = "bar";
 
   VectorX<double> expected(2);
   expected << 5, 25;
-  EXPECT_EQ(expected, clone.get_vector_data(0)->get_value());
+  EXPECT_EQ(expected, copy.get_vector_data(0)->get_value());
 
-  EXPECT_EQ("foo", clone.get_data(2)->GetValue<std::string>());
+  EXPECT_EQ("foo", copy.get_data(2)->GetValue<std::string>());
 
   // The type and value should be preserved.
-  const BasicVector<double>* basic = clone.get_vector_data(1);
-  auto* my_vec = dynamic_cast<const MyVector<3, double>*>(basic);
-  ASSERT_NE(my_vec, nullptr);
+  const BasicVector<double>* basic = copy.get_vector_data(1);
+  ASSERT_TRUE((is_dynamic_castable<const MyVector<3, double>>(basic)));
+  auto& my_vec = dynamic_cast<const MyVector<3, double>&>(*basic);
 
   expected.resize(3);
   expected << 125, 625, 3125;
-  EXPECT_EQ(expected, my_vec->get_value());
-
-  EXPECT_EQ(clone.get_data(2)->GetValueOrThrow<std::string>(), "foo");
+  EXPECT_EQ(expected, my_vec.get_value());
 }
 
 }  // namespace systems

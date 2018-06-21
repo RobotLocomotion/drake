@@ -1,17 +1,13 @@
 #pragma once
 
 #include <memory>
-#include <set>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/value.h"
-#include "drake/systems/framework/value_checker.h"
 
 namespace drake {
 namespace systems {

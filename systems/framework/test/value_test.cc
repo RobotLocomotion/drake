@@ -311,8 +311,7 @@ class PrintableValue : public Value<T>, public PrintInterface {
   explicit PrintableValue(const T& v) : Value<T>(v) {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
-    return std::unique_ptr<PrintableValue<T>>(
-        new PrintableValue<T>(this->get_value()));
+    return std::make_unique<PrintableValue<T>>(this->get_value());
   }
 
   std::string print() const override {
