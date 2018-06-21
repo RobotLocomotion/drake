@@ -3,6 +3,7 @@
 #include <cmath>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace drake {
 namespace maliput {
@@ -195,45 +196,25 @@ namespace test {
                                                   double tolerance) {
   bool fails = false;
   std::string error_message{};
-  double delta = std::abs(cubic1.a() - cubic2.a());
-  if (delta > tolerance) {
-    fails = true;
-    error_message = error_message +
-                    "Cubic polynomials are different at a coefficient. " +
-                    "cubic1.a(): " + std::to_string(cubic1.a()) +
-                    " vs. cubic2.a(): " + std::to_string(cubic2.a()) +
-                    ", diff = " + std::to_string(delta) +
-                    ", tolerance = " + std::to_string(tolerance) + "\n";
-  }
-  delta = std::abs(cubic1.b() - cubic2.b());
-  if (delta > tolerance) {
-    fails = true;
-    error_message = error_message +
-                    "Cubic polynomials are different at b coefficient. " +
-                    "cubic1.b(): " + std::to_string(cubic1.b()) +
-                    " vs. cubic2.b(): " + std::to_string(cubic2.b()) +
-                    ", diff = " + std::to_string(delta) +
-                    ", tolerance = " + std::to_string(tolerance) + "\n";
-  }
-  delta = std::abs(cubic1.c() - cubic2.c());
-  if (delta > tolerance) {
-    fails = true;
-    error_message = error_message +
-                    "Cubic polynomials are different at c coefficient. " +
-                    "cubic1.c(): " + std::to_string(cubic1.c()) +
-                    " vs. cubic2.c(): " + std::to_string(cubic2.c()) +
-                    ", diff = " + std::to_string(delta) +
-                    ", tolerance = " + std::to_string(tolerance) + "\n";
-  }
-  delta = std::abs(cubic1.d() - cubic2.d());
-  if (delta > tolerance) {
-    fails = true;
-    error_message = error_message +
-                    "Cubic polynomials are different at d coefficient. " +
-                    "cubic1.d(): " + std::to_string(cubic1.d()) +
-                    " vs. cubic2.d(): " + std::to_string(cubic2.d()) +
-                    ", diff = " + std::to_string(delta) +
-                    ", tolerance = " + std::to_string(tolerance) + "\n";
+  static const std::vector<std::string> coefficient_strs{"a", "b", "c", "d"};
+  const std::vector<double> coefficients1{cubic1.a(), cubic1.b(), cubic1.c(),
+                                          cubic1.d()};
+  const std::vector<double> coefficients2{cubic2.a(), cubic2.b(), cubic2.c(),
+                                          cubic2.d()};
+
+  for (int i = 0; i < 4; ++i) {
+    const double delta = std::abs(coefficients1[i] - coefficients2[i]);
+    if (delta > tolerance) {
+      fails = true;
+      error_message = error_message + "Cubic polynomials are different at " +
+                      coefficient_strs[i] + " coefficient. " + "cubic1." +
+                      coefficient_strs[i] +
+                      "(): " + std::to_string(coefficients1[i]) +
+                      " vs. cubic2." + coefficient_strs[i] +
+                      "(): " + std::to_string(coefficients2[i]) +
+                      ", diff = " + std::to_string(delta) +
+                      ", tolerance = " + std::to_string(tolerance) + "\n";
+    }
   }
   if (fails) {
     return ::testing::AssertionFailure() << error_message;

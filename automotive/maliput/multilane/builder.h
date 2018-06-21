@@ -121,13 +121,12 @@ class StartLane {
 
   /// Builds a Spec at `endpoint` with `direction` direction. When
   /// `direction` == `Direction::kReverse`, `endpoint` is reversed.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
+  /// `endpoint`'s theta_dot must be nullopt.
   Spec at(const Endpoint& endpoint, Direction direction) const {
-    Endpoint endpoint_without_theta_dot =
-        direction == Direction::kForward ? endpoint : endpoint.reverse();
-    endpoint_without_theta_dot.get_mutable_z().get_mutable_theta_dot() = {};
-    return Spec(endpoint_without_theta_dot, start_lane_);
+    DRAKE_DEMAND(!endpoint.z().theta_dot().has_value());
+    return direction == Direction::kForward
+               ? Spec(endpoint, start_lane_)
+               : Spec(endpoint.reverse(), start_lane_);
   }
 
   /// Builds a Spec at `connection`'s `lane_id` lane at `end` side with
@@ -280,13 +279,12 @@ class EndLane {
 
   /// Builds an Spec at `endpoint_z` with `direction` direction.
   /// When `direction` == `Direction::kReverse`, `endpoint_z` is reversed.
-  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
-  /// continuity constraints.
+  /// `endpoint_z`'s theta_dot must be nullopt.
   Spec z_at(const EndpointZ& endpoint_z, Direction direction) const {
-    EndpointZ endpoint_z_without_theta_dot =
-        direction == Direction::kForward ? endpoint_z : endpoint_z.reverse();
-    endpoint_z_without_theta_dot.get_mutable_theta_dot() = {};
-    return Spec(endpoint_z_without_theta_dot, end_lane_);
+    DRAKE_DEMAND(!endpoint_z.theta_dot().has_value());
+    return direction == Direction::kForward
+               ? Spec(endpoint_z, end_lane_)
+               : Spec(endpoint_z.reverse(), end_lane_);
   }
 
  private:

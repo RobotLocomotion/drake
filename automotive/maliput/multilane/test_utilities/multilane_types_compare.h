@@ -84,7 +84,7 @@ using ::testing::MatchResultListener;
 // coefficients.
 // @param cubic1 A CubicPolynomial object to compare.
 // @param cubic2 A CubicPolynomial object to compare.
-// @param tolernace An allowable absolute linear deviation for each coefficient.
+// @param tolerance An allowable absolute linear deviation for each coefficient.
 // @return ::testing::AssertionFailure() When any coefficient of
 // CubicPolynomial objects are different.
 // @return ::testing::AssertionSuccess() When all coefficients of
