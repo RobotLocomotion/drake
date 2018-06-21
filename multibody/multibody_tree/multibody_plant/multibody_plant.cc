@@ -805,7 +805,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Compute discrete update before applying friction forces.
   // We denote this state x* = [q*, v*], the "star" state.
-  // Generalized momentum "star", before friction forces are applied.
+  // Generalized momentum "star", before contact forces are applied.
   VectorX<T> p_star = M0 * v0 - dt * minus_tau;
 
   // Compute normal and tangential velocity Jacobians at t0.

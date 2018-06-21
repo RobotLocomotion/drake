@@ -56,6 +56,7 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // model of the plant.
     relative_tolerance = time_stepping ? 5.5e-4 : 5.5e-3;
   }
+
  protected:
   double time_step;
   double penetration_allowance;
@@ -160,7 +161,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // Verify the relative errors are below 1%. For this case errors are dominated
   // by the penetration allowance and the stiction tolerance since the
   // integrator's accuracy was set to a relatively small value.
-  EXPECT_TRUE(std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance);
+  EXPECT_TRUE(
+      std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance);
   EXPECT_TRUE(
       std::abs(speed - speed_expected) / speed_expected < relative_tolerance);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
