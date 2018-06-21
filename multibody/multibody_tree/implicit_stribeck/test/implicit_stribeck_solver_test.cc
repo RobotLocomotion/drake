@@ -1,6 +1,5 @@
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 
-#include <iostream>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -23,17 +22,36 @@ class ImplicitStribeckSolverTester {
     const int nv = solver.nv_;
 
     // Problem data.
-    const auto& M = *solver.problem_data_aliases_.M_ptr;
-    const auto& fn = *solver.problem_data_aliases_.fn_ptr;
-    const auto& Jt = *solver.problem_data_aliases_.Jt_ptr;
+    const auto& M = solver.problem_data_aliases_.M();
+    const auto& Jn = solver.problem_data_aliases_.Jn();
+    const auto& Jt = solver.problem_data_aliases_.Jt();
 
     // Workspace with size depending on the number of contact points.
+    // Note: "auto" below resolves to Eigen::Block.
+    auto vn = solver.variable_size_workspace_.mutable_vn();
     auto vt = solver.variable_size_workspace_.mutable_vt();
+    auto fn = solver.variable_size_workspace_.mutable_fn();
     auto ft = solver.variable_size_workspace_.mutable_ft();
+    auto Gn = solver.variable_size_workspace_.mutable_Gn();
     auto mus = solver.variable_size_workspace_.mutable_mu();
     auto t_hat = solver.variable_size_workspace_.mutable_t_hat();
     auto v_slip = solver.variable_size_workspace_.mutable_v_slip();
-    auto& dft_dvt = solver.variable_size_workspace_.mutable_dft_dvt();
+    std::vector<Matrix2<double>>& dft_dvt =
+        solver.variable_size_workspace_.mutable_dft_dvt();
+    auto x = solver.variable_size_workspace_.mutable_x();
+
+    // Normal separation velocity.
+    vn = Jn * v;
+
+    if (solver.has_two_way_coupling()) {
+      const auto x0 = solver.problem_data_aliases_.x0();
+      // Penetration distance (positive when there is penetration).
+      x = x0 - dt * vn;
+    }
+
+    // Computes friction forces fn and gradients Gn as a function of x, vn,
+    // Jn and dt.
+    solver.CalcNormalForces(x, vn, Jn, dt, &fn, &Gn);
 
     // Tangential velocity.
     vt = Jt * v;
@@ -47,12 +65,11 @@ class ImplicitStribeckSolverTester {
 
     // Newton-Raphson Jacobian, J = ∇ᵥR, as a function of M, dft_dvt, Jt, dt.
     MatrixX<double> J(nv, nv);
-    solver.CalcJacobian(M, dft_dvt, Jt, dt, &J);
+    solver.CalcJacobian(M, Jn, Jt, Gn, dft_dvt, t_hat, mus, dt, &J);
 
     return J;
   }
 };
-
 namespace {
 
 // A test fixture to test DirectionChangeLimiter for a very standard
@@ -374,12 +391,12 @@ class PizzaSaver : public ::testing::Test {
  public:
   void SetUp() override {
     // Now we'll set up each term in the equation:
-    //   Mv̇ = τ + Dᵀ⋅fₜ
+    //   Mv̇ = τ + Dᵀ fₜ
     // where τ =[Fx, Fy, Mz] contains the external force in x, the external
     // force in y and the external moment about z (out of plane).
     M_ << m_,  0,  0,
-        0, m_,  0,
-        0,  0,  I_;
+           0, m_,  0,
+           0,  0,  I_;
   }
 
   MatrixX<double> ComputeTangentialJacobian(double theta) {
@@ -390,7 +407,7 @@ class PizzaSaver : public ::testing::Test {
     // 2D rotation matrix of the body frame B in the world frame W.
     Matrix2<double> R_WB;
     R_WB <<  c, s,
-        -s, c;
+            -s, c;
 
     // Position of each contact point in the body frame B.
     const Vector2<double> p_BoA(-sqrt(3) / 2.0, -0.5);
@@ -428,9 +445,13 @@ class PizzaSaver : public ::testing::Test {
     // All contact points have the same friction for this case.
     mu_ = mu * Vector3<double>::Ones();
 
+    // The generalized velocites do not affect the out-of-plane separation
+    // velocities for this problem. Normal forces are decoupled.
+    Jn_.setZero();
+
     Jt_ = ComputeTangentialJacobian(theta);
 
-    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetOneWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
   void SetNoContactProblem(const Vector3<double>& v0,
@@ -442,9 +463,10 @@ class PizzaSaver : public ::testing::Test {
     // No contact points.
     fn_.resize(0);
     mu_.resize(0);
+    Jn_.resize(0, nv_);
     Jt_.resize(0, nv_);
 
-    solver_.SetProblemData(&M_, &Jt_, &p_star_, &fn_, &mu_);
+    solver_.SetOneWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &fn_, &mu_);
   }
 
  protected:
@@ -464,6 +486,9 @@ class PizzaSaver : public ::testing::Test {
 
   // Mass matrix.
   MatrixX<double> M_{nv_, nv_};
+
+  // The separation velocities Jacobian.
+  MatrixX<double> Jn_{nc_, nv_};
 
   // Tangential velocities Jacobian.
   MatrixX<double> Jt_{2 * nc_, nv_};
@@ -564,12 +589,13 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
+  MatrixX<double> J_expected = test::CalcOneWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
-  const double J_tolerance = J_expected.rows() * J_expected.norm() *
-      std::numeric_limits<double>::epsilon();
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
 
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(
@@ -580,7 +606,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 // applied moment Mz = 6.0 > M_transition = 5.0. In this case the pizza saver
 // transitions to sliding with a net moment of Mz - M_transition during a
 // period (time stepping interval) dt. Therefore we expect a change of angular
-// velocity given by Δω = dt⋅(Mz - Mtransition) / I.
+// velocity given by Δω = dt (Mz - Mtransition) / I.
 TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   const double dt = 1.0e-3;  // time step in seconds.
@@ -669,8 +695,8 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
-  MatrixX<double> J_expected = test::CalcJacobianWithAutoDiff(
-      M_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
+  MatrixX<double> J_expected = test::CalcOneWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance = J_expected.rows() * J_expected.norm() *
@@ -738,7 +764,7 @@ TEST_F(PizzaSaver, NoContact) {
 // towards the ground until the moment of impact at which the vertical velocity
 // goes to zero (a purely inelastic collision). Since we know the initial
 // height, we therefore know that the vertical velocity at the time of impact
-// will be vy = -sqrt(2⋅g⋅h0), with g the acceleration of gravity. Therefore the
+// will be vy = -sqrt(2 g h0), with g the acceleration of gravity. Therefore the
 // change of momentum, in the vertical direction, at the time of impact will be
 // py = m * vy.
 // The implicit Stribeck solver needs to know the normal forces in advance. We
@@ -749,11 +775,11 @@ TEST_F(PizzaSaver, NoContact) {
 // needed to exactly bring the cylinder's vertical velocity to zero. The solver
 // keeps this value constant througout the computation.
 // The equations governing the motion for the cylinder during impact are:
-//   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
-//   (2)  m⋅Δvx = pt ,  Δvx = vx - vx0
-//   (3)  vt = vx + ω⋅R
-//   (4)  |pt| ≤ μ⋅pn
-// where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction (in the
+//   (1)  I Δω = pt R,  Δω  = ω, since ω0 = 0.
+//   (2)  m Δvx = pt ,  Δvx = vx - vx0
+//   (3)  vt = vx + ω R
+//   (4)  |pt| ≤ μ pn
+// where pt = dt ft and pn = dt fn are the impulses due to friction (in the
 // tangential direction) and due to the normal force, respectively.
 // The problem above can be solved analytically for vx, ω and ft. We will find
 // the condition for either stiction or sliding after impact by solving the
@@ -764,10 +790,10 @@ TEST_F(PizzaSaver, NoContact) {
 // Setting vt = 0 in Eq. (3), solving for ω and substituting the result in
 // Eq. (1) leads now, together with Eq. (2), to a system of equations in vx and
 // pt. We solve it for pt to find:
-//   pt = -m⋅vx0 / (1 + m⋅R²/I)
+//   pt = -m vx0 / (1 + m R²/I)
 // From Eq. (4), stiction occurs if vx0 < vx_transition, with vx_transition
 // defined as:
-//   vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
+//   vx_transition =  μ (1 + m R²/I) pn/m
 // Otherwise the cylinder will be sliding after impact.
 class RollingCylinder : public ::testing::Test {
  public:
@@ -801,25 +827,31 @@ class RollingCylinder : public ::testing::Test {
   //   dt: time step used by the solver.
   void SetImpactProblem(const Vector3<double>& v0, const Vector3<double>& tau,
                         double mu, double height, double dt) {
-    // At the moment of impact the cylinder will have a vertical velocity
-    // vy = sqrt(2 * h * g).
-    const double vy = sqrt(2.0 * g_ * height);
-
-    // The non-penetration constraint implies there will be a discrete change of
-    // momentum equal to m * vy. We therefore compute a normal force so that the
-    // cylinder undergoes this finite change of momentum and comes to a stop
-    // within the discrete interval dt.
-    fn_(0) = m_ * vy / dt + m_ * g_;
-
-    // Next time step generalized momentum if there are no friction forces.
-    p_star_ = M_ * v0 + dt * tau + dt * Vector3<double>(0.0, fn_(0), 0.0);
+    // Next time step generalized momentum if there are no contact forces.
+    p_star_ = M_ * v0 + dt * tau;
 
     // Friction coefficient for the only contact point in the problem.
     mu_vector_(0) = mu;
 
-    D_ = ComputeTangentialJacobian();
+    // Compute Jacobian matrices.
+    Jn_ << 0, 1, 0;
+    Jt_ = ComputeTangentialJacobian();
 
-    solver_.SetProblemData(&M_, &D_, &p_star_, &fn_, &mu_vector_);
+    // A very small penetration allowance for practical purposes.
+    const double penetration_allowance = 1.0e-6;
+    // Initial penetration of O(dt), in tests below we use dt = 1.0e-3.
+    x0_(0) = 1.0e-3;
+    stiffness_(0) = m_ * g_ / penetration_allowance;
+    const double omega = sqrt(stiffness_(0) / m_);
+    const double time_scale = 1.0 / omega;
+    const double damping_ratio = 1.0;
+    const double dissipation =
+        damping_ratio * time_scale / penetration_allowance;
+    dissipation_(0) = dissipation;
+
+    solver_.SetTwoWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &x0_,
+                                        &stiffness_, &dissipation_,
+                                        &mu_vector_);
   }
 
  protected:
@@ -834,16 +866,16 @@ class RollingCylinder : public ::testing::Test {
   //   vy = -3.0 m/s (velocity at impact).
   //   pn = 3.0 Ns
   //   vx_transition = 0.6 m/s
-  // with pn = -m⋅vy = m⋅sqrt(2⋅g⋅h0) and vx_transition determined from
-  // vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m as described in the documentation of
+  // with pn = −m vy = m sqrt(2 g h0) and vx_transition determined from
+  // vx_transition =  μ (1 + m R²/I) pn/m as described in the documentation of
   // this test fixture.
   const double m_{1.0};   // Mass of the cylinder, kg.
   const double R_{1.0};   // Radius of the cylinder, m.
   const double g_{9.0};   // Acceleration of gravity, m/s².
-  // For a thin cylindrical shell the moment of inertia is I = m⋅R². We use this
+  // For a thin cylindrical shell the moment of inertia is I = m R². We use this
   // inertia so that numbers are simpler for debugging purposes
-  // (I = 1.0 kg⋅m² in this case).
-  const double I_{R_ * R_ * m_};  // kg⋅m².
+  // (I = 1.0 kg m² in this case).
+  const double I_{R_ * R_ * m_};  // kg m².
   const double mu_{0.1};  // Coefficient of friction, dimensionless.
 
   // Problem sizes.
@@ -854,24 +886,28 @@ class RollingCylinder : public ::testing::Test {
   MatrixX<double> M_{nv_, nv_};
 
   // Tangential velocities Jacobian.
-  MatrixX<double> D_{2 * nc_, nv_};
+  MatrixX<double> Jt_{2 * nc_, nv_};
+
+  // Normal separation velocities Jacobian.
+  MatrixX<double> Jn_{nc_, nv_};
+
+  VectorX<double> stiffness_{nc_};
+  VectorX<double> dissipation_{nc_};
+  VectorX<double> x0_{nc_};
 
   // The implicit Stribeck solver for this problem.
   ImplicitStribeckSolver<double> solver_{nv_};
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
-  VectorX<double> fn_{nc_};      // Normal forces at each contact point.
-  // Friction coefficient at each contact point.
-  VectorX<double> mu_vector_{nc_};
+  VectorX<double> mu_vector_{nc_};  // Friction at each contact point.
 };
 
-// This is a case for which the initial horizontal velocity is
-// vx0 < vx_transition and therefore we expect rolling after impact.
 TEST_F(RollingCylinder, StictionAfterImpact) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   const double dt = 1.0e-3;  // time step in seconds.
+  const double mu = 0.1;  // Friction coefficient.
 
   // Other than normal contact forces, external forcing for this problem
   // includes gravity.
@@ -889,7 +925,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   // Initial velocity.
   const Vector3<double> v0(vx0, vy0, 0.0);
 
-  SetImpactProblem(v0, tau, mu_, h0, dt);
+  SetImpactProblem(v0, tau, mu, h0, dt);
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
@@ -925,21 +961,43 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   const VectorX<double>& v = solver_.get_generalized_velocities();
   ASSERT_EQ(v.size(), nv_);
 
-  // Since we imposed the normal force exactly to bring the cylinder to a stop,
-  // we expect the vertical velocity to be zero.
-  EXPECT_NEAR(v(1), 0.0, kTolerance);
-
   // We expect rolling, i.e. vt = vx + omega * R = 0, to within the stiction
   // tolerance.
   EXPECT_LT(std::abs(v(0) + R_ * v(2)), parameters.stiction_tolerance);
+
+  // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
+  // solver's internal implementation.
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
+
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
+  MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
+      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
+
+  // We use a tolerance scaled by the norm and size of the matrix.
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
+// Same tests a RollingCylinder::StictionAfterImpact but with a smaller friction
+// coefficient of mu = 0.1 and initial horizontal velocity of vx0 = 1.0 m/s,
+// which leads to the cylinder to be sliding after impact.
 // This is a case for which the initial horizontal velocity is
 // vx0 > vx_transition and therefore we expect sliding after impact.
 TEST_F(RollingCylinder, SlidingAfterImpact) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   const double dt = 1.0e-3;  // time step in seconds.
+  const double mu = 0.1;     // Friction coefficient.
 
   // Other than normal contact forces, external forcing for this problem
   // includes gravity.
@@ -957,7 +1015,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // Initial velocity.
   const Vector3<double> v0(vx0, vy0, 0.0);
 
-  SetImpactProblem(v0, tau, mu_, h0, dt);
+  SetImpactProblem(v0, tau, mu, h0, dt);
 
   Parameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
@@ -1000,15 +1058,28 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   // We expect the solver to update vt accordingly based on v before return.
   EXPECT_NEAR(v(0) + R_ * v(2), vt(0), kTolerance);
 
-  // Since we imposed the normal force exactly to bring the cylinder to a stop,
-  // we expect the vertical velocity to be zero.
-  EXPECT_NEAR(v(1), 0.0, kTolerance);
-}
+  // Compute the Newton-Raphson Jacobian of the (two-way coupled)
+  // residual J = ∇ᵥR using the solver's internal implementation.
+  MatrixX<double> J =
+      ImplicitStribeckSolverTester::CalcJacobian(solver_, v, dt);
 
-// TODO(amcastro-tri): Add more unit tests including:
-// - Jacobian of the residual compared against and AutoDiff test version.
-//   - Test for the one-way coupled version (friction).
-//   - Test for the two-way coupled version (friction and normal forces).
+  // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
+  // a completely separate implementation using automatic differentiation.
+  const double v_stiction = parameters.stiction_tolerance;
+  const double epsilon_v = v_stiction * parameters.relative_tolerance;
+  MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
+      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
+      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
+
+  // We use a tolerance scaled by the norm and size of the matrix.
+  const double J_tolerance =
+      J_expected.rows() * J_expected.norm() *
+          std::numeric_limits<double>::epsilon();
+
+  // Verify the result.
+  EXPECT_TRUE(CompareMatrices(
+      J, J_expected, J_tolerance, MatrixCompareType::absolute));
+}
 
 }  // namespace
 }  // namespace implicit_stribeck
