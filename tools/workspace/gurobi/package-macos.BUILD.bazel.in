@@ -16,7 +16,7 @@ genrule(
 )
 
 GUROBI_C_HDRS = glob([
-    "gurobi-distro/include/gurobi_c++.h",
+    "gurobi-distro/include/gurobi_c.h",
 ]) or [":error-message.h"]
 
 GUROBI_CXX_HDRS = glob([
