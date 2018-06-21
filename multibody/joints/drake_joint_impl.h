@@ -61,6 +61,12 @@
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v)   \
       const override {                                                       \
     return derived_.frictionTorque(v);                                       \
+  };                                                                         \
+                                                                             \
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> springTorque(                     \
+      const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q)   \
+      const override {                                                       \
+    return derived_.springTorque(q);                                       \
   };
 
 #pragma GCC diagnostic push

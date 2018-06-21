@@ -844,6 +844,10 @@ class RigidBodyTree {
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(
       Eigen::MatrixBase<DerivedV> const& v) const;
 
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> springTorques(
+      const KinematicsCache<Scalar>& cache) const;
+
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;

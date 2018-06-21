@@ -119,6 +119,16 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
+  template <typename DerivedQ>
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> springTorque(
+      const Eigen::MatrixBase<DerivedQ>& q) const {
+    typedef typename DerivedQ::Scalar Scalar;
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(get_num_positions(), 1);
+    using std::abs;
+    ret[0] = stiffness_ * (q[0] - nominal_position_);
+    return ret;
+  }
+
   void setJointLimits(double joint_limit_min, double joint_limit_max) {
     if (joint_limit_min > joint_limit_max) {
       throw std::logic_error(
@@ -181,6 +191,11 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     DRAKE_ASSERT(coulomb_window_ > 0);
   }
 
+  void setSpringDynamics(double stiffness, double nominal_position) {
+    stiffness_ = stiffness;
+    nominal_position_ = nominal_position;
+  }
+
   std::string get_position_name(int index) const override {
     if (index != 0) throw std::runtime_error("bad index");
     return DrakeJoint::name_;
@@ -210,12 +225,16 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     fixed_axis_one_dof_joint->damping_ = this->damping_;
     fixed_axis_one_dof_joint->coulomb_friction_ = this->coulomb_friction_;
     fixed_axis_one_dof_joint->coulomb_window_ = this->coulomb_window_;
+    fixed_axis_one_dof_joint->stiffness_ = this->stiffness_;
+    fixed_axis_one_dof_joint->nominal_position_ = this->nominal_position_;
   }
 
  private:
   drake::TwistVector<double> joint_axis_;
   double damping_{};
   double coulomb_friction_{};
+  double stiffness_ = 0;
+  double nominal_position_ = 0;
   // We're trying to emulate MATLAB's code:
   // NOLINTNEXTLINE(whitespace/line_length)
   // https://github.com/RobotLocomotion/drake/blob/d7f3c011d37d471d7b9293ecf2066c98d88b2a05/drake/matlab/systems/plants/RigidBody.m#L29

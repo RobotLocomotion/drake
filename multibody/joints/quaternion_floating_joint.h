@@ -304,6 +304,15 @@ class QuaternionFloatingJoint : public DrakeJointImpl<QuaternionFloatingJoint> {
         get_num_velocities(), 1);
   }
 
+  template <typename DerivedQ>
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> springTorque(
+      const Eigen::MatrixBase<DerivedQ>& q) const {
+    drake::unused(q);
+    return Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1>::Zero(
+        get_num_positions(), 1);
+  }
+
+
   bool is_floating() const override { return true; };
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.

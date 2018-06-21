@@ -102,6 +102,14 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
         get_num_velocities(), 1);
   }
 
+  template <typename DerivedQ>
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> springTorque(
+      const Eigen::MatrixBase<DerivedQ>& q) const {
+    drake::unused(q);
+    return Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1>::Zero(
+        get_num_positions(), 1);
+  }
+
   std::string get_position_name(int index) const override;
   Eigen::VectorXd zeroConfiguration() const override;
   Eigen::VectorXd randomConfiguration(
