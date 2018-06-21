@@ -583,11 +583,11 @@ class RotationMatrix {
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
   template <typename S = T>
-  static typename std::enable_if<is_numeric<S>::value>::type
+  static typename std::enable_if<is_numeric<S>::value, void>::type
   ThrowIfNotValid(const Matrix3<T>& R);
 
   template <typename S = T>
-  static typename std::enable_if<!is_numeric<S>::value>::type
+  static typename std::enable_if<!is_numeric<S>::value, void>::type
   ThrowIfNotValid(const Matrix3<T>& R) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
