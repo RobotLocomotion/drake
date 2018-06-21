@@ -391,7 +391,7 @@ class PizzaSaver : public ::testing::Test {
  public:
   void SetUp() override {
     // Now we'll set up each term in the equation:
-    //   Mv̇ = τ + Dᵀ⋅fₜ
+    //   Mv̇ = τ + Dᵀ fₜ
     // where τ =[Fx, Fy, Mz] contains the external force in x, the external
     // force in y and the external moment about z (out of plane).
     M_ << m_,  0,  0,
@@ -606,7 +606,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 // applied moment Mz = 6.0 > M_transition = 5.0. In this case the pizza saver
 // transitions to sliding with a net moment of Mz - M_transition during a
 // period (time stepping interval) dt. Therefore we expect a change of angular
-// velocity given by Δω = dt⋅(Mz - Mtransition) / I.
+// velocity given by Δω = dt (Mz - Mtransition) / I.
 TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   const double dt = 1.0e-3;  // time step in seconds.
@@ -764,7 +764,7 @@ TEST_F(PizzaSaver, NoContact) {
 // towards the ground until the moment of impact at which the vertical velocity
 // goes to zero (a purely inelastic collision). Since we know the initial
 // height, we therefore know that the vertical velocity at the time of impact
-// will be vy = -sqrt(2⋅g⋅h0), with g the acceleration of gravity. Therefore the
+// will be vy = -sqrt(2 g h0), with g the acceleration of gravity. Therefore the
 // change of momentum, in the vertical direction, at the time of impact will be
 // py = m * vy.
 // The implicit Stribeck solver needs to know the normal forces in advance. We
@@ -775,11 +775,11 @@ TEST_F(PizzaSaver, NoContact) {
 // needed to exactly bring the cylinder's vertical velocity to zero. The solver
 // keeps this value constant througout the computation.
 // The equations governing the motion for the cylinder during impact are:
-//   (1)  I⋅Δω = pt⋅R,  Δω  = ω, since ω0 = 0.
-//   (2)  m⋅Δvx = pt ,  Δvx = vx - vx0
-//   (3)  vt = vx + ω⋅R
-//   (4)  |pt| ≤ μ⋅pn
-// where pt = dt⋅ft and pn = dt⋅fn are the impulses due to friction (in the
+//   (1)  I Δω = pt R,  Δω  = ω, since ω0 = 0.
+//   (2)  m Δvx = pt ,  Δvx = vx - vx0
+//   (3)  vt = vx + ω R
+//   (4)  |pt| ≤ μ pn
+// where pt = dt ft and pn = dt fn are the impulses due to friction (in the
 // tangential direction) and due to the normal force, respectively.
 // The problem above can be solved analytically for vx, ω and ft. We will find
 // the condition for either stiction or sliding after impact by solving the
@@ -790,10 +790,10 @@ TEST_F(PizzaSaver, NoContact) {
 // Setting vt = 0 in Eq. (3), solving for ω and substituting the result in
 // Eq. (1) leads now, together with Eq. (2), to a system of equations in vx and
 // pt. We solve it for pt to find:
-//   pt = -m⋅vx0 / (1 + m⋅R²/I)
+//   pt = -m vx0 / (1 + m R²/I)
 // From Eq. (4), stiction occurs if vx0 < vx_transition, with vx_transition
 // defined as:
-//   vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m
+//   vx_transition =  μ (1 + m R²/I) pn/m
 // Otherwise the cylinder will be sliding after impact.
 class RollingCylinder : public ::testing::Test {
  public:
@@ -845,11 +845,13 @@ class RollingCylinder : public ::testing::Test {
     const double omega = sqrt(stiffness_(0) / m_);
     const double time_scale = 1.0 / omega;
     const double damping_ratio = 1.0;
-    const double damping = damping_ratio * time_scale / penetration_allowance;
-    damping_(0) = damping;
+    const double dissipation =
+        damping_ratio * time_scale / penetration_allowance;
+    dissipation_(0) = dissipation;
 
-    solver_.SetTwoWayCoupledProblemData(
-        &M_, &Jn_, &Jt_, &p_star_, &x0_, &stiffness_, &damping_, &mu_vector_);
+    solver_.SetTwoWayCoupledProblemData(&M_, &Jn_, &Jt_, &p_star_, &x0_,
+                                        &stiffness_, &dissipation_,
+                                        &mu_vector_);
   }
 
  protected:
@@ -864,16 +866,16 @@ class RollingCylinder : public ::testing::Test {
   //   vy = -3.0 m/s (velocity at impact).
   //   pn = 3.0 Ns
   //   vx_transition = 0.6 m/s
-  // with pn = -m⋅vy = m⋅sqrt(2⋅g⋅h0) and vx_transition determined from
-  // vx_transition =  μ⋅(1 + m⋅R²/I)⋅pn/m as described in the documentation of
+  // with pn = −m vy = m sqrt(2 g h0) and vx_transition determined from
+  // vx_transition =  μ (1 + m R²/I) pn/m as described in the documentation of
   // this test fixture.
   const double m_{1.0};   // Mass of the cylinder, kg.
   const double R_{1.0};   // Radius of the cylinder, m.
   const double g_{9.0};   // Acceleration of gravity, m/s².
-  // For a thin cylindrical shell the moment of inertia is I = m⋅R². We use this
+  // For a thin cylindrical shell the moment of inertia is I = m R². We use this
   // inertia so that numbers are simpler for debugging purposes
-  // (I = 1.0 kg⋅m² in this case).
-  const double I_{R_ * R_ * m_};  // kg⋅m².
+  // (I = 1.0 kg m² in this case).
+  const double I_{R_ * R_ * m_};  // kg m².
   const double mu_{0.1};  // Coefficient of friction, dimensionless.
 
   // Problem sizes.
@@ -890,7 +892,7 @@ class RollingCylinder : public ::testing::Test {
   MatrixX<double> Jn_{nc_, nv_};
 
   VectorX<double> stiffness_{nc_};
-  VectorX<double> damping_{nc_};
+  VectorX<double> dissipation_{nc_};
   VectorX<double> x0_{nc_};
 
   // The implicit Stribeck solver for this problem.
@@ -974,7 +976,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
-      stiffness_, damping_, dt, v_stiction, epsilon_v, v);
+      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =
@@ -1067,7 +1069,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
       M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
-      stiffness_, damping_, dt, v_stiction, epsilon_v, v);
+      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance =

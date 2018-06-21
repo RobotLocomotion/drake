@@ -30,8 +30,8 @@ namespace internal {
 /// The implicit Stribeck solver uses the following modified Stribeck function
 /// describing the functional dependence of the Stribeck coefficient of friction
 /// μₛ with slip speed: <pre>
-///     μₛ(x) = ⌈ μ⋅x⋅(2.0 - x),  x  < 1
-///             ⌊ μ            ,  x >= 1
+///     μₛ(x) = ⌈ μ x (2 - x),  x  < 1
+///             ⌊ μ          ,  x >= 1
 /// </pre>
 /// where x corresponds to the dimensionless slip speed x = ‖vₜ‖ / vₛ and
 /// μ is the Coulomb's law coefficient of friction. The implicit Stribeck solver
@@ -267,8 +267,8 @@ struct IterationStats {
 /** %ImplicitStribeckSolver solves the equations below for mechanical systems
 with contact using a modified Stribeck model of friction:
 @verbatim
-            q̇ = N(q)⋅v
-  (1)  M(q)⋅v̇ = τ + Jₙᵀ(q)⋅fₙ(q, v) + Jₜᵀ(q)⋅fₜ(q, v)
+            q̇ = N(q) v
+  (1)  M(q) v̇ = τ + Jₙᵀ(q) fₙ(q, v) + Jₜᵀ(q) fₜ(q, v)
 @endverbatim
 where `v ∈ ℝⁿᵛ` is the vector of generalized velocities, `M(q) ∈ ℝⁿᵛˣⁿᵛ` is
 the mass matrix, `Jₙ(q) ∈ ℝⁿᶜˣⁿᵛ` is the Jacobian of normal separation
@@ -345,13 +345,13 @@ This implicit scheme variation evaluates Jacobian matrices Jₙ and Jₜ as
 well as the kinematic mapping N(q) at the previous time step. In Eq. (4) we
 have fₙˢ⁺¹ = fₙ(xˢ⁺¹, vₙˢ⁺¹) with xˢ⁺¹ = x(qˢ⁺¹), the signed _penetration_
 distance (defined positive when bodies overlap) between contact point pairs
-and the _separation_ velocities vₙˢ⁺¹ = Jₙ(qˢ)⋅vˢ⁺¹ (= −ẋˢ⁺¹). Also the
+and the _separation_ velocities vₙˢ⁺¹ = Jₙ(qˢ) vˢ⁺¹ (= −ẋˢ⁺¹). Also the
 functional dependence of fₜ with fₙ and vₜ is highlighted in Eq. (4). More
 precisely, the two-way coupling scheme uses a normal force law for each contact
 pair of the form:
 @verbatim
-  (5)  fₙ(x, vₙ) = k(vₙ)₊ φ₊
-  (6)      k(vₙ) = k (1 − d⋅vₙ)₊
+  (5)  fₙ(x, vₙ) = k(vₙ)₊ x₊
+  (6)      k(vₙ) = k (1 − d vₙ)₊
 @endverbatim
 where `x₊` is the positive part of x (x₊ = x if x ≥ 0 and x₊ = 0 otherwise)
 and `k` and d are the stiffness and dissipation coefficients for a given contact
@@ -372,12 +372,12 @@ coupled given the choice of a common variable, the generalized velocity v.
 Equation (7) is used into Eq. (5) to obtain an expression of the normal
 force in terms of the generalized velocity vˢ⁺¹ at the next time step:
 @verbatim
-  (8) fₙ(φˢ⁺¹, vₙˢ⁺¹) = <k⋅(1 - d⋅vₙˢ⁺¹)>¹ <φˢ⁺¹>¹
-                      = <k⋅(1 - d⋅Jₙ(qˢ)⋅vˢ⁺¹)>¹ <φˢ - δt Jₙ(qˢ)⋅vˢ⁺¹>¹
+  (8) fₙ(xˢ⁺¹, vₙˢ⁺¹) = k (1 − d vₙˢ⁺¹)₊ xˢ⁺¹₊
+                      = k (1 − d Jₙ(qˢ) vˢ⁺¹)₊ (xˢ − δt Jₙ(qˢ) vˢ⁺¹)₊
                       = fₙ(vˢ⁺¹)
 @endverbatim
 Similarly, the friction forces fₜ can be written in terms of the next time
-step generalized velocities using vₜˢ⁺¹ = Jₜ(qˢ)⋅vˢ⁺¹ and using Eq. (8)
+step generalized velocities using vₜˢ⁺¹ = Jₜ(qˢ) vˢ⁺¹ and using Eq. (8)
 to substitute an expression for the normal force in terms of vˢ⁺¹. This
 allows to re-write the tangential forces as a function of the generalized
 velocities as:
@@ -385,7 +385,7 @@ velocities as:
   (9)  fₜ(fₙˢ⁺¹, vₜˢ⁺¹) = fₜ(fₙ(x(vˢ⁺¹), vₙ(vˢ⁺¹)), vₜ((vˢ⁺¹)))
                         = fₜ(vˢ⁺¹)
 @endverbatim
-where we write x(vˢ⁺¹) = xˢ − δt Jₙ(qˢ)⋅vˢ⁺¹.
+where we write x(vˢ⁺¹) = xˢ − δt Jₙ(qˢ) vˢ⁺¹.
 Finally, Eqs. (8) and (9) are used into Eq. (4) to obtain an expression in
 vˢ⁺¹:
 @verbatim
@@ -406,7 +406,7 @@ step `vˢ⁺¹` with either a one-way or two-way coupled scheme as described in 
  previous sections.
 The solver uses a Newton-Raphson iteration to compute an update `Δvᵏ` at the
 k-th Newton-Raphson iteration. Once `Δvᵏ` is computed, the solver limits the
-change in the tangential velocities `Δvₜᵏ = Jₜᵀ⋅Δvᵏ` using the approach
+change in the tangential velocities `Δvₜᵏ = Jₜᵀ Δvᵏ` using the approach
 described in [Uchida et al., 2015]. This approach limits the maximum angle
 change θ between two successive iterations in the tangential velocity.
 
@@ -471,7 +471,7 @@ are exact. To obtain an approximate time stepping scheme, we drop `O₇(δt²)`
 (we neglect it) in Eq. (16) to arrive to a first order scheme:
 @verbatim
   (17)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-                     δt [τˢ + Jₙᵀ(qˢ) fₙ(qˢ,vˢ) + Jₜᵀ(qˢ)⋅fₜ(vˢ⁺¹)]
+                     δt [τˢ + Jₙᵀ(qˢ) fₙ(qˢ,vˢ) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)]
 @endverbatim
 Therefore, with the scheme in Eq. (17) we are able to decouple the
 computation of (compliant) normal forces from that of friction forces.
@@ -695,14 +695,14 @@ class ImplicitStribeckSolver {
         EigenPtr<const VectorX<T>> p_star,
         EigenPtr<const VectorX<T>> x0,
         EigenPtr<const VectorX<T>> stiffness,
-        EigenPtr<const VectorX<T>> damping, EigenPtr<const VectorX<T>> mu) {
+        EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
       DRAKE_DEMAND(M != nullptr);
       DRAKE_DEMAND(Jn != nullptr);
       DRAKE_DEMAND(Jt != nullptr);
       DRAKE_DEMAND(p_star != nullptr);
       DRAKE_DEMAND(x0 != nullptr);
       DRAKE_DEMAND(stiffness != nullptr);
-      DRAKE_DEMAND(damping != nullptr);
+      DRAKE_DEMAND(dissipation != nullptr);
       DRAKE_DEMAND(mu != nullptr);
       M_ptr = M;
       Jn_ptr = Jn;
@@ -710,7 +710,7 @@ class ImplicitStribeckSolver {
       p_star_ptr = p_star;
       x0_ptr = x0;
       stiffness_ptr = stiffness;
-      damping_ptr = damping;
+      dissipation_ptr = dissipation;
       mu_ptr = mu;
     }
 
@@ -750,11 +750,11 @@ class ImplicitStribeckSolver {
     }
 
     // For the two-way coupled scheme, it returns a constant reference to the
-    // data for the damping. It aborts if called on data for the
+    // data for the dissipation. It aborts if called on data for the
     // one-way coupled scheme, see has_two_way_coupling_data().
-    Eigen::Ref<const VectorX<T>> damping() const {
-      DRAKE_DEMAND(damping_ptr != nullptr);
-      return *damping_ptr;
+    Eigen::Ref<const VectorX<T>> dissipation() const {
+      DRAKE_DEMAND(dissipation_ptr != nullptr);
+      return *dissipation_ptr;
     }
 
     Eigen::Ref<const VectorX<T>> mu() const {
@@ -780,7 +780,7 @@ class ImplicitStribeckSolver {
     // Stiffness in the normal direction. nullptr for one-way coupled problems.
     EigenPtr<const VectorX<T>> stiffness_ptr{nullptr};
     // Damping in the normal direction. nullptr for one-way coupled problems.
-    EigenPtr<const VectorX<T>> damping_ptr{nullptr};
+    EigenPtr<const VectorX<T>> dissipation_ptr{nullptr};
     // Friction coefficient for each contact point.
     EigenPtr<const VectorX<T>> mu_ptr{nullptr};
   };
@@ -816,7 +816,7 @@ class ImplicitStribeckSolver {
     VectorX<T> residual_;
     // Newton-Raphson Jacobian, i.e. Jᵢⱼ = ∂Rᵢ/∂vⱼ.
     MatrixX<T> J_;
-    // Solution to Newton-Raphson update, i.e. Δv = -J⁻¹⋅R.
+    // Solution to Newton-Raphson update, i.e. Δv = −J⁻¹ R.
     VectorX<T> Delta_v_;
     // Vector of generalized forces due to friction.
     VectorX<T> tau_f_;
@@ -930,7 +930,7 @@ class ImplicitStribeckSolver {
       return mus_.segment(0, nc_);
     }
 
-    // Returns a mutable reference to the gradient Gn = ∇ᵥfₙ(φˢ⁺¹, vₙˢ⁺¹)
+    // Returns a mutable reference to the gradient Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹)
     // with respect to the generalized velocites v.
     Eigen::Block<MatrixX<T>> mutable_Gn() {
       return Gn_.block(0, 0, nc_, nv_);
@@ -945,7 +945,7 @@ class ImplicitStribeckSolver {
    private:
     // The number of contact points. This determines sizes in this workspace.
     int nc_, nv_;
-    VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ⋅Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
+    VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
     VectorX<T> vn_;        // vₙᵏ, in ℝⁿᶜ.
     VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
     VectorX<T> fn_;        // fₙᵏ, in ℝⁿᶜ.
@@ -956,7 +956,7 @@ class ImplicitStribeckSolver {
     VectorX<T> mus_;       // (modified) Stribeck friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
-    MatrixX<T> Gn_;        // ∇ᵥfₙ(φˢ⁺¹, vₙˢ⁺¹), in ℝⁿᶜˣⁿᵛ
+    MatrixX<T> Gn_;        // ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹), in ℝⁿᶜˣⁿᵛ
   };
 
   // Returns true if the solver is solving the two-way coupled problem.
@@ -980,7 +980,7 @@ class ImplicitStribeckSolver {
       EigenPtr<VectorX<T>> fn,
       EigenPtr<MatrixX<T>> Gn) const;
 
-  // Helper to compute fₜ(vₜ) = −vₜ/‖vₜ‖ₛ⋅μ(‖vₜ‖ₛ)⋅fₙ, where ‖vₜ‖ₛ
+  // Helper to compute fₜ(vₜ) = −vₜ/‖vₜ‖ₛ μ(‖vₜ‖ₛ) fₙ, where ‖vₜ‖ₛ
   // is the "soft norm" of vₜ. In addition this method computes
   // v_slip = ‖vₜ‖ₛ, t_hat = vₜ/‖vₜ‖ₛ and mu_stribeck = μ(‖vₜ‖ₛ).
   void CalcFrictionForces(

@@ -20,7 +20,7 @@ namespace test {
 // Computes the normal force as a function of the signed penetration depth x
 // and separation velocity vn using a compliant law of the form:
 //   fₙ(x, vₙ) = k(vₙ)₊ x₊
-//       k(vₙ) = k (1 − d⋅vₙ)₊
+//       k(vₙ) = k (1 − d vₙ)₊
 // where `x₊ = max(x, 0)` and k and d are the stiffness and
 // dissipation coefficients for a given contact point, respectively.
 template <typename U>
@@ -30,7 +30,7 @@ VectorX<U> CalcNormalForces(
     double dt, const VectorX<U>& vn) {
   int nc = x.size();
 
-  // Compute normal force at tˢ⁺¹.
+  // Compute normal force at t^{n+1}
   const VectorX<U> k_vn =
       stiffness * (VectorX<U>::Ones(nc) - dissipation.asDiagonal() * vn);
   const VectorX<U> k_vn_clamped = k_vn.template cwiseMax(VectorX<U>::Zero(nc));
@@ -99,11 +99,11 @@ VectorX<U> CalcFrictionForces(
 // Computes and returns the Newton-Raphson residual for the implicit Stribeck
 // solver. This templated method is used to automatically differentiate the
 // residual and compute its Jacobian J = ∇ᵥR.
-// This same method is used to evaluate the residual for both the one-way
-// (normal forces are fixed) and two-way coupled schemes.
-// two_way_coupling = true indicates to compute the residual for the two-way
-// coupled scheme. Call with two_way_coupling = false to compute the residual
-// for the one-way coupled scheme.
+// This same method is used to evaluate the residual for both the one-way (
+// normal forces are fixed) and two-way coupled schemes. two_way_coupling = true
+// indicates to compute the residual for the two-way coupled scheme. Call with
+// two_way_coupling = false to compute the residual for the one-way coupled
+// scheme.
 // When two_way_coupling = true fn_data is not used.
 // When two_way_coupling = false x0, stiffness and dissipation are not used.
 template <typename U>
@@ -117,7 +117,7 @@ VectorX<U> CalcResidual(
     const VectorX<double>& fn_data,
     const VectorX<double>& stiffness,
     const VectorX<double>& dissipation,
-    double dt, double v_stiction, double epsilon_v,
+    double dt, double v_stribeck, double epsilon_v,
     bool two_way_coupling,
     const VectorX<U>& v) {
   // Separation velocities vₙˢ⁺¹ ( = vn in code below).
@@ -125,10 +125,10 @@ VectorX<U> CalcResidual(
 
   VectorX<U> fn;
   if (two_way_coupling) {
-    // Compute separation distance at O(dt).
+    // Compute penetration distance at O(dt).
     // xˢ⁺¹ = xˢ − δt vₙˢ⁺¹. The minus sign is needed because vn's are
     // **separation** velocities, i.e. when negative, x (penetration distance)
-    // increases. That is, ẋ = −vₙ.
+    // increases. That is, ẋ = -vₙ.
     VectorX<U> x = x0 - dt * vn;
 
     // Normal force, as a function of xˢ⁺¹ and vₙˢ⁺¹.
@@ -141,7 +141,7 @@ VectorX<U> CalcResidual(
   VectorX<U> vt = Jt * v;
 
   // Friction forces.
-  VectorX<U> ft = CalcFrictionForces(v_stiction, epsilon_v, mu, vt, fn);
+  VectorX<U> ft = CalcFrictionForces(v_stribeck, epsilon_v, mu, vt, fn);
 
   // Newton-Raphson residual
   VectorX<U> residual =
@@ -183,7 +183,7 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
     const VectorX<double>& p_star,
     const VectorX<double>& mu,
     const VectorX<double>& fn,
-    double dt, double v_stiction, double epsilon_v,
+    double dt, double v_stribeck, double epsilon_v,
     const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::initializeAutoDiff(v, v_autodiff);
@@ -191,7 +191,7 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
   const VectorX<double> not_used;
   VectorX<AutoDiffXd> residual = CalcResidual(
       M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
-      dt, v_stiction, epsilon_v, false,
+      dt, v_stribeck, epsilon_v, false,
       v_autodiff);
   return math::autoDiffToGradientMatrix(residual);
 }

@@ -276,12 +276,10 @@ void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
 
 template <typename T>
 void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
-    EigenPtr<const MatrixX<T>> M,
-    EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
-    EigenPtr<const VectorX<T>> p_star,
-    EigenPtr<const VectorX<T>> x0,
-    EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
-    EigenPtr<const VectorX<T>> mu) {
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
+    EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
+    EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
   nc_ = x0->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
@@ -289,10 +287,10 @@ void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
   DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   DRAKE_THROW_UNLESS(stiffness->size() == nc_);
-  DRAKE_THROW_UNLESS(damping->size() == nc_);
+  DRAKE_THROW_UNLESS(dissipation->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.SetTwoWayCoupledData(
-      M, Jn, Jt, p_star, x0, stiffness, damping, mu);
+  problem_data_aliases_.SetTwoWayCoupledData(M, Jn, Jt, p_star, x0, stiffness,
+                                             dissipation, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
@@ -475,18 +473,18 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 
   // Convenient aliases to problem data.
   const auto& stiffness = problem_data_aliases_.stiffness();
-  const auto& damping = problem_data_aliases_.damping();
+  const auto& dissipation = problem_data_aliases_.dissipation();
 
   VectorX<T> x_capped(nc);  // = x₊
   VectorX<T> H_x(nc);  // = H(x), with H the Heaviside function.
-  VectorX<T> k_vn_capped(nc);  // = k(vₙ)₊ = k (1 − d⋅vₙ)₊
+  VectorX<T> k_vn_capped(nc);  // = k(vₙ)₊ = k (1 − d vₙ)₊
   VectorX<T> H_k_vn(nc);  // = H(k(vₙ)).
 
   auto& fn = *fn_ptr;
   for (int ic = 0; ic < nc; ++ic) {
-    // Stiffness as a function of vn, k(vₙ) = k (1 − d⋅vₙ)₊
+    // Stiffness as a function of vn, k(vₙ) = k (1 − d vₙ)₊
     // where x₊ = max(x, 0).
-    T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
+    T k_vn = stiffness(ic) * (1.0 - dissipation(ic) * vn(ic));
 
     k_vn_capped(ic) = max(0.0, k_vn);
     x_capped(ic) = max(0.0, x(ic));
@@ -505,13 +503,13 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   // of size nc x nv.
   MatrixX<T> nabla_k_vn_capped = -(
       (H_k_vn.array() *
-          stiffness.array() * damping.array()).matrix().asDiagonal() * Jn);
+          stiffness.array() * dissipation.array()).matrix().asDiagonal() * Jn);
 
   auto& Gn = *Gn_ptr;
 
   // fₙ = k(vₙ)₊ x₊
   // Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹) =
-  //        diag(x₊)⋅∇ᵥk(vₙˢ⁺¹)₊ + diag(k(vₙ)₊) ∇ᵥxˢ⁺¹₊
+  //        diag(x₊) ∇ᵥk(vₙˢ⁺¹)₊ + diag(k(vₙ)₊) ∇ᵥxˢ⁺¹₊
   // Gn is of size nc x nv.
   Gn = x_capped.asDiagonal() * nabla_k_vn_capped +
       k_vn_capped.asDiagonal() * nabla_x_capped;
@@ -544,12 +542,12 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
   // of the normal and friction forces, respectively. The gradient of the normal
   // forces is an input to this method while the gradient of the tangential
   // forces can be computed in terms of dft_dvt and Gn as:
-  //   Gt = ∇ᵥfₜ = −diag(dft_dvt)⋅Jₜ - Gfn(ft)⋅Jₙ
+  //   Gt = ∇ᵥfₜ = −diag(dft_dvt) Jₜ - Gfn(ft) Jₙ
   // recall that dft_dvt = −∇ᵥₜfₜ so that dft_dvt is defined PSD.
   // For each contact point dft_dvt is a 2x2 PSD matrix. diag(dft_dvt) is the
   // (2nc x 2nc) block diagonal matrix with dft_dvt in each 2x2 diagonal entry.
   // Gfn(ft) is the gradient of the friction forces with respect to the normal
-  // forces. Thus, Gfn(ft)⋅Jₙ is nothing but the chain rule of differentiation
+  // forces. Thus, Gfn(ft) Jₙ is nothing but the chain rule of differentiation
   // to compute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
   // the functional dependence of the normal forces with v.
   // Notice that Gfn(ft) is zero for the one-way coupled scheme.
@@ -563,7 +561,7 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     Gt.block(ik, 0, 2, nv) =
         -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
 
-    // Add Contribution from Gn = ∇ᵥfₙ(φˢ⁺¹, vₙˢ⁺¹). Only for the two-way
+    // Add Contribution from Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹). Only for the two-way
     // coupled scheme.
     if (has_two_way_coupling()) {
       auto& t_hat_ic = t_hat.template segment<2>(ik);
@@ -620,7 +618,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     const auto p_star = problem_data_aliases_.p_star();
     auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
-    // M⋅vˢ⁺¹ = p*.
+    // M vˢ⁺¹ = p*.
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
