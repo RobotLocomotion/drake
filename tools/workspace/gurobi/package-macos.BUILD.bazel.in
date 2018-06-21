@@ -25,7 +25,7 @@ GUROBI_CXX_HDRS = glob([
 ]) or [":error-message.h"]
 
 cc_library(
-    name = "c",
+    name = "gurobi_c",
     hdrs = GUROBI_C_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = [
@@ -36,7 +36,7 @@ cc_library(
 )
 
 cc_library(
-    name = "cxx",
+    name = "gurobi_cxx",
     hdrs = GUROBI_CXX_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = [
@@ -49,7 +49,9 @@ cc_library(
 
 alias(
     name = "gurobi",
-    actual = ":c",
+    actual = "gurobi_c",
+    deprecation = "The @gurobi//:gurobi target is deprecated, \
+                   you should used @gurobi//:gurobi_c instead",
     visibility = ["//visibility:public"],
 )
 

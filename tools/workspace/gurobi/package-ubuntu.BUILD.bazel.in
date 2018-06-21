@@ -21,6 +21,7 @@ GUROBI_C_HDRS = glob([
 ]) or [":error-message.h"]
 
 GUROBI_CXX_HDRS = glob([
+    "gurobi-distro/include/gurobi_c.h",
     "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
 
@@ -43,7 +44,6 @@ GUROBI_CXX_SRCS = glob([
 GUROBI_INSTALL_LIBRARIES = glob([
     "gurobi-distro/lib/libgurobi.so.8.0.0",
     "gurobi-distro/lib/libgurobi80.so",
-    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_DOCS = glob([
@@ -51,7 +51,7 @@ GUROBI_DOCS = glob([
 ]) or [":error-message.h"]
 
 cc_library(
-    name = "c",
+    name = "gurobi_c",
     srcs = GUROBI_C_SRCS,
     hdrs = GUROBI_C_HDRS,
     includes = ["gurobi-distro/include"],
@@ -60,7 +60,7 @@ cc_library(
 )
 
 cc_library(
-    name = "cxx",
+    name = "gurobi_cxx",
     srcs = GUROBI_CXX_SRCS,
     hdrs = GUROBI_CXX_HDRS,
     includes = ["gurobi-distro/include"],
@@ -70,7 +70,9 @@ cc_library(
 
 alias(
     name = "gurobi",
-    actual = ":c",
+    actual = "gurobi_c",
+    deprecation = "The @gurobi//:gurobi target is deprecated, \
+                   you should used @gurobi//:gurobi_c instead",
     visibility = ["//visibility:public"],
 )
 
