@@ -936,6 +936,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     stribeck_model_.set_stiction_tolerance(v_stiction);
+    // We allow calling this method post-finalize. Therefore, if the plant is
+    // modeled as a discrete system, we must update the solver's stiction
+    // parameter. Pre-Finalize the solver is not yet created and therefore we
+    // check for nullptr.
+    if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
+      implicit_stribeck::Parameters solver_parameters;
+      solver_parameters.stiction_tolerance =
+          stribeck_model_.stiction_tolerance();
+      implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+    }
   }
   /// @}
 

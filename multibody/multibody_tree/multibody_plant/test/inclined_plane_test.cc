@@ -11,12 +11,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-//#define PRINT_VAR(a) (void)a;
-//#define PRINT_VARn(a) (void)a;
-
 namespace drake {
 
 using geometry::SceneGraph;
@@ -42,7 +36,7 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 
     // The period of the periodic updates for the discrete plant model or zero
     // when the plant is modeled as a continuous system.
-    const double time_step = time_stepping ? 5.0e-4 : 0.0;
+    time_step = time_stepping ? 1.0e-3 : 0.0;
 
     // Contact parameters. Results converge to the analytical solution as the
     // penetration allowance and the stiction tolerance go to zero.
@@ -50,14 +44,23 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // tighter contact parameters than those used with a continuous plant model.
 
     // The penetration allowance in meters.
-    const double penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;
+    penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;
     // The stiction tolerance in meters per second.
-    const double stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
+    stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
 
-    (void) time_step;
-    (void) penetration_allowance;
-    (void) stiction_tolerance;
+    // Relative tolerance (unitless) used to verify the numerically computed
+    // results against the analytical solution.
+    // Notice we can use a much tighter tolerance with the time-stepping
+    // approach given that both the penetration allowance and the stiction
+    // tolerance values are much smaller than those used for the continuous
+    // model of the plant.
+    relative_tolerance = time_stepping ? 5.5e-4 : 5.5e-3;
   }
+ protected:
+  double time_step;
+  double penetration_allowance;
+  double stiction_tolerance;
+  double relative_tolerance;
 };
 
 // This test creates a simple multibody model of a sphere rolling down an
@@ -82,16 +85,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double mass = 0.1;      // Rolling sphere mass, [kg]
   const double g = 9.81;        // Acceleration of gravity, [m/s²]
   const double slope = 15.0 / 180 * M_PI;  // Inclined plane's slope, [rad]
-  const bool time_stepping = GetParam();
-  const double time_step = time_stepping ? 5.0e-4 : 0.0;
   const CoulombFriction<double> surface_friction(
       1.0 /* static friction */, 0.5 /* dynamic friction */);
-
-  // Contact parameters. Results converge to the analytical solution as the
-  // penetration allowance and the stiction tolerance go to zero.
-  const double penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;  // [m]
-  // Stribeck approximation stiction velocity tolerance, [m/s].
-  const double stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
       radius, mass, slope, surface_friction, g, time_step, &scene_graph));
@@ -100,12 +95,6 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   plant.set_penetration_allowance(penetration_allowance);
   plant.set_stiction_tolerance(stiction_tolerance);
   const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
-
-  // Hint the integrator's time step based on the contact time scale.
-  // A fraction of this time scale is used which is chosen so that the fixed
-  // time step integrators are stable.
-  //const double max_time_step =
-    //  plant.get_contact_penalty_method_time_scale() / 30;
 
   // Sanity check for the model's size.
   DRAKE_DEMAND(plant.num_velocities() == 6);
@@ -171,23 +160,11 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // Verify the relative errors are below 1%. For this case errors are dominated
   // by the penetration allowance and the stiction tolerance since the
   // integrator's accuracy was set to a relatively small value.
-  EXPECT_TRUE(std::abs(ke_WB - ke_WB_expected) / ke_WB < 0.01);
-  EXPECT_TRUE(std::abs(speed - speed_expected) / speed_expected < 0.01);
+  EXPECT_TRUE(std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance);
+  EXPECT_TRUE(
+      std::abs(speed - speed_expected) / speed_expected < relative_tolerance);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
-                  / angular_velocity_expected < 0.01);
-
-  PRINT_VAR(ke_WB);
-  PRINT_VAR(ke_WB_expected);
-  PRINT_VAR(std::abs(ke_WB - ke_WB_expected) / ke_WB);
-
-  PRINT_VAR(speed);
-  PRINT_VAR(speed_expected);
-  PRINT_VAR(std::abs(speed - speed_expected) / speed_expected);
-
-  PRINT_VAR(angular_velocity);
-  PRINT_VAR(angular_velocity_expected);
-  PRINT_VAR(std::abs(angular_velocity - angular_velocity_expected)
-                / angular_velocity_expected);
+                  / angular_velocity_expected < relative_tolerance);
 }
 
 // Instantiate the tests.

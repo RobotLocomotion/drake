@@ -112,9 +112,9 @@ DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
               "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0, "The amplitude of the harmonic oscillations "
+DEFINE_double(amplitude, 0.15, "The amplitude of the harmonic oscillations "
               "carried out by the gripper. [m].");
-DEFINE_double(frequency, 0, "The frequency of the harmonic oscillations "
+DEFINE_double(frequency, 2.0, "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.

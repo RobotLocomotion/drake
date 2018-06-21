@@ -6,18 +6,10 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/extract_double.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
-
-#include <fstream>
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-//#define PRINT_VAR(a) (void)a;
-//#define PRINT_VARn(a) (void)a;
 
 namespace drake {
 namespace multibody {
@@ -241,6 +233,8 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     implicit_stribeck_solver_ =
         std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(
             num_velocities());
+    // Set the stiction tolerance according to the values set by users with
+    // set_stiction_tolerance().
     implicit_stribeck::Parameters solver_parameters;
     solver_parameters.stiction_tolerance =
         stribeck_model_.stiction_tolerance();
@@ -496,10 +490,19 @@ template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
-  const geometry::QueryObject<double>& query_object =
-      this->EvalAbstractInput(context, geometry_query_port_)
-          ->template GetValue<geometry::QueryObject<double>>();
-  return query_object.ComputePointPairPenetration();
+  if (num_collision_geometries() > 0) {
+    if (geometry_query_port_ < 0) {
+      throw std::logic_error(
+          "This MultibodyPlant registered geometry for contact handling. "
+          "However its query input port (get_geometry_query_input_port()) "
+          "is not connected. ");
+    }
+    const geometry::QueryObject<double>& query_object =
+        this->EvalAbstractInput(context, geometry_query_port_)
+            ->template GetValue<geometry::QueryObject<double>>();
+    return query_object.ComputePointPairPenetration();
+  }
+  return std::vector<PenetrationAsPointPair<double>>();
 }
 
 template<typename T>
@@ -741,9 +744,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
 
-  int istep = ExtractDoubleOrThrow(context0.get_time()) / time_step_;
-  (void) istep;
-
   // Get the system state as raw Eigen vectors
   // (solution at the previous time step).
   auto x0 = context0.get_discrete_state(0).get_value();
@@ -854,16 +854,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       implicit_stribeck_solver_->SolveWithGuess(dt, v0);
   DRAKE_DEMAND(info == implicit_stribeck::Success);
 
-  const implicit_stribeck::IterationStats& stats =
-      implicit_stribeck_solver_->get_iteration_statistics();
-
-  std::ofstream outfile;
-  outfile.open("nr_iteration.dat", std::ios_base::app);
-  outfile <<
-          fmt::format("{0:14.6e} {1:d} {2:d} {3:d} {4:14.6e}\n",
-                      context0.get_time(), istep, stats.num_iterations,
-                      num_contacts, stats.vt_residual());
-  outfile.close();
+  // TODO(amcastro-tri): implement capability to dump solver statistics to a
+  // file for analysis.
 
   // Retrieve the solution velocity for the next time step.
   VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();

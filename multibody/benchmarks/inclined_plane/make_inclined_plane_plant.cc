@@ -23,7 +23,8 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
     const CoulombFriction<double>& surface_friction, double gravity,
     double time_step,
     SceneGraph<double>* scene_graph) {
-  DRAKE_DEMAND(scene_graph != nullptr);
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
+  DRAKE_THROW_UNLESS(time_step >= 0);
 
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
 
