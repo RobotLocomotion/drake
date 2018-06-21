@@ -71,13 +71,13 @@ T DirectionChangeLimiter<T>::CalcAlpha(
     //         region has strong gradients, we allow it. i.e. alpha = 1.0
     // x1 > 1: If we go from a region of strong gradients (x < 1) to sliding
     //         (x1 > 1), we allow it. Notice that the case from weak gradients
-    //         (close to zero) when x < relative_tolerance, was covered by
+    //         (close to zero) when x < relative_tolerance_, was covered by
     //         Case II.
     return 1.0;
   } else {  // x > 1.0
     if (x1 < 1.0) {
       // Case IV:
-      // From Case III we know that x1 > relative_tolerance, i.e x1 falls in a
+      // From Case III we know that x1 > relative_tolerance_, i.e x1 falls in a
       // region of strong gradients and thus we allow it.
       return 1.0;
     }

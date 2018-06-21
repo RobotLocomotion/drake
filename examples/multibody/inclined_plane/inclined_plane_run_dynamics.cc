@@ -33,7 +33,7 @@ DEFINE_double(time_step, 1.0e-3,
               "This parameter must be non-negative.");
 DEFINE_double(integration_accuracy, 1e-6,
               "Integration accuracy when the plant is modeled as a continuous "
-              "system. Not used if time_step > 0.");
+              "system. Not used if time_step_ > 0.");
 
 DEFINE_double(static_friction, 0.5, "Static friction coefficient.");
 DEFINE_double(dynamic_friction, 0.3, "Dynamic friction coefficient.");

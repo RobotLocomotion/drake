@@ -47,7 +47,7 @@ DEFINE_double(simulation_time, 10.0,
 
 DEFINE_double(time_step, 0,
             "If greater than zero, the plant is modeled as a system with "
-            "discrete updates and period equal to this time_step. "
+            "discrete updates and period equal to this time_step_. "
             "If 0, the plant is modeled as a continuous system.");
 
 int do_main() {

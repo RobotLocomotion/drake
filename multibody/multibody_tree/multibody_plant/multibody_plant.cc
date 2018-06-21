@@ -475,7 +475,7 @@ void MultibodyPlant<T>::set_penetration_allowance(
   // contact_penetration_allowance_ goint to zero (no bounce off).
   const double damping_ratio = 1.0;
   // We form the damping (with units of 1/velocity) using dimensional analysis.
-  // Thus we use 1/omega for the time scale and penetration_allowance for the
+  // Thus we use 1/omega for the time scale and penetration_allowance_ for the
   // length scale. We then scale it by the damping ratio.
   const double damping = damping_ratio * time_scale / penetration_allowance;
 

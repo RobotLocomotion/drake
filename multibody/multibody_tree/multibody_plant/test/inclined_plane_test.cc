@@ -36,7 +36,7 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 
     // The period of the periodic updates for the discrete plant model or zero
     // when the plant is modeled as a continuous system.
-    time_step = time_stepping ? 1.0e-3 : 0.0;
+    time_step_ = time_stepping ? 1.0e-3 : 0.0;
 
     // Contact parameters. Results converge to the analytical solution as the
     // penetration allowance and the stiction tolerance go to zero.
@@ -44,9 +44,9 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // tighter contact parameters than those used with a continuous plant model.
 
     // The penetration allowance in meters.
-    penetration_allowance = time_stepping ? 1.0e-6 : 1.0e-3;
+    penetration_allowance_ = time_stepping ? 1.0e-6 : 1.0e-3;
     // The stiction tolerance in meters per second.
-    stiction_tolerance = time_stepping ? 1.0e-5 : 1.0e-3;
+    stiction_tolerance_ = time_stepping ? 1.0e-5 : 1.0e-3;
 
     // Relative tolerance (unitless) used to verify the numerically computed
     // results against the analytical solution.
@@ -54,14 +54,14 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // approach given that both the penetration allowance and the stiction
     // tolerance values are much smaller than those used for the continuous
     // model of the plant.
-    relative_tolerance = time_stepping ? 5.5e-4 : 5.5e-3;
+    relative_tolerance_ = time_stepping ? 5.5e-4 : 5.5e-3;
   }
 
  protected:
-  double time_step;
-  double penetration_allowance;
-  double stiction_tolerance;
-  double relative_tolerance;
+  double time_step_{0};  // in seconds.
+  double penetration_allowance_{1.0e-3};  // in meters.
+  double stiction_tolerance_{1.0e-3};  // in meters per second.
+  double relative_tolerance_{1.0e-3};  // dimensionless.
 };
 
 // This test creates a simple multibody model of a sphere rolling down an
@@ -90,11 +90,11 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
       1.0 /* static friction */, 0.5 /* dynamic friction */);
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
-      radius, mass, slope, surface_friction, g, time_step, &scene_graph));
+      radius, mass, slope, surface_friction, g, time_step_, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
-  plant.set_penetration_allowance(penetration_allowance);
-  plant.set_stiction_tolerance(stiction_tolerance);
+  plant.set_penetration_allowance(penetration_allowance_);
+  plant.set_stiction_tolerance(stiction_tolerance_);
   const RigidBody<double>& ball = model.GetRigidBodyByName("Ball");
 
   // Sanity check for the model's size.
@@ -158,15 +158,24 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double Ve = model.CalcPotentialEnergy(plant_context);
   EXPECT_NEAR(-Ve, ke_WB_expected, std::numeric_limits<double>::epsilon());
 
-  // Verify the relative errors are below 1%. For this case errors are dominated
-  // by the penetration allowance and the stiction tolerance since the
+  // Verify the relative errors. For the continuous model of the plant errors
+  // are dominated by the penetration allowance and the stiction tolerance since the
   // integrator's accuracy was set to a relatively small value.
+  // For the time stepping model of the plant, errors are dominated by the
+  // finite time step, given that we are able to use very tight penetration
+  // allowance and stiction tolerance.
+  // Notice that given the kinematic relation v_WBcm = R * W_WB, relative errors
+  // in v_WBcm and W_WB have the same order of magnitude. Moreover, since the
+  // kinetic energy scales with the velocities (translational and angular)
+  // squared, standard error propagation shows that the relative error in the
+  // kinetic energy is expected to be twice that in the velocities. Thus the
+  // factor of two used below for the relative error in kinetic energy.
   EXPECT_TRUE(
-      std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance);
+      std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance_);
   EXPECT_TRUE(
-      std::abs(speed - speed_expected) / speed_expected < relative_tolerance);
+      std::abs(speed - speed_expected) / speed_expected < relative_tolerance_);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
-                  / angular_velocity_expected < relative_tolerance);
+                  / angular_velocity_expected < relative_tolerance_);
 }
 
 // Instantiate the tests.
