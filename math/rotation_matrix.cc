@@ -42,6 +42,5 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
 }  // namespace math
 }  // namespace drake
 
-// Explicitly instantiate on non-symbolic scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RotationMatrix)

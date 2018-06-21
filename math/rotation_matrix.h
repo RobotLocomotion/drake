@@ -29,13 +29,19 @@ namespace math {
 /// @note This class does not store the frames associated with a rotation matrix
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
+/// @note In debug builds, several methods in this class do a validity check
+/// and throw an exception (std::logic_error) if the rotation matrix is invalid.
+/// For speed in release builds, nearly all validity checks are skipped.
+/// In addition, validity tests are only performed for scalar types for which
+/// drake::is_numeric<T> is `true`.  No validity check is performed and no
+/// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
+///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
 /// - double
 /// - AutoDiffXd
-///
-// TODO(Mitiguy) Ensure class handles RotationMatrix<symbolic::Expression>.
+/// - symbolic::Expression
 template <typename T>
 class RotationMatrix {
  public:
@@ -126,9 +132,9 @@ class RotationMatrix {
   /// Note: B and A are no longer aligned.
   /// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
   explicit RotationMatrix(const RollPitchYaw<T>& rpy) {
-    const T &r = rpy.roll_angle();
-    const T &p = rpy.pitch_angle();
-    const T &y = rpy.yaw_angle();
+    const T& r = rpy.roll_angle();
+    const T& p = rpy.pitch_angle();
+    const T& y = rpy.yaw_angle();
     using std::sin;
     using std::cos;
     const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
@@ -582,13 +588,15 @@ class RotationMatrix {
 
   // Throws an exception if R is not a valid %RotationMatrix.
   // @param[in] R an allegedly valid rotation matrix.
+  // @note If the underlying scalar type T is non-numeric (symbolic), no
+  // validity check is made and no assertion is thrown.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, void>::type
   ThrowIfNotValid(const Matrix3<T>& R);
 
   template <typename S = T>
   static typename std::enable_if<!is_numeric<S>::value, void>::type
-  ThrowIfNotValid(const Matrix3<T>& R) {}
+  ThrowIfNotValid(const Matrix3<T>&) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
