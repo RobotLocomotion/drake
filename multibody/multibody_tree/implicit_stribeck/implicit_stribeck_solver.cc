@@ -55,7 +55,7 @@ T DirectionChangeLimiter<T>::CalcAlpha(
 
   // Case III: Transition to an almost exact stiction from sliding.
   // We want to avoid v1 landing in a region of zero gradients so we force
-  // it to land within the circle of radius v_stiction, at v_stribeck/2 in the
+  // it to land within the circle of radius v_stiction, at v_stiction/2 in the
   // direction of v.
   if (x > 1.0 && x1 < relative_tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
@@ -258,7 +258,7 @@ ImplicitStribeckSolver<T>::ImplicitStribeckSolver(int nv) :
 }
 
 template <typename T>
-void ImplicitStribeckSolver<T>::SetProblemData(
+void ImplicitStribeckSolver<T>::SetOneWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> M,
     EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
     EigenPtr<const VectorX<T>> p_star,
@@ -270,28 +270,27 @@ void ImplicitStribeckSolver<T>::SetProblemData(
   DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, Jn, Jt, p_star, fn, mu);
+  problem_data_aliases_.SetOneWayCoupledData(M, Jn, Jt, p_star, fn, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
 template <typename T>
 void ImplicitStribeckSolver<T>::SetTwoWayCoupledProblemData(
-    EigenPtr<const MatrixX<T>> M,
-    EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
-    EigenPtr<const VectorX<T>> p_star,
-    EigenPtr<const VectorX<T>> phi0,
-    EigenPtr<const VectorX<T>> stiffness, EigenPtr<const VectorX<T>> damping,
-    EigenPtr<const VectorX<T>> mu) {
-  nc_ = phi0->size();
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
+    EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const VectorX<T>> x0, EigenPtr<const VectorX<T>> stiffness,
+    EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
+  nc_ = x0->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
   DRAKE_THROW_UNLESS(Jn->rows() == nc_ && Jn->cols() == nv_);
   DRAKE_THROW_UNLESS(Jt->rows() == 2 * nc_ && Jt->cols() == nv_);
   DRAKE_THROW_UNLESS(mu->size() == nc_);
   DRAKE_THROW_UNLESS(stiffness->size() == nc_);
-  DRAKE_THROW_UNLESS(damping->size() == nc_);
+  DRAKE_THROW_UNLESS(dissipation->size() == nc_);
   // Keep references to the problem data.
-  problem_data_aliases_.Set(M, Jn, Jt, p_star, phi0, stiffness, damping, mu);
+  problem_data_aliases_.SetTwoWayCoupledData(M, Jn, Jt, p_star, x0, stiffness,
+                                             dissipation, mu);
   variable_size_workspace_.ResizeIfNeeded(nc_, nv_);
 }
 
@@ -316,15 +315,13 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   auto t_hat = *t_hat_ptr;
 
   // The stiction tolerance.
-  // TODO(amcastro-tri): rename v_stribeck to v_stiction, since our
-  // "Stribeck function" is not a Stribeck model really.
-  const double v_stribeck = parameters_.stiction_tolerance;
+  const double v_stiction = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
   // velocity epsilon_v. With v_epsilon we define a "soft norm" which we
   // use to compute "soft" tangent vectors to avoid a division by zero
   // singularity when tangential velocities are zero.
-  const double epsilon_v = v_stribeck * parameters_.relative_tolerance;
+  const double epsilon_v = v_stiction * parameters_.relative_tolerance;
   const double epsilon_v2 = epsilon_v * epsilon_v;
 
   // Compute 2D tangent vectors.
@@ -367,7 +364,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
     // "soft" tangent vector:
     const Vector2<T> that_ic = vt_ic / v_slip(ic);
     t_hat.template segment<2>(ik) = that_ic;
-    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stribeck, mu(ic));
+    mu_stribeck(ic) = ModifiedStribeck(v_slip(ic) / v_stiction, mu(ic));
     // Friction force.
     ft->template segment<2>(ik) = -mu_stribeck(ic) * that_ic * fn(ic);
   }
@@ -390,17 +387,17 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
   std::vector<Matrix2<T>>& dft_dvt = *dft_dvt_ptr;
 
   // The stiction tolerance.
-  const double v_stribeck = parameters_.stiction_tolerance;
+  const double v_stiction = parameters_.stiction_tolerance;
 
   // Compute dft/dvt, a 2x2 matrix with the derivative of the friction
   // force (in ℝ²) with respect to the tangent velocity (also in ℝ²).
   for (int ic = 0; ic < nc; ++ic) {
     const int ik = 2 * ic;
 
-    // Compute dmu/dv = (1/v_stribeck) * dmu/dx
-    // where x = v_slip / v_stribeck is the dimensionless slip velocity.
-    const T x = v_slip(ic) / v_stribeck;
-    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stribeck;
+    // Compute dmu/dv = (1/v_stiction) * dmu/dx
+    // where x = v_slip / v_stiction is the dimensionless slip velocity.
+    const T x = v_slip(ic) / v_stiction;
+    const T dmudv = ModifiedStribeckDerivative(x, mu(ic)) / v_stiction;
 
     const auto t_hat_ic = t_hat.template segment<2>(ik);
 
@@ -426,11 +423,11 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
     // We now compute the gradient with respect to the tangential velocity
     // ∇ᵥₜfₜ(vₜ) as (recall that fₜ(vₜ) = vₜ/‖vₜ‖ₛμ(‖vₜ‖ₛ),
     // with ‖v‖ₛ the soft norm ‖v‖ₛ ≜ sqrt(vᵀv + εᵥ²)):
-    //   ∇ᵥₜfₜ = -dft_dvt = -fn * (
+    //   ∇ᵥₜfₜ = −dft_dvt = −fn * (
     //     mu_stribeck(‖vₜ‖ₛ) / ‖vₜ‖ₛ * Pperp(t̂) +
-    //     dmu_stribeck/dx * P(t̂) / v_stribeck )
+    //     dmu_stribeck/dx * P(t̂) / v_stiction )
     // where x = ‖vₜ‖ₛ / vₛ is the dimensionless slip velocity and we
-    // have defined dft_dvt = -∇ᵥₜfₜ.
+    // have defined dft_dvt = −∇ᵥₜfₜ.
     // Therefore dft_dvt (in ℝ²ˣ²) is a linear combination of PSD matrices
     // (P and Pperp) where the coefficients of the combination are positive
     // scalars. Therefore,
@@ -457,7 +454,7 @@ void ImplicitStribeckSolver<T>::CalcFrictionForcesGradient(
 
 template <typename T>
 void ImplicitStribeckSolver<T>::CalcNormalForces(
-    const Eigen::Ref<const VectorX<T>>& phi,
+    const Eigen::Ref<const VectorX<T>>& x,
     const Eigen::Ref<const VectorX<T>>& vn,
     const Eigen::Ref<const MatrixX<T>>& Jn,
     double dt,
@@ -466,7 +463,7 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
-  if (!two_way_coupling()) {
+  if (!has_two_way_coupling()) {
     // Copy the input normal force (i.e. it is fixed).
     *fn_ptr = problem_data_aliases_.fn();
     return;
@@ -474,46 +471,46 @@ void ImplicitStribeckSolver<T>::CalcNormalForces(
 
   // Convenient aliases to problem data.
   const auto& stiffness = problem_data_aliases_.stiffness();
-  const auto& damping = problem_data_aliases_.damping();
+  const auto& dissipation = problem_data_aliases_.dissipation();
 
-  VectorX<T> phi_capped(nc);  // = <φ>¹
-  VectorX<T> H_phi(nc);  // = <φ>⁰ = H(φ), with H the Heaviside function.
-  VectorX<T> k_vn_capped(nc);  // = <k(vₙ)>¹ = <k⋅(1 - d⋅vₙ)>¹
-  VectorX<T> H_k_vn(nc);  // = <k(vₙ)>⁰ = H(k(vₙ)).
+  VectorX<T> x_capped(nc);  // = x₊
+  VectorX<T> H_x(nc);  // = H(x), with H the Heaviside function.
+  VectorX<T> k_vn_capped(nc);  // = k(vₙ)₊ = k (1 − d vₙ)₊
+  VectorX<T> H_k_vn(nc);  // = H(k(vₙ)).
 
   auto& fn = *fn_ptr;
   for (int ic = 0; ic < nc; ++ic) {
-    // Stiffness as a function of vn, k(vₙ) = <k⋅(1 - d⋅vₙ)>¹, where we
-    // use the Macaulay bracket <⋅>¹.
-    T k_vn = stiffness(ic) * (1.0 - damping(ic) * vn(ic));
+    // Stiffness as a function of vn, k(vₙ) = k (1 − d vₙ)₊
+    // where x₊ = max(x, 0).
+    T k_vn = stiffness(ic) * (1.0 - dissipation(ic) * vn(ic));
 
     k_vn_capped(ic) = max(0.0, k_vn);
-    phi_capped(ic) = max(0.0, phi(ic));
-    // fₙ = <k(vₙ)>¹⋅<φ>¹
-    fn(ic) = k_vn_capped(ic) * phi_capped(ic);
-    // Factors in the derivatives of <φ>¹ and <k(vₙ)>¹
-    H_phi(ic) = phi(ic) > 0 ? 1.0 : 0.0;
+    x_capped(ic) = max(0.0, x(ic));
+    // fₙ = k(vₙ)₊ x₊
+    fn(ic) = k_vn_capped(ic) * x_capped(ic);
+    // Factors in the derivatives of x₊ and k(vₙ)₊
+    H_x(ic) = x(ic) > 0 ? 1.0 : 0.0;
     H_k_vn(ic) = k_vn > 0 ? 1.0 : 0.0;
   }
 
-  // ∇ᵥ<φⁿ⁺¹>¹ = -δt⋅diag((H(φⁿ⁺¹))⋅Jₙ, with φⁿ⁺¹ = φⁿ  - δt⋅vₙⁿ⁺¹.
+  // ∇ᵥxˢ⁺¹₊ = −δt diag(H(xˢ⁺¹)) Jₙ, with xˢ⁺¹ = xˢ − δt vₙˢ⁺¹.
   // of size nc x nv.
-  MatrixX<T> nabla_phi_capped = -dt * H_phi.asDiagonal() * Jn;
+  MatrixX<T> nabla_x_capped = -dt * H_x.asDiagonal() * Jn;
 
-  // ∇ᵥ<k(vₙⁿ⁺¹)>¹ = -diag(H(k(vₙⁿ⁺¹)))⋅diag(k)⋅diag(d)⋅Jₙ
+  // ∇ᵥk(vₙˢ⁺¹)₊ = −diag(H(k(vₙˢ⁺¹))) diag(k) diag(d) Jₙ
   // of size nc x nv.
   MatrixX<T> nabla_k_vn_capped = -(
       (H_k_vn.array() *
-          stiffness.array() * damping.array()).matrix().asDiagonal() * Jn);
+          stiffness.array() * dissipation.array()).matrix().asDiagonal() * Jn);
 
   auto& Gn = *Gn_ptr;
 
-  // fₙ = <k(vₙ)>¹⋅<φ>¹
-  // Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹) =
-  //        diag(<φ>¹)⋅∇ᵥ<k(vₙⁿ⁺¹)>¹ + diag(<k(vₙ)>¹)⋅∇ᵥ<φⁿ⁺¹>¹
+  // fₙ = k(vₙ)₊ x₊
+  // Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹) =
+  //        diag(x₊) ∇ᵥk(vₙˢ⁺¹)₊ + diag(k(vₙ)₊) ∇ᵥxˢ⁺¹₊
   // Gn is of size nc x nv.
-  Gn = phi_capped.asDiagonal() * nabla_k_vn_capped +
-      k_vn_capped.asDiagonal() * nabla_phi_capped;
+  Gn = x_capped.asDiagonal() * nabla_k_vn_capped +
+      k_vn_capped.asDiagonal() * nabla_x_capped;
 }
 
 template <typename T>
@@ -534,37 +531,37 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
 
   // Newton-Raphson Jacobian, i.e. the derivative of the residual with
   // respect to the independent variable which, in this case, is the vector
-  // of generalized velocities vⁿ⁺¹ at the next time step. We just use v for
+  // of generalized velocities vˢ⁺¹ at the next time step. We just use v for
   // brevity here.
   // Analytical differentiation of the residual with respect to v leads to:
-  //   J = ∇ᵥR = M - δt Jₙᵀ⋅Gn - δt Jₜᵀ⋅Gt
-  // where Gn = Gn = ∇ᵥfₙ(∇ᵥfₙ(φ(v), vₙ(v))) (of size nc x nv) and
+  //   J = ∇ᵥR = M − δt Jₙᵀ Gn − δt Jₜᵀ Gt
+  // where Gn = Gn = ∇ᵥfₙ(∇ᵥfₙ(x(v), vₙ(v))) (of size nc x nv) and
   // Gt = ∇ᵥfₜ(vₜ(v)) (of size 2nc x nv) are the gradients with respect to v
   // of the normal and friction forces, respectively. The gradient of the normal
   // forces is an input to this method while the gradient of the tangential
   // forces can be computed in terms of dft_dvt and Gn as:
-  //   Gt = ∇ᵥfₜ = -diag(dft_dvt)⋅Jₜ - Gfn(ft)⋅Jₙ
-  // recall that dft_dvt = -∇ᵥₜfₜ so that dft_dvt is defined PSD.
+  //   Gt = ∇ᵥfₜ = −diag(dft_dvt) Jₜ - Gfn(ft) Jₙ
+  // recall that dft_dvt = −∇ᵥₜfₜ so that dft_dvt is defined PSD.
   // For each contact point dft_dvt is a 2x2 PSD matrix. diag(dft_dvt) is the
   // (2nc x 2nc) block diagonal matrix with dft_dvt in each 2x2 diagonal entry.
   // Gfn(ft) is the gradient of the friction forces with respect to the normal
-  // forces. Thus, Gfn(ft)⋅Jₙ is nothing but the chain rule of differentiation
-  // to copute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
+  // forces. Thus, Gfn(ft) Jₙ is nothing but the chain rule of differentiation
+  // to compute the contribution to the gradient ∇ᵥfₜ with respect to v, due to
   // the functional dependence of the normal forces with v.
   // Notice that Gfn(ft) is zero for the one-way coupled scheme.
 
-  // Compute Gt = -∇ᵥfₜ (gradient of the friction forces with respect to the
-  // generalized velocities) as Gt = -diag(dft_dvt)Jt and use the fact that
+  // Compute Gt = −∇ᵥfₜ (gradient of the friction forces with respect to the
+  // generalized velocities) as Gt = −diag(dft_dvt) Jt and use the fact that
   // diag(dft_dvt) is block diagonal.
-  MatrixX<T> Gt(nf, nv);  // -∇ᵥfₜ
+  MatrixX<T> Gt(nf, nv);  // −∇ᵥfₜ
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     Gt.block(ik, 0, 2, nv) =
         -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
 
-    // Add Contribution from Gn = ∇ᵥfₙ(φⁿ⁺¹, vₙⁿ⁺¹). Only for the two-way
+    // Add Contribution from Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹). Only for the two-way
     // coupled scheme.
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       auto& t_hat_ic = t_hat.template segment<2>(ik);
       Gt.block(ik    , 0, 1, nv) -=
           mu_vt(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
@@ -573,9 +570,9 @@ void ImplicitStribeckSolver<T>::CalcJacobian(
     }
   }
 
-  // Form J = M - JnᵀGn - dt JtᵀGt:
+  // Form J = M − Jnᵀ Gn − dt Jtᵀ Gt:
   *J = M - dt * Jt.transpose() * Gt;
-  if (two_way_coupling()) {
+  if (has_two_way_coupling()) {
     *J -= dt * Jn.transpose() * Gn;
   }
 }
@@ -586,7 +583,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
   T alpha = 1.0;
-  double v_stribeck = parameters_.stiction_tolerance;
+  double v_stiction = parameters_.stiction_tolerance;
   for (int ic = 0; ic < nc_; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     auto vt_ic = vt.template segment<2>(ik);
@@ -595,7 +592,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
         alpha,
         internal::DirectionChangeLimiter<T>::CalcAlpha(
             vt_ic, dvt_ic,
-            cos_theta_max_, v_stribeck, parameters_.relative_tolerance));
+            cos_theta_max_, v_stiction, parameters_.relative_tolerance));
   }
   DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
   return alpha;
@@ -619,7 +616,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     const auto p_star = problem_data_aliases_.p_star();
     auto& v = fixed_size_workspace_.mutable_v();
     // With no friction forces Eq. (3) in the documentation reduces to
-    // M⋅vⁿ⁺¹ = p*.
+    // M vˢ⁺¹ = p*.
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
@@ -657,7 +654,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
   auto mu_vt = variable_size_workspace_.mutable_mu();
   auto t_hat = variable_size_workspace_.mutable_t_hat();
   auto fn = variable_size_workspace_.mutable_fn();
-  auto phi = variable_size_workspace_.mutable_phi();
+  auto x = variable_size_workspace_.mutable_x();
   auto v_slip = variable_size_workspace_.mutable_v_slip();
 
   // Initialize vt_error to a value larger than tolerance so t_hat the solver at
@@ -672,13 +669,13 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     vn = Jn * v;
     vt = Jt * v;
 
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       // Update the penetration for the two-way coupling scheme.
-      const auto& phi0 = problem_data_aliases_.phi0();
-      phi = phi0 - dt * vn;
+      const auto& x0 = problem_data_aliases_.x0();
+      x = x0 - dt * vn;
     }
 
-    CalcNormalForces(phi, vn, Jn, dt, &fn, &Gn);
+    CalcNormalForces(x, vn, Jn, dt, &fn, &Gn);
 
 
     // Update v_slip, t_hat, mus and ft as a function of vt and fn.
@@ -709,7 +706,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     // is probably best.
     // TODO(amcastro-tri): Consider using a matrix-free iterative method to
     // avoid computing M and J. CG and the Krylov family can be matrix-free.
-    if (two_way_coupling()) {
+    if (has_two_way_coupling()) {
       auto& J_lu = fixed_size_workspace_.mutable_J_lu();
       J_lu.compute(J);  // Update factorization.
       Delta_v = J_lu.solve(-residual);
@@ -723,10 +720,10 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     }
 
     // Since we keep Jt constant we have that:
-    // vₜᵏ⁺¹ = Jt⋅vᵏ⁺¹ = Jt⋅(vᵏ + α Δvᵏ)
-    //                = vₜᵏ + α Jt⋅Δvᵏ
-    //                = vₜᵏ + α Δvₜᵏ
-    // where we defined Δvₜᵏ = Jt⋅Δvᵏ and 0 < α < 1 is a constant that we'll
+    // vₜᵏ⁺¹ = Jt vᵏ⁺¹ = Jt (vᵏ + α Δvᵏ)
+    //                 = vₜᵏ + α Jt Δvᵏ
+    //                 = vₜᵏ + α Δvₜᵏ
+    // where we defined Δvₜᵏ = Jt Δvᵏ and 0 < α < 1 is a constant that we'll
     // determine by limiting the maximum angle change between vₜᵏ and vₜᵏ⁺¹.
     // For multiple contact points, we choose the minimum α among all contact
     // points.
@@ -751,23 +748,23 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 }
 
 template <typename T>
-T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
+T ImplicitStribeckSolver<T>::ModifiedStribeck(const T& s, const T& mu) {
+  DRAKE_ASSERT(s >= 0);
+  if (s >= 1) {
     return mu;
   } else {
-    return mu * x * (2.0 - x);
+    return mu * s * (2.0 - s);
   }
 }
 
 template <typename T>
 T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
-    const T& x, const T& mu) {
-  DRAKE_ASSERT(x >= 0);
-  if (x >= 1) {
+    const T& s, const T& mu) {
+  DRAKE_ASSERT(s >= 0);
+  if (s >= 1) {
     return 0;
   } else {
-    return mu * (2 * (1 - x));
+    return mu * (2 * (1 - s));
   }
 }
 

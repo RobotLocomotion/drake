@@ -147,13 +147,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
-  /// Creates a %Body with a BodyFrame associated with it.
-  Body() : body_frame_(*this) {}
-
-  /// Creates a %Body named `name` with a given `default_mass` and a BodyFrame
-  /// associated with it.
-  explicit Body(const std::string& name, double default_mass) :
-      name_(name), body_frame_(*this), default_mass_(default_mass) {}
+  /// Creates a %Body named `name` in model instance `model_instance`
+  /// with a given `default_mass` and a BodyFrame associated with it.
+  Body(const std::string& name, ModelInstanceIndex model_instance,
+       double default_mass)
+      : MultibodyTreeElement<Body<T>, BodyIndex>(model_instance),
+        name_(name),
+        body_frame_(*this), default_mass_(default_mass) {}
 
   /// Gets the `name` associated with `this` body.
   const std::string& name() const { return name_; }

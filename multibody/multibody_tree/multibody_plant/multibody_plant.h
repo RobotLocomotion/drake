@@ -265,7 +265,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    const RigidBody<T>& body = model_->AddRigidBody(name, M_BBo_B);
+    // TODO(sam.creasey) Expose model instances through MultibodyPlant.
+    const RigidBody<T>& body = model_->AddRigidBody(
+        name, default_model_instance(), M_BBo_B);
     // Each entry of visual_geometries_, ordered by body index, contains a
     // std::vector of geometry ids for that body. The emplace_back() below
     // resizes visual_geometries_ to store the geometry ids for the body we

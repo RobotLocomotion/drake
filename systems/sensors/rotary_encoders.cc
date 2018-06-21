@@ -58,6 +58,8 @@ RotaryEncoders<T>::RotaryEncoders(int input_port_size,
   DRAKE_ASSERT(ticks_per_revolution_.empty() ||
                *std::min_element(ticks_per_revolution_.begin(),
                                  ticks_per_revolution_.end()) >= 0);
+
+  // This vector is numeric parameter 0.
   this->DeclareNumericParameter(
       BasicVector<T>(VectorX<T>::Zero(num_encoders_)));
 }
@@ -78,7 +80,7 @@ void RotaryEncoders<T>::DoCalcVectorOutput(
   unused(state);
 
   const Eigen::VectorBlock<const VectorX<T>>& calibration_offsets =
-      this->GetNumericParameter(context, 0).get_value();
+      context.get_numeric_parameter(0).get_value();
   DRAKE_ASSERT(calibration_offsets.size() == num_encoders_);
 
   // Loop through the outputs.
@@ -102,17 +104,14 @@ template <typename T>
 void RotaryEncoders<T>::set_calibration_offsets(
     Context<T>* context,
     const Eigen::Ref<VectorX<T>>& calibration_offsets) const {
-  auto leaf_context = dynamic_cast<LeafContext<T>*>(context);
-  DRAKE_DEMAND(leaf_context != nullptr);
   DRAKE_DEMAND(calibration_offsets.rows() == num_encoders_);
-  leaf_context->set_parameters(std::make_unique<Parameters<T>>(
-      std::make_unique<BasicVector<T>>(calibration_offsets)));
+  context->get_mutable_numeric_parameter(0).set_value(calibration_offsets);
 }
 
 template <typename T>
 Eigen::VectorBlock<const VectorX<T>> RotaryEncoders<T>::get_calibration_offsets(
     const Context<T>& context) const {
-  return this->template GetNumericParameter(context, 0).get_value();
+  return context.get_numeric_parameter(0).get_value();
 }
 
 }  // namespace sensors
