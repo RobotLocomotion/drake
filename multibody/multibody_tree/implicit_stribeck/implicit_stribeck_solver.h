@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -539,6 +540,11 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  /// @throws std::exception if any of the data pointers are nullptr.
+  /// @throws std::exception if the problem data sizes are not consistent as
+  /// described above.
+  /// @throws std::exception if SetTwoWayCoupledProblemData() was ever called on
+  /// `this` solver.
   void SetOneWayCoupledProblemData(
       EigenPtr<const MatrixX<T>> M,
       EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -584,6 +590,11 @@ class ImplicitStribeckSolver {
   ///   2. changes to the problem data invalidate any solution performed by this
   ///      solver. In such a case, SetOneWayCoupledProblemData() and
   ///      SolveWithGuess() must be invoked again.
+  /// @throws std::exception if any of the data pointers are nullptr.
+  /// @throws std::exception if the problem data sizes are not consistent as
+  /// described above.
+  /// @throws std::exception if SetOneWayCoupledProblemData() was ever called on
+  /// `this` solver.
   // TODO(amcastro-tri): rework the entire math again to make phi to actually be
   // the signed distance function (instead of the signed penetration distance).
   void SetTwoWayCoupledProblemData(
@@ -669,6 +680,8 @@ class ImplicitStribeckSolver {
   class ProblemDataAliases {
    public:
     // Sets the references to the data defining a one-way coupled problem.
+    // This method throws an exeption if SetTwoWayCoupledData() was previously
+    // called on this object.
     void SetOneWayCoupledData(
         EigenPtr<const MatrixX<T>> M,
         EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -680,15 +693,20 @@ class ImplicitStribeckSolver {
       DRAKE_DEMAND(p_star != nullptr);
       DRAKE_DEMAND(fn != nullptr);
       DRAKE_DEMAND(mu != nullptr);
-      M_ptr = M;
-      Jn_ptr = Jn;
-      Jt_ptr = Jt;
-      p_star_ptr = p_star;
-      fn_ptr = fn;
-      mu_ptr = mu;
+      DRAKE_THROW_UNLESS(coupling_scheme_ == kInvalidScheme ||
+          coupling_scheme_ == kOneWayCoupled);
+      coupling_scheme_ = kOneWayCoupled;
+      M_ptr_ = M;
+      Jn_ptr_ = Jn;
+      Jt_ptr_ = Jt;
+      p_star_ptr_ = p_star;
+      fn_ptr_ = fn;
+      mu_ptr_ = mu;
     }
 
     // Sets the references to the data defining a two-way coupled problem.
+    // This method throws an exeption if SetOneWayCoupledData() was previously
+    // called on this object.
     void SetTwoWayCoupledData(
         EigenPtr<const MatrixX<T>> M,
         EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
@@ -704,91 +722,100 @@ class ImplicitStribeckSolver {
       DRAKE_DEMAND(stiffness != nullptr);
       DRAKE_DEMAND(dissipation != nullptr);
       DRAKE_DEMAND(mu != nullptr);
-      M_ptr = M;
-      Jn_ptr = Jn;
-      Jt_ptr = Jt;
-      p_star_ptr = p_star;
-      x0_ptr = x0;
-      stiffness_ptr = stiffness;
-      dissipation_ptr = dissipation;
-      mu_ptr = mu;
+      DRAKE_THROW_UNLESS(coupling_scheme_ == kInvalidScheme ||
+          coupling_scheme_ == kTwoWayCoupled);
+      coupling_scheme_ = kTwoWayCoupled;
+      M_ptr_ = M;
+      Jn_ptr_ = Jn;
+      Jt_ptr_ = Jt;
+      p_star_ptr_ = p_star;
+      x0_ptr_ = x0;
+      stiffness_ptr_ = stiffness;
+      dissipation_ptr_ = dissipation;
+      mu_ptr_ = mu;
     }
 
     // Returns true if this class contains the data for a two-way coupled
     // problem.
     bool has_two_way_coupling_data() const {
-      return fn_ptr == nullptr;
+      return coupling_scheme_ == kTwoWayCoupled;
     }
 
-    Eigen::Ref<const MatrixX<T>> M() const { return *M_ptr; }
-    Eigen::Ref<const MatrixX<T>> Jn() const { return *Jn_ptr; }
-    Eigen::Ref<const MatrixX<T>> Jt() const { return *Jt_ptr; }
-    Eigen::Ref<const VectorX<T>> p_star() const { return *p_star_ptr; }
+    Eigen::Ref<const MatrixX<T>> M() const { return *M_ptr_; }
+    Eigen::Ref<const MatrixX<T>> Jn() const { return *Jn_ptr_; }
+    Eigen::Ref<const MatrixX<T>> Jt() const { return *Jt_ptr_; }
+    Eigen::Ref<const VectorX<T>> p_star() const { return *p_star_ptr_; }
 
     // For the one-way coupled scheme, it returns a constant reference to the
     // data for the normal forces. It aborts if called on data for the two-way
     // coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> fn() const {
-      DRAKE_DEMAND(fn_ptr != nullptr);
-      return *fn_ptr;
+      DRAKE_DEMAND(fn_ptr_ != nullptr);
+      return *fn_ptr_;
     }
 
     // For the two-way coupled scheme, it returns a constant reference to the
     // data for the penetration distance. It aborts if called on data for the
     // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> x0() const {
-      DRAKE_DEMAND(x0_ptr != nullptr);
-      return *x0_ptr;
+      DRAKE_DEMAND(x0_ptr_ != nullptr);
+      return *x0_ptr_;
     }
 
     // For the two-way coupled scheme, it returns a constant reference to the
     // data for the stiffness. It aborts if called on data for the
     // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> stiffness() const {
-      DRAKE_DEMAND(stiffness_ptr != nullptr);
-      return *stiffness_ptr;
+      DRAKE_DEMAND(stiffness_ptr_ != nullptr);
+      return *stiffness_ptr_;
     }
 
     // For the two-way coupled scheme, it returns a constant reference to the
     // data for the dissipation. It aborts if called on data for the
     // one-way coupled scheme, see has_two_way_coupling_data().
     Eigen::Ref<const VectorX<T>> dissipation() const {
-      DRAKE_DEMAND(dissipation_ptr != nullptr);
-      return *dissipation_ptr;
+      DRAKE_DEMAND(dissipation_ptr_ != nullptr);
+      return *dissipation_ptr_;
     }
 
     Eigen::Ref<const VectorX<T>> mu() const {
-      return *mu_ptr;
+      return *mu_ptr_;
     }
 
    private:
+    enum {
+      kInvalidScheme,
+      kOneWayCoupled,
+      kTwoWayCoupled
+    } coupling_scheme_{kInvalidScheme};
+
     // The mass matrix of the system.
-    EigenPtr<const MatrixX<T>> M_ptr{nullptr};
+    EigenPtr<const MatrixX<T>> M_ptr_{nullptr};
     // The normal separation velocities Jacobian.
-    EigenPtr<const MatrixX<T>> Jn_ptr{nullptr};
+    EigenPtr<const MatrixX<T>> Jn_ptr_{nullptr};
     // The tangential velocities Jacobian.
-    EigenPtr<const MatrixX<T>> Jt_ptr{nullptr};
+    EigenPtr<const MatrixX<T>> Jt_ptr_{nullptr};
     // The generalized momentum vector **before** contact is applied.
-    EigenPtr<const VectorX<T>> p_star_ptr{nullptr};
-    // Normal force at each contact point. fn_ptr is nullptr for two-way
+    EigenPtr<const VectorX<T>> p_star_ptr_{nullptr};
+    // Normal force at each contact point. fn_ptr_ is nullptr for two-way
     // coupled problems.
-    EigenPtr<const VectorX<T>> fn_ptr{nullptr};
+    EigenPtr<const VectorX<T>> fn_ptr_{nullptr};
     // Penetration distance. Positive when there is penetration and negative
     // when there is separation, i.e. it is minus the signed distance function.
-    // x0_ptr is nullptr for one-way coupled problems.
-    EigenPtr<const VectorX<T>> x0_ptr{nullptr};
+    // x0_ptr_ is nullptr for one-way coupled problems.
+    EigenPtr<const VectorX<T>> x0_ptr_{nullptr};
     // Stiffness in the normal direction. nullptr for one-way coupled problems.
-    EigenPtr<const VectorX<T>> stiffness_ptr{nullptr};
+    EigenPtr<const VectorX<T>> stiffness_ptr_{nullptr};
     // Damping in the normal direction. nullptr for one-way coupled problems.
-    EigenPtr<const VectorX<T>> dissipation_ptr{nullptr};
+    EigenPtr<const VectorX<T>> dissipation_ptr_{nullptr};
     // Friction coefficient for each contact point.
-    EigenPtr<const VectorX<T>> mu_ptr{nullptr};
+    EigenPtr<const VectorX<T>> mu_ptr_{nullptr};
   };
 
   // The solver's workspace allocated at construction time. Sizes only depend on
   // nv, the number of generalized velocities.
-  // The size of the variables in this workspace MUST remain fixed throghout the
-  // lifetime of the solver. Do not resize any of them!.
+  // The size of the variables in this workspace MUST remain fixed throughout
+  // the lifetime of the solver. Do not resize any of them!.
   class FixedSizeWorkspace {
    public:
     // Constructs a workspace with size only dependent on nv.

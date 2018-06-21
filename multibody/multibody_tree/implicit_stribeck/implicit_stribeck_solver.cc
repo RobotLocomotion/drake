@@ -315,8 +315,6 @@ void ImplicitStribeckSolver<T>::CalcFrictionForces(
   auto t_hat = *t_hat_ptr;
 
   // The stiction tolerance.
-  // TODO(amcastro-tri): rename v_stiction to v_stiction, since our
-  // "Stribeck function" is not a Stribeck model really.
   const double v_stiction = parameters_.stiction_tolerance;
 
   // We use the stiction tolerance as a reference scale to estimate a small
