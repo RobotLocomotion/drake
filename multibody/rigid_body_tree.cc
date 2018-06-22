@@ -2603,7 +2603,7 @@ Matrix<Scalar, Dynamic, 1> RigidBodyTree<T>::springTorques(
     if (body.has_parent_body()) {
       const DrakeJoint& joint = body.getJoint();
       int nq_joint = joint.get_num_positions();
-      int q_start_joint = body.get_velocity_start_index();
+      int q_start_joint = body.get_position_start_index();
       auto q_body = q.middleRows(q_start_joint, nq_joint);
       f_q.middleRows(q_start_joint, nq_joint) = joint.springTorque(q_body);
     }
