@@ -680,7 +680,7 @@ class ImplicitStribeckSolver {
   class ProblemDataAliases {
    public:
     // Sets the references to the data defining a one-way coupled problem.
-    // This method throws an exeption if SetTwoWayCoupledData() was previously
+    // This method throws an exception if SetTwoWayCoupledData() was previously
     // called on this object.
     void SetOneWayCoupledData(
         EigenPtr<const MatrixX<T>> M,
@@ -705,7 +705,7 @@ class ImplicitStribeckSolver {
     }
 
     // Sets the references to the data defining a two-way coupled problem.
-    // This method throws an exeption if SetOneWayCoupledData() was previously
+    // This method throws an exception if SetOneWayCoupledData() was previously
     // called on this object.
     void SetTwoWayCoupledData(
         EigenPtr<const MatrixX<T>> M,

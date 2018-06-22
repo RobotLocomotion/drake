@@ -24,13 +24,20 @@ namespace {
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
-DEFINE_double(integration_accuracy, 1e-6, "Integration accuracy.");
 DEFINE_double(simulation_time, 1.0,
               "Desired duration of the simulation in seconds.");
+DEFINE_double(time_step, 1.0e-3,
+              "If zero, the plant is modeled as a continuous system. "
+              "If positive, the period (in seconds) of the discrete updates "
+              "for the plant modeled as a discrete system."
+              "This parameter must be non-negative.");
+DEFINE_double(integration_accuracy, 1e-6,
+              "Integration accuracy when the plant is modeled as a continuous "
+              "system. Not used if time_step > 0.");
 
 DEFINE_double(static_friction, 0.5, "Static friction coefficient.");
 DEFINE_double(dynamic_friction, 0.3, "Dynamic friction coefficient.");
-DEFINE_double(stiction_tolerance, 0.001, "Stribeck model stiction tolerance.");
+DEFINE_double(stiction_tolerance, 1.0e-5, "Stribeck model stiction tolerance.");
 
 using geometry::SceneGraph;
 using geometry::SourceId;
@@ -49,10 +56,6 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  // The target accuracy determines the size of the actual time steps taken
-  // whenever a variable time step integrator is used.
-  const double target_accuracy = FLAGS_integration_accuracy;
-
   // Plant's parameters.
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
@@ -61,19 +64,13 @@ int do_main() {
   const CoulombFriction<double> surface_friction(FLAGS_static_friction,
                                                  FLAGS_dynamic_friction);
 
+  DRAKE_DEMAND(FLAGS_time_step >= 0);
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
-      radius, mass, slope, surface_friction, g, &scene_graph));
+      radius, mass, slope, surface_friction, g, FLAGS_time_step, &scene_graph));
   const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
-  plant.set_penetration_allowance(0.001);
+  plant.set_penetration_allowance(1.0e-5);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
-
-  // Choose a maximum time step based on the fastest dynamics of the system. For
-  // this case, the fastest dynamics corresponds to the time scale introduced by
-  // the penalty method. Thus we set the maximum time step to a fraction of this
-  // time scale.
-  const double max_time_step =
-      plant.get_contact_penalty_method_time_scale() / 30;
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
@@ -124,8 +121,7 @@ int do_main() {
 
   systems::IntegratorBase<double>* integrator =
       simulator.get_mutable_integrator();
-  integrator->set_maximum_step_size(max_time_step);
-  integrator->set_target_accuracy(target_accuracy);
+  integrator->set_target_accuracy(FLAGS_integration_accuracy);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);

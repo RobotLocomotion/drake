@@ -242,7 +242,7 @@ static std::unique_ptr<System<T>> Make(
   // is the only extrinsic property of the System and LeafSystem base classes
   // that is stored within the System itself.
   result->set_name(other.get_name());
-  return std::move(result);
+  return result;
 }
 // When Traits says not to convert.
 template <template <typename> class S, typename T, typename U>

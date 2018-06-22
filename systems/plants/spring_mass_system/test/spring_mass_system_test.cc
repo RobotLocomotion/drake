@@ -7,10 +7,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/framework/vector_base.h"
 
