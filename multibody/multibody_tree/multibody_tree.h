@@ -175,10 +175,9 @@ class MultibodyTree {
     return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
   }
 
-  /// Creates a rigid body model with the provided name, model
-  /// instance, and spatial inertia.  This method returns a constant
-  /// reference to the body just added, which will remain valid for
-  /// the lifetime of `this` %MultibodyTree.
+  /// Creates a rigid body with the provided name, model instance, and spatial
+  /// inertia.  This method returns a constant reference to the body just added,
+  /// which will remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
   /// @code
@@ -221,9 +220,9 @@ class MultibodyTree {
     return body;
   }
 
-  /// Creates a rigid body model with the provided name, model instance, and
-  /// spatial inertia.  The newly created body will be placed in the default
-  /// model instance.  This method returns a constant reference to the body just
+  /// Creates a rigid body with the provided name, model instance, and spatial
+  /// inertia.  The newly created body will be placed in the default model
+  /// instance.  This method returns a constant reference to the body just
   /// added, which will remain valid for the lifetime of `this` %MultibodyTree.
   ///
   /// Example of usage:
@@ -683,7 +682,7 @@ class MultibodyTree {
     if (HasModelInstanceNamed(name)) {
       throw std::logic_error(
           "This model already contains a model instance named '" + name +
-          "'. Model instancs names must be unique within a given model.");
+          "'. Model instance names must be unique within a given model.");
     }
 
     if (topology_is_valid()) {

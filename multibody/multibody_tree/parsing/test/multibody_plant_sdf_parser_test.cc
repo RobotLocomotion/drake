@@ -6,6 +6,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
@@ -274,6 +275,35 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
   EXPECT_TRUE(ExtractBoolOrThrow(
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
           CoulombFriction<double>(0.5, 0.5)));
+}
+// Verifies model instances are correctly created in the plant.
+TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant_.num_model_instances(), 2);
+
+  ModelInstanceIndex instance1_idx =
+      AddModelFromSdfFile(full_name_, "instance1", &plant_);
+
+  const std::string acrobot_sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  ModelInstanceIndex instance2_idx =
+      AddModelFromSdfFile(acrobot_sdf_name, &plant_);
+
+  // TODO(sam.creasey) Check that we can add multiple copies of the same model
+  // with different names once that's supported.
+
+  // Check that a duplicate model names are not allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromSdfFile(full_name_, "instance1", &plant_), std::logic_error,
+      "This model already contains a model instance named 'instance1'. "
+      "Model instance names must be unique within a given model.");
+
+  // We are done adding models.
+  plant_.Finalize();
+
+  ASSERT_EQ(plant_.num_model_instances(), 4);
+  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1_idx);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), instance2_idx);
 }
 
 }  // namespace
