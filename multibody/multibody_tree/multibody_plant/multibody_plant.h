@@ -215,7 +215,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->num_model_instances();
   }
 
-  /// Returns the size of the generalized position vector `q` for `this` model.
+  /// Returns the size of the generalized position vector `q` for `this`
+  /// %MultibodyPlant.
   int num_positions() const { return model_->num_positions(); }
 
   /// Returns the size of the generalized position vector `q` for a specific
@@ -224,7 +225,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->num_positions(model_instance);
   }
 
-  /// Returns the size of the generalized velocity vector `v` for `this` model.
+  /// Returns the size of the generalized velocity vector `v` for `this`
+  /// %MultibodyPlant.
   int num_velocities() const { return model_->num_velocities(); }
 
   /// Returns the size of the generalized velocity vector `v` for a specific
@@ -234,8 +236,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   }
 
   /// Returns the size of the multibody system state vector `x = [q; v]` for
-  /// `this` model. This will equal the number of generalized positions
-  /// (see num_positions()) plus the number of generalized velocities
+  /// `this` %MultibodyPlant. This will equal the number of generalized
+  /// positions (see num_positions()) plus the number of generalized velocities
   /// (see num_velocities()).
   /// Notice however that the state of a %MultibodyPlant, stored in its Context,
   /// can actually contain other variables such as integrated power and discrete
@@ -285,9 +287,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] model_instance
   ///   A model instance index which this body is part of.
   /// @param[in] M_BBo_B
-  ///   The SpatialInertia of the new rigid body to be added to `this` model,
-  ///   computed about the body frame origin `Bo` and expressed in the body
-  ///   frame B.
+  ///   The SpatialInertia of the new rigid body to be added to `this`
+  ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
+  ///   in the body frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   const RigidBody<T>& AddRigidBody(
@@ -327,9 +329,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///   model. A std::runtime_error is thrown if a body named `name` already is
   ///   part of the model. See HasBodyNamed(), Body::name().
   /// @param[in] M_BBo_B
-  ///   The SpatialInertia of the new rigid body to be added to `this` model,
-  ///   computed about the body frame origin `Bo` and expressed in the body
-  ///   frame B.
+  ///   The SpatialInertia of the new rigid body to be added to `this`
+  ///   %MultibodyPlant, computed about the body frame origin `Bo` and expressed
+  ///   in the body frame B.
   /// @returns A constant reference to the new RigidBody just added, which will
   ///          remain valid for the lifetime of `this` %MultibodyPlant.
   /// @throws std::logic_error if additional model instances have been created
@@ -410,8 +412,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   ///       Vector3d::UnitZ());     /* revolute axis in this case */
   /// @endcode
   ///
-  /// @throws if `this` model already contains a joint with the given `name`.
-  /// See HasJointNamed(), Joint::name().
+  /// @throws if `this` %MultibodyPlant already contains a joint with the given
+  /// `name`.  See HasJointNamed(), Joint::name().
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
@@ -426,9 +428,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
         name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   }
 
-  /// Adds a new force element model of type `ForceElementType` to `this` model.
-  /// The arguments to this method `args` are forwarded to `ForceElementType`'s
-  /// constructor.
+  /// Adds a new force element model of type `ForceElementType` to `this`
+  /// %MultibodyPlant.  The arguments to this method `args` are forwarded to
+  /// `ForceElementType`'s constructor.
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new force
   ///   element. It must be the case that
@@ -515,25 +517,27 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// being added to the model.
   /// @{
 
-  /// @returns `true` if a body named `name` was added to the model.
+  /// @returns `true` if a body named `name` was added to the %MultibodyPlant.
   /// @see AddRigidBody().
   bool HasBodyNamed(const std::string& name) const {
     return model_->HasBodyNamed(name);
   }
 
-  /// @returns `true` if a joint named `name` was added to the model.
+  /// @returns `true` if a joint named `name` was added to the %MultibodyPlant.
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return model_->HasJointNamed(name);
   }
 
-  /// @returns `true` if an actuator named `name` was added to the model.
+  /// @returns `true` if an actuator named `name` was added to the
+  /// %MultibodyPlant.
   /// @see AddJointActuator().
   bool HasJointActuatorNamed(const std::string& name) const {
     return model_->HasJointActuatorNamed(name);
   }
 
-  /// @returns `true` if a model instance named `name` was added to the model.
+  /// @returns `true` if a model instance named `name` was added to the
+  /// %MultibodyPlant.
   /// @see AddModelInstance().
   bool HasModelInstanceNamed(const std::string& name) const {
     return model_->HasModelInstanceNamed(name);
@@ -545,25 +549,25 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// by its name. An exception is thrown if there is no element with the
   /// requested name.
   /// These queries can be performed at any time during the lifetime of a
-  /// %MultibodyPlant model, i.e. there is no restriction on whether they must
+  /// %MultibodyPlant, i.e. there is no restriction on whether they must
   /// be called before or after Finalize(). This implies that these queries can
   /// be performed while new multibody elements are being added to the model.
   /// @{
 
   /// Returns a constant reference to the rigid body that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no body with the requested name.
-  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
-  /// given specified name.
+  /// @see HasBodyNamed() to query if there exists a body in `this`
+  /// %MultibodyPlant with a given specified name.
   const Body<T>& GetBodyByName(const std::string& name) const {
     return model_->GetBodyByName(name);
   }
 
   /// Returns a constant reference to the joint that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no joint with the requested name.
-  /// @see HasJointNamed() to query if there exists a joint in `this` model with
-  /// a given specified name.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
     return model_->GetJointByName(name);
   }
@@ -575,28 +579,28 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
   /// if there is no Joint with that name.
-  /// @see HasJointNamed() to query if there exists a joint in `this` model with
-  /// a given specified name.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
   template <template<typename> class JointType>
   const JointType<T>& GetJointByName(const std::string& name) const {
     return model_->template GetJointByName<JointType>(name);
   }
 
   /// Returns a constant reference to the actuator that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no actuator with the requested name.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
-  /// `this` model with a given specified name.
+  /// `this` %MultibodyPlant with a given specified name.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return model_->GetJointActuatorByName(name);
   }
 
   /// Returns the index to the model instance that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no instance with the requested name.
   /// @see HasModelInstanceNamed() to query if there exists an instance in
-  /// `this` model with a given specified name.
+  /// `this` %MultibodyPlant with a given specified name.
   ModelInstanceIndex GetModelInstanceByName(const std::string& name) const {
     return model_->GetModelInstanceByName(name);
   }
@@ -1378,7 +1382,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       inv_v_stiction_tolerance_ = 1.0 / v_stiction;
     }
 
-    /// Returns the value of the stiction tolerance for `this` model.
+    /// Returns the value of the stiction tolerance for `this` %MultibodyPlant.
     /// It returns a negative value when the stiction tolerance has not been set
     /// previously with set_stiction_tolerance().
     double stiction_tolerance() const { return v_stiction_tolerance_; }
