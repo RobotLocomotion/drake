@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
+#include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -935,6 +936,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `v_stiction` is non-positive.
   void set_stiction_tolerance(double v_stiction = 0.001) {
     stribeck_model_.set_stiction_tolerance(v_stiction);
+    // We allow calling this method post-finalize. Therefore, if the plant is
+    // modeled as a discrete system, we must update the solver's stiction
+    // parameter. Pre-Finalize the solver is not yet created and therefore we
+    // check for nullptr.
+    if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
+      implicit_stribeck::Parameters solver_parameters =
+          implicit_stribeck_solver_->get_solver_parameters();
+      solver_parameters.stiction_tolerance =
+          stribeck_model_.stiction_tolerance();
+      implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+    }
   }
   /// @}
 
@@ -1291,6 +1303,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // time_step_ corresponds to the period of those updates. Otherwise, if the
   // plant is modeled as a continuous system, it is exactly zero.
   double time_step_{0};
+
+  // The solver used when the plant is modeled as a discrete system.
+  std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
+      implicit_stribeck_solver_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

@@ -228,6 +228,18 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   if (num_collision_geometries() > 0 &&
       stribeck_model_.stiction_tolerance() < 0)
     set_stiction_tolerance();
+  // Make a contact solver when the plant is modeled as a discrete system.
+  if (is_discrete()) {
+    implicit_stribeck_solver_ =
+        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(
+            num_velocities());
+    // Set the stiction tolerance according to the values set by users with
+    // set_stiction_tolerance().
+    implicit_stribeck::Parameters solver_parameters;
+    solver_parameters.stiction_tolerance =
+        stribeck_model_.stiction_tolerance();
+    implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+  }
 }
 
 template <typename T>
@@ -478,10 +490,19 @@ template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
-  const geometry::QueryObject<double>& query_object =
-      this->EvalAbstractInput(context, geometry_query_port_)
-          ->template GetValue<geometry::QueryObject<double>>();
-  return query_object.ComputePointPairPenetration();
+  if (num_collision_geometries() > 0) {
+    if (geometry_query_port_ < 0) {
+      throw std::logic_error(
+          "This MultibodyPlant registered geometry for contact handling. "
+          "However its query input port (get_geometry_query_input_port()) "
+          "is not connected. ");
+    }
+    const geometry::QueryObject<double>& query_object =
+        this->EvalAbstractInput(context, geometry_query_port_)
+            ->template GetValue<geometry::QueryObject<double>>();
+    return query_object.ComputePointPairPenetration();
+  }
+  return std::vector<PenetrationAsPointPair<double>>();
 }
 
 template<typename T>
@@ -709,6 +730,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xdot);
 }
 
+// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
 template<typename T>
 void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
@@ -737,7 +759,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(*model_);
 
-  // Position and velocity kinematics at the previous time step.
   const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
   const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
 
@@ -762,17 +783,15 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.
-  if (num_collision_geometries() > 0) {
-    throw std::runtime_error("Contact not supported in time stepping mode.");
-  }
+  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
+      CalcPointPairPenetrations(context0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(model_->num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
-
+  // Body forces (alias to forces0).
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces0.mutable_body_forces();
 
   // With vdot = 0, this computes:
@@ -785,8 +804,66 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &F_BBo_W_array, /* Note: these arrays get overwritten on output. */
       &minus_tau);
 
-  // Velocity at next time step.
-  VectorX<T> v_next = v0 + dt * M0_ldlt.solve(-minus_tau);
+  // Compute discrete update before applying friction forces.
+  // We denote this state x* = [q*, v*], the "star" state.
+  // Generalized momentum "star", before contact forces are applied.
+  VectorX<T> p_star = M0 * v0 - dt * minus_tau;
+
+  // Compute normal and tangential velocity Jacobians at t0.
+  const int num_contacts = point_pairs0.size();
+  MatrixX<T> Jn(num_contacts, nv);
+  MatrixX<T> Jt(2 * num_contacts, nv);
+  if (num_contacts > 0) {
+    // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
+    // solver to use operators instead so that we don't have to form these
+    // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
+    Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
+    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0);
+  }
+
+  // Get friction coefficient into a single vector. Dynamic friction is ignored
+  // by the time stepping scheme.
+  std::vector<CoulombFriction<double>> combined_friction_pairs =
+      CalcCombinedFrictionCoefficients(point_pairs0);
+  VectorX<T> mu(num_contacts);
+  std::transform(combined_friction_pairs.begin(), combined_friction_pairs.end(),
+                 mu.data(),
+                 [](const CoulombFriction<double>& coulomb_friction) {
+                   return coulomb_friction.static_friction();
+                 });
+
+  // Place all the penetration depths within a single vector as required by
+  // the solver.
+  VectorX<T> phi0(num_contacts);
+  std::transform(point_pairs0.begin(), point_pairs0.end(),
+                 phi0.data(),
+                 [](const PenetrationAsPointPair<T>& pair) {
+                   return pair.depth;
+                 });
+
+  // TODO(amcastro-tri): Consider using different penalty parameters at each
+  // contact point.
+  // Compliance parameters used by the solver for each contact point.
+  VectorX<T> stiffness = VectorX<T>::Constant(
+      num_contacts, penalty_method_contact_parameters_.stiffness);
+  VectorX<T> damping = VectorX<T>::Constant(
+      num_contacts, penalty_method_contact_parameters_.damping);
+
+  // Update the solver with the new data defining the problem for this update.
+  implicit_stribeck_solver_->SetTwoWayCoupledProblemData(
+      &M0, &Jn, &Jt, &p_star, &phi0, &stiffness, &damping, &mu);
+
+  // Solve for v and the contact forces.
+  implicit_stribeck::ComputationInfo info =
+      implicit_stribeck_solver_->SolveWithGuess(dt, v0);
+  DRAKE_DEMAND(info == implicit_stribeck::Success);
+
+  // TODO(amcastro-tri): implement capability to dump solver statistics to a
+  // file for analysis.
+
+  // Retrieve the solution velocity for the next time step.
+  VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();
+
   VectorX<T> qdot_next(this->num_positions());
   model_->MapVelocityToQDot(context0, v_next, &qdot_next);
   VectorX<T> q_next = q0 + dt * qdot_next;
