@@ -442,6 +442,73 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
+// Test creating a rotation matrix with symbolic variables.
+GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
+  const symbolic::Variable q0("q0");  // Quaternion element q0.
+  const symbolic::Variable q1("q1");  // Quaternion element q1.
+  const symbolic::Variable q2("q2");  // Quaternion element q2.
+  const symbolic::Variable q3("q3");  // Quaternion element q3.
+  const Eigen::Quaternion<symbolic::Variable> q(q0, q1, q2, q3);
+  const RotationMatrix<symbolic::Expression> R(q);
+  const RotationMatrix<symbolic::Expression> R_inverse = R.inverse();
+  const RotationMatrix<symbolic::Expression> R_R_inverse = R * R_inverse;
+
+  // R * R_inverse does not natually simplify to the identity matrix without
+  // a simplifying rule such as q0^2 + q1^2 + q2^2 + q3^2 = 1.
+  // To verify that R_R_inverse is the identity matrix, evaluate numerically.
+  // To that end, map the symbolic variables to numerical values (shown below).
+  const double q0d = 0.2, q1d = 0.3, q2d = 0.4;
+  const double q3d = std::sqrt(1 - (q0d * q0d + q1d * q1d + q2d * q2d));
+  const symbolic::Environment env{{q0, q0d}, {q1, q1d}, {q2, q2d}, {q3, q3d}};
+
+  // Evaluate the symbolic R_R_inverse matrix with specific numerical values.
+  const Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
+  Eigen::Matrix3d m_numerical;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      const symbolic::Expression mij_symbolic = m_symbolic(i, j);
+      m_numerical(i, j) = mij_symbolic.Evaluate(env);
+    }
+  }
+  const RotationMatrix<double> R_identity(m_numerical);
+  const Bool<double> is_identity = R_identity.IsIdentityToInternalTolerance();
+  EXPECT_TRUE(is_identity.value());
+
+  // Verify Bool method IsExactlyIdentity().
+  m_numerical(0, 1) = kEpsilon;
+  const RotationMatrix<double> R_approx(m_numerical);
+  EXPECT_FALSE(R_approx.IsExactlyIdentity().value());
+
+  // Verify Bool method IsOrthonormal();
+  const Bool<double> is_orthonormal =
+      RotationMatrix<double>::IsOrthonormal(R_identity.matrix(), 800*kEpsilon);
+  EXPECT_TRUE(is_orthonormal.value());
+
+  // Verify Bool method IsValid().
+  const Bool<double> is_validA =
+      RotationMatrix<double>::IsValid(R_identity.matrix(), 800*kEpsilon);
+  EXPECT_TRUE(is_validA.value());
+
+  // Verify Bool method IsValid().
+  m_numerical(0, 1) = 800 * kEpsilon;
+  const Bool<double> is_validB = RotationMatrix<double>::IsValid(m_numerical);
+  EXPECT_FALSE(is_validB.value());
+
+  // Verify Bool method IsNearlyEqualTo().
+  const Bool<double> is_nearly_equalA =
+      R_approx.IsNearlyEqualTo(R_identity, 10 * kEpsilon);
+  const Bool<double> is_nearly_equalB =
+      R_approx.IsNearlyEqualTo(R_identity, 0.1 * kEpsilon);
+  EXPECT_TRUE(is_nearly_equalA.value());
+  EXPECT_FALSE(is_nearly_equalB.value());
+
+  // Verify Bool method IsExactlyEqualTo().
+  const Bool<double> is_exactly_equalA = R_approx.IsExactlyEqualTo(R_approx);
+  const Bool<double> is_exactly_equalB = R_approx.IsExactlyEqualTo(R_identity);
+  EXPECT_TRUE(is_exactly_equalA.value());
+  EXPECT_FALSE(is_exactly_equalB.value());
+}
+
 class RotationMatrixConversionTests : public ::testing::Test {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
