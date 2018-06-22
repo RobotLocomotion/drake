@@ -160,11 +160,12 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   // Verify the relative errors. For the continuous model of the plant errors
   // are dominated by the penetration allowance and the stiction tolerance since
-  // the integrator's accuracy was set to a relatively small value.
+  // the integrator's accuracy was set to a relatively tight value.
   // For the time stepping model of the plant, errors are dominated by the
   // finite time step, given that we are able to use very tight penetration
   // allowance and stiction tolerance.
-  // Notice that given the kinematic relation v_WBcm = R * W_WB, relative errors
+  // Notice that given the kinematic relationship between linear and angular
+  // velocity v_WBcm = radius * W_WB at rolling, relative errors
   // in v_WBcm and W_WB have the same order of magnitude. Moreover, since the
   // kinetic energy scales with the velocities (translational and angular)
   // squared, standard error propagation shows that the relative error in the

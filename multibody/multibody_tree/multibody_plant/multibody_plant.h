@@ -941,7 +941,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
     if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
-      implicit_stribeck::Parameters solver_parameters;
+      implicit_stribeck::Parameters solver_parameters =
+          implicit_stribeck_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
           stribeck_model_.stiction_tolerance();
       implicit_stribeck_solver_->set_solver_parameters(solver_parameters);

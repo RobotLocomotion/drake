@@ -813,6 +813,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   MatrixX<T> Jn(num_contacts, nv);
   MatrixX<T> Jt(2 * num_contacts, nv);
   if (num_contacts > 0) {
+    // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
+    // solver to use operators instead so that we don't have to form these
+    // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
     Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
     Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0);
   }
