@@ -473,7 +473,13 @@ class TestRigidBodyTree(unittest.TestCase):
         box_collision_element.set_body(body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
+        rbt.DefineCollisionFilterGroup(name="test_group")
+        rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_2", model_id=0)
+
+        self.assertFalse(rbt.initialized())
         rbt.compile()
+        self.assertTrue(rbt.initialized())
 
         # The RBT's position vector should now be [z, theta].
         self.assertEqual(body_1.get_position_start_index(), 0)
