@@ -13,17 +13,22 @@
 namespace drake {
 namespace systems {
 
-class SystemOutputTest : public ::testing::Test {
+// Construction and add_port() calls here are permitted only because this test
+// class has been granted friend access to SystemOutput. Otherwise a
+// SystemOutput<T> object can only be created by a System<T> object, or by
+// copying an existing SystemOutput object.
  protected:
   void SetUp() override {
     // Vector output port 0 is just a BasicVector<double>.
     const BasicVector<double> vec{5, 25};
-    output_.add_port(vec.Clone());
+    output_.add_port(AbstractValue::Make(vec));
 
     // Vector output port 1 is derived from BasicVector<double>. The concrete
     // type should be preserved when copying.
     auto my_vec = MyVector<3, double>::Make(125, 625, 3125);
-    output_.add_port(std::move(my_vec));
+    auto my_basic_vec =
+        std::make_unique<Value<BasicVector<double>>>(std::move(my_vec));
+    output_.add_port(std::move(my_basic_vec));
 
     // Abstract output port 2 is a string.
     auto str = AbstractValue::Make(std::string("foo"));

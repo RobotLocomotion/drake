@@ -104,7 +104,7 @@ class DiagramContextTest : public ::testing::Test {
 
   void AddSystem(const System<double>& sys, SubsystemIndex index) {
     auto subcontext = sys.CreateDefaultContext();
-    context_->AddSystem(SubsystemIndex(index), std::move(subcontext));
+    context_->AddSystem(index, std::move(subcontext));
   }
 
   void AttachInputPorts() {

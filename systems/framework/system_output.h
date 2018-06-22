@@ -12,11 +12,18 @@
 namespace drake {
 namespace systems {
 
+// Forward declare for friendship below. Only System<T> may ever create
+// a SystemOutput<T>.
+template <typename T> class System;
+
 /** Conveniently stores a snapshot of the values of every output port of
 a System. There is framework support for allocating the right types and filling
 them in but otherwise this is not used internally. Note that there is never any
 live connection between a SystemOutput object and the System whose output values
 it has captured.
+
+A `SystemOutput<T>` object can only be obtained using
+`System<T>::AllocateOutput()` or by copying an existing %SystemOutput object.
 
 @tparam T The type of the output data. Must be a valid Eigen scalar. */
 template <typename T>
@@ -24,7 +31,6 @@ class SystemOutput {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemOutput);
 
-  SystemOutput() = default;
   ~SystemOutput() = default;
 
   /** Returns the number of output ports specified for this %SystemOutput
@@ -70,21 +76,17 @@ class SystemOutput {
                 ->template GetMutableValueOrThrow<BasicVector<T>>();
   }
 
-  /** (Internal use only) Add a suitable object to hold values for the next
-  output port. */
+ private:
+  friend class System<T>;
+  friend class SystemOutputTest;
+
+  SystemOutput() = default;
+
+  // Add a suitable object to hold values for the next output port.
   void add_port(std::unique_ptr<AbstractValue> model_value) {
     port_values_.emplace_back(std::move(model_value));
   }
 
-  /** (Internal use only) Add a suitable BasicVector object to hold values for
-  the next output port. Still stored as an AbstractValue internally. */
-  void add_port(std::unique_ptr<BasicVector<T>> model_value) {
-    auto abs_value = std::unique_ptr<AbstractValue>(
-        new Value<BasicVector<T>>(std::move(model_value)));
-    add_port(std::move(abs_value));
-  }
-
- private:
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;
 };
 
