@@ -19,6 +19,7 @@ libpng16-16
 libprotobuf-dev
 libqt5multimedia5
 libqt5x11extras5
+libtbb2
 libtheora0
 libtiff5
 libtinyxml2-dev
