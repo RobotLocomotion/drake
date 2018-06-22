@@ -50,7 +50,7 @@ class MyContextBase : public ContextBase {
 
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
-    return std::unique_ptr<ContextBase>(new MyContextBase(*this));
+    return std::make_unique<MyContextBase>(*this);
   }
 };
 

@@ -63,7 +63,7 @@ class BasicVector : public VectorBase<T> {
   static std::unique_ptr<BasicVector<T>> Make(Fargs&&... args) {
     auto data = std::make_unique<BasicVector<T>>(sizeof...(args));
     BasicVector<T>::MakeRecursive(data.get(), 0, args...);
-    return std::move(data);
+    return data;
   }
 
   int size() const override { return static_cast<int>(values_.rows()); }

@@ -185,7 +185,7 @@ class DiagramBuilder {
   /// not buildable.
   std::unique_ptr<Diagram<T>> Build() {
     std::unique_ptr<Diagram<T>> diagram(new Diagram<T>(Compile()));
-    return std::move(diagram);
+    return diagram;
   }
 
   /// Configures @p target to have the topology that has been described by
