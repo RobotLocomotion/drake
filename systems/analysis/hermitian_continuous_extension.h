@@ -48,7 +48,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   class IntegrationStep {
    public:
     /// Constructs a zero length step (i.e. a step containing a single time,
-    /// state and state derivative triplet) by copy from column matrices.
+    /// state and state derivative triplet) from column matrices.
     ///
     /// @param initial_time Initial time t₀ where the step starts.
     /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
@@ -61,32 +61,16 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///   if given @p initial_state_derivative d𝐱/t₀ is not a column matrix.<br>
     ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative d𝐱/dt₀ do
     ///   not match each other's dimension.
-    IntegrationStep(const T& initial_time,
-                    const MatrixX<T>& initial_state,
-                    const MatrixX<T>& initial_state_derivative) {
+    IntegrationStep(T initial_time, MatrixX<T> initial_state,
+                    MatrixX<T> initial_state_derivative) {
       ValidateStepExtendTripletOrThrow(initial_time, initial_state,
                                        initial_state_derivative);
-      times_.push_back(initial_time);
-      states_.push_back(initial_state);
-      state_derivatives_.push_back(initial_state_derivative);
-    }
-
-    /// Constructs a zero length step (i.e. a step containing a single time,
-    /// state and state derivative triplet) by move from column matrices.
-    ///
-    /// @copydetails IntegrationStep(const T&,const MatrixX<T>&,
-    ///                              const MatrixX<T>&)
-    IntegrationStep(const T& initial_time,
-                    MatrixX<T>&& initial_state,
-                    MatrixX<T>&& initial_state_derivative) {
-      ValidateStepExtendTripletOrThrow(initial_time, initial_state,
-                                       initial_state_derivative);
-      times_.push_back(initial_time);
+      times_.push_back(std::move(initial_time));
       states_.push_back(std::move(initial_state));
       state_derivatives_.push_back(std::move(initial_state_derivative));
     }
 
-    /// Extends the step forward in time by copy from column matrices.
+    /// Extends the step forward in time from column matrices.
     ///
     /// Provided @p time, @p state and @p state_derivative are appended
     /// to the current step, effectively increasing its time length.
@@ -104,21 +88,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///   previous state 𝐱ᵢ₋₁.<br>
     ///   if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not match each
     ///   other's dimension.
-    void Extend(const T& time, const MatrixX<T>& state,
-                const MatrixX<T>& state_derivative) {
+    void Extend(T time, MatrixX<T> state, MatrixX<T> state_derivative) {
       ValidateStepExtendTripletOrThrow(time, state, state_derivative);
-      times_.push_back(time);
-      states_.push_back(state);
-      state_derivatives_.push_back(state_derivative);
-    }
-
-    /// Extends the step forward in time by move of column matrices.
-    ///
-    /// @copydetails Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
-    void Extend(const T& time, MatrixX<T>&& state,
-                MatrixX<T>&& state_derivative) {
-      ValidateStepExtendTripletOrThrow(time, state, state_derivative);
-      times_.push_back(time);
+      times_.push_back(std::move(time));
       states_.push_back(std::move(state));
       state_derivatives_.push_back(std::move(state_derivative));
     }
@@ -236,7 +208,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     return start_time_;
   }
 
-  /// Update extension with the given @p step by copy.
+  /// Update extension with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
   /// the time the @p step extends cannot be readily evaluated (see
@@ -249,17 +221,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
   ///   this continuous extension.<br>
   ///   if given @p step dimensions does not match this continuous
   ///   extension dimensions.
-  void Update(const IntegrationStep& step) {
+  void Update(IntegrationStep step) {
     ValidateStepCanBeConsolidatedOrThrow(step);
-    raw_steps_.push_back(step);
-  }
-
-  /// Update extension with the given @p step by move.
-  ///
-  /// @copydetails Update(const IntegrationStep&)
-  void Update(IntegrationStep&& step) {
-    ValidateStepCanBeConsolidatedOrThrow(step);
-    raw_steps_.push_back(step);
+    raw_steps_.push_back(std::move(step));
   }
 
   void Rollback() override {
