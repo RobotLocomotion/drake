@@ -34,14 +34,17 @@ class PendulumParameters {
   PendulumParameters(
       double mass = 1.0,
       double length = 0.5,
+      double damping = 0.1,
       double gravity = 9.81) :
       mass_(mass),
       length_(length),
+      damping_(damping),
       g_(gravity) {}
 
   // getters for pendulum parameters
   double m() const { return mass_; }
   double l() const { return length_; }
+  double damping() const { return damping_; }
   double g() const { return g_; }
   // Radius of the sphere used to visualize the point mass
   double point_mass_radius() const { return 0.025; }
@@ -63,6 +66,7 @@ class PendulumParameters {
   // quick detection of uninitialized values.
   double mass_{nan()},    // In kilograms.
       length_{nan()},     // In meters.
+      damping_{nan()},    // Damping in N⋅m⋅s.
       g_{nan()};          // In m/s².
 
   // Modeling elements' names.

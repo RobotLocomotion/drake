@@ -145,7 +145,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   The context storing the state and parameters for the model to which
   ///   `this` joint belongs.
   /// @param[in] joint_dof
-  ///   Index specifying one of the degress of freedom for this joint. The index
+  ///   Index specifying one of the degrees of freedom for this joint. The index
   ///   must be in the range `0 <= joint_dof < num_dofs()` or otherwise this
   ///   method will abort.
   /// @param[in] joint_tau

@@ -96,7 +96,6 @@ class MultibodyPlantTester {
 };
 
 namespace {
-
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
 // properly added and the model sizes.
@@ -897,8 +896,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
   PendulumParameters parameters;
-  unique_ptr<MultibodyPlant<double>> pendulum =
-      MakePendulumPlant(parameters);
+  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
@@ -917,9 +915,10 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   // Compute the expected solution by hand.
   Eigen::Matrix2d A;
   Eigen::Vector2d B;
-  A <<                            0.0, 1.0,
-      parameters.g() / parameters.l(), 0.0;
-  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
+  A << 0.0, 1.0,
+       parameters.g() / parameters.l(),
+      -parameters.damping() / parameters.m() / parameters.l() / parameters.l();
+  B << 0, 1 / (parameters.m() * parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
 
@@ -931,8 +930,9 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
       *pendulum, *context,
       pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
   // Compute the expected solution by hand.
-  A <<                             0.0, 1.0,
-      -parameters.g() / parameters.l(), 0.0;
+  A << 0.0, 1.0,
+      -parameters.g() / parameters.l(),
+      -parameters.damping() / parameters.m() / parameters.l() / parameters.l();
   B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
