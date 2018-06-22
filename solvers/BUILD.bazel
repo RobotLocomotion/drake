@@ -566,7 +566,7 @@ drake_cc_library(
         "//tools:with_gurobi": [
             ":mathematical_program_api",
             "//math:eigen_sparse_triplet",
-            "@gurobi",
+            "@gurobi//:gurobi_c",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
@@ -762,7 +762,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_gurobi": [
             "@eigen",
-            "@gurobi",
+            "@gurobi//:gurobi_c",
         ],
         "//conditions:default": [],
     }),
