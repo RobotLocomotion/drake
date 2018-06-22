@@ -50,7 +50,8 @@ class WorldSimTreeBuilder {
   ///
   /// @param compile_tree Specifies whether the tree should be automatically
   /// compiled. Defaults to true.
-  explicit WorldSimTreeBuilder(bool compile_tree = true);
+  WorldSimTreeBuilder(bool compile_tree = true,
+                      std::unique_ptr<RigidBodyTree<T>> base_tree = nullptr);
 
   ~WorldSimTreeBuilder();
 
@@ -190,8 +191,7 @@ class WorldSimTreeBuilder {
   }
 
  private:
-  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{
-      std::make_unique<RigidBodyTree<T>>()};
+  std::unique_ptr<RigidBodyTree<T>> rigid_body_tree_{};
 
   bool built_{false};
   bool compile_tree_{true};
