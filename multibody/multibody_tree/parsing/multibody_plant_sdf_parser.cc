@@ -153,7 +153,7 @@ double ParseJointDamping(const sdf::Joint& joint_spec) {
     throw std::runtime_error(
         "An axis must be specified for joint '" + joint_spec.Name() + "'");
   }
-  double damping = axis->Damping();
+  const double damping = axis->Damping();
   if (damping < 0) {
     throw std::runtime_error(
         "Joint damping is negative for joint '" + joint_spec.Name() + "'. "

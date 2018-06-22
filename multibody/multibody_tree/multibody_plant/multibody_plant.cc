@@ -647,6 +647,16 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddJointDampingForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = model().get_joint(joint_index);
+    joint.AddInDamping(context, forces);
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
@@ -692,11 +702,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
     }
   }
 
-  // Add joint damping.
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-    joint.AddInDamping(context, &forces);
-  }
+  AddJointDampingForces(context, &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -789,13 +795,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     }
   }
 
-  // Add joint damping.
   // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
   // implicitly.
-  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-    joint.AddInDamping(context0, &forces0);
-  }
+  AddJointDampingForces(context0, &forces0);
 
   std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);

@@ -157,7 +157,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   void AddInOneForce(
       const systems::Context<T>& context,
       int joint_dof,
-      const T &joint_tau,
+      const T& joint_tau,
       MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
@@ -172,7 +172,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   `this` joint belongs.
   /// @param[out] forces
   ///   On return, this method will add the force due to damping within `this`
-  ///   joint. This method aborts if `forces` is `nullptr` or if `forces` doest
+  ///   joint. This method aborts if `forces` is `nullptr` or if `forces` does
   ///   not have the right sizes to accommodate a set of forces for the model
   ///   to which this joint belongs.
   // NVI to DoAddInOneForce().
@@ -289,15 +289,14 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
       const T& joint_tau,
       MultibodyForces<T>* forces) const = 0;
 
-  /// Adds into `forces` the forces due to damping within `this` joint.
+  /// Adds into MultibodyForces the forces due to damping within `this` joint.
   /// How forces are added to a MultibodyTree model depends on the underlying
   /// implementation of a particular joint (for instance, mobilizer vs.
   /// constraint) and therefore specific %Joint subclasses must provide a
   /// definition for this method.
   /// The default implementation is a no-op for joints with no damping.
   virtual void DoAddInDamping(
-      const systems::Context<T>& context,
-      MultibodyForces<T>* forces) const {}
+      const systems::Context<T>&, MultibodyForces<T>*) const {}
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.

@@ -1124,6 +1124,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Helper method to apply forces due to damping at the joints.
+  void AddJointDampingForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Given a set of point pairs in `point_pairs_set`, this method computes the
   // Jacobian N(q) such that:
   //   vn = N(q) v
