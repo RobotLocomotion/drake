@@ -1,0 +1,19 @@
+<sdf version='1.6'>
+  <model name='robot_model'>
+    <!-- This sdf file produces a model with the default parameters documented
+         in AcrobotParameters in make_acrobot_plant.h.
+         They MUST be kept in sync. -->
+    <link name='link'>
+    </link>
+    <joint name='joint' type='revolute'>
+      <parent>world</parent>
+      <child>link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <dynamics>
+          <damping>-0.1</damping>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>

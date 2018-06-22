@@ -671,6 +671,12 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
     }
   }
 
+  // Add joint damping.
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = model().get_joint(joint_index);
+    joint.AddInDamping(context, &forces);
+  }
+
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
@@ -760,6 +766,14 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
             context0, joint_dof, u[actuator_index], &forces0);
       }
     }
+  }
+
+  // Add joint damping.
+  // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
+  // implicitly.
+  for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = model().get_joint(joint_index);
+    joint.AddInDamping(context0, &forces0);
   }
 
   // TODO(amcastro-tri): Implement contact handling for the time-stepping MBP.

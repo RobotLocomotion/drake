@@ -57,8 +57,8 @@ class PrismaticJoint final : public Joint<T> {
   /// root of machine epsilon.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis) :
-      Joint<T>(name, frame_on_parent, frame_on_child) {
+                const Vector3<double>& axis, double damping = 0) :
+      Joint<T>(name, frame_on_parent, frame_on_child, damping) {
     const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();

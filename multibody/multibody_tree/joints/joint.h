@@ -84,11 +84,12 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
   Joint(const std::string& name,
-        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child)
-      : MultibodyTreeElement<Joint<T>, JointIndex>(
+        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+        double damping = 0) : MultibodyTreeElement<Joint<T>, JointIndex>(
             frame_on_child.model_instance()),
         name_(name),
-        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child) {
+        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child),
+        damping_(damping) {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
   }
@@ -117,6 +118,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const Frame<T>& frame_on_child() const {
     return frame_on_child_;
   }
+
+  double damping() const { return damping_; }
 
   /// Returns the number of degrees of freedom for `this` joint.
   /// E.g., one for a revolute joint and three for a ball joint.
@@ -155,14 +158,21 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   accommodate a set of forces for the model to which this joint belongs.
   // NVI to DoAddInOneForce().
   void AddInOneForce(
-      const systems::Context<T> &context,
+      const systems::Context<T>& context,
       int joint_dof,
       const T &joint_tau,
-      MultibodyForces<T> *forces) const {
+      MultibodyForces<T>* forces) const {
     DRAKE_DEMAND(forces != nullptr);
     DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_dofs());
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInOneForce(context, joint_dof, joint_tau, forces);
+  }
+
+  void AddInDamping(
+      const systems::Context<T> &context, MultibodyForces<T>* forces) const {
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    DoAddInDamping(context, forces);
   }
 
   // Hide the following section from Doxygen.
@@ -266,10 +276,15 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// input arguments were checked to be valid.
   /// @see The public NVI AddInOneForce() for details.
   virtual void DoAddInOneForce(
-      const systems::Context<T> &context,
+      const systems::Context<T>& context,
       int joint_dof,
-      const T &joint_tau,
-      MultibodyForces<T> *forces) const = 0;
+      const T& joint_tau,
+      MultibodyForces<T>* forces) const = 0;
+
+  /// The default implementation is a no-op for joints with no damping.
+  virtual void DoAddInDamping(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const {}
 
   // Implements MultibodyTreeElement::DoSetTopology(). Joints have no topology
   // though we could require them to have one in the future.
@@ -320,6 +335,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   std::string name_;
   const Frame<T>& frame_on_parent_;
   const Frame<T>& frame_on_child_;
+
+  double damping_{0};
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;

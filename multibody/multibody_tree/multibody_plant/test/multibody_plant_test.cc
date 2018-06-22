@@ -286,7 +286,19 @@ class AcrobotPlantTests : public ::testing::Test {
         theta1, theta2, theta1dot, theta2dot);
     Vector2d tau_g_expected =
         acrobot_benchmark_.CalcGravityVector(theta1, theta2);
-    Vector2d rhs = tau_g_expected - C_expected + Vector2d(0.0, input_torque);
+    Vector2d tau_damping(
+        -parameters_.b1() * theta1dot, -parameters_.b2() * theta2dot);
+
+    // Verify the computation of the contribution due to joint damping.
+    MultibodyForces<double> forces(plant_->model());
+    shoulder_->AddInDamping(*context_, &forces);
+    elbow_->AddInDamping(*context_, &forces);
+    EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
+                                kTolerance, MatrixCompareType::relative));
+
+    // Verify the computation of xdot.
+    Vector2d rhs =
+        tau_g_expected + tau_damping - C_expected + Vector2d(0.0, input_torque);
     Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
     Vector2d vdot_expected = M_expected.inverse() * rhs;
     VectorXd xdot_expected(4);

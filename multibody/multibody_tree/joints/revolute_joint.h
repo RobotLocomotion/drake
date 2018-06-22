@@ -59,8 +59,8 @@ class RevoluteJoint final : public Joint<T> {
   ///   aborts if `axis` is the zero vector.
   RevoluteJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis) :
-      Joint<T>(name, frame_on_parent, frame_on_child) {
+                const Vector3<double>& axis, double damping = 0) :
+      Joint<T>(name, frame_on_parent, frame_on_child, damping) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     axis_ = axis.normalized();
@@ -169,6 +169,12 @@ class RevoluteJoint final : public Joint<T> {
         get_mobilizer()->get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
+  }
+
+  void DoAddInDamping(const systems::Context<T>& context,
+                      MultibodyForces<T>* forces) const override {
+    const T damping_torque = -this->damping() * get_angular_rate(context);
+    AddInTorque(context, damping_torque, forces);
   }
 
  private:
