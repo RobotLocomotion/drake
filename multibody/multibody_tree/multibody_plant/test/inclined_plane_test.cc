@@ -159,8 +159,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   EXPECT_NEAR(-Ve, ke_WB_expected, std::numeric_limits<double>::epsilon());
 
   // Verify the relative errors. For the continuous model of the plant errors
-  // are dominated by the penetration allowance and the stiction tolerance since the
-  // integrator's accuracy was set to a relatively small value.
+  // are dominated by the penetration allowance and the stiction tolerance since
+  // the integrator's accuracy was set to a relatively small value.
   // For the time stepping model of the plant, errors are dominated by the
   // finite time step, given that we are able to use very tight penetration
   // allowance and stiction tolerance.
