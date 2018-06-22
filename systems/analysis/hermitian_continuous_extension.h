@@ -1,13 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
-#include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/stepwise_continuous_extension.h"
@@ -29,14 +29,15 @@ namespace systems {
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
-template <typename T,
-          // TODO(hidmic): Support non `double` type scalars.
-          typename std::enable_if<
-            std::is_same<T, double>::value, int>::type = 0>
+template <typename T>
 class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
+  // TODO(hidmic): Support non `double` type scalars.
+  static_assert(std::is_same<T, double>::value,
+                "HermitianContinuousExtension only supports double for now.");
+
  public:
   /// An integration step representation class, holding just enough
-  /// for Hermitian interpolation i.e. three (3) related sets containing
+  /// for Hermitian interpolation: three (3) related sets containing
   /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
   /// {𝐱₀, ..., 𝐱ᵢ₋₁, 𝐱ᵢ} where 𝐱ᵢ ∈ ℝⁿ, and state derivatives
   /// {d𝐱/dt₀, ..., d𝐱/dtᵢ₋₁, d𝐱/dtᵢ} where d𝐱/dtᵢ ∈ ℝⁿ.
@@ -60,9 +61,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///   if given @p initial_state_derivative d𝐱/t₀ is not a column matrix.<br>
     ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative d𝐱/dt₀ do
     ///   not match each other's dimension.
-    explicit IntegrationStep(const T& initial_time,
-                             const MatrixX<T>& initial_state,
-                             const MatrixX<T>& initial_state_derivative) {
+    IntegrationStep(const T& initial_time,
+                    const MatrixX<T>& initial_state,
+                    const MatrixX<T>& initial_state_derivative) {
       ValidateStepExtendTripletOrThrow(initial_time, initial_state,
                                        initial_state_derivative);
       times_.push_back(initial_time);
@@ -75,9 +76,9 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///
     /// @copydetails IntegrationStep(const T&,const MatrixX<T>&,
     ///                              const MatrixX<T>&)
-    explicit IntegrationStep(const T& initial_time,
-                             MatrixX<T>&& initial_state,
-                             MatrixX<T>&& initial_state_derivative) {
+    IntegrationStep(const T& initial_time,
+                    MatrixX<T>&& initial_state,
+                    MatrixX<T>&& initial_state_derivative) {
       ValidateStepExtendTripletOrThrow(initial_time, initial_state,
                                        initial_state_derivative);
       times_.push_back(initial_time);
@@ -125,13 +126,13 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     /// Returns step start time t₀ (that of the first time, state and state
     /// derivative triplet), which may coincide with its end time tᵢ (that of
     /// the last time, state and state derivative triplet) if the step has zero
-    /// length (i.e. it contains a single triplet).
+    /// length (that is, it contains a single triplet).
     const T& get_start_time() const { return times_.front(); }
 
     /// Returns step end time tᵢ (that of the first time, state and state
     /// derivative triplet), which may coincide with its start time t₀ (that of
     /// the last time, state and state derivative triplet) if the step has zero
-    /// length (i.e. it contains a single triplet).
+    /// length (that is, it contains a single triplet).
     const T& get_end_time() const { return times_.back(); }
 
     /// Returns the step state 𝐱 dimensions.

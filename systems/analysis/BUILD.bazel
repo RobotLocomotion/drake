@@ -54,7 +54,6 @@ drake_cc_library(
         ":stepwise_continuous_extension",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
-        "//systems/framework:vector",
     ],
 )
 

@@ -23,15 +23,18 @@ namespace systems {
 template <typename T>
 class StepwiseContinuousExtension : public ContinuousExtension<T> {
  public:
-  /// Rolls back (i.e. drops) the last update.
+  /// Rolls back (drops) the last update.
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
   ///      consolidation (via Consolidate()).
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual void Rollback() = 0;
 
-  /// Consolidates latest updates i.e. puts all updates since last
-  /// call or construction into a form that is suitable for evaluation.
+  /// Consolidates latest updates.
+  ///
+  /// All updates since last call or construction are put into a form
+  /// that is suitable for evaluation.
+  ///
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
   ///      consolidation.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -23,7 +24,10 @@ namespace systems {
 template <typename T>
 class ContinuousExtension {
  public:
-  virtual ~ContinuousExtension() {}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContinuousExtension)
+
+  ContinuousExtension() = default;
+  virtual ~ContinuousExtension() = default;
 
   /// Evaluates the extension function at the given time @p t.
   /// @param t Time to evaluate extension at.
@@ -42,14 +46,14 @@ class ContinuousExtension {
   /// Checks whether the extension is empty or not.
   virtual bool is_empty() const = 0;
 
-  /// Returns extension's start time i.e. the oldest time `t`
-  /// that it can be evaluated at e.g. via Evaluate().
+  /// Returns extension's start time, or in other words, the oldest time
+  /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Extension is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual const T& get_start_time() const = 0;
 
-  /// Returns extension's end time i.e. the newest time `t`
-  /// that it can be evaluated at e.g. via Evaluate().
+  /// Returns extension's end time, or in other words, the newest time
+  /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Extension is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual const T& get_end_time() const = 0;
