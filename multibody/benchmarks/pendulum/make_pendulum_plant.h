@@ -29,6 +29,8 @@ class PendulumParameters {
   ///   Value of the mass of the pendulum's point mass [kg].
   /// @param length
   ///   Length of the massless rod connecting the point mass to the world [m].
+  /// @param damping
+  ///   The joint's damping in N⋅m⋅s.
   /// @param gravity
   ///   Gravitational constant (m/s²).
   PendulumParameters(
