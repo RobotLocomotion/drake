@@ -35,8 +35,8 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   Vector1d u;
   auto xdot_rbp = rbp.AllocateTimeDerivatives();
   auto xdot_p = p.AllocateTimeDerivatives();
-  auto y_rbp = rbp.AllocateOutput(*context_rbp);
-  auto y_p = p.AllocateOutput(*context_p);
+  auto y_rbp = rbp.AllocateOutput();
+  auto y_p = p.AllocateOutput();
 
   srand(42);
   for (int i = 0; i < 100; ++i) {

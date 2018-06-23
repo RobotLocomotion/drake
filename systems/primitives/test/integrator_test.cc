@@ -23,7 +23,7 @@ class IntegratorTest : public ::testing::Test {
     integrator_.reset(new Integrator<double>(kLength));
     context_ = integrator_->CreateDefaultContext();
     derivatives_ = integrator_->AllocateTimeDerivatives();
-    output_ = integrator_->AllocateOutput(*context_);
+    output_ = integrator_->AllocateOutput();
 
     // Set the state to zero initially.
     ContinuousState<double>& xc = continuous_state();
@@ -97,7 +97,7 @@ class SymbolicIntegratorTest : public IntegratorTest {
     symbolic_integrator_ = integrator_->ToSymbolic();
     symbolic_context_ = symbolic_integrator_->CreateDefaultContext();
     symbolic_derivatives_ = symbolic_integrator_->AllocateTimeDerivatives();
-    symbolic_output_ = symbolic_integrator_->AllocateOutput(*symbolic_context_);
+    symbolic_output_ = symbolic_integrator_->AllocateOutput();
 
     ASSERT_EQ(1, symbolic_context_->get_num_input_ports());
     symbolic_context_->FixInputPort(

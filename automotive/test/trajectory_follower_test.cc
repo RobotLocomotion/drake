@@ -88,7 +88,7 @@ GTEST_TEST(TrajectoryFollowerTest, Outputs) {
     systems::Simulator<double> simulator(follower);
     systems::Context<double>& context = simulator.get_mutable_context();
     std::unique_ptr<systems::SystemOutput<double>> outputs =
-        follower.AllocateOutput(context);
+        follower.AllocateOutput();
     simulator.Initialize();
 
     const double end_time = it.distance / kSpeed;
@@ -152,7 +152,7 @@ GTEST_TEST(TrajectoryFollowerTest, ToAutoDiff) {
   EXPECT_TRUE(is_autodiffxd_convertible(follower,
                                         [&](const auto& autodiff_dut) {
     auto context = autodiff_dut.CreateDefaultContext();
-    auto output = autodiff_dut.AllocateOutput(*context);
+    auto output = autodiff_dut.AllocateOutput();
 
     // Check that the public methods can be called without exceptions.
     autodiff_dut.CalcOutput(*context, output.get());

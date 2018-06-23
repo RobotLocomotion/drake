@@ -34,7 +34,7 @@ class SpringMassSystemTest : public ::testing::Test {
                                                          with_input_force);
     system_->set_name("test_system");
     context_ = system_->CreateDefaultContext();
-    system_output_ = system_->AllocateOutput(*context_);
+    system_output_ = system_->AllocateOutput();
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
     configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
@@ -394,7 +394,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
   // Allocate resources.
   for (int i = 0; i < kNumIntegrators; ++i) {
     contexts.push_back(system_->CreateDefaultContext());
-    outputs.push_back(system_->AllocateOutput(*contexts.back()));
+    outputs.push_back(system_->AllocateOutput());
     derivs.push_back(system_->AllocateTimeDerivatives());
   }
 

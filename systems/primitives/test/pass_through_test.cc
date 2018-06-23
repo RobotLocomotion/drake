@@ -48,7 +48,7 @@ class PassThroughTest : public ::testing::TestWithParam<bool> {
           make_unique<PassThrough<double>>(Value<SimpleAbstractType>(size));
     }
     context_ = pass_through_->CreateDefaultContext();
-    output_ = pass_through_->AllocateOutput(*context_);
+    output_ = pass_through_->AllocateOutput();
   }
 
   const bool is_abstract_;

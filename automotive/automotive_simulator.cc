@@ -694,8 +694,7 @@ template <typename T>
 PoseBundle<T> AutomotiveSimulator<T>::GetCurrentPoses() const {
   DRAKE_DEMAND(has_started());
   const auto& context = simulator_->get_context();
-  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput(
-      context);
+  std::unique_ptr<SystemOutput<T>> system_output = diagram_->AllocateOutput();
   diagram_->CalcOutput(context, system_output.get());
   DRAKE_DEMAND(system_output->get_num_ports() == 1);
   const AbstractValue* abstract_value = system_output->get_data(0);

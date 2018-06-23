@@ -24,7 +24,7 @@ class SimpleCarTest : public ::testing::Test {
   void SetUp() override {
     dut_.reset(new SimpleCar<double>);
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
     derivatives_ = dut_->AllocateTimeDerivatives();
     SetInputValue(0.0, 0.0);
   }
@@ -354,7 +354,7 @@ TEST_F(SimpleCarTest, Derivatives) {
 TEST_F(SimpleCarTest, TransmogrifyAutoDiff) {
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
     auto other_context = other_dut.CreateDefaultContext();
-    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_output = other_dut.AllocateOutput();
     auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
     auto input_value = std::make_unique<DrivingCommand<AutoDiffXd>>();
@@ -369,7 +369,7 @@ TEST_F(SimpleCarTest, TransmogrifyAutoDiff) {
 TEST_F(SimpleCarTest, TransmogrifySymbolic) {
   EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& other_dut) {
     auto other_context = other_dut.CreateDefaultContext();
-    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_output = other_dut.AllocateOutput();
     auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
     // TODO(jwnimmer-tri) We should have a framework way to just say "make the
