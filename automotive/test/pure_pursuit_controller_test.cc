@@ -36,7 +36,7 @@ class PurePursuitControllerTest : public ::testing::Test {
     // Initialize PurePursuitController with the dragway.
     dut_.reset(new PurePursuitController<double>());
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
   }
 
   // Create poses for one ego car and two traffic cars.
@@ -86,7 +86,7 @@ TEST_F(PurePursuitControllerTest, Topology) {
 TEST_F(PurePursuitControllerTest, ToAutoDiff) {
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
     auto other_context = other_dut.CreateDefaultContext();
-    auto other_output = other_dut.AllocateOutput(*other_context);
+    auto other_output = other_dut.AllocateOutput();
     auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
     other_context->FixInputPort(dut_->lane_input().get_index(),

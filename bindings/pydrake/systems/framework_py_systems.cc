@@ -277,11 +277,6 @@ struct Impl {
         .def("AllocateOutput",
              overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                  &System<T>::AllocateOutput))
-        // TODO(sherm1) Deprecate this next signature (context unused).
-        .def("AllocateOutput",
-             overload_cast_explicit<unique_ptr<SystemOutput<T>>,
-                                    const Context<T>&>(
-                 &System<T>::AllocateOutput), py::arg("context"))
         .def(
             "EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {

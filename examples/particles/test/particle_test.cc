@@ -25,7 +25,7 @@ class ParticleTest : public ::testing::Test {
   void SetUp() override {
     this->dut_ = std::make_unique<Particle<T>>();
     this->context_ = this->dut_->CreateDefaultContext();
-    this->output_ = this->dut_->AllocateOutput(*context_);
+    this->output_ = this->dut_->AllocateOutput();
     this->derivatives_ = this->dut_->AllocateTimeDerivatives();
   }
 

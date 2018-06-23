@@ -768,7 +768,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);
+  auto system_output = dut.AllocateOutput();
 
   // Check that BasicVector<double>(3) came out.
   auto output0 = system_output->get_vector_data(0);
@@ -980,7 +980,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
 GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   DeclaredNonModelOutputSystem dut;
   auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);  // Invokes all allocators.
+  auto system_output = dut.AllocateOutput();  // Invokes all allocators.
 
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);

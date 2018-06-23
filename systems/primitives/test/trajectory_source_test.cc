@@ -30,7 +30,7 @@ class TrajectorySourceTest : public ::testing::Test {
     source_ = make_unique<TrajectorySource<double>>(*kppTraj_, kDerivativeOrder,
                                                     true);
     context_ = source_->CreateDefaultContext();
-    output_ = source_->AllocateOutput(*context_);
+    output_ = source_->AllocateOutput();
     input_ = make_unique<BasicVector<double>>(3 /* length */);
   }
 
