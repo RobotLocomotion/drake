@@ -296,7 +296,7 @@ void TestIO(std::vector<MatrixX<T>> W, std::vector<VectorX<T>> B,
   FeedforwardNeuralNetwork<double> dut(W, B, GenerateFullyConnectedLayers(3),
                                        GenerateReluNonlinearities(3));
   unique_ptr<Context<double>> context = dut.CreateDefaultContext();
-  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput(*context);
+  unique_ptr<SystemOutput<double>> output = dut.AllocateOutput();
 
   context->FixInputPort(dut.input().get_index(), input);
   dut.CalcOutput(*context, output.get());

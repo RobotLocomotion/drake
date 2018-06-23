@@ -53,7 +53,7 @@ class MobilPlannerTest : public ::testing::TestWithParam<RoadPositionStrategy> {
     dut_.reset(new MobilPlanner<double>(
         *road_, initial_with_s, cache_or_search_, period_sec_));
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     const auto mp = dynamic_cast<const MobilPlanner<double>*>(dut_.get());
     DRAKE_DEMAND(mp != nullptr);

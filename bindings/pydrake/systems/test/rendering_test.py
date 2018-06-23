@@ -147,7 +147,7 @@ class TestRendering(unittest.TestCase):
 
         # - CalcOutput.
         context = aggregator.CreateDefaultContext()
-        output = aggregator.AllocateOutput(context)
+        output = aggregator.AllocateOutput()
 
         p1 = [0, 1, 2]
         pose1 = PoseVector()

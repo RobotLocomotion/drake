@@ -19,7 +19,7 @@ class DrivingCommandMuxTest : public ::testing::Test {
   void SetUp() override {
     mux_ = std::make_unique<DrivingCommandMux<double>>();
     context_ = mux_->CreateDefaultContext();
-    output_ = mux_->AllocateOutput(*context_);
+    output_ = mux_->AllocateOutput();
   }
 
   std::unique_ptr<DrivingCommandMux<double>> mux_;
@@ -67,7 +67,7 @@ TEST_F(DrivingCommandMuxTest, ToAutoDiff) {
     EXPECT_EQ(2, converted.get_output_port(0).size());
 
     const auto context = converted.CreateDefaultContext();
-    const auto output = converted.AllocateOutput(*context);
+    const auto output = converted.AllocateOutput();
     const DrivingCommand<AutoDiffXd>* driving_command_output =
         dynamic_cast<const DrivingCommand<AutoDiffXd>*>(
             output->get_vector_data(0));
@@ -86,7 +86,7 @@ TEST_F(DrivingCommandMuxTest, ToSymbolic) {
     EXPECT_EQ(2, converted.get_output_port(0).size());
 
     const auto context = converted.CreateDefaultContext();
-    const auto output = converted.AllocateOutput(*context);
+    const auto output = converted.AllocateOutput();
     const DrivingCommand<symbolic::Expression>* driving_command_output =
         dynamic_cast<const DrivingCommand<symbolic::Expression>*>(
             output->get_vector_data(0));

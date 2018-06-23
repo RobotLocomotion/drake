@@ -17,8 +17,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
     : observed_system_(std::move(observed_system)),
       observer_gain_(observer_gain),
       observed_system_context_(std::move(observed_system_context)),
-      observed_system_output_(
-          observed_system_->AllocateOutput(*observed_system_context_)),
+      observed_system_output_(observed_system_->AllocateOutput()),
       observed_system_derivatives_(
           observed_system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(observed_system_ != nullptr);

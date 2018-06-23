@@ -467,7 +467,7 @@ class DiagramTest : public ::testing::Test {
     diagram_->set_name("Unicode Snowman's Favorite Diagram!!1!☃!");
 
     context_ = diagram_->CreateDefaultContext();
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
 
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
@@ -728,7 +728,7 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   std::unique_ptr<Context<AutoDiffXd>> context =
       ad_diagram->CreateDefaultContext();
   std::unique_ptr<SystemOutput<AutoDiffXd>> output =
-      ad_diagram->AllocateOutput(*context);
+      ad_diagram->AllocateOutput();
 
   // The name was preserved.
   EXPECT_EQ(diagram_->get_name(), ad_diagram->get_name());
@@ -882,7 +882,7 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     diagram_->set_name("DiagramOfDiagrams");
 
     context_ = diagram_->CreateDefaultContext();
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
 
     context_->FixInputPort(0, {8});
     context_->FixInputPort(1, {64});
@@ -995,7 +995,7 @@ class AddConstantDiagram : public Diagram<double> {
 GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   AddConstantDiagram plus_seven(7.0);
   auto context = plus_seven.CreateDefaultContext();
-  auto output = plus_seven.AllocateOutput(*context);
+  auto output = plus_seven.AllocateOutput();
   ASSERT_TRUE(context != nullptr);
   ASSERT_TRUE(output != nullptr);
 
@@ -1766,7 +1766,7 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_ = big_diagram_builder.Build();
     big_diagram_->set_name("big_diagram");
     big_context_ = big_diagram_->CreateDefaultContext();
-    big_output_ = big_diagram_->AllocateOutput(*big_context_);
+    big_output_ = big_diagram_->AllocateOutput();
   }
 
   Integrator<double>* integrator0_;

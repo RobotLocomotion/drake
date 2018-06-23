@@ -72,7 +72,7 @@ class BouncingBallTest : public ::testing::Test {
   void SetUp() override {
     dut_ = std::make_unique<BouncingBall<double>>();
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 

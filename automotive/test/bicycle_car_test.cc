@@ -23,7 +23,7 @@ class BicycleCarTest : public ::testing::Test {
     dut_.reset(new BicycleCar<double>());
 
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 

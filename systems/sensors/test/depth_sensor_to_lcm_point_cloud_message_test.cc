@@ -57,7 +57,7 @@ class TestDepthSensorToLcmPointCloudMessage : public ::testing::Test {
       context->FixInputPort(pose_input_port.get_index(), std::move(pose_input));
     }
 
-    output_ = dut.AllocateOutput(*context);
+    output_ = dut.AllocateOutput();
 
     dut.CalcOutput(*context, output_.get());
 

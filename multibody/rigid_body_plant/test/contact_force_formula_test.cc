@@ -46,7 +46,7 @@ class ContactFormulaTest : public ::testing::Test {
     //  the plant requires a *compiled* tree at constructor time.
     plant_ = make_unique<RigidBodyPlant<double>>(move(unique_tree));
     context_ = plant_->CreateDefaultContext();
-    output_ = plant_->AllocateOutput(*context_);
+    output_ = plant_->AllocateOutput();
     const int port_index = plant_->contact_results_output_port().get_index();
 
     // Set Sphere 2's velocity.

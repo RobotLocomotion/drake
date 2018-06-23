@@ -29,7 +29,7 @@ class OptitrackPoseTest : public ::testing::Test {
     dut_ = std::make_unique<OptitrackPoseExtractor>(
         object_id, world_X_optitrack, 0.01 /* optitrack_lcm_status_period */);
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     EXPECT_EQ(dut_->get_num_input_ports(), 1);
     EXPECT_EQ(dut_->get_num_output_ports(), 1);
