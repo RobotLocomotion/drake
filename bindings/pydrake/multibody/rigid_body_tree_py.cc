@@ -252,9 +252,11 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                                     const KinematicsCache<T>& cache,
                                     int base_or_frame_ind,
                                     int body_or_frame_ind) {
-        return tree.relativeTransform(cache, base_or_frame_ind,
-          body_or_frame_ind).matrix();
-      })
+          return tree.relativeTransform(cache, base_or_frame_ind,
+            body_or_frame_ind).matrix();
+        },
+        py::arg("cache"),
+        py::arg("base_or_frame_ind"), py::arg("body_or_frame_ind"))
       .def("centerOfMassJacobian",
            &RigidBodyTree<double>::centerOfMassJacobian<T>,
            py::arg("cache"),

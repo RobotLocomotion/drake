@@ -41,6 +41,18 @@ class TestRigidBodyTree(unittest.TestCase):
         p = tree.transformPoints(kinsol, np.zeros(3), 0, 1)
         self.assertTrue(np.allclose(p, np.zeros(3)))
 
+        # Ensure mismatched sizes throw an error.
+        q_bad = np.zeros(num_q + 1)
+        v_bad = np.zeros(num_v + 1)
+        bad_args_list = (
+            (q_bad,),
+            (q_bad, v),
+            (q, v_bad),
+        )
+        for bad_args in bad_args_list:
+            with self.assertRaises(SystemExit):
+                tree.doKinematics(*bad_args)
+
         # AutoDiff jacobians.
 
         def do_transform(q):
