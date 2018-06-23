@@ -23,7 +23,7 @@ class PidControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = controller_.CreateDefaultContext();
-    output_ = controller_.AllocateOutput(*context_);
+    output_ = controller_.AllocateOutput();
     derivatives_ = controller_.AllocateTimeDerivatives();
 
     // State:
@@ -207,7 +207,7 @@ GTEST_TEST(PidIOProjectionTest, Test) {
 
   PidController<double> dut(P_input, P_output, kp, ki, kd);
   auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
+  auto output = dut.AllocateOutput();
 
   VectorX<double> x = VectorX<double>::Random(2 * num_full_q);
   VectorX<double> x_d = VectorX<double>::Random(2 * num_controlled_q);

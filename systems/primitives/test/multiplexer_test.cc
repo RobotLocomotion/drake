@@ -23,13 +23,13 @@ class MultiplexerTest : public ::testing::Test {
   void InitializeFromSizes(std::vector<int> input_sizes) {
     mux_ = make_unique<Multiplexer<double>>(input_sizes);
     context_ = mux_->CreateDefaultContext();
-    output_ = mux_->AllocateOutput(*context_);
+    output_ = mux_->AllocateOutput();
   }
 
   void InitializeFromMyVector() {
     mux_ = make_unique<Multiplexer<double>>(MyVector<2, double>());
     context_ = mux_->CreateDefaultContext();
-    output_ = mux_->AllocateOutput(*context_);
+    output_ = mux_->AllocateOutput();
   }
 
   std::unique_ptr<System<double>> mux_;
@@ -71,7 +71,7 @@ TEST_F(MultiplexerTest, Basic) {
 TEST_F(MultiplexerTest, ScalarConstructor) {
   mux_ = make_unique<Multiplexer<double>>(4);
   context_ = mux_->CreateDefaultContext();
-  output_ = mux_->AllocateOutput(*context_);
+  output_ = mux_->AllocateOutput();
 
   // Confirm the shape.
   ASSERT_EQ(4, mux_->get_num_input_ports());

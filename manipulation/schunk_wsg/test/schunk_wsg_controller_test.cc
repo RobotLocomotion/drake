@@ -24,7 +24,7 @@ std::pair<double, double> RunWsgControllerTestStep(
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
   std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput(*context);
+      dut.AllocateOutput();
   context->FixInputPort(
       dut.get_command_input_port().get_index(),
       std::make_unique<systems::Value<lcmt_schunk_wsg_command>>(wsg_command));

@@ -179,7 +179,7 @@ class MaliputRailcarTest : public ::testing::Test {
     const maliput::api::Lane* lane = road_->junction(0)->segment(0)->lane(0);
     dut_.reset(new MaliputRailcar<double>(LaneDirection(lane, with_s)));
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 

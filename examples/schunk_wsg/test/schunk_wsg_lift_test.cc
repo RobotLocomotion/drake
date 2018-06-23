@@ -424,7 +424,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
 
   // Capture the "initial" positions of the box and the gripper finger as
   // discussed in the test notes below.
-  auto state_output = model->AllocateOutput(simulator.get_context());
+  auto state_output = model->AllocateOutput();
   model->CalcOutput(simulator.get_context(), state_output.get());
   auto& interim_kinematics_results =
       state_output->get_data(kinematrics_results_index)
