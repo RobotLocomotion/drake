@@ -91,6 +91,12 @@ class DrakeDeprecationWarning(DeprecationWarning):
         DeprecationWarning.__init__(self, extra_message, *args)
 
 
+def _warn_deprecated(message, stacklevel=2):
+    # Consolidate call so that C++ has an easy point to call this.
+    warnings.warn(
+        message, category=DrakeDeprecationWarning, stacklevel=stacklevel)
+
+
 class _DeprecatedDescriptor(object):
     """Wraps a descriptor to warn that it is deprecated any time it is
     acccessed."""
@@ -102,8 +108,7 @@ class _DeprecatedDescriptor(object):
         self._message = message
 
     def _warn(self):
-        warnings.warn(
-            self._message, category=DrakeDeprecationWarning, stacklevel=3)
+        _warn_deprecated(self._message, stacklevel=3)
 
     def __get__(self, obj, objtype):
         self._warn()

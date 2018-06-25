@@ -66,6 +66,15 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
 )
 
+# N.B. Since `common_py` incorporates `deprecation_py`, C++ Python libraries
+# need not worry about it.
+drake_cc_library(
+    name = "deprecation_pybind",
+    hdrs = ["deprecation_pybind.h"],
+    visibility = ["//visibility:public"],
+    deps = ["//bindings/pydrake:pydrake_pybind"],
+)
+
 drake_cc_library(
     name = "eigen_pybind",
     hdrs = ["eigen_pybind.h"],
