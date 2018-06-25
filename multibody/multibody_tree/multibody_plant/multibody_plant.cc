@@ -672,15 +672,15 @@ void MultibodyPlant<T>::AddJointActuationForces(
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
       for (int joint_dof = 0;
            joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(context, joint_dof, u[actuator_index], &forces);
+        actuator.AddInOneForce(context, joint_dof, u[actuator_index], forces);
       }
     }
   }
 }
 
+template<typename T>
 VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const systems::Context<T>& context) const {
-
   // Assemble the vector from the model instance input ports.
   VectorX<T> actuation_input(num_actuated_dofs());
   int u_offset = 0;
