@@ -146,3 +146,24 @@ class TestDeprecation(unittest.TestCase):
             # Manually set this back to `once`.
             warnings.simplefilter("ignored", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
+
+    def test_deprecation_pybind(self):
+        """Test C++ usage in `deprecation_pybind.h`."""
+        from deprecation_example.cc_module import ExampleCppClass
+        with warnings.catch_warnings(record=True) as w:
+            # This is a descriptor, so it will trigger on class access.
+            ExampleCppClass.DeprecatedMethod
+            self.assertEqual(len(w), 1)
+            self._check_warning(w[0], ExampleCppClass.message_method)
+            # Same for a property.
+            ExampleCppClass.deprecated_prop
+            self.assertEqual(len(w), 2)
+            self._check_warning(w[1], ExampleCppClass.message_prop)
+            # Call good overload; no new warnings.
+            obj = ExampleCppClass()
+            obj.overload()
+            self.assertEqual(len(w), 2)
+            # Call bad overload.
+            obj.overload(10)
+            self.assertEqual(len(w), 3)
+            self._check_warning(w[2], ExampleCppClass.message_overload)
