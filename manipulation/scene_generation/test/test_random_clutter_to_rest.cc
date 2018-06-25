@@ -3,17 +3,17 @@
 #include <random>
 #include <sstream>
 #include <string>
+#include <vector>
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
-#include <vector>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/manipulation/scene_generation/random_clutter_generator.h"
 #include "drake/manipulation/scene_generation/simulate_plant_to_rest.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace manipulation {
@@ -74,12 +74,12 @@ class ClutterGeneratorTest : public ::testing::Test {
     num_positions_ = scene_tree->get_num_positions();
     clutter_generator_ = std::make_unique<RandomClutterGenerator>(
         scene_tree.get(), clutter_instances, kClutterCenter, kClutterSize);
-    
-  auto scene_plant = 
-  std::make_unique<systems::RigidBodyPlant<double>>(std::move(scene_tree));
 
-    plant_to_rest_ = std::make_unique<SimulatePlantToRest>(
-      std::move(scene_plant));
+    auto scene_plant = std::make_unique<systems::RigidBodyPlant<double>>(
+        std::move(scene_tree));
+
+    plant_to_rest_ =
+        std::make_unique<SimulatePlantToRest>(std::move(scene_plant));
   }
 
  protected:
@@ -98,16 +98,16 @@ TEST_F(ClutterGeneratorTest, TestClutterIkValidity) {
   VectorX<double> q_initial = VectorX<double>::Random(num_positions_);
   VectorX<double> q_ik, q_ik_previous = q_initial;
 
-  for (int i = 0; i< kNumTrials; ++i) {
-  	q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator,
-        kZHeightCost);
-	EXPECT_EQ(q_ik.size(), num_positions_);
-	EXPECT_NO_THROW(VerifyClutterIk(q_ik, 8));
-	
-	// Also verify that the resulting solution is not identical for a generous 
-	// tolerance.
-	EXPECT_FALSE(CompareMatrices(q_ik, q_ik_previous, 1e-2));
-	q_ik_previous = q_ik;
+  for (int i = 0; i < kNumTrials; ++i) {
+    q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator,
+                                                       kZHeightCost);
+    EXPECT_EQ(q_ik.size(), num_positions_);
+    EXPECT_NO_THROW(VerifyClutterIk(q_ik, 8));
+
+    // Also verify that the resulting solution is not identical for a generous
+    // tolerance.
+    EXPECT_FALSE(CompareMatrices(q_ik, q_ik_previous, 1e-2));
+    q_ik_previous = q_ik;
   }
 }
 
@@ -119,31 +119,30 @@ TEST_F(ClutterGeneratorTest, TestClutterIkCost) {
   VectorX<double> q_ik;
   std::vector<VectorX<double>> q_stored_ik_with_cost, q_stored_ik_no_cost;
 
-  for (int i = 0; i< kNumTrials; ++i) {
-    q_ik = clutter_generator_->GenerateFloatingClutter(
-        q_initial, &generator_1, kZHeightCost);
+  for (int i = 0; i < kNumTrials; ++i) {
+    q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator_1,
+                                                       kZHeightCost);
     EXPECT_EQ(q_ik.size(), num_positions_);
     EXPECT_NO_THROW(VerifyClutterIk(q_ik, 8));
 
-    q_stored_ik_with_cost.push_back(q_ik)   ;
+    q_stored_ik_with_cost.push_back(q_ik);
   }
 
   std::default_random_engine generator_2(42);
-  for (int i = 0; i< kNumTrials; ++i) {
-    q_ik = clutter_generator_->GenerateFloatingClutter(
-        q_initial, &generator_2);
+  for (int i = 0; i < kNumTrials; ++i) {
+    q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator_2);
     EXPECT_EQ(q_ik.size(), num_positions_);
     EXPECT_NO_THROW(VerifyClutterIk(q_ik, 8));
 
-    q_stored_ik_no_cost.push_back(q_ik)   ;
+    q_stored_ik_no_cost.push_back(q_ik);
   }
 
-  // Verifies that adding or removing cost results in different but valid 
+  // Verifies that adding or removing cost results in different but valid
   // clutter.
-  for (int i = 0; i< kNumTrials; ++i) {
-     EXPECT_FALSE(CompareMatrices(q_stored_ik_no_cost[i], 
-      q_stored_ik_with_cost[i], 1e-2));
-   }
+  for (int i = 0; i < kNumTrials; ++i) {
+    EXPECT_FALSE(CompareMatrices(q_stored_ik_no_cost[i],
+                                 q_stored_ik_with_cost[i], 1e-2));
+  }
 }
 
 // This is a regression test. Verifies repeatability of SimulatePlantToRest.
@@ -153,20 +152,16 @@ TEST_F(ClutterGeneratorTest, TestPlantToRest) {
   EXPECT_EQ(num_positions_, 7 * 4 * 2);
   VectorX<double> q_initial = VectorX<double>::Random(num_positions_);
   VectorX<double> q_ik, q_out, q_out_stored;
-	 q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, 
-        &generator, kZHeightCost);
+  q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator,
+                                                     kZHeightCost);
 
-	EXPECT_NO_THROW(
-		q_out_stored = plant_to_rest_->Run(q_ik));
-  for (int i = 0; i< kNumTrials; ++i) {
-  	
-	EXPECT_EQ(q_ik.size(), num_positions_);
-	EXPECT_NO_THROW(
-		q_out = plant_to_rest_->Run(q_ik));	
+  EXPECT_NO_THROW(q_out_stored = plant_to_rest_->Run(q_ik));
+  for (int i = 0; i < kNumTrials; ++i) {
+    EXPECT_EQ(q_ik.size(), num_positions_);
+    EXPECT_NO_THROW(q_out = plant_to_rest_->Run(q_ik));
 
-	EXPECT_TRUE(CompareMatrices(q_out_stored, q_out, 1e-10));
+    EXPECT_TRUE(CompareMatrices(q_out_stored, q_out, 1e-10));
   }
-  
 }
 
 }  // namespace scene_generation

@@ -190,7 +190,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
 
     IKoptions ikoptions(scene_tree_ptr_);
     if (z_height_cost) {
-      DRAKE_DEMAND(*z_height_cost > 0);
+      DRAKE_DEMAND(*z_height_cost >= 0);
       for (auto& it : z_indices) {
         Q(it, it) = *z_height_cost;
       }

@@ -22,7 +22,7 @@ namespace scene_generation {
  * Note: The actual time taken to come to rest is very strongly dependent on
  * the kind of bodies and their inertial properties. The parameters for
  * the simulation are currently hand-tuned to bring to rest 1-30 bodies
- * of dimension  and mass comparable to the manipulation targets in
+ * of dimension and mass comparable to the manipulation targets in
  *'/examples/kuka_iiwa_arm/objects/'
  * In case the simulation were to explode, the forward simulation is simply
  * repeated with half the max step size.
@@ -56,7 +56,8 @@ class SimulatePlantToRest {
                       double v_threshold = 0.1, double max_settling_time = 1.5);
 
   /**
-   * Returns a pointer to the Sim diagram.
+   * Returns a pointer to the Sim diagram which can then be used to build
+   * custom simulations as desired.
    */
   systems::Diagram<double>* GetSimDiagram();
 

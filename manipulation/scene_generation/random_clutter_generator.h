@@ -56,14 +56,15 @@ class RandomClutterGenerator {
 
   /**
    * Generates the "Floating" clutter scene by solving an IK problem.
-   * @return a VectorX<double> containing a feasible .
+   * @return a VectorX<double> containing a feasible configuration.
    * @param q_nominal : nominal configuration for the scene_tree. Poses of
    * the model_instances not specified in `clutter_model_instances' are set
    * to this value.
    * @param generator : used to pass a seed.
    * @param z_height_cost : An optional cost added to the optimization problem 
    * on the height (z) of each of the model intances. Set to either 0 or {} 
-   * in order to not utilise any z cost.
+   * in order to not utilise any z cost. @pre z_height_cost must be 
+   * non-negative, if specified.
    */
   VectorX<double> GenerateFloatingClutter(const VectorX<double>& q_nominal,
                                           std::default_random_engine *generator,
