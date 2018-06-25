@@ -22,6 +22,7 @@ class TestTrajectories(unittest.TestCase):
     def test_zero_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()
         pp = PiecewisePolynomial.ZeroOrderHold([0., 1., 2.], x)
+        pp_d = pp.derivative(1)
         np.testing.assert_equal(np.array([[1.], [2.]]), pp.value(.5))
         self.assertEqual(pp.get_number_of_segments(), 2)
         self.assertEqual(pp.start_time(), 0.)
@@ -31,6 +32,8 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(pp.duration(0), 1.)
         self.assertEqual(pp.get_segment_index(1.5), 1)
         self.assertEqual(pp.get_segment_times(), [0., 1., 2.])
+
+        np.testing.assert_equal(pp_d.value(.5), np.array([[0.], [0.]]))
 
     def test_first_order_hold(self):
         x = np.array([[1., 2.], [3., 4.], [5., 6.]]).transpose()

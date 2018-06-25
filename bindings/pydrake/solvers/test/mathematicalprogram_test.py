@@ -70,6 +70,8 @@ class TestMathematicalProgram(unittest.TestCase):
         # Redundant cost just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
+        prog.AddL2NormCost(np.eye(2), np.zeros(2), x)
+
         result = prog.Solve()
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
 
