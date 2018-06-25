@@ -106,12 +106,16 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(tree.number_of_velocities(), num_v)
 
         q = tree.getZeroConfiguration()
-        kinsol = tree.doKinematics(q)
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
         # - Sanity check sizes.
         J_default, v_indices_default = tree.geometricJacobian(kinsol, 0, 2, 0)
+        J_eeDotTimesV = tree.geometricJacobianDotTimesV(kinsol, 0, 2, 0)
+
         self.assertEqual(J_default.shape[0], 6)
         self.assertEqual(J_default.shape[1], num_v)
         self.assertEqual(len(v_indices_default), num_v)
+        self.assertEqual(J_eeDotTimesV.shape[0], 6)
 
         # - Check QDotToVelocity and VelocityToQDot methods
         q = tree.getZeroConfiguration()
@@ -422,6 +426,10 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(len(body_visual_elements), 1)
         self.assertEqual(body_visual_elements[0].getGeometry().getShape(),
                          box_visual_element.getGeometry().getShape())
+
+        # Test collision-related methods.
+        self.assertEqual(body.get_num_collision_elements(), 0)
+        self.assertEqual(len(body.get_collision_element_ids()), 0)
 
     def test_joints_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays,

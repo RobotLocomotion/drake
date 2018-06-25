@@ -265,7 +265,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
            py::arg("in_terms_of_qdot") = false)
       // centroidalMomentumMatrix
       // forwardKinPositionGradient
-      // geometricJacobianDotTimesV
+      .def("geometricJacobianDotTimesV",
+           &RigidBodyTree<double>::geometricJacobianDotTimesV<T>,
+           py::arg("cache"),
+           py::arg("base_body_or_frame_ind"),
+           py::arg("end_effector_body_or_frame_ind"),
+           py::arg("expressed_in_body_or_frame_ind"))
       .def("centerOfMassJacobianDotTimesV",
            &RigidBodyTree<double>::centerOfMassJacobianDotTimesV<T>,
            py::arg("cache"),
