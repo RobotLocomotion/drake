@@ -13,6 +13,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -881,6 +882,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @}
   // Closes Doxygen section "Continuous state output"
 
+  const systems::OutputPort<T>& get_contact_results_output_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -1241,6 +1244,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  void CalcContactResultsOutput(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
   // Helper to evaluate if a GeometryId corresponds to a collision model.
   bool is_collision_geometry(geometry::GeometryId id) const {
     return geometry_id_to_collision_index_.count(id) > 0;
@@ -1269,6 +1276,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  void CalcContactResults(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
+      const std::vector<Matrix3<T>>& R_WC_set,
+      ContactResults<T>* contacts) const;
 
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
@@ -1473,6 +1486,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // ModelInstanceIndex.  An invalid value indicates that the model instance has
   // no state.
   std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
+  systems::OutputPortIndex contact_results_port_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the
@@ -1482,6 +1496,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
       implicit_stribeck_solver_;
+
+  // TODO(amcastro-tri): Remove this when caching lands.
+  mutable ContactResults<T> contact_results_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.

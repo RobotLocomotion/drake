@@ -63,7 +63,7 @@ class ContactResults {
    in a release build (but will be done in debug).  It is assumed the caller
    will only use values in the range [0, get_num_contacts() -1], inclusive.
    */
-  const PointPairContactInfo<T>& get_contact_info(int i) const;
+  const PointPairContactInfo<T>& contact_info(int i) const;
 
  private:
   std::vector<PointPairContactInfo<T>> point_pairs_info_;

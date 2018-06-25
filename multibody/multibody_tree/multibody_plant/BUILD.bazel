@@ -31,6 +31,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":contact_results",
         ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
@@ -68,6 +69,22 @@ drake_cc_library(
     deps = [
         ":contact_info",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results_to_lcm",
+    srcs = [
+        "contact_results_to_lcm.cc",
+    ],
+    hdrs = [
+        "contact_results_to_lcm.h",
+    ],
+    deps = [
+        ":contact_results",
+        ":multibody_plant",
+        "//lcmtypes:contact_info_for_viz",
+        "//lcmtypes:contact_results_for_viz",
     ],
 )
 

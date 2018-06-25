@@ -540,6 +540,49 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
 }
 
 template<typename T>
+void MultibodyPlant<T>::CalcContactResultsOutput(
+    const systems::Context<T>&,
+    ContactResults<T>* contact_results) const {
+  DRAKE_DEMAND(contact_results != nullptr);
+  // TODO(amcastro-tri): Eval() cotact results when caching lands.
+  *contact_results = contact_results_;
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcContactResults(
+    const systems::Context<T>&,
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs,
+    const std::vector<Matrix3<T>>& R_WC_set,
+    ContactResults<T>* contact_results) const {
+  if (num_collision_geometries() == 0) return;
+  DRAKE_DEMAND(contact_results != nullptr);
+
+  auto fn = implicit_stribeck_solver_->get_normal_forces();
+  auto ft = implicit_stribeck_solver_->get_friction_forces();
+
+  contact_results->Clear();
+  for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
+    const auto& pair = point_pairs[icontact];
+    const GeometryId geometryA_id = pair.id_A;
+    const GeometryId geometryB_id = pair.id_B;
+
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+
+    const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
+
+    const Matrix3<T>& R_WC = R_WC_set[icontact];
+
+    const Vector3<T> f_Bc_C(
+        ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
+    const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
+
+    contact_results->AddContactInfo(
+        {bodyA_index, bodyB_index, f_Bc_W, p_WC, pair});
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>&,
     const PositionKinematicsCache<T>& pc,
@@ -815,7 +858,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // implicitly.
   AddJointDampingForces(context0, &forces0);
 
-  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
+  // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
       CalcPointPairPenetrations(context0);
 
   // Workspace for inverse dynamics:
@@ -845,12 +889,16 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const int num_contacts = point_pairs0.size();
   MatrixX<T> Jn(num_contacts, nv);
   MatrixX<T> Jt(2 * num_contacts, nv);
+  // For each contact point pair, the rotation matrix R_WC giving the
+  // orientation of the contact frame C in the world frame W.
+  // TODO(amcastro-tri): cache R_WC_set as soon as caching lands.
+  std::vector<Matrix3<T>> R_WC_set(num_contacts);
   if (num_contacts > 0) {
     // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
     // solver to use operators instead so that we don't have to form these
     // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
     Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
-    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0);
+    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0, &R_WC_set);
   }
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored
@@ -903,6 +951,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
+
+  // Save contact results for analysis and visualization.
+  CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
 }
 
 template<typename T>
@@ -997,6 +1048,11 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
         this->DeclareVectorOutputPort(
             BasicVector<T>(instance_num_states), calc).get_index();
   }
+
+  // Contact results output port.
+  contact_results_port_ = this->DeclareAbstractOutputPort(
+      ContactResults<T>(),
+      &MultibodyPlant<T>::CalcContactResultsOutput).get_index();
 }
 
 template <typename T>
@@ -1064,6 +1120,13 @@ MultibodyPlant<T>::get_continuous_state_output_port(
   DRAKE_THROW_UNLESS(model_->num_states(model_instance) > 0);
   return this->get_output_port(
       instance_continuous_state_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_contact_results_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_output_port(contact_results_port_);
 }
 
 template <typename T>

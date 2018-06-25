@@ -647,6 +647,15 @@ class ImplicitStribeckSolver {
   const VectorX<T>& get_generalized_velocities() const {
     return fixed_size_workspace_.mutable_v();
   }
+
+  Eigen::VectorBlock<const VectorX<T>> get_normal_forces() const {
+    return variable_size_workspace_.fn();
+  }
+
+  Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
+    return variable_size_workspace_.ft();
+  }
+
   /// @}
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
@@ -920,6 +929,12 @@ class ImplicitStribeckSolver {
       return Delta_vt_.segment(0, 2 * nc_);
     }
 
+    // Returns a constant reference to the vector containing the normal
+    // contact forces fₙ for all contact points, of size nc.
+    Eigen::VectorBlock<const VectorX<T>> fn() const {
+      return fn_.segment(0, nc_);
+    }
+
     // Returns a mutable reference to the vector containing the normal
     // contact forces fₙ for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_fn() {
@@ -930,6 +945,12 @@ class ImplicitStribeckSolver {
     // depths for all contact points, of size nc.
     Eigen::VectorBlock<VectorX<T>> mutable_x() {
       return x_.segment(0, nc_);
+    }
+
+    // Returns a constant reference to the vector containing the tangential
+    // friction forces fₜ for all contact points, of size 2nc.
+    Eigen::VectorBlock<const VectorX<T>> ft() const {
+      return ft_.segment(0, 2 * nc_);
     }
 
     // Returns a mutable reference to the vector containing the tangential
