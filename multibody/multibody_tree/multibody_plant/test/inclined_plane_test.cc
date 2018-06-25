@@ -167,8 +167,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // finite time step, given that we are able to use very tight penetration
   // allowance and stiction tolerance.
   // Notice that given the kinematic relationship between linear and angular
-  // velocity v_WBcm = radius * W_WB at rolling, relative errors
-  // in v_WBcm and W_WB have the same order of magnitude. Moreover, since the
+  // velocity v_WBcm = radius * w_WB at rolling, relative errors
+  // in v_WBcm and w_WB have the same order of magnitude. Moreover, since the
   // kinetic energy scales with the velocities (translational and angular)
   // squared, standard error propagation shows that the relative error in the
   // kinetic energy is expected to be twice that in the velocities. Thus the

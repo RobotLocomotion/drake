@@ -96,7 +96,6 @@ class MultibodyPlantTester {
 };
 
 namespace {
-
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
 // properly added and the model sizes.
@@ -335,13 +334,25 @@ class AcrobotPlantTests : public ::testing::Test {
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
-    Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
+    const Vector2d C_expected = acrobot_benchmark_.CalcCoriolisVector(
         theta1, theta2, theta1dot, theta2dot);
-    Vector2d tau_g_expected =
+    const Vector2d tau_g_expected =
         acrobot_benchmark_.CalcGravityVector(theta1, theta2);
-    Vector2d rhs = tau_g_expected - C_expected + Vector2d(0.0, input_torque);
-    Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
-    Vector2d vdot_expected = M_expected.inverse() * rhs;
+    const Vector2d tau_damping(
+        -parameters_.b1() * theta1dot, -parameters_.b2() * theta2dot);
+
+    // Verify the computation of the contribution due to joint damping.
+    MultibodyForces<double> forces(plant_->model());
+    shoulder_->AddInDamping(*context_, &forces);
+    elbow_->AddInDamping(*context_, &forces);
+    EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
+                                kTolerance, MatrixCompareType::relative));
+
+    // Verify the computation of xdot.
+    const Vector2d rhs =
+        tau_g_expected + tau_damping - C_expected + Vector2d(0.0, input_torque);
+    const Matrix2d M_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
+    const Vector2d vdot_expected = M_expected.inverse() * rhs;
     VectorXd xdot_expected(4);
     xdot_expected << Vector2d(theta1dot, theta2dot), vdot_expected;
 
@@ -947,8 +958,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
   PendulumParameters parameters;
-  unique_ptr<MultibodyPlant<double>> pendulum =
-      MakePendulumPlant(parameters);
+  unique_ptr<MultibodyPlant<double>> pendulum = MakePendulumPlant(parameters);
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
@@ -967,9 +977,11 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   // Compute the expected solution by hand.
   Eigen::Matrix2d A;
   Eigen::Vector2d B;
-  A <<                            0.0, 1.0,
-      parameters.g() / parameters.l(), 0.0;
-  B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
+  const double domegadot_domega = -parameters.damping() /
+      (parameters.m() * parameters.l() * parameters.l());
+  A << 0.0, 1.0,
+       parameters.g() / parameters.l(), domegadot_domega;
+  B << 0, 1 / (parameters.m() * parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
 
@@ -981,8 +993,8 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
       *pendulum, *context,
       pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
   // Compute the expected solution by hand.
-  A <<                             0.0, 1.0,
-      -parameters.g() / parameters.l(), 0.0;
+  A << 0.0, 1.0,
+      -parameters.g() / parameters.l(), domegadot_domega;
   B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));

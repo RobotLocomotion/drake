@@ -106,6 +106,10 @@ TEST_F(AcrobotModelTests, ModelBasics) {
   EXPECT_EQ(plant_->GetJointActuatorByName("ElbowJoint").joint().index(),
             elbow_->index());
 
+  // Verify we parse damping correctly.
+  EXPECT_EQ(shoulder_->damping(), parameters_.b1());
+  EXPECT_EQ(elbow_->damping(), parameters_.b2());
+
   // State size.
   EXPECT_EQ(plant_->num_positions(), benchmark_plant_->num_positions());
   EXPECT_EQ(plant_->num_velocities(), benchmark_plant_->num_velocities());
@@ -304,6 +308,20 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
   ASSERT_EQ(plant_.num_model_instances(), 4);
   EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1_idx);
   EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), instance2_idx);
+}
+
+// Verify that our SDF parser throws an exception when a user specifies a joint
+// with negative damping.
+GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
+  const std::string sdf_file_path =
+      "drake/multibody/multibody_tree/parsing/test/negative_damping_joint.sdf";
+  MultibodyPlant<double> plant;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), &plant),
+      std::runtime_error,
+      /* Verify this method is throwing for the right reasons. */
+      "Joint damping is negative for joint '.*'. "
+          "Joint damping must be a non-negative number.");
 }
 
 }  // namespace
