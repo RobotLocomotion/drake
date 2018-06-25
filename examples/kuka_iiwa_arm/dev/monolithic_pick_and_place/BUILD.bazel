@@ -90,6 +90,9 @@ drake_cc_googletest(
         "no_tsan",
         "no_ubsan",
         "snopt",
+        # TODO(9039) This test should be re-enabled in CI; it was disabled
+        # because it was timing out frequenutly.
+        "manual",
     ],
     deps = [
         ":kuka_pick_and_place_monolithic",

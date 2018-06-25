@@ -22,7 +22,7 @@ PrismaticJoint<T>::TemplatedDoCloneToScalar(
   auto joint_clone = std::make_unique<PrismaticJoint<ToScalar>>(
       this->name(),
       frame_on_parent_body_clone, frame_on_child_body_clone,
-      this->translation_axis());
+      this->translation_axis(), this->damping());
 
   return joint_clone;
 }

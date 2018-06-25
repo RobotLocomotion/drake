@@ -69,7 +69,8 @@ MakePendulumPlant(const PendulumParameters& params,
       plant->world_body(), {},
       /* Pin joint outboard frame IS the body frame B. */
       point_mass, {},
-      Vector3d::UnitY()); /* Pendulum oscillates in the x-z plane. */
+      Vector3d::UnitY(), /* Pendulum oscillates in the x-z plane. */
+      params.damping());
 
   // Add pendulum's actuator at the pin joint.
   plant->AddJointActuator(params.actuator_name(), pin);

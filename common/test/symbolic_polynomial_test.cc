@@ -80,9 +80,14 @@ class SymbolicPolynomialTest : public ::testing::Test {
   };
 };
 
-TEST_F(SymbolicPolynomialTest, DefaultConstructor) {
-  const Polynomial p{};
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+TEST_F(SymbolicPolynomialTest, DefaultConstructors) {
+  const Polynomial p;
   EXPECT_TRUE(p.monomial_to_coefficient_map().empty());
+
+  const Polynomial p_zero(0);
+  EXPECT_TRUE(p_zero.monomial_to_coefficient_map().empty());
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMapType1) {

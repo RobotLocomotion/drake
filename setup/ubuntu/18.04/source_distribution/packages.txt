@@ -43,11 +43,9 @@ pkg-config
 protobuf-compiler
 python-dev
 python-gtk2
-python-matplotlib
 python-protobuf
 python-pygame
 python-sphinx
-python-tk
 ruby
 unzip
 valgrind

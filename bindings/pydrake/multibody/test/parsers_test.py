@@ -7,6 +7,7 @@ from pydrake import getDrakePath
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.parsers import PackageMap
 from pydrake.multibody.rigid_body_tree import (
+    AddModelInstanceFromUrdfFile,
     AddModelInstanceFromUrdfStringSearchingInRosPackages,
     AddModelInstancesFromSdfFile,
     AddModelInstancesFromSdfString,
@@ -106,6 +107,30 @@ class TestParsers(unittest.TestCase):
         base_body_id, = robot.FindBaseBodies(id)
         expected_body_id = robot.FindBody("base_link").get_body_index()
         self.assertEqual(base_body_id, expected_body_id)
+
+    def test_do_compile(self):
+
+        def load_robot(filename, **kwargs):
+            robot = RigidBodyTree()
+            if filename.endswith(".sdf"):
+                AddModelInstancesFromSdfFile(
+                    FindResourceOrThrow(filename),
+                    FloatingBaseType.kRollPitchYaw, None, robot, **kwargs)
+            else:
+                assert filename.endswith(".urdf")
+                AddModelInstanceFromUrdfFile(
+                    FindResourceOrThrow(filename),
+                    FloatingBaseType.kRollPitchYaw, None, robot, **kwargs)
+            return robot
+
+        sdf = "drake/examples/acrobot/Acrobot.sdf"
+        urdf = (
+            "drake/examples/pr2/models/pr2_description/urdf/"
+            "pr2_simplified.urdf")
+        for filename in (sdf, urdf):
+            self.assertTrue(load_robot(filename).initialized())
+            self.assertFalse(
+                load_robot(filename, do_compile=False).initialized())
 
     def test_package_map(self):
         pm = PackageMap()

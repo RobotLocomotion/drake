@@ -52,7 +52,7 @@ derived class, you should use
 
 ## Target Conventions
 
-Target names should be of the following form:
+### Names
 
 - `*_py`: A Python library (can be pure Python or pybind)
   - File Names: `*.py`, `*_py.cc`
@@ -62,6 +62,15 @@ Target names should be of the following form:
   - File Names: `*_pybind.{h,cc}`
 
 File names should follow form with their respective target.
+
+### Visibility
+
+- All Python libraries should generally be private, as `pydrake` will
+  be consumed as one encapsulated target.
+
+- All C++ `*_pybind` libraries for binding utilities should be public to aide
+  downstream Bazel projects. If the API is unstable, consider making it private
+  with a TODO to make public once it stabilizes.
 
 ### Bazel
 

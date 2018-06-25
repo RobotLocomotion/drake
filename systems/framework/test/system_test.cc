@@ -15,7 +15,7 @@
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/leaf_output_port.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
@@ -60,11 +60,6 @@ class TestSystem : public System<double> {
 
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* params) const override {}
-
-  std::unique_ptr<SystemOutput<double>> AllocateOutput(
-      const Context<double>& context) const override {
-    return nullptr;
-  }
 
   const InputPortDescriptor<double>& AddAbstractInputPort() {
     return this->DeclareAbstractInputPort();
@@ -535,15 +530,6 @@ class ValueIOTestSystem : public System<T> {
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
     auto& vec_out = output->template GetMutableValue<BasicVector<T>>();
     vec_out.get_mutable_value() = 2 * vec_in->get_value();
-  }
-
-  std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const override {
-    std::unique_ptr<LeafSystemOutput<T>> output(
-        new LeafSystemOutput<T>);
-    output->add_port(this->get_output_port(0).Allocate());
-    output->add_port(this->get_output_port(1).Allocate());
-    return std::move(output);
   }
 
   void DispatchPublishHandler(

@@ -17,7 +17,7 @@ drake_cc_library(
     name = "implicit_stribeck_solver",
     srcs = ["implicit_stribeck_solver.cc"],
     hdrs = ["implicit_stribeck_solver.h"],
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:default_scalars",
         "//common:extract_double",

@@ -40,7 +40,7 @@ class MyVector : public BasicVector<T> {
                   "The number of arguments must match the MyVector size");
     auto data = std::make_unique<MyVector>();
     BasicVector<T>::MakeRecursive(data.get(), 0, args...);
-    return std::move(data);
+    return data;
   }
 
   /// Shadows the base class Clone() method to change the return type, so that

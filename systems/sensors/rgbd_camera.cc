@@ -125,8 +125,13 @@ void RgbdCamera::InitRenderer() {
     }
 
     const int body_id = body->get_body_index();
+    auto& body_visual_indices = body_visual_indices_map_[body_id];
     for (const auto& visual : body->get_visual_elements()) {
-      renderer_->RegisterVisual(visual, body_id);
+      optional<VisualIndex> visual_index =
+          renderer_->RegisterVisual(visual, body_id);
+      if (visual_index) {
+        body_visual_indices.push_back(*visual_index);
+      }
     }
   }
 
@@ -205,7 +210,9 @@ void RgbdCamera::UpdateModelPoses(
 
     const auto X_WBody = tree_.CalcBodyPoseInWorldFrame(cache, *body);
 
-    for (size_t i = 0; i < body->get_visual_elements().size(); ++i) {
+    const auto& body_visual_indices =
+        body_visual_indices_map_.at(body->get_body_index());
+    for (VisualIndex i : body_visual_indices) {
       const auto& visual = body->get_visual_elements()[i];
       const auto X_WV = X_WBody * visual.getLocalTransform();
       renderer_->UpdateVisualPose(X_WV, body->get_body_index(),

@@ -52,6 +52,15 @@ class VariableTest : public ::testing::Test {
   }
 };
 
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+TEST_F(VariableTest, DefaultConstructors) {
+  const Variable v_default;
+  const Variable v_zero(0);
+  EXPECT_TRUE(v_default.is_dummy());
+  EXPECT_TRUE(v_zero.is_dummy());
+}
+
 TEST_F(VariableTest, GetId) {
   const Variable dummy{};
   const Variable x_prime{"x"};

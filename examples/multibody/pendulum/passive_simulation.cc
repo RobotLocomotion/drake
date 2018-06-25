@@ -158,7 +158,11 @@ int do_main() {
 
   // Checks for variable time step integrators.
   if (!integrator->get_fixed_step_mode()) {
-    DRAKE_DEMAND(integrator->get_largest_step_size_taken() <= max_time_step);
+    // From IntegratorBase::set_maximum_step_size():
+    // "The integrator may stretch the maximum step size by as much as 1% to
+    // reach discrete event." Thus the 1.01 factor in this DRAKE_DEMAND.
+    DRAKE_DEMAND(
+        integrator->get_largest_step_size_taken() <= 1.01 * max_time_step);
     DRAKE_DEMAND(integrator->get_smallest_adapted_step_size_taken() <=
         integrator->get_largest_step_size_taken());
     DRAKE_DEMAND(

@@ -78,6 +78,9 @@ DEFINE_double(max_time_step, 1.0e-3,
               "is used.");
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
+DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
+    "discrete system with periodic updates of period 'max_time_step'."
+    "If 'false', the plant is modeled as a continuous system.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -109,9 +112,9 @@ DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
               "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0, "The amplitude of the harmonic oscillations "
+DEFINE_double(amplitude, 0.15, "The amplitude of the harmonic oscillations "
               "carried out by the gripper. [m].");
-DEFINE_double(frequency, 0, "The frequency of the harmonic oscillations "
+DEFINE_double(frequency, 2.0, "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.
@@ -167,7 +170,12 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>();
+  DRAKE_DEMAND(FLAGS_max_time_step > 0);
+
+  MultibodyPlant<double>& plant =
+      FLAGS_time_stepping ?
+      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
+      *builder.AddSystem<MultibodyPlant>();
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
   AddModelFromSdfFile(full_name, &plant, &scene_graph);

@@ -119,6 +119,15 @@ class MonomialTest : public ::testing::Test {
   }
 };
 
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+TEST_F(MonomialTest, DefaultConstructors) {
+  const Monomial m_default;
+  const Monomial m_zero(0);
+  EXPECT_EQ(m_default.total_degree(), 0);
+  EXPECT_EQ(m_zero.total_degree(), 0);
+}
+
 TEST_F(MonomialTest, ConstructFromVariable) {
   const Monomial m1{var_x_};
   const std::map<Variable, int> powers{m1.get_powers()};

@@ -31,6 +31,11 @@ class Monomial {
   /** Constructs a monomial equal to 1. Namely the total degree is zero. */
   Monomial() = default;
 
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Monomial(std::nullptr_t) : Monomial() {}
+
   /** Constructs a Monomial from @p powers.
    * @throws std::logic_error if `powers` includes a negative exponent.
    */

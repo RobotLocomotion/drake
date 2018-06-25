@@ -36,13 +36,13 @@ drake_cc_package_library(
         ":model_values",
         ":output_port",
         ":output_port_base",
-        ":output_port_value",
         ":parameters",
         ":single_output_vector_source",
         ":state",
         ":system",
         ":system_base",
         ":system_constraint",
+        ":system_output",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
         ":value",
@@ -291,10 +291,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "output_port_value",
-    srcs = ["output_port_value.cc"],
-    hdrs = ["output_port_value.h"],
+    name = "system_output",
+    srcs = ["system_output.cc"],
+    hdrs = [
+        "output_port_value.h",  # Deprecated.
+        "system_output.h",
+    ],
     deps = [
+        ":framework_common",
         ":value",
         ":value_checker",
         ":vector",
@@ -310,7 +314,6 @@ drake_cc_library(
     hdrs = ["context.h"],
     deps = [
         ":context_base",
-        ":output_port_value",
         ":parameters",
         ":state",
         "//common:default_scalars",
@@ -383,6 +386,7 @@ drake_cc_library(
         ":output_port",
         ":system_base",
         ":system_constraint",
+        ":system_output",
         ":system_scalar_converter",
         ":value",
         "//common:autodiff",
@@ -778,10 +782,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "output_port_value_test",
+    name = "system_output_test",
     deps = [
-        ":output_port_value",
+        ":system_output",
         "//common:essential",
+        "//systems/framework/test_utilities",
     ],
 )
 

@@ -53,15 +53,22 @@ class PrismaticJoint final : public Joint<T> {
   ///   rotation, the measures of `axis` in either frame F or M
   ///   are exactly the same, that is, `axis_F = axis_M`.
   ///   This vector can have any length, only the direction is used.
+  /// @param[in] damping
+  ///   Viscous damping coefficient, in N⋅s/m, used to model losses within the
+  ///   joint. The damping force (in N) is modeled as `f = -damping⋅v`, i.e.
+  ///   opposing motion, with v the translational speed for `this` joint (see
+  ///   get_translation_rate()).
   /// @throws std::exception if the L2 norm of `axis` is less than the square
   /// root of machine epsilon.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis) :
+                const Vector3<double>& axis, double damping = 0) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
+    DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
+    damping_ = damping;
   }
 
   /// Returns the axis of translation for `this` joint as a unit vector.
@@ -71,6 +78,9 @@ class PrismaticJoint final : public Joint<T> {
   const Vector3<double>& translation_axis() const {
     return axis_;
   }
+
+  /// Returns `this` joint's damping constant in N⋅s/m.
+  double damping() const { return damping_; }
 
   /// @name Context-dependent value access
   ///
@@ -163,6 +173,16 @@ class PrismaticJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
+  /// Joint<T> override called through public NVI, Joint::AddInDamping().
+  /// Therefore arguments were already checked to be valid.
+  /// This method adds into `forces` a dissipative force according to the
+  /// viscous law `f = -d⋅v`, with d the damping coefficient (see damping()).
+  void DoAddInDamping(const systems::Context<T>& context,
+                      MultibodyForces<T>* forces) const override {
+    const T damping_force = -this->damping() * get_translation_rate(context);
+    AddInForce(context, damping_force, forces);
+  }
+
  private:
   int do_get_num_dofs() const final {
     return 1;
@@ -213,6 +233,9 @@ class PrismaticJoint final : public Joint<T> {
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   // It is a unit vector.
   Vector3<double> axis_;
+
+  /// This joint's damping constant in N⋅s/m.
+  double damping_{0};
 };
 
 }  // namespace multibody

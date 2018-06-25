@@ -35,6 +35,7 @@ drake_cc_library(
     # NOTE: We must violate IWYU and not list any Drake libraries in "deps"
     # here because we do not want these dependencies violating ODR (at both
     # development and install time).
+    visibility = ["//visibility:public"],
 )
 
 drake_pybind_library(
@@ -54,6 +55,7 @@ drake_pybind_library(
 drake_cc_library(
     name = "autodiff_types_pybind",
     hdrs = ["autodiff_types_pybind.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_pybind_library(
@@ -119,10 +121,10 @@ drake_pybind_library(
     ],
 )
 
-# TODO(eric.cousineau): Make private.
 drake_cc_library(
     name = "symbolic_types_pybind",
     hdrs = ["symbolic_types_pybind.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_pybind_library(

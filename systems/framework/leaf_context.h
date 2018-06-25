@@ -33,8 +33,7 @@ class LeafContext : public Context<T> {
   //@}
 
   LeafContext()
-      : state_(std::make_unique<State<T>>()),
-        parameters_(std::make_unique<Parameters<T>>()) {}
+      : state_(std::make_unique<State<T>>()) {}
   ~LeafContext() override {}
 
   const State<T>& get_state() const final {
@@ -47,23 +46,16 @@ class LeafContext : public Context<T> {
     return *state_.get();
   }
 
-  // =========================================================================
-  // Accessors and Mutators for Parameters.
-
-  /// Sets the parameters to @p params, deleting whatever was there before.
-  void set_parameters(std::unique_ptr<Parameters<T>> params) {
-    parameters_ = std::move(params);
-  }
-
-  /// Returns the entire Parameters object.
-  const Parameters<T>& get_parameters() const final {
-    return *parameters_;
-  }
-
-  /// Returns the entire Parameters object.
-  Parameters<T>& get_mutable_parameters() final {
-    return *parameters_;
-  }
+#ifndef DRAKE_DOXYGEN_CXX
+  // Temporarily promoting this to public so that LeafSystem and testing
+  // code can construct a LeafContext with parameters. Users should never
+  // call this because parameters should not be resized once allocated (or at
+  // least should be done under Framework control so that dependency tracking
+  // can be correctly revised).
+  // TODO(sherm1) Make this inaccessible to users, along with other dangerous
+  // context resource sizing methods. See discussion in PR #9029.
+  using Context<T>::init_parameters;
+#endif
 
  protected:
   /// Protected copy constructor takes care of the local data members and
@@ -72,9 +64,6 @@ class LeafContext : public Context<T> {
   LeafContext(const LeafContext& source) : Context<T>(source) {
     // Make a deep copy of the state.
     state_ = source.CloneState();
-
-    // Make deep copies of the parameters.
-    set_parameters(source.parameters_->Clone());
 
     // Everything else was handled by the Context<T> copy constructor.
   }
@@ -106,11 +95,8 @@ class LeafContext : public Context<T> {
   }
 
  private:
-  // The internal state of the System.
+  // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
-
-  // The parameters of the system.
-  std::unique_ptr<Parameters<T>> parameters_;
 };
 
 }  // namespace systems

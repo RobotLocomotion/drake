@@ -35,6 +35,11 @@ class Polynomial {
   Polynomial() = default;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polynomial)
 
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Polynomial(std::nullptr_t) : Polynomial() {}
+
   /// Constructs a polynomial from a map, Monomial → Expression.
   explicit Polynomial(MapType init);
 

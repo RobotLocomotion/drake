@@ -19,6 +19,7 @@ libpng12-0
 libprotobuf-dev
 libqt5multimedia5
 libqt5x11extras5
+libtbb2
 libtheora0
 libtiff5
 libtinyxml2-dev
@@ -29,8 +30,11 @@ libyaml-cpp0.5v5
 openjdk-8-jre
 python
 python-lxml
+python-matplotlib
 python-numpy
+python-pydot
 python-scipy
+python-tk
 python-yaml
 qtbase5-dev
 zlib1g
