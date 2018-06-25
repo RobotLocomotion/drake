@@ -429,7 +429,7 @@ class TestRigidBodyTree(unittest.TestCase):
 
         # Test collision-related methods.
         self.assertEqual(body.get_num_collision_elements(), 0)
-        body.get_collision_element_ids()  # check spelling.
+        self.assertEqual(len(body.get_collision_element_ids()), 0)
 
     def test_joints_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays,
