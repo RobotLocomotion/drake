@@ -1490,10 +1490,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by
-  // ModelInstanceIndex.  An invalid value indicates that the model instance has
+  // ModelInstanceIndex. An invalid value indicates that the model instance has
   // no state.
   std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
 
+  // A vector containing the index for the generalized contact forces port for
+  // each model instance. This vector is indexed by ModelInstanceIndex. An
+  // invalid value indicates that the model instance has no generalized
+  // velocities and thus no generalized forces.
   std::vector<systems::OutputPortIndex>
       instance_generalized_contact_forces_output_ports_;
 
