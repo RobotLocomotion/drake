@@ -48,7 +48,7 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
 
 /* If a column Aᵢ of A is nonnegative (resp. nonpositive), then  {Aᵢ*z : z ∈ Qᵢ}
  * is totally ordered, where Qᵢ is the alphabet for the iᵗʰ component. In other
- * words, the inequalities Aᵢz1 ≤Aᵢz2 ≤...≤ Aᵢzm hold for zj ∈ Qi 
+ * words, the inequalities Aᵢz1 ≤Aᵢz2 ≤...≤ Aᵢzm hold for zj ∈ Qi
  * sorted in ascending (resp. descending) order. This allows for infeasibility
  * propagation in the recursive enumeration of integer solutions.  This function
  * detects when {Aᵢ*z : z ∈ Qᵢ} is totally ordered and then sorts the alphabet
@@ -151,10 +151,11 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
 using drake::solvers::integer_programming::BuildAlphabetFromBounds;
 using drake::solvers::integer_programming::ProcessInputs;
 
-Eigen::MatrixXi EnumerateIntegerSolutions(const Eigen::Ref<const Eigen::MatrixXi>& A,
-                                          const Eigen::Ref<const Eigen::VectorXi>& b,
-                                          const Eigen::Ref<const Eigen::VectorXi>& lower_bound,
-                                          const Eigen::Ref<const Eigen::VectorXi>& upper_bound) {
+Eigen::MatrixXi EnumerateIntegerSolutions(
+    const Eigen::Ref<const Eigen::MatrixXi>& A,
+    const Eigen::Ref<const Eigen::VectorXi>& b,
+    const Eigen::Ref<const Eigen::VectorXi>& lower_bound,
+    const Eigen::Ref<const Eigen::VectorXi>& upper_bound) {
   DRAKE_DEMAND(A.rows() == b.rows());
   DRAKE_DEMAND(A.cols() == lower_bound.size());
   DRAKE_DEMAND(A.cols() == upper_bound.size());

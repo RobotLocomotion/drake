@@ -82,54 +82,48 @@ bool ContainsExponent(const ExponentList& A, const Exponent& B) {
   return false;
 }
 
-
 /* Intersection(A,B) removes duplicate rows from B and any row that doesn't also
  * appear in A.  For example, given A = [1,0; 0,1; 1,1] and B = [1,0; 1,1;
  * 1,1;], it overwrites B with [1,0; 1,1]. */
 
-void Intersection(const ExponentList& A, ExponentList * B) {
+void Intersection(const ExponentList& A, ExponentList* B) {
   DRAKE_ASSERT(A.cols() == B->cols());
   int indx = 0;
   for (int i = 0; i < B->rows(); i++) {
-    if ((ContainsExponent(A, B->row(i))) && 
-       !(ContainsExponent(B->topRows(indx), B->row(i))))
-    {
-      B->row(indx++) = B->row(i); 
+    if ((ContainsExponent(A, B->row(i))) &&
+        !(ContainsExponent(B->topRows(indx), B->row(i)))) {
+      B->row(indx++) = B->row(i);
     }
   }
   //  Possible Eigen bug: can produce incorrect results without .eval().
   *B = (B->topRows(indx)).eval();
 }
 
-
-
 /* Removes exponents of the monomials that aren't diagonally-consistent with
  * respect to the polynomial p and the given monomial basis.  A monomial is
  * diagonally-consistent if its square appears in p, or its square equals a
  * product of monomials in the basis; see, e.g., "Pre- and Post-Processing
  * Sum-of-Squares Programs in Practice Johan Löfberg, IEEE Transactions on
- * Automatic Control, 2009." After execution, all exponents of inconsistent 
+ * Automatic Control, 2009." After execution, all exponents of inconsistent
  * monomials are removed from exponents_of_basis.
 */
 void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
                                            ExponentList* exponents_of_basis) {
   while (1) {
-    
-    int num_exponents = exponents_of_basis->rows(); 
-    
+    int num_exponents = exponents_of_basis->rows();
+
     ExponentList valid_squares =
         VerticalStack(PairwiseSums(*exponents_of_basis), exponents_of_p);
 
-    (*exponents_of_basis) = (*exponents_of_basis)*2;
+    (*exponents_of_basis) = (*exponents_of_basis) * 2;
     Intersection(valid_squares, exponents_of_basis);
-    (*exponents_of_basis) = (*exponents_of_basis)/2;
-    
+    (*exponents_of_basis) = (*exponents_of_basis) / 2;
+
     if (exponents_of_basis->rows() == num_exponents) {
       return;
     } else {
       num_exponents = exponents_of_basis->rows();
     }
-
   }
 }
 
@@ -152,9 +146,11 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
   //  We generate nonnegative or nonpositive columns so that call to
   //  EnumerateIntegerSolutions is more efficient.
   for (int i = 0; i < H.normal_vectors.cols(); i++) {
-    H.normal_vectors.col(i) << Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale;
+    H.normal_vectors.col(i)
+        << Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale;
     int sign = std::rand() > (RAND_MAX / 2) ? -1 : 1;
-    H.normal_vectors.col(i) = sign*abs(Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale);
+    H.normal_vectors.col(i) =
+        sign * abs(Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale);
   }
 
   std::cout << H.normal_vectors;
@@ -178,8 +174,8 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   // We check the inequalities in two batches to allow for internal
   // infeasibility propogation inside of EnumerateIntegerSolutions,
   // which is done only if A has a column that is elementwise nonnegative
-  // (resp., nonpositive). (This condition never holds if we check the inequalities
-  // in one batch, since then A = [normal_vectors;-normal_vectors].)
+  // (resp., nonpositive). (This condition never holds if we check the
+  // inequalities in one batch, since A = [normal_vectors;-normal_vectors].)
   ExponentList basis_exponents_1 = drake::solvers::EnumerateIntegerSolutions(
       hyperplanes.normal_vectors, hyperplanes.max_dot_product, lower_bounds,
       upper_bounds);

@@ -7,8 +7,7 @@ namespace {
 
 // Compare in Lexicographical (Lex) order
 struct VectorLexCompare {
-  bool operator()(const Eigen::VectorXi& v, const Eigen::VectorXi& w) 
-      const {
+  bool operator()(const Eigen::VectorXi& v, const Eigen::VectorXi& w) const {
     for (int i = 0; i < v.size(); ++i) {
       if (v(i) < w(i)) return true;
       if (v(i) > w(i)) return false;
@@ -52,11 +51,9 @@ class IntegerLatticeTest : public ::testing::Test {
 
 TEST_F(IntegerLatticeTest, EqualComponents) {
   SetDimensions(2, 2);
-  A_ << 1, -1, 
-        -1, 1;
+  A_ << 1, -1, -1, 1;
 
-  b_ << 0, 
-        0;
+  b_ << 0, 0;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 2, 2;
@@ -70,10 +67,8 @@ TEST_F(IntegerLatticeTest, EqualComponents) {
 
 TEST_F(IntegerLatticeTest, SumToConstant) {
   SetDimensions(2, 2);
-  A_ << 1,  1, 
-       -1, -1;
-  b_ << 2, 
-       -2;
+  A_ << 1, 1, -1, -1;
+  b_ << 2, -2;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 2, 2;
