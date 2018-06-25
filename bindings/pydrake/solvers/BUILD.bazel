@@ -51,6 +51,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],

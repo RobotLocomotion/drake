@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -82,11 +83,9 @@ auto RegisterBinding(py::handle* pscope,
                          .def("constraint", &B::evaluator)
                          .def("variables", &B::variables);
   // Deprecate `constraint`.
-  py::module deprecation = py::module::import("pydrake.util.deprecation");
-  py::object deprecated = deprecation.attr("deprecated");
-  binding_cls.attr("constraint") =
-      deprecated("`constraint` is deprecated; please use `evaluator` instead.")(
-          binding_cls.attr("constraint"));
+  DeprecateAttribute(
+      binding_cls, "constraint",
+      "`constraint` is deprecated; please use `evaluator` instead.");
   // Register overloads for MathematicalProgram class
   prog_cls.def(
       "EvalBindingAtSolution",
