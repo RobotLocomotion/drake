@@ -44,7 +44,6 @@ Vector4<typename Derived::Scalar> rotmat2quat(
  * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
  * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
  * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
- * @see rpy2rotmat
  */
 template <typename Derived>
 Vector3<typename Derived::Scalar> rotmat2rpy(
