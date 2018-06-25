@@ -657,6 +657,27 @@ void MultibodyPlant<T>::AddJointDampingForces(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddJointActuationForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  if (num_actuators() > 0) {
+    Eigen::VectorBlock<const VectorX<T>> u =
+        this->EvalEigenVectorInput(context, actuation_port_);
+    for (JointActuatorIndex actuator_index(0);
+         actuator_index < num_actuators(); ++actuator_index) {
+      const JointActuator<T>& actuator =
+          model().get_joint_actuator(actuator_index);
+      // We only support actuators on single dof joints for now.
+      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
+      for (int joint_dof = 0;
+           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
+        actuator.AddInOneForce(context, joint_dof, u[actuator_index], forces);
+      }
+    }
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
@@ -686,21 +707,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   model_->CalcForceElementsContribution(context, pc, vc, &forces);
 
   // If there is any input actuation, add it to the multibody forces.
-  if (num_actuators() > 0) {
-    Eigen::VectorBlock<const VectorX<T>> u =
-        this->EvalEigenVectorInput(context, actuation_port_);
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < num_actuators(); ++actuator_index) {
-      const JointActuator<T>& actuator =
-          model().get_joint_actuator(actuator_index);
-      // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
-      for (int joint_dof = 0;
-           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(context, joint_dof, u[actuator_index], &forces);
-      }
-    }
-  }
+  AddJointActuationForces(context, &forces);
 
   AddJointDampingForces(context, &forces);
 
@@ -778,22 +785,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   model_->CalcForceElementsContribution(context0, pc0, vc0, &forces0);
 
   // If there is any input actuation, add it to the multibody forces.
-  if (num_actuators() > 0) {
-    Eigen::VectorBlock<const VectorX<T>> u =
-        this->EvalEigenVectorInput(context0, actuation_port_);
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < num_actuators(); ++actuator_index) {
-      const JointActuator<T>& actuator =
-          model().get_joint_actuator(actuator_index);
-      // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
-      for (int joint_dof = 0;
-           joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(
-            context0, joint_dof, u[actuator_index], &forces0);
-      }
-    }
-  }
+  AddJointActuationForces(context0, &forces0);
 
   // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
   // implicitly.
