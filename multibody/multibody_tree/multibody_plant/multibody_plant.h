@@ -1270,6 +1270,23 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
 
+  // Helper method to add the contribution of external actuation forces to the
+  // set of multibody `forces`. External actuation is applied through the
+  // plant's input ports.
+  void AddJointActuationForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
+  // Helper method to apply forces due to damping at the joints.
+  // Currently, MultibodyPlant treats damping forces separately from other
+  // ForceElement forces so that it can use an implicit scheme in the time
+  // stepping scheme.
+  // TODO(amcastro-tri): Consider updating ForceElement to also compute a
+  // Jacobian for general force models. That would allow MultibodyPlant to use
+  // that general infrastructure rather than having to deal with damping in a
+  // special way.
+  void AddJointDampingForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Given a set of point pairs in `point_pairs_set`, this method computes the
   // Jacobian N(q) such that:
   //   vn = N(q) v

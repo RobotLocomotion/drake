@@ -139,6 +139,29 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   return axis_J;
 }
 
+// Helper to parse the damping for a given joint specification.
+// Right now we only parse the <damping> tag.
+// An exception is thrown if the provided damping value is negative or if there
+// is no <axis> under <joint>.
+double ParseJointDamping(const sdf::Joint& joint_spec) {
+  DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+  const double damping = axis->Damping();
+  if (damping < 0) {
+    throw std::runtime_error(
+        "Joint damping is negative for joint '" + joint_spec.Name() + "'. "
+            "Joint damping must be a non-negative number.");
+  }
+  return damping;
+}
+
 // Extracts the effort limit from a joint specification and adds an actuator if
 // the value is non-zero. In SDF, effort limits are specified in
 // <joint><axis><limit><effort>. In Drake, we understand that joints with an
@@ -233,20 +256,22 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::PRISMATIC: {
+      const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J);
+          child_body, X_CJ, axis_J, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
+      const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J);
+          child_body, X_CJ, axis_J, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
