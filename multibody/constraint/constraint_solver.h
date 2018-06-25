@@ -1409,6 +1409,18 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLCPSolution(
   // Quit now if zz is empty.
   if (zz.size() == 0) {
     cf->setZero();
+    if (num_eq_constraints > 0) {
+      VectorX<T> aug = a;
+      const VectorX<T> u = -mlcp_to_lcp_data.A_solve(aug);
+      auto lambda = cf->segment(num_contacts +
+          num_spanning_vectors + num_limits, num_eq_constraints);
+
+      // Transform the impulsive forces to non-impulsive forces.
+      lambda = u.tail(num_eq_constraints) / dt;
+      DRAKE_SPDLOG_DEBUG(drake::log(),
+          "Bilateral constraint forces/impulses: {}", lambda.transpose());
+    }
+
     return;
   }
 
@@ -1998,9 +2010,12 @@ void ConstraintSolver<T>::CheckVelConstraintMatrix(
       MM.rows();
 
   // Check that the blocks are nearly equal.
-  DRAKE_ASSERT((F_iM_NT - F_iM_NT_true).norm() < zero_tol);
-  DRAKE_ASSERT((L_iM_NT - L_iM_NT_true).norm() < zero_tol);
-  DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
+  if (nr > 0 && num_contacts > 0)
+    DRAKE_ASSERT((F_iM_NT - F_iM_NT_true).norm() < zero_tol);
+  if (num_contacts > 0 && nl > 0)
+    DRAKE_ASSERT((L_iM_NT - L_iM_NT_true).norm() < zero_tol);
+  if (nr > 0 && nl > 0)
+    DRAKE_ASSERT((L_iM_FT - L_iM_FT_true).norm() < zero_tol);
 }
 
 // Forms the LCP matrix and vector, which is used to determine the collisional

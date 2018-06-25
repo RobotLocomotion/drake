@@ -1880,7 +1880,6 @@ TEST_P(Constraint2DSolverTest, NoImpactImpliesNoImpulses) {
   }
 }
 
-
 // Tests that the cross-term interaction between contact forces and generic
 // unilateral constraints is computed correctly at the velocity level.
 TEST_P(Constraint2DSolverTest, ContactLimitCrossTermVel) {
@@ -2053,6 +2052,60 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
   solver_.SolveImpactProblem(*vel_data_, &cf);
   EXPECT_EQ(cf.size(), 1);
   EXPECT_NEAR(cf[0], mv*2, lcp_eps_);
+}
+
+// Tests that a purely bilaterally constrained problem is handled correctly.
+TEST_P(Constraint2DSolverTest, BilateralOnly) {
+  // Set the rod to a ballistic state.
+  ContinuousState<double>& xc = context_->get_mutable_continuous_state();
+  xc[0] = 0.0;     // com horizontal position
+  xc[1] = 10.0;     // com vertical position
+  xc[2] = 0.0;     // rod rotation
+  xc[3] = 0.0;     // no horizontal velocity.
+  xc[4] = 0.0;     // upward velocity.
+  xc[5] = 0.0;     // no angular velocity.
+
+  // Compute the problem data.
+  CalcConstraintProblemDataForImpact(vel_data_.get());
+
+  // Compute the generalized velocity.
+  const VectorX<double> v = vel_data_->solve_inertia(vel_data_->Mv);
+
+  // Add in bilateral constraints on rotational motion.
+  vel_data_->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
+    VectorX<double> result(1);   // Only one constraint.
+
+    // Constrain the angular velocity to be zero.
+    result[0] = w[2];
+    return result;
+  };
+  vel_data_->G_transpose_mult =
+      [this](const VectorX<double>& f) -> VectorX<double> {
+        // An impulsive force (torque) applied to the third component needs no
+        // transformation.
+        DRAKE_DEMAND(f.size() == 1);
+        VectorX<double> result(get_rod_num_coordinates());
+        result.setZero();
+        result[2] = f[0];
+        return result;
+      };
+
+  // Indicate through construction of the kG term that the system already has
+  // angular orientation (which violates our desire to keep the rod at
+  // zero rotation).
+  vel_data_->kG.resize(1);
+  vel_data_->kG[0] = 1.0;    // Indicate a ccw orientation.
+
+  // Compute the impact forces.
+  VectorX<double> cf;
+  solver_.SolveImpactProblem(*vel_data_, &cf);
+
+  // Get the change in generalized velocity and verify that the angular
+  // velocity has changed counter-clockwise.
+  VectorX<double> gv;
+  solver_.ComputeGeneralizedVelocityChange(*vel_data_, cf, &gv);
+  EXPECT_NEAR(v[2] + gv[2], -vel_data_->kG[0],
+              lcp_eps_ * cf.size());
 }
 
 // Instantiate the value-parameterized tests to run with a range of CFM values
