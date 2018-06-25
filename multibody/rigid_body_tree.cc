@@ -2564,7 +2564,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
     torques += frictionTorques(cache.getV());
   }
 
-  torques += springTorques(cache);
+  // SpringTorques added with a negative sign since they are being included in
+  // the bias terms 
+  torques -= SpringTorques(cache.getQ());
 
   return torques;
 }
@@ -2592,24 +2594,27 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
 
 template <typename T>
 template <typename Scalar>
-Matrix<Scalar, Dynamic, 1> RigidBodyTree<T>::springTorques(
-    const KinematicsCache<Scalar>& cache) const {
-  const auto& q = cache.getQ();
-  Matrix<Scalar, Dynamic, 1> ret(num_velocities_, 1);
-  Matrix<Scalar, Dynamic, 1> f_q(num_positions_, 1);
+VectorX<Scalar> RigidBodyTree<T>::SpringTorques(VectorX<Scalar> q) const {
+  VectorX<Scalar> generalized_force(num_velocities_);
 
   for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {
-    RigidBody<T>& body = **it;
+    const RigidBody<T>& body = **it;
     if (body.has_parent_body()) {
       const DrakeJoint& joint = body.getJoint();
+      int nv_joint = joint.get_num_velocities();
+      int v_start_joint = body.get_velocity_start_index();
       int nq_joint = joint.get_num_positions();
       int q_start_joint = body.get_position_start_index();
+
       auto q_body = q.middleRows(q_start_joint, nq_joint);
-      f_q.middleRows(q_start_joint, nq_joint) = joint.springTorque(q_body);
+
+      //generalized spring forces each depend on the joint position, but are
+      //in velocity coordinates
+      generalized_force.middleRows(v_start_joint, nv_joint) =
+          joint.SpringTorque(q_body);
     }
   }
-  ret = GetQDotToVelocityMapping(cache)*f_q;
-  return ret;
+  return generalized_force;
 }
 
 #endif

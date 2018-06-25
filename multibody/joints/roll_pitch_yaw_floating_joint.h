@@ -273,11 +273,13 @@ class RollPitchYawFloatingJoint
   }
 
   template <typename DerivedQ>
-  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> springTorque(
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
     drake::unused(q);
-    return Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1>::Zero(
-        get_num_positions(), 1);
+    //returning zero for now, but a 3D torsional spring could theoretically be
+    //added here
+    return drake::VectorX<typename DerivedQ::Scalar>::Zero(
+        get_num_velocities(),1);
   }
 
 

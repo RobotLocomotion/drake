@@ -119,14 +119,19 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
+  /// Compute the spring torque for a simple singleaxis joint
+  /// Since this is a one DOF joint, the input and output vectors will be
+  /// length 1
+  ///
+  /// Torque is computed to be included in the dynamics bias terms, and thus
+  /// appears here with a "positive" gain
   template <typename DerivedQ>
-  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> springTorque(
+  Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
     typedef typename DerivedQ::Scalar Scalar;
-    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(get_num_positions(), 1);
-    using std::abs;
-    ret[0] = stiffness_ * (q[0] - nominal_position_);
-    return ret;
+    drake::VectorX<Scalar> torque(get_num_velocities(), 1);
+    torque[0] = stiffness_ * (nominal_position_ - q[0]);
+    return torque;
   }
 
   void setJointLimits(double joint_limit_min, double joint_limit_max) {
@@ -191,7 +196,10 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     DRAKE_ASSERT(coulomb_window_ > 0);
   }
 
-  void setSpringDynamics(double stiffness, double nominal_position) {
+  /// Set the spring stiffness and nominal position
+  /// The resuting force will be
+  ///   torque = stiffness * (nominal_position - position)
+  void SetSpringDynamics(double stiffness, double nominal_position) {
     stiffness_ = stiffness;
     nominal_position_ = nominal_position;
   }
@@ -233,8 +241,8 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   drake::TwistVector<double> joint_axis_;
   double damping_{};
   double coulomb_friction_{};
-  double stiffness_ = 0;
-  double nominal_position_ = 0;
+  double stiffness_{0};
+  double nominal_position_{0};
   // We're trying to emulate MATLAB's code:
   // NOLINTNEXTLINE(whitespace/line_length)
   // https://github.com/RobotLocomotion/drake/blob/d7f3c011d37d471d7b9293ecf2066c98d88b2a05/drake/matlab/systems/plants/RigidBody.m#L29

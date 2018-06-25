@@ -122,6 +122,18 @@ class RigidBody {
   }
 
   /**
+   * An accessor to this rigid body's mutable parent joint. By "parent joint" we
+   * mean the joint through which this rigid body connects to its parent rigid
+   * body in the rigid body tree.
+   *
+   * @return The mutable parent joint of this rigid body.
+   */
+  DrakeJoint* get_mutable_joint() {
+    DRAKE_DEMAND(joint_ != nullptr);
+    return joint_.get();
+  }
+
+  /**
    * Reports if the body has a parent joint.
    */
   bool has_joint() const { return joint_ != nullptr; }

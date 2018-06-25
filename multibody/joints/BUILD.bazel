@@ -71,6 +71,7 @@ drake_cc_googletest(
     name = "joint_test",
     deps = [
         ":joint_compare_to_clone",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
