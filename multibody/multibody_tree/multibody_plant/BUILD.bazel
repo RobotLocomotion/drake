@@ -43,6 +43,35 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "contact_info",
+    srcs = [
+        "contact_info.cc",
+    ],
+    hdrs = [
+        "contact_info.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/multibody_tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results",
+    srcs = [
+        "contact_results.cc",
+    ],
+    hdrs = [
+        "contact_results.h",
+    ],
+    deps = [
+        ":contact_info",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
     name = "coulomb_friction",
     srcs = [
         "coulomb_friction.cc",
