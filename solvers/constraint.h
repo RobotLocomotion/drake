@@ -379,9 +379,9 @@ class EvaluatorConstraint : public Constraint {
                    std::forward<Args>(args)...),
         evaluator_(evaluator) {}
 
+  using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
   using Constraint::UpdateUpperBound;
-  using Constraint::set_bounds;
 
  protected:
   /** Reference to the nested evaluator. */
@@ -497,9 +497,9 @@ class LinearConstraint : public Constraint {
     set_bounds(new_lb, new_ub);
   }
 
+  using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
   using Constraint::UpdateUpperBound;
-  using Constraint::set_bounds;
 
  protected:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
