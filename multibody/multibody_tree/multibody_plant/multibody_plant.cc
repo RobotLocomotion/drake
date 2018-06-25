@@ -954,6 +954,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
         model_->num_velocities(), 0 /* num_z */);
   }
 
+  // Declare per model instance actuation ports.
   int num_actuated_instances = 0;
   ModelInstanceIndex last_actuated_instance;
   instance_actuation_ports_.resize(num_model_instances());
@@ -975,11 +976,13 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
+  // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort(
           BasicVector<T>(num_multibody_states()),
           &MultibodyPlant::CopyContinuousStateOut).get_index();
 
+  // Declare per model instance state output ports.
   instance_continuous_state_output_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
@@ -997,6 +1000,26 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
         this->DeclareVectorOutputPort(
             BasicVector<T>(instance_num_states), calc).get_index();
   }
+
+  // Declare per model instance output port of generalized contact forces.
+  instance_generalized_contact_forces_output_ports_.resize(
+      num_model_instances());
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_velocities =
+        model_->num_velocities(model_instance_index);
+    if (instance_num_velocities == 0) {
+      continue;
+    }
+    auto calc = [this, model_instance_index](const systems::Context<T>& context,
+                                             systems::BasicVector<T>* result) {
+      this->CopyGeneralizedContactForcesOut(
+          model_instance_index, context, result);
+    };
+    instance_generalized_contact_forces_output_ports_[model_instance_index] =
+        this->DeclareVectorOutputPort(
+            BasicVector<T>(instance_num_velocities), calc).get_index();
+  }
 }
 
 template <typename T>
@@ -1012,7 +1035,7 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
-  VectorX<T> continuous_state_vector =
+  const VectorX<T> continuous_state_vector =
       context.get_continuous_state_vector().CopyToVector();
 
   VectorX<T> instance_state_vector(model_->num_states(model_instance));
@@ -1024,6 +1047,29 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
           model_instance, continuous_state_vector.tail(num_velocities()));
 
   state_vector->set_value(instance_state_vector);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
+    ModelInstanceIndex model_instance, const Context<T>&,
+    BasicVector<T>* tau_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(is_discrete());
+
+  // Vector of generalized contact forces for the entire plant's multibody
+  // system.
+  // TODO(amcastro-tri): Contact forces should be computed into a cache entry
+  // and evaluated here. Update this to use caching as soon as the capability
+  // lands.
+  const VectorX<T>& tau_contact =
+      implicit_stribeck_solver_->get_generalized_contact_forces();
+
+  // Generalized velocities and generalized forces are ordered in the same way.
+  // Thus we can call get_velocities_from_array().
+  const VectorX<T> instance_tau_contact =
+      model_->get_velocities_from_array(model_instance, tau_contact);
+
+  tau_vector->set_value(instance_tau_contact);
 }
 
 template <typename T>
@@ -1064,6 +1110,19 @@ MultibodyPlant<T>::get_continuous_state_output_port(
   DRAKE_THROW_UNLESS(model_->num_states(model_instance) > 0);
   return this->get_output_port(
       instance_continuous_state_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_generalized_contact_forces_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(is_discrete());
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  DRAKE_THROW_UNLESS(model_->num_states(model_instance) > 0);
+  return this->get_output_port(
+      instance_generalized_contact_forces_output_ports_.at(model_instance));
 }
 
 template <typename T>

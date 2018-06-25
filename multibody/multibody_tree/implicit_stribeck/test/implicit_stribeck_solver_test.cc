@@ -532,7 +532,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
   ASSERT_EQ(info, ComputationInfo::Success);
 
-  VectorX<double> tau_f = solver_.get_generalized_forces();
+  VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
   const IterationStats& stats = solver_.get_iteration_statistics();
 
@@ -634,7 +634,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
   ASSERT_EQ(info, ComputationInfo::Success);
 
-  VectorX<double> tau_f = solver_.get_generalized_forces();
+  VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
   const IterationStats& stats = solver_.get_iteration_statistics();
 
@@ -726,7 +726,7 @@ TEST_F(PizzaSaver, NoContact) {
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
   ASSERT_EQ(info, ComputationInfo::Success);
 
-  EXPECT_EQ(solver_.get_generalized_forces(), Vector3<double>::Zero());
+  EXPECT_EQ(solver_.get_generalized_friction_forces(), Vector3<double>::Zero());
 
   const IterationStats& stats = solver_.get_iteration_statistics();
   EXPECT_EQ(stats.vt_residual(), 0);
@@ -934,7 +934,7 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
   ASSERT_EQ(info, ComputationInfo::Success);
 
-  VectorX<double> tau_f = solver_.get_generalized_forces();
+  VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
   const IterationStats& stats = solver_.get_iteration_statistics();
 
@@ -1024,7 +1024,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
   ComputationInfo info = solver_.SolveWithGuess(dt, v0);
   ASSERT_EQ(info, ComputationInfo::Success);
 
-  VectorX<double> tau_f = solver_.get_generalized_forces();
+  VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
   const IterationStats& stats = solver_.get_iteration_statistics();
 
