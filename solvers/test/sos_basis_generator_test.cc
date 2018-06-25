@@ -31,7 +31,8 @@ MonomialSet VectorToSet(const drake::VectorX<Monomial>& x) {
 
 class SosBasisGeneratorTest : public ::testing::Test {
  public:
-  void CheckMonomialBasis(symbolic::Polynomial poly, MonomialSet basis_ref) {
+  void CheckMonomialBasis(const symbolic::Polynomial& poly, 
+                          const MonomialSet& basis_ref) {
     drake::VectorX<Monomial> basis = ConstructMonomialBasis(poly);
     MonomialSet basis_set = VectorToSet(basis);
     EXPECT_EQ(basis_set, basis_ref);
@@ -73,6 +74,19 @@ TEST_F(SosBasisGeneratorTest, Empty) {
   MonomialSet basis_ref;
   CheckMonomialBasis(poly, basis_ref);
 }
+
+
+TEST_F(SosBasisGeneratorTest, NewtonPolytopeEmptyInterior) {
+  const symbolic::Polynomial poly{   pow(x_(0), 2)*pow(x_(1), 2) +
+                                     pow(x_(0), 3)*pow(x_(1), 3) +
+                                     pow(x_(0), 4)*pow(x_(1), 4) 
+  };
+  MonomialSet basis_ref;
+  basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 1)));
+  basis_ref.insert(Monomial(pow(x_(0), 2) * pow(x_(1), 2)));
+  CheckMonomialBasis(poly, basis_ref);
+}
+
 
 TEST_F(SosBasisGeneratorTest, Singleton) {
   const symbolic::Polynomial poly{1 + pow(x_(0), 1)};

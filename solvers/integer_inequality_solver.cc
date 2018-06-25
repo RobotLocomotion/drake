@@ -15,25 +15,11 @@ namespace integer_programming {
 using IntegerVectorList = std::vector<std::vector<int>>;
 
 bool IsElementwiseNonnegative(const Eigen::MatrixXi& A) {
-  for (int i = 0; i < A.rows(); i++) {
-    for (int j = 0; j < A.cols(); j++) {
-      if (A(i, j) < 0) {
-        return false;
-      }
-    }
-  }
-  return true;
+  return (A.array() >= 0).all();
 }
 
 bool IsElementwiseNonpositive(const Eigen::MatrixXi& A) {
-  for (int i = 0; i < A.rows(); i++) {
-    for (int j = 0; j < A.cols(); j++) {
-      if (A(i, j) > 0) {
-        return false;
-      }
-    }
-  }
-  return true;
+  return (A.array() <= 0).all();
 }
 
 /* Construct finite-set of admissible values, i.e., an alphabet, for each
@@ -60,38 +46,38 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
   return alphabet;
 }
 
-/* If a column Ai of A is nonnegative (resp. nonpositive),
- * then  \{ Ai z : z \in Qi } is totally ordered, where Qi is the alphabet
- * for the i^th component.  This allows for infeasibility propagation
- * in the recursive enumeration of integer solutions.  This function
- * detects when \{ Ai z : z \in Qi } is totally ordered and then sorts the
- * alphabet using this ordering.
+/* If a column Aᵢ of A is nonnegative (resp. nonpositive), then  {Aᵢ*z : z ∈ Qᵢ}
+ * is totally ordered, where Qᵢ is the alphabet for the iᵗʰ component. In other
+ * words, the inequalities Aᵢz1 ≤Aᵢz2 ≤...≤ Aᵢzm hold for zj ∈ Qi 
+ * sorted in ascending (resp. descending) order. This allows for infeasibility
+ * propagation in the recursive enumeration of integer solutions.  This function
+ * detects when {Aᵢ*z : z ∈ Qᵢ} is totally ordered and then sorts the alphabet
+ * using this ordering.
  */
-enum ColumnType { Nonnegative, Nonpositive, Indefinite };
+enum class ColumnType { Nonnegative, Nonpositive, Indefinite };
 std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
                                       IntegerVectorList* alphabet) {
   DRAKE_ASSERT(alphabet != NULL);
   int cnt = 0;
-  std::vector<ColumnType> ordering(A.cols());
+  std::vector<ColumnType> column_type(A.cols());
 
   for (auto& col_alphabet : *alphabet) {
-    ordering.at(cnt) = ColumnType::Indefinite;
+    column_type.at(cnt) = ColumnType::Indefinite;
     if (IsElementwiseNonnegative(A.col(cnt))) {
       std::sort(col_alphabet.begin(), col_alphabet.end());
-      ordering.at(cnt) = ColumnType::Nonnegative;
+      column_type.at(cnt) = ColumnType::Nonnegative;
     } else if (IsElementwiseNonpositive(A.col(cnt))) {
-      std::sort(col_alphabet.begin(), col_alphabet.end());
-      std::reverse(col_alphabet.begin(), col_alphabet.end());
-      ordering.at(cnt) = ColumnType::Nonpositive;
+      std::sort(col_alphabet.begin(), col_alphabet.end(), std::greater<int>());
+      column_type.at(cnt) = ColumnType::Nonpositive;
     }
     cnt++;
   }
 
-  return ordering;
+  return column_type;
 }
 
 /* Given an integer z and a list of integer vectors V, constructs
- * the Cartesian product (z, v) for all v \in V.*/
+ * the Cartesian product (z, v) for all v ∈ V */
 Eigen::MatrixXi CartesianProduct(int z, const Eigen::MatrixXi& V) {
   Eigen::MatrixXi cart_products(V.rows(), V.cols() + 1);
   cart_products << Eigen::MatrixXi::Constant(V.rows(), 1, z), V;
@@ -117,11 +103,11 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
  * xi can only take on values in a finite alphabet Qi, e.g.,
  * Qi = {1, 2, 3, 8, 9}.   We do this recursively, enumerating
  * the possible values (x2, x3, ..., xn) can take when x1
- * is fixed. If the columns \{Ai z : z \in Qi \} are totally
+ * is fixed. If the columns {Aᵢ*z : z ∈ Qᵢ} are totally
  * ordered, we propagate infeasibility: if no solutions exist when
  * x1 = z, then no solution can exist if x1 takes on values
  * larger than z (in the ordering).  We assume the function "ProcessInputs"
- * was previously called to sort the alphabet in ascending order.)
+ * was previously called to sort the alphabet in ascending order.
  */
 Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
@@ -129,7 +115,7 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const std::vector<ColumnType>& column_type) {
   Eigen::MatrixXi feasible_points(0, A.cols());
 
-  for (auto& value : column_alphabets.at(0)) {
+  for (const auto& value : column_alphabets.at(0)) {
     Eigen::MatrixXi new_feasible_points(0, A.cols());
 
     if (A.cols() == 1) {
@@ -152,8 +138,9 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
     else
         //  Propagate infeasibility: if this test passes, then no feasible
         //  points exist for remaining values in the alphabet.
-        if (column_type.at(0) != ColumnType::Indefinite)
-      return feasible_points;
+        if (column_type.at(0) != ColumnType::Indefinite) {
+          return feasible_points;
+        }
   }
 
   return feasible_points;
@@ -164,10 +151,10 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
 using drake::solvers::integer_programming::BuildAlphabetFromBounds;
 using drake::solvers::integer_programming::ProcessInputs;
 
-Eigen::MatrixXi EnumerateIntegerSolutions(const Eigen::MatrixXi& A,
-                                          const Eigen::VectorXi& b,
-                                          const Eigen::VectorXi& lower_bound,
-                                          const Eigen::VectorXi& upper_bound) {
+Eigen::MatrixXi EnumerateIntegerSolutions(const Eigen::Ref<const Eigen::MatrixXi>& A,
+                                          const Eigen::Ref<const Eigen::VectorXi>& b,
+                                          const Eigen::Ref<const Eigen::VectorXi>& lower_bound,
+                                          const Eigen::Ref<const Eigen::VectorXi>& upper_bound) {
   DRAKE_DEMAND(A.rows() == b.rows());
   DRAKE_DEMAND(A.cols() == lower_bound.size());
   DRAKE_DEMAND(A.cols() == upper_bound.size());

@@ -61,7 +61,7 @@ ExponentList VerticalStack(const ExponentList& A, const ExponentList& B) {
 
 ExponentList PairwiseSums(const ExponentList& exponents) {
   int n = exponents.rows();
-  ExponentList sums((n * n + n) / 2, exponents.cols());
+  ExponentList sums((n * n - n) / 2, exponents.cols());
   int cnt = 0;
   for (int i = 0; i < n; i++) {
     // Note: counter starts at i+1 to omit a+b when a = b.
@@ -82,34 +82,54 @@ bool ContainsExponent(const ExponentList& A, const Exponent& B) {
   return false;
 }
 
+
+/* Intersection(A,B) removes duplicate rows from B and any row that doesn't also
+ * appear in A.  For example, given A = [1,0; 0,1; 1,1] and B = [1,0; 1,1;
+ * 1,1;], it overwrites B with [1,0; 1,1]. */
+
+void Intersection(const ExponentList& A, ExponentList * B) {
+  DRAKE_ASSERT(A.cols() == B->cols());
+  int indx = 0;
+  for (int i = 0; i < B->rows(); i++) {
+    if ((ContainsExponent(A, B->row(i))) && 
+       !(ContainsExponent(B->topRows(indx), B->row(i))))
+    {
+      B->row(indx++) = B->row(i); 
+    }
+  }
+  //  Possible Eigen bug: can produce incorrect results without .eval().
+  *B = (B->topRows(indx)).eval();
+}
+
+
+
 /* Removes exponents of the monomials that aren't diagonally-consistent with
  * respect to the polynomial p and the given monomial basis.  A monomial is
  * diagonally-consistent if its square appears in p, or its square equals a
  * product of monomials in the basis; see, e.g., "Pre- and Post-Processing
  * Sum-of-Squares Programs in Practice Johan Löfberg, IEEE Transactions on
- * Automatic Control, 2009."
+ * Automatic Control, 2009." After execution, all exponents of inconsistent 
+ * monomials are removed from exponents_of_basis.
 */
 void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
                                            ExponentList* exponents_of_basis) {
   while (1) {
-    ExponentList exponents_to_keep(exponents_of_basis->rows(),
-                                   exponents_of_basis->cols());
-    int cnt = 0;
+    
+    int num_exponents = exponents_of_basis->rows(); 
+    
     ExponentList valid_squares =
         VerticalStack(PairwiseSums(*exponents_of_basis), exponents_of_p);
-    for (int i = 0; i < exponents_of_basis->rows(); i++) {
-      if (ContainsExponent(valid_squares, exponents_of_basis->row(i) * 2)) {
-        exponents_to_keep.row(cnt++) = exponents_of_basis->row(i);
-      }
-    }
 
-    if (cnt == exponents_of_basis->rows()) {
+    (*exponents_of_basis) = (*exponents_of_basis)*2;
+    Intersection(valid_squares, exponents_of_basis);
+    (*exponents_of_basis) = (*exponents_of_basis)/2;
+    
+    if (exponents_of_basis->rows() == num_exponents) {
       return;
     } else {
-      exponents_of_basis->resize(cnt, exponents_of_basis->cols());
-      exponents_of_basis->block(0, 0, cnt, exponents_of_basis->cols()) =
-          exponents_to_keep.block(0, 0, cnt, exponents_to_keep.cols());
+      num_exponents = exponents_of_basis->rows();
     }
+
   }
 }
 
@@ -122,13 +142,22 @@ struct Hyperplanes {
 /* Finding random supporting hyperplanes of 1/2 P, where P is the Newton
  * polytope of the polynomial p (i.e., the convex hull of its exponents).
 */
-Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
-                                        int num_hyperplanes) {
+
+Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
   Hyperplanes H;
 
   int scale = RAND_MAX / 100;
-  H.normal_vectors =
-      Eigen::MatrixXi::Random(num_hyperplanes, exponents_of_p.cols()) / scale;
+  int num_hyperplanes = exponents_of_p.cols();
+  H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
+  //  We generate nonnegative or nonpositive columns so that call to
+  //  EnumerateIntegerSolutions is more efficient.
+  for (int i = 0; i < H.normal_vectors.cols(); i++) {
+    H.normal_vectors.col(i) << Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale;
+    int sign = std::rand() > (RAND_MAX / 2) ? -1 : 1;
+    H.normal_vectors.col(i) = sign*abs(Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale);
+  }
+
+  std::cout << H.normal_vectors;
   Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
   H.max_dot_product = dot_products.rowwise().maxCoeff() / 2;
   H.min_dot_product = dot_products.rowwise().minCoeff() / 2;
@@ -137,24 +166,29 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
 }
 }  // namespace
 
-/* Finds monomial basis for given polynomial p. We provide two implementions:
- * the first takes as input the polynomial p, and the second takes as input the
- * exponents of p.*/
 ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   Eigen::VectorXi lower_bounds = exponents_of_p.colwise().minCoeff() / 2;
   Eigen::VectorXi upper_bounds = exponents_of_p.colwise().maxCoeff() / 2;
 
-  int num_hyperplanes = 10;
   // Fix the random seed so code is deterministic.
   unsigned int random_seed = 1;
   std::srand(random_seed);
-  Hyperplanes hyperplanes =
-      RandomSupportingHyperplanes(exponents_of_p, num_hyperplanes);
+  Hyperplanes hyperplanes = RandomSupportingHyperplanes(exponents_of_p);
 
-  ExponentList basis_exponents = drake::solvers::EnumerateIntegerSolutions(
+  // We check the inequalities in two batches to allow for internal
+  // infeasibility propogation inside of EnumerateIntegerSolutions,
+  // which is done only if A has a column that is elementwise nonnegative
+  // (resp., nonpositive). (This condition never holds if we check the inequalities
+  // in one batch, since then A = [normal_vectors;-normal_vectors].)
+  ExponentList basis_exponents_1 = drake::solvers::EnumerateIntegerSolutions(
       hyperplanes.normal_vectors, hyperplanes.max_dot_product, lower_bounds,
       upper_bounds);
 
+  ExponentList basis_exponents = drake::solvers::EnumerateIntegerSolutions(
+      -hyperplanes.normal_vectors, -hyperplanes.min_dot_product, lower_bounds,
+      upper_bounds);
+
+  Intersection(basis_exponents_1, &basis_exponents);
   RemoveDiagonallyInconsistentExponents(exponents_of_p, &basis_exponents);
   return basis_exponents;
 }

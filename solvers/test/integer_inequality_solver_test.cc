@@ -1,6 +1,3 @@
-/* clang-format off to disable clang-format-includes */
-/* clang-format on */
-
 #include "drake/solvers/integer_inequality_solver.h"
 
 #include <gtest/gtest.h>
@@ -8,8 +5,10 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// Compare in Lexicographical (Lex) order
 struct VectorLexCompare {
-  bool operator()(Eigen::VectorXi v, Eigen::VectorXi w) const {
+  bool operator()(const Eigen::VectorXi& v, const Eigen::VectorXi& w) 
+      const {
     for (int i = 0; i < v.size(); ++i) {
       if (v(i) < w(i)) return true;
       if (v(i) > w(i)) return false;
@@ -20,7 +19,7 @@ struct VectorLexCompare {
 
 typedef std::set<Eigen::VectorXi, VectorLexCompare> IntegerSet;
 
-IntegerSet MatrixToSet(Eigen::MatrixXi M) {
+IntegerSet MatrixToSet(const Eigen::MatrixXi& M) {
   IntegerSet M_set;
   for (int i = 0; i < M.rows(); i++) {
     M_set.insert(M.row(i));
@@ -30,7 +29,7 @@ IntegerSet MatrixToSet(Eigen::MatrixXi M) {
 
 class IntegerLatticeTest : public ::testing::Test {
  public:
-  void CheckEnumeration(IntegerSet ref) {
+  void CheckEnumeration(const IntegerSet& ref) {
     auto y = EnumerateIntegerSolutions(A_, b_, lower_bound_, upper_bound_);
     auto y_set = MatrixToSet(y);
     EXPECT_EQ(y_set, ref);
@@ -53,9 +52,11 @@ class IntegerLatticeTest : public ::testing::Test {
 
 TEST_F(IntegerLatticeTest, EqualComponents) {
   SetDimensions(2, 2);
-  A_ << 1, -1, -1, 1;
+  A_ << 1, -1, 
+        -1, 1;
 
-  b_ << 0, 0;
+  b_ << 0, 
+        0;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 2, 2;
@@ -69,8 +70,10 @@ TEST_F(IntegerLatticeTest, EqualComponents) {
 
 TEST_F(IntegerLatticeTest, SumToConstant) {
   SetDimensions(2, 2);
-  A_ << 1, 1, -1, -1;
-  b_ << 2, -2;
+  A_ << 1,  1, 
+       -1, -1;
+  b_ << 2, 
+       -2;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 2, 2;
