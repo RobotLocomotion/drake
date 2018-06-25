@@ -41,6 +41,18 @@ class TestRigidBodyTree(unittest.TestCase):
         p = tree.transformPoints(kinsol, np.zeros(3), 0, 1)
         self.assertTrue(np.allclose(p, np.zeros(3)))
 
+        # Ensure mismatched sizes throw an error.
+        q_bad = np.zeros(num_q + 1)
+        v_bad = np.zeros(num_v + 1)
+        bad_args_list = (
+            (q_bad,),
+            (q_bad, v),
+            (q, v_bad),
+        )
+        for bad_args in bad_args_list:
+            with self.assertRaises(SystemExit):
+                tree.doKinematics(*bad_args)
+
         # AutoDiff jacobians.
 
         def do_transform(q):
@@ -473,7 +485,13 @@ class TestRigidBodyTree(unittest.TestCase):
         box_collision_element.set_body(body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
+        rbt.DefineCollisionFilterGroup(name="test_group")
+        rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_2", model_id=0)
+
+        self.assertFalse(rbt.initialized())
         rbt.compile()
+        self.assertTrue(rbt.initialized())
 
         # The RBT's position vector should now be [z, theta].
         self.assertEqual(body_1.get_position_start_index(), 0)

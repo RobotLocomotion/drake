@@ -45,6 +45,8 @@ using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::InputPortDescriptor;
+using systems::InputPortIndex;
+using systems::OutputPortIndex;
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step) :
@@ -491,7 +493,7 @@ std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>& context) const {
   if (num_collision_geometries() > 0) {
-    if (geometry_query_port_ < 0) {
+    if (!geometry_query_port_.is_valid()) {
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
           "However its query input port (get_geometry_query_input_port()) "
@@ -661,8 +663,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
   if (num_actuators() > 0) {
-    Eigen::VectorBlock<const VectorX<T>> u =
-        this->EvalEigenVectorInput(context, actuation_port_);
+    const VectorX<T> u = AssembleActuationInput(context);
     for (JointActuatorIndex actuator_index(0);
          actuator_index < num_actuators(); ++actuator_index) {
       const JointActuator<T>& actuator =
@@ -671,10 +672,33 @@ void MultibodyPlant<T>::AddJointActuationForces(
       DRAKE_DEMAND(actuator.joint().num_dofs() == 1);
       for (int joint_dof = 0;
            joint_dof < actuator.joint().num_dofs(); ++joint_dof) {
-        actuator.AddInOneForce(context, joint_dof, u[actuator_index], forces);
+        actuator.AddInOneForce(context, joint_dof, u[actuator_index], &forces);
       }
     }
   }
+}
+
+VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
+    const systems::Context<T>& context) const {
+
+  // Assemble the vector from the model instance input ports.
+  VectorX<T> actuation_input(num_actuated_dofs());
+  int u_offset = 0;
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_dofs =
+        model_->num_actuated_dofs(model_instance_index);
+    if (instance_num_dofs == 0) {
+      continue;
+    }
+    Eigen::VectorBlock<const VectorX<T>> u_instance =
+        this->EvalEigenVectorInput(
+            context, instance_actuation_ports_[model_instance_index]);
+    actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
+    u_offset += instance_num_dofs;
+  }
+  DRAKE_ASSERT(u_offset == num_actuated_dofs());
+  return actuation_input;
 }
 
 template<typename T>
@@ -930,16 +954,49 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
         model_->num_velocities(), 0 /* num_z */);
   }
 
-  if (num_actuators() > 0) {
-    actuation_port_ =
+  int num_actuated_instances = 0;
+  ModelInstanceIndex last_actuated_instance;
+  instance_actuation_ports_.resize(num_model_instances());
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_dofs =
+        model_->num_actuated_dofs(model_instance_index);
+    if (instance_num_dofs == 0) {
+      continue;
+    }
+    ++num_actuated_instances;
+    last_actuated_instance = model_instance_index;
+    instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
-            systems::BasicVector<T>(num_actuated_dofs())).get_index();
+            systems::BasicVector<T>(instance_num_dofs)).get_index();
+  }
+
+  if (num_actuated_instances == 1) {
+    actuated_instance_ = last_actuated_instance;
   }
 
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort(
           BasicVector<T>(num_multibody_states()),
           &MultibodyPlant::CopyContinuousStateOut).get_index();
+
+  instance_continuous_state_output_ports_.resize(num_model_instances());
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    const int instance_num_states =
+        model_->num_states(model_instance_index);
+    if (instance_num_states == 0) {
+      continue;
+    }
+
+    auto calc = [this, model_instance_index](const systems::Context<T>& context,
+                                             systems::BasicVector<T>* result) {
+      this->CopyContinuousStateOut(model_instance_index, context, result);
+    };
+    instance_continuous_state_output_ports_[model_instance_index] =
+        this->DeclareVectorOutputPort(
+            BasicVector<T>(instance_num_states), calc).get_index();
+  }
 }
 
 template <typename T>
@@ -950,11 +1007,44 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CopyContinuousStateOut(
+    ModelInstanceIndex model_instance,
+    const Context<T>& context, BasicVector<T>* state_vector) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+
+  VectorX<T> continuous_state_vector =
+      context.get_continuous_state_vector().CopyToVector();
+
+  VectorX<T> instance_state_vector(model_->num_states(model_instance));
+  instance_state_vector.head(num_positions(model_instance)) =
+      model_->get_positions_from_array(
+          model_instance, continuous_state_vector.head(num_positions()));
+  instance_state_vector.tail(num_velocities(model_instance)) =
+      model_->get_velocities_from_array(
+          model_instance, continuous_state_vector.tail(num_velocities()));
+
+  state_vector->set_value(instance_state_vector);
+}
+
+template <typename T>
 const systems::InputPortDescriptor<T>&
 MultibodyPlant<T>::get_actuation_input_port() const {
-  DRAKE_THROW_UNLESS(is_finalized());
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(num_actuators() > 0);
-  return systems::System<T>::get_input_port(actuation_port_);
+  DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
+  return get_actuation_input_port(actuated_instance_);
+}
+
+template <typename T>
+const systems::InputPortDescriptor<T>&
+MultibodyPlant<T>::get_actuation_input_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  DRAKE_THROW_UNLESS(num_actuated_dofs(model_instance) > 0);
+  return systems::System<T>::get_input_port(
+      instance_actuation_ports_.at(model_instance));
 }
 
 template <typename T>
@@ -962,6 +1052,18 @@ const systems::OutputPort<T>&
 MultibodyPlant<T>::get_continuous_state_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return this->get_output_port(continuous_state_output_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_continuous_state_output_port(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  DRAKE_THROW_UNLESS(model_->num_states(model_instance) > 0);
+  return this->get_output_port(
+      instance_continuous_state_output_ports_.at(model_instance));
 }
 
 template <typename T>
