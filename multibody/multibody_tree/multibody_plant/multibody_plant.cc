@@ -1023,10 +1023,21 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
 }
 
 template <typename T>
+const systems::BasicVector<T>& MultibodyPlant<T>::GetStateVector(
+    const Context<T>& context) const {
+  if (is_discrete()) {
+    return context.get_discrete_state(0);
+  } else {
+    return dynamic_cast<const systems::BasicVector<T>&>(
+        context.get_continuous_state_vector());
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  state_vector->SetFrom(context.get_continuous_state_vector());
+  state_vector->SetFrom(GetStateVector(context));
 }
 
 template <typename T>
@@ -1035,8 +1046,8 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
     const Context<T>& context, BasicVector<T>* state_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
-  const VectorX<T> continuous_state_vector =
-      context.get_continuous_state_vector().CopyToVector();
+  VectorX<T> continuous_state_vector =
+      GetStateVector(context).CopyToVector();
 
   VectorX<T> instance_state_vector(model_->num_states(model_instance));
   instance_state_vector.head(num_positions(model_instance)) =
