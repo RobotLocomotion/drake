@@ -1,6 +1,7 @@
 #include "drake/solvers/integer_inequality_solver.h"
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <vector>
 
@@ -133,14 +134,15 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                                         column_type.end())));
     }
 
-    if (new_feasible_points.rows() > 0)
+    if (new_feasible_points.rows() > 0) {
       feasible_points = VerticalStack(feasible_points, new_feasible_points);
-    else
+    } else {
         //  Propagate infeasibility: if this test passes, then no feasible
         //  points exist for remaining values in the alphabet.
         if (column_type.at(0) != ColumnType::Indefinite) {
           return feasible_points;
         }
+    }
   }
 
   return feasible_points;
