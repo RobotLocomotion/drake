@@ -479,8 +479,8 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     // Maximum time misalignment between step and continuous extension that can
     // still be disregarded as a discontinuity in time.
     const double allowed_time_misalignment = std::max(
-        std::abs(scalar_converter_.ToDouble(end_), 1.) *
-        std::numeric_limits<double>::epsilon();;
+        std::abs(scalar_converter_.ToDouble(end_time)), 1.) *
+        std::numeric_limits<double>::epsilon();
     const double time_misalignment = std::abs(
         scalar_converter_.ToDouble(end_time) -
         scalar_converter_.ToDouble(step.get_start_time()));

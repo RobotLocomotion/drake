@@ -55,6 +55,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/framework:vector",
     ],
 )
 
