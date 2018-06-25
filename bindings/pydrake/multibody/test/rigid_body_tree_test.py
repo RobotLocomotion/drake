@@ -171,6 +171,18 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(J_in_terms_of_q_dot.shape[1], num_q)
         self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
 
+        # - Check transformPointsJacobian methods
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
+        Jv = tree.transformPointsJacobian(kinsol, np.zeros(3), 0, 1, False)
+        Jq = tree.transformPointsJacobian(kinsol, np.zeros(3), 0, 1, True)
+        JdotV = tree.transformPointsJacobianDotTimesV(kinsol, np.zeros(3),
+                                                      0, 1)
+        self.assertEqual(Jv.shape, (3, num_v))
+        self.assertEqual(Jq.shape, (3, num_q))
+        self.assertEqual(JdotV.shape, (3,))
+
         # - Check that drawKinematicTree runs
         tree.drawKinematicTree(
             join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
