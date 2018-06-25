@@ -630,8 +630,14 @@ class ImplicitStribeckSolver {
 
   /// Returns a constant reference to the last solved vector of generalized
   /// friction forces.
-  const VectorX<T>& get_generalized_forces() const {
+  const VectorX<T>& get_generalized_friction_forces() const {
     return fixed_size_workspace_.mutable_tau_f();
+  }
+
+  /// Returns a constant reference to the last solved vector of generalized
+  /// contact forces, including both friction and normal forces.
+  const VectorX<T>& get_generalized_contact_forces() const {
+    return fixed_size_workspace_.mutable_tau();
   }
 
   /// Returns a constant reference to the last solved vector of tangential
