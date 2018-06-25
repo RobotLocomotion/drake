@@ -15,6 +15,7 @@ namespace drake {
 
 using geometry::SceneGraph;
 using multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
+using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -32,11 +33,11 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
   void SetUp() override {
     // If "true" the plant is modeled as a discrete system with periodic
     // updates.
-    const bool time_stepping = GetParam();
+    time_stepping_ = GetParam();
 
     // The period of the periodic updates for the discrete plant model or zero
     // when the plant is modeled as a continuous system.
-    time_step_ = time_stepping ? 1.0e-3 : 0.0;
+    time_step_ = time_stepping_ ? 1.0e-3 : 0.0;
 
     // Contact parameters. Results converge to the analytical solution as the
     // penetration allowance and the stiction tolerance go to zero.
@@ -44,9 +45,9 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // tighter contact parameters than those used with a continuous plant model.
 
     // The penetration allowance in meters.
-    penetration_allowance_ = time_stepping ? 1.0e-6 : 1.0e-3;
+    penetration_allowance_ = time_stepping_ ? 1.0e-6 : 1.0e-3;
     // The stiction tolerance in meters per second.
-    stiction_tolerance_ = time_stepping ? 1.0e-5 : 1.0e-3;
+    stiction_tolerance_ = time_stepping_ ? 1.0e-5 : 1.0e-3;
 
     // Relative tolerance (unitless) used to verify the numerically computed
     // results against the analytical solution.
@@ -54,10 +55,11 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
     // approach given that both the penetration allowance and the stiction
     // tolerance values are much smaller than those used for the continuous
     // model of the plant.
-    relative_tolerance_ = time_stepping ? 5.5e-4 : 5.5e-3;
+    relative_tolerance_ = time_stepping_ ? 5.5e-4 : 5.5e-3;
   }
 
  protected:
+  bool time_stepping_;
   double time_step_{0};  // in seconds.
   double penetration_allowance_{1.0e-3};  // in meters.
   double stiction_tolerance_{1.0e-3};  // in meters per second.
@@ -177,6 +179,43 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
       std::abs(speed - speed_expected) / speed_expected < relative_tolerance_);
   EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
                   / angular_velocity_expected < relative_tolerance_);
+
+  // Verify the value of the contact forces when using time stepping.
+  if (time_stepping_) {
+    const auto& contact_forces_port =
+        plant.get_generalized_contact_forces_output_port(
+            default_model_instance());
+
+    auto contact_forces_value = contact_forces_port.Allocate();
+    // Verify the correct type.
+    EXPECT_NO_THROW(
+        contact_forces_value->GetValueOrThrow<BasicVector<double>>());
+    const BasicVector<double>& contact_forces =
+        contact_forces_value->GetValueOrThrow<BasicVector<double>>();
+    EXPECT_EQ(contact_forces.size(), 6);
+    // Compute the generalized contact forces using the system's API.
+    contact_forces_port.Calc(plant_context, contact_forces_value.get());
+
+    const VectorX<double> tau_contact = contact_forces.CopyToVector();
+
+    // Unit inertia computed about the contact point using the
+    // parallel axis theorem.
+    const double G_Bc = G_Bcm + radius * radius;
+    // Analytical value of the friction force at the contact point.
+    const double ft_expected =
+        mass * g * (1.0 - radius * radius / G_Bc) * std::sin(slope);
+    // The expected value of the moment due to friction applied to the sphere.
+    const double friction_moment_expected = ft_expected * radius;
+
+    EXPECT_TRUE(
+        std::abs(friction_moment_expected - tau_contact(1))
+            / friction_moment_expected < 1.0e-9);
+  } else {
+    // This port is not available when the plant is modeled as a continuous
+    // system.
+    EXPECT_THROW(plant.get_generalized_contact_forces_output_port(
+        default_model_instance()), std::exception);
+  }
 }
 
 // Instantiate the tests.
