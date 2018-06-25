@@ -976,7 +976,7 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
-  // Declare on output port for the entire state vector.
+  // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort(
           BasicVector<T>(num_multibody_states()),
@@ -1051,8 +1051,8 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    ModelInstanceIndex model_instance,
-    const Context<T>& context, BasicVector<T>* tau_vector) const {
+    ModelInstanceIndex model_instance, const Context<T>&,
+    BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
