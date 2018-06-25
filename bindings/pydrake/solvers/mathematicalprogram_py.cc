@@ -340,6 +340,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                const Eigen::Ref<const VectorXDecisionVariable>&>(
                &MathematicalProgram::AddQuadraticErrorCost),
            py::arg("Q"), py::arg("x_desired"), py::arg("vars"))
+      .def("AddL2NormCost",
+           overload_cast_explicit<
+               Binding<QuadraticCost>, const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&>(
+               &MathematicalProgram::AddL2NormCost),
+           py::arg("A"), py::arg("b"), py::arg("vars"))
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (
