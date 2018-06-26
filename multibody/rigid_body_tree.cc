@@ -2565,7 +2565,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
   }
 
   // SpringTorques added with a negative sign since they are being included in
-  // the bias terms 
+  // the bias terms
   torques -= SpringTorques(cache.getQ());
 
   return torques;
@@ -2608,8 +2608,8 @@ VectorX<Scalar> RigidBodyTree<T>::SpringTorques(VectorX<Scalar> q) const {
 
       auto q_body = q.middleRows(q_start_joint, nq_joint);
 
-      //generalized spring forces each depend on the joint position, but are
-      //in velocity coordinates
+      // generalized spring forces each depend on the joint position, but are
+      // in velocity coordinates
       generalized_force.middleRows(v_start_joint, nv_joint) =
           joint.SpringTorque(q_body);
     }

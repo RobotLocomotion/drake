@@ -3,9 +3,10 @@
 #include <memory>
 #include <string>
 
+#include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-#include "drake/multibody/joints/drake_joint_impl.h"
+
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
@@ -107,7 +108,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
       const Eigen::MatrixBase<DerivedQ>& q) const {
     drake::unused(q);
     // fixed joints have zero degrees of freedom
-    return drake::VectorX<typename DerivedQ::Scalar>::Zero(0,1);
+    return drake::VectorX<typename DerivedQ::Scalar>::Zero(0, 1);
   }
 
   std::string get_position_name(int index) const override;

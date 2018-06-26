@@ -44,7 +44,7 @@ TEST_F(RigidBodyTreeSpringTest, QuaternionBaseSpringTest) {
     tree_.get());
 
 
-  //compute bias without spring forces
+  // compute bias without spring forces
   VectorXd q = VectorXd::Random(tree_->get_num_positions());
   VectorXd v = VectorXd::Random(tree_->get_num_velocities());
 
@@ -85,7 +85,7 @@ TEST_F(RigidBodyTreeSpringTest, FixedBaseSpringTest) {
     tree_.get());
 
 
-  //compute bias without spring forces
+  // compute bias without spring forces
   VectorXd q = VectorXd::Random(tree_->get_num_positions());
   VectorXd v = VectorXd::Random(tree_->get_num_velocities());
 
