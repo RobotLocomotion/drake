@@ -290,9 +290,9 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
     VectorX<double> qq, a;
     MatrixX<double> MM;
     ConstraintSolver<double>::MlcpToLcpData mlcp_to_lcp_data;
-    solver_.ConstructBaseDiscretizedTimeLCP(
+    solver_.ConstructBaseDiscretizedTimeLcp(
         problem_data, &mlcp_to_lcp_data, &MM, &qq);
-    solver_.UpdateDiscretizedTimeLCP(
+    solver_.UpdateDiscretizedTimeLcp(
         problem_data, dt, &mlcp_to_lcp_data, &a, &MM, &qq);
 
     // Determine the zero tolerance.
@@ -2058,9 +2058,9 @@ TEST_P(Constraint2DSolverTest, TwoPointImpactAsLimit) {
 TEST_P(Constraint2DSolverTest, BilateralOnly) {
   // Set the rod to a ballistic state.
   ContinuousState<double>& xc = context_->get_mutable_continuous_state();
-  xc[0] = 0.0;     // com horizontal position
-  xc[1] = 10.0;     // com vertical position
-  xc[2] = 0.0;     // rod rotation
+  xc[0] = 0.0;     // com horizontal position.
+  xc[1] = 10.0;    // com vertical position.
+  xc[2] = 0.0;     // rod rotation.
   xc[3] = 0.0;     // no horizontal velocity.
   xc[4] = 0.0;     // upward velocity.
   xc[5] = 0.0;     // no angular velocity.
@@ -2074,21 +2074,19 @@ TEST_P(Constraint2DSolverTest, BilateralOnly) {
   // Add in bilateral constraints on rotational motion.
   vel_data_->G_mult = [](const VectorX<double>& w) -> VectorX<double> {
     VectorX<double> result(1);   // Only one constraint.
-
-    // Constrain the angular velocity to be zero.
-    result[0] = w[2];
+    result[0] = w[2];            // Constrain the angular velocity to be zero.
     return result;
   };
   vel_data_->G_transpose_mult =
       [this](const VectorX<double>& f) -> VectorX<double> {
-        // An impulsive force (torque) applied to the third component needs no
-        // transformation.
-        DRAKE_DEMAND(f.size() == 1);
-        VectorX<double> result(get_rod_num_coordinates());
-        result.setZero();
-        result[2] = f[0];
-        return result;
-      };
+    // An impulsive force (torque) applied to the third component needs no
+    // transformation.
+    DRAKE_DEMAND(f.size() == 1);
+    VectorX<double> result(get_rod_num_coordinates());
+    result.setZero();
+    result[2] = f[0];
+    return result;
+  };
 
   // Indicate through construction of the kG term that the system already has
   // angular orientation (which violates our desire to keep the rod at
