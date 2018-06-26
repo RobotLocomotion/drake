@@ -316,7 +316,7 @@ class Constraint2DSolverTest : public ::testing::TestWithParam<double> {
                            std::max(1.0, ww.maxCoeff()) * num_vars * zero_tol);
 
     // Compute the packed constraint forces.
-    solver_.PopulatePackedConstraintForcesFromLCPSolution(
+    solver_.PopulatePackedConstraintForcesFromLcpSolution(
         problem_data, mlcp_to_lcp_data, zz, a, dt, cf);
   }
 

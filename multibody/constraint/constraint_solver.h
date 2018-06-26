@@ -372,7 +372,7 @@ class ConstraintSolver {
   ///        constraints. This packed storage format can be turned into more
   ///        useful representations through
   ///        ComputeGeneralizedForceFromConstraintForces() and
-  ///        CalcContactForcesInContactFrames(). 
+  ///        CalcContactForcesInContactFrames().
   /// @pre cf is non-null.
   static void PopulatePackedConstraintForcesFromLcpSolution(
       const ConstraintVelProblemData<T>& problem_data,
@@ -1424,7 +1424,6 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     cf->setZero();
     if (num_eq_constraints > 0) {
       const VectorX<T> u = -mlcp_to_lcp_data.A_solve(a);
-      // Get lambda subvector (as specified in 
       auto lambda = cf->segment(num_contacts +
           num_spanning_vectors + num_limits, num_eq_constraints);
 
