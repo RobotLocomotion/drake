@@ -3,10 +3,9 @@
 #include <memory>
 #include <string>
 
-#include "drake/multibody/joints/drake_joint_impl.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
-
+#include "drake/multibody/joints/drake_joint_impl.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"

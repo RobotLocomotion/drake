@@ -3,6 +3,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/joints/helical_joint.h"
 #include "drake/multibody/joints/prismatic_joint.h"
@@ -11,7 +12,6 @@
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/joints/test/joint_compare_to_clone.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 
