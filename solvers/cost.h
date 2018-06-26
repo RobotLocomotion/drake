@@ -83,6 +83,9 @@ class LinearCost : public Cost {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override;
+
  private:
   Eigen::VectorXd a_;
   double b_{};
@@ -150,6 +153,9 @@ class QuadraticCost : public Cost {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override;
+
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
   double c_{};
@@ -192,6 +198,11 @@ class EvaluatorCost : public Cost {
   }
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
+    evaluator_->Eval(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override {
     evaluator_->Eval(x, y);
   }
 

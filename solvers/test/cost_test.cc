@@ -7,8 +7,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/constraint.h"
@@ -33,6 +35,11 @@ using drake::solvers::detail::is_convertible_workaround;
 using drake::solvers::test::GenericTrivialCost2;
 
 namespace drake {
+
+using symbolic::Expression;
+using symbolic::Variable;
+using symbolic::test::ExprEqual;
+
 namespace solvers {
 namespace {
 
@@ -108,6 +115,13 @@ GTEST_TEST(testCost, testLinearCost) {
   EXPECT_EQ(y.rows(), 1);
   EXPECT_NEAR(y(0), obj_expected, tol);
 
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
+  VectorX<Expression> y_sym;
+  cost->Eval(x_sym, y_sym);
+  EXPECT_EQ(y_sym.size(), 1);
+  EXPECT_PRED2(ExprEqual, y_sym[0], 1 * x_sym[0] + 2 * x_sym[1]);
+
   // Update with a constant term.
   const double b = 100;
   cost->UpdateCoefficients(a, b);
@@ -141,6 +155,22 @@ GTEST_TEST(testCost, testQuadraticCost) {
   cost->Eval(x0, y);
   EXPECT_EQ(y.rows(), 1);
   EXPECT_NEAR(y(0), obj_expected, tol);
+
+  // Test Eval/CheckSatisfied using Expression.
+  {
+    const VectorX<Variable> x_sym{
+        symbolic::MakeVectorContinuousVariable(2, "x")};
+    VectorX<Expression> y_sym;
+    cost->Eval(x_sym, y_sym);
+    EXPECT_EQ(y_sym.size(), 1);
+    const Variable& x_0{x_sym[0]};
+    const Variable& x_1{x_sym[1]};
+    EXPECT_PRED2(ExprEqual, y_sym[0].Expand(),
+                 // 0.5 x'Qx + bx
+                 (0.5 * (x_0 * x_0 + (2 + 3) * x_0 * x_1 + 4 * x_1 * x_1) +
+                  5 * x_0 + 6 * x_1)
+                     .Expand());
+  }
 
   // Update with an asymmetric Q
   cost->UpdateCoefficients(2 * Q, b);
