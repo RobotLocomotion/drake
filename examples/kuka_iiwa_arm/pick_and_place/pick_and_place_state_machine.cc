@@ -863,13 +863,13 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kOpenGripper: {
       if (!wsg_act_.ActionStarted()) {
         const Isometry3<double>& obj_pose = env_state.get_object_pose();
-        const math::Transform<double> X(obj_pose);
-        const math::RollPitchYaw<double> rpy(X.rotation());
+        math::Transform<double> X(obj_pose);
+        math::RollPitchYaw<double> rpy(X.rotation());
         drake::log()->info("Object at: {} {}",
                            X.translation().transpose(),
                            rpy.vector().transpose());
         const Isometry3<double>& iiwa_pose = env_state.get_iiwa_base();
-        X.SetFromIsomety3(iiwa_pose);
+        X.SetFromIsometry3(iiwa_pose);
         rpy.SetFromRotationMatrix(X.rotation());
                 drake::log()->info("Base at: {} {}",
                            X.translation().transpose(),
