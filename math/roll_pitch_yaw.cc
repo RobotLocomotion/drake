@@ -40,9 +40,18 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
 #ifdef DRAKE_ASSERT_IS_ARMED
   // Verify that arguments to this method make sense.  Ensure the
   // rotation_matrix and quaternion correspond to the same orientation.
-  const double kEpsilon = std::numeric_limits<double>::epsilon();
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   const RotationMatrix<T> R_quaternion(quaternion);
-  DRAKE_ASSERT(R_quaternion.IsNearlyEqualTo(R, 20 * kEpsilon));
+  constexpr double tolerance = 20 * kEpsilon;
+  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
+    std::string message = fmt::format("RollPitchYaw::{}():"
+        " An element of the RotationMatrix R passed to this method differs by"
+        " more than {:G} from the corresponding element of the RotationMatrix"
+        " formed by the Quaternion passed to this method.  To avoid this"
+        " inconsistency, ensure the orientation of R and Quaternion align."
+        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
+    throw std::logic_error(message);
+  }
 
   // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
   // It is tested by converting the returned %RollPitchYaw to a %RotationMatrix

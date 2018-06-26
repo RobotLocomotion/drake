@@ -61,11 +61,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
     const std::string robot_tag{"robot_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(robot_tag, configuration.robot_models[i]);
     // Add the arm.
-    const Isometry3<double>& robot_base_pose{};
-    const drake::math::Transform<double> X_robot(configuration.robot_poses[i]);
-    const drake::math::RollPitchYaw<double> rpy_robot(X_robot.rotation());
+    const drake::math::Transform<double> X_WRobot(configuration.robot_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy_WRobot(X_WRobot.rotation());
     const int robot_base_id = tree_builder->AddFixedModelInstance(
-        robot_tag, X_robot.translation(), rpy_robot.vector());
+        robot_tag, X_WRobot.translation(), rpy_WRobot.vector());
     arm_instances->push_back(
         tree_builder->get_model_info_for_instance(robot_base_id));
     if (wsg_instances) {
@@ -84,12 +83,14 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
           tree_builder->get_model_info_for_instance(wsg_id));
     }
 
-    // Add the table T that the arm sits on.
-    const drake::math::Transform<double> X_WT(robot_base_pose *
-        Isometry3<double>::TranslationType(0.0, 0.0, -kTableTopZInWorld));
-    const drake::math::RollPitchYaw<double> rpy_table(X_WT.rotation());
-    tree_builder->AddFixedModelInstance("table", X_WT.translation(),
-                                        rpy_table.vector());
+    // Add the table that the arm sits on.
+    const Eigen::Vector3d p_RobotTable_Robot(0.0, 0.0, -kTableTopZInWorld);
+    const drake::math::Transform<double> X_RobotTable(
+        drake::math::RotationMatrix<double>::Identity(), p_RobotTable_Robot);
+    const drake::math::Transform<double> X_WTable = X_WRobot * X_RobotTable;
+    const drake::math::RollPitchYaw<double> rpy_WTable(X_WTable.rotation());
+    tree_builder->AddFixedModelInstance("table", X_WTable.translation(),
+                                                 rpy_WTable.vector());
   }
 
   // Add the objects.
