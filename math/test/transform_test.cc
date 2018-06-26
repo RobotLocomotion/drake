@@ -146,6 +146,7 @@ GTEST_TEST(Transform, Isometry3) {
   isometryA.linear() = m;
   isometryA.translation() = p;
 
+  // Test constructing a Transform from an Isometry3.
   const Transform<double> X(isometryA);
   Matrix3d zero_rotation = m - X.rotation().matrix();
   Vector3d zero_position = p - X.translation();
@@ -156,6 +157,14 @@ GTEST_TEST(Transform, Isometry3) {
   const Isometry3<double> isometryB = X.GetAsIsometry3();
   zero_rotation = m - isometryB.linear();
   zero_position = p - isometryB.translation();
+  EXPECT_TRUE((zero_rotation.array() == 0).all());
+  EXPECT_TRUE((zero_position.array() == 0).all());
+
+  // Test setting a Transform from an Isometry3.
+  Transform<double> X2;
+  X2.SetFromIsometry3(isometryA);
+  zero_rotation = m - X2.rotation().matrix();
+  zero_position = p - X2.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 

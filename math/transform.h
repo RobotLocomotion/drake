@@ -65,8 +65,20 @@ class Transform {
   /// orthonormal 3x3 rotation matrix.
   /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  explicit Transform(const Isometry3<T>& pose) :
-      Transform(RotationMatrix<T>(pose.linear()), pose.translation()) {}
+  explicit Transform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
+
+  /// Sets `this` Transform from an Eigen Isometry3.
+  /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
+  /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
+  /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
+  /// @throws std::logic_error in debug builds if R_AB is not a proper
+  /// orthonormal 3x3 rotation matrix.
+  /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
+  /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
+  void SetFromIsometry3(const Isometry3<T>& pose) {
+    R_AB_ = RotationMatrix<T>(pose.linear());
+    p_AoBo_A_ = pose.translation();
+  }
 
   /// Creates a %Transform templatized on a scalar type U from a
   /// %Transform templatized on scalar type T.  For example,
