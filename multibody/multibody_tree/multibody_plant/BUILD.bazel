@@ -126,6 +126,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "box_test",
+    timeout = "moderate",
+    data = ["test/box.sdf"],
+    deps = [
+        ":multibody_plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "coulomb_friction_test",
     deps = [
         ":coulomb_friction",

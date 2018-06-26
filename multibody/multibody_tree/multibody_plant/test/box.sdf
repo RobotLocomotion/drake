@@ -1,0 +1,101 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <!-- Note: This is the accompaning SDF file for the example demo in
+       simple_gripper.cc and thefore these two files must be kept in sync.
+
+         This file defines the model for a simple gripper having two fingers.
+       The right finger is fixed to the body of the gripper. The left finger
+       is attached to the main body by a prismatic joint that allows it to
+       perform a grip.
+         The frame of the gripper, G, has its x-axis pointing to the right
+       of the gripper, its y-axis pointing "forward" (towards the fingers
+       side) and, the z-axis pointing upwards. This file only defines visual
+       geometry but not contact geometry, allowing the demo in
+       simple_gripper.cc to add contact geometry programmatically.
+  -->
+  <model name='box_with_pusher'>
+    <link name='x_translate_link'>
+      <pose frame=''>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0e-6</mass>
+        <inertia>
+          <ixx>1.0e-6</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.0e-6</iyy>
+          <iyz>0</iyz>
+          <izz>1.0e-6</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <joint name='x_slider' type='prismatic'>
+      <parent>world</parent>
+      <child>x_translate_link</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do want an actuator for this joint. -->
+        <limit>
+          <effort>500</effort>
+        </limit>
+      </axis>
+    </joint>
+
+    <joint name='z_slider' type='prismatic'>
+      <parent>x_translate_link</parent>
+      <child>box</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <!-- Drake attaches an actuator to all joints with a non-zero effort
+             limit. We do not want an actuator for this joint and therefore we
+             set a zero effort limit. -->
+        <limit>
+          <effort>0</effort>
+        </limit>
+      </axis>
+    </joint>
+
+    <link name='box'>
+      <pose>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.166666666666667</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.166666666666667</iyy>
+          <iyz>0</iyz>
+          <izz>0.166666666666667</izz>
+        </inertia>
+      </inertial>
+      <visual name='visual'>
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+      </visual>
+
+      <collision name='collision'>
+        <geometry>
+          <box>
+            <size>1.0 1.0 1.0</size>
+          </box>
+        </geometry>
+
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+
+  </model>
+</sdf>
