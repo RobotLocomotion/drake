@@ -58,9 +58,10 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     ///                                 column matrix.
     /// @throw std::runtime_error
     ///   if given @p initial_state 𝐱₀ is not a column matrix.<br>
-    ///   if given @p initial_state_derivative d𝐱/t₀ is not a column matrix.<br>
-    ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative d𝐱/dt₀ do
-    ///   not match each other's dimension.
+    ///   if given @p initial_state_derivative d𝐱/t₀ is not a column
+    ///   matrix.<br>
+    ///   if given @p initial_state 𝐱₀ and @p initial_state_derivative
+    ///   d𝐱/dt₀ do not match each other's dimension.
     IntegrationStep(const T& initial_time, MatrixX<T> initial_state,
                     MatrixX<T> initial_state_derivative) {
       ValidateStepExtendTripletOrThrow(initial_time, initial_state,
@@ -82,12 +83,12 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
     /// @throw std::runtime_error
     ///   if given @p state 𝐱ᵢ is not a column matrix.<br>
     ///   if given @p state_derivative d𝐱/dtᵢ is not a column matrix.<br>
-    ///   if given @p time tᵢ is not greater than the previous time tᵢ₋₁ in
-    ///   the step.<br>
-    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of the
-    ///   previous state 𝐱ᵢ₋₁.<br>
-    ///   if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not match each
-    ///   other's dimension.
+    ///   if given @p time tᵢ is not greater than the previous time
+    ///   tᵢ₋₁ in the step.<br>
+    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of
+    ///   the previous state 𝐱ᵢ₋₁.<br>
+    ///   if given @p state 𝐱ᵢ and @p state_derivative d𝐱/dtᵢ do not
+    ///   match each other's dimension.
     void Extend(const T& time, MatrixX<T> state, MatrixX<T> state_derivative) {
       ValidateStepExtendTripletOrThrow(time, state, state_derivative);
       times_.push_back(time);
