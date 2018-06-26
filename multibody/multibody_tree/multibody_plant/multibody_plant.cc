@@ -568,6 +568,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
   auto fn = implicit_stribeck_solver_->get_normal_forces();
   auto ft = implicit_stribeck_solver_->get_friction_forces();
+  auto vt = implicit_stribeck_solver_->get_tangential_velocities();
 
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
@@ -585,19 +586,23 @@ void MultibodyPlant<T>::CalcContactResults(
 
     const Matrix3<T>& R_WC = R_WC_set[icontact];
 
+    // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(
         ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
+    // Slip velocity.
+    const T slip = vt.template segment<2>(2 * icontact).norm();
+
     if (bodyA_index < bodyB_index) {
       contact_results->AddContactInfo(
-          {bodyA_index, bodyB_index, f_Bc_W, p_WC, pair});
+          {bodyA_index, bodyB_index, f_Bc_W, p_WC, slip, pair});
     } else {
       PenetrationAsPointPair<T> swapped_pair{
           pair.id_B, pair.id_A,
           pair.p_WCb, pair.p_WCa, -pair.nhat_BA_W, pair.depth};
       contact_results->AddContactInfo(
-          {bodyB_index, bodyA_index, -f_Bc_W, p_WC, swapped_pair});
+          {bodyB_index, bodyA_index, -f_Bc_W, p_WC, slip, swapped_pair});
     }
 
     PRINT_VAR(model().get_body(bodyA_index).name());

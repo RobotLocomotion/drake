@@ -56,7 +56,7 @@ class PointPairContactInfo {
    */
   PointPairContactInfo(
       BodyIndex bodyA_index, BodyIndex bodyB_index,
-      const Vector3<T>& f_Bc_W, const Vector3<T>& p_WC,
+      const Vector3<T>& f_Bc_W, const Vector3<T>& p_WC, const T& slip,
       const drake::geometry::PenetrationAsPointPair<T>& point_pair);
 
   BodyIndex bodyA_index() const { return bodyA_index_; }
@@ -65,6 +65,8 @@ class PointPairContactInfo {
   const Vector3<T>& contact_force() const { return f_Bc_W_; }
 
   const Vector3<T>& contact_point() const { return p_WC_; }
+
+  const T& slip_speed() const { return slip_; }
 
   const drake::geometry::PenetrationAsPointPair<T>& point_pair() const {
     return point_pair_;
@@ -81,6 +83,8 @@ class PointPairContactInfo {
   Vector3<T> f_Bc_W_;
   // Contact point.
   Vector3<T> p_WC_;
+  // Sliding speed, the norm of the sliding velocity.
+  T slip_;
 };
 
 }  // namespace multibody_plant

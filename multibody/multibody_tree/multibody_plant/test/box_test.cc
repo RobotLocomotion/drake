@@ -175,16 +175,22 @@ GTEST_TEST(Box, UnderStiction) {
   // Upper limit on the x displacement computed using the maximum possible
   // velocity under stiction, i.e. the stiction tolerance.
   const double x_upper_limit = stiction_tolerance * simulation_time;
-  EXPECT_LT
+  EXPECT_LT(contact_info.contact_point().x(), x_upper_limit);
 
+  // The penetration allowance is just an estimate. Therefore we only expect
+  // the penetration depth to be close enough to it.
+  EXPECT_NEAR(contact_info.point_pair().depth, penetration_allowance, 1.0e-3);
 
-  PRINT_VAR(contact_info.bodyA_index());
-  PRINT_VAR(contact_info.bodyB_index());
-  PRINT_VAR(contact_info.contact_force().transpose());
-  PRINT_VAR(contact_info.contact_point().transpose());
+  // Whether the normal points up or down depends on the order in which the
+  // geometry engine orders bodies in the contact pair.
+  const Vector3<double> expected_normal = Vector3<double>::UnitZ() * direction;
+  EXPECT_TRUE(CompareMatrices(
+      contact_info.point_pair().nhat_BA_W, expected_normal,
+      kTolerance, MatrixCompareType::relative));
 
-  PRINT_VAR(contact_info.point_pair().depth);
-  PRINT_VAR(contact_info.point_pair().nhat_BA_W.transpose());
+  EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
+
+  PRINT_VAR(contact_info.slip_speed());
 
   const SpatialVelocity<double>& V_WB =
       model.EvalBodySpatialVelocityInWorld(plant_context, box);
@@ -192,55 +198,6 @@ GTEST_TEST(Box, UnderStiction) {
   const Isometry3<double>& X_WB =
       model.EvalBodyPoseInWorld(plant_context, box);
   PRINT_VAR(X_WB.matrix());
-
-#if 0
-  // Compute the kinetic energy of B (in frame W) from V_WB.
-  const SpatialVelocity<double>& V_WB =
-      model.EvalBodySpatialVelocityInWorld(plant_context, ball);
-  const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
-  const Isometry3<double>& X_WB =
-      model.EvalBodyPoseInWorld(plant_context, ball);
-  const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(X_WB.linear());
-  const double ke_WB = 0.5 * V_WB.dot(M_BBo_W * V_WB);
-  const double speed = V_WB.translational().norm();
-  const double angular_velocity = V_WB.rotational().y();
-
-  // Height traveled by the sphere.
-  const double h = std::abs(X_WB.translation().z());
-  // This change in height must have been transferred into kinetic energy.
-  const double ke_WB_expected = mass * g * h;
-
-  // Sphere's unit inertia.
-  const double G_Bcm = 0.4 * radius * radius;
-  const double speed_expected =
-      std::sqrt(2 * g * h / (1.0 + G_Bcm / radius / radius));
-  // Expected angular velocity for when there is no slipping.
-  const double angular_velocity_expected = speed_expected / radius;
-
-  // Verify the plant's potential energy matches the analytical calculation.
-  const double Ve = model.CalcPotentialEnergy(plant_context);
-  EXPECT_NEAR(-Ve, ke_WB_expected, std::numeric_limits<double>::epsilon());
-
-  // Verify the relative errors. For the continuous model of the plant errors
-  // are dominated by the penetration allowance and the stiction tolerance since
-  // the integrator's accuracy was set to a relatively tight value.
-  // For the time stepping model of the plant, errors are dominated by the
-  // finite time step, given that we are able to use very tight penetration
-  // allowance and stiction tolerance.
-  // Notice that given the kinematic relationship between linear and angular
-  // velocity v_WBcm = radius * w_WB at rolling, relative errors
-  // in v_WBcm and w_WB have the same order of magnitude. Moreover, since the
-  // kinetic energy scales with the velocities (translational and angular)
-  // squared, standard error propagation shows that the relative error in the
-  // kinetic energy is expected to be twice that in the velocities. Thus the
-  // factor of two used below for the relative error in kinetic energy.
-  EXPECT_TRUE(
-      std::abs(ke_WB - ke_WB_expected) / ke_WB < 2 * relative_tolerance_);
-  EXPECT_TRUE(
-      std::abs(speed - speed_expected) / speed_expected < relative_tolerance_);
-  EXPECT_TRUE(std::abs(angular_velocity - angular_velocity_expected)
-                  / angular_velocity_expected < relative_tolerance_);
-#endif
 }
 
 }  // namespace
