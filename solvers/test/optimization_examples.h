@@ -338,6 +338,11 @@ class LowerBoundedProblem {
 
       EvalImpl(x, y);
     }
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+                VectorX<symbolic::Expression>&) const override {
+      throw std::logic_error(
+          "LowerBoundTestConstraint does not support symbolic evaluation.");
+    }
 
    private:
     template <typename ScalarType>
@@ -435,6 +440,13 @@ class GloptiPolyConstrainedMinimizationProblem {
     void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                 AutoDiffVecXd& y) const override {
       EvalImpl(x, &y);
+    }
+
+    void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+                VectorX<symbolic::Expression>&) const override {
+      throw std::logic_error(
+          "GloptipolyConstrainedExampleConstraint does not support symbolic "
+          "evaluation.");
     }
 
    private:

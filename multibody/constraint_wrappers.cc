@@ -39,6 +39,14 @@ void SingleTimeKinematicConstraintWrapper::DoEval(
       y, (dy * drake::math::autoDiffToGradientMatrix(tq)).eval(), ty);
 }
 
+void SingleTimeKinematicConstraintWrapper::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "SingleTimeKinematicConstraintWrapper does not support symbolic "
+      "evaluation.");
+}
+
 void QuasiStaticConstraintWrapper::DoEval(
     const Eigen::Ref<const Eigen::VectorXd> &q, Eigen::VectorXd &y) const {
   auto& kinsol = kin_helper_->UpdateKinematics(
@@ -61,6 +69,14 @@ QuasiStaticConstraintWrapper::QuasiStaticConstraintWrapper(
   Eigen::VectorXd upper_bound;
   rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
   set_bounds(lower_bound, upper_bound);
+}
+
+void QuasiStaticConstraintWrapper::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "SingleTimeKinematicConstraintWrapper does not support symbolic "
+      "evaluation.");
 }
 
 QuasiStaticConstraintWrapper::~QuasiStaticConstraintWrapper() {}

@@ -34,6 +34,9 @@ class SingleTimeKinematicConstraintWrapper : public drake::solvers::Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd> &tq,
               AutoDiffVecXd &ty) const override;
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override;
+
  private:
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
   mutable KinematicsCacheHelper<double>* kin_helper_;
@@ -58,6 +61,9 @@ class QuasiStaticConstraintWrapper : public drake::solvers::Constraint {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd> &tq,
               AutoDiffVecXd &ty) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override;
 
  private:
   const QuasiStaticConstraint* rigid_body_constraint_;
