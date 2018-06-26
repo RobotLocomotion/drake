@@ -1238,6 +1238,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
+  // Helper to retrieve a constant reference to the state vector from context.
+  const systems::BasicVector<T>& GetStateVector(
+      const systems::Context<T>& context) const;
+
   // Calc method for the continuous state vector output port.
   void CopyContinuousStateOut(
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
