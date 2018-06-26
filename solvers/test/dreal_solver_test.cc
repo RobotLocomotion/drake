@@ -684,14 +684,33 @@ TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
 }
 
 TEST_F(DrealSolverTest, SolveGenericConstraint) {
-  // No support for a generic constraint which is not of
-  // ExpressionConstraint. Checks DrealSolver throws std::logic_error.
+  const Variable& x0{xvec_(0)};
+  const Variable& x1{xvec_(1)};
+  const Variable& x2{xvec_(2)};
+  prog_.AddConstraint(x0, -10, 10);
+  prog_.AddConstraint(x1, -10, 10);
+  prog_.AddConstraint(x2, -10, 10);
+  // -1 <= x0 * x1 + x2 / x0 * 2 <= 2
+  // -2 <= x1 * x2 - x0 <= 1
   const shared_ptr<Constraint> generic_trivial_constraint1 =
       make_shared<test::GenericTrivialConstraint1>();
   prog_.AddConstraint(Binding<Constraint>(
-      generic_trivial_constraint1,
-      VectorDecisionVariable<3>(xvec_(0), xvec_(1), xvec_(2))));
-  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+      generic_trivial_constraint1, VectorDecisionVariable<3>(x0, x1, x2)));
+  const SolutionResult solution_result{solver_.Solve(prog_)};
+  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
+  const double v0{prog_.GetSolution(x0)};
+  const double v1{prog_.GetSolution(x1)};
+  const double v2{prog_.GetSolution(x2)};
+  EXPECT_LE(-10, v0);
+  EXPECT_LE(v0, 10);
+  EXPECT_LE(-10, v1);
+  EXPECT_LE(v1, 10);
+  EXPECT_LE(-10, v2);
+  EXPECT_LE(v2, 10);
+  EXPECT_LE(-1, v0 * v1 + v2 / v0 * 2);
+  EXPECT_LE(v0 * v1 + v2 / v0 * 2, 2);
+  EXPECT_LE(-2, v1 * v2 - v0);
+  EXPECT_LE(v1 * v2 - v0, 1);
 }
 
 TEST_F(DrealSolverTest, SolveGenericCost) {
