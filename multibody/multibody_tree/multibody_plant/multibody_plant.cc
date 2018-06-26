@@ -11,6 +11,9 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -373,6 +376,7 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
   // D is defined such that vt = D * v, with vt of size 2nc.
   MatrixX<T> D(2 * num_contacts, num_velocities());
 
+  R_WC_set->clear();
   if (R_WC_set != nullptr) R_WC_set->reserve(point_pairs_set.size());
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
@@ -556,9 +560,16 @@ void MultibodyPlant<T>::CalcContactResults(
     ContactResults<T>* contact_results) const {
   if (num_collision_geometries() == 0) return;
   DRAKE_DEMAND(contact_results != nullptr);
+  const int num_contacts = point_pairs.size();
+  DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
+
+  PRINT_VAR(__PRETTY_FUNCTION__);
 
   auto fn = implicit_stribeck_solver_->get_normal_forces();
   auto ft = implicit_stribeck_solver_->get_friction_forces();
+
+  DRAKE_DEMAND(fn.size() == num_contacts);
+  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
 
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -577,8 +588,22 @@ void MultibodyPlant<T>::CalcContactResults(
         ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
-    contact_results->AddContactInfo(
-        {bodyA_index, bodyB_index, f_Bc_W, p_WC, pair});
+    if (bodyA_index < bodyB_index) {
+      contact_results->AddContactInfo(
+          {bodyA_index, bodyB_index, f_Bc_W, p_WC, pair});
+    } else {
+      PenetrationAsPointPair<T> swapped_pair{
+          pair.id_B, pair.id_A,
+          pair.p_WCb, pair.p_WCa, -pair.nhat_BA_W, pair.depth};
+      contact_results->AddContactInfo(
+          {bodyB_index, bodyA_index, -f_Bc_W, p_WC, swapped_pair});
+    }
+
+    PRINT_VAR(model().get_body(bodyA_index).name());
+    PRINT_VAR(model().get_body(bodyB_index).name());
+    PRINT_VAR(f_Bc_C.transpose());
+    PRINT_VAR(f_Bc_W.transpose());
+    PRINT_VAR(pair.nhat_BA_W.transpose());
   }
 }
 
@@ -892,7 +917,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // For each contact point pair, the rotation matrix R_WC giving the
   // orientation of the contact frame C in the world frame W.
   // TODO(amcastro-tri): cache R_WC_set as soon as caching lands.
-  std::vector<Matrix3<T>> R_WC_set(num_contacts);
+  std::vector<Matrix3<T>> R_WC_set;
   if (num_contacts > 0) {
     // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
     // solver to use operators instead so that we don't have to form these

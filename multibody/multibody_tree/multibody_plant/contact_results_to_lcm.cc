@@ -6,6 +6,9 @@
 //#include "drake/util/drakeUtil.h"
 #include "drake/systems/framework/value.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -36,6 +39,8 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
   const MultibodyTree<T>& model = plant_.model();
 
+  PRINT_VAR(__PRETTY_FUNCTION__);
+
   for (int i = 0; i < contact_results.num_contacts(); ++i) {
     lcmt_contact_info_for_viz& info_msg = msg.contact_info[i];
     info_msg.timestamp = static_cast<int64_t>(context.get_time() * 1e6);
@@ -50,6 +55,14 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
 
     Map<Vector3<T>>(info_msg.contact_force) = contact_info.contact_force();
     Map<Vector3<T>>(info_msg.normal) = contact_info.point_pair().nhat_BA_W;
+
+    PRINT_VAR(info_msg.body1_name);
+    PRINT_VAR(info_msg.body2_name);
+    PRINT_VAR(contact_info.contact_point().transpose());
+    PRINT_VAR(contact_info.contact_force().transpose());
+    PRINT_VAR(contact_info.point_pair().nhat_BA_W.transpose());
+
+
   //    eigenVectorToCArray(contact_force.get_normal(), info_msg.normal);
   }
 }
