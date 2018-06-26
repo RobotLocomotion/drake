@@ -133,7 +133,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      const math::RollPitchYaw rpy(R_JB);
+      const math::RollPitchYaw<double> rpy(R_JB);
       q.segment<3>(position_start + 3) = rpy.vector();
 
       // Translational velocity.
