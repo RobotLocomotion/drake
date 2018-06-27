@@ -82,11 +82,11 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       auto xc = std::make_unique<ContinuousState<T>>(
           std::make_unique<BasicVector<T>>(num_states),
           num_positions, num_velocities, 0);
-      this->set_continuous_state(std::move(xc));
+      this->init_continuous_state(std::move(xc));
     } else {
       auto xd = std::make_unique<DiscreteValues<T>>(
           std::make_unique<BasicVector<T>>(num_states));
-      this->set_discrete_state(std::move(xd));
+      this->init_discrete_state(std::move(xd));
     }
 
     // TODO(amcastro-tri): Create cache entries.

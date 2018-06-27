@@ -126,46 +126,50 @@ class LeafSystem : public System<T> {
   }
   /// @endcond
 
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
-    // Reserve continuous state via delegation to subclass.
-    context->set_continuous_state(this->AllocateContinuousState());
-    // Reserve discrete state via delegation to subclass.
-    context->set_discrete_state(this->AllocateDiscreteState());
-    context->set_abstract_state(this->AllocateAbstractState());
+    this->InitializeContextBase(&*context);
 
     // Reserve parameters via delegation to subclass.
     context->init_parameters(this->AllocateParameters());
 
-    return context;
-  }
+    // Reserve state via delegation to subclass.
+    context->init_continuous_state(this->AllocateContinuousState());
+    context->init_discrete_state(this->AllocateDiscreteState());
+    context->init_abstract_state(this->AllocateAbstractState());
 
-  // Enforce some requirements on the fully-assembled Context.
-  // -- The continuous state must be contiguous, i.e., a valid BasicVector.
-  //    (In general, a System's Context's continuous state can be any kind of
-  //    VectorBase including scatter-gather implementations like Supervector.
-  //    But for a LeafSystem with LeafContext, we only allow BasicVectors,
-  //    which are guaranteed to have a linear storage layout.)  If the xc is
-  //    not BasicVector, the dynamic_cast will yield nullptr, and the
-  //    invariant-checker will complain.
-  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
-    auto& context = dynamic_cast<const LeafContext<T>&>(context_base);
-    const VectorBase<T>* const xc = &context.get_continuous_state_vector();
+    // At this point this LeafContext is complete except possibly for
+    // inter-Context dependencies involving port connections to peers or
+    // parent. We can now perform some final sanity checks.
+
+    // The numeric vectors used for parameters and state must be contiguous,
+    // i.e., valid BasicVectors. In general, a Context's numeric vectors can be
+    // any kind of VectorBase including scatter-gather implementations like
+    // Supervector. But for a LeafContext, we only allow BasicVectors, which are
+    // guaranteed to have a contiguous storage layout.
+
+    // If xc is not BasicVector, the dynamic_cast will yield nullptr, and the
+    // invariant-checker will complain.
+    const VectorBase<T>* const xc = &context->get_continuous_state_vector();
     detail::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
-    // -- The discrete state must all be valid BasicVectors.
+
+    // The discrete state must all be valid BasicVectors.
     for (const BasicVector<T>* group :
-        context.get_state().get_discrete_state().get_data()) {
+        context->get_state().get_discrete_state().get_data()) {
       detail::CheckBasicVectorInvariants(group);
     }
-    // -- The numeric parameters must all be valid BasicVectors.
-    const int num_numeric_parameters = context.num_numeric_parameters();
+
+    // The numeric parameters must all be valid BasicVectors.
+    const int num_numeric_parameters = context->num_numeric_parameters();
     for (int i = 0; i < num_numeric_parameters; ++i) {
-      const BasicVector<T>& group = context.get_numeric_parameter(i);
+      const BasicVector<T>& group = context->get_numeric_parameter(i);
       detail::CheckBasicVectorInvariants(&group);
     }
 
     // Allow derived LeafSystem to validate allocated Context.
-    DoValidateAllocatedLeafContext(context);
+    DoValidateAllocatedLeafContext(*context);
+
+    return context;
   }
 
   /// Default implementation: sets all continuous state to the model vector
@@ -312,8 +316,11 @@ class LeafSystem : public System<T> {
 
   /// Derived classes that impose restrictions on what resources are permitted
   /// should check those restrictions by implementing this. For example, a
-  /// derived class might require a single input and single output. The default
-  /// implementation does nothing.
+  /// derived class might require a single input and single output. Note that
+  /// the supplied Context will be complete except that input and output
+  /// dependencies on peer and parent subcontexts will not yet have been set up,
+  /// so you may not consider them for validation.
+  /// The default implementation does nothing.
   virtual void DoValidateAllocatedLeafContext(
       const LeafContext<T>& context) const {
     unused(context);

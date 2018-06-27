@@ -47,13 +47,15 @@ class LeafContext : public Context<T> {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // Temporarily promoting this to public so that LeafSystem and testing
-  // code can construct a LeafContext with parameters. Users should never
-  // call this because parameters should not be resized once allocated (or at
-  // least should be done under Framework control so that dependency tracking
-  // can be correctly revised).
-  // TODO(sherm1) Make this inaccessible to users, along with other dangerous
-  // context resource sizing methods. See discussion in PR #9029.
+  // Temporarily promoting these to public so that LeafSystem and testing code
+  // can construct a LeafContext with state & parameters. Users should never
+  // call these because state & parameters should not be resized once allocated
+  // (or at least should be done under Framework control so that dependency
+  // tracking can be correctly revised).
+  // TODO(sherm1) Make these inaccessible to users. See discussion in PR #9029.
+  using Context<T>::init_continuous_state;
+  using Context<T>::init_discrete_state;
+  using Context<T>::init_abstract_state;
   using Context<T>::init_parameters;
 #endif
 
@@ -95,6 +97,10 @@ class LeafContext : public Context<T> {
   }
 
  private:
+  friend class LeafContextTest;
+  using ContextBase::AddInputPort;    // For LeafContextTest.
+  using ContextBase::AddOutputPort;
+
   // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };

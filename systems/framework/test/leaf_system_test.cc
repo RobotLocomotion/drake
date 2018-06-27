@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -197,7 +198,8 @@ class LeafSystemTest : public ::testing::Test {
   }
 
   TestSystem<double> system_;
-  LeafContext<double> context_;
+  std::unique_ptr<LeafContext<double>> context_ptr_ = system_.AllocateContext();
+  LeafContext<double>& context_ = *context_ptr_;
 
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
@@ -767,7 +769,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 // correct values.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
-  auto context = dut.CreateDefaultContext();
   auto system_output = dut.AllocateOutput();
 
   // Check that BasicVector<double>(3) came out.
@@ -801,8 +802,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i = 0; i < 4; ++i) {
+  for (OutputPortIndex i(0); i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
@@ -1090,16 +1092,20 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
-  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  context->set_continuous_state(std::make_unique<ContinuousState<double>>(
+
+  // This needs to be a LeafContext for access to init_ methods.
+  auto context = dynamic_pointer_cast_or_throw<LeafContext<double>>(
+      system_.CreateDefaultContext());
+
+  context->init_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
-  context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
+  context->init_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
   std::vector<std::unique_ptr<AbstractValue>> abstract_data;
   abstract_data.push_back(PackValue(3));
   abstract_data.push_back(PackValue(5));
   abstract_data.push_back(PackValue(7));
-  context->set_abstract_state(
+  context->init_abstract_state(
       std::make_unique<AbstractValues>(std::move(abstract_data)));
 
   // Copy the state.
