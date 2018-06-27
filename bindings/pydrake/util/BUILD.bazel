@@ -36,16 +36,19 @@ PACKAGE_INFO = get_pybind_package_info("//bindings")
 drake_cc_library(
     name = "type_pack",
     hdrs = ["type_pack.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "wrap_function",
     hdrs = ["wrap_function.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "wrap_pybind",
     hdrs = ["wrap_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [":wrap_function"],
 )
 
@@ -66,12 +69,14 @@ drake_py_library(
 drake_cc_library(
     name = "eigen_pybind",
     hdrs = ["eigen_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 
 drake_cc_library(
     name = "eigen_geometry_pybind",
     hdrs = ["eigen_geometry_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = ["//bindings/pydrake:pydrake_pybind"],
 )
 
@@ -89,6 +94,7 @@ drake_cc_library(
     name = "cpp_param_pybind",
     srcs = ["cpp_param_pybind.cc"],
     hdrs = ["cpp_param_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":type_pack",
         "//bindings/pydrake:pydrake_pybind",
@@ -117,6 +123,7 @@ drake_cc_library(
     name = "cpp_template_pybind",
     srcs = [],
     hdrs = ["cpp_template_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cpp_param_pybind",
         "//bindings/pydrake:pydrake_pybind",
@@ -136,11 +143,13 @@ drake_py_library(
 drake_cc_library(
     name = "drake_optional_pybind",
     hdrs = ["drake_optional_pybind.h"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
+    visibility = ["//visibility:public"],
 )
 
 generate_pybind11_version_py_file(

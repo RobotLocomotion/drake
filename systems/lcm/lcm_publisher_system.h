@@ -106,7 +106,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
 
   /**
    * Sets the publishing period of this system. See
-   * LeafSystem::DeclarePublishPeriodSec() for details about the semantics of
+   * LeafSystem::DeclarePeriodicPublish() for details about the semantics of
    * parameter `period`.
    */
   void set_publish_period(double period);

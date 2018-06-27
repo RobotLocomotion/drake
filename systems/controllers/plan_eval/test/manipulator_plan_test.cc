@@ -3,6 +3,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/lcmt_manipulator_plan_move_end_effector.hpp"
+#include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/plan_eval/manipulator_move_end_effector_plan.h"
@@ -47,12 +48,12 @@ class ManipPlanTest : public GenericPlanTest {
         "iiwa14_polytope_collision.urdf");
 
     const std::string kAliasGroupsPath = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.alias_groups");
+        "drake/systems/controllers/qp_inverse_dynamics/"
+        "test/iiwa.alias_groups");
 
     const std::string kControlConfigPath = FindResourceOrThrow(
-        "drake/examples/QPInverseDynamicsForHumanoids/"
-        "config/iiwa.id_controller_config");
+        "drake/systems/controllers/qp_inverse_dynamics/"
+        "test/iiwa.id_controller_config");
 
     std::default_random_engine generator(123);
     AllocateResources(kModelPath, kAliasGroupsPath, kControlConfigPath);

@@ -3,8 +3,8 @@
 load(
     "//tools:drake.bzl",
     "drake_cc_binary",
-    "drake_cc_library",
     "drake_cc_googletest",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -31,7 +31,6 @@ drake_cc_library(
         "//manipulation/util:world_sim_tree_builder",
         "//multibody/rigid_body_plant",
         "//systems/framework:diagram_builder",
-        "//systems/sensors:optitrack_encoder",
         "//systems/sensors:optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],

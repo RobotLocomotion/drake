@@ -30,7 +30,7 @@ Here is a quick summary of capabilities:
 		* `Rich library of kinematic and dynamic queries <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ (e.g. Centroidal dynamics, Center of Pressure, Kinematic Jacobians, ...)
 	* `Sensor models <http://drake.mit.edu/doxygen_cxx/group__sensor__systems.html>`_ (lidar, RGB-D camera, imu, contact force/torque)
 	* Hand-derived models for many canonical control dynamical systems
-	* `Easily add your own models/components <https://github.com/RobotLocomotion/drake/blob/master/drake/examples/simple_continuous_time_system.cc>`_
+	* `Easily add your own models/components <https://github.com/RobotLocomotion/drake/blob/master/examples/simple_continuous_time_system.cc>`_
 	* For nearly all of the above we aim to expose sparsity in the governing equations and provide analytical gradients / symbolic analysis
 	* **Coming soon**:
 		* API upgrade from `RigidBodyTree <http://drake.mit.edu/doxygen_cxx/class_rigid_body_tree.html>`_ to `MultiBodyTree <http://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_tree.html>`_

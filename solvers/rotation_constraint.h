@@ -68,9 +68,8 @@ typedef uint32_t RollPitchYawLimits;
 ///   kPitch_NegPI_2_to_PI_2 (over 0_to_PI)
 /// because it adds one more constraint (when combined with constraints on roll
 /// and yaw).
-/// Note: The Roll-Pitch-Yaw coordinates follow the convention in @rpy2rotmat -
-/// representing extrinsic rotations about Space-fixed x-y-z axes,
-/// respectively.
+/// Note: The Roll-Pitch-Yaw angles follow the convention in RollPitchYaw,
+/// namely extrinsic rotations about Space-fixed x-y-z axes, respectively.
 void AddBoundingBoxConstraintsImpliedByRollPitchYawLimits(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,

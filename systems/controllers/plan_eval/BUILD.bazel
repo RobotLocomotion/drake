@@ -16,6 +16,7 @@ drake_cc_package_library(
     name = "plan_eval",
     deps = [
         ":generic_plan",
+        ":manipulator_move_end_effector_plan",
         ":plan_eval_base_system",
     ],
 )
@@ -35,6 +36,21 @@ drake_cc_library(
         "//systems/controllers/qp_inverse_dynamics:control",
         "//systems/controllers/qp_inverse_dynamics:param_parser",
         "//systems/framework:value",
+    ],
+)
+
+drake_cc_library(
+    name = "manipulator_move_end_effector_plan",
+    srcs = [
+        "manipulator_move_end_effector_plan.cc",
+    ],
+    hdrs = [
+        "manipulator_move_end_effector_plan.h",
+    ],
+    deps = [
+        ":generic_plan",
+        "//lcmtypes:manipulator_plan_move_end_effector",
+        "//manipulation/util:bot_core_lcm_encode_decode",
     ],
 )
 
@@ -73,6 +89,23 @@ drake_cc_googletest(
     ],
     deps = [
         ":generic_plan",
+        ":test_common",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody:rigid_body_tree",
+        "//multibody/parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "manipulator_plan_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
+    ],
+    deps = [
+        ":manipulator_move_end_effector_plan",
         ":test_common",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",

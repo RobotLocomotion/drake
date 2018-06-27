@@ -79,7 +79,7 @@ void KinematicsCache<T>::initialize(const Eigen::MatrixBase<Derived>& q_in) {
   static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
   static_assert(std::is_same<typename Derived::Scalar, T>::value,
                 "T type of q must match T type of KinematicsCache");
-  DRAKE_ASSERT(q.rows() == q_in.rows());
+  DRAKE_DEMAND(q.rows() == q_in.rows());
   q = q_in;
   invalidate();
   velocity_vector_valid = false;
@@ -93,7 +93,7 @@ void KinematicsCache<T>::initialize(const Eigen::MatrixBase<DerivedQ>& q_in,
   static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
   static_assert(std::is_same<typename DerivedV::Scalar, T>::value,
                 "T type of v must match T type of KinematicsCache");
-  DRAKE_ASSERT(v.rows() == v_in.rows());
+  DRAKE_DEMAND(v.rows() == v_in.rows());
   v = v_in;
   velocity_vector_valid = true;
 }

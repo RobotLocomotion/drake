@@ -132,7 +132,6 @@ DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
 DEFAULT_CTOR_CUSTOM_END = """
 }
 """
-DEFAULT_CTOR_FIELD_DEFAULT_VALUE = '0.0'  # When not otherwise overridden.
 DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
@@ -570,10 +569,8 @@ def generate_code(
     # Default some field attributes if they are missing.
     for item in fields:
         if len(item['default_value']) == 0:
-            print("warning: using an implicit default_value is deprecated;")
-            print(" add '{}' to {}.{} to prevent future errors".format(
-                'default_value: "0.0"', snake, item['name']))
-            item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
+            print("error: a default_value for {}.{} is required".format(
+                snake, item['name']))
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 

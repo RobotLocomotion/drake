@@ -49,7 +49,7 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
   // ALWAYS is in the inertial frame Bi, regardless of how a user might have
   // specified frames in the sdf file. That is, that it always returns
   // M_BBcm_Bi.
-  const ignition::math::Matrix3d I = inertial.MassMatrix().MOI();
+  const ignition::math::Matrix3d I = inertial.MassMatrix().Moi();
   return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
                                    I(1, 0), I(2, 0), I(2, 1));
 }
@@ -137,6 +137,29 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
     axis_J = X_MJ.linear().transpose() * axis_J;
   }
   return axis_J;
+}
+
+// Helper to parse the damping for a given joint specification.
+// Right now we only parse the <damping> tag.
+// An exception is thrown if the provided damping value is negative or if there
+// is no <axis> under <joint>.
+double ParseJointDamping(const sdf::Joint& joint_spec) {
+  DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
+      joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    throw std::runtime_error(
+        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+  }
+  const double damping = axis->Damping();
+  if (damping < 0) {
+    throw std::runtime_error(
+        "Joint damping is negative for joint '" + joint_spec.Name() + "'. "
+            "Joint damping must be a non-negative number.");
+  }
+  return damping;
 }
 
 // Extracts the effort limit from a joint specification and adds an actuator if
@@ -233,20 +256,22 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::PRISMATIC: {
+      const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J);
+          child_body, X_CJ, axis_J, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
+      const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J);
+          child_body, X_CJ, axis_J, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
@@ -258,8 +283,9 @@ void AddJointFromSpecification(
 }
 }  // namespace
 
-void AddModelFromSdfFile(
+ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
+    const std::string& model_name_in,
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -273,7 +299,7 @@ void AddModelFromSdfFile(
 
   // Check for any errors.
   if (!errors.empty()) {
-    std::string error_accumulation("From AddModelFromSdfString():\n");
+    std::string error_accumulation("From AddModelFromSdfFile():\n");
     for (const auto& e : errors)
       error_accumulation += "Error: " + e.Message() + "\n";
     throw std::runtime_error(error_accumulation);
@@ -302,6 +328,11 @@ void AddModelFromSdfFile(
   parsers::PackageMap package_map;
   package_map.PopulateUpstreamToDrake(full_path);
 
+  const std::string model_name =
+      model_name_in.empty() ? model.Name() : model_name_in;
+  const ModelInstanceIndex model_instance =
+      plant->AddModelInstance(model_name);
+
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
@@ -318,7 +349,8 @@ void AddModelFromSdfFile(
         ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
-    const RigidBody<double>& body = plant->AddRigidBody(link.Name(), M_BBo_B);
+    const RigidBody<double>& body =
+        plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
     if (scene_graph != nullptr) {
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -362,6 +394,15 @@ void AddModelFromSdfFile(
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(model, joint, plant);
   }
+
+  return model_instance;
+}
+
+ModelInstanceIndex AddModelFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  return AddModelFromSdfFile(file_name, "", plant, scene_graph);
 }
 
 }  // namespace parsing

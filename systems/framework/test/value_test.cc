@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
@@ -151,9 +152,28 @@ TYPED_TEST(TypedValueTest, Make) {
 GTEST_TEST(ValueTest, NiceTypeName) {
   auto double_value = AbstractValue::Make<double>(3.);
   auto string_value = AbstractValue::Make<std::string>("hello");
+  auto base_value =
+      std::make_unique<Value<BasicVector<double>>>(MyVector2d::Make(1., 2.));
 
   EXPECT_EQ(double_value->GetNiceTypeName(), "double");
   EXPECT_EQ(string_value->GetNiceTypeName(), "std::string");
+
+  // Must return the name of the most-derived type.
+  EXPECT_EQ(base_value->GetNiceTypeName(),
+            "drake::systems::MyVector<2,double>");
+}
+
+GTEST_TEST(ValueTest, TypeInfo) {
+  auto double_value = AbstractValue::Make<double>(3.);
+  auto string_value = AbstractValue::Make<std::string>("hello");
+  auto base_value =
+      std::make_unique<Value<BasicVector<double>>>(MyVector2d::Make(1., 2.));
+
+  EXPECT_EQ(double_value->type_info(), typeid(double));
+  EXPECT_EQ(string_value->type_info(), typeid(std::string));
+
+  // Must return the typeid of the most-derived type.
+  EXPECT_EQ(base_value->type_info(), typeid(MyVector2d));
 }
 
 // Check that MaybeGetValue() returns nullptr for wrong-type requests,
@@ -291,8 +311,7 @@ class PrintableValue : public Value<T>, public PrintInterface {
   explicit PrintableValue(const T& v) : Value<T>(v) {}
 
   std::unique_ptr<AbstractValue> Clone() const override {
-    return std::unique_ptr<PrintableValue<T>>(
-        new PrintableValue<T>(this->get_value()));
+    return std::make_unique<PrintableValue<T>>(this->get_value());
   }
 
   std::string print() const override {

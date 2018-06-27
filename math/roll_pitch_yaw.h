@@ -104,7 +104,7 @@ class RollPitchYaw {
     return SetOrThrowIfNotValidInDebugBuild(rpy);
   }
 
-  /// Sets `this` %RollPitchYaw from roll, pitch, yaw angles (radian units).
+  /// Sets `this` %RollPitchYaw from roll, pitch, yaw angles (units of radians).
   /// @param[in] roll x-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] pitch y-directed angle in SpaceXYZ rotation sequence.
   /// @param[in] yaw z-directed angle in SpaceXYZ rotation sequence.
@@ -114,17 +114,29 @@ class RollPitchYaw {
     return set(Vector3<T>(roll, pitch, yaw));
   }
 
-  /// Returns the Vector3 underlying a %RollPitchYaw.
+  /// Returns the Vector3 underlying `this` %RollPitchYaw.
   const Vector3<T>& vector() const { return roll_pitch_yaw_; }
 
-  /// Returns the roll-angle underlying a %RollPitchYaw.
+  /// Returns the roll-angle underlying `this` %RollPitchYaw.
   const T& roll_angle() const { return roll_pitch_yaw_(0); }
 
-  /// Returns the pitch-angle underlying a %RollPitchYaw.
+  /// Returns the pitch-angle underlying `this` %RollPitchYaw.
   const T& pitch_angle() const { return roll_pitch_yaw_(1); }
 
-  /// Returns the yaw-angle underlying a %RollPitchYaw.
+  /// Returns the yaw-angle underlying `this` %RollPitchYaw.
   const T& yaw_angle() const { return roll_pitch_yaw_(2); }
+
+  /// Set the roll-angle underlying `this` %RollPitchYaw.
+  /// @param[in] r roll angle (in units of radians).
+  void set_roll_angle(const T& r)  { roll_pitch_yaw_(0) = r; }
+
+  /// Set the pitch-angle underlying `this` %RollPitchYaw.
+  /// @param[in] p pitch angle (in units of radians).
+  void set_pitch_angle(const T& p)  { roll_pitch_yaw_(1) = p; }
+
+  /// Set the yaw-angle underlying `this` %RollPitchYaw.
+  /// @param[in] y yaw angle (in units of radians).
+  void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const {
@@ -143,6 +155,16 @@ class RollPitchYaw {
     const T y = c0 * s1_c2 + s0 * c1_s2;
     const T z = c0 * c1_s2 - s0 * s1_c2;
     return Eigen::Quaternion<T>(w, x, y, z);
+  }
+
+  /// Returns the RotationMatrix representation of `this` %RollPitchYaw.
+  RotationMatrix<T> ToRotationMatrix() const;
+
+  /// Returns the 3x3 matrix representation of the %RotationMatrix that
+  /// corresponds to `this` %RollPitchYaw.  This is a convenient "sugar" method
+  /// that is exactly equivalent to RotationMatrix(rpy).ToMatrix3().
+  Matrix3<T> ToMatrix3ViaRotationMatrix() const {
+    return ToRotationMatrix().matrix();
   }
 
   /// Compares each element of `this` to the corresponding element of `other`
@@ -581,6 +603,10 @@ DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
 Vector3<T> QuaternionToSpaceXYZ(const Eigen::Quaternion<T>& quaternion) {
   return RollPitchYaw<T>(quaternion).vector();
 }
+
+/// Abbreviation (alias/typedef) for a RollPitchYaw double scalar type.
+/// @relates RollPitchYaw
+using RollPitchYawd = RollPitchYaw<double>;
 
 /// (Deprecated), use @ref math::RollPitchYaw(rpy).ToQuaternion().
 // TODO(mitiguy) Delete this code that was deprecated on April 16, 2018.

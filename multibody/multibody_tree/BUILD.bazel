@@ -30,7 +30,9 @@ drake_cc_package_library(
 drake_cc_library(
     name = "multibody_tree_indexes",
     srcs = [],
-    hdrs = ["multibody_tree_indexes.h"],
+    hdrs = [
+        "multibody_tree_indexes.h",
+    ],
     deps = [
         "//common:type_safe_index",
     ],
@@ -95,6 +97,7 @@ drake_cc_library(
         "joints/revolute_joint.cc",
         "joints/weld_joint.cc",
         "mobilizer_impl.cc",
+        "model_instance.cc",
         "multibody_forces.cc",
         "multibody_tree.cc",
         "prismatic_mobilizer.cc",
@@ -121,6 +124,7 @@ drake_cc_library(
         "joints/weld_joint.h",
         "mobilizer.h",
         "mobilizer_impl.h",
+        "model_instance.h",
         "multibody_forces.h",
         "multibody_tree.h",
         "prismatic_mobilizer.h",
@@ -275,6 +279,14 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "frames_test",
     deps = [":multibody_tree"],
+)
+
+drake_cc_googletest(
+    name = "model_instance_test",
+    deps = [
+        ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
 )
 
 drake_cc_googletest(

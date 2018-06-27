@@ -1,8 +1,10 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -270,6 +272,8 @@ class RgbdCamera final : public LeafSystem<double> {
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
+  using VisualIndex = RgbdRenderer::VisualIndex;
+  std::map<int, std::vector<VisualIndex>> body_visual_indices_map_;
 
   const bool camera_fixed_;
   const CameraInfo color_camera_info_;

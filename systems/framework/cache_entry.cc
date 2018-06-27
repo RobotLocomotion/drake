@@ -11,11 +11,11 @@ namespace drake {
 namespace systems {
 
 CacheEntry::CacheEntry(
-    const internal::SystemMessageInterface* owning_subsystem, CacheIndex index,
+    const internal::SystemMessageInterface* owning_system, CacheIndex index,
     DependencyTicket ticket, std::string description,
     AllocCallback alloc_function, CalcCallback calc_function,
-    std::vector<DependencyTicket> prerequisites_of_calc)
-    : owning_subsystem_(owning_subsystem),
+    std::set<DependencyTicket> prerequisites_of_calc)
+    : owning_system_(owning_system),
       cache_index_(index),
       ticket_(ticket),
       description_(std::move(description)),
@@ -24,7 +24,7 @@ CacheEntry::CacheEntry(
       prerequisites_of_calc_(
           std::move(prerequisites_of_calc)) {
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
-  DRAKE_DEMAND(owning_subsystem && alloc_function_ && calc_function_);
+  DRAKE_DEMAND(owning_system && alloc_function_ && calc_function_);
 
   if (prerequisites_of_calc_.empty()) {
     throw std::logic_error(FormatName("CacheEntry") +
@@ -46,7 +46,7 @@ std::unique_ptr<AbstractValue> CacheEntry::Allocate() const {
 void CacheEntry::Calc(const ContextBase& context,
                       AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
-  DRAKE_ASSERT_VOID(owning_subsystem_->ThrowIfContextNotCompatible(context));
+  DRAKE_ASSERT_VOID(owning_system_->ThrowIfContextNotCompatible(context));
   DRAKE_ASSERT_VOID(CheckValidAbstractValue(*value));
 
   calc_function_(context, value);
@@ -61,17 +61,17 @@ void CacheEntry::CheckValidAbstractValue(const AbstractValue& proposed) const {
   //              need to pass in a ContextBase.
   auto good_ptr = Allocate();  // Very expensive!
   const AbstractValue& good = *good_ptr;
-  if (typeid(proposed) != typeid(good)) {
+  if (proposed.type_info() != good.type_info()) {
     throw std::logic_error(FormatName("Calc") +
                            "expected AbstractValue output type " +
-                           NiceTypeName::Get(good) + " but got " +
-                           NiceTypeName::Get(proposed) + ".");
+                           good.GetNiceTypeName() + " but got " +
+                           proposed.GetNiceTypeName() + ".");
   }
 }
 
 std::string CacheEntry::FormatName(const char* api) const {
-  return "Subsystem '" + owning_subsystem_->GetSystemPathname() + "' (" +
-      NiceTypeName::RemoveNamespaces(owning_subsystem_->GetSystemType()) +
+  return "System '" + owning_system_->GetSystemPathname() + "' (" +
+      NiceTypeName::RemoveNamespaces(owning_system_->GetSystemType()) +
       "): CacheEntry[" + std::to_string(cache_index_) + "](" +
       description() + ")::" + api + "(): ";
 }

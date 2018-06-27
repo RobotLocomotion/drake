@@ -96,7 +96,6 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:is_approx_equal_abstol",
-        "@fmt",
     ],
 )
 

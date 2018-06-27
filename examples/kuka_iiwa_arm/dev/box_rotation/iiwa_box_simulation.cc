@@ -36,7 +36,6 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/systems/sensors/optitrack_encoder.h"
 #include "drake/systems/sensors/optitrack_sender.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -71,8 +70,7 @@ using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::Simulator;
 using manipulation::util::FramePoseTracker;
-using systems::sensors::OptitrackEncoder;
-using systems::sensors::OptitrackLCMFrameSender;
+using systems::sensors::OptitrackLcmFrameSender;
 
 const char *const kIiwaUrdf = "drake/examples/kuka_iiwa_arm/dev/box_rotation/"
     "models/dual_iiwa14_primitive_sphere_visual_collision.urdf";
@@ -200,15 +198,6 @@ int DoMain() {
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>(14);
   iiwa_status_sender->set_name("iiwa_status_sender");
 
-  // Create the Optitrack sender and publisher. The sender is configured to
-  // send three objects: left arm base, right arm base, and box.
-  auto optitrack_sender = builder.AddSystem<OptitrackLCMFrameSender>(3);
-  optitrack_sender->set_name("optitrack frame sender");
-  auto optitrack_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<optitrack::optitrack_frame_t>(
-          "OPTITRACK_FRAMES", &lcm));
-  optitrack_pub->set_name("optitrack frame publisher");
-  optitrack_pub->set_publish_period(systems::sensors::kLcmStatusPeriod);
 
   // Create the FramePoseTracker system.
   std::map<std::string, std::pair<std::string, int>> frame_info;
@@ -218,23 +207,28 @@ int DoMain() {
   auto pose_tracker = builder.AddSystem<FramePoseTracker>(tree, frame_info);
   pose_tracker->set_name("frame pose tracker");
 
-  // Create the OptitrackEncoder system. This assigns a unique Optitrack ID to
-  // each tracked frame (similar to the Motive software). These are used to
-  // create a tracked Optitrack body.
-  std::map<std::string, int> frame_name_to_id_map;
-  frame_name_to_id_map["left_iiwa_base"] = 1;
-  frame_name_to_id_map["right_iiwa_base"] = 2;
-  frame_name_to_id_map["box"] = 3;
-  auto optitrack_encoder =
-      builder.AddSystem<OptitrackEncoder>(frame_name_to_id_map);
-  optitrack_encoder->set_name("optitrack encoder");
+  std::map<geometry::FrameId, std::pair<std::string, int>> frame_map;
+  const std::map<std::string, geometry::FrameId>& frame_name_to_id_map =
+      pose_tracker->get_frame_name_to_id_map();
+  frame_map[frame_name_to_id_map.at("left_iiwa_base")] =
+      {"left_iiwa_base", 1};
+  frame_map[frame_name_to_id_map.at("right_iiwa_base")] =
+      {"right_iiwa_base", 2};
+  frame_map[frame_name_to_id_map.at("box")] = {"box", 3};
+
+  // Create the Optitrack sender and publisher. The sender is configured to
+  // send three objects: left arm base, right arm base, and box.
+  auto optitrack_sender =
+      builder.AddSystem<OptitrackLcmFrameSender>(frame_map);
+  auto optitrack_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<optitrack::optitrack_frame_t>(
+          "OPTITRACK_FRAMES", &lcm));
+  optitrack_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Connect the systems related to tracking bodies.
   builder.Connect(model->get_output_port_kinematics_results(),
                   pose_tracker->get_kinematics_input_port());
-  builder.Connect(pose_tracker->get_pose_bundle_output_port(),
-                  optitrack_encoder->get_pose_bundle_input_port());
-  builder.Connect(optitrack_encoder->get_optitrack_output_port(),
+  builder.Connect(pose_tracker->get_pose_vector_output_port(),
                   optitrack_sender->get_optitrack_input_port());
   builder.Connect(optitrack_sender->get_lcm_output_port(),
                   optitrack_pub->get_input_port());

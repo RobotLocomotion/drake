@@ -123,7 +123,7 @@ MakeAcrobotPlantSdf() {
     // with the principal axes of inertia.
     // MOI() returns the rotational massmatrix of body B about the body's
     // COM, Bcm, expressed in the body's frame.
-    const ignition::math::Matrix3d I_BBcm_B = I_Bcm_Bi.MOI();
+    const ignition::math::Matrix3d I_BBcm_B = I_Bcm_Bi.Moi();
 
     // Create the multibody inertia
     SpatialInertia<double> M_BBo_B =

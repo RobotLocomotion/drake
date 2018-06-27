@@ -57,13 +57,20 @@ class RevoluteJoint final : public Joint<T> {
   ///   equal to one.
   ///   This vector can have any length, only the direction is used. This method
   ///   aborts if `axis` is the zero vector.
+  /// @param[in] damping
+  ///   Viscous damping coefficient, in N⋅m⋅s, used to model losses within the
+  ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
+  ///   opposing motion, with ω the angular rate for `this` joint (see
+  ///   get_angular_rate()).
   RevoluteJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis) :
+                const Vector3<double>& axis, double damping = 0) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
+    DRAKE_THROW_UNLESS(damping >= 0);
     axis_ = axis.normalized();
+    damping_ = damping;
   }
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
@@ -73,6 +80,9 @@ class RevoluteJoint final : public Joint<T> {
   const Vector3<double>& revolute_axis() const {
     return axis_;
   }
+
+  /// Returns `this` joint's damping constant in N⋅m⋅s.
+  double damping() const { return damping_; }
 
   /// @name Context-dependent value access
   ///
@@ -171,6 +181,16 @@ class RevoluteJoint final : public Joint<T> {
     tau_mob(joint_dof) += joint_tau;
   }
 
+  /// Joint<T> override called through public NVI, Joint::AddInDamping().
+  /// Therefore arguments were already checked to be valid.
+  /// This method adds into `forces` a dissipative torque according to the
+  /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see damping()).
+  void DoAddInDamping(const systems::Context<T>& context,
+                      MultibodyForces<T>* forces) const override {
+    const T damping_torque = -this->damping() * get_angular_rate(context);
+    AddInTorque(context, damping_torque, forces);
+  }
+
  private:
   int do_get_num_dofs() const override {
     return 1;
@@ -220,6 +240,9 @@ class RevoluteJoint final : public Joint<T> {
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   Vector3<double> axis_;
+
+  // Returns `this` joint's damping constant in N⋅m⋅s.
+  double damping_{0};
 };
 
 }  // namespace multibody

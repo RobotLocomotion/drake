@@ -26,7 +26,7 @@ using Which = api::LaneEnd::Which;
 //                   road surface is continuous, off the centerline, at the
 //                   branch-point where two connections connect
 
-// StartReferenceSpec using an Endpoint.
+// StartReference::Spec using an Endpoint.
 GTEST_TEST(StartReferenceSpecTest, Endpoint) {
   const Endpoint point{{1., 2., 3.}, {4., 5., 6., 7.}};
   const double kVeryExact{1e-15};
@@ -41,42 +41,54 @@ GTEST_TEST(StartReferenceSpecTest, Endpoint) {
                                     kVeryExact));
 }
 
-// StartReferenceSpec using a connection's reference curve.
+// StartReference::Spec using a connection's reference curve.
 GTEST_TEST(StartReferenceSpecTest, Connection) {
   const double kLinearTolerance{0.01};
   const double kScaleLength{1.};
   const ComputationPolicy kComputationPolicy{
     ComputationPolicy::kPreferAccuracy};
-  const EndpointZ kFlatEndpointZ{0., 0., 0., 0.};
-  const Endpoint kStartEndpoint{{1., 2., 3.}, kFlatEndpointZ};
-  const Connection conn("conn", kStartEndpoint, kFlatEndpointZ, 2, 0., 1., 1.5,
-                        1.5, 10., kLinearTolerance, kScaleLength,
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
+  const EndpointXy kStartXy{1., 2., 3.};
+  const LineOffset kLineOffset{10.};
+  const EndpointXy kEndXy{1. + 10. * std::cos(3.), 2. + 10. * std::sin(3.), 3.};
+  const Endpoint kStartEndpoint{kStartXy, kFlatZ};
+  const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
+                        kLineOffset, kLinearTolerance, kScaleLength,
                         kComputationPolicy);
-
   const double kVeryExact{1e-15};
 
   const StartReference::Spec forward_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kForward);
-  EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(), conn.start(),
+  const Endpoint expected_forward_start_endpoint{kStartXy,
+                                                 kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointClose(forward_start_dut.endpoint(),
+                                    expected_forward_start_endpoint,
                                     kVeryExact));
 
   const StartReference::Spec reversed_start_dut =
       StartReference().at(conn, Which::kStart, Direction::kReverse);
+  const Endpoint expected_reversed_start_endpoint{
+      kStartXy.reverse(), kFlatZWithoutThetaDot.reverse()};
   EXPECT_TRUE(test::IsEndpointClose(reversed_start_dut.endpoint(),
-                                    conn.start().reverse(), kVeryExact));
+                                    expected_reversed_start_endpoint,
+                                    kVeryExact));
 
   const StartReference::Spec forward_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kForward);
-  EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(), conn.end(),
-                                    kVeryExact));
+  const Endpoint expected_forward_end_endpoint{kEndXy, kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointClose(forward_end_dut.endpoint(),
+                                    expected_forward_end_endpoint, kVeryExact));
 
   const StartReference::Spec reversed_end_dut =
       StartReference().at(conn, Which::kFinish, Direction::kReverse);
-  EXPECT_TRUE(test::IsEndpointClose(reversed_end_dut.endpoint(),
-                                    conn.end().reverse(), kVeryExact));
+  const Endpoint expected_reversed_end_endpoint{
+      kEndXy.reverse(), kFlatZWithoutThetaDot.reverse()};
+  EXPECT_TRUE(test::IsEndpointClose(
+      reversed_end_dut.endpoint(), expected_reversed_end_endpoint, kVeryExact));
 }
 
-// EndReferenceSpec using an EndpointZ.
+// EndReference::Spec using an EndpointZ.
 GTEST_TEST(EndReferenceSpecTest, Endpoint) {
   const EndpointZ z_point{4., 5., 6., 7.};
   const double kVeryExact{1e-15};
@@ -90,6 +102,45 @@ GTEST_TEST(EndReferenceSpecTest, Endpoint) {
       EndReference().z_at(z_point, Direction::kReverse);
   EXPECT_TRUE(test::IsEndpointZClose(z_reversed_dut.endpoint_z(),
                                      z_point.reverse(), kVeryExact));
+}
+
+// EndReference::Spec using a connection's reference curve.
+GTEST_TEST(EndReferenceSpecTest, Connection) {
+  const double kLinearTolerance{0.01};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const EndpointXy kStartXy{1., 2., 3.};
+  const Endpoint kStartEndpoint{kStartXy, kFlatZ};
+  const EndpointZ kFlatZWithoutThetaDot{0., 0., 0., {}};
+  const Connection conn("conn", kStartEndpoint, kFlatZ, 2, 0., 1., 1.5, 1.5,
+                        LineOffset(10.), kLinearTolerance, kScaleLength,
+                        kComputationPolicy);
+  const double kVeryExact{1e-15};
+
+  const EndReference::Spec forward_start_dut =
+      EndReference().z_at(conn, Which::kStart, Direction::kForward);
+  const EndpointZ expected_forward_start_endpoint{kFlatZWithoutThetaDot};
+  EXPECT_TRUE(test::IsEndpointZClose(forward_start_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot, kVeryExact));
+
+  const EndReference::Spec reversed_start_dut =
+      EndReference().z_at(conn, Which::kStart, Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(reversed_start_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot.reverse(),
+                                     kVeryExact));
+
+  const EndReference::Spec forward_end_dut =
+      EndReference().z_at(conn, Which::kFinish, Direction::kForward);
+  EXPECT_TRUE(test::IsEndpointZClose(forward_end_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot, kVeryExact));
+
+  const EndReference::Spec reversed_end_dut =
+      EndReference().z_at(conn, Which::kFinish, Direction::kReverse);
+  EXPECT_TRUE(test::IsEndpointZClose(reversed_end_dut.endpoint_z(),
+                                     kFlatZWithoutThetaDot.reverse(),
+                                     kVeryExact));
 }
 
 // LaneLayout check.
@@ -260,17 +311,16 @@ GTEST_TEST(MultilaneBuilderTest, Fig8) {
 
   // Tweak ends to check if fuzzy-matching is working.
   Endpoint c6end = c6->end();
-  c6end = Endpoint(EndpointXy(c6end.xy().x() + kLinearTolerance * 0.5,
-                              c6end.xy().y() - kLinearTolerance * 0.5,
-                              c6end.xy().heading()),
-                   EndpointZ(c6end.z().z() + kLinearTolerance * 0.5,
-                             c6end.z().z_dot(),
-                             c6end.z().theta(), c6end.z().theta_dot()));
+  c6end = Endpoint(
+      EndpointXy(c6end.xy().x() + kLinearTolerance * 0.5,
+                 c6end.xy().y() - kLinearTolerance * 0.5, c6end.xy().heading()),
+      EndpointZ(c6end.z().z() + kLinearTolerance * 0.5, c6end.z().z_dot(),
+                c6end.z().theta(), *c6end.z().theta_dot()));
 
   EndpointZ c0start_z = c0->start().z();
-  c0start_z = EndpointZ(c0start_z.z() - kLinearTolerance * 0.5,
-                        c0start_z.z_dot(),
-                        c0start_z.theta(), c0start_z.theta_dot());
+  c0start_z =
+      EndpointZ(c0start_z.z() - kLinearTolerance * 0.5, c0start_z.z_dot(),
+                c0start_z.theta(), *c0start_z.theta_dot());
 
   b.Connect("7", kLaneLayout, StartReference().at(c6end, Direction::kForward),
             kLineOffset, EndReference().z_at(c0start_z, Direction::kForward));
@@ -471,6 +521,8 @@ struct BranchPointLaneIds {
   std::vector<std::string> finish_b_side;
 };
 
+// Holds common properties to create a Builder and Connections of different
+// geometries.
 class MultilaneBuilderPrimitivesTest : public ::testing::Test {
  protected:
   const double kLaneWidth{4.};
@@ -598,6 +650,108 @@ TEST_F(MultilaneBuilderPrimitivesTest, MultilaneArcSegment) {
   }
   // Checks the number of branch points.
   EXPECT_EQ(rg->num_branch_points(), 2 * kNumLanes);
+}
+
+// Holds common properties to create a Builder and Connections whose endpoint
+// information lacks theta_dot so it is adjusted.
+//
+// For the tests below, let L be the curvature of the curve at the point so that
+// L_line is the curvature for a line and L_arc is the curvature for an arc. In
+// addition, let Δθ be the angle span of the arc offset.
+// Then,
+//
+// L_line = 0
+// L_arc = sign(Δθ) / radius
+//
+// And
+//
+// theta_dot = L * sin(-atan(z_dot))
+//
+// theta_dot constants in tests below were computed in Octave using previous
+// expression.
+class MultilaneBuilderPrimitiveContinuityConstraintTest
+    : public ::testing::Test {
+ protected:
+  const double kLaneWidth{4.};
+  const double kRefR0{0.};
+  const double kLeftShoulder{2.};
+  const double kRightShoulder{2.};
+  const int kNumLanes{1};
+  const int kRefLane{0};
+  const LaneLayout kLaneLayout{kLeftShoulder, kRightShoulder, kNumLanes,
+                               kRefLane, kRefR0};
+  const api::HBounds kElevationBounds{0., 5.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.};
+  const ComputationPolicy kComputationPolicy{
+      ComputationPolicy::kPreferAccuracy};
+  const EndpointZ kStartZ{1., 2., M_PI / 6., {}};
+  const double kStartHeading{-M_PI / 4.};
+  const Endpoint kStartEndpoint{{0., 0., kStartHeading}, kStartZ};
+  const EndpointZ kEndZ{4., 5., -M_PI / 6., {}};
+};
+
+// Checks how theta_dot is adjusted at the end points of the connection and set
+// to zero always because of infinite curvature radius of a line.
+TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneLineSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
+  const LineOffset kLineOffset(50.);
+  auto c0 =
+      b.Connect("c0", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                kLineOffset, EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(c0, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      c0->start(), {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.}},
+      kLinearTolerance));
+  EXPECT_TRUE(
+      test::IsEndpointClose(c0->end(),
+                            {{50. * std::cos(kStartHeading),
+                              50. * std::sin(kStartHeading), kStartHeading},
+                             {4., 5., -M_PI / 6., 0.}},
+                            kLinearTolerance));
+}
+
+// Checks how theta_dot is adjusted at the end points of the connection based
+// on curvature and angular displacement.
+TEST_F(MultilaneBuilderPrimitiveContinuityConstraintTest, MonolaneArcSegment) {
+  Builder b(kLaneWidth, kElevationBounds, kLinearTolerance, kAngularTolerance,
+            kScaleLength, kComputationPolicy);
+  const double kRadius = 30.;
+  const double kDTheta = 0.5 * M_PI;
+  auto counter_clockwise_conn =
+      b.Connect("counter_clockwise", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                ArcOffset(kRadius, kDTheta),
+                EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(counter_clockwise_conn, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      counter_clockwise_conn->start(),
+      {kStartEndpoint.xy(), {1., 2., M_PI / 6., -0.0298142396999972}},
+      kLinearTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(
+      counter_clockwise_conn->end(),
+      {{kRadius * std::sqrt(2.), 0., kStartHeading + kDTheta},
+       {4., 5., -M_PI / 6., -0.0326860225230307}},
+      kLinearTolerance));
+
+  auto clockwise_conn =
+      b.Connect("clockwise", kLaneLayout,
+                StartReference().at(kStartEndpoint, Direction::kForward),
+                ArcOffset(kRadius, -kDTheta),
+                EndReference().z_at(kEndZ, Direction::kForward));
+  EXPECT_NE(clockwise_conn, nullptr);
+  EXPECT_TRUE(test::IsEndpointClose(
+      clockwise_conn->start(),
+      {kStartEndpoint.xy(), {1., 2., M_PI / 6., 0.0298142396999972}},
+      kLinearTolerance));
+  EXPECT_TRUE(test::IsEndpointClose(
+      clockwise_conn->end(),
+      {{0., -kRadius * std::sqrt(2.), kStartHeading - kDTheta},
+       {4., 5., -M_PI / 6., 0.0326860225230307}},
+      kLinearTolerance));
 }
 
 // Checks that Junctions, Segments, Lanes and BranchPoints are correctly made

@@ -54,8 +54,14 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 
 VTK_MAJOR_MINOR_VERSION = "8.1"
 
-def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
-                    header_only = False, linkopts = []):
+def _vtk_cc_library(
+        os_name,
+        name,
+        hdrs = None,
+        visibility = None,
+        deps = None,
+        header_only = False,
+        linkopts = []):
     hdr_paths = []
 
     if hdrs:
@@ -83,9 +89,8 @@ def _vtk_cc_library(os_name, name, hdrs = None, visibility = None, deps = None,
                 "-L/usr/local/opt/vtk@{}/lib".format(VTK_MAJOR_MINOR_VERSION),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
             ]
-    else:
-        if not header_only:
-            srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
+    elif not header_only:
+        srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
 
     content = """
 cc_library(
@@ -108,14 +113,15 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
-            VTK_MAJOR_MINOR_VERSION), "include")
+            VTK_MAJOR_MINOR_VERSION,
+        ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64.tar.gz"
-            sha256 = "b2bc97da2d21dda16775de50638ffeaa4070673dcc01aaee88311f09678a36bc"  # noqa
+            archive = "vtk-v8.1.1-qt-5.5.1-xenial-x86_64-1.tar.gz"
+            sha256 = "77c4bd6eb41fa23c2c7421eeca70e761fc699aaed6cc4804e3d3a73dff16a0fb"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64.tar.gz"
-            sha256 = "3f61705139f2475bd035ccdd3d52920f2308b3581ca044a6a4bc535ceea9cc71"  # noqa
+            archive = "vtk-v8.1.1-qt-5.9.5-bionic-x86_64-1.tar.gz"
+            sha256 = "7c05576eb918fcf85934659d920e4a97bf2c5f034eda296d941495f0008e22b3"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -572,7 +578,8 @@ licenses([
         file_content += _vtk_cc_library(repository_ctx.os.name, "vtkglew")
 
     file_content += _vtk_cc_library(
-        repository_ctx.os.name, "vtkkwiml",
+        repository_ctx.os.name,
+        "vtkkwiml",
         hdrs = [
             "vtk_kwiml.h",
             "vtkkwiml/abi.h",
@@ -582,8 +589,11 @@ licenses([
         header_only = True,
     )
 
-    file_content += _vtk_cc_library(repository_ctx.os.name, "vtkmetaio",
-                                    deps = ["@zlib"])
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkmetaio",
+        deps = ["@zlib"],
+    )
 
     file_content += _vtk_cc_library(repository_ctx.os.name, "vtksys")
 
@@ -613,8 +623,11 @@ install_files(
 )
 """.format(files_to_install)
 
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 vtk_repository = repository_rule(
     attrs = {

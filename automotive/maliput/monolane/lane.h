@@ -28,6 +28,7 @@ typedef Vector3<double> V3;
 /// This effects a compound rotation around space-fixed x-y-z axes:
 ///
 ///   Rot3(yaw,pitch,roll) * V = RotZ(yaw) * RotY(pitch) * RotX(roll) * V
+// TODO(Mitiguy) Deprecate this class in favor of math::RollPitchYaw.
 class Rot3 {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rot3)
@@ -35,7 +36,10 @@ class Rot3 {
   Rot3(double roll, double pitch, double yaw) : rpy_(roll, pitch, yaw) {}
 
   /// Applies the rotation to a 3-vector.
-  V3 apply(const V3& in) const { return math::rpy2rotmat(rpy_) * in; }
+  V3 apply(const V3& in) const {
+    const math::RollPitchYaw<double> roll_pitch_yaw(rpy_);
+    return roll_pitch_yaw.ToRotationMatrix() * in;
+  }
 
   double yaw() const { return rpy_(2); }
   double pitch() const { return rpy_(1); }

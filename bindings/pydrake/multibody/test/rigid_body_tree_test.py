@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os
+from os.path import join
 import unittest
 
 import pydrake
@@ -39,6 +40,18 @@ class TestRigidBodyTree(unittest.TestCase):
         kinsol = tree.doKinematics(q, v)
         p = tree.transformPoints(kinsol, np.zeros(3), 0, 1)
         self.assertTrue(np.allclose(p, np.zeros(3)))
+
+        # Ensure mismatched sizes throw an error.
+        q_bad = np.zeros(num_q + 1)
+        v_bad = np.zeros(num_v + 1)
+        bad_args_list = (
+            (q_bad,),
+            (q_bad, v),
+            (q, v_bad),
+        )
+        for bad_args in bad_args_list:
+            with self.assertRaises(SystemExit):
+                tree.doKinematics(*bad_args)
 
         # AutoDiff jacobians.
 
@@ -93,12 +106,61 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(tree.number_of_velocities(), num_v)
 
         q = tree.getZeroConfiguration()
-        kinsol = tree.doKinematics(q)
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
         # - Sanity check sizes.
         J_default, v_indices_default = tree.geometricJacobian(kinsol, 0, 2, 0)
+        J_eeDotTimesV = tree.geometricJacobianDotTimesV(kinsol, 0, 2, 0)
+
         self.assertEqual(J_default.shape[0], 6)
         self.assertEqual(J_default.shape[1], num_v)
         self.assertEqual(len(v_indices_default), num_v)
+        self.assertEqual(J_eeDotTimesV.shape[0], 6)
+
+        # - Check QDotToVelocity and VelocityToQDot methods
+        q = tree.getZeroConfiguration()
+        v_real = np.zeros(num_v)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_real_ad = np.array(map(AutoDiffXd, v_real))
+
+        kinsol = tree.doKinematics(q)
+        kinsol_ad = tree.doKinematics(q_ad)
+        qd = tree.transformVelocityToQDot(kinsol, v_real)
+        v = tree.transformQDotToVelocity(kinsol, qd)
+        qd_ad = tree.transformVelocityToQDot(kinsol_ad, v_real_ad)
+        v_ad = tree.transformQDotToVelocity(kinsol_ad, qd_ad)
+        self.assertEqual(qd.shape, (num_q,))
+        self.assertEqual(v.shape, (num_v,))
+        self.assertEqual(qd_ad.shape, (num_q,))
+        self.assertEqual(v_ad.shape, (num_v,))
+
+        v_to_qdot = tree.GetVelocityToQDotMapping(kinsol)
+        qdot_to_v = tree.GetQDotToVelocityMapping(kinsol)
+        v_to_qdot_ad = tree.GetVelocityToQDotMapping(kinsol_ad)
+        qdot_to_v_ad = tree.GetQDotToVelocityMapping(kinsol_ad)
+        self.assertEqual(v_to_qdot.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v.shape, (num_v, num_q))
+        self.assertEqual(v_to_qdot_ad.shape, (num_q, num_v))
+        self.assertEqual(qdot_to_v_ad.shape, (num_v, num_q))
+
+        v_map = tree.transformVelocityMappingToQDotMapping(kinsol,
+                                                           np.eye(num_v))
+        qd_map = tree.transformQDotMappingToVelocityMapping(kinsol,
+                                                            np.eye(num_q))
+        v_map_ad = tree.transformVelocityMappingToQDotMapping(kinsol_ad,
+                                                              np.eye(num_v))
+        qd_map_ad = tree.transformQDotMappingToVelocityMapping(kinsol_ad,
+                                                               np.eye(num_q))
+        self.assertEqual(v_map.shape, (num_v, num_q))
+        self.assertEqual(qd_map.shape, (num_q, num_v))
+        self.assertEqual(v_map_ad.shape, (num_v, num_q))
+        self.assertEqual(qd_map_ad.shape, (num_q, num_v))
+
+        # - Check ChildOfJoint methods
+        body = tree.FindChildBodyOfJoint("theta")
+        self.assertIsInstance(body, RigidBody)
+        self.assertEqual(body.get_name(), "arm")
+        self.assertEqual(tree.FindIndexOfChildBodyOfJoint("theta"), 2)
 
         # - Check that default value for in_terms_of_qdot is false.
         J_not_in_terms_of_q_dot, v_indices_not_in_terms_of_qdot = \
@@ -112,6 +174,66 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(J_in_terms_of_q_dot.shape[0], 6)
         self.assertEqual(J_in_terms_of_q_dot.shape[1], num_q)
         self.assertEqual(len(v_indices_in_terms_of_qdot), num_q)
+
+        # - Check transformPointsJacobian methods
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_v)
+        kinsol = tree.doKinematics(q, v)
+        Jv = tree.transformPointsJacobian(cache=kinsol, points=np.zeros(3),
+                                          from_body_or_frame_ind=0,
+                                          to_body_or_frame_ind=1,
+                                          in_terms_of_qdot=False)
+        Jq = tree.transformPointsJacobian(cache=kinsol, points=np.zeros(3),
+                                          from_body_or_frame_ind=0,
+                                          to_body_or_frame_ind=1,
+                                          in_terms_of_qdot=True)
+        JdotV = tree.transformPointsJacobianDotTimesV(cache=kinsol,
+                                                      points=np.zeros(3),
+                                                      from_body_or_frame_ind=0,
+                                                      to_body_or_frame_ind=1)
+        self.assertEqual(Jv.shape, (3, num_v))
+        self.assertEqual(Jq.shape, (3, num_q))
+        self.assertEqual(JdotV.shape, (3,))
+
+        # - Check that drawKinematicTree runs
+        tree.drawKinematicTree(
+            join(os.environ["TEST_TMPDIR"], "test_graph.dot"))
+
+    def test_constraint_api(self):
+        tree = RigidBodyTree(FindResourceOrThrow(
+            "drake/examples/simple_four_bar/FourBar.urdf"))
+        num_q = 9
+        num_con = 7
+
+        bodyA = 1
+        bodyB = 2
+        point = np.ones(3)
+        distance = 1
+
+        q = tree.getZeroConfiguration()
+        v = np.zeros(num_q)
+        q_ad = np.array(map(AutoDiffXd, q))
+        v_ad = np.array(map(AutoDiffXd, v))
+        kinsol = tree.doKinematics(q, v)
+        kinsol_ad = tree.doKinematics(q_ad, v_ad)
+
+        self.assertEqual(tree.getNumPositionConstraints(), num_con - 1)
+        tree.addDistanceConstraint(bodyA, point, bodyB, point, distance)
+        self.assertEqual(tree.getNumPositionConstraints(), num_con)
+
+        constraint = tree.positionConstraints(kinsol)
+        J = tree.positionConstraintsJacobian(kinsol)
+        JdotV = tree.positionConstraintsJacDotTimesV(kinsol)
+        constraint_ad = tree.positionConstraints(kinsol_ad)
+        J_ad = tree.positionConstraintsJacobian(kinsol_ad)
+        JdotV_ad = tree.positionConstraintsJacDotTimesV(kinsol_ad)
+
+        self.assertEqual(constraint.shape, (num_con,))
+        self.assertEqual(J.shape, (num_con, num_q))
+        self.assertEqual(JdotV.shape, (num_con,))
+        self.assertEqual(constraint_ad.shape, (num_con,))
+        self.assertEqual(J_ad.shape, (num_con, num_q))
+        self.assertEqual(JdotV_ad.shape, (num_con,))
 
     def test_frame_api(self):
         tree = RigidBodyTree(FindResourceOrThrow(
@@ -154,6 +276,9 @@ class TestRigidBodyTree(unittest.TestCase):
             [0., 1., 0., 0.2425, 0., 0., 0.],
             [0., 0., 1., 0., 0., 0., 0.]])
         self.assertTrue(np.allclose(Jc, Jc_expected))
+        # - JacobianDotTimesV
+        JcDotV = tree.centerOfMassJacobianDotTimesV(kinsol)
+        self.assertEqual(JcDotV.shape, (3,))
 
         # Specific body.
         arm_com = tree.FindBody("arm_com")
@@ -322,6 +447,10 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(body_visual_elements[0].getGeometry().getShape(),
                          box_visual_element.getGeometry().getShape())
 
+        # Test collision-related methods.
+        self.assertEqual(body.get_num_collision_elements(), 0)
+        self.assertEqual(len(body.get_collision_element_ids()), 0)
+
     def test_joints_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays,
         # and sanity-check that the accessors function.
@@ -384,7 +513,13 @@ class TestRigidBodyTree(unittest.TestCase):
         box_collision_element.set_body(body_2)
         rbt.addCollisionElement(box_collision_element, body_2, "default")
 
+        rbt.DefineCollisionFilterGroup(name="test_group")
+        rbt.AddCollisionFilterGroupMember(
+            group_name="test_group", body_name="body_2", model_id=0)
+
+        self.assertFalse(rbt.initialized())
         rbt.compile()
+        self.assertTrue(rbt.initialized())
 
         # The RBT's position vector should now be [z, theta].
         self.assertEqual(body_1.get_position_start_index(), 0)

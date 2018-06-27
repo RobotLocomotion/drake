@@ -40,10 +40,12 @@ drake_py_library(
     ],
 )
 
-# N.B. Any C++ libraries that include this must include `cpp_template_py`.
+# N.B. Any C++ libraries that include this must include `cpp_template_py` when
+# being used in Python.
 drake_cc_library(
     name = "systems_pybind",
     hdrs = ["systems_pybind.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",

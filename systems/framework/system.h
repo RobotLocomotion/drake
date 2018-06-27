@@ -26,9 +26,9 @@
 #include "drake/systems/framework/event_collection.h"
 #include "drake/systems/framework/input_port_descriptor.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/system_constraint.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/witness_function.h"
 
@@ -134,10 +134,21 @@ class System : public SystemBase {
   /// output ports. It is sized with the number of output ports and uses each
   /// output port's allocation method to provide an object of the right type
   /// for that port.
-  // TODO(sherm1) Get rid of context parameter. We are stuck with it for now
-  // because of the way DiagramOutput is implemented. Fixed in caching branch.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput(
-      const Context<T>& context) const = 0;
+  std::unique_ptr<SystemOutput<T>> AllocateOutput() const {
+    // make_unique can't invoke this private constructor.
+    auto output = std::unique_ptr<SystemOutput<T>>(new SystemOutput<T>());
+    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+      const OutputPort<T>& port = this->get_output_port(i);
+      output->add_port(port.Allocate());
+    }
+    return output;
+  }
+
+  /// (Deprecated) Context is ignored.
+  // TODO(sherm1) Get rid of this.
+  std::unique_ptr<SystemOutput<T>> AllocateOutput(const Context<T>&) const {
+    return AllocateOutput();
+  }
 
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state
@@ -412,12 +423,13 @@ class System : public SystemBase {
 
     // The API allows an int but we'll use InputPortIndex internally.
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex iport_index(port_index);
 
     const BasicVector<T>* const basic_value =
         EvalBasicVectorInputImpl(__func__, context, iport_index);
-    if (basic_value == nullptr) return nullptr;  // An unconnected port.
+    if (basic_value == nullptr)
+      return nullptr;  // An unconnected port.
 
     // It's a BasicVector, but we're fussy about the subtype here.
     const Vec<T>* const value = dynamic_cast<const Vec<T>*>(basic_value);
@@ -442,7 +454,7 @@ class System : public SystemBase {
   Eigen::VectorBlock<const VectorX<T>> EvalEigenVectorInput(
       const Context<T>& context, int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const BasicVector<T>* const basic_value =
@@ -627,7 +639,7 @@ class System : public SystemBase {
   }
 
   /// This method forces an unrestricted update on the system given a
-  /// @p context, and the updated state is stored in @p discrete_state. The
+  /// @p context, and the updated state is stored in @p state. The
   /// unrestricted update event will have a trigger type of kForced, with no
   /// additional data, attribute or custom callback.
   ///
@@ -741,8 +753,11 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(CheckValidContext(context));
     DRAKE_ASSERT_VOID(CheckValidOutput(outputs));
     for (OutputPortIndex i(0); i < get_num_output_ports(); ++i) {
-      get_output_port(i).Calc(
-          context, outputs->get_mutable_port_value(i)->GetMutableData());
+      // TODO(sherm1) Would be better to use Eval() here but we don't have
+      // a generic abstract assignment capability that would allow us to
+      // copy into existing memory in `outputs` (rather than clone). User
+      // code depends on memory stability in SystemOutput.
+      get_output_port(i).Calc(context, outputs->GetMutableData(i));
     }
   }
 
@@ -960,11 +975,7 @@ class System : public SystemBase {
 
   // So we don't have to keep writing this->get_num_input_ports().
   using SystemBase::get_num_input_ports;
-
-  /// Returns the number of output ports of the system.
-  int get_num_output_ports() const {
-    return static_cast<int>(output_ports_.size());
-  }
+  using SystemBase::get_num_output_ports;
 
   /// Returns the typed input port at index @p port_index.
   // TODO(sherm1) Make this an InputPortIndex.
@@ -976,13 +987,8 @@ class System : public SystemBase {
   /// Returns the typed output port at index @p port_index.
   // TODO(sherm1) Make this an OutputPortIndex.
   const OutputPort<T>& get_output_port(int port_index) const {
-    if (port_index < 0 || port_index >= get_num_output_ports()) {
-      throw std::out_of_range(
-          "System " + get_name() + ": Port index " +
-          std::to_string(port_index) + " is out of range. There are only " +
-          std::to_string(get_num_output_ports()) + " output ports.");
-    }
-    return *output_ports_[port_index];
+    return dynamic_cast<const OutputPort<T>&>(
+        this->GetOutputPortBaseOrThrow(__func__, port_index));
   }
 
   /// Returns the number of constraints specified for the system.
@@ -1021,14 +1027,6 @@ class System : public SystemBase {
     return true;
   }
 
-  /// Returns the total dimension of all of the output ports (as if they were
-  /// muxed).
-  int get_num_total_outputs() const {
-    int count = 0;
-    for (const auto& out : output_ports_) count += out->size();
-    return count;
-  }
-
   /// Checks that @p output is consistent with the number and size of output
   /// ports declared by the system.
   /// @throw exception unless `output` is non-null and valid for this system.
@@ -1064,8 +1062,11 @@ class System : public SystemBase {
     DRAKE_THROW_UNLESS(context.get_num_input_ports() ==
                        this->get_num_input_ports());
 
-    // Checks that the size of the fixed vector input ports in the
-    // context matches the declarations made by the system.
+    DRAKE_THROW_UNLESS(context.get_num_output_ports() ==
+                       this->get_num_output_ports());
+
+    // Checks that the size of the fixed vector input ports in the context
+    // matches the declarations made by the system.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const FixedInputPortValue* port_value =
           context.MaybeGetFixedInputPortValue(i);
@@ -1427,7 +1428,7 @@ class System : public SystemBase {
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
-    this->CreateInputPort(
+    this->AddInputPort(
         std::make_unique<InputPortDescriptor<T>>(
             port_index, port_ticket, type, size, random_type, this, this));
     return get_input_port(port_index);
@@ -1439,15 +1440,6 @@ class System : public SystemBase {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
-  /// Adds an already-created output port to this System. Insists that the port
-  /// already contains a reference to this System, and that the port's index is
-  /// already set to the next available output port index for this System.
-  void CreateOutputPort(std::unique_ptr<OutputPort<T>> port) {
-    DRAKE_DEMAND(port != nullptr);
-    DRAKE_DEMAND(&port->get_system() == this);
-    DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
-    output_ports_.push_back(std::move(port));
-  }
   //@}
 
   /// Adds an already-created constraint to the list of constraints for this
@@ -1689,10 +1681,10 @@ class System : public SystemBase {
   }
   //@}
 
-//----------------------------------------------------------------------------
-/// @name             Constraint-related functions (protected).
-///
-// @{
+  //----------------------------------------------------------------------------
+  /// @name             Constraint-related functions (protected).
+  ///
+  // @{
 
   /// Gets the number of constraint equations for this system from the given
   /// context. The context is supplied in case the number of constraints is
@@ -1860,9 +1852,6 @@ class System : public SystemBase {
 
     return basic_value;
   }
-
-  // TODO(sherm1) Move output ports up with input ports.
-  std::vector<std::unique_ptr<OutputPort<T>>> output_ports_;
 
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
