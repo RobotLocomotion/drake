@@ -146,6 +146,12 @@ class PyFunctionConstraint : public Constraint {
     y = autodiff_func_(x);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionConstraint does not support symbolic evaluation.");
+  }
+
  private:
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
