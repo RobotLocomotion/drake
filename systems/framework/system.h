@@ -144,11 +144,13 @@ class System : public SystemBase {
     return output;
   }
 
-  /// (Deprecated) Context is ignored.
-  // TODO(sherm1) Get rid of this.
+#ifndef DRAKE_DOXYGEN_CXX
+  // TODO(sherm1) Remove this after 10/1/2018 (three months).
+  DRAKE_DEPRECATED("Call AllocateOutput() with no Context argument.")
   std::unique_ptr<SystemOutput<T>> AllocateOutput(const Context<T>&) const {
     return AllocateOutput();
   }
+#endif
 
   /// Returns a ContinuousState of the same size as the continuous_state
   /// allocated in CreateDefaultContext. The simulator will provide this state

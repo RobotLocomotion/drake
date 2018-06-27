@@ -139,7 +139,7 @@ class TestAutomotive(unittest.TestCase):
         lane = rg.junction(0).segment(0).lane(0)
         pure_pursuit = PurePursuitController()
         context = pure_pursuit.CreateDefaultContext()
-        output = pure_pursuit.AllocateOutput(context)
+        output = pure_pursuit.AllocateOutput()
 
         # Fix the inputs.
         ld_value = framework.AbstractValue.Make(
@@ -189,7 +189,7 @@ class TestAutomotive(unittest.TestCase):
             road_position_strategy=RoadPositionStrategy.kExhaustiveSearch,
             period_sec=0.)
         context = idm.CreateDefaultContext()
-        output = idm.AllocateOutput(context)
+        output = idm.AllocateOutput()
 
         # Fix the inputs.
         pose_vector1 = PoseVector()
@@ -235,7 +235,7 @@ class TestAutomotive(unittest.TestCase):
         simple_car = SimpleCar()
         simulator = Simulator(simple_car)
         context = simulator.get_mutable_context()
-        output = simple_car.AllocateOutput(context)
+        output = simple_car.AllocateOutput()
 
         # Fix the input.
         command = DrivingCommand()

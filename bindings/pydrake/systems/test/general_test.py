@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import copy
+import warnings
 
 import unittest
 import numpy as np
@@ -84,6 +85,11 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertEqual(system.get_num_input_ports(), 3)
         self.assertEqual(system.get_num_output_ports(), 1)
+        # Test deprecated methods.
+        context = system.CreateDefaultContext()
+        with warnings.catch_warnings(record=True) as w:
+            c = system.AllocateOutput(context)
+            self.assertEqual(len(w), 1)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
 
@@ -145,7 +151,7 @@ class TestGeneral(unittest.TestCase):
 
             def check_output(context):
                 # Check number of output ports and value for a given context.
-                output = system.AllocateOutput(context)
+                output = system.AllocateOutput()
                 self.assertEqual(output.get_num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:

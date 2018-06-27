@@ -232,7 +232,7 @@ class RgbdCameraDiagramTest : public ::testing::Test {
     size_ = size;
     diagram_->Init(position, orientation, size_.width, size_.height);
     context_ = diagram_->CreateDefaultContext();
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
   }
 
   // For moving camera base.
@@ -244,7 +244,7 @@ class RgbdCameraDiagramTest : public ::testing::Test {
     size_ = size;
     diagram_->Init(transformation, size_.width, size_.height);
     context_ = diagram_->CreateDefaultContext();
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
   }
 
   void CalcOutput() {

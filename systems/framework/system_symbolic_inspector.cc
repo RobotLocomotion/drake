@@ -19,7 +19,7 @@ SystemSymbolicInspector::SystemSymbolicInspector(
       continuous_state_variables_(context_->get_continuous_state().size()),
       discrete_state_variables_(context_->get_num_discrete_state_groups()),
       numeric_parameters_(context_->num_numeric_parameters()),
-      output_(system.AllocateOutput(*context_)),
+      output_(system.AllocateOutput()),
       derivatives_(system.AllocateTimeDerivatives()),
       discrete_updates_(system.AllocateDiscreteVariables()),
       output_port_types_(system.get_num_output_ports()),

@@ -57,6 +57,7 @@ drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         ":systems_pybind",
+        "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
         "//bindings/pydrake/util:type_safe_index_pybind",
