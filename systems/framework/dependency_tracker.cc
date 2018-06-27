@@ -219,10 +219,12 @@ void DependencyTracker::RepairTrackerPointers(
   owning_subcontext_ = owning_subcontext;
 
   // Set the cache entry pointer.
-  if (source.cache_value_ == &CacheEntryValue::dummy()) {
+  if (!source.has_associated_cache_entry_) {
+    DRAKE_DEMAND(!has_associated_cache_entry_);
     cache_value_ = &CacheEntryValue::dummy();
   } else {
     const CacheIndex source_index(source.cache_value_->cache_index());
+    DRAKE_DEMAND(has_associated_cache_entry_);
     cache_value_ = &cache->get_mutable_cache_entry_value(source_index);
     DRAKE_SPDLOG_DEBUG(log(),
         "Cloned tracker '{}' repairing cache entry {} invalidation to {:#x}.",
