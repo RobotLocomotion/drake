@@ -20,12 +20,53 @@ RotationMatrix<T> RollPitchYaw<T>::ToRotationMatrix() const {
 }
 
 template <typename T>
-RollPitchYaw<T>::RollPitchYaw(const RotationMatrix<T>& R) :
-    RollPitchYaw(R.ToQuaternion(), R) {}
+void RollPitchYaw<T>::SetFromRotationMatrix(const RotationMatrix<T>& R) {
+  SetFromQuaternionAndRotationMatrix(R.ToQuaternion(), R);
+}
 
 template <typename T>
-RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion) :
-    RollPitchYaw(quaternion, RotationMatrix<T>(quaternion)) {}
+void RollPitchYaw<T>::SetFromQuaternion(
+    const Eigen::Quaternion<T>& quaternion) {
+  SetFromQuaternionAndRotationMatrix(quaternion, RotationMatrix<T>(quaternion));
+}
+
+template <typename T>
+void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
+    const Eigen::Quaternion<T>& quaternion, const RotationMatrix<T>& R) {
+  const Vector3<T> rpy =
+      CalcRollPitchYawFromQuaternionAndRotationMatrix(quaternion, R.matrix());
+  SetOrThrowIfNotValidInDebugBuild(rpy);
+
+#ifdef DRAKE_ASSERT_IS_ARMED
+  // Verify that arguments to this method make sense.  Ensure the
+  // rotation_matrix and quaternion correspond to the same orientation.
+  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  const RotationMatrix<T> R_quaternion(quaternion);
+  constexpr double tolerance = 20 * kEpsilon;
+  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
+    std::string message = fmt::format("RollPitchYaw::{}():"
+        " An element of the RotationMatrix R passed to this method differs by"
+        " more than {:G} from the corresponding element of the RotationMatrix"
+        " formed by the Quaternion passed to this method.  To avoid this"
+        " inconsistency, ensure the orientation of R and Quaternion align."
+        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
+    throw std::logic_error(message);
+  }
+
+  // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
+  // It is tested by converting the returned %RollPitchYaw to a %RotationMatrix
+  // and verifying the rotation matrices are within kEpsilon of each other.
+  // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
+  // = 2.22E-16) and there are two sets of two multiplies and one addition for
+  // each rotation matrix element, I decided to test with 20 * kEpsilon:
+  // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
+  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
+  // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
+  const RollPitchYaw<T> roll_pitch_yaw(rpy);
+  const RotationMatrix<T> R_rpy = RotationMatrix<T>(roll_pitch_yaw);
+  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(R, 20 * kEpsilon));
+#endif
+}
 
 // <h3>Theory</h3>
 //
@@ -108,18 +149,12 @@ RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion) :
 // @note This algorithm is specific to SpaceXYZ (roll-pitch-yaw) order.
 // It is easily modified for other SpaceIJK and BodyIJI rotation sequences.
 // @author Paul Mitiguy
-template<typename T>
-RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
-                              const RotationMatrix<T>& rotation_matrix) {
-  const Matrix3<T> R = rotation_matrix.matrix();
-
+template <typename T>
+Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
+    const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R) {
   using std::atan2;
   using std::sqrt;
   using std::abs;
-
-  // This algorithm is specific to SpaceXYZ order, including the calculation
-  // of q2, the formulas for xA,yA, xB,yB, and values of q1, q3.
-  // It is easily modified for other SpaceIJK and BodyIJI rotation sequences.
 
   // Calculate q2 using lots of information in the rotation matrix.
   // Rsum = abs( cos(q2) ) is inherently non-negative.
@@ -153,30 +188,7 @@ RollPitchYaw<T>::RollPitchYaw(const Eigen::Quaternion<T>& quaternion,
 
   // Return in Drake/ROS conventional SpaceXYZ q1, q2, q3 (roll-pitch-yaw) order
   // (which is equivalent to BodyZYX q3, q2, q1 order).
-  roll_pitch_yaw_ = Vector3<T>(q1, q2, q3);
-
-#ifdef DRAKE_ASSERT_IS_ARMED
-  ThrowIfNotValid(roll_pitch_yaw_);
-
-  // Verify that arguments to this method make sense.  Ensure the
-  // rotation_matrix and quaternion correspond to the same orientation.
-  const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const RotationMatrix<T> R_quaternion(quaternion);
-  DRAKE_ASSERT(R_quaternion.IsNearlyEqualTo(rotation_matrix, 20 * kEpsilon));
-
-  // This algorithm converts a quaternion and %RotationMatrix to %RollPitchYaw.
-  // It is tested by converting the returned %RollPitchYaw to a %RotationMatrix
-  // and verifying the rotation matrices are within kEpsilon of each other.
-  // Assuming sine, cosine are accurate to 4*(standard double-precision epsilon
-  // = 2.22E-16) and there are two sets of two multiplies and one addition for
-  // each rotation matrix element, I decided to test with 20 * kEpsilon:
-  // (1+4*eps)*(1+4*eps)*(1+4*eps) = 1 + 3*(4*eps) + 3*(4*eps)^2 + (4*eps)^3.
-  // Each + or * or sqrt rounds-off, which can introduce 1/2 eps for each.
-  // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
-  const RollPitchYaw<T> rpy(roll_pitch_yaw_);
-  const RotationMatrix<T> R_rpy = RotationMatrix<T>(rpy);
-  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(rotation_matrix, 20 * kEpsilon));
-#endif
+  return Vector3<T>(q1, q2, q3);
 }
 
 template <typename T>

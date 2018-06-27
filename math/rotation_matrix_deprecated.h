@@ -117,20 +117,20 @@ Vector3<typename Derived::Scalar> rotmat2rpy(
   return drake::Vector3<Scalar>(theta3, theta2, theta1);
 }
 
-/// (Deprecated), use @ref math::RotationMatrix or @ref math::rotmat2rpy
+/// (Deprecated), use @ref math::RotationMatrix or @ref math::RollPitchYaw
 /// or @ref math::RotationMatrix::ToQuaternionAsVector4.
 // TODO(mitiguy) This code was deprecated on April 12, 2018.
 // Even prior to this date, there are no calls in drake to this function.
 // Delete this code in accordance with issue #8323.
 template <typename Derived>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
-                 "Use math::RotationMatrix(R) or math::rotmat2rpy(R) "
+                 "Use math::RotationMatrix(R) or math::RollPitchYaw(R) "
                  "or math::RotationMatrix::ToQuaternionAsVector4.")
 VectorX<typename Derived::Scalar> rotmat2Representation(
     const Eigen::MatrixBase<Derived>& R, int rotation_type) {
   throw std::runtime_error("This code is deprecated per issue #8323. "
-                           "Use math::RotationMatrix(R) or math::rotmat2rpy(R) "
-                           "or math::RotationMatrix::ToQuaternionAsVector4.");
+                         "Use math::RotationMatrix(R) or math::RollPitchYaw(R) "
+                         "or math::RotationMatrix::ToQuaternionAsVector4.");
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::MakeXRotation

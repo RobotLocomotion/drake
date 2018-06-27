@@ -12,6 +12,7 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/manipulation/util/world_sim_tree_builder.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/multibody/joints/fixed_joint.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_ik.h"
@@ -862,13 +863,17 @@ void PickAndPlaceStateMachine::Update(const WorldState& env_state,
     case PickAndPlaceState::kOpenGripper: {
       if (!wsg_act_.ActionStarted()) {
         const Isometry3<double>& obj_pose = env_state.get_object_pose();
+        math::Transform<double> X(obj_pose);
+        math::RollPitchYaw<double> rpy(X.rotation());
         drake::log()->info("Object at: {} {}",
-                           obj_pose.translation().transpose(),
-                           math::rotmat2rpy(obj_pose.rotation()).transpose());
+                           X.translation().transpose(),
+                           rpy.vector().transpose());
         const Isometry3<double>& iiwa_pose = env_state.get_iiwa_base();
-        drake::log()->info("Base at: {} {}",
-                           iiwa_pose.translation().transpose(),
-                           math::rotmat2rpy(iiwa_pose.rotation()).transpose());
+        X.SetFromIsometry3(iiwa_pose);
+        rpy.SetFromRotationMatrix(X.rotation());
+                drake::log()->info("Base at: {} {}",
+                           X.translation().transpose(),
+                           rpy.vector().transpose());
       }
     }  // Intentionally fall through.
     case PickAndPlaceState::kGrasp:
