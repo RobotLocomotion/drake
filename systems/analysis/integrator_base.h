@@ -47,10 +47,16 @@ solution, so must be avoided.
  * IntegrateWithMultipleSteps() and IntegrateWithSingleFixedStep() methods;
  * the latter permits the caller to advance time using fixed steps in
  * applications where variable stepping would be deleterious (e.g., direct
- * transcription). To support these applications for cases where performance
- * is of paramount importance, continuous extensions of the integrated
- * continuous state are also available (through the StartDenseIntegration()
- * and StopDenseIntegration() methods).
+ * transcription).
+ *
+ * For applications that require a more dense sampling of the system
+ * continuous state than what would be available through either fixed or
+ * error-controlled step integration (for a given accuracy), continuous
+ * extensions are available (through StartDenseIntegration() and
+ * StopDenseIntegration() methods). The accuracy and performance of the
+ * extensions may vary with each integration scheme implementation. However,
+ * unless specified otherwise, an HermitianContinuousExtension is provided
+ * by default.
  *
  * A natural question for a user to ask of an integrator is: Which scheme
  * (method) should be applied to a particular problem? The answer is whichever

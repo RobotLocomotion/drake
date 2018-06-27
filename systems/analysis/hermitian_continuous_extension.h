@@ -175,7 +175,7 @@ struct ScalarConverter<double> : public ScalarBaseConverter<double> {
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
 // TODO(hidmic): Better support AutoDiff scalars when PiecewisePolynomial
-// fully supports them.
+// supports them.
 template <typename T>
 class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
  public:
@@ -257,7 +257,7 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
 
     /// Extends the step forward in time from system vectors.
     ///
-    /// @param time Time tᵢto extend the step to.
+    /// @param time Time tᵢ to extend the step to.
     /// @param state State vector 𝐱ᵢ at @p time tᵢ.
     /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ.
     /// @throw std::runtime_error
