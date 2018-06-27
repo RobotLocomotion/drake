@@ -102,6 +102,13 @@ class LeafSystem : public System<T> {
         System<T>::AllocateContext());
   }
 
+  /// Shadows System<T>::CreateDefaultContext to provide a more concrete return
+  /// type LeafContext<T>.
+  std::unique_ptr<LeafContext<T>> CreateDefaultContext() const {
+    return dynamic_pointer_cast_or_throw<LeafContext<T>>(
+        System<T>::CreateDefaultContext());
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
@@ -128,16 +135,16 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoMakeContext() const final {
     std::unique_ptr<LeafContext<T>> context = DoMakeLeafContext();
-    // Reserve continuous state via delegation to subclass.
-    context->set_continuous_state(this->AllocateContinuousState());
-    // Reserve discrete state via delegation to subclass.
-    context->set_discrete_state(this->AllocateDiscreteState());
-    context->set_abstract_state(this->AllocateAbstractState());
 
     // Reserve parameters via delegation to subclass.
     context->init_parameters(this->AllocateParameters());
 
-    return context;
+    // Reserve state via delegation to subclass.
+    context->init_continuous_state(this->AllocateContinuousState());
+    context->init_discrete_state(this->AllocateDiscreteState());
+    context->init_abstract_state(this->AllocateAbstractState());
+
+    return std::move(context);
   }
 
   // Enforce some requirements on the fully-assembled Context.

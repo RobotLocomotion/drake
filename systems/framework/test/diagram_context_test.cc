@@ -20,7 +20,6 @@
 
 namespace drake {
 namespace systems {
-namespace {
 
 constexpr int kSize = 1;
 constexpr int kNumSystems = 8;
@@ -84,8 +83,10 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_abstract_parameters_, SubsystemIndex(7));
 
     // Fake up some input ports for this diagram.
-    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
-    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
+    detail::SystemBaseContextBaseAttorney::AddInputPort(
+        &*context_, InputPortIndex(0), DependencyTicket(100));
+    detail::SystemBaseContextBaseAttorney::AddInputPort(
+        &*context_, InputPortIndex(1), DependencyTicket(101));
 
     context_->MakeState();
     context_->MakeParameters();
@@ -132,6 +133,8 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<SystemWithAbstractParameters>
       system_with_abstract_parameters_;
 };
+
+namespace {
 
 // Verifies that @p state is a clone of the state constructed in
 // DiagramContextTest::SetUp.
@@ -245,9 +248,9 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(
-      context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
+  EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }
 
 // Tests that input ports can be assigned to the DiagramContext and then
@@ -260,8 +263,9 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
 }
 
 TEST_F(DiagramContextTest, Clone) {
-  context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                    {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
+  context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
   AttachInputPorts();
 
   auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());

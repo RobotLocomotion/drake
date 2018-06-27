@@ -56,7 +56,7 @@ class LeafContextTest : public ::testing::Test {
     }
 
     // Reserve a continuous state with five elements.
-    context_.set_continuous_state(std::make_unique<ContinuousState<double>>(
+    context_.init_continuous_state(std::make_unique<ContinuousState<double>>(
         BasicVector<double>::Make({1.0, 2.0, 3.0, 5.0, 8.0}),
         kGeneralizedPositionSize, kGeneralizedVelocitySize,
         kMiscContinuousStateSize));
@@ -65,7 +65,7 @@ class LeafContextTest : public ::testing::Test {
     // that we can change it using get_mutable_discrete_state_vector().
     std::vector<std::unique_ptr<BasicVector<double>>> xd_single;
     xd_single.push_back(BasicVector<double>::Make({128.0}));
-    context_.set_discrete_state(
+    context_.init_discrete_state(
         std::make_unique<DiscreteValues<double>>(std::move(xd_single)));
     context_.get_mutable_discrete_state_vector()[0] = 192.0;
     EXPECT_EQ(context_.get_discrete_state().get_vector()[0], 192.0);
@@ -74,14 +74,14 @@ class LeafContextTest : public ::testing::Test {
     std::vector<std::unique_ptr<BasicVector<double>>> xd;
     xd.push_back(BasicVector<double>::Make({128.0}));
     xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
-    context_.set_discrete_state(
+    context_.init_discrete_state(
         std::make_unique<DiscreteValues<double>>(std::move(xd)));
 
     // Reserve an abstract state with one element, which is not owned.
     abstract_state_ = PackValue(42);
     std::vector<AbstractValue*> xa;
     xa.push_back(abstract_state_.get());
-    context_.set_abstract_state(
+    context_.init_abstract_state(
         std::make_unique<AbstractValues>(std::move(xa)));
 
     // Reserve two numeric parameters of size 3 and size 4, and one abstract
@@ -127,7 +127,8 @@ class LeafContextTest : public ::testing::Test {
   void AddInputPorts(int n, Context<T>* context) {
     for (InputPortIndex i(0); i < n; ++i) {
       input_port_tickets_.push_back(next_ticket_);
-      context->AddInputPort(i, next_ticket_++);
+      detail::SystemBaseContextBaseAttorney::AddInputPort(&*context, i,
+                                                          next_ticket_++);
     }
   }
 
@@ -139,13 +140,14 @@ class LeafContextTest : public ::testing::Test {
     // Pretend the first output port has an external dependency (so tracking
     // should be deferred) while the rest are dependent on a built-in tracker.
     output_port_tickets_.push_back(next_ticket_);
-    context->AddOutputPort(OutputPortIndex(0), next_ticket_++,
-                           {SubsystemIndex(1), DependencyTicket(0)});
+    detail::SystemBaseContextBaseAttorney::AddOutputPort(
+        &*context, OutputPortIndex(0), next_ticket_++,
+        {SubsystemIndex(1), DependencyTicket(0)});
 
     for (OutputPortIndex i(1); i < n; ++i) {
       output_port_tickets_.push_back(next_ticket_);
-      context->AddOutputPort(
-          i, next_ticket_++,
+      detail::SystemBaseContextBaseAttorney::AddOutputPort(
+          &*context, i, next_ticket_++,
           {nullopt, DependencyTicket(internal::kAllSourcesTicket)});
     }
   }
@@ -158,6 +160,8 @@ class LeafContextTest : public ::testing::Test {
   std::vector<DependencyTicket> input_port_tickets_;
   std::vector<DependencyTicket> output_port_tickets_;
 };
+
+namespace {
 
 // Verifies that @p state is a clone of the state constructed in
 // LeafContextTest::SetUp.
@@ -221,16 +225,15 @@ TEST_F(LeafContextTest, CheckPorts) {
   ASSERT_EQ(kNumOutputPorts, context_.get_num_output_ports());
 
   // The "all inputs" tracker should have been subscribed to each of the
-  // input ports.
-  // TODO(sherm1) And each input port should have subscribed to its fixed
+  // input ports. And each input port should have subscribed to its fixed
   // input value.
   auto& u_tracker =
       context_.get_tracker(DependencyTicket(internal::kAllInputPortsTicket));
   for (InputPortIndex i(0); i < kNumInputPorts; ++i) {
     EXPECT_EQ(context_.input_port_ticket(i), input_port_tickets_[i]);
     auto& tracker = context_.get_tracker(input_port_tickets_[i]);
-    // TODO(sherm1) The fixed input value should be a prerequisite.
-    EXPECT_EQ(tracker.num_prerequisites(), 0);
+    // The fixed input value is a prerequisite.
+    EXPECT_EQ(tracker.num_prerequisites(), 1);
     EXPECT_EQ(tracker.num_subscribers(), 1);
     EXPECT_TRUE(u_tracker.HasPrerequisite(tracker));
   }
@@ -269,15 +272,15 @@ TEST_F(LeafContextTest, IsStateless) {
 
 TEST_F(LeafContextTest, HasOnlyContinuousState) {
   EXPECT_FALSE(context_.has_only_continuous_state());
-  context_.set_discrete_state(std::make_unique<DiscreteValues<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractValues>());
+  context_.init_discrete_state(std::make_unique<DiscreteValues<double>>());
+  context_.init_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_continuous_state());
 }
 
 TEST_F(LeafContextTest, HasOnlyDiscreteState) {
   EXPECT_FALSE(context_.has_only_discrete_state());
-  context_.set_continuous_state(std::make_unique<ContinuousState<double>>());
-  context_.set_abstract_state(std::make_unique<AbstractValues>());
+  context_.init_continuous_state(std::make_unique<ContinuousState<double>>());
+  context_.init_abstract_state(std::make_unique<AbstractValues>());
   EXPECT_TRUE(context_.has_only_discrete_state());
 }
 
@@ -286,7 +289,7 @@ TEST_F(LeafContextTest, GetNumStates) {
   EXPECT_EQ(context.get_num_total_states(), 0);
 
   // Reserve a continuous state with five elements.
-  context.set_continuous_state(std::make_unique<ContinuousState<double>>(
+  context.init_continuous_state(std::make_unique<ContinuousState<double>>(
       BasicVector<double>::Make({1.0, 2.0, 3.0, 5.0, 8.0})));
   EXPECT_EQ(context.get_num_total_states(), 5);
 
@@ -294,7 +297,7 @@ TEST_F(LeafContextTest, GetNumStates) {
   std::vector<std::unique_ptr<BasicVector<double>>> xd;
   xd.push_back(BasicVector<double>::Make({128.0}));
   xd.push_back(BasicVector<double>::Make({256.0, 512.0}));
-  context.set_discrete_state(
+  context.init_discrete_state(
       std::make_unique<DiscreteValues<double>>(std::move(xd)));
   EXPECT_EQ(context.get_num_total_states(), 8);
 
@@ -302,7 +305,7 @@ TEST_F(LeafContextTest, GetNumStates) {
   std::unique_ptr<AbstractValue> abstract_state = PackValue(42);
   std::vector<AbstractValue*> xa;
   xa.push_back(abstract_state.get());
-  context.set_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
+  context.init_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
   EXPECT_THROW(context.get_num_total_states(), std::runtime_error);
 }
 
@@ -461,7 +464,7 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // interesting values.
   // In actual applications, System<T>::CreateDefaultContext does this.
   LeafContext<AutoDiffXd> target;
-  target.set_continuous_state(std::make_unique<ContinuousState<AutoDiffXd>>(
+  target.init_continuous_state(std::make_unique<ContinuousState<AutoDiffXd>>(
       std::make_unique<BasicVector<AutoDiffXd>>(5),
       kGeneralizedPositionSize, kGeneralizedVelocitySize,
       kMiscContinuousStateSize));
@@ -469,12 +472,12 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> xd;
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(1));
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(2));
-  target.set_discrete_state(
+  target.init_discrete_state(
       std::make_unique<DiscreteValues<AutoDiffXd>>(std::move(xd)));
 
   std::vector<std::unique_ptr<AbstractValue>> xa;
   xa.push_back(PackValue(76));
-  target.set_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
+  target.init_abstract_state(std::make_unique<AbstractValues>(std::move(xa)));
 
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> params;
   params.push_back(std::make_unique<BasicVector<AutoDiffXd>>(3));
@@ -528,5 +531,6 @@ TEST_F(LeafContextTest, Accuracy) {
   EXPECT_EQ(clone->get_accuracy().value(), unity);
 }
 
+}  // namespace
 }  // namespace systems
 }  // namespace drake

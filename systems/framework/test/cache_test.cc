@@ -160,11 +160,44 @@ class CacheTest : public ::testing::Test {
   const DependencyTicket time_ticket_{internal::kTimeTicket};
   const DependencyTicket z_ticket_{internal::kZTicket};
   const DependencyTicket xc_ticket_{internal::kXcTicket};
+  const DependencyTicket xcdot_ticket_{internal::kXcdotTicket};
   const DependencyTicket all_sources_ticket_{internal::kAllSourcesTicket};
   DependencyTicket next_ticket_{internal::kNextAvailableTicket};
 
   CacheIndex next_cache_index_{cache().cache_size()};
 };
+
+// Normally creating a new CacheEntryValue creates a new DependencyTracker to
+// manage it. However, for well-known cached objects like the time derivatives
+// cache entry xcdot, the tracker is created during Context construction and
+// we are allowed to associate the cache entry value to it later.
+TEST_F(CacheTest, CanAssociateExistingTrackerWithNewCacheEntry) {
+  // Check that creating a new cache entry value creates the matching tracker.
+  int expected_num_trackers = graph().trackers_size();
+  CacheIndex index(next_cache_index_++);
+  DependencyTicket ticket(next_ticket_++);
+  EXPECT_FALSE(graph().has_tracker(ticket));
+  CacheEntryValue& normal_value = cache().CreateNewCacheEntryValue(
+      index, ticket, "normal cache entry", {nothing_ticket_}, &graph());
+  ++expected_num_trackers;
+  EXPECT_EQ(graph().trackers_size(), expected_num_trackers);
+  ASSERT_TRUE(graph().has_tracker(ticket));
+  EXPECT_EQ(graph().get_tracker(ticket).cache_entry_value(), &normal_value);
+
+  // Now check that we can attach a new cache entry value to an existing
+  // well-known tracker.
+  ASSERT_TRUE(graph().has_tracker(xcdot_ticket_));
+  const DependencyTracker& xcdot_tracker = graph().get_tracker(xcdot_ticket_);
+  EXPECT_EQ(xcdot_tracker.cache_entry_value(), nullptr);
+
+  index = next_cache_index_++;
+  CacheEntryValue& xcdot_value = cache().CreateNewCacheEntryValue(
+      index, xcdot_ticket_, "xcdot cache entry", {nothing_ticket_}, &graph());
+  // No new tracker should have been created.
+  EXPECT_EQ(graph().trackers_size(), expected_num_trackers);
+  EXPECT_EQ(graph().get_tracker(xcdot_ticket_).cache_entry_value(),
+            &xcdot_value);
+}
 
 // Check that SetInitialValue works and fails properly.
 TEST_F(CacheTest, SetInitialValueWorks) {
