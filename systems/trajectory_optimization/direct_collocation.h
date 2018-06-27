@@ -96,6 +96,9 @@ class DirectCollocationConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override;
+
  private:
   DirectCollocationConstraint(const System<double>& system,
                               const Context<double>& context, int num_states,

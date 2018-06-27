@@ -43,9 +43,14 @@ class IKTrajectoryCost : public drake::solvers::Cost {
         q_nom_(q_nom) {}
 
  protected:
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error("Non-gradient version not implemented!");
+  }
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
               Eigen::VectorXd&) const override {
-    throw std::runtime_error("Non-gradient version not implemented!");
+    throw std::logic_error("Non-gradient version not implemented!");
   }
 
   void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd> &x,
@@ -150,7 +155,12 @@ class IKInbetweenConstraint : public drake::solvers::Constraint {
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>&,
               Eigen::VectorXd&) const override {
-    throw std::runtime_error("Non-gradient version not implemented!");
+    throw std::logic_error("Non-gradient version not implemented!");
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error("Non-gradient version not implemented!");
   }
 
   void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd> &x,

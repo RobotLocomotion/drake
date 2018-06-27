@@ -86,6 +86,12 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     y = next_state - discrete_state_->get_vector(0).CopyToVector();
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "DiscreteTimeSystemConstraint does not support symbolic evaluation.");
+  }
+
  private:
   const System<AutoDiffXd>& system_;
   Context<AutoDiffXd>* const context_;

@@ -116,6 +116,12 @@ class PyFunctionCost : public Cost {
     y[0] = autodiff_func_(x);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionCost does not support symbolic evaluation.");
+  }
+
  private:
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -143,6 +149,12 @@ class PyFunctionConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
     y = autodiff_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionConstraint does not support symbolic evaluation.");
   }
 
  private:

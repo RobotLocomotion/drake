@@ -4,6 +4,7 @@
 
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -14,12 +15,35 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 namespace drake {
+
+using symbolic::test::ExprEqual;
+using symbolic::test::FormulaEqual;
+
 namespace solvers {
 
-using symbolic::Variable;
+using symbolic::Environment;
 using symbolic::Expression;
+using symbolic::Formula;
+using symbolic::Variable;
 
 namespace {
+
+// Given a list of variables [x₀, ..., xₙ] and a list of values [v₀, ..., vₙ],
+// returns an environment {x₀ ↦ v₀, ..., xₙ ↦ vₙ}.
+Environment BuildEnvironment(const VectorX<Variable>& vars,
+                             const VectorXd& values) {
+  Environment env;
+  for (int i = 0; i < vars.size(); ++i) {
+    env.insert(vars[i], values[i]);
+  }
+  return env;
+}
+
+// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
+auto Evaluate(const MatrixX<Expression>& m, const Environment& env) {
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
+}
+
 GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   // Update the coefficients or the bound of the linear constraint, and check
   // the updated constraint.
@@ -30,6 +54,17 @@ GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   EXPECT_TRUE(CompareMatrices(constraint.upper_bound(), b));
   EXPECT_TRUE(CompareMatrices(constraint.A(), A));
   EXPECT_EQ(constraint.num_constraints(), 2);
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
+  VectorX<Expression> y_sym;
+  constraint.Eval(x_sym, y_sym);
+  EXPECT_EQ(y_sym.size(), 2);
+  EXPECT_PRED2(ExprEqual, y_sym[0], x_sym[0]);
+  EXPECT_PRED2(ExprEqual, y_sym[1], x_sym[1]);
+  EXPECT_PRED2(
+      FormulaEqual, constraint.CheckSatisfied(x_sym),
+      1 <= x_sym[0] && x_sym[0] <= 1 && 2 <= x_sym[1] && x_sym[1] <= 2);
 
   // Update with a new matrix A2 with three columns. This should cause a runtime
   // error, since the number of variables do not match.
@@ -59,6 +94,18 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   QuadraticConstraint constraint1(Q, b, 0, 1);
   EXPECT_TRUE(CompareMatrices(constraint1.Q(), Q));
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
+  const Variable& x0{x_sym[0]};
+  const Variable& x1{x_sym[1]};
+  VectorX<Expression> y_sym;
+  constraint1.Eval(x_sym, y_sym);
+  EXPECT_EQ(y_sym.size(), 1);
+  EXPECT_PRED2(ExprEqual, y_sym[0],
+               0.5 * x0 * x0 + 0.5 * x1 * x1 + x0 + 2 * x1);
+  EXPECT_PRED2(FormulaEqual, constraint1.CheckSatisfied(x_sym),
+               0 <= y_sym[0] && y_sym[0] <= 1);
 
   // Updates constraint with a non-symmetric Hessian.
   // clang-format off
@@ -103,6 +150,16 @@ void TestLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{
+      symbolic::MakeVectorContinuousVariable(x_test.size(), "x")};
+  VectorX<Expression> y_sym;
+  cnstr.Eval(x_sym, y_sym);
+  const Environment env{BuildEnvironment(x_sym, x_test)};
+  EXPECT_TRUE(CompareMatrices(Evaluate(y_sym, env), y_expected, 1E-10,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_sym).Evaluate(env), is_in_cone_expected);
 }
 
 void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
@@ -132,6 +189,16 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
 
   EXPECT_TRUE(CompareMatrices(y, math::autoDiffToValueMatrix(y_taylor)));
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{
+      symbolic::MakeVectorContinuousVariable(x_test.size(), "x")};
+  VectorX<Expression> y_sym;
+  cnstr.Eval(x_sym, y_sym);
+  const Environment env{BuildEnvironment(x_sym, x_test)};
+  EXPECT_TRUE(CompareMatrices(Evaluate(y_sym, env), y_expected, 1E-10,
+                              MatrixCompareType::absolute));
+  EXPECT_EQ(cnstr.CheckSatisfied(x_sym).Evaluate(env), is_in_cone_expected);
 }
 
 GTEST_TEST(testConstraint, testLorentzConeConstraint) {
@@ -232,6 +299,13 @@ GTEST_TEST(testConstraint, testPositiveSemidefiniteConstraint) {
               (y.array() > cnstr.upper_bound().array()).any());
   EXPECT_EQ(cnstr.matrix_rows(), 3);
   EXPECT_FALSE(cnstr.CheckSatisfied(X2));
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{
+      symbolic::MakeVectorContinuousVariable(X1.size(), "x")};
+  VectorX<Expression> y_sym;
+  EXPECT_THROW(cnstr.Eval(x_sym, y_sym), std::logic_error);
+  EXPECT_THROW(cnstr.CheckSatisfied(x_sym), std::logic_error);
 }
 
 GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
@@ -258,6 +332,13 @@ GTEST_TEST(testConstraint, testLinearMatrixInequalityConstraint) {
   EXPECT_TRUE((y.array() < cnstr.lower_bound().array()).any() ||
               (y.array() > cnstr.upper_bound().array()).any());
   EXPECT_FALSE(cnstr.CheckSatisfied(x2));
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{
+      symbolic::MakeVectorContinuousVariable(x1.size(), "x")};
+  VectorX<Expression> y_sym;
+  EXPECT_THROW(cnstr.Eval(x_sym, y_sym), std::logic_error);
+  EXPECT_THROW(cnstr.CheckSatisfied(x_sym), std::logic_error);
 }
 
 GTEST_TEST(testConstraint, testExpressionConstraint) {
@@ -295,6 +376,15 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
                               y_expected));
   EXPECT_TRUE(CompareMatrices(math::autoDiffToGradientMatrix(y_autodiff),
                               y_gradient_expected));
+
+  // Test Eval/CheckSatisfied using Expression.
+  VectorX<Expression> y_sym;
+  constraint.Eval(vars, y_sym);
+  EXPECT_EQ(y_sym.size(), e.size());
+  EXPECT_PRED2(ExprEqual, y_sym[0], e[0]);
+  EXPECT_PRED2(ExprEqual, y_sym[1], e[1]);
+  EXPECT_PRED2(FormulaEqual, constraint.CheckSatisfied(vars),
+               0 <= e[0] && e[0] <= 2 && 0 <= e[1] && e[1] <= 2);
 }
 
 // Test that the Eval() method of LinearComplementarityConstraint correctly
@@ -317,6 +407,23 @@ GTEST_TEST(testConstraint, testSimpleLCPConstraintEval) {
   EXPECT_TRUE(
       CompareMatrices(w, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
   EXPECT_FALSE(c.CheckSatisfied(x2));
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{
+      symbolic::MakeVectorContinuousVariable(x1.size(), "x")};
+  const Variable& x_0{x_sym[0]};
+  const Variable& x_1{x_sym[1]};
+  VectorX<Expression> y_sym;
+  c.Eval(x_sym, y_sym);  // y = Mx + q = Ix + [-1, -1].
+  EXPECT_EQ(y_sym.size(), 2);
+  EXPECT_PRED2(ExprEqual, y_sym[0], x_0 - 1);
+  EXPECT_PRED2(ExprEqual, y_sym[1], x_1 - 1);
+  // 1. Mx + q = Ix + [-1 -1] >= 0
+  // 2. x >= 0
+  // 3. x'(Mx + q) = x₀(x₀ - 1) + x₁(x₁ - 1) == 0
+  EXPECT_PRED2(FormulaEqual, c.CheckSatisfied(x_sym),
+               x_0 - 1.0 >= 0 && x_1 - 1.0 >= 0 && x_0 >= 0.0 && x_1 >= 0.0 &&
+                   x_0 * (x_0 - 1.0) + x_1 * (x_1 - 1.0) == 0.0);
 }
 
 class SimpleEvaluator : public EvaluatorBase {
@@ -337,6 +444,11 @@ class SimpleEvaluator : public EvaluatorBase {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
+    y = c_ * x;
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<Variable>>& x,
+              VectorX<Expression>& y) const override {
     y = c_ * x;
   }
 
@@ -361,6 +473,21 @@ GTEST_TEST(testConstraint, testEvaluatorConstraint) {
   const VectorXd y_expected = c * x;
   constraint.Eval(x, y);
   EXPECT_EQ(y_expected, y);
+
+  // Test Eval/CheckSatisfied using Expression.
+  const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(3, "x")};
+  const Variable& x_0{x_sym[0]};
+  const Variable& x_1{x_sym[1]};
+  const Variable& x_2{x_sym[2]};
+
+  VectorX<Expression> y_sym;
+  constraint.Eval(x_sym, y_sym);  // y = c * x
+  EXPECT_EQ(y_sym.size(), 2);
+  EXPECT_PRED2(ExprEqual, y_sym[0], 1 * x_0 + 2 * x_1 + 3 * x_2);
+  EXPECT_PRED2(ExprEqual, y_sym[1], 4 * x_0 + 5 * x_1 + 6 * x_2);
+  EXPECT_PRED2(
+      FormulaEqual, constraint.CheckSatisfied(x_sym),
+      -1 <= y_sym[0] && y_sym[0] <= 1 && -1 <= y_sym[1] && y_sym[1] <= 1);
 }
 
 }  // namespace
