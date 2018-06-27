@@ -102,6 +102,9 @@ class QueryObject {
    geometry are also not reported. The penetration between two geometries is
    characterized as a point pair (see PenetrationAsPointPair).
 
+   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner.
+
    <!--
    This method is affected by collision filtering; element pairs that
    have been filtered will not produce contacts, even if their collision
