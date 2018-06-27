@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
@@ -40,8 +41,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
   // rotation matrix with round-off errors.
   const math::RotationMatrix<T> Rproj_FM =
       math::RotationMatrix<T>::ProjectToRotationMatrix(R_FM);
-
-  q = math::rotmat2rpy(Rproj_FM.matrix());
+  q = math::RollPitchYaw<T>(Rproj_FM).vector();
   return *this;
 }
 

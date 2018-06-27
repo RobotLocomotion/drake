@@ -37,6 +37,21 @@ const int kSweepSize = 6;
 const double kEpsilon = numeric_limits<double>::epsilon();
 const double kTolerance = 1.0E-12;
 
+GTEST_TEST(EigenEulerAngleTest, MakeXYZRotation) {
+  // Verify MakeXRotation(theta), MakeYRotation(theta), MakeZRotation(theta) is
+  // the same as AngleAxis equivalents.
+  const double theta = 0.1234567;  // Arbitrary angle.
+  const RotationMatrix<double> Rx(RotationMatrix<double>::MakeXRotation(theta));
+  const RotationMatrix<double> Ry(RotationMatrix<double>::MakeYRotation(theta));
+  const RotationMatrix<double> Rz(RotationMatrix<double>::MakeZRotation(theta));
+  const Quaterniond qx(Eigen::AngleAxisd(theta, Vector3d::UnitX()));
+  const Quaterniond qy(Eigen::AngleAxisd(theta, Vector3d::UnitY()));
+  const Quaterniond qz(Eigen::AngleAxisd(theta, Vector3d::UnitZ()));
+  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrix<double>(qx), 512 * kEpsilon));
+  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrix<double>(qy), 512 * kEpsilon));
+  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrix<double>(qz), 512 * kEpsilon));
+}
+
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
   // Verify ea = Eigen::eulerAngles(0, 1, 2) returns Euler angles about
   // Body-fixed x-y'-z'' axes by [ea(0), ea(1), ea(2)].
