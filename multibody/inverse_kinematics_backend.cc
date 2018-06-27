@@ -187,6 +187,12 @@ class InverseKinObjective : public solvers::Cost {
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "InverseKinObjective does not support symbolic evaluation.");
+  }
+
  private:
   const MatrixXd& Q_;
   VectorXd q_nom_i_;

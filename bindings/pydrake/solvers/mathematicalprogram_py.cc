@@ -117,6 +117,12 @@ class PyFunctionCost : public Cost {
     y[0] = autodiff_func_(x);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionCost does not support symbolic evaluation.");
+  }
+
  private:
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;

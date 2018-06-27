@@ -40,6 +40,13 @@ class GenericTrivialCost1 : public Cost {
     y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+              VectorX<symbolic::Expression>& y) const override {
+    y.resize(1);
+    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
  private:
   // Add a private data member to make sure no slicing on this class, derived
   // from Constraint.
