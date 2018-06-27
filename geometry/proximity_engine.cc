@@ -295,6 +295,13 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       penetration.p_WCa = p_WAc;
       penetration.p_WCb = p_WBc;
       penetration.nhat_BA_W = drake_normal;
+      // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
+      // surfaces and then flip the normal.
+      if (penetration.id_B < penetration.id_A) {
+        std::swap(penetration.id_A, penetration.id_B);
+        std::swap(penetration.p_WCa, penetration.p_WCb);
+        penetration.nhat_BA_W = -penetration.nhat_BA_W;
+      }
       collision_data.contacts->emplace_back(std::move(penetration));
     }
   }
