@@ -79,19 +79,31 @@ CacheEntryValue& Cache::CreateNewCacheEntryValue(
                           nullptr /* no value yet */));
   CacheEntryValue& value = *store_[index];
 
-  // Allocate a DependencyTracker for this cache entry. Note that a pointer
-  // to the new CacheEntryValue is retained so must have a lifetime matching
-  // the tracker. That requires that the Cache and DependencyGraph are contained
-  // in the same Context.
-  DependencyTracker& tracker = trackers->CreateNewDependencyTracker(
-      ticket,
-      "cache " + description,
-      &value);
+  // Obtain a DependencyTracker for the CacheEntryValue. If the given ticket
+  // corresponds to a well-known tracker (e.g. continuous derivatives xcdot)
+  // then we just need to point the tracker at the new cache entry value.
+  // Otherwise create a new tracker.
+  DependencyTracker* tracker{};
+  if (trackers->has_tracker(ticket)) {
+    // Pre-existing trackers should only be present for well-known tickets.
+    DRAKE_DEMAND(ticket < internal::kNextAvailableTicket);
+    tracker = &trackers->get_mutable_tracker(ticket);
+    tracker->set_cache_entry_value(&value);
+  } else {
+    // Allocate a DependencyTracker for this cache entry. Note that a pointer
+    // to the new CacheEntryValue is retained so must have a lifetime matching
+    // the tracker. That requires that the Cache and DependencyGraph are
+    // contained in the same Context.
+    tracker = &trackers->CreateNewDependencyTracker(
+        ticket,
+        "cache " + description,
+        &value);
+  }
 
   // Subscribe to prerequisites (trackers must already exist).
   for (auto prereq : prerequisites) {
     auto& prereq_tracker = trackers->get_mutable_tracker(prereq);
-    tracker.SubscribeToPrerequisite(&prereq_tracker);
+    tracker->SubscribeToPrerequisite(&prereq_tracker);
   }
   return value;
 }
