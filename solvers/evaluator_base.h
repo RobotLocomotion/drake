@@ -12,6 +12,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/symbolic.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/function.h"
 
@@ -57,6 +58,18 @@ class EvaluatorBase {
   void Eval(const Eigen::Ref<const AutoDiffVecXd>& x,
             // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
             AutoDiffVecXd& y) const {
+    DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
+    DoEval(x, y);
+  }
+
+  /**
+   * Evaluates the expression with a scalar type of symbolic::Expression.
+   * @param[in] x A `num_vars` x 1 input vector.
+   * @param[out] y A `num_outputs` x 1 output vector.
+   */
+  void Eval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+            VectorX<symbolic::Expression>& y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
@@ -122,6 +135,17 @@ class EvaluatorBase {
                       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
                       AutoDiffVecXd& y) const = 0;
 
+  /**
+   * Implements expression evaluation for scalar type symbolic::Expression.
+   * @param[in] x Input vector.
+   * @param[out] y Output vector.
+   * @pre x must be of size `num_vars` x 1.
+   * @post y will be of size `num_outputs` x 1.
+   */
+  virtual void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+                      VectorX<symbolic::Expression>& y) const = 0;
+
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits
   // to change the number of outputs. One example is LinearConstraint in
@@ -172,6 +196,12 @@ class PolynomialEvaluator : public EvaluatorBase {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PolynomialEvaluator does not support symbolic evaluation.");
+  }
 
   const VectorXPoly polynomials_;
   const std::vector<Polynomiald::VarType> poly_vars_;
@@ -230,6 +260,12 @@ class FunctionEvaluator : public EvaluatorBase {
     detail::FunctionTraits<F>::eval(f_, x, y);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "FunctionEvaluator does not support symbolic evaluation.");
+  }
+
   const F f_;
 };
 
@@ -281,6 +317,12 @@ class VisualizationCallback : public EvaluatorBase {
     DRAKE_ASSERT(x.size() == num_vars());
     y.resize(0);
     callback_(math::autoDiffToValueMatrix(x));
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "VisualizationCallback does not support symbolic evaluation.");
   }
 
   const CallbackFunction callback_;

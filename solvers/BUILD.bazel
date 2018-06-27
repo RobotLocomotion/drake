@@ -72,6 +72,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//common:symbolic",
         "//math:autodiff",
         "//math:matrix_util",
     ],

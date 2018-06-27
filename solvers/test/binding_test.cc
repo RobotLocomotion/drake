@@ -74,6 +74,13 @@ class DummyEvaluator : public EvaluatorBase {
     y(0) = x(1) * x(2);
     y(1) = x(0) - x(1);
   }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>& y) const override {
+    y.resize(2);
+    y(0) = x(1) * x(2);
+    y(1) = x(0) - x(1);
+  }
 };
 
 GTEST_TEST(TestBinding, TestEvaluator) {
