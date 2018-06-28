@@ -248,27 +248,20 @@ class SimplePenetrationTest : public ::testing::Test {
     // Assume A => origin_sphere and b => colliding_sphere
     // NOTE: In this current version, penetration is only reported in double.
     PenetrationAsPointPair<double> expected;
-    expected.id_A = origin_sphere;  // located at origin
-    expected.id_B = colliding_sphere;  // located at [1.5R, 0, 0]
+    // This implicitly tests the *ordering* of the two reported ids. It must
+    // always be in *this* order.
+    bool origin_is_A = origin_sphere < colliding_sphere;
+    expected.id_A = origin_is_A ? origin_sphere : colliding_sphere;
+    expected.id_B = origin_is_A ? colliding_sphere : origin_sphere;
     expected.depth = 2 * radius_ - colliding_x_;
-    expected.p_WCa = Vector3<double>{radius_, 0, 0};
-    expected.p_WCb = Vector3<double>{colliding_x_ - radius_, 0, 0};
-    expected.nhat_BA_W = -Vector3<double>::UnitX();
-
-    // Reverse if previous order assumption is false
-    if (penetration.id_A == colliding_sphere) {
-      Vector3<double> temp;
-      // Swap the indices
-      expected.id_A = colliding_sphere;
-      expected.id_B = origin_sphere;
-      // Swap the points
-      temp = expected.p_WCa;
-      expected.p_WCa = expected.p_WCb;
-      expected.p_WCb = temp;
-      // Reverse the normal
-      expected.nhat_BA_W = -expected.nhat_BA_W;
-      // Penetration depth is same either way; do nothing.
-    }
+    // Contact point on the origin_sphere.
+    Vector3<double> p_WCo{radius_, 0, 0};
+    // Contact point on the colliding_sphere.
+    Vector3<double> p_WCc{colliding_x_ - radius_, 0, 0};
+    expected.p_WCa = origin_is_A ? p_WCo : p_WCc;
+    expected.p_WCb = origin_is_A ? p_WCc : p_WCo;
+    Vector3<double> norm_into_B = Vector3<double>::UnitX();
+    expected.nhat_BA_W = origin_is_A ? -norm_into_B : norm_into_B;
 
     EXPECT_EQ(penetration.id_A, expected.id_A);
     EXPECT_EQ(penetration.id_B, expected.id_B);

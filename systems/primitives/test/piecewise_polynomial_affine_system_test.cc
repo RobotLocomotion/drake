@@ -37,7 +37,7 @@ class PiecewisePolynomialAffineSystemTest
     }
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput(*context_);
+    system_output_ = dut_->AllocateOutput();
     continuous_state_ = &context_->get_mutable_continuous_state();
     discrete_state_ = &context_->get_mutable_discrete_state();
     derivatives_ = dut_->AllocateTimeDerivatives();

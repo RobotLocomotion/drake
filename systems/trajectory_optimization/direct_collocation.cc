@@ -109,6 +109,13 @@ void DirectCollocationConstraint::DoEval(
   y = xdotcol - g;
 }
 
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>&) const {
+  throw std::logic_error(
+      "DirectCollocationConstraint does not support symbolic evaluation.");
+}
+
 Binding<Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
     const Eigen::Ref<const VectorXDecisionVariable>& timestep,

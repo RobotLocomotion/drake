@@ -72,6 +72,7 @@ drake_cc_library(
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
+        "//common:symbolic",
         "//math:autodiff",
         "//math:matrix_util",
     ],
@@ -826,7 +827,9 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
+        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
     ],
 )
@@ -838,8 +841,10 @@ drake_cc_googletest(
         ":cost",
         ":create_cost",
         ":generic_trivial_cost",
+        "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:is_dynamic_castable",
+        "//common/test_utilities:symbolic_test_util",
         "//math:gradient",
     ],
 )

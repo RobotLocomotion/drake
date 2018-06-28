@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -82,11 +83,9 @@ auto RegisterBinding(py::handle* pscope,
                          .def("constraint", &B::evaluator)
                          .def("variables", &B::variables);
   // Deprecate `constraint`.
-  py::module deprecation = py::module::import("pydrake.util.deprecation");
-  py::object deprecated = deprecation.attr("deprecated");
-  binding_cls.attr("constraint") =
-      deprecated("`constraint` is deprecated; please use `evaluator` instead.")(
-          binding_cls.attr("constraint"));
+  DeprecateAttribute(
+      binding_cls, "constraint",
+      "`constraint` is deprecated; please use `evaluator` instead.");
   // Register overloads for MathematicalProgram class
   prog_cls.def(
       "EvalBindingAtSolution",
@@ -117,6 +116,12 @@ class PyFunctionCost : public Cost {
     y[0] = autodiff_func_(x);
   }
 
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionCost does not support symbolic evaluation.");
+  }
+
  private:
   const DoubleFunc double_func_;
   const AutoDiffFunc autodiff_func_;
@@ -144,6 +149,12 @@ class PyFunctionConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd& y) const override {
     y = autodiff_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>&) const override {
+    throw std::logic_error(
+        "PyFunctionConstraint does not support symbolic evaluation.");
   }
 
  private:
@@ -340,6 +351,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                const Eigen::Ref<const VectorXDecisionVariable>&>(
                &MathematicalProgram::AddQuadraticErrorCost),
            py::arg("Q"), py::arg("x_desired"), py::arg("vars"))
+      .def("AddL2NormCost",
+           overload_cast_explicit<
+               Binding<QuadraticCost>, const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&>(
+               &MathematicalProgram::AddL2NormCost),
+           py::arg("A"), py::arg("b"), py::arg("vars"))
       .def("AddSosConstraint",
            static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
                                  Binding<LinearEqualityConstraint>> (

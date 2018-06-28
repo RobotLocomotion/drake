@@ -686,7 +686,7 @@ class SystemIOTest : public ::testing::Test {
  protected:
   void SetUp() override {
     context_ = test_sys_.CreateDefaultContext();
-    output_ = test_sys_.AllocateOutput(*context_);
+    output_ = test_sys_.AllocateOutput();
 
     // make string input
     context_->FixInputPort(0, Value<std::string>("input"));

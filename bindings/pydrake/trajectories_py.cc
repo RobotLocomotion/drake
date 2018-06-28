@@ -65,6 +65,7 @@ PYBIND11_MODULE(trajectories, m) {
                       &PiecewisePolynomial<T>::Cubic),
                   py::arg("breaks"), py::arg("knots"))
       .def("value", &PiecewisePolynomial<T>::value)
+      .def("derivative", &PiecewisePolynomial<T>::derivative)
       .def("rows", &PiecewisePolynomial<T>::rows)
       .def("cols", &PiecewisePolynomial<T>::cols)
       .def("slice", &PiecewisePolynomial<T>::slice,

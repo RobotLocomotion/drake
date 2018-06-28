@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/manipulation/util/frame_pose_tracker.h"
+#include "drake/math/transform.h"
 #include "drake/systems/sensors/optitrack_sender.h"
 
 namespace drake {
@@ -60,10 +61,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
     const std::string robot_tag{"robot_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(robot_tag, configuration.robot_models[i]);
     // Add the arm.
-    const Isometry3<double>& robot_base_pose{configuration.robot_poses[i]};
-    int robot_base_id = tree_builder->AddFixedModelInstance(
-        robot_tag, robot_base_pose.translation(),
-        drake::math::rotmat2rpy(robot_base_pose.linear()));
+    const drake::math::Transform<double> X_WRobot(configuration.robot_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy_WRobot(X_WRobot.rotation());
+    const int robot_base_id = tree_builder->AddFixedModelInstance(
+        robot_tag, X_WRobot.translation(), rpy_WRobot.vector());
     arm_instances->push_back(
         tree_builder->get_model_info_for_instance(robot_base_id));
     if (wsg_instances) {
@@ -83,11 +84,13 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
     }
 
     // Add the table that the arm sits on.
-    const Isometry3<double> X_WT{
-        robot_base_pose *
-        Isometry3<double>::TranslationType(0.0, 0.0, -kTableTopZInWorld)};
-    tree_builder->AddFixedModelInstance("table", X_WT.translation(),
-                                        drake::math::rotmat2rpy(X_WT.linear()));
+    const Eigen::Vector3d p_RobotTable_Robot(0.0, 0.0, -kTableTopZInWorld);
+    const drake::math::Transform<double> X_RobotTable(
+        drake::math::RotationMatrix<double>::Identity(), p_RobotTable_Robot);
+    const drake::math::Transform<double> X_WTable = X_WRobot * X_RobotTable;
+    const drake::math::RollPitchYaw<double> rpy_WTable(X_WTable.rotation());
+    tree_builder->AddFixedModelInstance("table", X_WTable.translation(),
+                                                 rpy_WTable.vector());
   }
 
   // Add the objects.
@@ -97,9 +100,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
   for (int i = 0; i < num_objects; ++i) {
     const std::string object_tag{"object_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(object_tag, configuration.object_models[i]);
-    int object_id = tree_builder->AddFloatingModelInstance(
-        object_tag, configuration.object_poses[i].translation(),
-        drake::math::rotmat2rpy(configuration.object_poses[i].linear()));
+    const drake::math::Transform<double> X(configuration.object_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy(X.rotation());
+    const int object_id = tree_builder->AddFloatingModelInstance(object_tag,
+                                                 X.translation(), rpy.vector());
     object_instances->push_back(
         tree_builder->get_model_info_for_instance(object_id));
   }
@@ -111,9 +115,10 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildPickAndPlacePlant(
   for (int i = 0; i < num_tables; ++i) {
     const std::string table_tag{"table_" + std::to_string(i)};
     tree_builder->StoreDrakeModel(table_tag, configuration.table_models[i]);
-    int table_id = tree_builder->AddFixedModelInstance(
-        table_tag, configuration.table_poses[i].translation(),
-        drake::math::rotmat2rpy(configuration.table_poses[i].linear()));
+    const drake::math::Transform<double> X(configuration.table_poses[i]);
+    const drake::math::RollPitchYaw<double> rpy(X.rotation());
+    const int table_id = tree_builder->AddFixedModelInstance(
+        table_tag, X.translation(), rpy.vector());
     table_instances->push_back(
         tree_builder->get_model_info_for_instance(table_id));
   }

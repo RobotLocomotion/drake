@@ -882,6 +882,20 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @}
   // Closes Doxygen section "Continuous state output"
 
+  /// Returns a constant reference to the output port of generalized contact
+  /// forces for a specific model instance. This output port is only available
+  /// when modeling the plant as a discrete system with periodic updates, see
+  /// is_discrete().
+  ///
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if `this` plant is not modeled as a discrete system
+  /// with periodic updates.
+  /// @throws std::exception if called before Finalize() or if the model
+  /// instance does not have any generalized velocities.
+  /// @throws std::exception if the model instance does not exist.
+  const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
+      ModelInstanceIndex model_instance) const;
+
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.
@@ -1227,6 +1241,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
         body_index_to_frame_id_.end();
   }
 
+  // Helper to retrieve a constant reference to the state vector from context.
+  const systems::BasicVector<T>& GetStateVector(
+      const systems::Context<T>& context) const;
+
   // Calc method for the continuous state vector output port.
   void CopyContinuousStateOut(
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
@@ -1236,6 +1254,12 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void CopyContinuousStateOut(
       ModelInstanceIndex model_instance,
       const systems::Context<T>& context, systems::BasicVector<T>* state) const;
+
+  // Calc method to output per model instance vector of generalized contact
+  // forces.
+  void CopyGeneralizedContactForcesOut(
+      ModelInstanceIndex model_instance, const systems::Context<T>& context,
+      systems::BasicVector<T>* tau_vector) const;
 
   // Helper method to declare output ports used by this plant to communicate
   // with a SceneGraph.
@@ -1483,10 +1507,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by
-  // ModelInstanceIndex.  An invalid value indicates that the model instance has
+  // ModelInstanceIndex. An invalid value indicates that the model instance has
   // no state.
   std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
   systems::OutputPortIndex contact_results_port_;
+
+  // A vector containing the index for the generalized contact forces port for
+  // each model instance. This vector is indexed by ModelInstanceIndex. An
+  // invalid value indicates that the model instance has no generalized
+  // velocities and thus no generalized forces.
+  std::vector<systems::OutputPortIndex>
+      instance_generalized_contact_forces_output_ports_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the

@@ -30,7 +30,7 @@ class SingleDOFEulerJointTest : public ::testing::Test {
     translating_matrix(0, 0) = 1.0;
     this->dut_ = MakeDegenerateEulerJoint(translating_matrix);
     this->context_ = this->dut_->CreateDefaultContext();
-    this->output_ = this->dut_->AllocateOutput(*this->context_);
+    this->output_ = this->dut_->AllocateOutput();
   }
 
   /// System (aka Device Under Test) being tested.

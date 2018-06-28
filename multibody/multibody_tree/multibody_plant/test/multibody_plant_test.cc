@@ -145,7 +145,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_positions(pendulum_model_instance), 1);
   EXPECT_EQ(plant->num_velocities(pendulum_model_instance), 1);
 
-  // Check that the input/output ports have the approptiate geometry.
+  // Check that the input/output ports have the appropriate geometry.
   EXPECT_THROW(plant->get_actuation_input_port(), std::runtime_error);
   EXPECT_EQ(plant->get_actuation_input_port(
       default_model_instance()).size(), 1);
@@ -478,6 +478,15 @@ TEST_F(AcrobotPlantTests, CalcTimeDerivatives) {
 TEST_F(AcrobotPlantTests, DoCalcDiscreteVariableUpdates) {
   // Set up an additional discrete state model of the same acrobot model.
   SetUpDiscreteAcrobotPlant(0.001 /* time step in seconds. */);
+
+  const ModelInstanceIndex instance_index =
+      discrete_plant_->GetModelInstanceByName("acrobot");
+
+  // The generalized contact forces output port should have the same size as
+  // number of generalized velocities in the model instance, even if there is
+  // no contact geometry in the model.
+  EXPECT_EQ(discrete_plant_->get_generalized_contact_forces_output_port(
+      instance_index).size(), 2);
 
   // Verify the implementation for a number of arbitrarily chosen states.
   VerifyDoCalcDiscreteVariableUpdates(

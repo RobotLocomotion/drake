@@ -198,6 +198,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
              py_reference_internal)
         .def("state_output_port",
              &Class::state_output_port, py_reference_internal)
+        .def("state_derivative_output_port",
+             &Class::state_derivative_output_port, py_reference_internal)
         .def("model_instance_state_output_port",
              &Class::model_instance_state_output_port, py_reference_internal)
         .def("torque_output_port", &Class::torque_output_port,

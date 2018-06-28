@@ -84,6 +84,9 @@ class TestRigidBodyPlant(unittest.TestCase):
                 is not None)
             self.assertTrue(
                 plant.state_output_port() is not None)
+            if not is_discrete:
+                self.assertTrue(
+                    plant.state_derivative_output_port() is not None)
             self.assertTrue(
                 plant.model_instance_state_output_port(model_id) is not None)
             self.assertTrue(
