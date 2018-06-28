@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -13,35 +11,14 @@ namespace multibody {
 namespace multibody_plant {
 
 /**
- A class containing information regarding contact response between two bodies
- including:
-    - The pair of collision elements that are contacting (e1, e2), referenced
-        by their unique identifiers.
-    - A resultant ContactForce -- a single ContactForce with the equivalent
-      effect of applying all individual ContactDetails to element e1.
-    - An optional list of ContactDetail instances.
-
- Some forms of ContactDetail are more expensive than others. However,
- ContactInfo instances will need to be copied. The contact model defines a
- default behavior of whether the ContactDetails are stored in the corresponding
- ContactInfo instance or not. If this happens, the ContactInfo instance will
- contain a valid resultant force, but no contact details.
-
- Eventually, this beahvior will be subject to user configuration; the
- user will specify whether they want the details to be included in the
- ContactInfo, overriding the contact model's default behavior, and paying the
- corresponding copying cost.
-
- The resultant force and contact details, if they are included, are all defined
- such that they act on the first element in the pair (e1). Newton's third law
- requires that an equal and opposite force be applied, at exactly the same point
- in space, to e2.
+ A container class storing the contact results information for each contact
+ pair for a given state of the simulation.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
  Instantiated templates for the following ScalarTypes are provided:
-    - double
-    - AutoDiffXd
+   - double
+   - AutoDiffXd
  */
 template <typename T>
 class ContactResults {
@@ -57,12 +34,12 @@ class ContactResults {
   /** Returns the number of unique collision element pairs in contact. */
   int num_contacts() const;
 
+  /** Add a new contact pair result to the set of contact pairs stored by
+   `this` class. */
   void AddContactInfo(PointPairContactInfo<T> point_pair_info);
 
-  /** Retrieves the ith ContactInfo instance.  No bounds checking will be done
-   in a release build (but will be done in debug).  It is assumed the caller
-   will only use values in the range [0, get_num_contacts() -1], inclusive.
-   */
+  /** Retrieves the ith PointPairContactInfo instance. The input index `i`
+   must be in the range [0, get_num_contacts() - 1] or this method aborts. */
   const PointPairContactInfo<T>& contact_info(int i) const;
 
  private:
