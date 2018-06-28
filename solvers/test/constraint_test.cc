@@ -39,11 +39,6 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
   return env;
 }
 
-// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
-auto Evaluate(const MatrixX<Expression>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
-}
-
 GTEST_TEST(testConstraint, testLinearConstraintUpdate) {
   // Update the coefficients or the bound of the linear constraint, and check
   // the updated constraint.

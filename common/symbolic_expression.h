@@ -750,6 +750,18 @@ auto operator*(
     const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
   return t1.template cast<Expression>() * t2;
 }
+
+/// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
+/// @returns a matrix of double whose size is the size of `m`.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+template <typename Derived>
+auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+                "Evaluate only accepts a symbolic matrix.");
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
+      .eval();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
