@@ -515,7 +515,7 @@ void ExtractLinearCosts(const MathematicalProgram& prog,
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<LinearCost>& cost{binding.evaluator()};
     VectorX<symbolic::Expression> y;
-    cost->Eval(x, y);
+    cost->Eval(x, &y);
     costs->push_back(y[0]);
   }
 }
@@ -527,7 +527,7 @@ void ExtractQuadraticCosts(const MathematicalProgram& prog,
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<QuadraticCost>& cost{binding.evaluator()};
     VectorX<symbolic::Expression> y;
-    cost->Eval(x, y);
+    cost->Eval(x, &y);
     costs->push_back(y[0]);
   }
 }

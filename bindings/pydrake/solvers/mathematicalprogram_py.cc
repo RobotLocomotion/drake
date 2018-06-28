@@ -107,17 +107,17 @@ class PyFunctionCost : public Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    y[0] = double_func_(x);
+              Eigen::VectorXd* y) const override {
+    (*y)[0] = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y[0] = autodiff_func_(x);
+              AutoDiffVecXd* y) const override {
+    (*y)[0] = autodiff_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "PyFunctionCost does not support symbolic evaluation.");
   }
@@ -142,17 +142,17 @@ class PyFunctionConstraint : public Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    y = double_func_(x);
+              Eigen::VectorXd* y) const override {
+    *y = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y = autodiff_func_(x);
+              AutoDiffVecXd* y) const override {
+    *y = autodiff_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "PyFunctionConstraint does not support symbolic evaluation.");
   }

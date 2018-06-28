@@ -111,28 +111,28 @@ GTEST_TEST(testCost, testLinearCost) {
 
   auto cost = make_shared<LinearCost>(a);
   Eigen::VectorXd y(1);
-  cost->Eval(x0, y);
+  cost->Eval(x0, &y);
   EXPECT_EQ(y.rows(), 1);
   EXPECT_NEAR(y(0), obj_expected, tol);
 
   // Test Eval/CheckSatisfied using Expression.
   const VectorX<Variable> x_sym{symbolic::MakeVectorContinuousVariable(2, "x")};
   VectorX<Expression> y_sym;
-  cost->Eval(x_sym, y_sym);
+  cost->Eval(x_sym, &y_sym);
   EXPECT_EQ(y_sym.size(), 1);
   EXPECT_PRED2(ExprEqual, y_sym[0], 1 * x_sym[0] + 2 * x_sym[1]);
 
   // Update with a constant term.
   const double b = 100;
   cost->UpdateCoefficients(a, b);
-  cost->Eval(x0, y);
+  cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + b, tol);
   EXPECT_THROW(cost->UpdateCoefficients(Eigen::Vector3d::Ones(), b),
                runtime_error);
 
   // Reconstruct the same cost with the constant term.
   auto new_cost = make_shared<LinearCost>(a, b);
-  new_cost->Eval(x0, y);
+  new_cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + b, tol);
 }
 
@@ -152,7 +152,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
   EXPECT_TRUE(CompareMatrices(cost->Q(), (Q + Q.transpose()) / 2, 1E-10,
                               MatrixCompareType::absolute));
 
-  cost->Eval(x0, y);
+  cost->Eval(x0, &y);
   EXPECT_EQ(y.rows(), 1);
   EXPECT_NEAR(y(0), obj_expected, tol);
 
@@ -161,7 +161,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
     const VectorX<Variable> x_sym{
         symbolic::MakeVectorContinuousVariable(2, "x")};
     VectorX<Expression> y_sym;
-    cost->Eval(x_sym, y_sym);
+    cost->Eval(x_sym, &y_sym);
     EXPECT_EQ(y_sym.size(), 1);
     const Variable& x_0{x_sym[0]};
     const Variable& x_1{x_sym[1]};
@@ -180,7 +180,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
   // Update with a constant term.
   const double c = 100;
   cost->UpdateCoefficients(Q, b, c);
-  cost->Eval(x0, y);
+  cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
 
   EXPECT_THROW(cost->UpdateCoefficients(Eigen::Matrix3d::Identity(), b, c),
@@ -190,7 +190,7 @@ GTEST_TEST(testCost, testQuadraticCost) {
 
   // Reconstruct the same cost with the constant term.
   auto new_cost = make_shared<QuadraticCost>(Q, b, c);
-  new_cost->Eval(x0, y);
+  new_cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
 }
 
@@ -207,8 +207,8 @@ void VerifyRelatedCost(const Ref<const VectorXd>& x_value, Args&&... args) {
   C constraint(std::forward<Args>(args)..., lb, ub);
   typename related_cost<C>::type cost(std::forward<Args>(args)...);
   VectorXd y_expected, y;
-  constraint.Eval(x_value, y);
-  cost.Eval(x_value, y_expected);
+  constraint.Eval(x_value, &y);
+  cost.Eval(x_value, &y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
 
@@ -247,13 +247,13 @@ void VerifyFunctionCost(F&& f, const Ref<const VectorXd>& x_value) {
   // Compute expected value prior to forwarding `f` (which may involve
   // move'ing `unique_ptr<>` or `shared_ptr<>`, making `f` a nullptr).
   Eigen::VectorXd y_expected(1);
-  deref(f).eval(x_value, y_expected);
+  deref(f).eval(x_value, &y_expected);
   // Construct cost, moving `f`, if applicable.
   auto cost = MakeFunctionCost(std::forward<F>(f));
   EXPECT_TRUE(is_dynamic_castable<Cost>(cost));
   // Compare values.
   Eigen::VectorXd y(1);
-  cost->Eval(x_value, y);
+  cost->Eval(x_value, &y);
   EXPECT_TRUE(CompareMatrices(y, y_expected));
 }
 

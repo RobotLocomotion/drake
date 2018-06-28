@@ -27,24 +27,21 @@ class GenericTrivialCost1 : public Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              Eigen::VectorXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+              Eigen::VectorXd* y) const override {
+    y->resize(1);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              AutoDiffVecXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+              AutoDiffVecXd* y) const override {
+    y->resize(1);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              VectorX<symbolic::Expression>& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+              VectorX<symbolic::Expression>* y) const override {
+    y->resize(1);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
   }
 
  private:
@@ -67,11 +64,10 @@ class GenericTrivialCost2 {
 
   template <typename ScalarType>
   void eval(detail::VecIn<ScalarType> const& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            detail::VecOut<ScalarType>& y) const {
+            detail::VecOut<ScalarType>* y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
+    DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+    (*y)(0) = x(0) * x(0) - x(1) * x(1) + 2;
   }
 };
 

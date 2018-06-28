@@ -15,13 +15,13 @@ GeneralizedConstraintForceEvaluator::GeneralizedConstraintForceEvaluator(
       lambda_size_(lambda_size) {}
 
 void GeneralizedConstraintForceEvaluator::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const {
-  DoEvalGeneric(x, &y);
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  DoEvalGeneric(x, y);
 }
 
 void GeneralizedConstraintForceEvaluator::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
-  DoEvalGeneric(x, &y);
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric(x, y);
 }
 }  // namespace trajectory_optimization
 }  // namespace systems
