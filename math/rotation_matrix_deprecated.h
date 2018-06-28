@@ -37,15 +37,19 @@ Vector4<typename Derived::Scalar> rotmat2quat(
   return R.ToQuaternionAsVector4();
 }
 
-/**
- * Computes SpaceXYZ Euler angles from rotation matrix.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param R 3x3 rotation matrix.
- * @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
- * Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
- * http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
- */
+
+  /// Computes SpaceXYZ Euler angles from rotation matrix.
+  /// @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
+  /// @param R 3x3 rotation matrix.
+  /// @return 3x1 SpaceXYZ Euler angles (called roll-pitch-yaw by ROS).
+  /// Note: SpaceXYZ roll-pitch-yaw is equivalent to BodyZYX yaw-pitch-roll.
+  /// http://answers.ros.org/question/58863/incorrect-rollpitch-yaw-values-using-getrpy/
+  /// (Deprecated), use @ref math::RollPitchYaw(RotationMatrix).
+  /// TODO(mitiguy) This code was deprecated on April 12, 2018.
+  /// Delete this code in accordance with issue #8323.
 template <typename Derived>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use math::RollPitchYaw(RotationMatrix(R)).")
 Vector3<typename Derived::Scalar> rotmat2rpy(
     const Eigen::MatrixBase<Derived>& R) {
   // TO-DO(daihongkai@gmail.com) uncomment this block when the Eigen bug

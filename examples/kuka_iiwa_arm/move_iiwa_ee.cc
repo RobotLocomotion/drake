@@ -17,7 +17,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
 
@@ -83,11 +85,12 @@ class MoveDemoRunner {
       KinematicsCache<double> cache = tree_.doKinematics(iiwa_q, iiwa_v, true);
       const RigidBody<double>* end_effector = tree_.FindBody(FLAGS_ee_name);
 
-      Isometry3<double> ee_pose =
-          tree_.CalcBodyPoseInWorldFrame(cache, *end_effector);
+      const math::Transform<double> ee_pose(
+          tree_.CalcBodyPoseInWorldFrame(cache, *end_effector));
+      const math::RollPitchYaw<double> rpy(ee_pose.rotation());
       drake::log()->info("End effector at: {} {}",
                          ee_pose.translation().transpose(),
-                         math::rotmat2rpy(ee_pose.rotation()).transpose());
+                         rpy.vector().transpose());
     }
 
     // If this is the first status we've received, calculate a plan

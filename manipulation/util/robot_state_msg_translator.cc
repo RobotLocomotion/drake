@@ -161,7 +161,7 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
 
       // Express V_WB_J in the floating base's body frame (as V_WB_B).
       const math::RotationMatrix<double> R_BJ = R_JB.inverse();
-      v.segment<3>(velocity_start) =  R_BJ * V_WB_J.head<3>();     // Rotational
+      v.segment<3>(velocity_start) =  R_BJ * V_WB_J.head<3>();     // Rotate.
       v.segment<3>(velocity_start + 3) = R_BJ * V_WB_J.tail<3>();  // Translate.
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");

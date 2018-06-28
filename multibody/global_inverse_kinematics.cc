@@ -5,6 +5,8 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/joints/drake_joints.h"
 #include "drake/solvers/rotation_constraint.h"
 
@@ -192,7 +194,7 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
       if (num_positions == 6) {
         // The position order is x-y-z-roll-pitch-yaw.
         q.segment<3>(body.get_position_start_index() + 3) =
-            math::rotmat2rpy(normalized_rotmat.matrix());
+            math::RollPitchYaw<double>(normalized_rotmat).vector();
       } else {
         // The position order is x-y-z-qw-qx-qy-qz, namely translation
         // first, and quaternion second.

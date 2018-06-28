@@ -154,6 +154,7 @@ class RotationMatrix {
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ax = Bx`.
   /// @param[in] theta radian measure of rotation angle about Ax.
+  /// @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitX().
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
   /// a right-handed rotation relative to A by an angle `theta` about `Ax = Bx`.
@@ -178,6 +179,7 @@ class RotationMatrix {
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
   /// @param[in] theta radian measure of rotation angle about Ay.
+  /// @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitY().
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
   /// a right-handed rotation relative to A by an angle `theta` about `Ay = By`.
@@ -202,6 +204,7 @@ class RotationMatrix {
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
   /// @param[in] theta radian measure of rotation angle about Az.
+  /// @note Orientation is same as Eigen::AngleAxis<T>(theta, Vector3d::UnitZ().
   /// @note `R_AB` relates two frames A and B having unit vectors Ax, Ay, Az and
   /// Bx, By, Bz.  Initially, `Bx = Ax`, `By = Ay`, `Bz = Az`, then B undergoes
   /// a right-handed rotation relative to A by an angle `theta` about `Az = Bz`.
