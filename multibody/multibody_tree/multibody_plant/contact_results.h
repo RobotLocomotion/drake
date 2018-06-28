@@ -36,6 +36,10 @@ class ContactResults {
 
   /** Add a new contact pair result to the set of contact pairs stored by
    `this` class. */
+  // Note: we pass point_pair_info by value so that it gets "moved" when passing
+  // an rvalue. In this way we eliminate an unnecessary copy when passing
+  // rvalues. There is nothing we can do to eliminate the copy when passing an
+  // lvalue.
   void AddContactInfo(PointPairContactInfo<T> point_pair_info);
 
   /** Retrieves the ith PointPairContactInfo instance. The input index `i`

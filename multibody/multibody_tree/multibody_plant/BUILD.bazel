@@ -16,6 +16,8 @@ package(
 drake_cc_package_library(
     name = "multibody_plant",
     deps = [
+        ":contact_info",
+        ":contact_results",
         ":coulomb_friction",
         ":multibody_plant_core",
     ],

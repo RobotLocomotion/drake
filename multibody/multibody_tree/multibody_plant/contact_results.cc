@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 
+#include <utility>
+
 #include "drake/common/default_scalars.h"
 
 namespace drake {
@@ -9,7 +11,7 @@ namespace multibody_plant {
 template <typename T>
 void ContactResults<T>::AddContactInfo(
     PointPairContactInfo<T> point_pair_info) {
-  point_pairs_info_.emplace_back(point_pair_info);
+  point_pairs_info_.emplace_back(std::move(point_pair_info));
 }
 
 template <typename T>

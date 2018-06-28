@@ -46,7 +46,6 @@ GTEST_TEST(Box, UnderStiction) {
   const double simulation_time = 2.0;
 
   // Plant's parameters.
-  //const double length = 1.0;   // Box size, [m]
   const double mass = 1.0;     // Box mass, [kg]
   const double g = 10.0;       // Acceleration of gravity, [m/s²]
   const CoulombFriction<double> surface_friction(
