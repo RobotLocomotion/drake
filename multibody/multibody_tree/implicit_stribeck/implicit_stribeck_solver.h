@@ -660,10 +660,17 @@ class ImplicitStribeckSolver {
     return fixed_size_workspace_.mutable_v();
   }
 
+  /// Returns a constant reference to the last solved vector of (repulsive)
+  /// forces in the normal direction. That is, the normal force is positive when
+  /// the bodies push each other apart. Otherwise the normal force is zero,
+  /// since contact forces can only be repulsive.
   Eigen::VectorBlock<const VectorX<T>> get_normal_forces() const {
     return variable_size_workspace_.fn();
   }
 
+  /// Returns a constant reference to the last solved vector of friction forces.
+  /// This friction forces are defined in accordance to the tangential
+  /// velocities Jacobian Jₜ as documented in this class's documentation.
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
   }
