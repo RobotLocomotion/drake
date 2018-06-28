@@ -41,8 +41,7 @@ class EvaluatorBase {
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            Eigen::VectorXd& y) const {
+            Eigen::VectorXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
@@ -55,9 +54,7 @@ class EvaluatorBase {
   // TODO(eric.cousineau): Move this to DifferentiableConstraint derived class
   // if/when we need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
-  void Eval(const Eigen::Ref<const AutoDiffVecXd>& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            AutoDiffVecXd& y) const {
+  void Eval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
@@ -68,8 +65,7 @@ class EvaluatorBase {
    * @param[out] y A `num_outputs` x 1 output vector.
    */
   void Eval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            VectorX<symbolic::Expression>& y) const {
+            VectorX<symbolic::Expression>* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
@@ -121,8 +117,7 @@ class EvaluatorBase {
    * @post y will be of size `num_outputs` x 1.
    */
   virtual void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      Eigen::VectorXd& y) const = 0;
+                      Eigen::VectorXd* y) const = 0;
 
   /**
    * Implements expression evaluation for scalar type AutoDiffXd.
@@ -132,8 +127,7 @@ class EvaluatorBase {
    * @post y will be of size `num_outputs` x 1.
    */
   virtual void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      AutoDiffVecXd& y) const = 0;
+                      AutoDiffVecXd* y) const = 0;
 
   /**
    * Implements expression evaluation for scalar type symbolic::Expression.
@@ -143,8 +137,7 @@ class EvaluatorBase {
    * @post y will be of size `num_outputs` x 1.
    */
   virtual void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-                      // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-                      VectorX<symbolic::Expression>& y) const = 0;
+                      VectorX<symbolic::Expression>* y) const = 0;
 
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits
@@ -192,13 +185,13 @@ class PolynomialEvaluator : public EvaluatorBase {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "PolynomialEvaluator does not support symbolic evaluation.");
   }
@@ -241,27 +234,27 @@ class FunctionEvaluator : public EvaluatorBase {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    y.resize(detail::FunctionTraits<F>::numOutputs(f_));
+              Eigen::VectorXd* y) const override {
+    y->resize(detail::FunctionTraits<F>::numOutputs(f_));
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                  detail::FunctionTraits<F>::numInputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+    DRAKE_ASSERT(static_cast<size_t>(y->rows()) ==
                  detail::FunctionTraits<F>::numOutputs(f_));
     detail::FunctionTraits<F>::eval(f_, x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y.resize(detail::FunctionTraits<F>::numOutputs(f_));
+              AutoDiffVecXd* y) const override {
+    y->resize(detail::FunctionTraits<F>::numOutputs(f_));
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) ==
                  detail::FunctionTraits<F>::numInputs(f_));
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) ==
+    DRAKE_ASSERT(static_cast<size_t>(y->rows()) ==
                  detail::FunctionTraits<F>::numOutputs(f_));
     detail::FunctionTraits<F>::eval(f_, x, y);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "FunctionEvaluator does not support symbolic evaluation.");
   }
@@ -306,21 +299,21 @@ class VisualizationCallback : public EvaluatorBase {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+              Eigen::VectorXd* y) const override {
     DRAKE_ASSERT(x.size() == num_vars());
-    y.resize(0);
+    y->resize(0);
     callback_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
+              AutoDiffVecXd* y) const override {
     DRAKE_ASSERT(x.size() == num_vars());
-    y.resize(0);
+    y->resize(0);
     callback_(math::autoDiffToValueMatrix(x));
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "VisualizationCallback does not support symbolic evaluation.");
   }

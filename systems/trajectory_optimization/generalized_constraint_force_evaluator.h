@@ -78,16 +78,13 @@ class GeneralizedConstraintForceEvaluator : public solvers::EvaluatorBase {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              VectorX<symbolic::Expression>&) const override {
+              VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
         "GeneralizedConstraintForceEvaluator does not support symbolic "
         "evaluation.");

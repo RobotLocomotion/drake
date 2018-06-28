@@ -149,7 +149,7 @@ class Constraint : public EvaluatorBase {
   virtual bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 const double tol) const {
     Eigen::VectorXd y(num_constraints());
-    DoEval(x, y);
+    DoEval(x, &y);
     return (y.array() >= lower_bound_.array() - tol).all() &&
            (y.array() <= upper_bound_.array() + tol).all();
   }
@@ -157,7 +157,7 @@ class Constraint : public EvaluatorBase {
   virtual bool DoCheckSatisfied(const Eigen::Ref<const AutoDiffVecXd>& x,
                                 const double tol) const {
     AutoDiffVecXd y(num_constraints());
-    DoEval(x, y);
+    DoEval(x, &y);
     return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
            (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
   }
@@ -245,13 +245,13 @@ class QuadraticConstraint : public Constraint {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
   Eigen::MatrixXd Q_;
   Eigen::VectorXd b_;
@@ -306,13 +306,13 @@ class LorentzConeConstraint : public Constraint {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
   const Eigen::MatrixXd A_;
   const Eigen::VectorXd b_;
@@ -361,13 +361,13 @@ class RotatedLorentzConeConstraint : public Constraint {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
   const Eigen::MatrixXd A_;
   const Eigen::VectorXd b_;
@@ -407,15 +407,15 @@ class EvaluatorConstraint : public Constraint {
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+              Eigen::VectorXd* y) const override {
     evaluator_->Eval(x, y);
   }
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
+              AutoDiffVecXd* y) const override {
     evaluator_->Eval(x, y);
   }
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override {
+              VectorX<symbolic::Expression>* y) const override {
     evaluator_->Eval(x, y);
   }
 
@@ -527,13 +527,13 @@ class LinearConstraint : public Constraint {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 };
 
 /**
@@ -605,13 +605,13 @@ class BoundingBoxConstraint : public LinearConstraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 };
 
 /**
@@ -643,13 +643,13 @@ class LinearComplementarityConstraint : public Constraint {
  protected:
   /** Return Mx + q (the value of the slack variable). */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
   bool DoCheckSatisfied(const Eigen::Ref<const Eigen::VectorXd>& x,
                         const double tol) const override;
@@ -746,7 +746,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * @param x The stacked columns of the symmetric matrix.
    */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
@@ -754,7 +754,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * AutoDiffScalar.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   /**
    * @param x The stacked columns of the symmetric matrix. This function is not
@@ -762,7 +762,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * symbolic::Expression.
    */
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
   int matrix_rows_;  // Number of rows in the symmetric matrix being positive
@@ -807,21 +807,21 @@ class LinearMatrixInequalityConstraint : public Constraint {
    * Evaluate the eigen values of the linear matrix.
    */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
    * accept AutoDiffScalar type.
    */
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   /**
    * This function is not supported, since Eigen's eigen value solver does not
    * accept symbolic::Expression type.
    */
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
   std::vector<Eigen::MatrixXd> F_;
@@ -858,13 +858,13 @@ class ExpressionConstraint : public Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>& y) const override;
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
   VectorX<symbolic::Expression> expressions_{0};
