@@ -16,27 +16,11 @@ namespace multibody_plant {
 /**
  A class containing information regarding contact response between two bodies
  including:
-    - The pair of collision elements that are contacting (e1, e2), referenced
-        by their unique identifiers.
-    - A resultant ContactForce -- a single ContactForce with the equivalent
-      effect of applying all individual ContactDetails to element e1.
-    - An optional list of ContactDetail instances.
-
- Some forms of ContactDetail are more expensive than others. However,
- ContactInfo instances will need to be copied. The contact model defines a
- default behavior of whether the ContactDetails are stored in the corresponding
- ContactInfo instance or not. If this happens, the ContactInfo instance will
- contain a valid resultant force, but no contact details.
-
- Eventually, this beahvior will be subject to user configuration; the
- user will specify whether they want the details to be included in the
- ContactInfo, overriding the contact model's default behavior, and paying the
- corresponding copying cost.
-
- The resultant force and contact details, if they are included, are all defined
- such that they act on the first element in the pair (e1). Newton's third law
- requires that an equal and opposite force be applied, at exactly the same point
- in space, to e2.
+    - The pair of bodies that are contacting, referenced by their BodyIndex.
+    - A resultant contact force.
+    - A contact point.
+    - Separation velocity.
+    - Slip velocity.
 
  @tparam T      The scalar type. It must be a valid Eigen scalar.
 
@@ -49,10 +33,15 @@ class PointPairContactInfo {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
   /**
-   Initialize the contact response for two colliding collision elements.
-
-   @param element1      The identifier for the first collision element.
-   @param element2      The identifier for the second collision element.
+   Initialize the contact information for a given pair of two colliding bodies.
+   @param bodyA_index
+     Index that references a body, body A, in the MultibodyPlant model for
+     `this` contact pair.
+   @param bodyB_index
+     Index that references a body, body B, in the MultibodyPlant model for
+     `this` contact pair.
+   @param f_Bc_W
+     Force on body B applied at contact point C, expressed in the world frame W.
    */
   PointPairContactInfo(
       BodyIndex bodyA_index, BodyIndex bodyB_index,
