@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
 #include <memory>
+#include <vector>
 
 #include <sdf/sdf.hh>
 
@@ -281,6 +282,84 @@ void AddJointFromSpecification(
     }
   }
 }
+
+// Helper method to add a model to a MultibodyPlant given an sdf::Model
+// specification object.
+ModelInstanceIndex AddModelFromSpecification(const sdf::Model& model,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph,
+    const parsers::PackageMap& package_map,
+    const std::string& root_dir) {
+
+  const ModelInstanceIndex model_instance =
+    plant->AddModelInstance(model.Name());
+
+  // Add all the links
+  for (uint64_t link_index = 0;
+      link_index < model.LinkCount(); ++link_index) {
+    const sdf::Link& link = *model.LinkByIndex(link_index);
+
+    // Get the link's inertia relative to the Bcm frame.
+    // sdf::Link::Inertial() provides a representation for the SpatialInertia
+    // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
+    // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
+    // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
+    // necessarily aligned with B.
+    const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
+
+    const SpatialInertia<double> M_BBo_B =
+      ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
+
+    // Add a rigid body to model each link.
+    const RigidBody<double>& body =
+      plant->AddRigidBody(link.Name(),
+          model_instance, M_BBo_B);
+
+    if (scene_graph != nullptr) {
+      for (uint64_t visual_index = 0; visual_index < link.VisualCount();
+          ++visual_index) {
+        const sdf::Visual sdf_visual = detail::ResolveVisualUri(
+            *link.VisualByIndex(visual_index), package_map, root_dir);
+        unique_ptr<GeometryInstance> geometry_instance =
+          detail::MakeGeometryInstanceFromSdfVisual(sdf_visual);
+        // We check for nullptr in case someone decided to specify an SDF
+        // <empty/> geometry.
+        if (geometry_instance) {
+          plant->RegisterVisualGeometry(
+              body, geometry_instance->pose(), geometry_instance->shape(),
+              scene_graph);
+        }
+      }
+
+      for (uint64_t collision_index = 0;
+          collision_index < link.CollisionCount(); ++collision_index) {
+        const sdf::Collision& sdf_collision =
+          *link.CollisionByIndex(collision_index);
+        const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+        if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
+          const Isometry3d X_LG =
+            detail::MakeGeometryPoseFromSdfCollision(sdf_collision);
+          std::unique_ptr<geometry::Shape> shape =
+            detail::MakeShapeFromSdfGeometry(sdf_geometry);
+          const CoulombFriction<double> coulomb_friction =
+            detail::MakeCoulombFrictionFromSdfCollisionOde(sdf_collision);
+          plant->RegisterCollisionGeometry(
+              body, X_LG, *shape, coulomb_friction, scene_graph);
+        }
+      }
+    }
+  }
+
+  // Add all the joints
+  for (uint64_t joint_index = 0; joint_index < model.JointCount();
+      ++joint_index) {
+    // Get a pointer to the SDF joint, and the joint axis information.
+    const sdf::Joint& joint = *model.JointByIndex(joint_index);
+    AddJointFromSpecification(model, joint, plant);
+  }
+
+  return model_instance;
+}
 }  // namespace
 
 ModelInstanceIndex AddModelFromSdfFile(
@@ -403,6 +482,77 @@ ModelInstanceIndex AddModelFromSdfFile(
     multibody_plant::MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromSdfFile(file_name, "", plant, scene_graph);
+}
+
+std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
+    const std::string& file_name,
+    multibody_plant::MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(!plant->is_finalized());
+
+  const std::string full_path = parsers::GetFullPath(file_name);
+
+  // Load the SDF file.
+  sdf::Root root;
+  sdf::Errors errors = root.Load(full_path);
+
+  // Check for any errors.
+  if (!errors.empty()) {
+    std::string error_accumulation("From AddModelsFromSdfFile():\n");
+    for (const auto& e : errors)
+      error_accumulation += "Error: " + e.Message() + "\n";
+    throw std::runtime_error(error_accumulation);
+  }
+
+  if (root.ModelCount() == 0 && root.WorldCount() == 0) {
+    throw std::runtime_error(
+        "File must have at least one <model>, or <world> with one "
+        "child <model> lement.");
+  }
+
+  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+    plant->RegisterAsSourceForSceneGraph(scene_graph);
+  }
+
+  // Uses the directory holding the SDF to be the root directory
+  // in which to search for files referenced within the SDF file.
+  std::string root_dir = ".";
+  size_t found = full_path.find_last_of("/\\");
+  if (found != std::string::npos) {
+    root_dir = full_path.substr(0, found);
+  }
+
+  // TODO(sam.creasey) Add support for using an existing package map.
+  parsers::PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_path);
+
+  std::vector<ModelInstanceIndex> model_instances;
+
+  // Load all the models at the root level.
+  for (uint64_t i = 0; i < root.ModelCount(); ++i) {
+    // Get the model.
+    const sdf::Model& model = *root.ModelByIndex(i);
+    model_instances.push_back(AddModelFromSpecification(
+          model, plant, scene_graph, package_map, root_dir));
+  }
+
+  // Load all the worlds, and all the models in each world.
+  for (uint64_t world_index = 0; world_index < root.WorldCount();
+       ++world_index) {
+    // Get the world.
+    const sdf::World& world = *root.WorldByIndex(world_index);
+
+    for (uint64_t model_index = 0; model_index < world.ModelCount();
+         ++model_index) {
+      // Get the model.
+      const sdf::Model& model = *world.ModelByIndex(model_index);
+      model_instances.push_back(AddModelFromSpecification(
+            model, plant, scene_graph, package_map, root_dir));
+    }
+  }
+
+  return model_instances;
 }
 
 }  // namespace parsing

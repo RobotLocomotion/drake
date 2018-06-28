@@ -1,0 +1,15 @@
+<sdf version='1.6'>
+  <model name='robot3'>
+    <link name='robot3_base_link'>
+    </link>
+    <link name='robot3_moving_link'>
+    </link>
+    <joint name='robot3_slider' type='prismatic'>
+      <parent>robot3_base_link</parent>
+      <child>robot3_moving_link</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

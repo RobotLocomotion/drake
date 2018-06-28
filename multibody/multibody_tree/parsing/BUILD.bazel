@@ -14,6 +14,7 @@ filegroup(
     name = "test_models",
     testonly = 1,
     srcs = glob([
+        "test/**/*.config",
         "test/**/*.obj",
         "test/**/*.sdf",
         "test/**/*.urdf",
