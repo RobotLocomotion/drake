@@ -64,14 +64,6 @@ GTEST_TEST(Box, UnderStiction) {
   MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>(time_step);
   AddModelFromSdfFile(full_name, &plant, &scene_graph);
 
-  // Add collision geometry to the ground.
-  plant.RegisterCollisionGeometry(
-      plant.world_body(),
-      // A half-space passing through the origin in the x-y plane.
-      geometry::HalfSpace::MakePose(
-          Vector3<double>::UnitZ(), Vector3<double>::Zero()),
-      geometry::HalfSpace(), surface_friction, &scene_graph);
-
   // Add gravity to the model.
   plant.AddForceElement<UniformGravityFieldElement>(
       -g * Vector3<double>::UnitZ());
@@ -135,12 +127,14 @@ GTEST_TEST(Box, UnderStiction) {
   const PointPairContactInfo<double>& contact_info =
       contact_results.contact_info(0);
 
+  // Verify the bodies referenced by the contact info.
+  const RigidBody<double>& ground = model.GetRigidBodyByName("ground");
   const RigidBody<double>& box = model.GetRigidBodyByName("box");
   EXPECT_TRUE(
       (contact_info.bodyA_index() == box.index() &&
-       contact_info.bodyB_index() == plant.world_body().index()) ||
+       contact_info.bodyB_index() == ground.index()) ||
       (contact_info.bodyB_index() == box.index() &&
-       contact_info.bodyA_index() == plant.world_body().index()));
+       contact_info.bodyA_index() == ground.index()));
 
   // Whether the normal points up or down depends on the order in which the
   // geometry engine orders bodies in the contact pair.
