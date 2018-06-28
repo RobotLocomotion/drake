@@ -30,10 +30,12 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
-// This test creates a simple multibody model of a sphere rolling down an
-// inclined plane. After simulating the model for a given length of time, this
-// test verifies the numerical solution against analytical results obtained from
-// an energy conservation analysis.
+// This unit test loads a model for a box on a flat plane. The plane is the x-y
+// plane with the z axis pointing up and gravity pointing down in the negative z
+// direction.
+// In this test we apply an external horizontal force for which the box is in
+// stiction.
+// The test then verifies the computed values of contact results.
 GTEST_TEST(Box, UnderStiction) {
   DiagramBuilder<double> builder;
 
