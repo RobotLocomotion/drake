@@ -79,9 +79,9 @@ std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
 
 /* Given an integer z and a list of integer vectors V, constructs
  * the Cartesian product (z, v) for all v ∈ V */
-Eigen::MatrixXi CartesianProduct(int z, const Eigen::MatrixXi& V) {
+Eigen::MatrixXi CartesianProduct(const Eigen::MatrixXi& V, int z) {
   Eigen::MatrixXi cart_products(V.rows(), V.cols() + 1);
-  cart_products << Eigen::MatrixXi::Constant(V.rows(), 1, z), V;
+  cart_products << V, Eigen::MatrixXi::Constant(V.rows(), 1, z);
 
   return cart_products;
 }
@@ -103,35 +103,38 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
 /*Find each solution (x1, x2, ..., xn) to Ax <= b when
  * xi can only take on values in a finite alphabet Qi, e.g.,
  * Qi = {1, 2, 3, 8, 9}.   We do this recursively, enumerating
- * the possible values (x2, x3, ..., xn) can take when x1
+ * the possible values x1 can take when (x2, x3, ..., xn) 
  * is fixed. If the columns {Aᵢ*z : z ∈ Qᵢ} are totally
  * ordered, we propagate infeasibility: if no solutions exist when
  * x1 = z, then no solution can exist if x1 takes on values
  * larger than z (in the ordering).  We assume the function "ProcessInputs"
  * was previously called to sort the alphabet in ascending order.
  */
+
 Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
-                               const std::vector<ColumnType>& column_type) {
-  Eigen::MatrixXi feasible_points(0, A.cols());
+                               const std::vector<ColumnType>& column_type,
+                               int last_free_var_pos  
+                               ) {
 
-  for (const auto& value : column_alphabets.at(0)) {
-    Eigen::MatrixXi new_feasible_points(0, A.cols());
+  Eigen::MatrixXi feasible_points(0, last_free_var_pos);
 
-    if (A.cols() == 1) {
-      if (IsElementwiseNonnegative(b - A * value)) {
+  for (const auto& value : column_alphabets.at(last_free_var_pos)) {
+    Eigen::MatrixXi new_feasible_points(0, last_free_var_pos);
+
+    if (last_free_var_pos == 0) {
+      if (IsElementwiseNonnegative(b - A.col(0) * value)) {
         new_feasible_points.resize(1, 1);
         new_feasible_points(0, 0) = value;
       }
     } else {
       new_feasible_points = CartesianProduct(
-          value, FeasiblePoints(A.block(0, 1, A.rows(), A.cols() - 1),
-                                b - A.col(0) * value,
-                                IntegerVectorList(column_alphabets.begin() + 1,
-                                                  column_alphabets.end()),
-                                std::vector<ColumnType>(column_type.begin() + 1,
-                                                        column_type.end())));
+          FeasiblePoints(A,
+                        b - A.col(last_free_var_pos) * value,
+                        column_alphabets,
+                        column_type,
+                        last_free_var_pos - 1), value);
     }
 
     if (new_feasible_points.rows() > 0) {
@@ -139,7 +142,7 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
     } else {
         //  Propagate infeasibility: if this test passes, then no feasible
         //  points exist for remaining values in the alphabet.
-        if (column_type.at(0) != ColumnType::Indefinite) {
+        if (column_type.at(last_free_var_pos) != ColumnType::Indefinite) {
           return feasible_points;
         }
     }
@@ -168,7 +171,7 @@ Eigen::MatrixXi EnumerateIntegerSolutions(
   auto column_type = ProcessInputs(A, &variable_alphabets);
 
   return drake::solvers::integer_programming::FeasiblePoints(
-      A, b, variable_alphabets, column_type);
+      A, b, variable_alphabets, column_type, A.cols()-1);
 }
 
 }  // namespace solvers

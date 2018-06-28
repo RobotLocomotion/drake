@@ -52,7 +52,6 @@ class IntegerLatticeTest : public ::testing::Test {
 TEST_F(IntegerLatticeTest, EqualComponents) {
   SetDimensions(2, 2);
   A_ << 1, -1, -1, 1;
-
   b_ << 0, 0;
 
   lower_bound_ << 0, 0;
@@ -89,6 +88,42 @@ TEST_F(IntegerLatticeTest, Empty) {
 
   CheckEnumeration(ref);
 }
+
+TEST_F(IntegerLatticeTest, Singleton) {
+  SetDimensions(1, 4);
+  A_ << 0, 0, 0, 0;
+  b_ << 0;
+
+  lower_bound_ << 1, 2, 3, 4;
+  upper_bound_ << 1, 2, 3, 4;
+  IntegerSet ref;
+  ref.insert(lower_bound_);
+  CheckEnumeration(ref);
+}
+
+
+TEST_F(IntegerLatticeTest, InfeasProp) {
+  //Without infeasibility propogation, this test will
+  //require m^n recursions. With it, only n.
+  int n = 10;
+  int m = 8;
+  SetDimensions(1, n);
+
+  //These bounds define a box B with m^n points
+  lower_bound_ << Eigen::VectorXi::Constant(n, 1);
+  upper_bound_ << lower_bound_ * m;
+
+  //This constraint is satisfied by one point in B.
+  A_ << Eigen::MatrixXi::Constant(1, n, 1);
+  b_ << A_*lower_bound_;
+
+  IntegerSet ref;
+  ref.insert(lower_bound_);
+  CheckEnumeration(ref);
+}
+
+
+
 
 }  // namespace
 }  // namespace solvers

@@ -121,9 +121,7 @@ void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
 
     if (exponents_of_basis->rows() == num_exponents) {
       return;
-    } else {
-      num_exponents = exponents_of_basis->rows();
-    }
+    } 
   }
 }
 
@@ -153,7 +151,6 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
         sign * abs(Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale);
   }
 
-  std::cout << H.normal_vectors;
   Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
   H.max_dot_product = dot_products.rowwise().maxCoeff() / 2;
   H.min_dot_product = dot_products.rowwise().minCoeff() / 2;
@@ -174,7 +171,7 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   // We check the inequalities in two batches to allow for internal
   // infeasibility propogation inside of EnumerateIntegerSolutions,
   // which is done only if A has a column that is elementwise nonnegative
-  // (resp., nonpositive). (This condition never holds if we check the
+  // or nonpositive. (This condition never holds if we check the
   // inequalities in one batch, since A = [normal_vectors;-normal_vectors].)
   ExponentList basis_exponents_1 = drake::solvers::EnumerateIntegerSolutions(
       hyperplanes.normal_vectors, hyperplanes.max_dot_product, lower_bounds,
