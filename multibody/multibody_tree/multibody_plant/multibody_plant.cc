@@ -11,10 +11,6 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
 
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VAR(a) (void) a;
-
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -564,8 +560,6 @@ void MultibodyPlant<T>::CalcContactResults(
   const int num_contacts = point_pairs.size();
   DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
 
-  PRINT_VAR(__PRETTY_FUNCTION__);
-
   // Note: auto below resolves to VectorBlock<const VectorX<T>>.
   auto fn = implicit_stribeck_solver_->get_normal_forces();
   auto ft = implicit_stribeck_solver_->get_friction_forces();
@@ -574,6 +568,8 @@ void MultibodyPlant<T>::CalcContactResults(
 
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() == num_contacts);
+  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
   contact_results->Clear();
   for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
@@ -599,24 +595,10 @@ void MultibodyPlant<T>::CalcContactResults(
     // Separation velocity in the normal direction.
     const T separation_velocity = vn(icontact);
 
-    if (bodyA_index < bodyB_index) {
-      contact_results->AddContactInfo(
-          {bodyA_index, bodyB_index, f_Bc_W, p_WC,
-           separation_velocity, slip, pair});
-    } else {
-      PenetrationAsPointPair<T> swapped_pair{
-          pair.id_B, pair.id_A,
-          pair.p_WCb, pair.p_WCa, -pair.nhat_BA_W, pair.depth};
-      contact_results->AddContactInfo(
-          {bodyB_index, bodyA_index, -f_Bc_W, p_WC,
-           separation_velocity, slip, swapped_pair});
-    }
-
-    PRINT_VAR(model().get_body(bodyA_index).name());
-    PRINT_VAR(model().get_body(bodyB_index).name());
-    PRINT_VAR(f_Bc_C.transpose());
-    PRINT_VAR(f_Bc_W.transpose());
-    PRINT_VAR(pair.nhat_BA_W.transpose());
+    // Add pair info to the contact results.
+    contact_results->AddContactInfo(
+        {bodyA_index, bodyB_index, f_Bc_W, p_WC,
+         separation_velocity, slip, pair});
   }
 }
 
@@ -897,7 +879,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   AddJointDampingForces(context0, &forces0);
 
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
+  const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);
 
   // Workspace for inverse dynamics:
@@ -1234,6 +1216,7 @@ template <typename T>
 const systems::OutputPort<T>&
 MultibodyPlant<T>::get_contact_results_output_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(is_discrete());
   return this->get_output_port(contact_results_port_);
 }
 
