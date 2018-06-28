@@ -639,6 +639,7 @@ class ImplicitStribeckSolver {
   /// referencing a vector of size `nc`.
   Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
     return variable_size_workspace_.vn();
+  }
 
   /// Returns a constant reference to the last solved vector of generalized
   /// contact forces, including both friction and normal forces.
