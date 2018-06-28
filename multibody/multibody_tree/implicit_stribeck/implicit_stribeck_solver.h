@@ -634,10 +634,16 @@ class ImplicitStribeckSolver {
     return fixed_size_workspace_.mutable_tau_f();
   }
 
+  /// Returns a constant reference to the last solved vector of normal
+  /// separation velocities. This method returns an `Eigen::VectorBlock`
+  /// referencing a vector of size `nc`.
+  Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
+    return variable_size_workspace_.vn();
+  }
+
   /// Returns a constant reference to the last solved vector of tangential
   /// forces. This method returns an `Eigen::VectorBlock` referencing a vector
-  /// of size `nc` in accordance to the data last set with
-  /// SetOneWayCoupledProblemData().
+  /// of size `nc`.
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
@@ -904,6 +910,12 @@ class ImplicitStribeckSolver {
     // Returns the current (maximum) capacity of the workspace.
     int capacity() const {
       return vt_.size();
+    }
+
+    // Returns a constant reference to the vector of separation velocities in
+    // the normal direction, of size nc.
+    Eigen::VectorBlock<const VectorX<T>> vn() const {
+      return vn_.segment(0, nc_);
     }
 
     // Returns a mutable reference to the vector of separation velocities in

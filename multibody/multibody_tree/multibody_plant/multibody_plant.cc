@@ -566,9 +566,11 @@ void MultibodyPlant<T>::CalcContactResults(
 
   PRINT_VAR(__PRETTY_FUNCTION__);
 
+  // Note: auto below resolves to VectorBlock<const VectorX<T>>.
   auto fn = implicit_stribeck_solver_->get_normal_forces();
   auto ft = implicit_stribeck_solver_->get_friction_forces();
   auto vt = implicit_stribeck_solver_->get_tangential_velocities();
+  auto vn = implicit_stribeck_solver_->get_normal_velocities();
 
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
@@ -594,15 +596,20 @@ void MultibodyPlant<T>::CalcContactResults(
     // Slip velocity.
     const T slip = vt.template segment<2>(2 * icontact).norm();
 
+    // Separation velocity in the normal direction.
+    const T separation_velocity = vn(icontact);
+
     if (bodyA_index < bodyB_index) {
       contact_results->AddContactInfo(
-          {bodyA_index, bodyB_index, f_Bc_W, p_WC, slip, pair});
+          {bodyA_index, bodyB_index, f_Bc_W, p_WC,
+           separation_velocity, slip, pair});
     } else {
       PenetrationAsPointPair<T> swapped_pair{
           pair.id_B, pair.id_A,
           pair.p_WCb, pair.p_WCa, -pair.nhat_BA_W, pair.depth};
       contact_results->AddContactInfo(
-          {bodyB_index, bodyA_index, -f_Bc_W, p_WC, slip, swapped_pair});
+          {bodyB_index, bodyA_index, -f_Bc_W, p_WC,
+           separation_velocity, slip, swapped_pair});
     }
 
     PRINT_VAR(model().get_body(bodyA_index).name());

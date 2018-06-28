@@ -9,13 +9,15 @@ namespace multibody_plant {
 template <typename T>
 PointPairContactInfo<T>::PointPairContactInfo(
     BodyIndex bodyA_index, BodyIndex bodyB_index,
-    const Vector3<T>& f_Bc_W, const Vector3<T>& p_WC, const T& slip,
+    const Vector3<T>& f_Bc_W, const Vector3<T>& p_WC,
+    const T& separation_velocity, const T& slip,
     const drake::geometry::PenetrationAsPointPair<T>& point_pair) :
     point_pair_(point_pair),
     bodyA_index_(bodyA_index),
     bodyB_index_(bodyB_index),
     f_Bc_W_(f_Bc_W),
     p_WC_(p_WC),
+    separation_velocity_(separation_velocity),
     slip_(slip) {}
 
 }  // namespace multibody_plant

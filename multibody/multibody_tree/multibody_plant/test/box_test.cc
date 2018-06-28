@@ -14,10 +14,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VAR(a) (void) a;
-
 namespace drake {
 
 using geometry::Box;
@@ -82,19 +78,6 @@ GTEST_TEST(Box, UnderStiction) {
 
   plant.Finalize(&scene_graph);  // Done creating the model.
 
-#if 0
-  // Add a slider to grant the box one DOF along the x axis.
-  const PrismaticJoint<double>& x_slider = plant.AddJoint<PrismaticJoint>(
-      "SliderInX", plant.world_body(), {}, box, {}, Vector3<double>::UnitX());
-  // We add actuation along the x axis so that we can apply an external force.
-  plant.AddJointActuator("ActuationInX", x_slider);
-
-  // Add a slider to grant the box one DOF along the z axis. This allows the box
-  // to "fall" in the z direction generating contact forces against the ground.
-  const PrismaticJoint<double>& z_slider = plant.AddJoint<PrismaticJoint>(
-      "SliderInZ", plant.world_body(), {}, box, {}, Vector3<double>::UnitX());
-#endif
-
   const MultibodyTree<double>& model = plant.model();
   // Set contact parameters.
   plant.set_penetration_allowance(penetration_allowance);
@@ -112,6 +95,7 @@ GTEST_TEST(Box, UnderStiction) {
   // Sanity check on the availability of the optional source id before using it.
   ASSERT_TRUE(!!plant.get_source_id());
 
+  // Wire up MultibodyPlant with SceneGraph.
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
@@ -147,8 +131,7 @@ GTEST_TEST(Box, UnderStiction) {
   plant.get_contact_results_output_port().Calc(
       plant_context, contact_results_value.get());
 
-  PRINT_VAR(contact_results.num_contacts());
-
+  ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
   const PointPairContactInfo<double>& contact_info =
       contact_results.contact_info(0);
 
@@ -159,13 +142,15 @@ GTEST_TEST(Box, UnderStiction) {
       (contact_info.bodyB_index() == box.index() &&
        contact_info.bodyA_index() == plant.world_body().index()));
 
+  // Whether the normal points up or down depends on the order in which the
+  // geometry engine orders bodies in the contact pair.
   // direction = +1 indicates the normal is the +z axis pointing into the box
   // (i.e. the outward normal to the ground plane).
   // direction = -1 indicates the outward normal to the box (i.e. pointing down
-  // in the -z dirction).
+  // in the -z direction).
   double direction = contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
 
-  // The expected value of the contact force applied on body with index
+  // The expected value of the contact force applied on the body with index
   // contact_info.bodyB_index() at the contact point C.
   const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g * direction);
   EXPECT_TRUE(CompareMatrices(
@@ -188,16 +173,12 @@ GTEST_TEST(Box, UnderStiction) {
       contact_info.point_pair().nhat_BA_W, expected_normal,
       kTolerance, MatrixCompareType::relative));
 
+  // If we are in stiction, the slip speed should be smaller than the specified
+  // stiction tolerance.
   EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
 
-  PRINT_VAR(contact_info.slip_speed());
-
-  const SpatialVelocity<double>& V_WB =
-      model.EvalBodySpatialVelocityInWorld(plant_context, box);
-  PRINT_VAR(V_WB);
-  const Isometry3<double>& X_WB =
-      model.EvalBodyPoseInWorld(plant_context, box);
-  PRINT_VAR(X_WB.matrix());
+  // There should be not motion in the normal direction.
+  EXPECT_NEAR(contact_info.separation_velocity(), 0.0, kTolerance);
 }
 
 }  // namespace
