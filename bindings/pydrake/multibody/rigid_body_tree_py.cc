@@ -136,6 +136,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
     .def("DefineCollisionFilterGroup",
          &RigidBodyTree<double>::DefineCollisionFilterGroup,
          py::arg("name"))
+    .def("FindCollisionElement",
+         &RigidBodyTree<double>::FindCollisionElement,
+         py::return_value_policy::reference)
     .def("addFrame", &RigidBodyTree<double>::addFrame, py::arg("frame"))
     .def("FindBody", [](const RigidBodyTree<double>& self,
                         const std::string& body_name,
