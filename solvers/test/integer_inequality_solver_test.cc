@@ -103,17 +103,18 @@ TEST_F(IntegerLatticeTest, Singleton) {
 
 
 TEST_F(IntegerLatticeTest, InfeasProp) {
-  //Without infeasibility propogation, this test will
-  //require m^n recursions. With it, only n.
+  // Tests that EnumerateIntegerSolutions avoids exhaustive enumeration of m^n
+  // points for intractable choice of m and n. This is enabled by the
+  // infeasibility propapation feature of EnumerateIntegerSolutions.
   int n = 10;
   int m = 8;
   SetDimensions(1, n);
 
-  //These bounds define a box B with m^n points
+  // These bounds define a box B with m^n points.
   lower_bound_ << Eigen::VectorXi::Constant(n, 1);
   upper_bound_ << lower_bound_ * m;
 
-  //This constraint is satisfied by one point in B.
+  // This constraint is satisfied by one point in B.
   A_ << Eigen::MatrixXi::Constant(1, n, 1);
   b_ << A_*lower_bound_;
 

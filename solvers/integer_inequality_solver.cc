@@ -47,12 +47,12 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
   return alphabet;
 }
 
-/* If a column Aᵢ of A is nonnegative (resp. nonpositive), then  {Aᵢ*z : z ∈ Qᵢ}
- * is totally ordered, where Qᵢ is the alphabet for the iᵗʰ component. In other
- * words, the inequalities Aᵢz1 ≤Aᵢz2 ≤...≤ Aᵢzm hold for zj ∈ Qi
+/* If a column Ai of A is nonnegative (resp. nonpositive), then  {Ai*z : z ∈ Qi}
+ * is totally ordered, where Qi is the alphabet for the iᵗʰ component. In other
+ * words, the inequalities Ai z1 ≤ Ai z2 ≤ ... ≤ Ai zm hold for zj ∈ Qi
  * sorted in ascending (resp. descending) order. This allows for infeasibility
  * propagation in the recursive enumeration of integer solutions.  This function
- * detects when {Aᵢ*z : z ∈ Qᵢ} is totally ordered and then sorts the alphabet
+ * detects when {Ai z : z ∈ Qi} is totally ordered and then sorts the alphabet
  * using this ordering.
  */
 enum class ColumnType { Nonnegative, Nonpositive, Indefinite };
@@ -100,24 +100,23 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
   return Y;
 }
 
-/*Find each solution (x1, x2, ..., xn) to Ax <= b when
- * xi can only take on values in a finite alphabet Qi, e.g.,
- * Qi = {1, 2, 3, 8, 9}.   We do this recursively, enumerating
- * the possible values x1 can take when (x2, x3, ..., xn) 
- * is fixed. If the columns {Aᵢ*z : z ∈ Qᵢ} are totally
- * ordered, we propagate infeasibility: if no solutions exist when
- * x1 = z, then no solution can exist if x1 takes on values
- * larger than z (in the ordering).  We assume the function "ProcessInputs"
- * was previously called to sort the alphabet in ascending order.
+/*Find each solution (x(1), x(2), ..., x(n)) to Ax <= b when x(i) can only take
+ * on values in a finite alphabet Qi, e.g., Qi = {1, 2, 3, 8, 9}.   We do this
+ * by recursively enumerating the solutions to
+ * A (x(1), x(2), ..., x(n-1) ) <= (b - A_n x_n) for all values of x(n). If the
+ * column vectors {An*z : z ∈ Qn} are totally ordered, we propagate infeasibility:
+ * if no solutions exist when x(n) = z, then no solution can exist if x(n) takes
+ * on values larger than z (in the ordering).  We assume the function
+ * "ProcessInputs" was previously called to sort the alphabet in ascending order.
  */
 
+// TODO(frankpermenter):  Update to use preallocated memory
 Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& column_type,
-                               int last_free_var_pos  
+                               int last_free_var_pos
                                ) {
-
   Eigen::MatrixXi feasible_points(0, last_free_var_pos);
 
   for (const auto& value : column_alphabets.at(last_free_var_pos)) {

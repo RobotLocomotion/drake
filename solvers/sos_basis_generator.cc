@@ -121,7 +121,7 @@ void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
 
     if (exponents_of_basis->rows() == num_exponents) {
       return;
-    } 
+    }
   }
 }
 
