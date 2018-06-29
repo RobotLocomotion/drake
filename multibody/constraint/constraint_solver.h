@@ -476,12 +476,14 @@ class ConstraintSolver {
   ///           simulations) used to take the system's generalized velocities
   ///           from time t to time t + `dt`.
   /// @param[out] generalized_acceleration The generalized acceleration, on
-  ///             return.
+  ///             return. The original will be resized (if necessary) and
+  ///             overwritten.
   /// @warning This method uses the method `problem_data.solve_inertia()` in
   ///          order to compute `v(t+dt)`, so the computational demands may
   ///          be significant.
-  /// @throws std::logic_error if `generalized_acceleration` is null,
-  ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
+  /// @throws std::logic_error if `generalized_acceleration` is null or
+  ///         `cf` vector is incorrectly sized.
+  /// @pre `dt` is positive.
   static void ComputeGeneralizedAcceleration(
       const ConstraintVelProblemData<T>& problem_data,
       const VectorX<T>& v,
