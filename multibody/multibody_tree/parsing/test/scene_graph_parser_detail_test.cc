@@ -34,6 +34,7 @@ using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
 using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
 using multibody::parsing::detail::MakeShapeFromSdfGeometry;
+using multibody::parsing::detail::MakeVisualMaterialFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -312,6 +313,33 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
   EXPECT_EQ(geometry_instance, nullptr);
+}
+
+// Verify visual material parsing: default for unspecified, and diffuse color
+// given where specified in the SDF.
+GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
+  using geometry::VisualMaterial;
+
+  const VisualMaterial default_material;
+
+  // Case: No material defined -- default visual material.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), default_material.diffuse(),
+    0.0, MatrixCompareType::absolute));
+  }
+  // Case: No diffuse defined -- default visual material.
+  // Case: Malformed diffuse value -- default visual material.
+  // Case: Valid diffuse material -- visual material as specified.
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
