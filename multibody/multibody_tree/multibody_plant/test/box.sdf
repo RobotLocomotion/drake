@@ -110,7 +110,7 @@
       </axis>
     </joint>
 
-    <!-- The model for a slid box of uniform density. -->
+    <!-- The model for a solid box of uniform density. -->
     <link name='box'>
       <pose>0 0 0.5 0 0 0</pose>
       <inertial>

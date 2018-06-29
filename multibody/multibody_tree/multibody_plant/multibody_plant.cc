@@ -545,7 +545,7 @@ void MultibodyPlant<T>::CalcContactResultsOutput(
     const systems::Context<T>&,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  // TODO(amcastro-tri): Eval() cotact results when caching lands.
+  // TODO(amcastro-tri): Eval() contact results when caching lands.
   *contact_results = contact_results_;
 }
 

@@ -628,39 +628,39 @@ class ImplicitStribeckSolver {
   /// the last call to SolveWithGuess().
   /// @{
 
-  /// Returns a constant reference to the last solved vector of generalized
+  /// Returns a constant reference to the most recent  vector of generalized
   /// friction forces.
   const VectorX<T>& get_generalized_friction_forces() const {
     return fixed_size_workspace_.mutable_tau_f();
   }
 
-  /// Returns a constant reference to the last solved vector of normal
+  /// Returns a constant reference to the most recent solution vector for normal
   /// separation velocities. This method returns an `Eigen::VectorBlock`
   /// referencing a vector of size `nc`.
   Eigen::VectorBlock<const VectorX<T>> get_normal_velocities() const {
     return variable_size_workspace_.vn();
   }
 
-  /// Returns a constant reference to the last solved vector of generalized
+  /// Returns a constant reference to the most recent vector of generalized
   /// contact forces, including both friction and normal forces.
   const VectorX<T>& get_generalized_contact_forces() const {
     return fixed_size_workspace_.mutable_tau();
   }
 
-  /// Returns a constant reference to the last solved vector of tangential
+  /// Returns a constant reference to the most recent vector of tangential
   /// forces. This method returns an `Eigen::VectorBlock` referencing a vector
   /// of size `nc`.
   Eigen::VectorBlock<const VectorX<T>> get_tangential_velocities() const {
     return variable_size_workspace_.vt();
   }
 
-  /// Returns a constant reference to the last solved vector of generalized
+  /// Returns a constant reference to the most recent vector of generalized
   /// velocities.
   const VectorX<T>& get_generalized_velocities() const {
     return fixed_size_workspace_.mutable_v();
   }
 
-  /// Returns a constant reference to the last solved vector of (repulsive)
+  /// Returns a constant reference to the most recent vector of (repulsive)
   /// forces in the normal direction. That is, the normal force is positive when
   /// the bodies push each other apart. Otherwise the normal force is zero,
   /// since contact forces can only be repulsive.
@@ -668,8 +668,8 @@ class ImplicitStribeckSolver {
     return variable_size_workspace_.fn();
   }
 
-  /// Returns a constant reference to the last solved vector of friction forces.
-  /// This friction forces are defined in accordance to the tangential
+  /// Returns a constant reference to the most recent vector of friction forces.
+  /// These friction forces are defined in accordance to the tangential
   /// velocities Jacobian Jₜ as documented in this class's documentation.
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
@@ -973,7 +973,9 @@ class ImplicitStribeckSolver {
     }
 
     // Returns a constant reference to the vector containing the tangential
-    // friction forces fₜ for all contact points, of size 2nc.
+    // friction forces fₜ for all contact points. fₜ has size 2nc since it
+    // stores the two tangential compoents of the friction force for each
+    // contact point. Refer to ImplicitStribeckSolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
     }

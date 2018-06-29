@@ -47,6 +47,7 @@ GTEST_TEST(Box, UnderStiction) {
 
   // Plant's parameters.
   const double mass = 1.0;     // Box mass, [kg]
+  // We use g = 10 m/s² so that numbers are simpler.
   const double g = 10.0;       // Acceleration of gravity, [m/s²]
   const CoulombFriction<double> surface_friction(
       1.0 /* static friction */, 1.0 /* dynamic friction */);
@@ -58,6 +59,10 @@ GTEST_TEST(Box, UnderStiction) {
   const double applied_force = 5.0;  // Force in Newtons.
 
   // Tolerance used to verify the results.
+  // Since the contact solver uses a continuous ODE to model Coulomb friction
+  // (a modified Stribeck model), we simulate for a long enough time to reach a
+  // "steady state". Therefore the precision of the results in these tests is
+  // dominated for "how well we reached steady state".
   const double kTolerance = 1.0e-12;
 
   const std::string full_name = FindResourceOrThrow(

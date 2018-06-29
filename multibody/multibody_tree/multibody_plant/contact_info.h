@@ -35,11 +35,11 @@ class PointPairContactInfo {
   /**
    Initialize the contact information for a given pair of two colliding bodies.
    @param bodyA_index
-     Index that references a body, body A, in the MultibodyPlant model for
-     `this` contact pair.
+     Index that references body A in the MultibodyPlant model for `this`
+     contact pair.
    @param bodyB_index
-     Index that references a body, body B, in the MultibodyPlant model for
-     `this` contact pair.
+     Index that references body B in the MultibodyPlant model for `this`
+     contact pair.
    @param f_Bc_W
      Force on body B applied at contact point C, expressed in the world frame W.
    @param p_WC
@@ -48,7 +48,8 @@ class PointPairContactInfo {
      Separation velocity along the normal direction between body A and body B,
      in meters per second. A positive value indicates bodies are moving apart.
    @param slip
-     Slip velocity in meters per second.
+     Slip speed, that is, the magnitude of the relative tangential velocity at
+     the contact point in meters per second.
    @param point_pair
      Additional point pair information for `this` contact info. Refer to the
      documentation for PenetrationAsPointPair for further details.
@@ -87,7 +88,7 @@ class PointPairContactInfo {
   }
 
  private:
-  // Point pair containing iformation regarding the geometric query for this
+  // Point pair containing information regarding the geometric query for this
   // contact pair.
   drake::geometry::PenetrationAsPointPair<T> point_pair_;
   // Body associated with the geometry with identifier point_pair_.id_A.

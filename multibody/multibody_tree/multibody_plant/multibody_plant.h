@@ -901,6 +901,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if `this` plant is not modeled as a discrete system
   /// with periodic updates.
   /// @throws std::exception if called pre-finalize, see Finalize().
+  // TODO(amcastro-tri): report contact results for plants modeled as a
+  // continuous system as well.
   const systems::OutputPort<T>& get_contact_results_output_port() const;
 
   /// Returns a constant reference to the *world* body.
@@ -1541,6 +1543,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
 
   // TODO(amcastro-tri): Remove this when caching lands and properly cache the
   // contact results.
+  // Until caching lands, we use this variable as a "caching" entry.
+  // We make it mutable so we can change its values even from withing const
+  // methods.
   mutable ContactResults<T> contact_results_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
