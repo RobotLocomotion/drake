@@ -929,6 +929,9 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
 
+/// Returns the Taylor series expansion of `f` around `a` of order `order`.
+Expression TaylorExpand(const Expression& f, const Environment& a, int order);
+
 /// Returns the distinct variables in the matrix of expressions.
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);
 
