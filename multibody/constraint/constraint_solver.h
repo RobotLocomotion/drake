@@ -103,6 +103,9 @@ class ConstraintSolver {
   };
   // TODO(edrumwri): Describe conditions under which it is safe to replace
   // A⁻¹ by a pseudo-inverse.
+  // TODO(edrumwri): Constraint solver needs to use monogram notation throughout
+  // to make it consistent with the rest of Drake's multibody dynamics
+  // documentation (see Issue #9080).
 
   /// @name Velocity-level constraint problems formulated as MLCPs.
   /// @anchor Velocity-level-MLCPs
@@ -474,6 +477,9 @@ class ConstraintSolver {
   ///           from time t to time t + `dt`.
   /// @param[out] generalized_acceleration The generalized acceleration, on
   ///             return.
+  /// @warning This method uses the method `problem_data.solve_inertia()` in
+  ///          order to compute `v(t+dt)`, so the computational demands may
+  ///          be significant.
   /// @throws std::logic_error if `generalized_acceleration` is null,
   ///         `cf` vector is incorrectly sized, or `dt` is non-positive.
   static void ComputeGeneralizedAcceleration(
