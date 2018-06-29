@@ -125,6 +125,7 @@ class RigidBody {
   /**
    * An accessor to this rigid body's mutable inboard joint. Also called "parent joint".
    *
+   * @throws if there is no joint (joint == nullptr)
    * @return The mutable inboard joint of this rigid body.
    */
   DrakeJoint& get_mutable_joint() {

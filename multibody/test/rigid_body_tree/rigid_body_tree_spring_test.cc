@@ -1,6 +1,6 @@
 /* clang-format off to disable clang-format-includes */
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/joints/fixed_axis_one_dof_joint.h"
+#include "drake/multibody/joints/revolute_joint.h"
 /* clang-format on */
 
 #include <cmath>
@@ -27,91 +27,66 @@ using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 
 class RigidBodyTreeSpringTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
-    tree_ = std::make_unique<RigidBodyTree<double>>();
+
+  void TestTreeWithSpring(bool use_fixed_base) {
+    unique_ptr<RigidBodyTree<double>> tree = std::make_unique<RigidBodyTree<double>>();
+    const std::string filename = FindResourceOrThrow(
+        "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
+    if (use_fixed_base) {
+      AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
+          tree.get());
+    } else {
+      AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kFixed,
+          tree.get());
+    }
+
+    // compute bias without spring forces
+    VectorXd q(tree->get_num_positions());
+    VectorXd v(tree->get_num_velocities());
+    for (uint i = 0; i < q.size(); i++) {
+      q(i) = i+1;
+    }
+    for (uint i = 0; i < v.size(); i++) {
+      v(i) = -2*i-1;
+    }
+
+
+    auto kinsol = tree->doKinematics(q, v);
+    const typename RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
+    VectorXd bias_no_spring = tree->dynamicsBiasTerm(kinsol,
+                                                      no_external_wrenches, true);
+
+    const double stiffness = 102.0; // Nm/rad
+    const double nominal_position = 1.1; // rad
+
+    int body_index = tree->FindIndexOfChildBodyOfJoint("joint2");
+    auto body = tree->get_mutable_body(body_index);
+
+    RevoluteJoint& joint = dynamic_cast<RevoluteJoint&>(body->get_mutable_joint());
+
+    joint.SetSpringDynamics(stiffness, nominal_position);
+
+    VectorXd bias_spring = tree->dynamicsBiasTerm(kinsol,
+                                                   no_external_wrenches, true);
+    VectorXd delta_bias = VectorXd::Zero(tree->get_num_velocities());
+    int q_ind = body->get_position_start_index();
+    int v_ind = body->get_velocity_start_index();
+    delta_bias(v_ind) = stiffness * (nominal_position - q(q_ind));
+
+    EXPECT_TRUE(CompareMatrices(bias_no_spring - delta_bias, bias_spring,
+      0, MatrixCompareType::absolute));
   }
-  unique_ptr<RigidBodyTree<double>> tree_;
 };
 
 // Tests spring forces effect on RigidBodyTree dynamics
 // Computes dynamics with and without a spring, and checks that the difference
 // is correct
 TEST_F(RigidBodyTreeSpringTest, QuaternionBaseSpringTest) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
-  AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
-    tree_.get());
-
-
-  // compute bias without spring forces
-  VectorXd q = VectorXd::Random(tree_->get_num_positions());
-  VectorXd v = VectorXd::Random(tree_->get_num_velocities());
-
-
-  auto kinsol = tree_->doKinematics(q, v);
-  const typename RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
-                                                    no_external_wrenches, true);
-
-  const double stiffness = 102.0; // Nm/rad
-  const double nominal_position = 1.1; // rad
-
-  int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
-  auto body = tree_->get_mutable_body(body_index);
-
-  FixedAxisOneDoFJoint<double>& joint =
-      static_cast<FixedAxisOneDoFJoint<double>&>(body->get_mutable_joint());
-
-  joint.SetSpringDynamics(stiffness, nominal_position);
-
-  VectorXd bias_spring = tree_->dynamicsBiasTerm(kinsol,
-                                                 no_external_wrenches, true);
-  VectorXd delta_bias = VectorXd::Zero(tree_->get_num_velocities());
-  int q_ind = body->get_position_start_index();
-  int v_ind = body->get_velocity_start_index();
-  delta_bias(v_ind) = stiffness * (nominal_position - q(q_ind));
-
-  EXPECT_TRUE(CompareMatrices(bias_no_spring - delta_bias, bias_spring,
-    1e-20, MatrixCompareType::absolute));
+  TestTreeWithSpring(false);
 }
 
 TEST_F(RigidBodyTreeSpringTest, FixedBaseSpringTest) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
-  AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kFixed,
-    tree_.get());
-
-
-  // compute bias without spring forces
-  VectorXd q = VectorXd::Random(tree_->get_num_positions());
-  VectorXd v = VectorXd::Random(tree_->get_num_velocities());
-
-
-  auto kinsol = tree_->doKinematics(q, v);
-  const typename RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
-  VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
-                                                    no_external_wrenches, true);
-
-  const double stiffness = 102.0; // Nm/rad
-  const double nominal_position = 1.1; // rad
-
-  int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
-  auto body = tree_->get_mutable_body(body_index);
-
-  FixedAxisOneDoFJoint<double>& joint =
-      static_cast<FixedAxisOneDoFJoint<double>&>(body->get_mutable_joint());
-
-  joint.SetSpringDynamics(stiffness, nominal_position);
-
-  VectorXd bias_spring = tree_->dynamicsBiasTerm(kinsol,
-                                                 no_external_wrenches, true);
-  VectorXd delta_bias = VectorXd::Zero(tree_->get_num_velocities());
-  int q_ind = body->get_position_start_index();
-  int v_ind = body->get_velocity_start_index();
-  delta_bias(v_ind) = stiffness * (nominal_position - q(q_ind));
-
-  EXPECT_TRUE(CompareMatrices(bias_no_spring - delta_bias, bias_spring,
-    1e-20, MatrixCompareType::absolute));
+  TestTreeWithSpring(true);
 }
 
 }  // namespace
