@@ -2566,7 +2566,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree<T>::inverseDynamics(
 
   // SpringTorques added with a negative sign since they are being included in
   // the bias terms
-  torques -= SpringTorques(cache.getQ());
+  torques -= CalcGeneralizedSpringForces(cache.getQ());
 
   return torques;
 }
@@ -2594,7 +2594,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
 
 template <typename T>
 template <typename Scalar>
-VectorX<Scalar> RigidBodyTree<T>::SpringTorques(VectorX<Scalar> q) const {
+VectorX<Scalar> RigidBodyTree<T>::CalcGeneralizedSpringForces(VectorX<Scalar> q) const {
   VectorX<Scalar> generalized_force(num_velocities_);
 
   for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {

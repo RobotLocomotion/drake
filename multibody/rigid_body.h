@@ -10,6 +10,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/drake_throw.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
@@ -122,15 +123,15 @@ class RigidBody {
   }
 
   /**
-   * An accessor to this rigid body's mutable parent joint. By "parent joint" we
-   * mean the joint through which this rigid body connects to its parent rigid
-   * body in the rigid body tree.
+   * An accessor to this rigid body's mutable inboard joint. Also called "parent joint".
    *
-   * @return The mutable parent joint of this rigid body.
+   * @return The mutable inboard joint of this rigid body.
    */
-  DrakeJoint* get_mutable_joint() {
-    DRAKE_DEMAND(joint_ != nullptr);
-    return joint_.get();
+  DrakeJoint& get_mutable_joint() {
+    DRAKE_THROW_UNLESS(joint_ != nullptr);
+    if (body_index_ == 0) 
+      throw std::runtime_error("This method cannot be called on the world body");
+    return *joint_.get();
   }
 
   /**

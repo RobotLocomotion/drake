@@ -15,16 +15,15 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 
-using std::unique_ptr;
-using Eigen::VectorXd;
 namespace drake {
-
-using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
-
 namespace systems {
 namespace plants {
 namespace test {
 namespace {
+
+using std::unique_ptr;
+using Eigen::VectorXd;
+using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 
 class RigidBodyTreeSpringTest : public ::testing::Test {
  protected:
@@ -54,18 +53,16 @@ TEST_F(RigidBodyTreeSpringTest, QuaternionBaseSpringTest) {
   VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
                                                     no_external_wrenches, true);
 
-  double stiffness = 102.0;
-  double nominal_position = 1.1;
+  const double stiffness = 102.0;
+  const double nominal_position = 1.1;
 
   int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
   auto body = tree_->get_mutable_body(body_index);
 
-  FixedAxisOneDoFJoint<double>* joint =
-      static_cast<FixedAxisOneDoFJoint<double>*>(body->get_mutable_joint());
+  FixedAxisOneDoFJoint<double>& joint =
+      static_cast<FixedAxisOneDoFJoint<double>&>(body->get_mutable_joint());
 
-  EXPECT_TRUE(joint != nullptr);
-
-  joint->SetSpringDynamics(stiffness, nominal_position);
+  joint.SetSpringDynamics(stiffness, nominal_position);
 
   VectorXd bias_spring = tree_->dynamicsBiasTerm(kinsol,
                                                  no_external_wrenches, true);
@@ -95,18 +92,16 @@ TEST_F(RigidBodyTreeSpringTest, FixedBaseSpringTest) {
   VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
                                                     no_external_wrenches, true);
 
-  double stiffness = 102.0;
-  double nominal_position = 1.1;
+  const double stiffness = 102.0;
+  const double nominal_position = 1.1;
 
   int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
   auto body = tree_->get_mutable_body(body_index);
 
-  FixedAxisOneDoFJoint<double>* joint =
-      static_cast<FixedAxisOneDoFJoint<double>*>(body->get_mutable_joint());
+  FixedAxisOneDoFJoint<double>& joint =
+      static_cast<FixedAxisOneDoFJoint<double>&>(body->get_mutable_joint());
 
-  EXPECT_TRUE(joint != nullptr);
-
-  joint->SetSpringDynamics(stiffness, nominal_position);
+  joint.SetSpringDynamics(stiffness, nominal_position);
 
   VectorXd bias_spring = tree_->dynamicsBiasTerm(kinsol,
                                                  no_external_wrenches, true);

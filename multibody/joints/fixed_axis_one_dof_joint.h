@@ -129,6 +129,7 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
     typedef typename DerivedQ::Scalar Scalar;
+    DRAKE_DEMAND(q.size() == 1);
     drake::VectorX<Scalar> torque(get_num_velocities(), 1);
     torque[0] = stiffness_ * (nominal_position_ - q[0]);
     return torque;
