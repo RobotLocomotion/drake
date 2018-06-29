@@ -53,8 +53,8 @@ TEST_F(RigidBodyTreeSpringTest, QuaternionBaseSpringTest) {
   VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
                                                     no_external_wrenches, true);
 
-  const double stiffness = 102.0;
-  const double nominal_position = 1.1;
+  const double stiffness = 102.0; // Nm/rad
+  const double nominal_position = 1.1; // rad
 
   int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
   auto body = tree_->get_mutable_body(body_index);
@@ -92,8 +92,8 @@ TEST_F(RigidBodyTreeSpringTest, FixedBaseSpringTest) {
   VectorXd bias_no_spring = tree_->dynamicsBiasTerm(kinsol,
                                                     no_external_wrenches, true);
 
-  const double stiffness = 102.0;
-  const double nominal_position = 1.1;
+  const double stiffness = 102.0; // Nm/rad
+  const double nominal_position = 1.1; // rad
 
   int body_index = tree_->FindIndexOfChildBodyOfJoint("joint2");
   auto body = tree_->get_mutable_body(body_index);
