@@ -29,6 +29,7 @@ variables (i.e., the constraint forces) are computed to low accuracy.
 This discussion will provide necessary background material in:
  - @ref constraint_types
  - @ref constraint_stabilization
+ - @ref constraint_Jacobians
  - @ref contact_surface_constraints
 
 and will delve into the constraint solver functionality in:
@@ -206,6 +207,39 @@ frequency ω₀ that is high enough to correct errors rapidly but low enough to
 avoid computational stiffness. Picking that parameter is considered to be more
 art than science (see [Ascher 1995]). Given desired ω₀ and ζ, α and β are set
 using the equations above.
+*/
+
+/** @defgroup constraint_Jacobians Constraint Jacobian matrices
+@ingroup constraint_overview
+
+Much of the problem data necessary to account for constraints in dynamical
+systems refers to particular Jacobian matrices. These Jacobian matrices arise
+through the time derivatives of the constraint equations, e.g.:<pre>
+ġₚ = ∂gₚ/∂q⋅q̇
+</pre>
+where we assume that gₚ above is a function only of position (not time) for
+simplicity. The constraint solver currently operates on generalized velocities,
+requiring us to leverage the relationship:<pre>
+q̇ = N(q)⋅v
+</pre>
+using the left-invertible matrix N(q) between the time derivative of generalized
+coordinates and generalized velocities (see @ref quasi_coordinates). This yields
+the requisite form:<pre>
+ġₚ = ∂gₚ/∂q⋅N(q)⋅v
+</pre>
+In robotics literature, ∂gₚ/∂q⋅N(q) is known as a *geometric Jacobian* while
+∂gₚ/∂q is known as an *analytical Jacobian* [Sciavicco 2000]. The latter can
+be cumbersome to derive and less efficient to work with.
+
+Fortunately, adding new constraints defined in the form gₚ(t,q) does not
+require considering this distinction: since the Jacobians are described
+completely by the equation ġₚ = ∂gₚ/∂q⋅N(q)⋅v + ∂c/∂t and the problem
+data calls for operators (see
+@ref drake::multibody::constraint::ConstraintAccelProblemData
+"ConstraintAccelProblemData" and
+@ref drake::multibody::constraint::ConstraintVelProblemData
+"ConstraintVelProblemData" that compute (∂gₚ/∂q⋅N(q)⋅v), one can simply
+evaluate ġₚ - ∂g/∂t for a given v: no Jacobian matrix need be formed explicitly.
 */
 
 /** @defgroup contact_surface_constraints Contact surface constraints
