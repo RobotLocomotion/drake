@@ -453,7 +453,7 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   const RotationMatrix<symbolic::Expression> R_inverse = R.inverse();
   const RotationMatrix<symbolic::Expression> R_R_inverse = R * R_inverse;
 
-  // R * R_inverse does not natually simplify to the identity matrix without
+  // R * R_inverse does not naturally simplify to the identity matrix without
   // a simplifying rule such as q0^2 + q1^2 + q2^2 + q3^2 = 1.
   // To verify that R_R_inverse is the identity matrix, evaluate numerically.
   // To that end, map the symbolic variables to numerical values (shown below).
@@ -463,13 +463,7 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
 
   // Evaluate the symbolic R_R_inverse matrix with specific numerical values.
   const Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
-  Eigen::Matrix3d m_numerical;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      const symbolic::Expression mij_symbolic = m_symbolic(i, j);
-      m_numerical(i, j) = mij_symbolic.Evaluate(env);
-    }
-  }
+  Eigen::Matrix3d m_numerical{Evaluate(m_symbolic, env)};
   const RotationMatrix<double> R_identity(m_numerical);
   const Bool<double> is_identity = R_identity.IsIdentityToInternalTolerance();
   EXPECT_TRUE(is_identity.value());
@@ -481,12 +475,12 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
 
   // Verify Bool method IsOrthonormal();
   const Bool<double> is_orthonormal =
-      RotationMatrix<double>::IsOrthonormal(R_identity.matrix(), 800*kEpsilon);
+      RotationMatrix<double>::IsOrthonormal(R_identity.matrix(), 16*kEpsilon);
   EXPECT_TRUE(is_orthonormal.value());
 
   // Verify Bool method IsValid().
   const Bool<double> is_validA =
-      RotationMatrix<double>::IsValid(R_identity.matrix(), 800*kEpsilon);
+      RotationMatrix<double>::IsValid(R_identity.matrix(), 16*kEpsilon);
   EXPECT_TRUE(is_validA.value());
 
   // Verify Bool method IsValid().

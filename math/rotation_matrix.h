@@ -31,7 +31,9 @@ namespace math {
 ///
 /// @note In debug builds, several methods in this class do a validity check
 /// and throw an exception (std::logic_error) if the rotation matrix is invalid.
-/// For speed in release builds, nearly all validity checks are skipped.
+/// For speed in release builds, all validity checks are skipped except a
+/// validity check is always made (in both release and debug builds) for the
+/// inherently computationally expensive method ProjectToRotationMatrix().
 /// In addition, validity tests are only performed for scalar types for which
 /// drake::is_numeric<T> is `true`.  No validity check is performed and no
 /// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
@@ -416,7 +418,6 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  // @internal This function is not generated for symbolic Expression.
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
