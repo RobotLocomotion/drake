@@ -1557,7 +1557,9 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Get the gravitational acceleration.
     const double grav_accel = rod_->get_gravitational_acceleration();
 
-    // Set the coefficient of friction.
+    // Set the coefficient of friction to zero. Note that a test that uses
+    // a non-zero coefficient of friction with sliding is
+    // SlidingPlusBilateralDiscretized().
     rod_->set_mu_coulomb(0.0);
 
     // Compute the problem data.
@@ -2450,7 +2452,8 @@ class Constraint2DSolverTest : public ::testing::Test {
  private:
   // The timestep size for discretization. Note: if the timestep is too
   // large, the accuracy might be too low for the necessary effect to emerge).
-  // But we also want the step size to be large enough to test robustness.
+  // But we also want the step size to be large enough to test robustness. The
+  // selected value should be a good compromise.
   const double dt_{1e-4};
 };
 
