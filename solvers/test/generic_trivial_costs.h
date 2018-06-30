@@ -26,22 +26,26 @@ class GenericTrivialCost1 : public Cost {
   GenericTrivialCost1() : Cost(3), private_val_(2) {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override {
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<U>* y) const {
     y->resize(1);
     (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
-    y->resize(1);
-    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override {
-    y->resize(1);
-    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+    DoEvalGeneric(x, y);
   }
 
  private:

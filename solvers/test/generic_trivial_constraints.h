@@ -30,25 +30,27 @@ class GenericTrivialConstraint1 : public Constraint {
         private_val_{2} {}
 
  protected:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override {
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<U>* y) const {
     y->resize(2);
     (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
     (*y)(1) = x(1) * x(2) - x(0);
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
-    y->resize(2);
-    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-    (*y)(1) = x(1) * x(2) - x(0);
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override {
-    y->resize(2);
-    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-    (*y)(1) = x(1) * x(2) - x(0);
+    DoEvalGeneric(x, y);
   }
 
  private:

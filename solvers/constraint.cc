@@ -48,132 +48,146 @@ symbolic::Formula Constraint::DoCheckSatisfied(
   return f;
 }
 
-void QuadraticConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd* y) const {
+template <typename DerivedX, typename U>
+void QuadraticConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                                        VectorX<U>* y) const {
   y->resize(num_constraints());
   *y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
 }
 
+void QuadraticConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                 Eigen::VectorXd* y) const {
+  DoEvalGeneric(x, y);
+}
+
 void QuadraticConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                  AutoDiffVecXd* y) const {
-  y->resize(num_constraints());
-  *y = .5 * x.transpose() * Q_.cast<AutoDiffXd>() * x +
-       b_.cast<AutoDiffXd>().transpose() * x;
+  DoEvalGeneric(x, y);
 }
 
 void QuadraticConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
+  DoEvalGeneric(x, y);
+}
+
+template <typename DerivedX, typename U>
+void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                                          VectorX<U>* y) const {
+  const VectorX<U> z = A_ * x.template cast<U>() + b_;
   y->resize(num_constraints());
-  *y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
+  (*y)(0) = z(0);
+  (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
 }
 
 void LorentzConeConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
-  Eigen::VectorXd z = A_ * x + b_;
-  y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
+  DoEvalGeneric(x, y);
 }
 
 void LorentzConeConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                    AutoDiffVecXd* y) const {
-  AutoDiffVecXd z = A_.cast<AutoDiffXd>() * x + b_.cast<AutoDiffXd>();
-  y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
+  DoEvalGeneric(x, y);
 }
 
 void LorentzConeConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
-  const VectorX<symbolic::Expression> z = A_ * x + b_;
+  DoEvalGeneric(x, y);
+}
+
+template <typename DerivedX, typename U>
+void RotatedLorentzConeConstraint::DoEvalGeneric(
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const {
+  const VectorX<U> z = A_ * x.template cast<U>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
-  (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
+  (*y)(1) = z(1);
+  (*y)(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
 }
 
 void RotatedLorentzConeConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  Eigen::VectorXd z = A_ * x + b_;
-  y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = z(1);
-  (*y)(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
+  DoEvalGeneric(x, y);
 }
 
 void RotatedLorentzConeConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  AutoDiffVecXd z = A_.cast<AutoDiffXd>() * x + b_.cast<AutoDiffXd>();
-  y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = z(1);
-  (*y)(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
+  DoEvalGeneric(x, y);
 }
 
 void RotatedLorentzConeConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
-  VectorX<symbolic::Expression> z = A_ * x + b_;
+  DoEvalGeneric(x, y);
+}
+
+template <typename DerivedX, typename U>
+void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                                     VectorX<U>* y) const {
   y->resize(num_constraints());
-  (*y)(0) = z(0);
-  (*y)(1) = z(1);
-  (*y)(2) = z(0) * z(1) - z.tail(z.size() - 2).squaredNorm();
+  (*y) = A_ * x.template cast<U>();
 }
 
 void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                               Eigen::VectorXd* y) const {
-  y->resize(num_constraints());
-  (*y) = A_ * x;
+  DoEvalGeneric(x, y);
 }
+
 void LinearConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                               AutoDiffVecXd* y) const {
-  y->resize(num_constraints());
-  (*y) = A_.cast<AutoDiffXd>() * x;
+  DoEvalGeneric(x, y);
 }
 
 void LinearConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
+  DoEvalGeneric(x, y);
+}
+
+template <typename DerivedX, typename U>
+void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                                          VectorX<U>* y) const {
   y->resize(num_constraints());
-  (*y) = A_ * x;
+  (*y) = x.template cast<U>();
 }
 
 void BoundingBoxConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
-  y->resize(num_constraints());
-  (*y) = x;
+  DoEvalGeneric(x, y);
 }
 void BoundingBoxConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                    AutoDiffVecXd* y) const {
-  y->resize(num_constraints());
-  (*y) = x;
+  DoEvalGeneric(x, y);
 }
 
 void BoundingBoxConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
+  DoEvalGeneric(x, y);
+}
+
+template <typename DerivedX, typename U>
+void LinearComplementarityConstraint::DoEvalGeneric(
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const {
   y->resize(num_constraints());
-  (*y) = x;
+  (*y) = (M_ * x.template cast<U>()) + q_;
 }
 
 void LinearComplementarityConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  y->resize(num_constraints());
-  (*y) = (M_ * x) + q_;
+  DoEvalGeneric(x, y);
 }
 
 void LinearComplementarityConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  y->resize(num_constraints());
-  (*y) = (M_.cast<AutoDiffXd>() * x) + q_.cast<AutoDiffXd>();
+  DoEvalGeneric(x, y);
 }
 
 void LinearComplementarityConstraint::DoEval(
     const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
     VectorX<symbolic::Expression>* y) const {
-  y->resize(num_constraints());
-  (*y) = (M_ * x) + q_;
+  DoEvalGeneric(x, y);
 }
 
 bool LinearComplementarityConstraint::DoCheckSatisfied(
