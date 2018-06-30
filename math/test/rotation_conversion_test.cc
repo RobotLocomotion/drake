@@ -41,15 +41,16 @@ GTEST_TEST(EigenEulerAngleTest, MakeXYZRotation) {
   // Verify MakeXRotation(theta), MakeYRotation(theta), MakeZRotation(theta) is
   // the same as AngleAxis equivalents.
   const double theta = 0.1234567;  // Arbitrary angle.
-  const RotationMatrix<double> Rx(RotationMatrix<double>::MakeXRotation(theta));
-  const RotationMatrix<double> Ry(RotationMatrix<double>::MakeYRotation(theta));
-  const RotationMatrix<double> Rz(RotationMatrix<double>::MakeZRotation(theta));
+  const RotationMatrixd Rx(RotationMatrixd::MakeXRotation(theta));
+  const RotationMatrixd Ry(RotationMatrixd::MakeYRotation(theta));
+  const RotationMatrixd Rz(RotationMatrixd::MakeZRotation(theta));
   const Quaterniond qx(Eigen::AngleAxisd(theta, Vector3d::UnitX()));
   const Quaterniond qy(Eigen::AngleAxisd(theta, Vector3d::UnitY()));
   const Quaterniond qz(Eigen::AngleAxisd(theta, Vector3d::UnitZ()));
-  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrix<double>(qx), 512 * kEpsilon));
-  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrix<double>(qy), 512 * kEpsilon));
-  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrix<double>(qz), 512 * kEpsilon));
+  const double tolerance = 32 * kEpsilon;
+  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrixd(qx), tolerance).value());
+  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrixd(qy), tolerance).value());
+  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrixd(qz), tolerance).value());
 }
 
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
@@ -372,7 +373,7 @@ TEST_F(RotationConversionTest, RotmatQuat) {
         AreQuaternionsEqualForOrientation(quat_drake, quat_eigen, kTolerance));
     // Ensure the calculated quaternion produces the same rotation matrix.
     const RotationMatrix<double> rotmat(quat_drake);
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 256 * kEpsilon).value());
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 32 * kEpsilon).value());
   }
 }
 
