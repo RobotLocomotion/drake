@@ -525,6 +525,6 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(body_1.get_position_start_index(), 0)
         self.assertEqual(body_2.get_position_start_index(), 1)
 
-        self.assertNotEqual(rbt.FindCollisionElement(
-            body_2.get_collision_element_ids()[0]),
-            None)
+        self.assertIsNotNone(
+            rbt.FindCollisionElement(
+                body_2.get_collision_element_ids()[0]))
