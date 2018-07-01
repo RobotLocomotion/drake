@@ -557,9 +557,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           solver_.SolveConstraintProblem(*accel_data_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -595,9 +595,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           solver_.SolveConstraintProblem(*accel_data_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -686,9 +686,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           SolveDiscretizationProblem(*vel_data_, dt_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -727,9 +727,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           SolveDiscretizationProblem(*vel_data_, dt_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -873,9 +873,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           solver_.SolveConstraintProblem(*accel_data_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -1006,9 +1006,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           solver_.SolveConstraintProblem(*accel_data_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
@@ -1146,9 +1146,9 @@ class Constraint2DSolverTest : public ::testing::Test {
           VectorX<double> cf;
           SolveDiscretizationProblem(*vel_data_, dt_, &cf);
 
-          // The tests below are only conducted when there is no friction
+          // The primary test below is conducted when there is no friction
           // direction duplication because CalcContactForcesInContactFrames()
-          // would throw an exception.
+          // would throw an exception (the secondary test looks for this case).
           std::vector<Vector2<double>> contact_forces;
           if (friction_dir_dup == 0) {
             // Get the contact forces expressed in the contact frame.
