@@ -149,6 +149,7 @@ cc_binary(
         "lcmgen/emit_c.c",
         "lcmgen/emit_cpp.c",
         "lcmgen/emit_csharp.c",
+        "lcmgen/emit_go.c",
         "lcmgen/emit_java.c",
         "lcmgen/emit_lua.c",
         "lcmgen/emit_python.c",
