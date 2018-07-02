@@ -87,6 +87,9 @@ class LinearCost : public Cost {
               VectorX<symbolic::Expression>* y) const override;
 
  private:
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;
+
   Eigen::VectorXd a_;
   double b_{};
 };
@@ -147,6 +150,9 @@ class QuadraticCost : public Cost {
   }
 
  private:
+  template <typename DerivedX, typename U>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
