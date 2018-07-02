@@ -178,7 +178,7 @@ GTEST_TEST(Box, UnderStiction) {
   EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
 
   // There should be not motion in the normal direction.
-  EXPECT_NEAR(contact_info.separation_velocity(), 0.0, kTolerance);
+  EXPECT_NEAR(contact_info.separation_speed(), 0.0, kTolerance);
 }
 
 }  // namespace

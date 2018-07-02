@@ -32,15 +32,12 @@ class ContactResults {
   void Clear();
 
   /** Returns the number of unique collision element pairs in contact. */
+  // TODO(amcastro-tri): provide a proper definition of "unique" contact pair.
   int num_contacts() const;
 
   /** Add a new contact pair result to the set of contact pairs stored by
    `this` class. */
-  // Note: we pass point_pair_info by value so that it gets "moved" when passing
-  // an rvalue. In this way we eliminate an unnecessary copy when passing
-  // rvalues. There is nothing we can do to eliminate the copy when passing an
-  // lvalue.
-  void AddContactInfo(PointPairContactInfo<T> point_pair_info);
+  void AddContactInfo(const PointPairContactInfo<T>& point_pair_info);
 
   /** Retrieves the ith PointPairContactInfo instance. The input index `i`
    must be in the range [0, get_num_contacts() - 1] or this method aborts. */

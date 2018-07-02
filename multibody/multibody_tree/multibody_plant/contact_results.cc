@@ -10,7 +10,7 @@ namespace multibody_plant {
 
 template <typename T>
 void ContactResults<T>::AddContactInfo(
-    PointPairContactInfo<T> point_pair_info) {
+    const PointPairContactInfo<T>& point_pair_info) {
   point_pairs_info_.emplace_back(std::move(point_pair_info));
 }
 
