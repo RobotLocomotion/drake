@@ -27,14 +27,14 @@ using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 
 class RigidBodyTreeSpringTest : public ::testing::Test {
  protected:
-
   void TestTreeWithSpring(bool use_fixed_base) {
-    unique_ptr<RigidBodyTree<double>> tree = std::make_unique<RigidBodyTree<double>>();
+    unique_ptr<RigidBodyTree<double>> tree =
+        std::make_unique<RigidBodyTree<double>>();
     const std::string filename = FindResourceOrThrow(
         "drake/multibody/test/rigid_body_tree/two_dof_robot.urdf");
     if (use_fixed_base) {
-      AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kQuaternion,
-          tree.get());
+      AddModelInstanceFromUrdfFileToWorld(filename,
+          multibody::joints::kQuaternion, tree.get());
     } else {
       AddModelInstanceFromUrdfFileToWorld(filename, multibody::joints::kFixed,
           tree.get());
@@ -54,15 +54,17 @@ class RigidBodyTreeSpringTest : public ::testing::Test {
     auto kinsol = tree->doKinematics(q, v);
     const typename RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     VectorXd bias_no_spring = tree->dynamicsBiasTerm(kinsol,
-                                                      no_external_wrenches, true);
+                                                     no_external_wrenches,
+                                                     true);
 
-    const double stiffness = 102.0; // Nm/rad
-    const double nominal_position = 1.1; // rad
+    const double stiffness = 102.0;  // Nm/rad
+    const double nominal_position = 1.1;  // rad
 
     int body_index = tree->FindIndexOfChildBodyOfJoint("joint2");
     auto body = tree->get_mutable_body(body_index);
 
-    RevoluteJoint& joint = dynamic_cast<RevoluteJoint&>(body->get_mutable_joint());
+    RevoluteJoint& joint = dynamic_cast<RevoluteJoint&>(
+        body->get_mutable_joint());
 
     joint.SetSpringDynamics(stiffness, nominal_position);
 

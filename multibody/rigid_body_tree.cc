@@ -2594,7 +2594,8 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
 
 template <typename T>
 template <typename Scalar>
-VectorX<Scalar> RigidBodyTree<T>::CalcGeneralizedSpringForces(VectorX<Scalar> q) const {
+VectorX<Scalar> RigidBodyTree<T>::CalcGeneralizedSpringForces(VectorX<Scalar> q)
+    const {
   VectorX<Scalar> generalized_force(num_velocities_);
 
   for (auto it = bodies_.begin(); it != bodies_.end(); ++it) {

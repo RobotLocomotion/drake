@@ -130,8 +130,8 @@ class RigidBody {
    */
   DrakeJoint& get_mutable_joint() {
     DRAKE_THROW_UNLESS(joint_ != nullptr);
-    if (body_index_ == 0) 
-      throw std::runtime_error("This method cannot be called on the world body");
+    if (body_index_ == 0)
+      throw std::runtime_error("This method cannot be called on world body");
     return *joint_.get();
   }
 

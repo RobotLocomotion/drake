@@ -850,7 +850,8 @@ class RigidBodyTree {
   /// Spring forces are computed joint-by-joint and are a function of position
   /// only (they do not couple between joints)
   template <typename Scalar>
-  drake::VectorX<Scalar> CalcGeneralizedSpringForces(const drake::VectorX<Scalar> q) const;
+  drake::VectorX<Scalar> CalcGeneralizedSpringForces(
+      const drake::VectorX<Scalar> q) const;
 
   template <
       typename Scalar,
