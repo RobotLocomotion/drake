@@ -2073,7 +2073,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Construct the problem as a limit constraint preventing movement in the
     // downward direction.
-    vel_data_->mu.resize(1);
+    vel_data_->mu.setZero(1);
     vel_data_->r = {1};
     vel_data_->N_mult = [&N](const VectorX<double>& v) {
       return N.row(0) * v;
