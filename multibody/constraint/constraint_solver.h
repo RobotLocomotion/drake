@@ -103,6 +103,9 @@ class ConstraintSolver {
   };
   // TODO(edrumwri): Describe conditions under which it is safe to replace
   // A⁻¹ by a pseudo-inverse.
+  // TODO(edrumwri): Constraint solver needs to use monogram notation throughout
+  // to make it consistent with the rest of Drake's multibody dynamics
+  // documentation (see Issue #9080).
 
   /// @name Velocity-level constraint problems formulated as MLCPs.
   /// @anchor Velocity-level-MLCPs
@@ -446,8 +449,11 @@ class ConstraintSolver {
 
   /// Computes the system generalized acceleration due to both external forces
   /// and constraint forces.
+  /// @param problem_data The acceleration-level constraint data.
   /// @param cf The computed constraint forces, in the packed storage
   ///           format described in documentation for SolveConstraintProblem.
+  /// @param[out] generalized_acceleration The generalized acceleration, on
+  ///             return.
   /// @throws std::logic_error if @p generalized_acceleration is null or
   ///         @p cf vector is incorrectly sized.
   static void ComputeGeneralizedAcceleration(
@@ -459,6 +465,31 @@ class ConstraintSolver {
     (*generalized_acceleration) += problem_data.solve_inertia(
         problem_data.tau);
   }
+
+  /// Computes a first-order approximation of generalized acceleration due
+  /// *only* to constraint forces.
+  /// @param problem_data The velocity-level constraint data.
+  /// @param cf The computed constraint forces, in the packed storage
+  ///           format described in documentation for SolveConstraintProblem.
+  /// @param v  The system generalized velocity at time t.
+  /// @param dt The discretization time constant (i.e., the "time step" for
+  ///           simulations) used to take the system's generalized velocities
+  ///           from time t to time t + `dt`.
+  /// @param[out] generalized_acceleration The generalized acceleration, on
+  ///             return. The original will be resized (if necessary) and
+  ///             overwritten.
+  /// @warning This method uses the method `problem_data.solve_inertia()` in
+  ///          order to compute `v(t+dt)`, so the computational demands may
+  ///          be significant.
+  /// @throws std::logic_error if `generalized_acceleration` is null or
+  ///         `cf` vector is incorrectly sized.
+  /// @pre `dt` is positive.
+  static void ComputeGeneralizedAcceleration(
+      const ConstraintVelProblemData<T>& problem_data,
+      const VectorX<T>& v,
+      const VectorX<T>& cf,
+      double dt,
+      VectorX<T>* generalized_acceleration);
 
   /// Computes the system generalized acceleration due *only* to constraint
   /// forces.
@@ -522,9 +553,13 @@ class ConstraintSolver {
       const std::vector<Matrix2<T>>& contact_frames,
       std::vector<Vector2<T>>* contact_forces);
 
-  /// Gets the contact impulses expressed in each contact frame *for 2D contact
-  /// problems* from the "packed" solution returned by SolveImpactProblem().
-  /// @param cf the output from SolveImpactProblem()
+  /// Gets the contact forces expressed in each contact frame *for 2D contact
+  /// problems* from a "packed" solution returned by, e.g.,
+  /// SolveImpactProblem().  If the constraint forces are impulsive, the contact
+  /// forces are impulsive (with units of Ns); similarly, if the constraint
+  /// forces are non-impulsive, the contact forces will be non-impulsive (with
+  /// units of N).
+  /// @param cf the constraint forces in packed format.
   /// @param problem_data the problem data input to SolveImpactProblem()
   /// @param contact_frames the contact frames corresponding to the contacts.
   ///        The first column of each matrix should give the contact normal,
@@ -532,7 +567,7 @@ class ConstraintSolver {
   ///        tangent direction used to determine `problem_data.F`). All
   ///        vectors should be expressed in the global frame.
   /// @param[out] contact_forces a non-null vector of a doublet of values,
-  ///             where the iᵗʰ element represents the impulsive force along
+  ///             where the iᵗʰ element represents the force along
   ///             each basis vector in the iᵗʰ contact frame.
   /// @throws std::logic_error if `contact_forces` is null, if
   ///         `contact_forces` is not empty, if `cf` is not the
@@ -541,7 +576,7 @@ class ConstraintSolver {
   ///         the number of contact frames is not equal to the number
   ///         of contacts, or if a contact frame does not appear to be
   ///         orthonormal.
-  /// @note On return, the contact impulse at the iᵗʰ contact point expressed
+  /// @note On return, the contact force at the iᵗʰ contact point expressed
   ///       in the world frame is `contact_frames[i]` * `contact_forces[i]`.
   static void CalcContactForcesInContactFrames(
       const VectorX<T>& cf,
@@ -2273,6 +2308,31 @@ void ConstraintSolver<T>::ComputeGeneralizedForceFromConstraintForces(
       problem_data.F_transpose_mult(f_frictional) +
       problem_data.L_transpose_mult(f_limit) +
       problem_data.G_transpose_mult(f_bilat);
+}
+
+template <class T>
+void ConstraintSolver<T>::ComputeGeneralizedAcceleration(
+    const ConstraintVelProblemData<T>& problem_data,
+    const VectorX<T>& v,
+    const VectorX<T>& cf,
+    double dt,
+    VectorX<T>* generalized_acceleration) {
+  DRAKE_DEMAND(dt > 0);
+
+  // Keep from allocating storage by reusing `generalized_acceleration`; at
+  // first, it will hold the generalized force from constraint forces.
+  ComputeGeneralizedForceFromConstraintForces(problem_data, cf,
+                                              generalized_acceleration);
+
+  // Using a first-order approximation to velocity, the new velocity is:
+  // v(t+dt) = v(t) + dt * ga
+  //         = inv(M) * (M * v(t) + dt * gf)
+  // where ga is the generalized acceleration and gf is the generalized force.
+  // Note: we have no way to break apart the Mv term. But, we can instead
+  // compute v(t+dt) and then solve for the acceleration.
+  const VectorX<T> vplus = problem_data.solve_inertia(problem_data.Mv +
+      dt * (*generalized_acceleration));
+  *generalized_acceleration = (vplus - v)/dt;
 }
 
 template <class T>
