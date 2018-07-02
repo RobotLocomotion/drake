@@ -52,10 +52,7 @@ const CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
   return new_entry;
 }
 
-std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
-  // Derived class creates the concrete Context object, which already contains
-  // all the well-known trackers (the ones with fixed tickets).
-  std::unique_ptr<ContextBase> context_ptr = DoMakeContext();
+void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;
 
@@ -94,7 +91,8 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
         oport->GetPrerequisite());
   }
 
-  return context_ptr;
+  detail::SystemBaseContextBaseAttorney::mark_context_base_initialized(
+      &context);
 }
 
 // Set up trackers for variable-numbered independent sources: discrete and

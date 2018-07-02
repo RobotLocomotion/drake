@@ -397,12 +397,14 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
+
+  // Used to validate that System-derived classes didn't forget to invoke the
+  // SystemBase method that properly sets up the ContextBase.
+  bool is_context_base_initialized_{false};
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
 class SystemBase;
-class LeafContextTest;
-class DiagramContextTest;
 namespace detail {
 
 // This is an attorney-client pattern class providing SystemBase with access to
@@ -414,8 +416,6 @@ class SystemBaseContextBaseAttorney {
 
  private:
   friend class drake::systems::SystemBase;
-  friend class drake::systems::LeafContextTest;
-  friend class drake::systems::DiagramContextTest;
 
   static void set_system_name(ContextBase* context, const std::string& name) {
     DRAKE_DEMAND(context != nullptr);
@@ -453,6 +453,17 @@ class SystemBaseContextBaseAttorney {
   static std::vector<DependencyTicket>& abstract_parameter_tickets(
       ContextBase* context) {
     return context->abstract_parameter_tickets_;
+  }
+
+  static bool is_context_base_initialized(const ContextBase& context) {
+    return context.is_context_base_initialized_;
+  }
+
+  // SystemBase should invoke this when ContextBase has been successfully
+  // initialized.
+  static void mark_context_base_initialized(ContextBase* context) {
+    DRAKE_DEMAND(context);
+    context->is_context_base_initialized_ = true;
   }
 };
 

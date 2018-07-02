@@ -83,17 +83,16 @@ class SystemBase : public internal::SystemMessageInterface {
   construction. */
   std::unique_ptr<ContextBase> AllocateContext() const {
     // Get a concrete Context of the right type, allocate internal resources
-    // like parameters, state, and cache entries, and make intra-subcontext
-    // dependency connections that reflect declared dependencies within this
-    // subsystem.
-    std::unique_ptr<ContextBase> context = MakeContext();
+    // like parameters, state, and cache entries, and set up intra- and
+    // inter-subcontext dependencies.
+    std::unique_ptr<ContextBase> context = DoAllocateContext();
 
-    // Make inter-subcontext dependency connections to reflect inter-subsystem
-    // input and output port wiring involving this subsystem.
-    MakeInterSubcontextConnections(&*context);
+    // We depend on derived classes to call our InitializeContextBase() method
+    // after allocating the appropriate concrete Context.
+    DRAKE_DEMAND(
+        detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+            *context));
 
-    // Validate that restrictions imposed by subsystems are satisfied.
-    ValidateAllocatedContext(*context);
     return context;
   }
 
@@ -689,26 +688,6 @@ class SystemBase : public internal::SystemMessageInterface {
     child->set_parent_service(parent_service);
   }
 
-  /** (Internal use only) Allows Diagram to use private MakeContext() to invoke
-  the same method on its children. */
-  static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
-    return system.MakeContext();
-  }
-
-  /** Allows Diagram to use its private MakeInterSubcontextConnections() to
-  invoke the same method on its children. */
-  static void MakeInterSubcontextConnections(const SystemBase& system,
-                                             ContextBase* context) {
-    system.MakeInterSubcontextConnections(&*context);
-  }
-
-  /** (Internal use only) Allows Diagram to use its private
-  ValidateAllocatedContext() to invoke the same method on its children. */
-  static void ValidateAllocatedContext(const SystemBase& system,
-                                       const ContextBase& context) {
-    system.ValidateAllocatedContext(context);
-  }
-
   /** (Internal use only) Shared code for updating an input port and returning a
   pointer to its abstract value, or nullptr if the port is not connected. `func`
   should be the user-visible API function name obtained with __func__. */
@@ -780,57 +759,28 @@ class SystemBase : public internal::SystemMessageInterface {
     return *output_ports_[port_index];
   }
 
-  /** Derived class implementations should allocate a suitable
-  default-constructed Context, with default-constructed subcontexts for
-  diagrams. The base class allocates trackers for known resources and
-  intra-subcontext dependencies. No inter-subcontext dependencies should be
-  made in this step. */
-  virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
+  /** This method must be invoked from within derived class DoAllocateContext()
+  implementations right after the concrete Context object has been allocated.
+  It allocates cache entries, sets up all intra-Context dependencies, and marks
+  the ContextBase as initialized so that we can verify proper derived-class
+  behavior. */
+  void InitializeContextBase(ContextBase* context) const;
 
-  /** If the derived class is a diagram it should implement this method to
-  set up the inter-subcontext dependencies. The given `context` already has
-  the right structure and each subcontext has trackers available for each of
-  its resources. The supplied context is guaranteed to be non-null; you don't
-  need to error-check that. The default implementation does nothing, which is
-  suitable for leaf systems. */
-  virtual void DoMakeInterSubcontextConnections(ContextBase* context) const {
-    unused(context);
-  }
-
-  /** Any derived class that imposes restrictions on the structure or content
-  of an acceptable Context should enforce those restrictions by overriding
-  this method. The supplied Context is guaranteed to have come from the
-  AllocateContext() sequence of this System so you don't need to check that.
-  This method is invoked _only_ during Context allocation and will not be
-  called during runtime use. It will _always_ be called as the final step in
-  Context allocation, even in Release builds.
-  @see DoCheckValidContext() for runtime checking. */
-  virtual void DoValidateAllocatedContext(const ContextBase& context) const = 0;
+  /** Derived class implementations should allocate a suitable concrete Context
+  type, then invoke the above InitializeContextBase() method. A Diagram must
+  then invoke AllocateContext() to obtain each of the subcontexts for its
+  DiagramContext, and must set up inter-subcontext dependencies among its
+  children and between itself and its children. Then context resources such as
+  parameters and state should be allocated. */
+  virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
   /** Derived classes must implement this to verify that the supplied
   Context is suitable, and throw an exception if not. This is a runtime check
   but may be expensive so is not guaranteed to be invoked except in Debug
-  builds.
-  @see DoValidateAllocatedContext() for one-time validity checking during
-       Context allocation. */
+  builds. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:
-  // Obtains a context of the right concrete type, with all internal trackers
-  // allocated and internal wiring set up.
-  std::unique_ptr<ContextBase> MakeContext() const;
-
-  // Sets up the inter-subsystem wiring in the context.
-  void MakeInterSubcontextConnections(ContextBase* context) const {
-    DRAKE_DEMAND(context != nullptr);
-    DoMakeInterSubcontextConnections(&*context);
-  }
-
-  // Check that all subsystems are prepared to deal with a context like this.
-  void ValidateAllocatedContext(const ContextBase& context) const {
-    DoValidateAllocatedContext(context);
-  }
-
   // Declares that `parent_service` is the service interface of the immediately
   // enclosing Diagram. Aborts if the parent service has already been set to
   // something else.

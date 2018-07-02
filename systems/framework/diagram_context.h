@@ -363,6 +363,10 @@ class DiagramContext final : public Context<T> {
   }
 
  private:
+  friend class DiagramContextTest;
+  using ContextBase::AddInputPort;    // For DiagramContextTest.
+  using ContextBase::AddOutputPort;
+
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::unique_ptr<ContextBase>(new DiagramContext<T>(*this));
   }

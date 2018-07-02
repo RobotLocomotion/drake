@@ -97,6 +97,10 @@ class LeafContext : public Context<T> {
   }
 
  private:
+  friend class LeafContextTest;
+  using ContextBase::AddInputPort;    // For LeafContextTest.
+  using ContextBase::AddOutputPort;
+
   // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };
