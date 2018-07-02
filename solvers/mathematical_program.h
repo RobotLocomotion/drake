@@ -2511,7 +2511,7 @@ class MathematicalProgram {
       binding_x(i) =
           prog_var_vals(FindDecisionVariableIndex(binding.variables()(i)));
     }
-    binding.evaluator()->Eval(binding_x, binding_y);
+    binding.evaluator()->Eval(binding_x, &binding_y);
     return binding_y;
   }
 

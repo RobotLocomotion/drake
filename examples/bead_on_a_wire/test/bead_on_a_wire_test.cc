@@ -23,8 +23,8 @@ class BeadOnAWireTest : public ::testing::Test {
     context_min_ = dut_min_->CreateDefaultContext();
 
     // Construct outputs.
-    output_abs_ = dut_abs_->AllocateOutput(*context_abs_);
-    output_min_ = dut_min_->AllocateOutput(*context_abs_);
+    output_abs_ = dut_abs_->AllocateOutput();
+    output_min_ = dut_min_->AllocateOutput();
 
     // Allocate storage for derivatives.
     derivatives_abs_ = dut_abs_->AllocateTimeDerivatives();

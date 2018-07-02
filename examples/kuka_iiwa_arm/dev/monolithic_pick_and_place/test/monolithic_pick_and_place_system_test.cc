@@ -10,6 +10,9 @@
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -175,27 +178,25 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     //   - T: Table frame of "place" table (center of the table top)
     const pick_and_place::WorldState& world_state = plant->world_state(
         sys->GetSubsystemContext(*plant, simulator.get_context()), 0);
-    const Isometry3<double>& X_SO = world_state.get_object_pose();
-    const Isometry3<double>& X_TS =
-        world_state.get_table_poses().back().inverse();
-    const Isometry3<double> X_TO = X_TS * X_SO;
+    const math::Transform<double> X_SO(world_state.get_object_pose());
+    const math::Transform<double> X_TS(
+        world_state.get_table_poses().back().inverse());
+    const math::Transform<double> X_TO = X_TS * X_SO;
+    const math::RollPitchYaw<double> rpy_TO(X_TO.rotation());
+
+    const Eigen::Vector3d p_TO_T_expected(0, 0, 0.5 * kTargetDimensions.z());
+    const double theta_TO_expected =
+        ExpectedObjectOrientation(kTablePositions[final_table_index_]);
+    const math::RotationMatrix<double> R_TO_expected(
+        math::RotationMatrix<double>::MakeZRotation(theta_TO_expected));
+    const math::RollPitchYaw<double> rpy_TO_expected(R_TO_expected);
 
     const Vector6<double>& object_velocity = world_state.get_object_velocity();
-    Isometry3<double> X_TO_expected{Isometry3<double>::TranslationType(
-        0.0, 0.0, 0.5 * kTargetDimensions.z())};
-    X_TO_expected.linear() =
-        Isometry3<double>::LinearMatrixType(AngleAxis<double>(
-            ExpectedObjectOrientation(kTablePositions[final_table_index_]),
-            Vector3<double>::UnitZ()));
-    Eigen::Vector3d object_rpy = math::rotmat2rpy(X_TO.linear());
-    Eigen::Vector3d X_TO_expected_rpy =
-        math::rotmat2rpy(X_TO_expected.linear());
-
     drake::log()->info("Pose: {} {}", X_TO.translation().transpose(),
-                       object_rpy.transpose());
+                       rpy_TO.vector().transpose());
     drake::log()->info("Velocity: {}", object_velocity.transpose());
-    drake::log()->info("Goal: {} {}", X_TO_expected.translation().transpose(),
-                       X_TO_expected_rpy.transpose());
+    drake::log()->info("Goal: {} {}", p_TO_T_expected.transpose(),
+                       rpy_TO_expected.vector().transpose());
 
     // TODO(avalenzu): Bring this back to 0.02 when planning is less brittle.
     const double position_tolerance = 0.03;
@@ -204,11 +205,12 @@ class SingleMoveTests : public ::testing::TestWithParam<std::tuple<int, int>> {
     const double angle_tolerance = 10.0 * M_PI / 180;
     const double linear_velocity_tolerance = 0.1;
     const double angular_velocity_tolerance = 0.1;
-    EXPECT_TRUE(CompareMatrices(X_TO.translation(), X_TO_expected.translation(),
+    EXPECT_TRUE(CompareMatrices(X_TO.translation(),
+                                p_TO_T_expected,
                                 position_tolerance));
-
-    EXPECT_TRUE(
-        CompareMatrices(object_rpy, X_TO_expected_rpy, angle_tolerance));
+    EXPECT_TRUE(CompareMatrices(rpy_TO.vector(),
+                                rpy_TO_expected.vector(),
+                                angle_tolerance));
     EXPECT_TRUE(CompareMatrices(object_velocity.head(3),
                                 Vector3<double>::Zero(),
                                 angular_velocity_tolerance));

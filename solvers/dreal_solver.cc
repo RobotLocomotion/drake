@@ -2,7 +2,6 @@
 
 #include <algorithm>  // To suppress cpplint.
 #include <functional>
-#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -21,7 +20,6 @@ using std::accumulate;
 using std::dynamic_pointer_cast;
 using std::logic_error;
 using std::map;
-using std::numeric_limits;
 using std::pair;
 using std::runtime_error;
 using std::set;
@@ -450,176 +448,63 @@ int GetIntOption(MathematicalProgram* const prog, const string& option_name,
   return value;
 }
 
-// Returns `True` if lb is -∞. Otherwise returns a symbolic formula `lb <= e`.
-symbolic::Formula MakeLowerBound(const double lb,
-                                 const symbolic::Expression& e) {
-  if (lb == -numeric_limits<double>::infinity()) {
-    return symbolic::Formula::True();
-  } else {
-    return lb <= e;
+template <typename T>
+symbolic::Formula ExtractConstraints(const vector<Binding<T>>& bindings) {
+  symbolic::Formula f{symbolic::Formula::True()};
+  for (const Binding<T>& binding : bindings) {
+    f = f && binding.evaluator()->CheckSatisfied(binding.variables());
   }
-}
-
-// Returns `True` if ub is ∞. Otherwise returns a symbolic formula `e <= ub`.
-symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
-                                 const double ub) {
-  if (ub == numeric_limits<double>::infinity()) {
-    return symbolic::Formula::True();
-  } else {
-    return e <= ub;
-  }
+  return f;
 }
 
 // Extracts bounding box constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractBoundingBoxConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<BoundingBoxConstraint>& binding :
-       prog.bounding_box_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<BoundingBoxConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const Eigen::VectorXd& ub{constraint->upper_bound()};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add lbᵢ ≤ xᵢ ≤ ubᵢ.
-      f = f && MakeLowerBound(lb(i), x(i)) && MakeUpperBound(x(i), ub(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.bounding_box_constraints());
 }
 
 // Extracts linear constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearConstraints(const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearConstraint>& binding : prog.linear_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const Eigen::VectorXd& ub{constraint->upper_bound()};
-    const VectorX<symbolic::Expression> M{constraint->A() * x};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add lbᵢ ≤ (Ax)(i) ≤ ubᵢ.
-      f = f && MakeLowerBound(lb(i), M(i)) && MakeUpperBound(M(i), ub(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.linear_constraints());
 }
 
 // Extracts linear-equality constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearEqualityConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearEqualityConstraint>& binding :
-       prog.linear_equality_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearEqualityConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const VectorX<symbolic::Expression> M{constraint->A() * x};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add (Ax)(i) = lbᵢ.
-      f = f && (M(i) == lb(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.linear_equality_constraints());
 }
 
 // Extracts Lorentz-cone constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLorentzConeConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LorentzConeConstraint>& binding :
-       prog.lorentz_cone_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LorentzConeConstraint>& constraint{binding.evaluator()};
-    const VectorX<symbolic::Expression> z{constraint->A() * x +
-                                          constraint->b()};
-    // z₀ ≥ 0
-    f = f && (z(0) >= 0);
-    // z₀² ≥ ∑ zᵢ² for i ∈ [1, n-1]
-    f = f && (pow(z(0), 2) >= z.tail(z.size() - 1).squaredNorm());
-  }
-  return f;
+  return ExtractConstraints(prog.lorentz_cone_constraints());
 }
 
 // Extracts rotated Lorentz-cone constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractRotatedLorentzConeConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<RotatedLorentzConeConstraint>& binding :
-       prog.rotated_lorentz_cone_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<RotatedLorentzConeConstraint>& constraint{
-        binding.evaluator()};
-    const VectorX<symbolic::Expression> z{constraint->A() * x +
-                                          constraint->b()};
-    // z₀ ≥ 0 ∧ z₁ ≥ 0
-    f = f && (z(0) >= 0) && (z(1) >= 0);
-    // z₀ * z₁ ≥ ∑ zᵢ² (for i ∈ [2, n-1])
-    f = f && (z(0) * z(1) >= z.tail(z.size() - 2).squaredNorm());
-  }
-
-  return f;
+  return ExtractConstraints(prog.rotated_lorentz_cone_constraints());
 }
 
 // Extracts linear-complementarity constraints in @p prog into a symbolic
 // formula. This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearComplementarityConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearComplementarityConstraint>& binding :
-       prog.linear_complementarity_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearComplementarityConstraint>& constraint{
-        binding.evaluator()};
-    const VectorX<symbolic::Expression> y =
-        constraint->M() * x + constraint->q();
-    // 1. Mx + q >= 0
-    for (VectorX<symbolic::Expression>::Index i = 0; i < y.size(); ++i) {
-      f = f && (y(i) >= 0);
-    }
-    // 2. x >= 0
-    for (VectorX<symbolic::Expression>::Index i = 0; i < x.size(); ++i) {
-      f = f && (x(i) >= 0);
-    }
-    // 3. x'(Mx + q) == 0
-    f = f && (x.dot(y) == 0);
-  }
-  return f;
+  return ExtractConstraints(prog.linear_complementarity_constraints());
 }
 
 // Extracts generic constraints in @p prog into a symbolic formula. This is a
 // helper function used in DrealSolver::Solve.
 //
-// @note All the generic constraints should be of `ExpressionConstraint`.
-// @throw std::logic_error if there is non-expression generic-constraint.
-//
-// TODO(soonho): Support other types of generic constraints.
+// @throw std::logic_error if there is a generic-constraint which does not
+// provide symbolic evaluation.
 symbolic::Formula ExtractGenericConstraints(const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<Constraint>& binding : prog.generic_constraints()) {
-    const shared_ptr<Constraint>& evaluator{binding.evaluator()};
-    const shared_ptr<ExpressionConstraint> expression_constraint =
-        dynamic_pointer_cast<ExpressionConstraint>(evaluator);
-    if (expression_constraint) {
-      const Eigen::VectorXd& lb{expression_constraint->lower_bound()};
-      const Eigen::VectorXd& ub{expression_constraint->upper_bound()};
-      const VectorX<symbolic::Expression>& expressions =
-          expression_constraint->expressions();
-      for (int i = 0; i < expression_constraint->num_constraints(); ++i) {
-        // Add lbᵢ ≤ eᵢ ≤ ubᵢ.
-        f = f && MakeLowerBound(lb(i), expressions(i)) &&
-            MakeUpperBound(expressions(i), ub(i));
-      }
-    } else {
-      throw logic_error("Non-expression generic-constraint is found.");
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.generic_constraints());
 }
 
 // Extracts linear costs in @p prog and push them into @p costs vector. This is
@@ -629,7 +514,9 @@ void ExtractLinearCosts(const MathematicalProgram& prog,
   for (const Binding<LinearCost>& binding : prog.linear_costs()) {
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<LinearCost>& cost{binding.evaluator()};
-    costs->push_back(cost->a().dot(x) + cost->b());
+    VectorX<symbolic::Expression> y;
+    cost->Eval(x, &y);
+    costs->push_back(y[0]);
   }
 }
 
@@ -639,9 +526,9 @@ void ExtractQuadraticCosts(const MathematicalProgram& prog,
   for (const Binding<QuadraticCost>& binding : prog.quadratic_costs()) {
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<QuadraticCost>& cost{binding.evaluator()};
-    costs->push_back(
-        (.5 * x.transpose() * cost->Q() * x + cost->b().transpose() * x)(0) +
-        cost->c());
+    VectorX<symbolic::Expression> y;
+    cost->Eval(x, &y);
+    costs->push_back(y[0]);
   }
 }
 

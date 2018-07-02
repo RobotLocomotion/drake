@@ -103,7 +103,7 @@ class TestCustom(unittest.TestCase):
         system = self._create_adder_system()
         context = system.CreateDefaultContext()
         self._fix_adder_inputs(context)
-        output = system.AllocateOutput(context)
+        output = system.AllocateOutput()
         self.assertEqual(output.get_num_ports(), 1)
         system.CalcOutput(context, output)
         value = output.get_vector_data(0).get_value()
@@ -354,7 +354,7 @@ class TestCustom(unittest.TestCase):
 
             self.assertEqual(context.get_num_input_ports(), 1)
             context.FixInputPort(0, AbstractValue.Make(expected_input_value))
-            output = system.AllocateOutput(context)
+            output = system.AllocateOutput()
             self.assertEqual(output.get_num_ports(), 1)
             system.CalcOutput(context, output)
             value = output.get_data(0)

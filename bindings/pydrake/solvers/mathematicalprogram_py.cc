@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
@@ -82,11 +83,9 @@ auto RegisterBinding(py::handle* pscope,
                          .def("constraint", &B::evaluator)
                          .def("variables", &B::variables);
   // Deprecate `constraint`.
-  py::module deprecation = py::module::import("pydrake.util.deprecation");
-  py::object deprecated = deprecation.attr("deprecated");
-  binding_cls.attr("constraint") =
-      deprecated("`constraint` is deprecated; please use `evaluator` instead.")(
-          binding_cls.attr("constraint"));
+  DeprecateAttribute(
+      binding_cls, "constraint",
+      "`constraint` is deprecated; please use `evaluator` instead.");
   // Register overloads for MathematicalProgram class
   prog_cls.def(
       "EvalBindingAtSolution",
@@ -108,13 +107,19 @@ class PyFunctionCost : public Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    y[0] = double_func_(x);
+              Eigen::VectorXd* y) const override {
+    (*y)[0] = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y[0] = autodiff_func_(x);
+              AutoDiffVecXd* y) const override {
+    (*y)[0] = autodiff_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::logic_error(
+        "PyFunctionCost does not support symbolic evaluation.");
   }
 
  private:
@@ -137,13 +142,19 @@ class PyFunctionConstraint : public Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
-    y = double_func_(x);
+              Eigen::VectorXd* y) const override {
+    *y = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
-    y = autodiff_func_(x);
+              AutoDiffVecXd* y) const override {
+    *y = autodiff_func_(x);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::logic_error(
+        "PyFunctionConstraint does not support symbolic evaluation.");
   }
 
  private:

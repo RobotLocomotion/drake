@@ -180,7 +180,7 @@ PYBIND11_MODULE(test_util, m) {
           state.CopyToVector() + dt * state_dot.CopyToVector());
     }
     // Calculate output.
-    auto output = system.AllocateOutput(*context);
+    auto output = system.AllocateOutput();
     system.CalcOutput(*context, output.get());
     return output;
   });

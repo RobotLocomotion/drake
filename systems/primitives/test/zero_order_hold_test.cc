@@ -60,7 +60,7 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
           kTenHertz, Value<SimpleAbstractType>(Eigen::Vector3d::Zero()));
     }
     context_ = hold_->CreateDefaultContext();
-    output_ = hold_->AllocateOutput(*context_);
+    output_ = hold_->AllocateOutput();
     if (!is_abstract_) {
       context_->FixInputPort(
           0, std::make_unique<BasicVector<double>>(input_value_));
@@ -222,7 +222,7 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
     auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 
-    output_ = hold_->AllocateOutput(*context_);
+    output_ = hold_->AllocateOutput();
     update_ = hold_->AllocateDiscreteVariables();
   }
 

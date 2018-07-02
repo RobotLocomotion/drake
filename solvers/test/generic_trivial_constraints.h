@@ -31,19 +31,24 @@ class GenericTrivialConstraint1 : public Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              Eigen::VectorXd& y) const override {
-    y.resize(2);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-    y(1) = x(1) * x(2) - x(0);
+              Eigen::VectorXd* y) const override {
+    y->resize(2);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+    (*y)(1) = x(1) * x(2) - x(0);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              AutoDiffVecXd& y) const override {
-    y.resize(2);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-    y(1) = x(1) * x(2) - x(0);
+              AutoDiffVecXd* y) const override {
+    y->resize(2);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+    (*y)(1) = x(1) * x(2) - x(0);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    y->resize(2);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+    (*y)(1) = x(1) * x(2) - x(0);
   }
 
  private:

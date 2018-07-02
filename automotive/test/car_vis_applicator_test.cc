@@ -39,7 +39,7 @@ class CarVisApplicatorTest : public ::testing::Test {
 
   void CreateOutputAndContext() {
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
   }
 
   void SetInput(const PoseBundle<double>& pose_bundle) {

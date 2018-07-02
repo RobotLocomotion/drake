@@ -145,9 +145,9 @@ class DynamicBicycleCarTest : public ::testing::Test {
     test_car_ = std::make_unique<DynamicBicycleCar<double>>();
     test_car_params_ = std::make_unique<DynamicBicycleCarParams<double>>();
     context_ = test_car_->CreateDefaultContext();
-    output_ = test_car_->AllocateOutput(*context_);
+    output_ = test_car_->AllocateOutput();
     derivatives_ = test_car_->AllocateTimeDerivatives();
-    system_output_ = test_car_->AllocateOutput(*context_);
+    system_output_ = test_car_->AllocateOutput();
   }
 
   // Returns a pointer to the state vector.

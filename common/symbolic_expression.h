@@ -299,8 +299,8 @@ class Expression {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Expression& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Expression& item) noexcept {
     DelegatingHasher delegating_hasher(
         [&hasher](const void* data, const size_t length) {
           return hasher(data, length);
@@ -750,6 +750,26 @@ auto operator*(
     const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
   return t1.template cast<Expression>() * t2;
 }
+
+/// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
+/// @returns a matrix of double whose size is the size of `m`.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+template <typename Derived>
+auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+                "Evaluate only accepts a symbolic matrix.");
+  // Without the trailing `.eval()`, it returns an Eigen Expression (of type
+  // CwiseUnaryOp) and `symbolic::Expression::Evaluate` is only called when a
+  // value is needed (i.e. lazy-evaluation). We add the trailing `.eval()` call
+  // to enforce eager-evaluation and provide a fully evaluated matrix (of
+  // double) to a caller.
+  //
+  // Please refer to https://eigen.tuxfamily.org/dox/TopicPitfalls.html for more
+  // information.
+  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
+      .eval();
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -786,11 +806,10 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
-struct hash<drake::symbolic::Expression>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Expression> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
-template<>
+template <>
 struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
 #endif
 

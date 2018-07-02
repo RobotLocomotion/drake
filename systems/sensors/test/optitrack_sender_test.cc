@@ -49,7 +49,7 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
       new systems::Value<geometry::FramePoseVector<double>>(pose_vector));
 
   auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
+  auto output = dut.AllocateOutput();
   context->FixInputPort(0 /* input port ID*/, std::move(input));
 
   dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());

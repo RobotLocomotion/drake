@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/transform.h"
 #include "drake/util/drakeGeometryUtil.h"
 
 namespace drake {
@@ -107,19 +108,24 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
     const DrakeJoint& root_joint = root_body_.getJoint();
 
     // Pose of floating base in the world frame.
-    Isometry3<double> X_WB = DecodePose(msg.pose);
+    const math::Transform<double> X_WB(DecodePose(msg.pose));
     // Spatial velocity of base in the world frame.
-    Vector6<double> V_WB = DecodeTwist(msg.twist);
+    const Vector6<double> V_WB_W = DecodeTwist(msg.twist);
     // J is the root_joint frame.
-    Isometry3<double> X_WJ = root_joint.get_transform_to_parent_body();
-    Isometry3<double> X_JB = X_WJ.inverse() * X_WB;
-    Vector6<double> V_JB;
-    V_JB.head<3>() = X_WJ.linear().transpose() * V_WB.head<3>();
-    V_JB.tail<3>() = X_WJ.linear().transpose() * V_WB.tail<3>();
+    const math::Transform<double> X_JW(
+        root_joint.get_transform_to_parent_body().inverse());
+    const math::RotationMatrix<double> R_JW = X_JW.rotation();
+    // Reexpress V_WB_W in J frame.
+    Vector6<double> V_WB_J;
+    V_WB_J.head<3>() = R_JW * V_WB_W.head<3>();
+    V_WB_J.tail<3>() = R_JW * V_WB_W.tail<3>();
+
+    const math::Transform<double> X_JB = X_JW * X_WB;
+    const math::RotationMatrix<double> R_JB = X_JB.rotation();
 
     const DrakeJoint& floating_joint = root_body_.getJoint();
-    int position_start = root_body_.get_position_start_index();
-    int velocity_start = root_body_.get_velocity_start_index();
+    const int position_start = root_body_.get_position_start_index();
+    const int velocity_start = root_body_.get_velocity_start_index();
 
     if (floating_joint.get_num_positions() == 6) {
       // RPY-parameterized floating joint.
@@ -127,11 +133,11 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      auto rpy = math::rotmat2rpy(X_JB.linear());
-      q.segment<3>(position_start + 3) = rpy;
+      const math::RollPitchYaw<double> rpy(R_JB);
+      q.segment<3>(position_start + 3) = rpy.vector();
 
       // Translational velocity.
-      auto translationdot = V_JB.tail<3>();
+      auto translationdot = V_WB_J.tail<3>();
       v.segment<3>(velocity_start) = translationdot;
 
       // Rotational velocity.
@@ -140,8 +146,8 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
           nullptr;
       typename math::Gradient<decltype(phi), Eigen::Dynamic, 2>::type* ddphi =
           nullptr;
-      angularvel2rpydotMatrix(rpy, phi, dphi, ddphi);
-      auto angular_velocity_world = V_JB.head<3>();
+      angularvel2rpydotMatrix(rpy.vector(), phi, dphi, ddphi);
+      auto angular_velocity_world = V_WB_J.head<3>();
       auto rpydot = (phi * angular_velocity_world).eval();
       v.segment<3>(velocity_start + 3) = rpydot;
     } else if (floating_joint.get_num_positions() == 7) {
@@ -150,18 +156,13 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       q.segment<3>(position_start) = X_JB.translation();
 
       // Orientation.
-      const Eigen::Vector4d quat =
-          drake::math::RotationMatrix<double>::ToQuaternionAsVector4(
-              X_JB.linear());
+      const Eigen::Vector4d quat = R_JB.ToQuaternionAsVector4();
       q.segment<4>(position_start + 3) = quat;
 
-      // Transform V_WB to the floating base's body frame (V_WB_B).
-      // Translational velocity.
-      v.segment<3>(velocity_start + 3) =
-          X_JB.linear().transpose() * V_JB.tail<3>();
-      // Rotational velocity.
-      v.segment<3>(velocity_start) =
-          X_JB.linear().transpose() * V_JB.head<3>();
+      // Express V_WB_J in the floating base's body frame (as V_WB_B).
+      const math::RotationMatrix<double> R_BJ = R_JB.inverse();
+      v.segment<3>(velocity_start) =  R_BJ * V_WB_J.head<3>();     // Rotate.
+      v.segment<3>(velocity_start + 3) = R_BJ * V_WB_J.tail<3>();  // Translate.
     } else {
       DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
     }

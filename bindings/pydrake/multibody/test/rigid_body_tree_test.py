@@ -524,3 +524,7 @@ class TestRigidBodyTree(unittest.TestCase):
         # The RBT's position vector should now be [z, theta].
         self.assertEqual(body_1.get_position_start_index(), 0)
         self.assertEqual(body_2.get_position_start_index(), 1)
+
+        self.assertIsNotNone(
+            rbt.FindCollisionElement(
+                body_2.get_collision_element_ids()[0]))

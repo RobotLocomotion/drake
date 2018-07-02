@@ -43,7 +43,7 @@ class IdmControllerTest
     dut_.reset(new IdmController<double>(*road_, path_or_branches,
                cache_or_search_, period_sec_));
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     const auto idm = dynamic_cast<const IdmController<double>*>(dut_.get());
     DRAKE_DEMAND(idm != nullptr);
@@ -227,7 +227,7 @@ TEST_P(IdmControllerTest, ToAutoDiff) {
 
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
     const auto other_context = other_dut.CreateDefaultContext();
-    const auto other_output = other_dut.AllocateOutput(*other_context);
+    const auto other_output = other_dut.AllocateOutput();
 
     // Verify that CalcOutput returns a result and validate its AutoDiff
     // derivatives.

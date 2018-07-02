@@ -8,6 +8,7 @@
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/bindings/pydrake/util/wrap_pybind.h"
@@ -279,9 +280,12 @@ struct Impl {
                  &System<T>::AllocateOutput))
         // TODO(sherm1) Deprecate this next signature (context unused).
         .def("AllocateOutput",
-             overload_cast_explicit<unique_ptr<SystemOutput<T>>,
-                                    const Context<T>&>(
-                 &System<T>::AllocateOutput), py::arg("context"))
+             [](const System<T>* self, const Context<T>&) {
+               WarnDeprecated(
+                  "`System.AllocateOutput(self, Context)` is deprecated. "
+                  "Please use `System.AllocateOutput(self)` instead.");
+               return self->AllocateOutput();
+             }, py::arg("context"))
         .def(
             "EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {

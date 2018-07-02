@@ -227,7 +227,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
                                                       this->GetParam());
 
     context_ = kuka_plant_->CreateDefaultContext();
-    output_ = kuka_plant_->AllocateOutput(*context_);
+    output_ = kuka_plant_->AllocateOutput();
     derivatives_ = kuka_plant_->AllocateTimeDerivatives();
   }
 

@@ -30,7 +30,7 @@ GTEST_TEST(PassThroughScalarTypeTest, AutoDiff) {
   // Set a PassThrough system with input and output of size 3.
   auto buffer = make_unique<PassThrough<T>>(3 /* size */);
   auto context = buffer->CreateDefaultContext();
-  auto output = buffer->AllocateOutput(*context);
+  auto output = buffer->AllocateOutput();
   auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.

@@ -73,7 +73,7 @@ class FramePoseTrackerTest : public ::testing::Test {
     input->SetValue(input_results);
 
     auto context_ = dut.CreateDefaultContext();
-    auto output_ = dut.AllocateOutput(*context_);
+    auto output_ = dut.AllocateOutput();
     context_->FixInputPort(
         dut.get_kinematics_input_port_index() /* input port ID*/,
         std::move(input));

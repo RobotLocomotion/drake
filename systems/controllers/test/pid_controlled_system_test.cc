@@ -131,7 +131,7 @@ class PidControlledSystemTest : public ::testing::Test {
     builder.ExportOutput(controller->get_output_port(0));
     diagram_ = builder.Build();
     auto context = diagram_->CreateDefaultContext();
-    auto output = diagram_->AllocateOutput(*context);
+    auto output = diagram_->AllocateOutput();
 
     const systems::Context<double>& plant_context =
         diagram_->GetSubsystemContext(*controller->plant(),
@@ -220,7 +220,7 @@ class ConnectControllerTest : public ::testing::Test {
   double ComputePidInput() {
     auto standard_diagram = builder_.Build();
     auto context = standard_diagram->CreateDefaultContext();
-    auto output = standard_diagram->AllocateOutput(*context);
+    auto output = standard_diagram->AllocateOutput();
 
     auto& plant_context =
         standard_diagram->GetSubsystemContext(*plant_, *context);

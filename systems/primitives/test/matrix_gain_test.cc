@@ -21,7 +21,7 @@ class MatrixGainTest : public AffineLinearSystemTest {
     dut_->set_name("test_matrix_gain_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput(*context_);
+    system_output_ = dut_->AllocateOutput();
   }
 
  protected:

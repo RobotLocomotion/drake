@@ -67,7 +67,7 @@ class SosConstraintTest : public ::testing::Test {
     const VectorXDecisionVariable& variables{psd_binding.variables()};
     const auto values = prog_.GetSolution(variables);
     Eigen::VectorXd eigen_values;
-    psd_binding.evaluator()->Eval(values, eigen_values);
+    psd_binding.evaluator()->Eval(values, &eigen_values);
     EXPECT_TRUE((eigen_values.array() >= -eps).all());
   }
 

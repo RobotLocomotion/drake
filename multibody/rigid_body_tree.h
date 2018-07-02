@@ -16,6 +16,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/collision/collision_filter.h"
 #include "drake/multibody/collision/drake_collision.h"
@@ -876,9 +877,11 @@ class RigidBodyTree {
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return drake::math::rotmat2rpy(
-        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
-            .linear());
+    const drake::Isometry3<Scalar> pose = relativeTransform(cache,
+                                  to_body_or_frame_ind, from_body_or_frame_ind);
+    const drake::math::RotationMatrix<Scalar> R(pose.linear());
+    const drake::math::RollPitchYaw<Scalar> rpy(R);
+    return rpy.vector();
   }
 
   template <typename Scalar, typename DerivedPoints>
