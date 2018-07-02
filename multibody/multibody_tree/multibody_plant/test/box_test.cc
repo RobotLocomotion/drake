@@ -50,7 +50,7 @@ GTEST_TEST(Box, UnderStiction) {
   // We use g = 10 m/s² so that numbers are simpler.
   const double g = 10.0;       // Acceleration of gravity, [m/s²]
   const CoulombFriction<double> surface_friction(
-      1.0 /* static friction */, 1.0 /* dynamic friction */);
+      0.9 /* static friction */, 0.9 /* dynamic friction */);
 
   // Simulation parameters.
   const double time_step = 1.0e-3;  // in seconds.
@@ -166,8 +166,8 @@ GTEST_TEST(Box, UnderStiction) {
   // the penetration depth to be close enough to it.
   EXPECT_NEAR(contact_info.point_pair().depth, penetration_allowance, 1.0e-3);
 
-  // Whether the normal points up or down depends on the order in which the
-  // geometry engine orders bodies in the contact pair.
+  // Whether the normal points up or down depends on the order in which
+  // scene graph orders bodies in the contact pair.
   const Vector3<double> expected_normal = Vector3<double>::UnitZ() * direction;
   EXPECT_TRUE(CompareMatrices(
       contact_info.point_pair().nhat_BA_W, expected_normal,
@@ -177,7 +177,7 @@ GTEST_TEST(Box, UnderStiction) {
   // stiction tolerance.
   EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
 
-  // There should be not motion in the normal direction.
+  // There should not be motion in the normal direction.
   EXPECT_NEAR(contact_info.separation_speed(), 0.0, kTolerance);
 }
 

@@ -373,6 +373,7 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
   // D is defined such that vt = D * v, with vt of size 2nc.
   MatrixX<T> D(2 * num_contacts, num_velocities());
 
+  DRAKE_ASSERT(R_WC_set);
   R_WC_set->clear();
   if (R_WC_set != nullptr) R_WC_set->reserve(point_pairs_set.size());
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
@@ -561,10 +562,11 @@ void MultibodyPlant<T>::CalcContactResults(
   DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
 
   // Note: auto below resolves to VectorBlock<const VectorX<T>>.
-  auto fn = implicit_stribeck_solver_->get_normal_forces();
-  auto ft = implicit_stribeck_solver_->get_friction_forces();
-  auto vt = implicit_stribeck_solver_->get_tangential_velocities();
-  auto vn = implicit_stribeck_solver_->get_normal_velocities();
+  using VectorXBlock = Eigen::VectorBlock<const VectorX<T>>;
+  const VectorXBlock fn = implicit_stribeck_solver_->get_normal_forces();
+  const VectorXBlock ft = implicit_stribeck_solver_->get_friction_forces();
+  const VectorXBlock vt = implicit_stribeck_solver_->get_tangential_velocities();
+  const VectorXBlock vn = implicit_stribeck_solver_->get_normal_velocities();
 
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
@@ -973,6 +975,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   updates->get_mutable_vector(0).SetFromVector(x_next);
 
   // Save contact results for analysis and visualization.
+  // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
+  // and R_WC_set will be cached.
   CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
 }
 
