@@ -124,30 +124,28 @@ class LeafContextTest : public ::testing::Test {
 
   // Mocks up some input ports sufficient to allow us to give them fixed values.
   template <typename T>
-  void AddInputPorts(int n, Context<T>* context) {
+  void AddInputPorts(int n, LeafContext<T>* context) {
     for (InputPortIndex i(0); i < n; ++i) {
       input_port_tickets_.push_back(next_ticket_);
-      detail::SystemBaseContextBaseAttorney::AddInputPort(&*context, i,
-                                                          next_ticket_++);
+      context->AddInputPort(i, next_ticket_++);
     }
   }
 
   // Mocks up some output ports sufficient to check that they are installed and
   // wired up properly. (We can't evaluate output ports without a System.)
-  // This code mimics SystemBase::MakeContext().
+  // This code mimics SystemBase::AllocateContext().
   template <typename T>
-  void AddOutputPorts(int n, Context<T>* context) {
+  void AddOutputPorts(int n, LeafContext<T>* context) {
     // Pretend the first output port has an external dependency (so tracking
     // should be deferred) while the rest are dependent on a built-in tracker.
     output_port_tickets_.push_back(next_ticket_);
-    detail::SystemBaseContextBaseAttorney::AddOutputPort(
-        &*context, OutputPortIndex(0), next_ticket_++,
-        {SubsystemIndex(1), DependencyTicket(0)});
+    context->AddOutputPort(OutputPortIndex(0), next_ticket_++,
+                           {SubsystemIndex(1), DependencyTicket(0)});
 
     for (OutputPortIndex i(1); i < n; ++i) {
       output_port_tickets_.push_back(next_ticket_);
-      detail::SystemBaseContextBaseAttorney::AddOutputPort(
-          &*context, i, next_ticket_++,
+      context->AddOutputPort(
+          i, next_ticket_++,
           {nullopt, DependencyTicket(internal::kAllSourcesTicket)});
     }
   }

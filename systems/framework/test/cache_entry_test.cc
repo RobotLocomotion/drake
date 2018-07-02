@@ -133,11 +133,11 @@ class MySystemBase final : public SystemBase {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<MyContextBase>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<MyContextBase>();
+    this->InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   void DoCheckValidContext(const ContextBase&) const final {}
 

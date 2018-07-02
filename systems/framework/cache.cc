@@ -79,10 +79,11 @@ CacheEntryValue& Cache::CreateNewCacheEntryValue(
                           nullptr /* no value yet */));
   CacheEntryValue& value = *store_[index];
 
-  // Obtain a DependencyTracker for the CacheEntryValue. If the given ticket
+  // Obtain a DependencyTracker for the CacheEntryValue. Normally there will be
+  // no tracker associated with the given ticket. However, if this cache entry
   // corresponds to a well-known tracker (e.g. continuous derivatives xcdot)
-  // then we just need to point the tracker at the new cache entry value.
-  // Otherwise create a new tracker.
+  // that tracker will already have been created earlier and we just need to
+  // point the tracker at the new cache entry value.
   DependencyTracker* tracker{};
   if (trackers->has_tracker(ticket)) {
     // Pre-existing trackers should only be present for well-known tickets.

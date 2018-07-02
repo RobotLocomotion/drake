@@ -42,11 +42,11 @@ class MySystemBase final : public SystemBase {
   MySystemBase() {}
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<MyContextBase>(true);  // A valid context.
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<MyContextBase>(true);  // A valid context.
+    InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   void DoCheckValidContext(const ContextBase& context) const final {
     auto& my_context = dynamic_cast<const MyContextBase&>(context);

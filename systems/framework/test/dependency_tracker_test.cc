@@ -261,7 +261,9 @@ class HandBuiltDependencies : public ::testing::Test {
         index, next_ticket++, "entry0",
         {time_ticket_, middle1_->ticket(), downstream2_->ticket()}, &graph);
     entry0_->SetInitialValue(AbstractValue::Make<int>(3));
-    entry0_tracker_ = &graph.get_mutable_tracker(entry0_->ticket());
+    // A new tracker should have been created.
+    EXPECT_NO_THROW(entry0_tracker_ =
+                        &graph.get_mutable_tracker(entry0_->ticket()));
 
     // Retrieve time tracker.
     time_tracker_ = &graph.get_mutable_tracker(time_ticket_);
@@ -310,6 +312,34 @@ TEST_F(HandBuiltDependencies, Construction) {
   const int num_trackers = graph.trackers_size();
   auto& tracker = graph.CreateNewDependencyTracker("tracker");
   EXPECT_EQ(tracker.ticket(), num_trackers);
+
+  // There were no cache entries assigned to those two trackers. Check
+  // that cache_entry_value() understands that.
+  EXPECT_EQ(tracker100.cache_entry_value(), nullptr);
+  EXPECT_EQ(tracker.cache_entry_value(), nullptr);
+
+  // In the HandBuiltDependencies SetUp() we assigned cache entry
+  // entry0_ to entry0_tracker_; make sure cache_entry_value() agrees.
+  EXPECT_EQ(entry0_tracker_->cache_entry_value(), entry0_);
+
+  // Make sure we can add a cache entry to a tracker. (Reusing entry0_
+  // here but that doesn't matter since we're just checking that the pointer
+  // gets memorized properly.)
+  tracker.set_cache_entry_value(entry0_);
+  EXPECT_EQ(tracker.cache_entry_value(), entry0_);
+
+  // Make sure that when we create a cache entry for an already-allocated
+  // built-in tracker, that tracker gets used rather than creating a
+  // new one. xcdot is an example where this is needed in practice.
+  Cache& cache = context_.get_mutable_cache();
+  const CacheIndex index(cache.cache_size());
+  const DependencyTicket xcdot_ticket(internal::kXcdotTicket);
+  const DependencyTracker& xcdot_tracker(graph.get_tracker(xcdot_ticket));
+  const CacheEntryValue& xcdot_value = cache.CreateNewCacheEntryValue(
+      index, xcdot_ticket, "xcdot cache value",
+      {time_ticket_}, &graph);
+  EXPECT_EQ(xcdot_value.ticket(), xcdot_ticket);
+  EXPECT_EQ(xcdot_tracker.cache_entry_value(), &xcdot_value);
 }
 
 // Check that a dependency tracker can provide a human-readable name.

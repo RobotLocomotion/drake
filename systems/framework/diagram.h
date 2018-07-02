@@ -811,16 +811,17 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
  private:
   // Allocates a default-constructed diagram context containing the complete
   // diagram substructure of default-constructed subcontexts.
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_subsystems());
+    this->InitializeContextBase(&*context);
 
     // Recursively construct each constituent system and its subsystems,
     // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
+      const System<T>& system = *registered_systems_[i];
       auto subcontext = dynamic_pointer_cast_or_throw<Context<T>>(
-          SystemBase::MakeContext(sys));
+          system.AllocateContext());
       context->AddSystem(i, std::move(subcontext));
     }
 
@@ -828,22 +829,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // subsystems' resources, which must have already been allocated above.
     context->MakeParameters();
     context->MakeState();
-
-    return std::move(context);
-  }
-
-  // Given a fully-populated diagram context created by MakeContext(), set up
-  // the inter-subcontext dependencies for input and output ports.
-  void DoMakeInterSubcontextConnections(ContextBase* context_base) const final {
-    auto context = dynamic_cast<DiagramContext<T>*>(context_base);
-
-    // Give all our subsystems a chance to set up their inter-subcontext
-    // dependencies if they are diagrams. Traversal order doesn't matter here.
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
-      Context<T>& subcontext = context->GetMutableSubsystemContext(i);
-      SystemBase::MakeInterSubcontextConnections(sys, &subcontext);
-    }
 
     // Connect child subsystem input ports to the child subsystem output ports
     // on which they depend. Declares dependency of each input port on its
@@ -873,19 +858,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       context->SubscribeDiagramPortToExportedOutputPort(
           i, ConvertToContextPortIdentifier(id));
     }
-  }
 
-  // Permits child Systems to take a look at the completed Context to see
-  // if they have any objections.
-  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
-    auto& context = dynamic_cast<const DiagramContext<T>&>(context_base);
-
-    // Depth-first validation of Context to make sure restrictions are met.
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
-      const Context<T>& subcontext = context.GetSubsystemContext(i);
-      SystemBase::ValidateAllocatedContext(sys, subcontext);
-    }
+    return context;
   }
 
   // Evaluates the value of the specified subsystem input
