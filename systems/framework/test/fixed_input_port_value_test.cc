@@ -82,11 +82,11 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
   // The input port trackers should have declared the free values as
   // prerequisites, and the free values should know the input ports are
   // subscribers.
-  EXPECT_EQ(tracker0_->num_prerequisites(), 1);
-  EXPECT_EQ(free_tracker0_->num_subscribers(), 1);
+  ASSERT_EQ(tracker0_->num_prerequisites(), 1);
+  ASSERT_EQ(free_tracker0_->num_subscribers(), 1);
   EXPECT_EQ(free_tracker0_->num_prerequisites(), 0);
-  EXPECT_EQ(tracker1_->num_prerequisites(), 1);
-  EXPECT_EQ(free_tracker1_->num_subscribers(), 1);
+  ASSERT_EQ(tracker1_->num_prerequisites(), 1);
+  ASSERT_EQ(free_tracker1_->num_subscribers(), 1);
   EXPECT_EQ(free_tracker1_->num_prerequisites(), 0);
 
   EXPECT_EQ(tracker0_->prerequisites()[0], free_tracker0_);

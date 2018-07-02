@@ -41,13 +41,8 @@ class FixedInputPortValue {
   FixedInputPortValue& operator=(FixedInputPortValue&&) = delete;
   /** @} */
 
-  /** Constructs an abstract-valued %FixedInputPortValue from a value
-  of arbitrary type. Takes ownership of the given value and sets the serial
-  number to 1. The value must not be null. */
-  explicit FixedInputPortValue(std::unique_ptr<AbstractValue> value)
-      : value_(std::move(value)), serial_number_{1} {
-    DRAKE_DEMAND(value_ != nullptr);
-  }
+  // Construction is private and only accessible to ContextBase via the
+  // attorney.
 
   ~FixedInputPortValue() = default;
 
@@ -96,8 +91,12 @@ class FixedInputPortValue {
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 
-  /** Returns the ticket used to find the associated DependencyTracker. */
-  DependencyTicket ticket() const { return ticket_; }
+  /** Returns the ticket used to find the associated DependencyTracker. Don't
+  call this */
+  DependencyTicket ticket() const {
+    DRAKE_ASSERT(ticket_.is_valid());
+    return ticket_;
+  }
 
   /** Returns a const reference to the context that owns this object. */
   const ContextBase& get_owning_context() const {
@@ -112,13 +111,24 @@ class FixedInputPortValue {
   // only for use by ContextBase.
   friend class copyable_unique_ptr<FixedInputPortValue>;
 
+  // Constructs an abstract-valued FixedInputPortValue from a value
+  // of arbitrary type. Takes ownership of the given value and sets the serial
+  // number to 1. The value must not be null.
+  explicit FixedInputPortValue(std::unique_ptr<AbstractValue> value)
+      : value_(std::move(value)), serial_number_{1} {
+    DRAKE_DEMAND(value_ != nullptr);
+  }
+
   // Copy constructor is only used for cloning and is not a complete copy --
   // owning_subcontext_ is left unassigned.
   FixedInputPortValue(const FixedInputPortValue& source) = default;
 
   // Informs this FixedInputPortValue of its assigned DependencyTracker
   // so it knows who to notify when its value changes.
-  void set_ticket(DependencyTicket ticket) { ticket_ = ticket; }
+  void set_ticket(DependencyTicket ticket) {
+    DRAKE_DEMAND(ticket.is_valid() && !ticket_.is_valid());
+    ticket_ = ticket;
+  }
 
   // Informs this %FixedInputPortValue of the subcontext that owns it.
   // Aborts if this has already been done or given bad args.
@@ -164,14 +174,24 @@ class ContextBaseFixedInputAttorney {
   // "Output" argument is first here since it is serving as a `this` pointer.
   static void set_owning_subcontext(FixedInputPortValue* fixed,
                                     ContextBase* owning_subcontext) {
-    DRAKE_DEMAND(owning_subcontext != nullptr && fixed != nullptr);
+    DRAKE_DEMAND(fixed != nullptr);
     fixed->set_owning_subcontext(owning_subcontext);
   }
 
   static void set_ticket(FixedInputPortValue* fixed,
                          DependencyTicket ticket) {
-    DRAKE_DEMAND(ticket.is_valid() && fixed != nullptr);
+    DRAKE_DEMAND(fixed != nullptr);
     fixed->set_ticket(ticket);
+  }
+
+  // This serves as the only accessible constructor for FixedInputPortValues.
+  // It must be followed immediately by inserting into a Context with the
+  // assigned ticket and the owning subcontext set using the above methods.
+  static std::unique_ptr<FixedInputPortValue> CreateFixedInputPortValue(
+      std::unique_ptr<AbstractValue> value) {
+    // Can't use make_unique here since constructor is private.
+    return std::unique_ptr<FixedInputPortValue>(
+        new FixedInputPortValue(std::move(value)));
   }
 };
 
