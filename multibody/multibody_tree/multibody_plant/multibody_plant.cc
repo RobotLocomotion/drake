@@ -373,6 +373,8 @@ MatrixX<T> MultibodyPlant<T>::CalcTangentVelocitiesJacobian(
   // D is defined such that vt = D * v, with vt of size 2nc.
   MatrixX<T> D(2 * num_contacts, num_velocities());
 
+  DRAKE_ASSERT(R_WC_set);
+  R_WC_set->clear();
   if (R_WC_set != nullptr) R_WC_set->reserve(point_pairs_set.size());
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
@@ -537,6 +539,70 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
         geometryA_friction, geometryB_friction));
   }
   return combined_frictions;
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcContactResultsOutput(
+    const systems::Context<T>&,
+    ContactResults<T>* contact_results) const {
+  DRAKE_DEMAND(contact_results != nullptr);
+  // TODO(amcastro-tri): Eval() contact results when caching lands.
+  *contact_results = contact_results_;
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcContactResults(
+    const systems::Context<T>&,
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs,
+    const std::vector<Matrix3<T>>& R_WC_set,
+    ContactResults<T>* contact_results) const {
+  if (num_collision_geometries() == 0) return;
+  DRAKE_DEMAND(contact_results != nullptr);
+  const int num_contacts = point_pairs.size();
+  DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
+
+  // Note: auto below resolves to VectorBlock<const VectorX<T>>.
+  using VectorXBlock = Eigen::VectorBlock<const VectorX<T>>;
+  const VectorXBlock fn = implicit_stribeck_solver_->get_normal_forces();
+  const VectorXBlock ft = implicit_stribeck_solver_->get_friction_forces();
+  const VectorXBlock vt =
+      implicit_stribeck_solver_->get_tangential_velocities();
+  const VectorXBlock vn = implicit_stribeck_solver_->get_normal_velocities();
+
+  DRAKE_DEMAND(fn.size() == num_contacts);
+  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() == num_contacts);
+  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+
+  contact_results->Clear();
+  for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
+    const auto& pair = point_pairs[icontact];
+    const GeometryId geometryA_id = pair.id_A;
+    const GeometryId geometryB_id = pair.id_B;
+
+    BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
+    BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
+
+    const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
+
+    const Matrix3<T>& R_WC = R_WC_set[icontact];
+
+    // Contact forces applied on B at contact point C.
+    const Vector3<T> f_Bc_C(
+        ft(2 * icontact), ft(2 * icontact + 1), fn(icontact));
+    const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
+
+    // Slip velocity.
+    const T slip = vt.template segment<2>(2 * icontact).norm();
+
+    // Separation velocity in the normal direction.
+    const T separation_velocity = vn(icontact);
+
+    // Add pair info to the contact results.
+    contact_results->AddContactInfo(
+        {bodyA_index, bodyB_index, f_Bc_W, p_WC,
+         separation_velocity, slip, pair});
+  }
 }
 
 template<typename T>
@@ -815,7 +881,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // implicitly.
   AddJointDampingForces(context0, &forces0);
 
-  std::vector<PenetrationAsPointPair<T>> point_pairs0 =
+  // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
+  const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);
 
   // Workspace for inverse dynamics:
@@ -845,12 +912,16 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const int num_contacts = point_pairs0.size();
   MatrixX<T> Jn(num_contacts, nv);
   MatrixX<T> Jt(2 * num_contacts, nv);
+  // For each contact point pair, the rotation matrix R_WC giving the
+  // orientation of the contact frame C in the world frame W.
+  // TODO(amcastro-tri): cache R_WC_set as soon as caching lands.
+  std::vector<Matrix3<T>> R_WC_set;
   if (num_contacts > 0) {
     // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
     // solver to use operators instead so that we don't have to form these
     // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
     Jn = CalcNormalSeparationVelocitiesJacobian(context0, point_pairs0);
-    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0);
+    Jt = CalcTangentVelocitiesJacobian(context0, point_pairs0, &R_WC_set);
   }
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored
@@ -903,6 +974,11 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
+
+  // Save contact results for analysis and visualization.
+  // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
+  // and R_WC_set will be cached.
+  CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
 }
 
 template<typename T>
@@ -1020,6 +1096,11 @@ void MultibodyPlant<T>::DeclareStateAndPorts() {
         this->DeclareVectorOutputPort(
             BasicVector<T>(instance_num_velocities), calc).get_index();
   }
+
+  // Contact results output port.
+  contact_results_port_ = this->DeclareAbstractOutputPort(
+      ContactResults<T>(),
+      &MultibodyPlant<T>::CalcContactResultsOutput).get_index();
 }
 
 template <typename T>
@@ -1134,6 +1215,14 @@ MultibodyPlant<T>::get_generalized_contact_forces_output_port(
   DRAKE_THROW_UNLESS(model_->num_states(model_instance) > 0);
   return this->get_output_port(
       instance_generalized_contact_forces_output_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::OutputPort<T>&
+MultibodyPlant<T>::get_contact_results_output_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(is_discrete());
+  return this->get_output_port(contact_results_port_);
 }
 
 template <typename T>

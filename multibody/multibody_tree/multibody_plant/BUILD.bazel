@@ -16,6 +16,8 @@ package(
 drake_cc_package_library(
     name = "multibody_plant",
     deps = [
+        ":contact_info",
+        ":contact_results",
         ":coulomb_friction",
         ":multibody_plant_core",
     ],
@@ -31,6 +33,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":contact_results",
         ":coulomb_friction",
         "//common:default_scalars",
         "//geometry:geometry_ids",
@@ -39,6 +42,35 @@ drake_cc_library(
         "//multibody/multibody_tree",
         "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # noqa
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_info",
+    srcs = [
+        "contact_info.cc",
+    ],
+    hdrs = [
+        "contact_info.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/multibody_tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results",
+    srcs = [
+        "contact_results.cc",
+    ],
+    hdrs = [
+        "contact_results.h",
+    ],
+    deps = [
+        ":contact_info",
+        "//common:default_scalars",
     ],
 )
 
@@ -76,6 +108,19 @@ drake_cc_googletest(
         "//multibody/benchmarks/pendulum",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "box_test",
+    timeout = "moderate",
+    data = ["test/box.sdf"],
+    deps = [
+        ":multibody_plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
     ],
 )
 

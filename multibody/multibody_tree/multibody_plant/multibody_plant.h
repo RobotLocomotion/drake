@@ -13,6 +13,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/force_element.h"
 #include "drake/multibody/multibody_tree/implicit_stribeck/implicit_stribeck_solver.h"
+#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
@@ -895,6 +896,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_generalized_contact_forces_output_port(
       ModelInstanceIndex model_instance) const;
 
+  /// Returns a constant reference to the port that outputs ContactResults.
+  /// @throws std::exception if `this` plant is not modeled as a discrete system
+  /// with periodic updates.
+  /// @throws std::exception if called pre-finalize, see Finalize().
+  // TODO(amcastro-tri): report contact results for plants modeled as a
+  // continuous system as well.
+  const systems::OutputPort<T>& get_contact_results_output_port() const;
+
   /// Returns a constant reference to the *world* body.
   const RigidBody<T>& world_body() const {
     return model_->world_body();
@@ -1265,6 +1274,10 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
+  void CalcContactResultsOutput(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
   // Helper to evaluate if a GeometryId corresponds to a collision model.
   bool is_collision_geometry(geometry::GeometryId id) const {
     return geometry_id_to_collision_index_.count(id) > 0;
@@ -1293,6 +1306,15 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const VelocityKinematicsCache<T>& vc,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
+
+  // Helper method to fill in the ContactResults given the current context,
+  // point_pairs and the vector or orientations R_WC of each contact point
+  // frame C in the world frame W.
+  void CalcContactResults(
+      const systems::Context<T>& context,
+      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
+      const std::vector<Matrix3<T>>& R_WC_set,
+      ContactResults<T>* contacts) const;
 
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
@@ -1498,6 +1520,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // no state.
   std::vector<systems::OutputPortIndex> instance_continuous_state_output_ports_;
 
+  // Index for the output port of ContactResults.
+  systems::OutputPortIndex contact_results_port_;
+
   // A vector containing the index for the generalized contact forces port for
   // each model instance. This vector is indexed by ModelInstanceIndex. An
   // invalid value indicates that the model instance has no generalized
@@ -1513,6 +1538,13 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
       implicit_stribeck_solver_;
+
+  // TODO(amcastro-tri): Remove this when caching lands and properly cache the
+  // contact results.
+  // Until caching lands, we use this variable as a "caching" entry.
+  // We make it mutable so we can change its values even from withing const
+  // methods.
+  mutable ContactResults<T> contact_results_;
 
   // Temporary solution for fake cache entries to help stabilize the API.
   // TODO(amcastro-tri): Remove these when caching lands.
