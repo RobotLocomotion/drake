@@ -30,6 +30,33 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual);
 
+/// Given an sdf::Visual object representing a <visual> element from an SDF
+/// file, this method makes a new @ref drake::geometry::VisualMaterial
+/// "VisualMaterial" object from the specification.
+///
+/// The visual material comes from the child <material> tag. E.g.,
+/// ```xml
+/// <visual>
+///   <geometry>
+///   ...
+///   </geometry>
+///   <material>
+///     <ambient>r_a g_a b_a a_a</ambient>
+///     <diffuse>r_d g_d b_d a_d</diffuse>
+///     <specular>r_s g_s b_s a_s</specular>
+///     <emissive>r_e g_e b_e a_e</emissive>
+///   </material>
+/// </visual>
+/// ```
+/// If there is no material tag, the supported material tags are missing, or
+/// there is an error parsing the supported values, the instantiated
+/// VisualMaterial will use default values. (See geometry::VisualMaterial for
+/// description of the default color.)
+///
+/// @note Currently, only the diffuse value is included in the VisualMaterial.
+geometry::VisualMaterial MakeVisualMaterialFromSdfVisual(
+    const sdf::Visual& sdf_visual);
+
 /// Given `sdf_collision` stemming from the parsing of a `<collision>` element
 /// in an SDF file, this method makes the pose `X_LG` of frame G for the
 /// geometry of that collision element in the frame L of the link it belongs to.
@@ -40,7 +67,8 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
 /// This method looks for the definitions specific to ODE, as given by the SDF
 /// specification in `<collision><surface><friction><ode>`. Drake understands
 /// `<mu>` as the static coefficient of friction and `<mu2>` as the dynamic
-/// coefficient of friction. Consider the example below: <pre>
+/// coefficient of friction. Consider the example below:
+/// ```xml
 ///   <collision>
 ///     <surface>
 ///       <friction>
@@ -51,7 +79,7 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
 ///       </friction>
 ///     </surface>
 ///   </collision>
-/// </pre>
+/// ```
 /// If a `<surface>` is not found, it returns the coefficients for a
 /// frictionless surface. If `<surface>` is found, all other nested elements
 /// are required and an exception is thrown if not present.

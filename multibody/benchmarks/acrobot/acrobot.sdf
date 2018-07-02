@@ -27,6 +27,9 @@
             <radius>0.05</radius>
           </cylinder>
         </geometry>
+        <material>
+          <diffuse>0 1 0 1</diffuse>
+        </material>
       </visual>
       <!-- A visual to show the link's pivot point -->
       <visual name='Link1_pivot_visual'>
@@ -37,6 +40,9 @@
             <radius>0.125</radius>
           </sphere>
         </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
       </visual>
     </link>
     <joint name='ShoulderJoint' type='revolute'>
@@ -78,6 +84,9 @@
             <radius>0.05</radius>
           </cylinder>
         </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+        </material>
       </visual>
     </link>
     <joint name='ElbowJoint' type='revolute'>

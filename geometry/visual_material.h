@@ -16,7 +16,8 @@ class VisualMaterial final {
   /** Constructs a material with the default grey color. */
   VisualMaterial();
 
-  /** Constructs a material with the given diffuse color. */
+  /** Constructs a material with the given diffuse color.
+   @param diffuse  A vector of [r, g, b, a] values, each in the range [0, 1]. */
   explicit VisualMaterial(const Eigen::Vector4d& diffuse);
 
   /** Returns the material's diffuse color. */
