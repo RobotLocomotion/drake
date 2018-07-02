@@ -265,7 +265,8 @@ struct IterationStats {
   std::vector<double> residuals;
 };
 
-/** %ImplicitStribeckSolver solves the equations below for mechanical systems
+/** @anchor implicit_stribeck_class_intro
+%ImplicitStribeckSolver solves the equations below for mechanical systems
 with contact using a modified Stribeck model of friction:
 @verbatim
             q̇ = N(q) v
@@ -670,7 +671,8 @@ class ImplicitStribeckSolver {
 
   /// Returns a constant reference to the most recent vector of friction forces.
   /// These friction forces are defined in accordance to the tangential
-  /// velocities Jacobian Jₜ as documented in this class's documentation.
+  /// velocities Jacobian Jₜ as documented in
+  /// @ref implicit_stribeck_class_intro "this class's documentation".
   Eigen::VectorBlock<const VectorX<T>> get_friction_forces() const {
     return variable_size_workspace_.ft();
   }

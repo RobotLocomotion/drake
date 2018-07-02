@@ -897,7 +897,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       ModelInstanceIndex model_instance) const;
 
   /// Returns a constant reference to the port that outputs ContactResults.
-  /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if `this` plant is not modeled as a discrete system
   /// with periodic updates.
   /// @throws std::exception if called pre-finalize, see Finalize().
@@ -1275,7 +1274,6 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
-  // Calc method for the contact results output port.
   void CalcContactResultsOutput(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
