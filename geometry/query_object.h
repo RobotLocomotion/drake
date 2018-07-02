@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -83,6 +84,13 @@ class QueryObject {
    @throws  std::runtime_error if the %QueryObject is in default configuration.
    @throws  std::logic_error if the geometry id is invalid. */
   FrameId GetFrameId(GeometryId geometry_id) const;
+
+  /** Returns the visual material of the geometry indicated by the given
+   `geometry_id` (if it exists).
+   @throws  std::runtime_error if the %QueryObject is in default configuration.
+   @throws  std::logic_error if the geometry id is invalid. */
+  optional<std::reference_wrapper<const VisualMaterial>> GetVisualMaterial(
+      GeometryId geometry_id) const;
 
   //@}
 
