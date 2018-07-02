@@ -681,7 +681,7 @@ class LinearComplementarityConstraint : public Constraint {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const override;
 
  private:
-  /** Return Mx + q (the value of the slack variable). */
+  // Return Mx + q (the value of the slack variable).
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                      VectorX<ScalarY>* y) const;
