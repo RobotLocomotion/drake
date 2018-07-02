@@ -61,7 +61,7 @@ class ContextBase : public internal::ContextMessageInterface {
   `is_disabled` flags are independent of the `out_of_date` flags, which continue
   to be maintained even when caching is disabled (though they are ignored). */
   void DisableCaching() const {
-    PropagateCachingChange(*this, &ContextBase::CachingChangeDisable);
+    PropagateCachingChange(*this, &Cache::DisableCaching);
   }
 
   /** (Debugging) Re-enables caching recursively for this context and all its
@@ -74,7 +74,7 @@ class ContextBase : public internal::ContextMessageInterface {
   repeatability or because you modified something in the debugger and want to
   make sure it gets used. */
   void EnableCaching() const {
-    PropagateCachingChange(*this, &ContextBase::CachingChangeEnable);
+    PropagateCachingChange(*this, &Cache::EnableCaching);
   }
 
   /** (Debugging) Marks all cache entries out of date, recursively for this
@@ -86,7 +86,7 @@ class ContextBase : public internal::ContextMessageInterface {
   correctly. If they are not, see the documentation for SetIsCacheDisabled() for
   suggestions. */
   void SetAllCacheEntriesOutOfDate() const {
-    PropagateCachingChange(*this, &ContextBase::CachingChangeSetAllOutOfDate);
+    PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
   }
 
   /** Returns the local name of the subsystem for which this is the Context.
@@ -246,17 +246,18 @@ class ContextBase : public internal::ContextMessageInterface {
     return source.DoCloneWithoutPointers();
   }
 
-  /** (Internal use only) Given a new context `clone` with the same dependency
-  graph as `source`, creates a mapping of all tracker memory addresses from
-  `source` to `clone`. This must be done for the whole Context tree because
-  pointers can point outside of their containing subcontext. */
+  /** (Internal use only) Given a new context `clone` containing an
+  identically-structured dependency graph as the one in `source`, creates a
+  mapping of all tracker memory addresses from `source` to `clone`. This must be
+  done for the whole Context tree because pointers can point outside of their
+  containing subcontext. */
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
   static void BuildTrackerPointerMap(
       const ContextBase& source, const ContextBase& clone,
       DependencyTracker::PointerMap* tracker_map);
 
-  /** (Internal user only) Assuming `clone` is a recently-cloned Context that
+  /** (Internal use only) Assuming `clone` is a recently-cloned Context that
   has yet to have its internal pointers updated, sets those pointers now. The
   given map is used to update tracker pointers. */
   // Structuring this as a static method allows DiagramContext to invoke this
@@ -266,16 +267,16 @@ class ContextBase : public internal::ContextMessageInterface {
       const DependencyTracker::PointerMap& tracker_map,
       ContextBase* clone);
 
-  /** (Internal user only) Applies the given caching-change notification method
+  /** (Internal use only) Applies the given caching-change notification method
   to `context`, and propagates the notification to subcontexts if `context` is
   a DiagramContext. Used, for example, to enable and disable the cache. The
-  method is const so depends on the cache being mutable. */
+  supplied `context` is const so depends on the cache being mutable. */
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected method on its children.
   static void PropagateCachingChange(const ContextBase& context,
-      void (ContextBase::*CachingChange)() const) {
-    (context.*CachingChange)();
-    context.DoPropagateCachingChange(CachingChange);
+                                     void (Cache::*caching_change)()) {
+    (context.get_mutable_cache().*caching_change)();
+    context.DoPropagateCachingChange(caching_change);
   }
 
   /** Declares that `parent` is the context of the enclosing Diagram.
@@ -308,7 +309,7 @@ class ContextBase : public internal::ContextMessageInterface {
   /** DiagramContext must implement this to invoke FixContextPointers() on
   each of its subcontexts. The default implementation does nothing which is
   fine for a LeafContext. */
-  virtual void DoPropagateFixSubcontextPointers(
+  virtual void DoPropagateFixContextPointers(
       const ContextBase& source,
       const DependencyTracker::PointerMap& tracker_map) {
     unused(source, tracker_map);
@@ -317,9 +318,8 @@ class ContextBase : public internal::ContextMessageInterface {
   /** DiagramContext must implement this to invoke a caching behavior change on
   each of its subcontexts. The default implementation does nothing which is
   fine for a LeafContext. */
-  virtual void DoPropagateCachingChange(
-      void (ContextBase::*CachingChange)() const) const {
-    unused(CachingChange);
+  virtual void DoPropagateCachingChange(void (Cache::*caching_change)()) const {
+    unused(caching_change);
   }
 
  private:
@@ -350,15 +350,6 @@ class ContextBase : public internal::ContextMessageInterface {
   // Fills in the dependency graph with the built-in trackers that are common
   // to every Context (and every System).
   void CreateBuiltInTrackers();
-
-  // Disables caching in just this subcontext.
-  void CachingChangeDisable() const { cache_.DisableCaching(); }
-
-  // Enables caching in just this subcontext.
-  void CachingChangeEnable() const { cache_.EnableCaching(); }
-
-  // Marks all cache entries out of date, but just in this subcontext.
-  void CachingChangeSetAllOutOfDate() const { cache_.SetAllEntriesOutOfDate(); }
 
   // We record tickets so we can reconstruct the dependency graph when cloning
   // or transmogrifying a Context without a System present.
@@ -397,12 +388,14 @@ class ContextBase : public internal::ContextMessageInterface {
 
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
+
+  // Used to validate that System-derived classes didn't forget to invoke the
+  // SystemBase method that properly sets up the ContextBase.
+  bool is_context_base_initialized_{false};
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
 class SystemBase;
-class LeafContextTest;
-class DiagramContextTest;
 namespace detail {
 
 // This is an attorney-client pattern class providing SystemBase with access to
@@ -414,8 +407,6 @@ class SystemBaseContextBaseAttorney {
 
  private:
   friend class drake::systems::SystemBase;
-  friend class drake::systems::LeafContextTest;
-  friend class drake::systems::DiagramContextTest;
 
   static void set_system_name(ContextBase* context, const std::string& name) {
     DRAKE_DEMAND(context != nullptr);
@@ -427,6 +418,7 @@ class SystemBaseContextBaseAttorney {
 
   static void AddInputPort(ContextBase* context, InputPortIndex expected_index,
                            DependencyTicket ticket) {
+    DRAKE_DEMAND(context != nullptr);
     context->AddInputPort(expected_index, ticket);
   }
 
@@ -434,25 +426,42 @@ class SystemBaseContextBaseAttorney {
       ContextBase* context, OutputPortIndex expected_index,
       DependencyTicket ticket,
       const internal::OutputPortPrerequisite& prerequisite) {
+    DRAKE_DEMAND(context != nullptr);
     context->AddOutputPort(expected_index, ticket, prerequisite);
   }
 
   // Provide SystemBase mutable access to the ticket lists.
   static std::vector<DependencyTicket>& discrete_state_tickets(
       ContextBase* context) {
+    DRAKE_DEMAND(context != nullptr);
     return context->discrete_state_tickets_;
   }
   static std::vector<DependencyTicket>& abstract_state_tickets(
       ContextBase* context) {
+    DRAKE_DEMAND(context != nullptr);
     return context->abstract_state_tickets_;
   }
   static std::vector<DependencyTicket>& numeric_parameter_tickets(
       ContextBase* context) {
+    DRAKE_DEMAND(context != nullptr);
     return context->numeric_parameter_tickets_;
   }
   static std::vector<DependencyTicket>& abstract_parameter_tickets(
       ContextBase* context) {
+    DRAKE_DEMAND(context != nullptr);
     return context->abstract_parameter_tickets_;
+  }
+
+  static bool is_context_base_initialized(const ContextBase& context) {
+    return context.is_context_base_initialized_;
+  }
+
+  // SystemBase should invoke this when ContextBase has been successfully
+  // initialized.
+  static void mark_context_base_initialized(ContextBase* context) {
+    DRAKE_DEMAND(context);
+    DRAKE_DEMAND(!context->is_context_base_initialized_);
+    context->is_context_base_initialized_ = true;
   }
 };
 
