@@ -565,7 +565,8 @@ void MultibodyPlant<T>::CalcContactResults(
   using VectorXBlock = Eigen::VectorBlock<const VectorX<T>>;
   const VectorXBlock fn = implicit_stribeck_solver_->get_normal_forces();
   const VectorXBlock ft = implicit_stribeck_solver_->get_friction_forces();
-  const VectorXBlock vt = implicit_stribeck_solver_->get_tangential_velocities();
+  const VectorXBlock vt =
+      implicit_stribeck_solver_->get_tangential_velocities();
   const VectorXBlock vn = implicit_stribeck_solver_->get_normal_velocities();
 
   DRAKE_DEMAND(fn.size() == num_contacts);
