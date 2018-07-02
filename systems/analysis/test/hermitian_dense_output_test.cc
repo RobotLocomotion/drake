@@ -1,4 +1,4 @@
-#include "drake/systems/analysis/hermitian_continuous_extension.h"
+#include "drake/systems/analysis/hermitian_dense_output.h"
 
 #include <gtest/gtest.h>
 
@@ -12,7 +12,7 @@ namespace analysis {
 namespace {
 
 template <typename T>
-class HermitianContinuousExtensionTest : public ::testing::Test {
+class HermitianDenseOutputTest : public ::testing::Test {
  protected:
   const T kInvalidTime{-1.0};
   const T kInitialTime{0.0};
@@ -46,91 +46,91 @@ class HermitianContinuousExtensionTest : public ::testing::Test {
 };
 
 
-// HermitianContinuousExtension types to test.
-typedef ::testing::Types<double, AutoDiffXd> ExtensionTypes;
+// HermitianDenseOutput types to test.
+typedef ::testing::Types<double, AutoDiffXd> OutputTypes;
 
-TYPED_TEST_CASE(HermitianContinuousExtensionTest, ExtensionTypes);
+TYPED_TEST_CASE(HermitianDenseOutputTest, OutputTypes);
 
-// Checks that HermitianContinuousExtension consistency is ensured.
-TYPED_TEST(HermitianContinuousExtensionTest, ExtensionConsistency) {
-  // Instantiates continuous extension.
-  HermitianContinuousExtension<TypeParam> continuous_extension;
-  // Verifies that the continuous extension is empty and API behavior
+// Checks that HermitianDenseOutput consistency is ensured.
+TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
+  // Instantiates dense output.
+  HermitianDenseOutput<TypeParam> dense_output;
+  // Verifies that the dense output is empty and API behavior
   // is consistent with that fact.
-  ASSERT_TRUE(continuous_extension.is_empty());
-  EXPECT_THROW(continuous_extension.Evaluate(
+  ASSERT_TRUE(dense_output.is_empty());
+  EXPECT_THROW(dense_output.Evaluate(
       this->kInitialTime), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_start_time(), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_end_time(), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_dimensions(), std::logic_error);
-  EXPECT_THROW(continuous_extension.Rollback(), std::logic_error);
-  EXPECT_THROW(continuous_extension.Consolidate(), std::logic_error);
+  EXPECT_THROW(dense_output.get_start_time(), std::logic_error);
+  EXPECT_THROW(dense_output.get_end_time(), std::logic_error);
+  EXPECT_THROW(dense_output.get_dimensions(), std::logic_error);
+  EXPECT_THROW(dense_output.Rollback(), std::logic_error);
+  EXPECT_THROW(dense_output.Consolidate(), std::logic_error);
 
-  // Verifies that trying to update the continuous extension with
+  // Verifies that trying to update the dense output with
   // a zero length step fails.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep first_step(
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
-  EXPECT_THROW(continuous_extension.Update(first_step), std::runtime_error);
+  EXPECT_THROW(dense_output.Update(first_step), std::runtime_error);
 
-  // Verifies that trying to update the continuous extension with
+  // Verifies that trying to update the dense output with
   // a valid step succeeds.
   first_step.Extend(this->kMidTime, this->kMidState,
                     this->kMidStateDerivative);
-  continuous_extension.Update(first_step);
+  dense_output.Update(first_step);
 
   // Verifies that an update does not imply a consolidation and thus
-  // the continuous extension remains empty.
-  ASSERT_TRUE(continuous_extension.is_empty());
-  EXPECT_THROW(continuous_extension.Evaluate(
+  // the dense output remains empty.
+  ASSERT_TRUE(dense_output.is_empty());
+  EXPECT_THROW(dense_output.Evaluate(
       this->kMidTime), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_start_time(), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_end_time(), std::logic_error);
-  EXPECT_THROW(continuous_extension.get_dimensions(), std::logic_error);
+  EXPECT_THROW(dense_output.get_start_time(), std::logic_error);
+  EXPECT_THROW(dense_output.get_end_time(), std::logic_error);
+  EXPECT_THROW(dense_output.get_dimensions(), std::logic_error);
 
   // Consolidates all previous updates.
-  continuous_extension.Consolidate();
+  dense_output.Consolidate();
 
   // Verifies that it is not possible to roll back updates after consolidation.
-  EXPECT_THROW(continuous_extension.Rollback(), std::logic_error);
+  EXPECT_THROW(dense_output.Rollback(), std::logic_error);
 
-  // Verifies that the continuous extension is not empty and that it
+  // Verifies that the dense output is not empty and that it
   // reflects the data provided on updates.
-  ASSERT_FALSE(continuous_extension.is_empty());
-  EXPECT_EQ(continuous_extension.get_start_time(), first_step.get_start_time());
-  EXPECT_EQ(continuous_extension.get_end_time(), first_step.get_end_time());
-  EXPECT_EQ(continuous_extension.get_dimensions(), first_step.get_dimensions());
-  EXPECT_NO_THROW(continuous_extension.Evaluate(this->kMidTime));
+  ASSERT_FALSE(dense_output.is_empty());
+  EXPECT_EQ(dense_output.get_start_time(), first_step.get_start_time());
+  EXPECT_EQ(dense_output.get_end_time(), first_step.get_end_time());
+  EXPECT_EQ(dense_output.get_dimensions(), first_step.get_dimensions());
+  EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
 
   // Verifies that invalid evaluation arguments generate errors.
-  EXPECT_THROW(continuous_extension.Evaluate(this->kInvalidTime),
+  EXPECT_THROW(dense_output.Evaluate(this->kInvalidTime),
                std::runtime_error);
 
-  // Verifies that step updates that would disrupt the extension continuity
+  // Verifies that step updates that would disrupt the output continuity
   // fail.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep second_step(
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep second_step(
       (this->kFinalTime + this->kMidTime) / 2.,
       this->kMidState, this->kMidStateDerivative);
   second_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  EXPECT_THROW(continuous_extension.Update(second_step), std::runtime_error);
+  EXPECT_THROW(dense_output.Update(second_step), std::runtime_error);
 
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep third_step(
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep third_step(
       this->kMidTime, this->kMidState * 2., this->kMidStateDerivative);
   third_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  EXPECT_THROW(continuous_extension.Update(third_step), std::runtime_error);
+  EXPECT_THROW(dense_output.Update(third_step), std::runtime_error);
 
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep fourth_step(
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep fourth_step(
       this->kMidTime, this->kMidState, this->kMidStateDerivative * 2.);
   fourth_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  EXPECT_THROW(continuous_extension.Update(fourth_step), std::runtime_error);
+  EXPECT_THROW(dense_output.Update(fourth_step), std::runtime_error);
 }
 
-// Checks that HermitianContinuousExtension::Step consistency is ensured.
-TYPED_TEST(HermitianContinuousExtensionTest, StepsConsistency) {
+// Checks that HermitianDenseOutput::Step consistency is ensured.
+TYPED_TEST(HermitianDenseOutputTest, StepsConsistency) {
   // Verifies that zero length steps are properly constructed.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep step(
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   ASSERT_EQ(step.get_times().size(), 1);
   EXPECT_EQ(step.get_start_time(), this->kInitialTime);
@@ -186,41 +186,41 @@ TYPED_TEST(HermitianContinuousExtensionTest, StepsConsistency) {
                               this->kFinalStateDerivative));
 }
 
-// Checks that HermitianContinuousExtension properly supports stepwise
+// Checks that HermitianDenseOutput properly supports stepwise
 // construction.
-TYPED_TEST(HermitianContinuousExtensionTest, CorrectConstruction) {
-  // Instantiates continuous extension.
-  HermitianContinuousExtension<TypeParam> continuous_extension;
-  // Updates extension for the first time.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep first_step(
+TYPED_TEST(HermitianDenseOutputTest, CorrectConstruction) {
+  // Instantiates dense output.
+  HermitianDenseOutput<TypeParam> dense_output;
+  // Updates output for the first time.
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   first_step.Extend(this->kMidTime, this->kMidState, this->kMidStateDerivative);
-  continuous_extension.Update(first_step);
-  // Updates extension a second time.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep second_step(
+  dense_output.Update(first_step);
+  // Updates output a second time.
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep second_step(
       this->kMidTime, this->kMidState, this->kMidStateDerivative);
   second_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  continuous_extension.Update(second_step);
+  dense_output.Update(second_step);
   // Rolls back the last update.
-  continuous_extension.Rollback();  // `second_step`
+  dense_output.Rollback();  // `second_step`
   // Consolidates existing updates.
-  continuous_extension.Consolidate();  // only `first_step`
+  dense_output.Consolidate();  // only `first_step`
 
-  // Verifies that the continuous extension only reflects the first step.
-  EXPECT_FALSE(continuous_extension.is_empty());
-  EXPECT_EQ(continuous_extension.get_start_time(), first_step.get_start_time());
-  EXPECT_EQ(continuous_extension.get_end_time(), first_step.get_end_time());
-  EXPECT_EQ(continuous_extension.get_dimensions(), first_step.get_dimensions());
-  EXPECT_TRUE(CompareMatrices(continuous_extension.Evaluate(this->kInitialTime),
+  // Verifies that the dense output only reflects the first step.
+  EXPECT_FALSE(dense_output.is_empty());
+  EXPECT_EQ(dense_output.get_start_time(), first_step.get_start_time());
+  EXPECT_EQ(dense_output.get_end_time(), first_step.get_end_time());
+  EXPECT_EQ(dense_output.get_dimensions(), first_step.get_dimensions());
+  EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(this->kInitialTime),
                               first_step.get_states().front()));
-  EXPECT_TRUE(CompareMatrices(continuous_extension.Evaluate(this->kMidTime),
+  EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(this->kMidTime),
                               first_step.get_states().back()));
 }
 
-// Checks that HermitianContinuousExtension properly implements and evaluates
+// Checks that HermitianDenseOutput properly implements and evaluates
 // an Hermite interpolator.
-TYPED_TEST(HermitianContinuousExtensionTest, CorrectEvaluation) {
+TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   // Creates an Hermite cubic spline with times, states and state
   // derivatives.
   const detail::ScalarConverter<TypeParam> scalar_converter;
@@ -238,27 +238,27 @@ TYPED_TEST(HermitianContinuousExtensionTest, CorrectEvaluation) {
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::Cubic(
           spline_times, spline_states, spline_state_derivatives);
-  // Instantiates continuous extension.
-  HermitianContinuousExtension<TypeParam> continuous_extension;
-  // Updates extension for the first time.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep first_step(
+  // Instantiates dense output.
+  HermitianDenseOutput<TypeParam> dense_output;
+  // Updates output for the first time.
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   first_step.Extend(this->kMidTime, this->kMidState, this->kMidStateDerivative);
-  continuous_extension.Update(first_step);
-  // Updates extension a second time.
-  typename HermitianContinuousExtension<TypeParam>::IntegrationStep second_step(
+  dense_output.Update(first_step);
+  // Updates output a second time.
+  typename HermitianDenseOutput<TypeParam>::IntegrationStep second_step(
       this->kMidTime, this->kMidState, this->kMidStateDerivative);
   second_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  continuous_extension.Update(second_step);
+  dense_output.Update(second_step);
   // Consolidates all previous updates.
-  continuous_extension.Consolidate();
-  // Verifies that continuous extensions and Hermite spline match.
+  dense_output.Consolidate();
+  // Verifies that dense output and Hermite spline match.
   const double kAccuracy{1e-12};
-  EXPECT_FALSE(continuous_extension.is_empty());
+  EXPECT_FALSE(dense_output.is_empty());
   for (TypeParam t = this->kInitialTime;
        t <= this->kFinalTime; t += this->kTimeStep) {
-    EXPECT_TRUE(CompareMatrices(continuous_extension.Evaluate(t),
+    EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(t),
                                 scalar_converter.FromDoubleMatrix(
                                     hermite_spline.value(
                                         scalar_converter.ToDouble(t))),

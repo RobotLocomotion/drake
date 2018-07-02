@@ -59,7 +59,7 @@ class DenseOutput {
 
   /// Returns output's start time, or in other words, the oldest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
-  /// @pre Putput is not empty i.e. is_empty() equals false.
+  /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual const T& get_start_time() const = 0;
 

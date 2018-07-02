@@ -16,7 +16,7 @@ drake_cc_package_library(
         ":antiderivative_function",
         ":dense_output",
         ":explicit_euler_integrator",
-        ":hermitian_continuous_extension",
+        ":hermitian_dense_output",
         ":implicit_euler_integrator",
         ":initial_value_problem",
         ":integrator_base",
@@ -48,8 +48,8 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hermitian_continuous_extension",
-    hdrs = ["hermitian_continuous_extension.h"],
+    name = "hermitian_dense_output",
+    hdrs = ["hermitian_dense_output.h"],
     deps = [
         ":stepwise_dense_output",
         "//common:autodiff",
@@ -64,7 +64,7 @@ drake_cc_library(
     hdrs = ["integrator_base.h"],
     deps = [
         ":dense_output",
-        ":hermitian_continuous_extension",
+        ":hermitian_dense_output",
         ":stepwise_dense_output",
         "//systems/framework:context",
         "//systems/framework:system",
@@ -303,9 +303,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hermitian_continuous_extension_test",
+    name = "hermitian_dense_output_test",
     deps = [
-        ":hermitian_continuous_extension",
+        ":hermitian_dense_output",
         "//common:autodiff",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",

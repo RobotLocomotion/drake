@@ -26,19 +26,7 @@ namespace detail {
 template <typename T>
 MatrixX<T> CopyToColumnMatrix(const VectorBase<T>& vector) {
   MatrixX<T> column_matrix(vector.size(), 1);
-  // Checks whether `vector` has flat storage and it can thus
-  // be more efficiently copied into the column matrix.
-  const BasicVector<T>* basic_vector =
-      dynamic_cast<const BasicVector<T>*>(&vector);
-  if (basic_vector == nullptr) {
-    // Copies potentially non flat vector the hard way.
-    for (int i = 0 ; i < vector.size() ; ++i) {
-      column_matrix(i, 0) = vector.GetAtIndex(i);
-    }
-  } else {
-    // Copies flat storage vector.
-    column_matrix.col(0) = basic_vector->get_value();
-  }
+  column_matrix.col(0) = vector.CopyToVector();
   return std::move(column_matrix);
 }
 
@@ -174,13 +162,12 @@ struct ScalarConverter<double> : public ScalarBaseConverter<double> {
 /// A StepwiseDenseOutput class implementation using Hermitian interpolators,
 /// and therefore a _continuous extension_ of the solution 𝐱(t) (see
 /// [Engquist, 2105]). This concept can be recast as a type of dense output that
-/// is continuous (see DenseOutput class documentation for the formal definition
-/// of dense output in use).
+/// is continuous.
 ///
-/// Updates take the form of integration steps, for which state 𝐱 and state
-/// time derivative d𝐱/dt are known at least at both ends of the step. Hermite
-/// cubic polynomials are then constructed upon consolidation, yielding a C1
-/// extension of the solution 𝐱(t).
+/// Updates take the form of integration steps, for which state 𝐱 and state time
+/// derivative d𝐱/dt are known at least at both ends of the step. Hermite cubic
+/// polynomials are then constructed upon @ref StepwiseDenseOutput::Consolidate
+/// "consolidation", yielding a C1 extension of the solution 𝐱(t).
 ///
 /// Hermitian continuous extensions exhibit the same truncation error as that
 /// of the integration scheme being used for up to 3rd order schemes (see
@@ -193,7 +180,7 @@ struct ScalarConverter<double> : public ScalarBaseConverter<double> {
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
-class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
+class HermitianDenseOutput : public StepwiseDenseOutput<T> {
  public:
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -364,12 +351,10 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
 
   VectorX<T> Evaluate(const T& t) const override {
     if (is_empty()) {
-      throw std::logic_error("Empty continuous extension cannot"
-                             " be evaluated.");
+      throw std::logic_error("Empty dense output cannot be evaluated.");
     }
     if (t < get_start_time() || t > get_end_time()) {
-      throw std::runtime_error("Continuous extension is not "
-                               "defined for given time.");
+      throw std::runtime_error("Dense output is not defined for given time.");
     }
     return scalar_converter_.FromDoubleMatrix(
         continuous_trajectory_.value(
@@ -378,8 +363,8 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
 
   int get_dimensions() const override {
     if (is_empty()) {
-      throw std::logic_error("Dimension is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("Dimension is not defined for"
+                             " an empty dense output.");
     }
     return continuous_trajectory_.rows();
   }
@@ -390,33 +375,33 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
 
   const T& get_end_time() const override {
     if (is_empty()) {
-      throw std::logic_error("End time is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("End time is not defined for"
+                             " an empty dense output.");
     }
     return end_time_;
   }
 
   const T& get_start_time() const override {
     if (is_empty()) {
-      throw std::logic_error("Start time is not defined for an"
-                             " empty continuous extension.");
+      throw std::logic_error("Start time is not defined for"
+                             " an empty dense output.");
     }
     return start_time_;
   }
 
-  /// Update extension with the given @p step.
+  /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
   /// the time the @p step extends cannot be readily evaluated (see
-  /// StepwiseContinuousExtension class documentation).
+  /// StepwiseDenseOutput class documentation).
   ///
-  /// @param step Integration step to update this extension with.
+  /// @param step Integration step to update this output with.
   /// @throw std::runtime_error
   ///   if given @p step has zero length.<br>
   ///   if given @p step does not ensure C1 continuity at the end of
-  ///   this continuous extension.<br>
-  ///   if given @p step dimensions does not match this continuous
-  ///   extension dimensions.
+  ///   this dense output.<br>
+  ///   if given @p step dimensions does not match this dense output
+  ///   dimensions.
   void Update(IntegrationStep step) {
     ValidateStepCanBeConsolidatedOrThrow(step);
     raw_steps_.push_back(std::move(step));
@@ -455,8 +440,8 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
   }
 
  private:
-  // Validates that the provided @p step can be consolidated
-  // into this continuous extension.
+  // Validates that the provided @p step can be consolidated into this
+  // dense output.
   // @see Update(const IntegrationStep&)
   void ValidateStepCanBeConsolidatedOrThrow(const IntegrationStep& step) {
     if (step.get_start_time() == step.get_end_time()) {
@@ -466,35 +451,36 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
     }
     if (!raw_steps_.empty()) {
       const IntegrationStep& last_raw_step = raw_steps_.back();
-      EnsureExtensionConsistencyOrThrow(step, last_raw_step.get_end_time(),
-                               last_raw_step.get_states().back(),
-                               last_raw_step.get_state_derivatives().back());
+      EnsureOutputConsistencyOrThrow(
+          step, last_raw_step.get_end_time(),
+          last_raw_step.get_states().back(),
+          last_raw_step.get_state_derivatives().back());
     } else if (!continuous_trajectory_.empty()) {
-      EnsureExtensionConsistencyOrThrow(step, end_time_, end_state_,
-                                        end_state_derivative_);
+      EnsureOutputConsistencyOrThrow(step, end_time_, end_state_,
+                                     end_state_derivative_);
     }
   }
 
-  // Ensures that the continuous extension would remain consistent if the
+  // Ensures that this dense output would remain consistent if the
   // provided @p step were to be consolidated at its end.
   // @param step Integration step to be taken.
-  // @param end_time Continuous extension end time.
-  // @param end_state Continuous extension end state.
-  // @param end_state Continuous extension end state derivative.
+  // @param end_time Dense output end time.
+  // @param end_state Dense output end state.
+  // @param end_state Dense output end state derivative.
   // @throw std::runtime_error
   //   if given @p step does not ensure C1 continuity at the end
-  //   of this continuous extension.<br>
-  //   if given @p step dimension does not match this continuous
-  //   extension dimension.
-  void EnsureExtensionConsistencyOrThrow(
+  //   of this dense outputt.<br>
+  //   if given @p step dimension does not match this dense output
+  //   dimension.
+  void EnsureOutputConsistencyOrThrow(
       const IntegrationStep& step, const T& end_time,
       const MatrixX<T>& end_state, const MatrixX<T>& end_state_derivative) {
     if (end_state.rows() != step.get_dimensions()) {
-      throw std::runtime_error("Provided step dimension and continuous"
-                               " extension (inferred) dimension do not match.");
+      throw std::runtime_error("Provided step dimension and dense output"
+                               " (inferred) dimension do not match.");
     }
-    // Maximum time misalignment between step and continuous extension that can
-    // still be disregarded as a discontinuity in time.
+    // Maximum time misalignment between step and dense output that
+    // can still be disregarded as a discontinuity in time.
     const double allowed_time_misalignment = std::max(
         std::abs(scalar_converter_.ToDouble(end_time)), 1.) *
         std::numeric_limits<double>::epsilon();
@@ -502,31 +488,30 @@ class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
         scalar_converter_.ToDouble(end_time) -
         scalar_converter_.ToDouble(step.get_start_time()));
     if (time_misalignment > allowed_time_misalignment) {
-      throw std::runtime_error("Provided step start time and continuous"
-                               " extension end time differ.");
+      throw std::runtime_error("Provided step start time and"
+                               " dense output end time differ.");
     }
     if (!end_state.isApprox(step.get_states().front())) {
-      throw std::runtime_error("Provided step start state and continuous"
-                               " extension end state differ. Cannot ensure"
-                               " C0 continuity.");
+      throw std::runtime_error("Provided step start state and dense output end"
+                               " state differ. Cannot ensure C0 continuity.");
     }
     if (!end_state_derivative.isApprox(step.get_state_derivatives().front())) {
       throw std::runtime_error("Provided step start state derivative and"
-                               " continuous extension end state derivative"
-                               " differ. Cannot ensure C1 continuity.");
+                               " dense output end state derivative differ."
+                               " Cannot ensure C1 continuity.");
     }
   }
 
   // TODO(hidmic): Remove state keeping members when
   // PiecewisePolynomial better supports non-double types.
 
-  // The smallest time at which the extension is defined.
+  // The smallest time at which the output is defined.
   T start_time_{};
-  // The largest time at which the extension is defined.
+  // The largest time at which the output is defined.
   T end_time_{};
-  // The value of the extension at the `end_time`.
+  // The value of the output at the `end_time`.
   MatrixX<T> end_state_{};
-  // The value of the extension's first time derivative at the `end_time`.
+  // The value of the output first time derivative at the `end_time`.
   MatrixX<T> end_state_derivative_{};
 
   // The integration steps taken but not consolidated yet (via Consolidate()).
