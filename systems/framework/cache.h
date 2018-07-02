@@ -609,7 +609,7 @@ class Cache {
   dependency notifications are issued. */
   ~Cache() = default;
 
-  /** Allocates a new CacheEntryValue and provide it a DependencyTracker using
+  /** Allocates a new CacheEntryValue and provides it a DependencyTracker using
   the given CacheIndex and DependencyTicket number. The CacheEntryValue object
   is owned by this Cache and the returned reference remains valid if other cache
   entry values are created. If there is a pre-existing tracker with the given

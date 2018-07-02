@@ -52,12 +52,14 @@ const CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
   return new_entry;
 }
 
-std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
-  // Derived class creates the concrete Context object, which already contains
-  // all the well-known trackers (the ones with fixed tickets).
-  std::unique_ptr<ContextBase> context_ptr = DoMakeContext();
+void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;
+
+  // Initialization should happen only once per Context.
+  DRAKE_DEMAND(
+      !detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+          context));
 
   detail::SystemBaseContextBaseAttorney::set_system_name(&context, get_name());
 
@@ -94,7 +96,8 @@ std::unique_ptr<ContextBase> SystemBase::MakeContext() const {
         oport->GetPrerequisite());
   }
 
-  return context_ptr;
+  detail::SystemBaseContextBaseAttorney::mark_context_base_initialized(
+      &context);
 }
 
 // Set up trackers for variable-numbered independent sources: discrete and
@@ -114,7 +117,7 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
       std::vector<DependencyTicket>* context_tickets) {
     DependencyTracker& subscriber =
         graph.get_mutable_tracker(subscriber_ticket);
-    context_tickets->clear();
+    DRAKE_DEMAND(context_tickets->empty());
     for (const auto& info : system_ticket_info) {
       auto& source_tracker =
           graph.CreateNewDependencyTracker(info.ticket, info.description);
