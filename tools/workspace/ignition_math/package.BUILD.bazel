@@ -81,8 +81,10 @@ generate_file(
 
 public_headers_no_gen = [
     "include/ignition/math/Angle.hh",
+    "include/ignition/math/AxisAlignedBox.hh",
     "include/ignition/math/Box.hh",
     "include/ignition/math/Color.hh",
+    "include/ignition/math/Cylinder.hh",
     "include/ignition/math/Filter.hh",
     "include/ignition/math/Frustum.hh",
     "include/ignition/math/Helpers.hh",
@@ -115,6 +117,8 @@ public_headers_no_gen = [
     "include/ignition/math/Vector3.hh",
     "include/ignition/math/Vector3Stats.hh",
     "include/ignition/math/Vector4.hh",
+    "include/ignition/math/detail/Box.hh",
+    "include/ignition/math/detail/Cylinder.hh",
     "include/ignition/math/detail/Sphere.hh",
     "include/ignition/math/graph/Edge.hh",
     "include/ignition/math/graph/Graph.hh",
@@ -123,9 +127,9 @@ public_headers_no_gen = [
 ]
 
 private_headers = [
-    "src/BoxPrivate.hh",
     "src/FrustumPrivate.hh",
     "src/KmeansPrivate.hh",
+    "src/MaterialType.hh",
     "src/RotationSplinePrivate.hh",
     "src/SignalStatsPrivate.hh",
     "src/SplinePrivate.hh",
@@ -163,11 +167,12 @@ cc_binary(
     name = "libdrake_ignition_math4.so",
     srcs = [
         "src/Angle.cc",
-        "src/Box.cc",
+        "src/AxisAlignedBox.cc",
         "src/Color.cc",
         "src/Frustum.cc",
         "src/Helpers.cc",
         "src/Kmeans.cc",
+        "src/Material.cc",
         "src/PID.cc",
         "src/Rand.cc",
         "src/RotationSpline.cc",
