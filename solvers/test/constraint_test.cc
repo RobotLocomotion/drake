@@ -432,12 +432,6 @@ class SimpleEvaluator : public EvaluatorBase {
   }
 
  protected:
-  template <typename DerivedX, typename U>
-  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                     VectorX<U>* y) const {
-    *y = c_ * x.template cast<U>();
-  }
-
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
     DoEvalGeneric(x, y);
@@ -454,6 +448,12 @@ class SimpleEvaluator : public EvaluatorBase {
   }
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const {
+    *y = c_ * x.template cast<ScalarY>();
+  }
+
   Eigen::MatrixXd c_;
 };
 

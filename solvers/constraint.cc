@@ -48,9 +48,9 @@ symbolic::Formula Constraint::DoCheckSatisfied(
   return f;
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void QuadraticConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                                        VectorX<U>* y) const {
+                                        VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
   *y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
 }
@@ -71,10 +71,10 @@ void QuadraticConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void LorentzConeConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                                          VectorX<U>* y) const {
-  const VectorX<U> z = A_ * x.template cast<U>() + b_;
+                                          VectorX<ScalarY>* y) const {
+  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = pow(z(0), 2) - z.tail(z.size() - 1).squaredNorm();
@@ -96,10 +96,10 @@ void LorentzConeConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void RotatedLorentzConeConstraint::DoEvalGeneric(
-    const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const {
-  const VectorX<U> z = A_ * x.template cast<U>() + b_;
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
+  const VectorX<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
   y->resize(num_constraints());
   (*y)(0) = z(0);
   (*y)(1) = z(1);
@@ -122,11 +122,11 @@ void RotatedLorentzConeConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                                     VectorX<U>* y) const {
+                                     VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  (*y) = A_ * x.template cast<U>();
+  (*y) = A_ * x.template cast<ScalarY>();
 }
 
 void LinearConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -145,11 +145,11 @@ void LinearConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void BoundingBoxConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                                          VectorX<U>* y) const {
+                                          VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  (*y) = x.template cast<U>();
+  (*y) = x.template cast<ScalarY>();
 }
 
 void BoundingBoxConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -167,11 +167,11 @@ void BoundingBoxConstraint::DoEval(
   DoEvalGeneric(x, y);
 }
 
-template <typename DerivedX, typename U>
+template <typename DerivedX, typename ScalarY>
 void LinearComplementarityConstraint::DoEvalGeneric(
-    const Eigen::MatrixBase<DerivedX>& x, VectorX<U>* y) const {
+    const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  (*y) = (M_ * x.template cast<U>()) + q_;
+  (*y) = (M_ * x.template cast<ScalarY>()) + q_;
 }
 
 void LinearComplementarityConstraint::DoEval(

@@ -26,13 +26,6 @@ class GenericTrivialCost1 : public Cost {
   GenericTrivialCost1() : Cost(3), private_val_(2) {}
 
  protected:
-  template <typename DerivedX, typename U>
-  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
-                     VectorX<U>* y) const {
-    y->resize(1);
-    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
-  }
-
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
     DoEvalGeneric(x, y);
@@ -49,6 +42,13 @@ class GenericTrivialCost1 : public Cost {
   }
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const {
+    y->resize(1);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
   // Add a private data member to make sure no slicing on this class, derived
   // from Constraint.
   double private_val_{0};
