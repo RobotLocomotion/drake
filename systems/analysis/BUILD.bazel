@@ -14,7 +14,7 @@ drake_cc_package_library(
     name = "analysis",
     deps = [
         ":antiderivative_function",
-        ":continuous_extension",
+        ":dense_output",
         ":explicit_euler_integrator",
         ":hermitian_continuous_extension",
         ":implicit_euler_integrator",
@@ -26,23 +26,23 @@ drake_cc_package_library(
         ":scalar_initial_value_problem",
         ":semi_explicit_euler_integrator",
         ":simulator",
-        ":stepwise_continuous_extension",
+        ":stepwise_dense_output",
     ],
 )
 
 drake_cc_library(
-    name = "continuous_extension",
-    hdrs = ["continuous_extension.h"],
+    name = "dense_output",
+    hdrs = ["dense_output.h"],
     deps = [
         "//common:essential",
     ],
 )
 
 drake_cc_library(
-    name = "stepwise_continuous_extension",
-    hdrs = ["stepwise_continuous_extension.h"],
+    name = "stepwise_dense_output",
+    hdrs = ["stepwise_dense_output.h"],
     deps = [
-        ":continuous_extension",
+        ":dense_output",
         "//common:essential",
     ],
 )
@@ -51,7 +51,7 @@ drake_cc_library(
     name = "hermitian_continuous_extension",
     hdrs = ["hermitian_continuous_extension.h"],
     deps = [
-        ":stepwise_continuous_extension",
+        ":stepwise_dense_output",
         "//common:autodiff",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
@@ -63,9 +63,9 @@ drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     deps = [
-        ":continuous_extension",
+        ":dense_output",
         ":hermitian_continuous_extension",
-        ":stepwise_continuous_extension",
+        ":stepwise_dense_output",
         "//systems/framework:context",
         "//systems/framework:system",
     ],

@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/hermitian_continuous_extension.h"
-#include "drake/systems/analysis/stepwise_continuous_extension.h"
+#include "drake/systems/analysis/stepwise_dense_output.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/vector_base.h"
@@ -51,12 +51,11 @@ solution, so must be avoided.
  *
  * For applications that require a more dense sampling of the system
  * continuous state than what would be available through either fixed or
- * error-controlled step integration (for a given accuracy), continuous
- * extensions are available (through StartDenseIntegration() and
- * StopDenseIntegration() methods). The accuracy and performance of the
- * extensions may vary with each integration scheme implementation. However,
- * unless specified otherwise, an HermitianContinuousExtension is provided
- * by default.
+ * error-controlled step integration (for a given accuracy), dense output
+ * support is available (through StartDenseIntegration() and
+ * StopDenseIntegration() methods). The accuracy and performance of these
+ * outputs may vary with each integration scheme implementation. Unless
+ * specified otherwise, an HermitianContinuousExtension is provided by default.
  *
  * A natural question for a user to ask of an integrator is: Which scheme
  * (method) should be applied to a particular problem? The answer is whichever
@@ -492,8 +491,8 @@ class IntegratorBase {
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
 
-    // Drops any pre-existing reference to a continuous extension.
-    continuous_extension_ = nullptr;
+    // Drops any pre-existing reference to a dense output.
+    dense_output_ = nullptr;
 
     // Statistics no longer valid.
     ResetStatistics();
@@ -796,53 +795,64 @@ class IntegratorBase {
 
 
   /**
-   * Starts dense integration, returning the newly allocated continuous
-   * extension that this integrator will use.
+   * @name             Methods for dense output computation
+   * @{
    *
-   * Ownership of the continuous extension is transferred to the caller
+   * In general, dense output computations entail both CPU load and memory
+   * footprint increases during numerical integration. For some applications,
+   * the performance penalty may be prohibitive. As such, these computations
+   * are only carried over by explicit user request. The API to start and stop
+   * a _dense integration_ process (i.e. a numerical integration process that
+   * also computes dense output) is consistent with this design choice.
+   */
+
+  /**
+   * Starts dense integration, returning the newly allocated dense output
+   * that this integrator will use.
+   *
+   * Ownership of the allocated dense output is transferred to the caller
    * and a reference is kept internally. The caller must guarantee that
-   *  either the extension outlives the integrator or that the reference
+   * either this dense output outlives the integrator or that the reference
    * gets dropped (via StopDenseIntegration() or by calling
    * StartDenseIntegration() again).
    *
-   * @return An StepwiseContinuousExtension instance, i.e. a continuous
-   *         representation of the continuous state trajectory of the system
-   *         being integrated. This representation is defined starting at the
-   *         current context time.
+   * @return An StepwiseDenseOutput instance, i.e. a representation of the
+   *         continuous state trajectory of the system being integrated that
+   *         can be evaluated at any time within its extension. This 
+   *         representation is defined starting at the current context time.
    * @pre The integrator has been initialized.
-   * @throw std::logic_error if any of the preconditions are not met.
+   * @throw std::logic_error if any of the preconditions is not met.
+   * @warning Dense integration may incur in significant overheads.
    */
-  std::unique_ptr<StepwiseContinuousExtension<T>> StartDenseIntegration() {
+  std::unique_ptr<StepwiseDenseOutput<T>> StartDenseIntegration() {
     if (!is_initialized()) {
       throw std::logic_error("Integrator was not initialized.");
     }
-    std::unique_ptr<StepwiseContinuousExtension<T>> continuous_extension =
+    std::unique_ptr<StepwiseDenseOutput<T>> dense_output =
         DoStartDenseIntegration();
-    continuous_extension_ = continuous_extension.get();
-    return std::move(continuous_extension);
+    dense_output_ = dense_output.get();
+    return std::move(dense_output);
   }
 
   /**
-   * Returns a const pointer to the internally-kept StepwiseContinuousExtension
-   * instance, holding a continuous representation of the continuous state
-   * trajectory since the last time StartDenseIntegration() was called. This is
-   * suitable to query the  integrator's current continuous extension, if any
+   * Returns a const pointer to the internally-kept StepwiseDenseOutput
+   * instance, holding a representation of the continuous state trajectory since
+   * the last time StartDenseIntegration() was called. This is suitable to query
+   * the  integrator's current dense output, if any (may be nullptr).
+   */
+  const StepwiseDenseOutput<T>* get_dense_output() const {
+    return dense_output_;
+  }
+
+  /**
+   * Returns a mutable pointer to the internally-maintained StepwiseDenseOutput
+   * instance, holding a representation of the continuous state trajectory since
+   * the last time StartDenseIntegration()  was called. This is useful for
+   * derived classes to update the integrator's current dense output, if any
    * (may be nullptr).
    */
-  const StepwiseContinuousExtension<T>* get_continuous_extension() const {
-    return continuous_extension_;
-  }
-
-  /**
-   * Returns a mutable pointer to the internally-maintained
-   * StepwiseContinuousExtension instance, holding a continuous
-   * representation of the continuous state trajectory since the
-   * last time StartDenseIntegration()  was called. This is useful
-   * for derived classes to update the current continuous extension,
-   * if any (may be nullptr).
-   */
-  StepwiseContinuousExtension<T>* get_mutable_continuous_extension() {
-    return continuous_extension_;
+  StepwiseDenseOutput<T>* get_mutable_dense_output() {
+    return dense_output_;
   }
 
   /**
@@ -852,15 +862,19 @@ class IntegratorBase {
    * @pre A continuous extension is held by this integrator (after a
    *      call to StartDenseIntegration())
    * @post Previous continuous extension is not updated nor referenced by
-   *        the integrator anymore.
+   *       the integrator anymore.
    * @throw std::logic_error if any of the preconditions are not met.
    */
   void StopDenseIntegration() {
-    if (!continuous_extension_) {
+    if (!dense_output_) {
       throw std::logic_error("No dense integration was started.");
     }
-    continuous_extension_ = nullptr;
+    dense_output_ = nullptr;
   }
+
+  /**
+   * @}
+   */
 
   /**
    * Gets a constant reference to the system that is being integrated (and
@@ -1309,7 +1323,7 @@ class IntegratorBase {
    */
   // TODO(hidmic): Make pure virtual.
   virtual
-  std::unique_ptr<StepwiseContinuousExtension<T>> DoStartDenseIntegration() {
+  std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
     return std::make_unique<HermitianContinuousExtension<T>>();
   }
 
@@ -1337,60 +1351,60 @@ class IntegratorBase {
    * Derived classes may implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt, (2) set the
    * error estimate (via get_mutable_error_estimate()) and (3) update their own
-   * continuous extension implementation (via get_mutable_dense_output()). This
-   * method is called during the default Step() method.
+   * dense output implementation (via get_mutable_dense_output()). This method
+   * is called during the default Step() method.
    * @param dt The integration step to take.
    * @returns `true` if successful, `false` if either the integrator was
    *           unable to take a single step of size @p dt or to advance
-   *           continuous extension an equal step.
+   *           its dense output an equal step.
    * @sa DoStep()
    */
   // TODO(hidmic): Make pure virtual.
   virtual bool DoDenseStep(const T& dt) {
     // Retrieves current time (i.e. time before the actual integration step)
-    // to be used as continuous extension step's initial time.
+    // to be used as dense output step's initial time.
     const T& initial_time = context_->get_time();
     // Retrieves current state (i.e. state before the actual integration
-    // step) to be used as continuous extension step's initial state.
+    // step) to be used as dense output step's initial state.
     const VectorBase<T>& initial_state_vector =
         context_->get_continuous_state_vector();
     // Computes state derivative with respect to time at current time and state
     // (i.e. before the actual integration step).
     system_.CalcTimeDerivatives(*context_, derivatives_.get());
     // Retrieves current state derivative (i.e. state derivative before
-    // the actual integration step) to be used as continuous extension step's
+    // the actual integration step) to be used as dense output step's
     // initial state derivative.
     const VectorBase<T>& initial_state_derivative_vector =
         derivatives_->get_vector();
-    // Makes a null (i.e. zero size) continuous extension step with initial
+    // Makes a null (i.e. zero size) dense output step with initial
     // time and state data.
     typename HermitianContinuousExtension<T>::IntegrationStep step(
         initial_time, initial_state_vector, initial_state_derivative_vector);
     // Performs the integration step.
     if (!DoStep(dt)) return false;
     // Retrieves current time (i.e. time after the actual integration step)
-    // to be used as continuous extension step's final time.
+    // to be used as dense output step's final time.
     const T& final_time = context_->get_time();
     // Retrieves current state (i.e. state after the actual integration step)
-    // to be used as continuous extension step's final state.
+    // to be used as dense output step's final state.
     const VectorBase<T>& final_state_vector =
         context_->get_continuous_state_vector();
     // Computes state derivative with respect to time at
     // current time and state (i.e. after the actual integration step).
     system_.CalcTimeDerivatives(*context_, derivatives_.get());
     // Retrieves current state derivative (i.e. state derivative after the
-    // actual integration step) to be used as continuous extension step's
+    // actual integration step) to be used as dense output step's
     // final state derivative.
     const VectorBase<T>& final_state_derivative_vector =
         derivatives_->get_vector();
-    // Extends continuous extension step to the end of the integration step.
+    // Extends dense output step to the end of the integration step.
     step.Extend(final_time, final_state_vector, final_state_derivative_vector);
-    // Retrieves continuous extension. This cast is safe because the
-    // actual StepwiseContinuousExtension<T> is entirely under this
+    // Retrieves dense output, a continuous extension in this case. This cast
+    // is safe because the actual StepwiseDenseOutput<T> is entirely under this
     // class' control.
     HermitianContinuousExtension<T>* continuous_extension =
         dynamic_cast<HermitianContinuousExtension<T>*>(
-            get_mutable_continuous_extension());
+            get_mutable_dense_output());
     // Updates continuous extension with the integration step taken.
     continuous_extension->Update(std::move(step));
     return true;
@@ -1468,7 +1482,7 @@ class IntegratorBase {
   // @sa DoStep()
   // @sa DoDenseStep()
   bool Step(const T& dt) {
-    if (get_continuous_extension()) {
+    if (get_dense_output()) {
       return DoDenseStep(dt);
     }
     return DoStep(dt);
@@ -1480,8 +1494,8 @@ class IntegratorBase {
   // Pointer to the context.
   Context<T>* context_{nullptr};  // The trajectory Context.
 
-  // Pointer to the current continuous extension.
-  StepwiseContinuousExtension<T>* continuous_extension_{nullptr};
+  // Pointer to the current dense output.
+  StepwiseDenseOutput<T>* dense_output_{nullptr};
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -1681,10 +1695,10 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       // Reset the time, state, and time derivative at t0.
       get_mutable_context()->set_time(current_time);
       xc.SetFromVector(xc0_save_);
-      if (get_continuous_extension()) {
-        // Take continuous extension one step back to undo
+      if (get_dense_output()) {
+        // Take dense output one step back to undo
         // the last integration step.
-        get_mutable_continuous_extension()->Rollback();
+        get_mutable_dense_output()->Rollback();
       }
     }
   } while (!step_succeeded);
@@ -1977,10 +1991,10 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
   } else {
     full_step = StepOnceErrorControlledAtMost(dt);
   }
-  if (get_continuous_extension()) {
-    // Consolidates current continuous extension, merging
-    // the step taken into its internal representation.
-    get_mutable_continuous_extension()->Consolidate();
+  if (get_dense_output()) {
+    // Consolidates current dense output, merging the step
+    // taken into its internal representation.
+    get_mutable_dense_output()->Consolidate();
   }
   // Update generic statistics.
   const T actual_dt = context_->get_time() - t0;

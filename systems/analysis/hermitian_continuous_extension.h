@@ -10,7 +10,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/systems/analysis/stepwise_continuous_extension.h"
+#include "drake/systems/analysis/stepwise_dense_output.h"
+#include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -25,8 +26,18 @@ namespace detail {
 template <typename T>
 MatrixX<T> CopyToColumnMatrix(const VectorBase<T>& vector) {
   MatrixX<T> column_matrix(vector.size(), 1);
-  for (int i = 0 ; i < vector.size() ; ++i) {
-    column_matrix(i, 0) = vector.GetAtIndex(i);
+  // Checks whether `vector` has flat storage and it can thus
+  // be more efficiently copied into the column matrix.
+  const BasicVector<T>* basic_vector =
+      dynamic_cast<const BasicVector<T>*>(&vector);
+  if (basic_vector == nullptr) {
+    // Copies potentially non flat vector the hard way.
+    for (int i = 0 ; i < vector.size() ; ++i) {
+      column_matrix(i, 0) = vector.GetAtIndex(i);
+    }
+  } else {
+    // Copies flat storage vector.
+    column_matrix.col(0) = basic_vector->get_value();
   }
   return std::move(column_matrix);
 }
@@ -160,24 +171,29 @@ struct ScalarConverter<double> : public ScalarBaseConverter<double> {
 
 }  // namespace detail
 
-/// A StepwiseContinuousExtension class implementation using Hermitian
-/// interpolators. Updates take the form of integration steps, for which
-/// state 𝐱 and state time derivative d𝐱/dt are known at least at both ends
-/// of the step. Hermite cubic polynomials are then constructed upon
-/// consolidation, yielding a C1 extension of the solution 𝐱(t).
+/// A StepwiseDenseOutput class implementation using Hermitian interpolators,
+/// and therefore a _continuous extension_ of the solution 𝐱(t) (see
+/// [Engquist, 2105]). This concept can be recast as a type of dense output that
+/// is continuous (see DenseOutput class documentation for the formal definition
+/// of dense output in use).
 ///
-/// Hermitian continuous extensions exhibit the same truncation error as that of
-/// the integration scheme being used for up to 3rd order schemes (see
+/// Updates take the form of integration steps, for which state 𝐱 and state
+/// time derivative d𝐱/dt are known at least at both ends of the step. Hermite
+/// cubic polynomials are then constructed upon consolidation, yielding a C1
+/// extension of the solution 𝐱(t).
+///
+/// Hermitian continuous extensions exhibit the same truncation error as that
+/// of the integration scheme being used for up to 3rd order schemes (see
 /// [Hairer, 1993]).
 ///
+/// - [Engquist, 2105] B. Engquist. Encyclopedia of Applied and Computational
+///                    Mathematics, p. 339, Springer, 2015.
 /// - [Hairer, 1993] E. Hairer, S. Nørsett and G. Wanner. Solving Ordinary
 ///                  Differential Equations I (Nonstiff Problems), p.190,
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
-// TODO(hidmic): Better support AutoDiff scalars when PiecewisePolynomial
-// supports them.
 template <typename T>
-class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
+class HermitianContinuousExtension : public StepwiseDenseOutput<T> {
  public:
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
@@ -514,6 +530,11 @@ class HermitianContinuousExtension : public StepwiseContinuousExtension<T> {
 
   // The integration steps taken but not consolidated yet (via Consolidate()).
   std::vector<IntegrationStep> raw_steps_{};
+
+  // TODO(hidmic): When PiecewisePolynomial supports scalar types other than
+  // doubles, pass in the template parameter T to it too and remove all scalar
+  // type conversions.
+
   // The underlying PiecewisePolynomial continuous trajectory.
   trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
   // Conversion mechanisms to deal with non floating point types.
