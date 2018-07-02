@@ -19,6 +19,7 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
+using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
 using std::make_unique;
 
@@ -235,10 +236,41 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     }
   }
 
-  // TODO(amcastro-tri): Extract <material> once sdf::Visual supports it.
-
+  const VisualMaterial material = MakeVisualMaterialFromSdfVisual(sdf_visual);
   return make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), material);
+}
+
+VisualMaterial MakeVisualMaterialFromSdfVisual(const sdf::Visual& sdf_visual) {
+  // TODO(SeanCurtis-TRI): Update this to use the sdf API when
+  // https://bitbucket.org/osrf/sdformat/pull-requests/445/material-dom/diff
+  // merges.
+
+  const sdf::ElementPtr visual_element = sdf_visual.Element();
+  // Element pointers can only be nullptr if Load() was not called on the sdf::
+  // object. Only a bug could cause this.
+  DRAKE_DEMAND(visual_element != nullptr);
+
+  const sdf::Element* const material_element =
+      MaybeGetChildElement(*visual_element, "material");
+
+  const VisualMaterial default_material;
+  if (material_element == nullptr ||
+      !material_element->HasElement("diffuse")) {
+    return default_material;
+  }
+
+  // If the diffuse tag exists, rely on sdformat's rules for resolving strange
+  // <diffuse> values.
+  using ignition::math::Color;
+  const std::pair<Color, bool> value_pair =
+      material_element->Get<Color>("diffuse", Color());
+  if (value_pair.second == false) return default_material;
+  const Color& sdf_diffuse = value_pair.first;
+
+  Vector4<double> diffuse{sdf_diffuse.R(), sdf_diffuse.G(), sdf_diffuse.B(),
+                          sdf_diffuse.A()};
+  return VisualMaterial(diffuse);
 }
 
 Isometry3d MakeGeometryPoseFromSdfCollision(
