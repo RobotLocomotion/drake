@@ -393,21 +393,21 @@ class Context : public ContextBase {
 
   /// Sets the continuous state to @p xc, deleting whatever was there before.
   /// Invalidates all continuous state-dependent computations in this context
-  /// and its subcontexts, recursively.
+  /// and its subcontexts.
   void init_continuous_state(std::unique_ptr<ContinuousState<T>> xc) {
     get_mutable_state().set_continuous_state(std::move(xc));
   }
 
   /// Sets the discrete state to @p xd, deleting whatever was there before.
   /// Invalidates all discrete state-dependent computations in this context and
-  /// its subcontexts, recursively.
+  /// its subcontexts.
   void init_discrete_state(std::unique_ptr<DiscreteValues<T>> xd) {
     get_mutable_state().set_discrete_state(std::move(xd));
   }
 
   /// Sets the abstract state to @p xa, deleting whatever was there before.
   /// Invalidates all abstract state-dependent computations in this context and
-  /// its subcontexts, recursively.
+  /// its subcontexts.
   void init_abstract_state(std::unique_ptr<AbstractValues> xa) {
     get_mutable_state().set_abstract_state(std::move(xa));
   }

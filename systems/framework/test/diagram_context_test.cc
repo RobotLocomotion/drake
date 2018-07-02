@@ -20,6 +20,7 @@
 
 namespace drake {
 namespace systems {
+namespace {
 
 constexpr int kSize = 1;
 constexpr int kNumSystems = 8;
@@ -38,7 +39,6 @@ class SystemWithNumericParameters : public LeafSystem<double> {
   SystemWithNumericParameters() {}
   ~SystemWithNumericParameters() override {}
 
-
   std::unique_ptr<Parameters<double>> AllocateParameters() const override {
     return std::make_unique<Parameters<double>>(
         std::make_unique<BasicVector<double>>(2));
@@ -52,6 +52,11 @@ class SystemWithAbstractParameters : public LeafSystem<double> {
   }
   ~SystemWithAbstractParameters() override {}
 };
+
+}  // namespace
+
+// This class must be outside the anonymous namespace to permit the
+// DiagramContext friend declaration to work.
 
 class DiagramContextTest : public ::testing::Test {
  protected:
@@ -83,10 +88,8 @@ class DiagramContextTest : public ::testing::Test {
     AddSystem(*system_with_abstract_parameters_, SubsystemIndex(7));
 
     // Fake up some input ports for this diagram.
-    detail::SystemBaseContextBaseAttorney::AddInputPort(
-        &*context_, InputPortIndex(0), DependencyTicket(100));
-    detail::SystemBaseContextBaseAttorney::AddInputPort(
-        &*context_, InputPortIndex(1), DependencyTicket(101));
+    context_->AddInputPort(InputPortIndex(0), DependencyTicket(100));
+    context_->AddInputPort(InputPortIndex(1), DependencyTicket(101));
 
     context_->MakeState();
     context_->MakeParameters();

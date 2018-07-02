@@ -1092,7 +1092,11 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
-  std::unique_ptr<LeafContext<double>> context = system_.CreateDefaultContext();
+
+  // This needs to be a LeafContext for access to init_ methods.
+  auto context = dynamic_pointer_cast_or_throw<LeafContext<double>>(
+      system_.CreateDefaultContext());
+
   context->init_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
   context->init_discrete_state(std::make_unique<DiscreteValues<double>>(

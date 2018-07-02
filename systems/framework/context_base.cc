@@ -38,7 +38,9 @@ std::string ContextBase::GetSystemPathname() const {
 
 FixedInputPortValue& ContextBase::FixInputPort(
     int index, std::unique_ptr<AbstractValue> value) {
-  auto fixed = std::make_unique<FixedInputPortValue>(std::move(value));
+  std::unique_ptr<FixedInputPortValue> fixed =
+      detail::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
+          std::move(value));
   FixedInputPortValue& fixed_ref = *fixed;
   SetFixedInputPortValue(InputPortIndex(index), std::move(fixed));
   return fixed_ref;
@@ -68,7 +70,8 @@ void ContextBase::AddOutputPort(
   output_port_tickets_.push_back(ticket);
   // If no child subsystem was specified then this output port's dependency is
   // resolvable within this subcontext so we can subscribe now. Inter-subcontext
-  // dependencies are deferred until MakeInterSubcontextConnections().
+  // dependencies are set up by Diagram after all child intra-subcontext
+  // dependency trackers have been allocated.
   if (!prerequisite.child_subsystem) {
     yi_tracker.SubscribeToPrerequisite(
         &get_mutable_tracker(prerequisite.dependency));
@@ -86,20 +89,25 @@ void ContextBase::SetFixedInputPortValue(
   FixedInputPortValue* old_value =
       input_port_values_[index].get_mutable();
 
+  DependencyTicket ticket_to_use;
   if (old_value != nullptr) {
-    // All the dependency wiring is already in place.
-    detail::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
-                                                      old_value->ticket());
+    // All the dependency wiring should be in place already.
+    ticket_to_use = old_value->ticket();
+    DRAKE_DEMAND(graph_.has_tracker(ticket_to_use));
+    DRAKE_ASSERT(graph_.get_tracker(ticket_to_use).HasSubscriber(port_tracker));
+    DRAKE_ASSERT(
+        port_tracker.HasPrerequisite(graph_.get_tracker(ticket_to_use)));
   } else {
     // Create a new tracker and subscribe to it.
     DependencyTracker& value_tracker = graph_.CreateNewDependencyTracker(
         "Value for fixed input port " + std::to_string(index));
-    detail::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
-                                                      value_tracker.ticket());
+    ticket_to_use = value_tracker.ticket();
     port_tracker.SubscribeToPrerequisite(&value_tracker);
   }
 
   // Fill in the FixedInputPortValue object and install it.
+  detail::ContextBaseFixedInputAttorney::set_ticket(port_value.get(),
+                                                    ticket_to_use);
   detail::ContextBaseFixedInputAttorney::set_owning_subcontext(
       port_value.get(), this);
   input_port_values_[index] = std::move(port_value);
@@ -193,6 +201,9 @@ void ContextBase::CreateBuiltInTrackers() {
   // This default subscription must be changed if configuration is not
   // represented by q in this System.
   configuration_tracker.SubscribeToPrerequisite(&q_tracker);
+  // The meaning of configuration variables can change as a result of
+  // parameter changes, and configuration-dependent results may need
+  // recomputation if accuracy requirements change.
   configuration_tracker.SubscribeToPrerequisite(&p_tracker);
   configuration_tracker.SubscribeToPrerequisite(&accuracy_tracker);
 
@@ -204,6 +215,9 @@ void ContextBase::CreateBuiltInTrackers() {
   // This default subscription must be changed if velocity is not
   // represented by v in this System.
   velocity_tracker.SubscribeToPrerequisite(&v_tracker);
+  // The meaning of velocity variables can change as a result of
+  // parameter changes, and velocity-dependent results may need
+  // recomputation if accuracy requirements change.
   velocity_tracker.SubscribeToPrerequisite(&p_tracker);
   velocity_tracker.SubscribeToPrerequisite(&accuracy_tracker);
 
@@ -255,7 +269,7 @@ void ContextBase::FixContextPointers(
   }
 
   // Then recursively ask our descendants to repair their pointers.
-  clone->DoPropagateFixSubcontextPointers(source, tracker_map);
+  clone->DoPropagateFixContextPointers(source, tracker_map);
 }
 
 }  // namespace systems
