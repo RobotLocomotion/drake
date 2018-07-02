@@ -9,36 +9,36 @@ namespace drake {
 namespace symbolic {
 namespace {
 
-using math::XRotation;
-using math::YRotation;
-using math::ZRotation;
-
 class SymbolicExpressionTransformationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    R1_ = XRotation(.25 * M_PI) * YRotation(.5 * M_PI) * ZRotation(.33 * M_PI);
-    R2_ = XRotation(M_PI / 2) * YRotation(-M_PI / 2) * ZRotation(M_PI / 2);
+    R1_ = math::RotationMatrixd::MakeXRotation(.25 * M_PI) *
+          math::RotationMatrixd::MakeYRotation(.5 * M_PI) *
+          math::RotationMatrixd::MakeZRotation(.33 * M_PI);
+    R2_ = math::RotationMatrixd::MakeXRotation(M_PI / 2) *
+          math::RotationMatrixd::MakeYRotation(-M_PI / 2) *
+          math::RotationMatrixd::MakeZRotation(M_PI / 2);
 
     affine_.setIdentity();
-    affine_.rotate(R1_);
+    affine_.rotate(R1_.matrix());
     affine_.translation() << 1.0, 2.0, 3.0;
 
     affine_compact_.setIdentity();
-    affine_compact_.rotate(R1_ * R2_);
+    affine_compact_.rotate((R1_ * R2_).matrix());
     affine_compact_.translation() << -2.0, 1.0, 3.0;
 
     isometry_.setIdentity();
-    isometry_.rotate(-R2_);
+    isometry_.rotate(-R2_.matrix());
     isometry_.translation() << 3.0, -1.0, 2.0;
 
     projective_.setIdentity();
-    projective_.rotate(-R2_ * R1_);
+    projective_.rotate(-(R2_ * R1_).matrix());
     projective_.translation() << 2.0, 3.0, -1.0;
   }
 
   // Rotation Matrices.
-  Eigen::Matrix3d R1_;
-  Eigen::Matrix3d R2_;
+  math::RotationMatrixd R1_;
+  math::RotationMatrixd R2_;
 
   // Transformations.
   Eigen::Transform<double, 3, Eigen::Affine, Eigen::DontAlign> affine_;
