@@ -125,9 +125,9 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   plant.set_position(context.get(), 5, std::sqrt(2)/2);  // about y-axis.
   plant.set_position(context.get(), 6, 0.0);
 
-  // Start a dense integration i.e. one that generates a continuous
-  // extension for the state function.
-  std::unique_ptr<ContinuousExtension<double>> rk3_continuous_extension =
+  // Start a dense integration i.e. one that generates a dense
+  // output for the state function.
+  std::unique_ptr<DenseOutput<double>> rk3_dense_output =
       rk3.StartDenseIntegration();
 
   const double t_step = t_final / 100.;
@@ -136,7 +136,7 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
     rk3.IntegrateWithMultipleSteps(t_step);
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
-        rk3_continuous_extension->Evaluate(t + t_step),
+        rk3_dense_output->Evaluate(t + t_step),
         plant.GetStateVector(*context),
         rk3.get_accuracy_in_use(),
         MatrixCompareType::relative));
@@ -148,8 +148,8 @@ GTEST_TEST(RK3RK2IntegratorTest, RigidBody) {
   // Integrate one more step.
   rk3.IntegrateWithMultipleSteps(t_step);
 
-  // Verify that the continuous extension was not updated.
-  EXPECT_LT(rk3_continuous_extension->get_end_time(), context->get_time());
+  // Verify that the dense output was not updated.
+  EXPECT_LT(rk3_dense_output->get_end_time(), context->get_time());
 }
 
 }  // namespace analysis_test

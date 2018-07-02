@@ -25,12 +25,12 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   EXPECT_THROW(integrator.request_initial_step_size_target(1.0),
                std::logic_error);
 
-  // Verifies that starting dense integration i.e. computing a continuous
-  // extension fails if the integrator has not been initialized yet.
+  // Verifies that starting dense integration (i.e. demanding a dense
+  // output) fails if the integrator has not been initialized yet.
   EXPECT_THROW(integrator.StartDenseIntegration(), std::logic_error);
 
-  // Verifies that stopping dense integration i.e. precluding further updates
-  // of the continuous extension known to the integrator fails if it has not
+  // Verifies that stopping dense integration (i.e. precluding further updates
+  // of the dense output known to the integrator) fails if it has not
   // been started (via StartDenseIntegration()) since last Initialize() call
   // or construction.
   EXPECT_THROW(integrator.StopDenseIntegration(), std::logic_error);
@@ -147,26 +147,26 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   spring_mass.set_velocity(integrator.get_mutable_context(),
                            initial_velocity);
 
-  // Perform a dense integration.
-  std::unique_ptr<ContinuousExtension<double>> continuous_extension =
+  // Get a dense output.
+  std::unique_ptr<DenseOutput<double>> dense_output =
       integrator.StartDenseIntegration();
 
   // Integrate for t_final seconds again.
   integrator.IntegrateWithMultipleSteps(t_final);
   x_final = xc_final.GetAtIndex(0);
 
-  // Prevent further updates to continuous extension.
+  // Prevent further updates to dense output.
   integrator.StopDenseIntegration();
 
   // Verify that integrator outputs are valid.
   EXPECT_NEAR(x_final_true, x_final, xtol);
 
-  // Verify that continuous extension is valid.
+  // Verify that the built dense output is valid.
   for (double t = 0; t <= t_final; t += dt / 2.) {
     double x_true, unused_v_true;
     spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
                                       t, &x_true, &unused_v_true);
-    const VectorX<double> x = continuous_extension->Evaluate(t);
+    const VectorX<double> x = dense_output->Evaluate(t);
     EXPECT_NEAR(x_true, x(0), xtol);
   }
   // Verify that integrator statistics are valid.
