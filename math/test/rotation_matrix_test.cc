@@ -270,17 +270,27 @@ GTEST_TEST(RotationMatrix, IsValid) {
 
 // Tests whether or not a RotationMatrix is an identity matrix.
 GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
-  const double cos_theta = std::cos(0.5);
-  const double sin_theta = std::sin(0.5);
+  RotationMatrix<double> R;
+  EXPECT_TRUE(R.IsExactlyIdentity().value());
+
   Matrix3d m;
   m << 1, 0, 0,
-      0, cos_theta, sin_theta,
-      0, -sin_theta, cos_theta;
+       0, 1, 0,
+       0, 0, 1;
+  R.SetOrThrowIfNotValid(m);
+  EXPECT_TRUE(R.IsExactlyIdentity().value());
 
-  const RotationMatrix<double> R1(m);
-  const RotationMatrix<double> R2;
-  EXPECT_FALSE(R1.IsExactlyIdentity().value());
-  EXPECT_TRUE(R2.IsExactlyIdentity().value());
+  m(0, 2) = kEpsilon;
+  R.SetOrThrowIfNotValid(m);
+  EXPECT_FALSE(R.IsExactlyIdentity().value());
+
+  const double cos_theta = std::cos(0.5);
+  const double sin_theta = std::sin(0.5);
+  m << 1, 0, 0,
+       0, cos_theta, sin_theta,
+       0, -sin_theta, cos_theta;
+  R.SetOrThrowIfNotValid(m);
+  EXPECT_FALSE(R.IsExactlyIdentity().value());
 }
 
 // Test ProjectMatrixToRotationMatrix.
@@ -468,10 +478,11 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   const Bool<double> is_identity = R_identity.IsIdentityToInternalTolerance();
   EXPECT_TRUE(is_identity.value());
 
-  // Verify Bool method IsExactlyIdentity().
+  // Verify Bool methods IsExactlyIdentity(), IsIdentityToInternalTolerance().
   m_numerical(0, 1) = kEpsilon;
   const RotationMatrix<double> R_approx(m_numerical);
   EXPECT_FALSE(R_approx.IsExactlyIdentity().value());
+  EXPECT_TRUE(R_approx.IsIdentityToInternalTolerance().value());
 
   // Verify Bool method IsOrthonormal();
   const Bool<double> is_orthonormal =

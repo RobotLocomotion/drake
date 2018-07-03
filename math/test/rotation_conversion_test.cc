@@ -372,6 +372,8 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     EXPECT_TRUE(
         AreQuaternionsEqualForOrientation(quat_drake, quat_eigen, kTolerance));
     // Ensure the calculated quaternion produces the same rotation matrix.
+    // This test accuracy to near machine precision and uses a tolerance of
+    // 32*kEpsilon (allows for 5 of the 53 mantissa bits to be inaccurate).
     const RotationMatrix<double> rotmat(quat_drake);
     EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 32 * kEpsilon).value());
   }

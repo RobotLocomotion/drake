@@ -29,11 +29,10 @@ namespace math {
 /// @note This class does not store the frames associated with a rotation matrix
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
-/// @note In debug builds, several methods in this class do a validity check
-/// and throw an exception (std::logic_error) if the rotation matrix is invalid.
-/// For speed in release builds, all validity checks are skipped except a
-/// validity check is always made (in both release and debug builds) for the
-/// inherently computationally expensive method ProjectToRotationMatrix().
+/// @note When DRAKE_ASSERT_IS_ARMED is defined, several methods in this class
+/// do a validity check and throw an exception (std::logic_error) if the
+/// rotation matrix is invalid.  When DRAKE_ASSERT_IS_ARMED is not defined,
+/// many of these validity checks are skipped (which helps improve speed).
 /// In addition, validity tests are only performed for scalar types for which
 /// drake::is_numeric<T> is `true`.  No validity check is performed and no
 /// assertion is thrown if T is non-numeric (e.g., T is symbolic::Expression).
@@ -62,7 +61,7 @@ class RotationMatrix {
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
   /// @param[in] quaternion a non-zero, finite quaternion which may or may not
-  /// have unit length [i.e., `quaterion.norm()` does not have to be 1].
+  /// have unit length [i.e., `quaternion.norm()` does not have to be 1].
   /// @throws std::logic_error in debug builds if the rotation matrix
   /// R that is built from `quaternion` fails IsValid(R).  For example, an
   /// exception is thrown if `quaternion` is zero or contains a NaN or infinity.
@@ -418,6 +417,8 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
+  // @internal Although this function exists for all scalar types, invocation on
+  // symbolic::Expression (non-numeric types) will throw an exception.
   // @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
@@ -432,7 +433,7 @@ class RotationMatrix {
   static typename std::enable_if<!is_numeric<S>::value, RotationMatrix<S>>::type
   ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
     throw std::runtime_error("This method is not supported for scalar types "
-                             "that are not is_numeric<S>.");
+                             "that are not drake::is_numeric<S>.");
   }
 
   /// Returns an internal tolerance that checks rotation matrix orthonormality.
@@ -513,13 +514,13 @@ class RotationMatrix {
     return q;
   }
 
-  /// Utility method to return the Vector4 associated with ToQuaterion().
+  /// Utility method to return the Vector4 associated with ToQuaternion().
   /// @see ToQuaternion().
   Vector4<T> ToQuaternionAsVector4() const {
     return ToQuaternionAsVector4(R_AB_);
   }
 
-  /// Utility method to return the Vector4 associated with ToQuaterion(M).
+  /// Utility method to return the Vector4 associated with ToQuaternion(M).
   /// @param[in] M 3x3 matrix to be made into a quaternion.
   /// @see ToQuaternion().
   static Vector4<T> ToQuaternionAsVector4(const Matrix3<T>& M)  {
