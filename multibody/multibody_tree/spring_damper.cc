@@ -6,6 +6,13 @@
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
+#include <iostream>
+//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+#define PRINT_VAR(a) (void) a;
+#define PRINT_VARn(a) (void) a;
+
 namespace drake {
 namespace multibody {
 
@@ -26,7 +33,7 @@ template <typename T>
 void SpringDamper<T>::DoCalcAndAddForceContribution(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>&,
+    const VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
   // Alias to the array of applied body forces:
   std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
@@ -40,20 +47,45 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
   const T length = p_PQ_W.norm();
 
+  PRINT_VAR(p_WP.transpose());
+  PRINT_VAR(p_WQ.transpose());
+  PRINT_VAR(p_PQ_W.transpose());
+  PRINT_VAR(length);
+
   // TODO: Check for zero norm or use "soft" norms as defined by Sherm.
   const Vector3<T> r_PQ_W = p_PQ_W.normalized();
 
+  PRINT_VAR(r_PQ_W.transpose());
+  PRINT_VAR(stiffness());
+  PRINT_VAR(rest_length());
+
   // Force on A, applied at P, expressed in the world frame.
-  const Vector3<T> f_AP_W = stiffness() * (length - rest_length_) * r_PQ_W;
+  const Vector3<T> f_AP_W = stiffness() * (length - rest_length()) * r_PQ_W;
 
   // Force on B, applied at Q, expressed in the world frame.
   const Vector3<T> f_BQ_W = -f_AP_W;
 
+  PRINT_VAR(f_AP_W.transpose());
+
+  // p_PAo = p_WAo - p_WP
+  const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
+
+  // p_QBo = p_WBo - p_WQ
+  const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
+
+  // Compute damping force.
+  const SpatialVelocity<T>& V_WP = vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
+  const SpatialVelocity<T>& V_WQ = vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
+  // relative velocity of P in Q, expressed in world.
+  const Vector3<T> v_PQ_W = V_WQ.translational() - V_WP.translational();
+  //const T length_dot = v_PQ_W.d
+  (void) v_PQ_W;
+
   F_Bo_W_array[bodyA().node_index()] +=
-      SpatialForce<T>(Vector3<T>::Zero(), f_AP_W);
+      SpatialForce<T>(Vector3<T>::Zero(), f_AP_W).Shift(p_PAo_W);
 
   F_Bo_W_array[bodyB().node_index()] +=
-      SpatialForce<T>(Vector3<T>::Zero(), f_BQ_W);
+      SpatialForce<T>(Vector3<T>::Zero(), f_BQ_W).Shift(p_QBo_W);
 }
 
 template <typename T>

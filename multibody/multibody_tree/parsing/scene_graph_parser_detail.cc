@@ -311,7 +311,7 @@ CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
 
   // If the surface is not found, the default is that of a frictionless
   // surface (i.e. zero friction coefficients).
-  if (!surface_element) return CoulombFriction<double>();
+  if (!surface_element) return CoulombFriction<double>(1.0, 1.0);
 
   // Once <surface> is found, <friction> and <ode> are required.
   const sdf::Element& friction_element =
