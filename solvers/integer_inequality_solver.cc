@@ -88,13 +88,13 @@ Eigen::MatrixXi CartesianProduct(const Eigen::MatrixXi& V, int z) {
 
 Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
                               const Eigen::MatrixXi& B) {
-  DRAKE_ASSERT(A.cols() == B.cols());
   if (A.rows() == 0) {
     return B;
   }
   if (B.rows() == 0) {
     return A;
   }
+  DRAKE_ASSERT(A.cols() == B.cols());
   Eigen::MatrixXi Y(A.rows() + B.rows(), B.cols());
   Y << A, B;
   return Y;
