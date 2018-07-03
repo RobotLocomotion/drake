@@ -30,10 +30,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Grey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -70,10 +67,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -123,10 +117,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -176,10 +167,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -229,10 +217,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -282,10 +267,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -335,10 +317,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Orange</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>1.0 0.423529411765 0.0392156862745 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
@@ -388,10 +367,7 @@ weld_base_to_world joint, and remove damping from the joints.
           </mesh>
         </geometry>
         <material>
-          <script>
-            <name>Gazebo/Grey</name>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-          </script>
+          <diffuse>0.4 0.4 0.4 1.0</diffuse>
         </material>
       </visual>
       <gravity>1</gravity>
