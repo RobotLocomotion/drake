@@ -34,6 +34,7 @@ using multibody::parsing::detail::MakeCoulombFrictionFromSdfCollisionOde;
 using multibody::parsing::detail::MakeGeometryInstanceFromSdfVisual;
 using multibody::parsing::detail::MakeGeometryPoseFromSdfCollision;
 using multibody::parsing::detail::MakeShapeFromSdfGeometry;
+using multibody::parsing::detail::MakeVisualMaterialFromSdfVisual;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -312,6 +313,144 @@ GTEST_TEST(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(*sdf_visual);
   EXPECT_EQ(geometry_instance, nullptr);
+}
+
+// Verify visual material parsing: default for unspecified, and diffuse color
+// given where specified in the SDF.
+GTEST_TEST(SceneGraphParserDetail, ParseVisualMaterialDiffuse) {
+  using geometry::VisualMaterial;
+
+  const VisualMaterial default_material;
+
+  // Case: No material defined -- default visual material.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), default_material.diffuse(),
+                                0.0, MatrixCompareType::absolute));
+  }
+
+  // Case: No diffuse defined -- default visual material.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "  </material>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), default_material.diffuse(),
+                                0.0, MatrixCompareType::absolute));
+  }
+
+  // Case: Valid diffuse material -- visual material as specified.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 0.5 0.75 1</diffuse>"
+        "  </material>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    Vector4<double> expected_diffuse{0.25, 0.5, 0.75, 1.0};
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
+                                0.0, MatrixCompareType::absolute));
+  }
+
+  // TODO(SeanCurtis-TRI): The following tests capture current behavior for
+  // sdformat. The behavior isn't necessarily desirable and an issue has been
+  // filed.
+  // https://bitbucket.org/osrf/sdformat/issues/193/using-element-get-has-surprising-defaults
+  // When this issue gets resolved, modify these tests accordingly.
+
+  // sdformat maps the diffuse values into a `Color` using the following rules:
+  //   1. Truncate to no more than four values (more than 4 values are simply
+  //      ignored).
+  //   2. If fewer than four, use 1 for a default alpha value and zero for
+  //      default r, g, b values.
+
+  // Case: Too many channel values -- truncate.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0.25 1 0.5 0.25 2</diffuse>"
+        "  </material>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    Vector4<double> expected_diffuse{0.25, 1, 0.5, 0.25};
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
+                                0.0, MatrixCompareType::absolute));
+  }
+
+  // Case: Too few channel values -- fill in with 0 for b and 1 for alpha.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>0 1</diffuse>"
+        "  </material>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    Vector4<double> expected_diffuse{0, 1, 0, 1};
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse,
+                                0.0, MatrixCompareType::absolute));
+  }
+
+  // Case: Values out of range:
+  //  Alpha simply gets clamped to the range [0, 1]
+  //  Negative R, G, B get set to zero.
+  //  R, G, B > 1 get divided by 255.
+  // These rules don't guarantee valid values.
+  {
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        "<visual name='some_link_visual'>"
+        "  <pose>0 0 0 0 0 0</pose>"
+        "  <geometry>"
+        "    <sphere>"
+        "      <radius>1</radius>"
+        "    </sphere>"
+        "  </geometry>"
+        "  <material>"
+        "    <diffuse>-0.1 255 65025 2</diffuse>"
+        "  </material>"
+        "</visual>");
+    VisualMaterial material = MakeVisualMaterialFromSdfVisual(*sdf_visual);
+    Vector4<double> expected_diffuse{0, 1, 255, 1};
+    EXPECT_TRUE(CompareMatrices(material.diffuse(), expected_diffuse, 0.0,
+                                MatrixCompareType::absolute));
+  }
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
