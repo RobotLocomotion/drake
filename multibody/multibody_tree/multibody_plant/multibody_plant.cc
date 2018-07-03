@@ -10,6 +10,8 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -241,6 +243,28 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     solver_parameters.stiction_tolerance =
         stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
+  }
+
+  for (JointIndex joint_index(0); joint_index < model().num_joints();
+      ++joint_index) {
+    const Joint<T>& joint = model().get_joint(joint_index);
+    auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
+    if (revolute_joint) {
+      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
+      joint_limits_parameters_.lower_limit.push_back(revolute_joint->lower_limit());
+      joint_limits_parameters_.upper_limit.push_back(revolute_joint->upper_limit());
+      joint_limits_parameters_.stiffness.push_back(150.0);
+      joint_limits_parameters_.damping.push_back(1.0);
+    }
+
+    auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
+    if (prismatic_joint) {
+      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
+      joint_limits_parameters_.lower_limit.push_back(revolute_joint->lower_limit());
+      joint_limits_parameters_.upper_limit.push_back(revolute_joint->upper_limit());
+      joint_limits_parameters_.stiffness.push_back(150.0);
+      joint_limits_parameters_.damping.push_back(1.0);
+    }
   }
 }
 
@@ -745,6 +769,69 @@ void MultibodyPlant<T>::AddJointActuationForces(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_DEMAND(forces != nullptr);
+  
+  auto CalcJointLimitPenaltyForce = [](
+      double lower_limit, double upper_limit, double stiffness, double damping,
+      const T& q, const T& v) {
+    DRAKE_DEMAND(lower_limit <= upper_limit);
+    DRAKE_DEMAND(stiffness >= 0);
+    DRAKE_DEMAND(damping >= 0);
+    
+    if (q > upper_limit) {
+      const T delta_q = q - upper_limit;
+      const T limit_force = (-stiffness * delta_q * (1 + damping * v));
+      using std::min;  // Needed for ADL.
+      return min(limit_force, 0.);
+    } else if (q < lower_limit) {
+      const T delta_q = q - lower_limit;
+      const T limit_force =
+          (-stiffness * delta_q * (1 - damping * v));
+      using std::max;  // Needed for ADL.
+      return max(limit_force, 0.);
+    }
+    return T(0.0);
+  };
+  
+  for (size_t index = 0;
+       index < joint_limits_parameters_.joints_with_limits.size(); ++index) {
+    const JointIndex joint_index =
+        joint_limits_parameters_.joints_with_limits[index];
+    const double lower_limit = joint_limits_parameters_.lower_limit[index];
+    const double upper_limit = joint_limits_parameters_.upper_limit[index];
+    const double stiffness = joint_limits_parameters_.stiffness[index];
+    const double damping = joint_limits_parameters_.damping[index];
+
+    T q(0), v(0);
+    {
+      auto joint = dynamic_cast<const RevoluteJoint<T>*>(
+          &model().get_joint(joint_index));
+      if (joint) {
+        q = joint->get_angle(context);
+        v = joint->get_angular_rate(context);
+      }
+    }
+    {
+      auto joint = dynamic_cast<const PrismaticJoint<T>*>(
+          &model().get_joint(joint_index));
+      if (joint) {
+        q = joint->get_translation(context);
+        v = joint->get_translation_rate(context);
+      }
+    }
+
+    const T penalty_force = CalcJointLimitPenaltyForce(
+        lower_limit, upper_limit, stiffness, damping, q, v);
+
+    const Joint<T>& joint = model().get_joint(joint_index);
+
+    joint.AddInOneForce(context, 0, penalty_force, forces);
+  }
+}
+
+template<typename T>
 VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     const systems::Context<T>& context) const {
   // Assemble the vector from the model instance input ports.
@@ -880,6 +967,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // TODO(amcastro-tri): Update ImplicitStribeckSolver to treat this term
   // implicitly.
   AddJointDampingForces(context0, &forces0);
+
+  AddJointLimitsPenaltyForces(context0, &forces0);
 
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
   const std::vector<PenetrationAsPointPair<T>> point_pairs0 =

@@ -1322,6 +1322,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void AddJointActuationForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
+  void AddJointLimitsPenaltyForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Helper method to apply forces due to damping at the joints.
   // Currently, MultibodyPlant treats damping forces separately from other
   // ForceElement forces so that it can use an implicit scheme in the time
@@ -1460,6 +1463,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     double inv_v_stiction_tolerance_{-1};
   };
   StribeckModel stribeck_model_;
+
+  struct JointLimitsParameters {
+    // list of joints that have limits.
+    std::vector<JointIndex> joints_with_limits;
+    std::vector<double> lower_limit;
+    std::vector<double> upper_limit;
+    // Penalty parameters.
+    std::vector<double> stiffness;
+    std::vector<double> damping;
+  } joint_limits_parameters_;
 
   // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;

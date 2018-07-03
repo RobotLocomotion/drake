@@ -62,13 +62,18 @@ class PrismaticJoint final : public Joint<T> {
   /// root of machine epsilon.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis, double damping = 0) :
+                const Vector3<double>& axis, double damping = 0,
+                double lower_limit = -std::numeric_limits<double>::infinity(),
+                double upper_limit = std::numeric_limits<double>::infinity()) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
+    DRAKE_THROW_UNLESS(lower_limit < upper_limit);
     axis_ = axis.normalized();
     damping_ = damping;
+    lower_limit_ = lower_limit;
+    upper_limit_ = upper_limit;
   }
 
   /// Returns the axis of translation for `this` joint as a unit vector.
@@ -81,6 +86,12 @@ class PrismaticJoint final : public Joint<T> {
 
   /// Returns `this` joint's damping constant in N⋅s/m.
   double damping() const { return damping_; }
+
+  /// Returns the lower limit for `this` joint in radians.
+  double lower_limit() const { return lower_limit_; }
+
+  /// Returns the upper limit for `this` joint in radians.
+  double upper_limit() const { return upper_limit_; }
 
   /// @name Context-dependent value access
   ///
@@ -236,6 +247,11 @@ class PrismaticJoint final : public Joint<T> {
 
   /// This joint's damping constant in N⋅s/m.
   double damping_{0};
+
+  // The lower and upper joint limits in radians.
+  // lower_limit_ < upper_limit_ always.
+  double lower_limit_{-std::numeric_limits<double>::infinity()};
+  double upper_limit_{std::numeric_limits<double>::infinity()};
 };
 
 }  // namespace multibody
