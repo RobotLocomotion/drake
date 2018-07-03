@@ -1519,6 +1519,26 @@ TEST_F(MultibodyPlantContactJacobianTests, TangentJacobian) {
       D, vt_derivs, kTolerance, MatrixCompareType::relative));
 }
 
+GTEST_TEST(JointLimits, KukaArm) {
+  const char kSdfPath[] =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+
+  // Make and add the kuka robot model.
+  MultibodyPlant<double> kuka_plant;
+  AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant);
+
+  // Add gravity to the model.
+  kuka_plant.AddForceElement<UniformGravityFieldElement>(
+      -9.81 * Vector3<double>::UnitZ());
+
+  // Now the model is complete.
+  kuka_plant.Finalize();
+
+  EXPECT_EQ(kuka_plant.num_positions(), 7);
+
+}
+
 }  // namespace
 }  // namespace multibody_plant
 }  // namespace multibody

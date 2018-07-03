@@ -32,6 +32,8 @@
 
 DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 
+DEFINE_double(time_step, 1.0e-3, "Time step.");
+
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
@@ -60,7 +62,7 @@ int DoMain() {
   scene_graph.set_name("scene_graph");
 
   // Make and add the kuka robot model.
-  MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
+  MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>(FLAGS_time_step);
   AddModelFromSdfFile(FindResourceOrThrow(kSdfPath), &kuka_plant, &scene_graph);
 
   // Add gravity to the model.

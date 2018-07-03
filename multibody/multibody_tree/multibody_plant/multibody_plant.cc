@@ -13,6 +13,11 @@
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+
 namespace drake {
 namespace multibody {
 namespace multibody_plant {
@@ -248,6 +253,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
       ++joint_index) {
     const Joint<T>& joint = model().get_joint(joint_index);
+
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
     if (revolute_joint) {
       joint_limits_parameters_.joints_with_limits.push_back(joint.index());
@@ -256,12 +262,11 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
       joint_limits_parameters_.stiffness.push_back(150.0);
       joint_limits_parameters_.damping.push_back(1.0);
     }
-
     auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
     if (prismatic_joint) {
       joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-      joint_limits_parameters_.lower_limit.push_back(revolute_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(revolute_joint->upper_limit());
+      joint_limits_parameters_.lower_limit.push_back(prismatic_joint->lower_limit());
+      joint_limits_parameters_.upper_limit.push_back(prismatic_joint->upper_limit());
       joint_limits_parameters_.stiffness.push_back(150.0);
       joint_limits_parameters_.damping.push_back(1.0);
     }
@@ -827,6 +832,10 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
 
     const Joint<T>& joint = model().get_joint(joint_index);
 
+    //PRINT_VAR(joint.name());
+    //PRINT_VAR(stiffness);
+    //PRINT_VAR(damping);
+
     joint.AddInOneForce(context, 0, penalty_force, forces);
   }
 }
@@ -887,6 +896,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   AddJointActuationForces(context, &forces);
 
   AddJointDampingForces(context, &forces);
+
+  AddJointLimitsPenaltyForces(context, &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1075,6 +1086,7 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
+  if (is_discrete()) return;
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 
@@ -1092,6 +1104,7 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
+  if (is_discrete()) return;
   const int nq = model_->num_positions();
   const int nv = model_->num_velocities();
 
