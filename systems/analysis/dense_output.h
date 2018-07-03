@@ -35,9 +35,8 @@ namespace systems {
 template <typename T>
 class DenseOutput {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DenseOutput)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseOutput)
 
-  DenseOutput() = default;
   virtual ~DenseOutput() = default;
 
   /// Evaluates the output at the given time @p t.
@@ -68,6 +67,9 @@ class DenseOutput {
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual const T& get_end_time() const = 0;
+
+ protected:
+  DenseOutput() = default;
 };
 
 }  // namespace systems

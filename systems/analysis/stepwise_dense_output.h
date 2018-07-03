@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/dense_output.h"
 
 namespace drake {
@@ -23,6 +24,10 @@ namespace systems {
 template <typename T>
 class StepwiseDenseOutput : public DenseOutput<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StepwiseDenseOutput)
+
+  virtual ~StepwiseDenseOutput() = default;
+
   /// Rolls back (drops) the last update.
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
@@ -44,6 +49,9 @@ class StepwiseDenseOutput : public DenseOutput<T> {
   ///       (via get_start_time()/get_end_time()).
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual void Consolidate() = 0;
+
+ protected:
+  StepwiseDenseOutput() = default;
 };
 
 }  // namespace systems

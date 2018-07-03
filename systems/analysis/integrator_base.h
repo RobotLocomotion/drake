@@ -173,7 +173,6 @@ class IntegratorBase {
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
       : system_(system), context_(context),
-        // TODO(hidmic): Remove when DoDenseStep() is made pure virtual.
         derivatives_(system.AllocateTimeDerivatives()) {
     initialization_done_ = false;
   }
@@ -419,6 +418,9 @@ class IntegratorBase {
     unweighted_substate_change_.setZero(0);
     weighted_q_change_.reset();
 
+    // Drops dense output, if any.
+    dense_output_.reset();
+
     // Integrator no longer operates in fixed step mode.
     fixed_step_mode_ = false;
 
@@ -490,9 +492,6 @@ class IntegratorBase {
           (z_weight_.size() && z_weight_.minCoeff() < 0))
         throw std::logic_error("Scaling coefficient is less than zero.");
     }
-
-    // Drops any pre-existing reference to a dense output.
-    dense_output_ = nullptr;
 
     // Statistics no longer valid.
     ResetStatistics();
@@ -807,69 +806,62 @@ class IntegratorBase {
    */
 
   /**
-   * Starts dense integration, returning the newly allocated dense output
-   * that this integrator will use.
+   * Starts dense integration, allocating a new dense output for this integrator
+   * to use.
    *
-   * Ownership of the allocated dense output is transferred to the caller
-   * and a reference is kept internally. The caller must guarantee that
-   * either this dense output outlives the integrator or that the reference
-   * gets dropped (via StopDenseIntegration() or by calling
-   * StartDenseIntegration() again).
-   *
-   * @return A StepwiseDenseOutput instance, i.e. a representation of the
-   *         continuous state trajectory of the system being integrated that
-   *         can be evaluated at any time within its extension. This
-   *         representation is defined starting at the current context time.
    * @pre The integrator has been initialized.
+   * @pre The system being integrated has continuous state.
+   * @pre No dense integration is in progress (no dense output is held by the
+   *      integrator)
    * @throw std::logic_error if any of the preconditions is not met.
    * @warning Dense integration may incur significant overhead.
    */
-  std::unique_ptr<StepwiseDenseOutput<T>> StartDenseIntegration() {
+  void StartDenseIntegration() {
     if (!is_initialized()) {
       throw std::logic_error("Integrator was not initialized.");
     }
-    std::unique_ptr<StepwiseDenseOutput<T>> dense_output =
-        DoStartDenseIntegration();
-    dense_output_ = dense_output.get();
-    return std::move(dense_output);
+    if (get_context().get_continuous_state().size() == 0) {
+      throw std::logic_error("System has no continuous state,"
+                             " no dense output can be built.");
+    }
+    if (get_dense_output()) {
+      throw std::logic_error("Dense integration has been started already.");
+    }
+    dense_output_ = DoStartDenseIntegration();
   }
 
   /**
-   * Returns a const pointer to the internally-kept StepwiseDenseOutput
-   * instance, holding a representation of the continuous state trajectory since
-   * the last time StartDenseIntegration() was called. This is suitable to query
-   * the  integrator's current dense output, if any (may be nullptr).
+   * Returns a const pointer to the integrator's current DenseOutput instance,
+   * holding a representation of the continuous state trajectory since the last
+   * StartDenseIntegration() call. This is suitable to query the integrator's
+   * current dense output, if any (may be nullptr).
    */
-  const StepwiseDenseOutput<T>* get_dense_output() const {
-    return dense_output_;
+  const DenseOutput<T>* get_dense_output() const {
+    return dense_output_.get();
   }
 
   /**
-   * Returns a mutable pointer to the internally-maintained StepwiseDenseOutput
-   * instance, holding a representation of the continuous state trajectory since
-   * the last time StartDenseIntegration()  was called. This is useful for
-   * derived classes to update the integrator's current dense output, if any
-   * (may be nullptr).
-   */
-  StepwiseDenseOutput<T>* get_mutable_dense_output() {
-    return dense_output_;
-  }
-
-  /**
-   * Stops dense integration, dropping the current dense output.
+   * Stops dense integration, yielding ownership of the current dense output
+   * to the caller.
    *
    * @remarks This process is irreversible.
-   * @pre A dense output is held by this integrator (after a call to
-   *      StartDenseIntegration())
+   * @return A DenseOutput instance, i.e. a representation of the
+   *         continuous state trajectory of the system being integrated
+   *         that can be evaluated at any time within its extension. This
+   *         representation is defined starting at the context time of the
+   *         last StartDenseIntegration() call and finishing at the current
+   *         context time.
+   * @pre Dense integration is in progress (a dense output is held by this
+   *      integrator, after a call to StartDenseIntegration()).
    * @post Previously held dense output is not updated nor referenced by
    *       the integrator anymore.
-   * @throw std::logic_error if any of the preconditions are not met.
+   * @throw std::logic_error if any of the preconditions is not met.
    */
-  void StopDenseIntegration() {
+  std::unique_ptr<DenseOutput<T>> StopDenseIntegration() {
     if (!dense_output_) {
-      throw std::logic_error("No dense integration was started.");
+      throw std::logic_error("No dense integration has been started.");
     }
-    dense_output_ = nullptr;
+    return std::move(dense_output_);
   }
 
   /**
@@ -1317,14 +1309,26 @@ class IntegratorBase {
    */
   virtual void DoReset() {}
 
+
   /**
    * Derived classes can override this method to provide a continuous
    * extension of their own when StartDenseIntegration() is called.
+   * TODO(hidmic): Make pure virtual.
    */
-  // TODO(hidmic): Make pure virtual.
   virtual
   std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
     return std::make_unique<HermitianDenseOutput<T>>();
+  }
+
+  /**
+   * Returns a mutable pointer to the internally-maintained StepwiseDenseOutput
+   * instance, holding a representation of the continuous state trajectory since
+   * the last time StartDenseIntegration() was called. This is useful for
+   * derived classes to update the integrator's current dense output, if any
+   * (may be nullptr).
+   */
+  StepwiseDenseOutput<T>* get_mutable_dense_output() {
+    return dense_output_.get();
   }
 
   /**
@@ -1361,44 +1365,24 @@ class IntegratorBase {
    */
   // TODO(hidmic): Make pure virtual.
   virtual bool DoDenseStep(const T& dt) {
-    // Retrieves current time (i.e. time before the actual integration step)
-    // to be used as dense output step's initial time.
-    const T& initial_time = context_->get_time();
-    // Retrieves current state (i.e. state before the actual integration
-    // step) to be used as dense output step's initial state.
-    const VectorBase<T>& initial_state_vector =
-        context_->get_continuous_state_vector();
-    // Computes state derivative with respect to time at current time and state
-    // (i.e. before the actual integration step).
-    system_.CalcTimeDerivatives(*context_, derivatives_.get());
-    // Retrieves current state derivative (i.e. state derivative before
-    // the actual integration step) to be used as dense output step's
-    // initial state derivative.
-    const VectorBase<T>& initial_state_derivative_vector =
-        derivatives_->get_vector();
+    const ContinuousState<T>& state = context_->get_continuous_state();
     // Makes a null (i.e. zero size) dense output step with initial
-    // time and state data.
+    // time and state, before the actual integration step. This will later
+    // be extended with the final values after the step.
+    system_.CalcTimeDerivatives(*context_, derivatives_.get());
     typename HermitianDenseOutput<T>::IntegrationStep step(
-        initial_time, initial_state_vector, initial_state_derivative_vector);
+        context_->get_time(), state.CopyToVector(),
+        derivatives_->CopyToVector());
+
     // Performs the integration step.
     if (!DoStep(dt)) return false;
-    // Retrieves current time (i.e. time after the actual integration step)
-    // to be used as dense output step's final time.
-    const T& final_time = context_->get_time();
-    // Retrieves current state (i.e. state after the actual integration step)
-    // to be used as dense output step's final state.
-    const VectorBase<T>& final_state_vector =
-        context_->get_continuous_state_vector();
-    // Computes state derivative with respect to time at
-    // current time and state (i.e. after the actual integration step).
+
+    // Extends dense output step to the end of the integration step, using
+    // the post-step values.
     system_.CalcTimeDerivatives(*context_, derivatives_.get());
-    // Retrieves current state derivative (i.e. state derivative after the
-    // actual integration step) to be used as dense output step's
-    // final state derivative.
-    const VectorBase<T>& final_state_derivative_vector =
-        derivatives_->get_vector();
-    // Extends dense output step to the end of the integration step.
-    step.Extend(final_time, final_state_vector, final_state_derivative_vector);
+    step.Extend(context_->get_time(), state.CopyToVector(),
+                derivatives_->CopyToVector());
+
     // Retrieves dense output. This cast is safe because the actual
     // StepwiseDenseOutput<T> derived type is entirely under this
     // class' control.
@@ -1493,8 +1477,8 @@ class IntegratorBase {
   // Pointer to the context.
   Context<T>* context_{nullptr};  // The trajectory Context.
 
-  // Pointer to the current dense output.
-  StepwiseDenseOutput<T>* dense_output_{nullptr};
+  // Current dense output.
+  std::unique_ptr<StepwiseDenseOutput<T>> dense_output_{nullptr};
 
   // Runtime variables.
   // For variable step integrators, this is set at the end of each step to guide
@@ -1995,6 +1979,7 @@ typename IntegratorBase<T>::StepResult IntegratorBase<T>::IntegrateAtMost(
     // taken into its internal representation.
     get_mutable_dense_output()->Consolidate();
   }
+
   // Update generic statistics.
   const T actual_dt = context_->get_time() - t0;
   UpdateStepStatistics(actual_dt);

@@ -8,7 +8,10 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/analysis/stepwise_dense_output.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -19,143 +22,51 @@ namespace systems {
 
 namespace detail {
 
-/// Copies a potentially non flat @p vector into a flat column matrix.
-/// @param vector A vector to be copied.
-/// @return The copied column matrix.
-/// @tparam T Vector elements' type, which must be a valid Eigen scalar type.
-template <typename T>
-MatrixX<T> CopyToColumnMatrix(const VectorBase<T>& vector) {
-  MatrixX<T> column_matrix(vector.size(), 1);
-  column_matrix.col(0) = vector.CopyToVector();
-  return std::move(column_matrix);
+/// Converts a matrix with scalar type `S` elements to a matrix with double
+/// type elements, failing at runtime if the type cannot be converted.
+/// @see ExtractDoubleOrThrow(const T&)
+/// @tparam S A valid Eigen scalar type.
+template <typename S>
+MatrixX<double> ExtractDoublesOrThrow(const MatrixX<S>& input_matrix) {
+  return input_matrix.unaryExpr([] (const S& value) {
+      return ExtractDoubleOrThrow(value);
+  });
 }
 
-/// A class providing a basic set of operations to convert to/from
-/// `scalar` type values from/to a `double` floating point type values.
-///
-/// @tparam T A valid Eigen scalar type.
-template <typename T>
-struct ScalarBaseConverter {
-  /// Converts a given scalar type value to its
-  /// double floating point type value equivalent.
-  /// @param value Scalar value to be converted.
-  /// @return Given @p value as a double.
-  double ToDouble(const T& value) const {
-    return double{value};
-  }
-
-  /// Converts a double floating point type value
-  /// to its equivalent scalar type value.
-  /// @param value Floating point value to be converted.
-  /// @return Given @p value as a scalar type value.
-  T FromDouble(double value) const {
-    return T{value};
-  }
-
-  /// Converts a matrix using scalar type elements to its equivalent
-  /// matrix using double floating point type elements.
-  /// @param matrix Matrix to be converted.
-  /// @return Given @p matrix using double floating type elements.
-  MatrixX<double> ToDoubleMatrix(const MatrixX<T>& matrix) const {
-    return matrix.template cast<double>();
-  }
-
-  /// Converts a matrix using double floating point type elements to
-  /// its equivalent matrix using scalar type elements.
-  /// @param matrix Matrix to be converted.
-  /// @return Given @p matrix using scalar type elements.
-  MatrixX<T> FromDoubleMatrix(const MatrixX<double>& matrix) const {
-    return matrix.template cast<T>();
-  }
-};
-
-/// A ScalarBaseConverter explicit specialization to deal
-/// with Eigen::AutoDiffScalar values.
+/// Converts an STL vector of scalar type `S` elements to an STL vector
+/// of double type elements, failing at runtime if the type cannot be
+/// converted.
+/// @see ExtractDoubleOrThrow(const T&)
+/// @tparam S A valid Eigen scalar type.
 template <typename S>
-struct ScalarBaseConverter<Eigen::AutoDiffScalar<S>> {
-  double ToDouble(const Eigen::AutoDiffScalar<S>& scalar) const {
-    return double{scalar.value()};
-  }
+std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
+  std::vector<double> output_vector{};
+  output_vector.reserve(input_vector.size());
+  std::transform(input_vector.begin(), input_vector.end(),
+                 std::back_inserter(output_vector),
+                 [] (const S& value) {
+                   return ExtractDoubleOrThrow(value);
+                 });
+  return output_vector;
+}
 
-  Eigen::AutoDiffScalar<S> FromDouble(double scalar) const {
-    return Eigen::AutoDiffScalar<S>{scalar};
-  }
-
-  MatrixX<double> ToDoubleMatrix(
-      const MatrixX<Eigen::AutoDiffScalar<S>>& matrix) const {
-    MatrixX<double> result(matrix.rows(), matrix.cols());
-    for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
-      for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
-        result(i, j) = matrix(i, j).value();
-      }
-    }
-    return result;
-  }
-
-  MatrixX<Eigen::AutoDiffScalar<S>> FromDoubleMatrix(
-      const MatrixX<double>& matrix) const {
-    MatrixX<Eigen::AutoDiffScalar<S>> result(
-        matrix.rows(), matrix.cols());
-    for (Eigen::Index i = 0; i < matrix.rows(); ++i) {
-      for (Eigen::Index j = 0; j < matrix.cols(); ++j) {
-        result(i, j) = matrix(i, j);
-      }
-    }
-    return result;
-  }
-};
-
-/// A ScalarBaseConverter extension to deal with scalars in
-/// common use data structures.
-///
-/// @tparam T A valid Eigen scalar type.
-template <typename T>
-struct ScalarConverter : public ScalarBaseConverter<T> {
-  /// Converts a given vector of scalar type values to its
-  /// equivalent vector of double floating point type values.
-  /// @param scalar_vector A vector of scalar type values.
-  /// @return Given @p scalar_vector using double floating point type values.
-  std::vector<double> ToDoubleVector(
-      const std::vector<T>& scalar_vector) const {
-    using std::placeholders::_1;
-    std::vector<double> scalar_vector_using_doubles{};
-    scalar_vector_using_doubles.reserve(scalar_vector.size());
-    std::transform(scalar_vector.begin(), scalar_vector.end(),
-                   std::back_inserter(scalar_vector_using_doubles),
-                   std::bind(&ScalarConverter<T>::ToDouble, this, _1));
-    return scalar_vector_using_doubles;
-  }
-
-  /// Converts a given vector of matrices using scalar type elements to its
-  /// equivalent vector of matrices using double floating point type elements.
-  /// @param matrix_vector A vector of matrices using scalar type elements.
-  /// @return Given @p matrix_vector using double floating point type elements.
-  std::vector<MatrixX<double>> ToDoubleMatrixVector(
-      const std::vector<MatrixX<T>>& matrix_vector) const {
-    using std::placeholders::_1;
-    std::vector<MatrixX<double>> matrix_vector_using_doubles{};
-    matrix_vector_using_doubles.reserve(matrix_vector.size());
-    std::transform(matrix_vector.begin(), matrix_vector.end(),
-                   std::back_inserter(matrix_vector_using_doubles),
-                   std::bind(&ScalarConverter<T>::ToDoubleMatrix, this, _1));
-    return matrix_vector_using_doubles;
-  }
-};
-
-/// A ScalarConverter explicit specialization to work as a passthrough
-/// for double scalars.
-template <>
-struct ScalarConverter<double> : public ScalarBaseConverter<double> {
-  std::vector<double> ToDoubleVector(
-      const std::vector<double>& scalar_vector) const {
-    return scalar_vector;
-  }
-
-  std::vector<MatrixX<double>> ToDoubleMatrixVector(
-      const std::vector<MatrixX<double>>& matrix_vector) const {
-    return matrix_vector;
-  }
-};
+/// Converts an STL vector of matrices with scalar type `S` elements to an STL
+/// vector of matrices with double type elements, failing at runtime if the type
+/// cannot be converted.
+/// @see ExtractDoublesOrThrow(const MatrixX<T>&)
+/// @tparam S A valid Eigen scalar type.
+template <typename S>
+std::vector<MatrixX<double>>
+ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
+  std::vector<MatrixX<double>> output_vector{};
+  output_vector.reserve(input_vector.size());
+  std::transform(input_vector.begin(), input_vector.end(),
+                 std::back_inserter(output_vector),
+                 [] (const MatrixX<S>& value) {
+                   return ExtractDoublesOrThrow(value);
+                 });
+  return output_vector;
+}
 
 }  // namespace detail
 
@@ -182,6 +93,8 @@ struct ScalarConverter<double> : public ScalarBaseConverter<double> {
 template <typename T>
 class HermitianDenseOutput : public StepwiseDenseOutput<T> {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HermitianDenseOutput)
+
   /// An integration step representation class, holding just enough
   /// for Hermitian interpolation: three (3) related sets containing
   /// step times {t₀, ..., tᵢ₋₁, tᵢ} where tᵢ ∈ ℝ, step states
@@ -217,22 +130,6 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
       state_derivatives_.push_back(std::move(initial_state_derivative));
     }
 
-    /// Constructs a zero length step by copy from system vectors.
-    ///
-    /// @param initial_time Initial time t₀ where the step starts.
-    /// @param initial_state Initial state vector 𝐱₀ at @p initial_time
-    /// @param initial_state_derivative Initial state derivative vector
-    ///                                 d𝐱/dt₀ at @p initial_time.
-    /// @throw std::runtime_error if given @p initial_state 𝐱₀ and
-    ///                           @p initial_state_derivative d𝐱/dt₀
-    ///                           do not match each other's dimension.
-    explicit IntegrationStep(const T& initial_time,
-                             const VectorBase<T>& initial_state,
-                             const VectorBase<T>& initial_state_derivative)
-        : IntegrationStep(
-              initial_time, detail::CopyToColumnMatrix(initial_state),
-              detail::CopyToColumnMatrix(initial_state_derivative)) {}
-
     /// Extends the step forward in time from column matrices.
     ///
     /// Provided @p time, @p state and @p state_derivative are appended
@@ -256,24 +153,6 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
       times_.push_back(time);
       states_.push_back(std::move(state));
       state_derivatives_.push_back(std::move(state_derivative));
-    }
-
-    /// Extends the step forward in time from system vectors.
-    ///
-    /// @param time Time tᵢ to extend the step to.
-    /// @param state State vector 𝐱ᵢ at @p time tᵢ.
-    /// @param state_derivative State derivative vector d𝐱/dtᵢ at @p time tᵢ.
-    /// @throw std::runtime_error
-    ///   if given @p time tᵢ is not greater than the previous time tᵢ₋₁ in
-    ///   the step.<br>
-    ///   if given @p state 𝐱ᵢ dimension does not match the dimension of the
-    ///   previous state 𝐱ᵢ₋₁.<br>
-    ///   if given @p state 𝐱ᵢand @p state_derivative d𝐱/dtᵢ do not match each
-    ///   other's dimension.<br>
-    void Extend(const T& time, const VectorBase<T>& state,
-                const VectorBase<T>& state_derivative) {
-      this->Extend(time, detail::CopyToColumnMatrix(state),
-                   detail::CopyToColumnMatrix(state_derivative));
     }
 
     /// Returns step start time t₀ (that of the first time, state and state
@@ -309,7 +188,7 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
     // Validates step update triplet for consistency between the triplet
     // and with current step content.
     //
-    // @see Extend(const T&, const MatrixX<T>&, const MatrixX<T>&)
+    // @see Extend(const T&, MatrixX<T>, MatrixX<T>)
     void ValidateStepExtendTripletOrThrow(
         const T& time, const MatrixX<T>& state,
         const MatrixX<T>& state_derivative) {
@@ -349,6 +228,8 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
     std::vector<MatrixX<T>> state_derivatives_{};
   };
 
+  HermitianDenseOutput() = default;
+
   VectorX<T> Evaluate(const T& t) const override {
     if (is_empty()) {
       throw std::logic_error("Empty dense output cannot be evaluated.");
@@ -356,9 +237,9 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
     if (t < get_start_time() || t > get_end_time()) {
       throw std::runtime_error("Dense output is not defined for given time.");
     }
-    return scalar_converter_.FromDoubleMatrix(
-        continuous_trajectory_.value(
-            scalar_converter_.ToDouble(t)).col(0));
+    const MatrixX<double> matrix_value =
+        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
+    return matrix_value.col(0).cast<T>();
   }
 
   int get_dimensions() const override {
@@ -419,15 +300,11 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
       throw std::logic_error("No updates to consolidate.");
     }
     for (const IntegrationStep& step : raw_steps_) {
-      const std::vector<double> step_times =
-          scalar_converter_.ToDoubleVector(step.get_times());
-      const std::vector<MatrixX<double>> step_states =
-          scalar_converter_.ToDoubleMatrixVector(step.get_states());
-      const std::vector<MatrixX<double>> step_state_derivatives =
-          scalar_converter_.ToDoubleMatrixVector(step.get_state_derivatives());
       continuous_trajectory_.ConcatenateInTime(
           trajectories::PiecewisePolynomial<double>::Cubic(
-              step_times, step_states, step_state_derivatives));
+              detail::ExtractDoublesOrThrow(step.get_times()),
+              detail::ExtractDoublesOrThrow(step.get_states()),
+              detail::ExtractDoublesOrThrow(step.get_state_derivatives())));
     }
     // TODO(hidmic): Remove state keeping members when
     // PiecewisePolynomial better supports non-double types.
@@ -469,24 +346,24 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
   // @param end_state Dense output end state derivative.
   // @throw std::runtime_error
   //   if given @p step does not ensure C1 continuity at the end
-  //   of this dense outputt.<br>
+  //   of this dense output.<br>
   //   if given @p step dimension does not match this dense output
   //   dimension.
   void EnsureOutputConsistencyOrThrow(
       const IntegrationStep& step, const T& end_time,
       const MatrixX<T>& end_state, const MatrixX<T>& end_state_derivative) {
+    using std::abs;
+    using std::max;
+
     if (end_state.rows() != step.get_dimensions()) {
       throw std::runtime_error("Provided step dimension and dense output"
                                " (inferred) dimension do not match.");
     }
     // Maximum time misalignment between step and dense output that
     // can still be disregarded as a discontinuity in time.
-    const double allowed_time_misalignment = std::max(
-        std::abs(scalar_converter_.ToDouble(end_time)), 1.) *
-        std::numeric_limits<double>::epsilon();
-    const double time_misalignment = std::abs(
-        scalar_converter_.ToDouble(end_time) -
-        scalar_converter_.ToDouble(step.get_start_time()));
+    const T allowed_time_misalignment =
+        max(abs(end_time), T{1.}) * std::numeric_limits<T>::epsilon();
+    const T time_misalignment = abs(end_time - step.get_start_time());
     if (time_misalignment > allowed_time_misalignment) {
       throw std::runtime_error("Provided step start time and"
                                " dense output end time differ.");
@@ -523,8 +400,6 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
 
   // The underlying PiecewisePolynomial continuous trajectory.
   trajectories::PiecewisePolynomial<double> continuous_trajectory_{};
-  // Conversion mechanisms to deal with non floating point types.
-  const detail::ScalarConverter<T> scalar_converter_{};
 };
 
 }  // namespace systems

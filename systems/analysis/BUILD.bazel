@@ -54,6 +54,7 @@ drake_cc_library(
         ":stepwise_dense_output",
         "//common:autodiff",
         "//common:essential",
+        "//common:extract_double",
         "//common/trajectories:piecewise_polynomial",
         "//systems/framework:vector",
     ],

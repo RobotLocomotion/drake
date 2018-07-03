@@ -97,7 +97,6 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create the integrator.
   const double dt = 1.0/1024;
-  const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> integrator(spring_mass, dt, context.get());
 
   // Setup the initial position and initial velocity.
@@ -113,11 +112,12 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Take all the defaults.
   integrator.Initialize();
 
+  // Build a dense output while integrating the solution.
+  integrator.StartDenseIntegration();
+
   // Integrate for 1 second.
   const double t_final = 1.0;
-  for (double t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    integrator.IntegrateAtMost(inf, inf, dt);
-
+  integrator.IntegrateWithMultipleSteps(t_final);
   EXPECT_NEAR(context->get_time(), t_final, dt);  // Should be exact.
 
   // Get the final position and velocity.
@@ -134,32 +134,9 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double xtol = 5e-3;
   EXPECT_NEAR(x_final_true, x_final, xtol);
 
-  // Verify that integrator statistics are valid.
-  CheckStatsValidity(&integrator);
-
-  // Reset integrator statistics.
-  integrator.ResetStatistics();
-
-  // Reset integrator internal Context time, position and velocity.
-  integrator.get_mutable_context()->set_time(0.);
-  spring_mass.set_position(integrator.get_mutable_context(),
-                           initial_position);
-  spring_mass.set_velocity(integrator.get_mutable_context(),
-                           initial_velocity);
-
-  // Get a dense output.
+  // Reclaim dense output and prevent further updates to it.
   std::unique_ptr<DenseOutput<double>> dense_output =
-      integrator.StartDenseIntegration();
-
-  // Integrate for t_final seconds again.
-  integrator.IntegrateWithMultipleSteps(t_final);
-  x_final = xc_final.GetAtIndex(0);
-
-  // Prevent further updates to dense output.
-  integrator.StopDenseIntegration();
-
-  // Verify that integrator outputs are valid.
-  EXPECT_NEAR(x_final_true, x_final, xtol);
+      integrator.StopDenseIntegration();
 
   // Verify that the built dense output is valid.
   for (double t = 0; t <= t_final; t += dt / 2.) {
@@ -169,6 +146,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
     const VectorX<double> x = dense_output->Evaluate(t);
     EXPECT_NEAR(x_true, x(0), xtol);
   }
+
   // Verify that integrator statistics are valid.
   CheckStatsValidity(&integrator);
 }

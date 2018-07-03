@@ -223,18 +223,16 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectConstruction) {
 TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   // Creates an Hermite cubic spline with times, states and state
   // derivatives.
-  const detail::ScalarConverter<TypeParam> scalar_converter;
   const std::vector<double> spline_times =
-      scalar_converter.ToDoubleVector(
-          {this->kInitialTime, this->kMidTime, this->kFinalTime});
+      detail::ExtractDoublesOrThrow(std::vector<TypeParam>{
+          this->kInitialTime, this->kMidTime, this->kFinalTime});
   const std::vector<MatrixX<double>> spline_states =
-      scalar_converter.ToDoubleMatrixVector(
-          {this->kInitialState, this->kMidState, this->kFinalState});
+      detail::ExtractDoublesOrThrow(std::vector<MatrixX<TypeParam>>{
+          this->kInitialState, this->kMidState, this->kFinalState});
   const std::vector<MatrixX<double>> spline_state_derivatives =
-      scalar_converter.ToDoubleMatrixVector({
-          this->kInitialStateDerivative,
-              this->kMidStateDerivative,
-              this->kFinalStateDerivative});
+      detail::ExtractDoublesOrThrow(std::vector<MatrixX<TypeParam>>{
+          this->kInitialStateDerivative, this->kMidStateDerivative,
+          this->kFinalStateDerivative});
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::Cubic(
           spline_times, spline_states, spline_state_derivatives);
@@ -258,11 +256,12 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   EXPECT_FALSE(dense_output.is_empty());
   for (TypeParam t = this->kInitialTime;
        t <= this->kFinalTime; t += this->kTimeStep) {
+    const MatrixX<double> matrix_value =
+        hermite_spline.value(ExtractDoubleOrThrow(t));
+    const VectorX<TypeParam> vector_value =
+        matrix_value.col(0).template cast<TypeParam>();
     EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(t),
-                                scalar_converter.FromDoubleMatrix(
-                                    hermite_spline.value(
-                                        scalar_converter.ToDouble(t))),
-                                kAccuracy));
+                                vector_value, kAccuracy));
   }
 }
 
