@@ -479,6 +479,7 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   EXPECT_TRUE(is_identity.value());
 
   // Verify Bool methods IsExactlyIdentity(), IsIdentityToInternalTolerance().
+  // Note: Some of these tests are repeated above (OK).
   m_numerical(0, 1) = kEpsilon;
   const RotationMatrix<double> R_approx(m_numerical);
   EXPECT_FALSE(R_approx.IsExactlyIdentity().value());
@@ -512,6 +513,11 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   const Bool<double> is_exactly_equalB = R_approx.IsExactlyEqualTo(R_identity);
   EXPECT_TRUE(is_exactly_equalA.value());
   EXPECT_FALSE(is_exactly_equalB.value());
+
+  // Ensure ThrowIfNotValid() does nothing for symbolic::Expression
+  const Matrix3<symbolic::Expression> m_symbolic_inverse = R_inverse.matrix();
+  RotationMatrix<symbolic::Expression> R_symbolic;
+  EXPECT_NO_THROW(R_symbolic.SetOrThrowIfNotValid(m_symbolic_inverse));
 }
 
 class RotationMatrixConversionTests : public ::testing::Test {
