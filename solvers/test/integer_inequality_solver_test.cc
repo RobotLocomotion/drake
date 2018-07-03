@@ -124,6 +124,24 @@ TEST_F(IntegerLatticeTest, InfeasProp) {
 }
 
 
+TEST_F(IntegerLatticeTest, EntireBoxFeasible) {
+  SetDimensions(2, 2);
+  A_ << 1, 1,
+        2, 2;
+  b_ << 10,
+        20;
+
+  lower_bound_ << 0, 0;
+  upper_bound_ << 1, 2;
+  Eigen::MatrixXi ref_mat(6, 2);
+  ref_mat << 0, 0,
+             0, 1,
+             0, 2,
+             1, 0,
+             1, 1,
+             1, 2;
+  CheckEnumeration(MatrixToSet(ref_mat));
+}
 
 
 }  // namespace

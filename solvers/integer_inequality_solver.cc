@@ -78,7 +78,7 @@ std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
 }
 
 /* Given an integer z and a list of integer vectors V, constructs
- * the Cartesian product (z, v) for all v ∈ V */
+ * the Cartesian product (v, z) for all v ∈ V */
 Eigen::MatrixXi CartesianProduct(const Eigen::MatrixXi& V, int z) {
   Eigen::MatrixXi cart_products(V.rows(), V.cols() + 1);
   cart_products << V, Eigen::MatrixXi::Constant(V.rows(), 1, z);
@@ -88,13 +88,13 @@ Eigen::MatrixXi CartesianProduct(const Eigen::MatrixXi& V, int z) {
 
 Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
                               const Eigen::MatrixXi& B) {
+  DRAKE_ASSERT(A.cols() == B.cols());
   if (A.rows() == 0) {
     return B;
   }
   if (B.rows() == 0) {
     return A;
   }
-  DRAKE_ASSERT(A.cols() == B.cols());
   Eigen::MatrixXi Y(A.rows() + B.rows(), B.cols());
   Y << A, B;
   return Y;
@@ -117,10 +117,10 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const std::vector<ColumnType>& column_type,
                                int last_free_var_pos
                                ) {
-  Eigen::MatrixXi feasible_points(0, last_free_var_pos);
+  Eigen::MatrixXi feasible_points(0, last_free_var_pos + 1);
 
   for (const auto& value : column_alphabets.at(last_free_var_pos)) {
-    Eigen::MatrixXi new_feasible_points(0, last_free_var_pos);
+    Eigen::MatrixXi new_feasible_points;
 
     if (last_free_var_pos == 0) {
       if (IsElementwiseNonnegative(b - A.col(0) * value)) {
