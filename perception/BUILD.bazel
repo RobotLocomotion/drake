@@ -109,7 +109,7 @@ drake_cc_binary(
         "//multibody/rigid_body_plant",
         "//systems/analysis",
         "//systems/sensors:image_to_lcm_image_array_t",
-        "//systems/sensors:rgbd_camera",
+        "//systems/sensors:rgbd_camera",        
         "@gflags",
     ],
 )
