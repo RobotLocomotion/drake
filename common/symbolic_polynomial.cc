@@ -613,7 +613,7 @@ Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
   cleaned_polynomial.reserve(monomial_to_coefficient_map_.size());
   for (const auto& term : monomial_to_coefficient_map_) {
     if (is_constant(term.second) &&
-        std::abs(to_constant(term.second)->get_value()) <= coefficient_tol) {
+        std::abs(get_constant_value(term.second)) <= coefficient_tol) {
       // The coefficients are small.
       continue;
     } else {
