@@ -74,14 +74,32 @@ class BuilderMock : public BuilderBase {
     const Connection* (Builder::*connect_line_ref)(
         const std::string&, const LaneLayout&, const StartReference::Spec&,
         const LineOffset&, const EndReference::Spec&) = &Builder::Connect;
-    ON_CALL(*this, Connect(_, _, _, An<const LineOffset&>(), _))
+    ON_CALL(*this,
+            Connect(_, _, An<const StartReference::Spec&>(),
+                    An<const LineOffset&>(), An<const EndReference::Spec&>()))
         .WillByDefault(Invoke(&builder_, connect_line_ref));
 
     const Connection* (Builder::*connect_arc_ref)(
         const std::string&, const LaneLayout&, const StartReference::Spec&,
         const ArcOffset&, const EndReference::Spec&) = &Builder::Connect;
-    ON_CALL(*this, Connect(_, _, _, An<const ArcOffset&>(), _))
+    ON_CALL(*this,
+            Connect(_, _, An<const StartReference::Spec&>(),
+                    An<const ArcOffset&>(), An<const EndReference::Spec&>()))
         .WillByDefault(Invoke(&builder_, connect_arc_ref));
+
+    const Connection* (Builder::*connect_line_lane)(
+        const std::string&, const LaneLayout&, const StartLane::Spec&,
+        const LineOffset&, const EndLane::Spec&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, An<const StartLane::Spec&>(),
+                           An<const LineOffset&>(), An<const EndLane::Spec&>()))
+        .WillByDefault(Invoke(&builder_, connect_line_lane));
+
+    const Connection* (Builder::*connect_arc_lane)(
+        const std::string&, const LaneLayout&, const StartLane::Spec&,
+        const ArcOffset&, const EndLane::Spec&) = &Builder::Connect;
+    ON_CALL(*this, Connect(_, _, An<const StartLane::Spec&>(),
+                           An<const ArcOffset&>(), An<const EndLane::Spec&>()))
+        .WillByDefault(Invoke(&builder_, connect_arc_lane));
 
     ON_CALL(*this, SetDefaultBranch(_, _, _, _, _, _))
         .WillByDefault(Invoke(&builder_, &Builder::SetDefaultBranch));
@@ -121,6 +139,16 @@ class BuilderMock : public BuilderBase {
                const Connection*(const std::string&, const LaneLayout&,
                                  const StartReference::Spec&, const ArcOffset&,
                                  const EndReference::Spec&));
+
+  MOCK_METHOD5(Connect,
+               const Connection*(const std::string&, const LaneLayout&,
+                                 const StartLane::Spec&, const LineOffset&,
+                                 const EndLane::Spec&));
+
+  MOCK_METHOD5(Connect,
+               const Connection*(const std::string&, const LaneLayout&,
+                                 const StartLane::Spec&, const ArcOffset&,
+                                 const EndLane::Spec&));
 
   MOCK_METHOD6(SetDefaultBranch,
                void(const Connection*, int, const api::LaneEnd::Which,

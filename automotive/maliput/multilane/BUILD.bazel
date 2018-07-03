@@ -29,6 +29,7 @@ drake_cc_library(
     srcs = [
         "arc_road_curve.cc",
         "branch_point.cc",
+        "cubic_polynomial.cc",
         "junction.cc",
         "lane.cc",
         "line_road_curve.cc",

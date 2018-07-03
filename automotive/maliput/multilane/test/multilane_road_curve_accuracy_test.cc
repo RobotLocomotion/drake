@@ -17,15 +17,6 @@
 namespace drake {
 namespace maliput {
 namespace multilane {
-
-// Convenience stream operator overload for CubicPolynomial instances.
-// @note MUST be outside the anonymous namespace to be found by the
-// compiler.
-std::ostream& operator<<(std::ostream& o, const CubicPolynomial& p) {
-  return o << p.a() << " + " << p.b() << " p + "
-           << p.c() << " p^2 + " << p.d() << " p^3";
-}
-
 namespace {
 
 // Checks brute force integral computations against known
