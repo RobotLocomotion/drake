@@ -27,7 +27,7 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   ///
   /// @param[in] tree The RigidBodyTree containing the geometric configuration
   /// of the world.
-  explicit RigidBodyTreeRemoval(std::unique_ptr<RigidBodyTree<double>> tree);
+  RigidBodyTreeRemoval(std::unique_ptr<const RigidBodyTree<double>> tree);
 
   /// Returns the RigidBodyTree for which known geometries are calculated.
   //  const RigidBodyTree<double>& tree() const { return tree_; }
@@ -52,7 +52,7 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   void FilterPointCloud(const systems::Context<double>& context,
                         PointCloud* output) const;
 
-  std::unique_ptr<RigidBodyTree<double>> tree_;
+  std::unique_ptr<const RigidBodyTree<double>> tree_;
 
   int input_port_index_point_cloud_{0};
   int input_port_index_tree_positions_{1};

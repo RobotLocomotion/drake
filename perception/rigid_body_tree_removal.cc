@@ -4,15 +4,20 @@ namespace drake {
 namespace perception {
 
 RigidBodyTreeRemoval::RigidBodyTreeRemoval(
-    std::unique_ptr<RigidBodyTree<double>> tree)
+    std::unique_ptr<const RigidBodyTree<double>> tree)
     : tree_(std::move(tree)) {
   /// input port for point cloud
   input_port_index_point_cloud_ = this->DeclareAbstractInputPort().get_index();
 
+  drake::log()->info(" constructor {}", tree_->get_num_positions() + tree_->get_num_velocities());
+
   /// input port for tree positions
   input_port_index_tree_positions_ =
-      this->DeclareInputPort(systems::kVectorValued, tree->get_num_positions())
+      this->DeclareInputPort(systems::kVectorValued, tree_->get_num_positions() + tree_->get_num_velocities())
           .get_index();
+//  input_port_index_tree_positions_ =
+//      this->DeclareInputPort(systems::kVectorValued, tree_->get_num_positions())
+//          .get_index();
 
   /// output port for filtered point cloud
   this->DeclareAbstractOutputPort(&RigidBodyTreeRemoval::MakeOutputPointCloud,
@@ -47,7 +52,13 @@ void RigidBodyTreeRemoval::FilterPointCloud(
       this->EvalEigenVectorInput(context, input_port_index_tree_positions_);
   KinematicsCache<double> kinematics_cache = tree_->doKinematics(q);
   std::vector<size_t> filtered_point_indices =
-      tree_->collidingPoints(kinematics_cache, points, collision_threshold_);
+      const_cast<RigidBodyTree<double>*>(tree_.get())->collidingPoints(kinematics_cache, points, collision_threshold_);
+
+//  RigidBodyTree<double> tree_non_const = *tree_.get();
+//  std::vector<size_t> filtered_point_indices =
+//        tree_non_const.collidingPoints(kinematics_cache, points, collision_threshold_);
+//  std::vector<size_t> filtered_point_indices =
+//      const_cast<RigidBodyTree<double>>(tree_.get()).collidingPoints(kinematics_cache, points, collision_threshold_);
 
   // 3. Create a new point cloud without the colliding points.
   output->resize(filtered_point_indices.size());
