@@ -247,9 +247,8 @@ class RotationMatrix {
   void SetOrThrowIfNotValidInDebugBuild(const Matrix3<T>& R) {
 #ifdef DRAKE_ASSERT_IS_ARMED
     ThrowIfNotValid(R);
-#else
-    SetUnchecked(R);
 #endif
+    SetUnchecked(R);
   }
 
   /// Returns the 3x3 identity %RotationMatrix.
