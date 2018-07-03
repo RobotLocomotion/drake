@@ -456,7 +456,7 @@ int do_main() {
   ModelInstanceInfo<double> iiwa_instance, wsg_instance, box_instance;
 
   // Point cloud filtering.
-  RigidBodyTreeRemoval filter(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
+//  RigidBodyTreeRemoval filter(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
 //  std::unique_ptr<RigidBodyTreeRemoval> filter_ptr(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
 
   std::unique_ptr<int> i(new int(5));
@@ -475,8 +475,9 @@ int do_main() {
 
   const RigidBodyTree<double>& tree = model->get_plant().get_rigid_body_tree();
 
-  RigidBodyTreeRemoval* filter2 = builder.AddSystem<RigidBodyTreeRemoval>(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
-  builder.Connect(model->get_output_port_plant_state(), filter2->get_input_port(1));
+  RigidBodyTreeRemoval* filter = builder.AddSystem<RigidBodyTreeRemoval>(BuildCombinedTree(&iiwa_instance, &wsg_instance, &box_instance, physical_camera.get()));
+  builder.Connect(model->get_output_port_plant_state(), filter->get_input_port(1));
+  // TODO(andreas): Add point cloud as input.
 
   // Add the visualizer.
   drake::lcm::DrakeLcm lcm;
