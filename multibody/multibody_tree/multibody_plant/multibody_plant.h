@@ -644,18 +644,17 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws if called post-finalize.
   /// @throws if `scene_graph` does not correspond to the same instance with
   /// which RegisterAsSourceForSceneGraph() was called.
-  void RegisterVisualGeometry(const Body<T>& body,
-                              const Isometry3<double>& X_BG,
-                              const geometry::Shape& shape,
-                              const geometry::VisualMaterial& material,
-                              geometry::SceneGraph<T>* scene_graph);
+  /// @returns the id for the registered geometry.
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const geometry::VisualMaterial& material,
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Overload for visual geometry registration; it implicitly assigns the
   /// default material.
-  void RegisterVisualGeometry(const Body<T>& body,
-                              const Isometry3<double>& X_BG,
-                              const geometry::Shape& shape,
-                              geometry::SceneGraph<T>* scene_graph);
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.

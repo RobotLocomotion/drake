@@ -14,7 +14,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/visual_material.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -43,7 +45,9 @@ using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
 using geometry::PenetrationAsPointPair;
+using geometry::QueryObject;
 using geometry::SceneGraph;
+using geometry::VisualMaterial;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using math::Transform;
@@ -952,6 +956,72 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
       plant.default_coulomb_friction(sphere1_id) == sphere1_friction));
   EXPECT_TRUE(ExtractBoolOrThrow(
       plant.default_coulomb_friction(sphere2_id) == sphere2_friction));
+}
+
+// Verifies the process of visual geometry registration with a SceneGraph.
+// We build a model with two spheres and a ground plane. The ground plane is
+// located at y = 0 with normal in the y-axis direction.
+GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
+  // Parameters of the setup.
+  const double radius = 0.5;
+
+  SceneGraph<double> scene_graph;
+  MultibodyPlant<double> plant;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  // A half-space for the ground geometry -- uses default visual material
+  GeometryId ground_id = plant.RegisterVisualGeometry(
+      plant.world_body(),
+      // A half-space passing through the origin in the x-z plane.
+      geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
+      geometry::HalfSpace(), &scene_graph);
+
+  // Add two spherical bodies.
+  const RigidBody<double>& sphere1 =
+      plant.AddRigidBody("Sphere1", SpatialInertia<double>());
+  Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
+  GeometryId sphere1_id = plant.RegisterVisualGeometry(
+      sphere1, Isometry3d::Identity(), geometry::Sphere(radius),
+      VisualMaterial(sphere1_diffuse), &scene_graph);
+  const RigidBody<double>& sphere2 =
+      plant.AddRigidBody("Sphere2", SpatialInertia<double>());
+  Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
+  GeometryId sphere2_id = plant.RegisterVisualGeometry(
+      sphere2, Isometry3d::Identity(), geometry::Sphere(radius),
+      VisualMaterial(sphere2_diffuse), &scene_graph);
+
+  // We are done defining the model.
+  plant.Finalize(&scene_graph);
+
+  EXPECT_EQ(plant.num_visual_geometries(), 3);
+  EXPECT_EQ(plant.num_collision_geometries(), 0);
+  EXPECT_TRUE(plant.geometry_source_is_registered());
+  EXPECT_TRUE(plant.get_source_id());
+
+  unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
+  unique_ptr<AbstractValue> state_value =
+      scene_graph.get_query_output_port().Allocate();
+  EXPECT_NO_THROW(state_value->GetValueOrThrow<QueryObject<double>>());
+  const QueryObject<double>& query_object =
+      state_value->GetValueOrThrow<QueryObject<double>>();
+  scene_graph.get_query_output_port().Calc(*context, state_value.get());
+
+  const VisualMaterial* test_material =
+      query_object.GetVisualMaterial(ground_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(),
+                              VisualMaterial().diffuse(), 0.0,
+                              MatrixCompareType::absolute));
+
+  test_material = query_object.GetVisualMaterial(sphere1_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere1_diffuse, 0.0,
+                              MatrixCompareType::absolute));
+
+  test_material = query_object.GetVisualMaterial(sphere2_id);
+  EXPECT_NE(test_material, nullptr);
+  EXPECT_TRUE(CompareMatrices(test_material->diffuse(), sphere2_diffuse, 0.0,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {

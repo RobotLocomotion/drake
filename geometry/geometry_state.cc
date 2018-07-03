@@ -175,6 +175,26 @@ const Isometry3<double>& GeometryState<T>::GetPoseInParent(
 }
 
 template <typename T>
+const VisualMaterial* GeometryState<T>::get_visual_material(
+    GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): Wrap this in a function accessible to all geometry
+  // property introspection functions.
+  {
+    auto iterator = geometries_.find(geometry_id);
+    if (iterator != geometries_.end()) {
+      return &iterator->second.get_visual_material();
+    }
+  }
+  {
+    auto iterator = anchored_geometries_.find(geometry_id);
+    if (iterator != anchored_geometries_.end()) {
+      return &iterator->second.get_visual_material();
+    }
+  }
+  throw std::logic_error(get_missing_id_message(geometry_id));
+}
+
+template <typename T>
 SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
   SourceId source_id = SourceId::get_new_id();
   const std::string final_name =

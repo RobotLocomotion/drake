@@ -73,15 +73,15 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 }
 
 template <typename T>
-void MultibodyPlant<T>::RegisterVisualGeometry(
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph) {
-  RegisterVisualGeometry(body, X_BG, shape, geometry::VisualMaterial(),
-                         scene_graph);
+  return RegisterVisualGeometry(body, X_BG, shape, geometry::VisualMaterial(),
+                                scene_graph);
 }
 
 template <typename T>
-void MultibodyPlant<T>::RegisterVisualGeometry(
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape, const geometry::VisualMaterial& material,
     SceneGraph<T>* scene_graph) {
@@ -111,6 +111,7 @@ void MultibodyPlant<T>::RegisterVisualGeometry(
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
   visual_geometries_[body.index()].push_back(id);
+  return id;
 }
 
 template <typename T>

@@ -228,6 +228,12 @@ class GeometryState {
                              GeometryInstance. */
   const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
 
+  /** Returns the visual material defined for geometry indicated by the given
+   `geometry_id` (if defined).
+   @throws std::logic_error If the `geometry_id` does _not_ map to a valid
+                            GeometryInstance. */
+  const VisualMaterial* get_visual_material(GeometryId geometry_id) const;
+
   //@}
 
   /** @name        State management
