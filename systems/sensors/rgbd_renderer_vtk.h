@@ -9,7 +9,7 @@ namespace systems {
 namespace sensors {
 
 /// An RgbdRenderer implementation using VTK.
-class RgbdRendererVTK final : public RgbdRenderer {
+class RgbdRendererVTK final : public RgbdRendererBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRendererVTK)
 

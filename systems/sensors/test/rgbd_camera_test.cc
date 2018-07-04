@@ -320,7 +320,7 @@ TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
         output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
 
     diagram_->camera().ResetRenderer(
-        std::unique_ptr<RgbdRenderer>(new RgbdRendererVTK(
+        std::unique_ptr<RgbdRendererBase>(new RgbdRendererVTK(
             RenderingConfig{size.width, size.height, kFovY,
                             kDepthRangeNear, kDepthRangeFar, kShowWindow})));
 

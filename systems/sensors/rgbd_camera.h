@@ -64,6 +64,7 @@ namespace sensors {
 ///     respectively.
 ///
 /// @ingroup sensor_systems
+template<class Renderer>
 class RgbdCamera final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
@@ -178,30 +179,10 @@ class RgbdCamera final : public LeafSystem<double> {
 
   ~RgbdCamera() = default;
 
-  /// Sets and initializes RgbdRenderer. The viewpoint of renderer will be
-  /// appropriately handled inside this function.
-  /// Note that if any visual element is registered with renderer before
-  /// this method is called, its behavior will not be guaranteed.
-  // TODO(kunimatsu-tri) Initialize the internal state of renderer when this
-  // method is called.
-  void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
-    renderer_ = std::move(renderer);
-    InitRenderer();
-    // This is needed only for camera_fixed_ is true since UpdateViewpoint()
-    // will be called while rendering related output ports are evaluated
-    // if it is false.
-    if (camera_fixed_) {
-      renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
-    }
-  }
-
-  /// Reterns mutable renderer.
-  RgbdRenderer& mutable_renderer() { return *renderer_; }
-
-  /// Reterns the color sensor's info.
+  /// Returns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
 
-  /// Reterns the depth sensor's info.
+  /// Returns the depth sensor's info.
   const CameraInfo& depth_camera_info() const { return depth_camera_info_; }
 
   /// Returns `X_BC`.
@@ -272,7 +253,7 @@ class RgbdCamera final : public LeafSystem<double> {
 
   const RigidBodyTree<double>& tree_;
   const RigidBodyFrame<double> frame_;
-  using VisualIndex = RgbdRenderer::VisualIndex;
+  using VisualIndex = RgbdRendererBase::VisualIndex;
   std::map<int, std::vector<VisualIndex>> body_visual_indices_map_;
 
   const bool camera_fixed_;
@@ -293,13 +274,14 @@ class RgbdCamera final : public LeafSystem<double> {
         (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
          Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
-  std::unique_ptr<RgbdRenderer> renderer_;
+  std::unique_ptr<RgbdRendererBase> renderer_;
 };
 
 /**
  * Wraps a continuous RgbdCamera with zero order holds to have it function as
  * a discrete sensor.
  */
+template<class RgbdRenderer>
 class RgbdCameraDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
@@ -313,15 +295,15 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   /// @param render_label_image
   ///   If true, renders label image (which requires additional overhead). If
   ///   false, `label_image_output_port` will raise an error if called.
-  RgbdCameraDiscrete(std::unique_ptr<RgbdCamera> camera,
+  RgbdCameraDiscrete(std::unique_ptr<RgbdCamera<RgbdRenderer>> camera,
                      double period = kDefaultPeriod,
                      bool render_label_image = true);
 
   /// Returns reference to RgbdCamera intsance.
-  const RgbdCamera& camera() const { return *camera_; }
+  const RgbdCamera<RgbdRenderer>& camera() const { return *camera_; }
 
   /// Returns reference to RgbdCamera intsance.
-  RgbdCamera& mutable_camera() { return *camera_; }
+  RgbdCamera<RgbdRenderer>& mutable_camera() { return *camera_; }
 
   /// Returns update period for discrete camera.
   double period() const { return period_; }
@@ -352,7 +334,7 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   }
 
  private:
-  RgbdCamera* const camera_{};
+  RgbdCamera<RgbdRenderer>* const camera_{};
   const double period_{};
 
   int input_port_state_{-1};
@@ -365,3 +347,5 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+#include "systems/sensors/rgbd_camera_impl.h"

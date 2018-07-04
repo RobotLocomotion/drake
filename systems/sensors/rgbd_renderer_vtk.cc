@@ -416,7 +416,8 @@ RgbdRendererVTK::Impl::Impl(RgbdRendererVTK* parent,
       static_cast<float>(parent_->config().z_far));
 }
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
+optional<RgbdRendererBase::VisualIndex>
+RgbdRendererVTK::Impl::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   std::array<vtkNew<vtkActor>, 3> actors;
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, 3> mappers;
@@ -569,12 +570,12 @@ optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::Impl::ImplRegisterVisual(
 
 RgbdRendererVTK::RgbdRendererVTK(const RenderingConfig& config,
                                  const Eigen::Isometry3d& X_WC)
-    : RgbdRenderer(config, X_WC),
+    : RgbdRendererBase(config, X_WC),
       impl_(new RgbdRendererVTK::Impl(this, X_WC)) {}
 
 RgbdRendererVTK::~RgbdRendererVTK() {}
 
-optional<RgbdRenderer::VisualIndex> RgbdRendererVTK::ImplRegisterVisual(
+optional<RgbdRendererBase::VisualIndex> RgbdRendererVTK::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   return impl_->ImplRegisterVisual(visual, body_id);
 }

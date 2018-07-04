@@ -126,7 +126,7 @@ class RgbdRendererTest : public ::testing::Test {
   ImageLabel16I label_;
   Eigen::Isometry3d X_WC_;
 
-  std::unique_ptr<RgbdRenderer> renderer_;
+  std::unique_ptr<RgbdRendererBase> renderer_;
 };
 
 }  // namespace test
