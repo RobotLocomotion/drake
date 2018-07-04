@@ -1053,6 +1053,8 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        "//common:temp_directory",
+        "@spruce",
     ],
 )
 
