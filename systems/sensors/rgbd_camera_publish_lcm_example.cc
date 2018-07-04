@@ -16,7 +16,7 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/rendering/pose_stamped_t_pose_vector_translator.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-#include "drake/systems/sensors/rgbd_camera.h"
+#include "drake/systems/sensors/rgbd_camera_vtk.h"
 
 using std::cout;
 using std::endl;
@@ -131,8 +131,8 @@ int main() {
   }
 
   auto rgbd_camera =
-      builder.AddSystem<RgbdCameraDiscrete>(
-          std::make_unique<RgbdCamera>(
+      builder.AddSystem<RgbdCameraDiscreteVTK>(
+          std::make_unique<RgbdCameraVTK>(
               "rgbd_camera", plant->get_rigid_body_tree(),
               config.pos, config.rpy,
               config.depth_range_near, config.depth_range_far,

@@ -213,8 +213,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rgbd_camera",
-    srcs = ["rgbd_camera.cc"],
-    hdrs = ["rgbd_camera.h"],
+    hdrs = [
+        "rgbd_camera.h",
+        "rgbd_camera_impl.h",
+        "rgbd_camera_vtk.h",
+    ],
     deps = [
         ":camera_info",
         ":image",

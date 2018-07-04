@@ -7,7 +7,7 @@
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
-#include "drake/systems/sensors/rgbd_camera.h"
+#include "drake/systems/sensors/rgbd_camera_vtk.h"
 
 namespace drake {
 
@@ -21,8 +21,8 @@ using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageToLcmImageArrayT;
-using systems::sensors::RgbdCamera;
-using systems::sensors::RgbdCameraDiscrete;
+using systems::sensors::RgbdCameraVTK;
+using systems::sensors::RgbdCameraDiscreteVTK;
 
 namespace manipulation {
 
@@ -64,8 +64,8 @@ void Xtion::BuildDiagram(lcm::DrakeLcm* lcm, bool add_lcm_publisher,
   const int kStateSize =
       tree_->get_num_positions() + tree_->get_num_velocities();
 
-  auto* camera = builder.AddSystem<RgbdCameraDiscrete>(
-      std::make_unique<RgbdCamera>(
+  auto* camera = builder.AddSystem<RgbdCameraDiscreteVTK>(
+      std::make_unique<RgbdCameraVTK>(
           name_, *tree_, *sensor_frame_,
           kDepthRangeNear, kDepthRangeFar,
           kFovY),

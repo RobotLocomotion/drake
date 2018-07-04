@@ -210,7 +210,7 @@ class TestSensors(unittest.TestCase):
         width = 1280
         height = 720
 
-        camera = mut.RgbdCamera(
+        camera = mut.RgbdCameraVTK(
             name="camera", tree=tree, frame=frame,
             z_near=0.5, z_far=5.0,
             fov_y=np.pi / 4, show_window=False,
@@ -231,8 +231,8 @@ class TestSensors(unittest.TestCase):
         self._check_ports(camera)
 
         # Test discrete camera.
-        period = mut.RgbdCameraDiscrete.kDefaultPeriod
-        discrete = mut.RgbdCameraDiscrete(
+        period = mut.RgbdCameraDiscreteVTK.kDefaultPeriod
+        discrete = mut.RgbdCameraDiscreteVTK(
             camera=camera, period=period, render_label_image=True)
         self.assertTrue(discrete.camera() is camera)
         self.assertTrue(discrete.mutable_camera() is camera)

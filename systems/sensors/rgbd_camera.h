@@ -64,7 +64,7 @@ namespace sensors {
 ///     respectively.
 ///
 /// @ingroup sensor_systems
-template<class Renderer>
+template <class Renderer>
 class RgbdCamera final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
@@ -125,13 +125,10 @@ class RgbdCamera final : public LeafSystem<double> {
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
-  RgbdCamera(const std::string& name,
-             const RigidBodyTree<double>& tree,
+  RgbdCamera(const std::string& name, const RigidBodyTree<double>& tree,
              const Eigen::Vector3d& position,
-             const Eigen::Vector3d& orientation,
-             double z_near = 0.5,
-             double z_far = 5.0,
-             double fov_y = M_PI_4,
+             const Eigen::Vector3d& orientation, double z_near = 0.5,
+             double z_far = 5.0, double fov_y = M_PI_4,
              bool show_window = RenderingConfig::kDefaultShowWindow,
              int width = RenderingConfig::kDefaultWidth,
              int height = RenderingConfig::kDefaultHeight);
@@ -167,17 +164,19 @@ class RgbdCamera final : public LeafSystem<double> {
   ///
   /// @throws std::logic_error When the number of rigid bodies in the scene
   /// exceeds the maximum limit 1535.
-  RgbdCamera(const std::string& name,
-             const RigidBodyTree<double>& tree,
-             const RigidBodyFrame<double>& frame,
-             double z_near = 0.5,
-             double z_far = 5.0,
-             double fov_y = M_PI_4,
+  RgbdCamera(const std::string& name, const RigidBodyTree<double>& tree,
+             const RigidBodyFrame<double>& frame, double z_near = 0.5,
+             double z_far = 5.0, double fov_y = M_PI_4,
              bool show_window = RenderingConfig::kDefaultShowWindow,
              int width = RenderingConfig::kDefaultWidth,
              int height = RenderingConfig::kDefaultHeight);
 
   ~RgbdCamera() = default;
+
+  /// Returns mutable renderer
+  Renderer& mutable_renderer() {
+    return *static_cast<Renderer*>(renderer_.get());
+  }
 
   /// Returns the color sensor's info.
   const CameraInfo& color_camera_info() const { return color_camera_info_; }
@@ -265,14 +264,16 @@ class RgbdCamera final : public LeafSystem<double> {
   // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
   // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
   // it's needed.
-  const Eigen::Isometry3d X_BC_{Eigen::Translation3d(0., 0.02, 0.) *
-        (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
+  const Eigen::Isometry3d X_BC_{
+      Eigen::Translation3d(0., 0.02, 0.) *
+      (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
   // The depth sensor's origin (`Do`) is offset by 0.02 m on the Y axis of
   // the RgbdCamera's base coordinate system (`B`).
-  const Eigen::Isometry3d X_BD_{Eigen::Translation3d(0., 0.02, 0.) *
-        (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-         Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
+  const Eigen::Isometry3d X_BD_{
+      Eigen::Translation3d(0., 0.02, 0.) *
+      (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
   std::unique_ptr<RgbdRendererBase> renderer_;
 };
@@ -281,7 +282,7 @@ class RgbdCamera final : public LeafSystem<double> {
  * Wraps a continuous RgbdCamera with zero order holds to have it function as
  * a discrete sensor.
  */
-template<class RgbdRenderer>
+template <class Renderer>
 class RgbdCameraDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCameraDiscrete);
@@ -295,15 +296,15 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   /// @param render_label_image
   ///   If true, renders label image (which requires additional overhead). If
   ///   false, `label_image_output_port` will raise an error if called.
-  RgbdCameraDiscrete(std::unique_ptr<RgbdCamera<RgbdRenderer>> camera,
+  RgbdCameraDiscrete(std::unique_ptr<RgbdCamera<Renderer>> camera,
                      double period = kDefaultPeriod,
                      bool render_label_image = true);
 
   /// Returns reference to RgbdCamera intsance.
-  const RgbdCamera<RgbdRenderer>& camera() const { return *camera_; }
+  const RgbdCamera<Renderer>& camera() const { return *camera_; }
 
   /// Returns reference to RgbdCamera intsance.
-  RgbdCamera<RgbdRenderer>& mutable_camera() { return *camera_; }
+  RgbdCamera<Renderer>& mutable_camera() { return *camera_; }
 
   /// Returns update period for discrete camera.
   double period() const { return period_; }
@@ -334,7 +335,7 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   }
 
  private:
-  RgbdCamera<RgbdRenderer>* const camera_{};
+  RgbdCamera<Renderer>* const camera_{};
   const double period_{};
 
   int input_port_state_{-1};
@@ -348,4 +349,4 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
 }  // namespace systems
 }  // namespace drake
 
-#include "systems/sensors/rgbd_camera_impl.h"
+#include "drake/systems/sensors/rgbd_camera_impl.h"

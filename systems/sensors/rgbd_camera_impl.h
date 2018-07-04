@@ -1,17 +1,15 @@
-#include "drake/systems/sensors/rgbd_camera.h"
+#pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
-
-#include <Eigen/Dense>
 
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-#include "drake/systems/rendering/pose_vector.h"
-#include "drake/systems/sensors/camera_info.h"
-#include "drake/systems/sensors/image.h"
-#include "drake/systems/sensors/rgbd_renderer_vtk.h"
+
+// Implementation of RgbdCamera template. Do NOT include this file directly.
+// Include `systems/sensors/rgbd_camera.h` instead.
 
 namespace drake {
 namespace systems {
@@ -19,9 +17,10 @@ namespace sensors {
 
 // Note that if `depth_image` holds any pixels that have NaN, the converted
 // points will aslo become NaN.
-void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
-                                               const CameraInfo& camera_info,
-                                               Eigen::Matrix3Xf* point_cloud) {
+template <class Renderer>
+void RgbdCamera<Renderer>::ConvertDepthImageToPointCloud(
+    const ImageDepth32F& depth_image, const CameraInfo& camera_info,
+    Eigen::Matrix3Xf* point_cloud) {
   if (depth_image.size() != point_cloud->cols()) {
     point_cloud->resize(3, depth_image.size());
   }
@@ -39,8 +38,7 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
       float z = depth_image.at(u, v)[0];
-      if (z != InvalidDepth::kTooClose &&
-          z != InvalidDepth::kTooFar) {
+      if (z != InvalidDepth::kTooClose && z != InvalidDepth::kTooFar) {
         pc(0, v * width + u) = z * (u - cx) * fx_inv;
         pc(1, v * width + u) = z * (v - cy) * fy_inv;
         pc(2, v * width + u) = z;
@@ -49,12 +47,13 @@ void RgbdCamera::ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
   }
 }
 
-RgbdCamera::RgbdCamera(const std::string& name,
-                       const RigidBodyTree<double>& tree,
-                       const Eigen::Vector3d& position,
-                       const Eigen::Vector3d& orientation, double z_near,
-                       double z_far, double fov_y, bool show_window, int width,
-                       int height)
+template <class Renderer>
+RgbdCamera<Renderer>::RgbdCamera(const std::string& name,
+                                 const RigidBodyTree<double>& tree,
+                                 const Eigen::Vector3d& position,
+                                 const Eigen::Vector3d& orientation,
+                                 double z_near, double z_far, double fov_y,
+                                 bool show_window, int width, int height)
     : tree_(tree),
       frame_(RigidBodyFrame<double>()),
       camera_fixed_(true),
@@ -64,60 +63,65 @@ RgbdCamera::RgbdCamera(const std::string& name,
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
                                 .ToMatrix3ViaRotationMatrix())),
-      renderer_(new RgbdRendererVTK(
+      renderer_(new Renderer(
           RenderingConfig{width, height, fov_y, z_near, z_far, show_window},
           Eigen::Translation3d(position[0], position[1], position[2]) *
-          Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
-                                .ToMatrix3ViaRotationMatrix()) * X_BC_)) {
+              Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
+                                    .ToMatrix3ViaRotationMatrix()) *
+              X_BC_)) {
   InitPorts(name);
   InitRenderer();
 }
 
-RgbdCamera::RgbdCamera(const std::string& name,
-                       const RigidBodyTree<double>& tree,
-                       const RigidBodyFrame<double>& frame, double z_near,
-                       double z_far, double fov_y, bool show_window,
-                       int width, int height)
+template <class Renderer>
+RgbdCamera<Renderer>::RgbdCamera(const std::string& name,
+                                 const RigidBodyTree<double>& tree,
+                                 const RigidBodyFrame<double>& frame,
+                                 double z_near, double z_far, double fov_y,
+                                 bool show_window, int width, int height)
     : tree_(tree),
       frame_(frame),
       camera_fixed_(false),
       color_camera_info_(width, height, fov_y),
       depth_camera_info_(width, height, fov_y),
-      renderer_(
-          new RgbdRendererVTK(RenderingConfig{width, height, fov_y,
-                                              z_near, z_far, show_window},
-                              Eigen::Isometry3d::Identity())) {
+      renderer_(new Renderer(
+          RenderingConfig{width, height, fov_y, z_near, z_far, show_window},
+          Eigen::Isometry3d::Identity())) {
   InitPorts(name);
   InitRenderer();
 }
 
-void RgbdCamera::InitPorts(const std::string& name) {
+template <class Renderer>
+void RgbdCamera<Renderer>::InitPorts(const std::string& name) {
   set_name(name);
-  const int kVecNum =
-      tree_.get_num_positions() + tree_.get_num_velocities();
+  const int kVecNum = tree_.get_num_positions() + tree_.get_num_velocities();
 
   state_input_port_ = &this->DeclareInputPort(systems::kVectorValued, kVecNum);
 
-  ImageRgba8U color_image(
-    color_camera_info_.width(), color_camera_info_.height());
-  color_image_port_ = &this->DeclareAbstractOutputPort(
-      sensors::ImageRgba8U(color_image), &RgbdCamera::OutputColorImage);
+  ImageRgba8U color_image(color_camera_info_.width(),
+                          color_camera_info_.height());
+  color_image_port_ =
+      &this->DeclareAbstractOutputPort(sensors::ImageRgba8U(color_image),
+                                       &RgbdCamera<Renderer>::OutputColorImage);
 
-  ImageDepth32F depth_image(
-      depth_camera_info_.width(), depth_camera_info_.height());
-  depth_image_port_ = &this->DeclareAbstractOutputPort(
-      sensors::ImageDepth32F(depth_image), &RgbdCamera::OutputDepthImage);
+  ImageDepth32F depth_image(depth_camera_info_.width(),
+                            depth_camera_info_.height());
+  depth_image_port_ =
+      &this->DeclareAbstractOutputPort(sensors::ImageDepth32F(depth_image),
+                                       &RgbdCamera<Renderer>::OutputDepthImage);
 
-  ImageLabel16I label_image(
-      color_camera_info_.width(), color_camera_info_.height());
-  label_image_port_ = &this->DeclareAbstractOutputPort(
-      sensors::ImageLabel16I(label_image), &RgbdCamera::OutputLabelImage);
+  ImageLabel16I label_image(color_camera_info_.width(),
+                            color_camera_info_.height());
+  label_image_port_ =
+      &this->DeclareAbstractOutputPort(sensors::ImageLabel16I(label_image),
+                                       &RgbdCamera<Renderer>::OutputLabelImage);
 
   camera_base_pose_port_ = &this->DeclareVectorOutputPort(
-      rendering::PoseVector<double>(), &RgbdCamera::OutputPoseVector);
+      rendering::PoseVector<double>(), &RgbdCamera<Renderer>::OutputPoseVector);
 }
 
-void RgbdCamera::InitRenderer() {
+template <class Renderer>
+void RgbdCamera<Renderer>::InitRenderer() {
   // Creates rendering world.
   for (const auto& body : tree_.get_bodies()) {
     if (body->get_name() == std::string(RigidBodyTreeConstants::kWorldName)) {
@@ -138,31 +142,38 @@ void RgbdCamera::InitRenderer() {
   renderer_->AddFlatTerrain();
 }
 
-const InputPortDescriptor<double>& RgbdCamera::state_input_port() const {
+template <class Renderer>
+const InputPortDescriptor<double>& RgbdCamera<Renderer>::state_input_port()
+    const {
   return *state_input_port_;
 }
 
-const OutputPort<double>&
-RgbdCamera::camera_base_pose_output_port() const {
+template <class Renderer>
+const OutputPort<double>& RgbdCamera<Renderer>::camera_base_pose_output_port()
+    const {
   return *camera_base_pose_port_;
 }
 
-const OutputPort<double>&
-RgbdCamera::color_image_output_port() const {
+template <class Renderer>
+const OutputPort<double>& RgbdCamera<Renderer>::color_image_output_port()
+    const {
   return *color_image_port_;
 }
 
-const OutputPort<double>&
-RgbdCamera::depth_image_output_port() const {
+template <class Renderer>
+const OutputPort<double>& RgbdCamera<Renderer>::depth_image_output_port()
+    const {
   return *depth_image_port_;
 }
 
-const OutputPort<double>&
-RgbdCamera::label_image_output_port() const {
+template <class Renderer>
+const OutputPort<double>& RgbdCamera<Renderer>::label_image_output_port()
+    const {
   return *label_image_port_;
 }
 
-void RgbdCamera::OutputPoseVector(
+template <class Renderer>
+void RgbdCamera<Renderer>::OutputPoseVector(
     const Context<double>& context,
     rendering::PoseVector<double>* pose_vector) const {
   const BasicVector<double>* input_vector =
@@ -189,7 +200,8 @@ void RgbdCamera::OutputPoseVector(
   pose_vector->set_rotation(quat);
 }
 
-void RgbdCamera::UpdateModelPoses(
+template <class Renderer>
+void RgbdCamera<Renderer>::UpdateModelPoses(
     const BasicVector<double>& input_vector) const {
   const Eigen::VectorXd q =
       input_vector.CopyToVector().head(tree_.get_num_positions());
@@ -197,8 +209,7 @@ void RgbdCamera::UpdateModelPoses(
 
   if (!camera_fixed_) {
     // Updates camera poses.
-    Eigen::Isometry3d X_WB =
-      tree_.CalcFramePoseInWorldFrame(cache, frame_);
+    Eigen::Isometry3d X_WB = tree_.CalcFramePoseInWorldFrame(cache, frame_);
     renderer_->UpdateViewpoint(X_WB * X_BC_);
   }
 
@@ -221,8 +232,9 @@ void RgbdCamera::UpdateModelPoses(
   }
 }
 
-void RgbdCamera::OutputColorImage(const Context<double>& context,
-                                  ImageRgba8U* color_image) const {
+template <class Renderer>
+void RgbdCamera<Renderer>::OutputColorImage(const Context<double>& context,
+                                            ImageRgba8U* color_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, state_input_port_->get_index());
 
@@ -230,8 +242,9 @@ void RgbdCamera::OutputColorImage(const Context<double>& context,
   renderer_->RenderColorImage(color_image);
 }
 
-void RgbdCamera::OutputDepthImage(const Context<double>& context,
-                                  ImageDepth32F* depth_image) const {
+template <class Renderer>
+void RgbdCamera<Renderer>::OutputDepthImage(const Context<double>& context,
+                                            ImageDepth32F* depth_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, state_input_port_->get_index());
 
@@ -239,8 +252,9 @@ void RgbdCamera::OutputDepthImage(const Context<double>& context,
   renderer_->RenderDepthImage(depth_image);
 }
 
-void RgbdCamera::OutputLabelImage(const Context<double>& context,
-                                  ImageLabel16I* label_image) const {
+template <class Renderer>
+void RgbdCamera<Renderer>::OutputLabelImage(const Context<double>& context,
+                                            ImageLabel16I* label_image) const {
   const BasicVector<double>* input_vector =
       this->EvalVectorInput(context, state_input_port_->get_index());
 
@@ -248,8 +262,10 @@ void RgbdCamera::OutputLabelImage(const Context<double>& context,
   renderer_->RenderLabelImage(label_image);
 }
 
-RgbdCameraDiscrete::RgbdCameraDiscrete(
-    std::unique_ptr<RgbdCamera> camera, double period, bool render_label_image)
+template <class Renderer>
+RgbdCameraDiscrete<Renderer>::RgbdCameraDiscrete(
+    std::unique_ptr<RgbdCamera<Renderer>> camera, double period,
+    bool render_label_image)
     : camera_(camera.get()), period_(period) {
   const auto& color_camera_info = camera->color_camera_info();
   const auto& depth_camera_info = camera->depth_camera_info();
@@ -259,8 +275,8 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(
   input_port_state_ = builder.ExportInput(camera_->state_input_port());
 
   // Color image.
-  const Value<ImageRgba8U> image_color(
-      color_camera_info.width(), color_camera_info.height());
+  const Value<ImageRgba8U> image_color(color_camera_info.width(),
+                                       color_camera_info.height());
   const auto* const zoh_color =
       builder.AddSystem<ZeroOrderHold>(period_, image_color);
   builder.Connect(camera_->color_image_output_port(),
@@ -268,8 +284,8 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(
   output_port_color_image_ = builder.ExportOutput(zoh_color->get_output_port());
 
   // Depth image.
-  const Value<ImageDepth32F> image_depth(
-      depth_camera_info.width(), depth_camera_info.height());
+  const Value<ImageDepth32F> image_depth(depth_camera_info.width(),
+                                         depth_camera_info.height());
   const auto* const zoh_depth =
       builder.AddSystem<ZeroOrderHold>(period_, image_depth);
   builder.Connect(camera_->depth_image_output_port(),
@@ -278,8 +294,8 @@ RgbdCameraDiscrete::RgbdCameraDiscrete(
 
   // Label image.
   if (render_label_image) {
-    const Value<ImageLabel16I> image_label(
-        color_camera_info.width(), color_camera_info.height());
+    const Value<ImageLabel16I> image_label(color_camera_info.width(),
+                                           color_camera_info.height());
     const auto* const zoh_label =
         builder.AddSystem<ZeroOrderHold>(period_, image_label);
     builder.Connect(camera_->label_image_output_port(),

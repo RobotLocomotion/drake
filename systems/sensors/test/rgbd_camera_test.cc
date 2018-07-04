@@ -24,7 +24,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/rendering/pose_vector.h"
 #include "drake/systems/sensors/image.h"
-#include "drake/systems/sensors/rgbd_renderer_vtk.h"
+#include "drake/systems/sensors/rgbd_camera_vtk.h"
 
 namespace drake {
 namespace systems {
@@ -83,8 +83,8 @@ void VerifyCameraPose(const Eigen::Isometry3d camera_optical_pose) {
                               kTolerance));
 }
 
-GTEST_TEST(RgbdCamera, TestInstantiation) {
-  auto Verify = [](const RgbdCamera& camera, Size size) {
+GTEST_TEST(RgbdCameraVTK, TestInstantiation) {
+  auto Verify = [](const RgbdCameraVTK& camera, Size size) {
     VerifyCameraInfo(camera.color_camera_info(), size);
     VerifyCameraInfo(camera.depth_camera_info(), size);
     VerifyCameraPose(camera.color_camera_optical_pose());
@@ -92,18 +92,18 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
     EXPECT_NO_THROW(camera.tree());
   };
 
-  RgbdCamera fixed_camera("rgbd_camera",
+  RgbdCameraVTK fixed_camera("rgbd_camera",
                           RigidBodyTree<double>(),
                           Eigen::Vector3d(1., 2., 3.),
                           Eigen::Vector3d(0.1, 0.2, 0.3),
                           kDepthRangeNear, kDepthRangeFar,
                           kFovY, kShowWindow);
   Verify(fixed_camera, kSizeVga);
-  // With the fixed camera use case, RgbdCamera doesn't hold a frame, thus
+  // With the fixed camera use case, RgbdCameraVTK doesn't hold a frame, thus
   // throws an exception.
   EXPECT_THROW(fixed_camera.frame(), std::logic_error);
 
-  RgbdCamera movable_camera("rgbd_camera",
+  RgbdCameraVTK movable_camera("rgbd_camera",
                             RigidBodyTree<double>(),
                             RigidBodyFrame<double>(),
                             kDepthRangeNear, kDepthRangeFar,
@@ -112,14 +112,14 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
   EXPECT_NO_THROW(movable_camera.frame());
 
   // Verify that we can construct specifying a different width and height.
-  RgbdCamera fixed_camera_hd720(
+  RgbdCameraVTK fixed_camera_hd720(
       "rgbd_camera", RigidBodyTree<double>(),
       Eigen::Vector3d(1., 2., 3.), Eigen::Vector3d(01., 0.2, 0.3),
       kDepthRangeNear, kDepthRangeFar,
       kFovY, kShowWindow, kSizeHd720.width, kSizeHd720.height);
   Verify(fixed_camera_hd720, kSizeHd720);
 
-  RgbdCamera movable_camera_hd720(
+  RgbdCameraVTK movable_camera_hd720(
       "rgbd_camera", RigidBodyTree<double>(), RigidBodyFrame<double>(),
       kDepthRangeNear, kDepthRangeFar,
       kFovY, kShowWindow, kSizeHd720.width, kSizeHd720.height);
@@ -147,7 +147,7 @@ class RgbdCameraDiagram : public systems::Diagram<double> {
   // For fixed camera base.
   void Init(const Eigen::Vector3d& position,
             const Eigen::Vector3d& orientation, int width, int height) {
-    rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
+    rgbd_camera_ = builder_.AddSystem<RgbdCameraVTK>(
         "rgbd_camera", plant_->get_rigid_body_tree(), position, orientation,
         kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow,
         width, height);
@@ -162,7 +162,7 @@ class RgbdCameraDiagram : public systems::Diagram<double> {
         "rgbd camera frame", plant_->get_rigid_body_tree().FindBody("link"),
         transformation);
 
-    rgbd_camera_ = builder_.AddSystem<RgbdCamera>(
+    rgbd_camera_ = builder_.AddSystem<RgbdCameraVTK>(
         "rgbd_camera", plant_->get_rigid_body_tree(), *rgbd_camera_frame_.get(),
         kDepthRangeNear, kDepthRangeFar, kFovY, kShowWindow,
         width, height);
@@ -170,7 +170,7 @@ class RgbdCameraDiagram : public systems::Diagram<double> {
     Connect();
   }
 
-  RgbdCamera& camera() { return *rgbd_camera_; }
+  RgbdCameraVTK& camera() { return *rgbd_camera_; }
 
  private:
   void Connect() {
@@ -185,7 +185,7 @@ class RgbdCameraDiagram : public systems::Diagram<double> {
 
   systems::DiagramBuilder<double> builder_;
   RigidBodyPlant<double>* plant_;
-  RgbdCamera* rgbd_camera_;
+  RgbdCameraVTK* rgbd_camera_;
   std::shared_ptr<RigidBodyFrame<double>> rgbd_camera_frame_;
 };
 
@@ -263,7 +263,7 @@ class RgbdCameraDiagramTest : public ::testing::Test {
 // Verifies the output images whose all the pixels have the same value as well
 // as the output camera pose.
 TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
-  // RgbdCamera is looking straight down 1m above the ground.
+  // RgbdCameraVTK is looking straight down 1m above the ground.
   const Eigen::Vector3d position(0., 0., 1.);
   const Eigen::Vector3d orientation(0., M_PI_2, 0.);
 
@@ -285,7 +285,7 @@ TEST_F(RgbdCameraDiagramTest, FixedCameraOutputTest) {
 }
 
 TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
-  // RgbdCamera is looking straight down 1m above the ground.
+  // RgbdCameraVTK is looking straight down 1m above the ground.
   const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
       Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
 
@@ -303,46 +303,6 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
   }
 }
 
-// Making sure that output image will be the same before vs. after calling
-// ResetRenderer()
-TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
-  // RgbdCamera is looking straight down 1m above the ground.
-  const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
-      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
-
-  for (auto size : kSizes) {
-    Init("nothing.sdf", X_WB, size);
-    Verify();
-
-    auto renderer1 = &diagram_->camera().mutable_renderer();
-
-    auto const rgb1 =
-        output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
-
-    diagram_->camera().ResetRenderer(
-        std::unique_ptr<RgbdRendererBase>(new RgbdRendererVTK(
-            RenderingConfig{size.width, size.height, kFovY,
-                            kDepthRangeNear, kDepthRangeFar, kShowWindow})));
-
-    auto renderer2 = &diagram_->camera().mutable_renderer();
-    EXPECT_NE(renderer1, renderer2);
-
-    CalcOutput();
-
-    auto const rgb2 =
-        output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
-
-    for (int y = 0; y < size.height; ++y) {
-      for (int x = 0; x < size.width; ++x) {
-        for (int ch = 0; ch < 4; ++ch) {
-          // Use ASSERT here instead of EXPECT to stop all subsequent testing.
-          ASSERT_EQ(rgb1.at(x, y)[ch], rgb2.at(x, y)[ch]);
-        }
-      }
-    }
-  }
-}
-
 class DepthImageToPointCloudConversionTest : public ::testing::Test {
  public:
   static constexpr float kFocal = 500.f;
@@ -355,7 +315,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
       depth_image_(kDepthWidth, kDepthHeight, 1) {}
 
   // kTooClose is treated as kTooFar. For the detail, refer to the document of
-  // RgbdCamera::ConvertDepthImageToPointCloud.
+  // RgbdCameraVTK::ConvertDepthImageToPointCloud.
   void VerifyTooFarTooClose() {
     for (int v = 0; v < depth_image_.height(); ++v) {
       for (int u = 0; u < depth_image_.width(); ++u) {
@@ -386,7 +346,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   constexpr float kDepthValue = 1.f;
   Init(kDepthValue);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(
+  RgbdCameraVTK::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
 
   // This tolerance was determined empirically using Drake's supported
@@ -412,7 +372,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
   Init(std::numeric_limits<float>::quiet_NaN());
 
-  RgbdCamera::ConvertDepthImageToPointCloud(
+  RgbdCameraVTK::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
 
   for (int v = 0; v < depth_image_.height(); ++v) {
@@ -430,7 +390,7 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
   Init(InvalidDepth::kTooFar);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(
+  RgbdCameraVTK::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
 
   VerifyTooFarTooClose();
@@ -440,7 +400,7 @@ TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
   Init(InvalidDepth::kTooClose);
 
-  RgbdCamera::ConvertDepthImageToPointCloud(
+  RgbdCameraVTK::ConvertDepthImageToPointCloud(
       depth_image_, camera_info_, &actual_point_cloud_);
 
   VerifyTooFarTooClose();

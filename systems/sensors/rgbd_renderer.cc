@@ -6,15 +6,15 @@ namespace sensors {
 
 const int kNumMaxLabel = 256;
 
-RgbdRendererBase::RgbdRenderer(const RenderingConfig& config,
+RgbdRendererBase::RgbdRendererBase(const RenderingConfig& config,
                            const Eigen::Isometry3d&)
     : config_(config),
       color_palette_(kNumMaxLabel, Label::kFlatTerrain, Label::kNoBody) {
 }
 
-RgbdRendererBase::~RgbdRenderer() {}
+RgbdRendererBase::~RgbdRendererBase() {}
 
-optional<RgbdRendererBase::VisualIndex> RgbdRenderer::RegisterVisual(
+optional<RgbdRendererBase::VisualIndex> RgbdRendererBase::RegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
   return ImplRegisterVisual(visual, body_id);
 }
