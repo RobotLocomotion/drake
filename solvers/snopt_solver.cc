@@ -14,49 +14,12 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
-// TODO(#7984) The SNOPT includes we use below are from an older f2c-based
-// implementation.  SNOPT has since switched to wrapping using F90 per the
-// publicly-available `snopt-interface` headers.  We should consider using that
-// header instead, which would remove a bunch of the odd #include and #define
-// statements from the below.
-
-// Put SNOPT's and F2C's typedefs into their own namespace.
-namespace snopt {
-extern "C" {
-
-// Include F2C's typedefs but revert its leaky defines.
-#include <f2c.h>
-#undef qbit_clear
-#undef qbit_set
-#undef TRUE_
-#undef FALSE_
-#undef Extern
-#undef VOID
-#undef abs
-#undef dabs
-#undef min
-#undef max
-#undef dmin
-#undef dmax
-#undef bit_test
-#undef bit_clear
-#undef bit_set
-
-// Include SNOPT's function declarations.
-#include <cexamples/snopt.h>
-#ifdef SNOPT_HAS_SNFILEWRAPPER
-#include <cexamples/snfilewrapper.h>
-#endif
-
-}  // extern C
-}  // namespace snopt
+#include "snoptProblem.hpp"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-// todo(sammy-tri) :  implement sparsity inside each cost/constraint
-// todo(sammy-tri) :  handle snopt options
 // todo(sammy-tri) :  return more information that just the solution (INFO,
 // infeasible constraints, ...)
 // todo(sammy-tri) :  avoid all dynamic allocation
@@ -64,91 +27,6 @@ extern "C" {
 namespace drake {
 namespace solvers {
 namespace {
-
-// snopt minimum workspace requirements
-unsigned int constexpr snopt_mincw = 500;
-unsigned int constexpr snopt_miniw = 500;
-unsigned int constexpr snopt_minrw = 500;
-
-struct SNOPTData : public MathematicalProgram::SolverData {
-  std::vector<char> cw;
-  std::vector<snopt::integer> iw;
-  std::vector<snopt::doublereal> rw;
-  snopt::integer lencw = 0;
-  snopt::integer leniw = 0;
-  snopt::integer lenrw = 0;
-
-  std::vector<snopt::doublereal> x;
-  std::vector<snopt::doublereal> xlow;
-  std::vector<snopt::doublereal> xupp;
-  std::vector<snopt::doublereal> xmul;
-  std::vector<snopt::integer> xstate;
-
-  std::vector<snopt::doublereal> F;
-  std::vector<snopt::doublereal> Flow;
-  std::vector<snopt::doublereal> Fupp;
-  std::vector<snopt::doublereal> Fmul;
-  std::vector<snopt::integer> Fstate;
-
-  std::vector<snopt::doublereal> A;
-  std::vector<snopt::integer> iAfun;
-  std::vector<snopt::integer> jAvar;
-
-  std::vector<snopt::integer> iGfun;
-  std::vector<snopt::integer> jGvar;
-
-  void min_alloc_w(snopt::integer mincw, snopt::integer miniw,
-                   snopt::integer minrw) {
-    if (lencw < mincw) {
-      lencw = mincw;
-      cw.resize(8 * lencw);
-    }
-    if (leniw < miniw) {
-      leniw = miniw;
-      iw.resize(leniw);
-    }
-    if (lenrw < minrw) {
-      lenrw = minrw;
-      rw.resize(lenrw);
-    }
-  }
-
-  void min_alloc_x(snopt::integer nx) {
-    if (nx > static_cast<snopt::integer>(x.size())) {
-      x.resize(nx);
-      xlow.resize(nx);
-      xupp.resize(nx);
-      xmul.resize(nx);
-      xstate.resize(nx);
-    }
-  }
-
-  void min_alloc_F(snopt::integer nF) {
-    if (nF > static_cast<snopt::integer>(F.size())) {
-      F.resize(nF);
-      Flow.resize(nF);
-      Fupp.resize(nF);
-      Fmul.resize(nF);
-      Fstate.resize(nF);
-    }
-  }
-
-  void min_alloc_A(snopt::integer nA) {
-    if (nA > static_cast<snopt::integer>(A.size())) {
-      A.resize(nA);
-      iAfun.resize(nA);
-      jAvar.resize(nA);
-    }
-  }
-
-  void min_alloc_G(snopt::integer nG) {
-    if (nG > static_cast<snopt::integer>(iGfun.size())) {
-      iGfun.resize(nG);
-      jGvar.resize(nG);
-    }
-  }
-};
-
 // This struct is used for passing additional info to the snopt_userfun, which
 // evaluates the value and gradient of the cost and constraints. Apart from the
 // standard information such as decision variable values, snopt_userfun could
@@ -158,79 +36,8 @@ struct SnoptUserFunInfo {
   const std::unordered_set<int>* cost_gradient_indices_;
 };
 
-struct SNOPTRun {
-  SNOPTRun(SNOPTData* d, SnoptUserFunInfo const* snopt_userfun_info) : D(*d) {
-    // Use the minimum default allocation needed by snInit.  The +1
-    // added to snopt_mincw is to make room for the pointer to SnoptUserFunInfo.
-    D.min_alloc_w(snopt_mincw + 1, snopt_miniw * 1000, snopt_minrw * 1000);
-
-    snInit();
-
-    // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-    // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-    // expressed in Fortran array slicing.  Use the space to pass the pointer
-    // to SnoptUserFunInfo.
-    snSeti("User character workspace", snopt_mincw + 1);
-    {
-      char const* const p_snopt_userfun_info =
-          reinterpret_cast<char*>(&snopt_userfun_info);
-      char* const cu_snopt_userfun_info = d->cw.data() + 8 * snopt_mincw;
-      std::copy(p_snopt_userfun_info,
-                p_snopt_userfun_info + sizeof(snopt_userfun_info),
-                cu_snopt_userfun_info);
-    }
-  }
-
-  ~SNOPTRun() {
-    if (iPrint >= 0) {
-      snopt::snclose_(&iPrint);
-    }
-  }
-
-  SNOPTData& D;
-
-  snopt::integer iPrint = -1;
-  snopt::integer iSumm = -1;
-
-  // The `opt` is non-const, because snopt wants a non-const char*.
-  snopt::integer snSeti(std::string opt, snopt::integer val) {
-    DRAKE_DEMAND(!opt.empty());
-    snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
-    snopt::integer err = 0;
-    snopt::snseti_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
-                   &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
-                   opt_len, 8 * D.lencw);
-    return err;
-  }
-
-  // The `opt` is non-const, because snopt wants a non-const char*.
-  snopt::integer snSetr(std::string opt, snopt::doublereal val) {
-    DRAKE_DEMAND(!opt.empty());
-    snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
-    snopt::integer err = 0;
-    snopt::snsetr_(&opt[0], &val, &iPrint, &iSumm, &err, D.cw.data(),
-                   &D.lencw, D.iw.data(), &D.leniw, D.rw.data(), &D.lenrw,
-                   opt_len, 8 * D.lencw);
-    return err;
-  }
-
-  void snInit() {
-    snopt::sninit_(&iPrint, &iSumm, D.cw.data(), &D.lencw, D.iw.data(),
-                   &D.leniw, D.rw.data(), &D.lenrw, 8 * D.lencw);
-  }
-
-  snopt::integer snMemA(snopt::integer nF, snopt::integer nx,
-                        snopt::integer nxname, snopt::integer nFname,
-                        snopt::integer neA, snopt::integer neG,
-                        snopt::integer* mincw, snopt::integer* miniw,
-                        snopt::integer* minrw) {
-    snopt::integer info = 0;
-    snopt::snmema_(&info, &nF, &nx, &nxname, &nFname, &neA, &neG, mincw, miniw,
-                   minrw, D.cw.data(), &D.lencw, D.iw.data(), &D.leniw,
-                   D.rw.data(), &D.lenrw, 8 * D.lencw);
-    return info;
-  }
-};
+// snopt minimum workspace requirements
+unsigned int constexpr snopt_miniu = 500;
 
 // Return the number of rows in the nonlinear constraint.
 template <typename C>
@@ -284,9 +91,8 @@ void EvaluateSingleNonlinearConstraint<LinearComplementarityConstraint>(
 template <typename C>
 void EvaluateNonlinearConstraints(
     const MathematicalProgram& prog,
-    const std::vector<Binding<C>>& constraint_list, snopt::doublereal F[],
-    snopt::doublereal G[], size_t* constraint_index, size_t* grad_index,
-    const Eigen::VectorXd& xvec) {
+    const std::vector<Binding<C>>& constraint_list, double F[], double G[],
+    size_t* constraint_index, size_t* grad_index, const Eigen::VectorXd& xvec) {
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.evaluator();
@@ -302,16 +108,13 @@ void EvaluateNonlinearConstraints(
     ty.resize(num_constraints);
     EvaluateSingleNonlinearConstraint(*c, this_x, &ty);
 
-    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
-         i++) {
-      F[(*constraint_index)++] = static_cast<snopt::doublereal>(ty(i).value());
+    for (int i = 0; i < num_constraints; i++) {
+      F[(*constraint_index)++] = ty(i).value();
     }
 
-    for (snopt::integer i = 0; i < static_cast<snopt::integer>(num_constraints);
-         i++) {
+    for (int i = 0; i < num_constraints; i++) {
       for (int j = 0; j < num_v_variables; ++j) {
-        G[(*grad_index)++] =
-            static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+        G[(*grad_index)++] = ty(i).derivatives()(j);
       }
     }
   }
@@ -336,13 +139,13 @@ std::unordered_set<int> GetCostNonzeroGradientIndices(
 
 void EvaluateAllCosts(const MathematicalProgram& prog,
                       const std::unordered_set<int>& cost_gradient_indices,
-                      snopt::doublereal F[], snopt::doublereal G[],
-                      size_t* grad_index, const Eigen::VectorXd& xvec) {
+                      double F[], double G[], size_t* grad_index,
+                      const Eigen::VectorXd& xvec) {
   // evaluate cost
   Eigen::VectorXd this_x;
   AutoDiffVecXd ty(1);
 
-  std::vector<snopt::doublereal> cost_gradient(prog.num_vars(), 0);
+  std::vector<double> cost_gradient(prog.num_vars(), 0);
   for (auto const& binding : prog.GetAllCosts()) {
     auto const& obj = binding.evaluator();
 
@@ -354,12 +157,11 @@ void EvaluateAllCosts(const MathematicalProgram& prog,
 
     obj->Eval(math::initializeAutoDiff(this_x), &ty);
 
-    F[0] += static_cast<snopt::doublereal>(ty(0).value());
+    F[0] += ty(0).value();
 
     for (int j = 0; j < num_v_variables; ++j) {
       size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
-      cost_gradient[vj_index] +=
-          static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+      cost_gradient[vj_index] += ty(0).derivatives()(j);
     }
   }
   for (const auto cost_gradient_index : cost_gradient_indices) {
@@ -368,36 +170,31 @@ void EvaluateAllCosts(const MathematicalProgram& prog,
   }
 }
 
-int snopt_userfun(snopt::integer* Status, snopt::integer* n,
-                  snopt::doublereal x[], snopt::integer* needF,
-                  snopt::integer* neF, snopt::doublereal F[],
-                  snopt::integer* needG, snopt::integer* neG,
-                  snopt::doublereal G[], char* cu, snopt::integer* lencu,
-                  snopt::integer iu[], snopt::integer* leniu,
-                  snopt::doublereal ru[], snopt::integer* lenru) {
+int snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
+                  double F[], int* needG, int* neG, double G[], char* cu,
+                  int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
   SnoptUserFunInfo const* snopt_userfun_info = NULL;
   {
-    char* const p_snopt_userfun_info =
-        reinterpret_cast<char*>(&snopt_userfun_info);
-    char const* const cu_snopt_userfun_info = cu + 8 * snopt_mincw;
-    std::copy(cu_snopt_userfun_info,
-              cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+    int* const p_snopt_userfun_info =
+        reinterpret_cast<int*>(&snopt_userfun_info);
+    int const* const iu_snopt_userfun_info = iu;
+    std::copy(iu_snopt_userfun_info,
+              iu_snopt_userfun_info + sizeof(snopt_userfun_info),
               p_snopt_userfun_info);
   }
   MathematicalProgram const* current_problem = snopt_userfun_info->prog_;
   std::unordered_set<int> const* cost_gradient_indices =
       snopt_userfun_info->cost_gradient_indices_;
 
-  snopt::integer i;
   Eigen::VectorXd xvec(*n);
-  for (i = 0; i < *n; i++) {
-    xvec(i) = static_cast<double>(x[i]);
+  for (int i = 0; i < *n; i++) {
+    xvec(i) = x[i];
   }
 
   F[0] = 0.0;
-  memset(G, 0, (*n) * sizeof(snopt::doublereal));
+  memset(G, 0, (*n) * sizeof(double));
 
   size_t grad_index = 0;
 
@@ -465,17 +262,18 @@ void UpdateNumNonlinearConstraintsAndGradients<LinearComplementarityConstraint>(
 template <typename C>
 void UpdateConstraintBoundsAndGradients(
     const MathematicalProgram& prog,
-    const std::vector<Binding<C>>& constraint_list, snopt::doublereal* Flow,
-    snopt::doublereal* Fupp, snopt::integer* iGfun, snopt::integer* jGvar,
-    size_t* constraint_index, size_t* grad_index) {
+    const std::vector<Binding<C>>& constraint_list, double* Flow, double* Fupp,
+    double* Fmul, int* iGfun, int* jGvar, size_t* constraint_index,
+    size_t* grad_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
     for (int i = 0; i < n; i++) {
-      Flow[*constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
-      Fupp[*constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
+      Flow[*constraint_index + i] = lb(i);
+      Fupp[*constraint_index + i] = ub(i);
+      Fmul[*constraint_index + i] = 0;
     }
 
     for (int i = 0; i < n; i++) {
@@ -501,11 +299,12 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     const MathematicalProgram& prog,
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    snopt::doublereal* Flow, snopt::doublereal* Fupp, snopt::integer* iGfun,
-    snopt::integer* jGvar, size_t* constraint_index, size_t* grad_index) {
+    double* Flow, double* Fupp, double* Fmul, int* iGfun, int* jGvar,
+    size_t* constraint_index, size_t* grad_index) {
   for (const auto& binding : constraint_list) {
     Flow[*constraint_index] = 0;
     Fupp[*constraint_index] = 0;
+    Fmul[*constraint_index] = 0;
     for (int j = 0; j < binding.evaluator()->M().rows(); ++j) {
       iGfun[*grad_index] = *constraint_index + 1;
       jGvar[*grad_index] =
@@ -566,7 +365,7 @@ template <typename C>
 void UpdateLinearConstraint(const MathematicalProgram& prog,
                             const std::vector<Binding<C>>& linear_constraints,
                             std::vector<Eigen::Triplet<double>>* tripletList,
-                            snopt::doublereal* Flow, snopt::doublereal* Fupp,
+                            double* Flow, double* Fupp,
                             size_t* constraint_index,
                             size_t* linear_constraint_index) {
   for (auto const& binding : linear_constraints) {
@@ -586,10 +385,8 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 
     const auto bounds = LinearConstraintBounds(*c);
     for (int i = 0; i < n; i++) {
-      Flow[*constraint_index + i] =
-          static_cast<snopt::doublereal>(bounds.first(i));
-      Fupp[*constraint_index + i] =
-          static_cast<snopt::doublereal>(bounds.second(i));
+      Flow[*constraint_index + i] = bounds.first(i);
+      Fupp[*constraint_index + i] = bounds.second(i);
     }
     *constraint_index += n;
     *linear_constraint_index += n;
@@ -600,31 +397,30 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 bool SnoptSolver::available() const { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
-  auto d = prog.GetSolverData<SNOPTData>();
-  const std::unordered_set<int> cost_gradient_indices =
-      GetCostNonzeroGradientIndices(prog);
-  SnoptUserFunInfo snopt_userfun_info;
-  snopt_userfun_info.prog_ = &prog;
-  snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
-  SNOPTRun cur(d.get(), &snopt_userfun_info);
+  snoptProblemA DrakeProblem;
+  // No print file, no summary.
+  DrakeProblem.initialize("", 0);
 
-  snopt::integer nx = prog.num_vars();
-  d->min_alloc_x(nx);
-  snopt::doublereal* x = d->x.data();
-  snopt::doublereal* xlow = d->xlow.data();
-  snopt::doublereal* xupp = d->xupp.data();
-  const Eigen::VectorXd x_initial_guess = prog.initial_guess();
-  for (int i = 0; i < nx; i++) {
+  const int nx = prog.num_vars();
+  double* x = new double[nx];
+  double* xlow = new double[nx];
+  double* xupp = new double[nx];
+  double* xmul = new double[nx];
+  int* xstate = new int[nx];
+
+  // Initialize the guess for x.
+  const Eigen::VectorXd& x_initial_guess = prog.initial_guess();
+  for (int i = 0; i < nx; ++i) {
     if (!std::isnan(x_initial_guess(i))) {
-      x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
+      x[i] = x_initial_guess(i);
     } else {
       x[i] = 0.0;
     }
-    xlow[i] = static_cast<snopt::doublereal>(
-        -std::numeric_limits<double>::infinity());
-    xupp[i] = static_cast<snopt::doublereal>(  // BR
-        std::numeric_limits<double>::infinity());
+    xlow[i] = -std::numeric_limits<double>::infinity();
+    xupp[i] = std::numeric_limits<double>::infinity();
+    xstate[i] = 0;
   }
+  // Set up the lower and upper bounds.
   for (auto const& binding : prog.bounding_box_constraints()) {
     const auto& c = binding.evaluator();
     const auto& lb = c->lower_bound();
@@ -633,13 +429,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       const size_t vk_index =
           prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[vk_index] = std::max<snopt::doublereal>(
-          static_cast<snopt::doublereal>(lb(k)), xlow[vk_index]);
-      xupp[vk_index] = std::min<snopt::doublereal>(
-          static_cast<snopt::doublereal>(ub(k)), xupp[vk_index]);
+      xlow[vk_index] = std::max(lb(k), xlow[vk_index]);
+      xupp[vk_index] = std::min(ub(k), xupp[vk_index]);
     }
   }
-
   // For linear complementary condition
   // 0 <= x ⊥ Mx + q >= 0
   // we add the bounding box constraint x >= 0
@@ -647,12 +440,11 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       const size_t vk_index =
           prog.FindDecisionVariableIndex(binding.variables()(k));
-      xlow[vk_index] =
-          std::max<snopt::doublereal>(xlow[vk_index], snopt::doublereal(0));
+      xlow[vk_index] = std::max(xlow[vk_index], 0.0);
     }
   }
 
-
+  // Update nonlinear constraints.
   int num_nonlinear_constraints = 0;
   int max_num_gradients = cost_gradient_indices.size();
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
@@ -668,6 +460,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
       prog.linear_complementarity_constraints(), &num_nonlinear_constraints,
       &max_num_gradients);
 
+  // Update linear constraints.
   int num_linear_constraints = 0;
   const auto linear_constraints = prog.GetAllLinearConstraints();
   for (auto const& binding : linear_constraints) {
@@ -682,42 +475,47 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     num_linear_constraints += binding.evaluator()->M().rows();
   }
 
-  snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
-  d->min_alloc_F(nF);
-  snopt::doublereal* Flow = d->Flow.data();
-  snopt::doublereal* Fupp = d->Fupp.data();
-  Flow[0] =
-      static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
-  Fupp[0] =
-      static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
+  // Update the bound of the constraint.
+  const int nF = 1 + num_nonlinear_constraints + num_linear_constraints;
+  double* F = new double[nF];
+  double* Flow = new double[nF];
+  double* Fupp = new double[nF];
+  double* Fmul = new double[nF];
+  int* Fstate = new int[nF];
+  // F[0] is the cost, so Flow[0] = -∞, Fupp[0] = ∞.
+  Flow[0] = -std::numeric_limits<double>::infinity();
+  Fupp[0] = std::numeric_limits<double>::infinity();
+  Fmul[0] = 0;
 
-  snopt::integer lenG = static_cast<snopt::integer>(max_num_gradients);
-  d->min_alloc_G(lenG);
-  snopt::integer* iGfun = d->iGfun.data();
-  snopt::integer* jGvar = d->jGvar.data();
+  // Set up the gradient sparsity pattern.
+  const int lenG = max_num_gradients;
+  int* iGfun = new int[lenG];
+  int* jGvar = new int[lenG];
   size_t grad_index = 0;
   for (const auto cost_gradient_index : cost_gradient_indices) {
     iGfun[grad_index] = 1;
     jGvar[grad_index] = cost_gradient_index + 1;
     ++grad_index;
   }
-
-  size_t constraint_index = 1;  // constraint index starts at 1
-                                                 // because the cost is the
-                                                 // first row
+  // constraint_index starts at 1 because row 0 is the cost.
+  size_t constraint_index = 1;
   UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), Flow,
-                                     Fupp, iGfun, jGvar, &constraint_index,
-                                     &grad_index);
+                                     Fupp, Fmul, iGfun, jGvar,
+                                     &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(prog, prog.lorentz_cone_constraints(),
-                                     Flow, Fupp, iGfun, jGvar,
+                                     Flow, Fupp, Fmul, iGfun, jGvar,
                                      &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.rotated_lorentz_cone_constraints(), Flow, Fupp, iGfun, jGvar,
-      &constraint_index, &grad_index);
+      prog, prog.rotated_lorentz_cone_constraints(), Flow, Fupp, Fmul, iGfun,
+      jGvar, &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.linear_complementarity_constraints(), Flow, Fupp, iGfun, jGvar,
-      &constraint_index, &grad_index);
+      prog, prog.linear_complementarity_constraints(), Flow, Fupp, Fmul, iGfun,
+      jGvar, &constraint_index, &grad_index);
 
+  // Now find the sparsity pattern of the linear constraints, and also update
+  // Flow and Fupp corresponding to the linear constraints.
+  // We use Eigen::Triplet to store the non-zero entries in the linear
+  // constraint
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
   std::vector<T> tripletList;
@@ -730,11 +528,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
                          &tripletList, Flow, Fupp, &constraint_index,
                          &linear_constraint_index);
 
-  snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
-  d->min_alloc_A(lenA);
-  snopt::doublereal* A = d->A.data();
-  snopt::integer* iAfun = d->iAfun.data();
-  snopt::integer* jAvar = d->jAvar.data();
+  const int lenA = tripletList.size();
+  double* A = new double[lenA];
+  int* iAfun = new int[lenA];
+  int* jAvar = new int[lenA];
   size_t A_index = 0;
   for (auto const& it : tripletList) {
     A[A_index] = it.value();
@@ -743,74 +540,58 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     A_index++;
   }
 
-  snopt::integer nxname = 1, nFname = 1, npname = 0;
-  char xnames[8 * 1];  // should match nxname
-  char Fnames[8 * 1];  // should match nFname
-  char Prob[200] = "drake.out";
-
-  snopt::integer nS, nInf;
-  snopt::doublereal sInf;
-
-  // Determines if we should print out snopt debugging info.
   const std::map<std::string, std::string>& snopt_option_str =
       prog.GetSolverOptionsStr(id());
+  // Determines if we should print out snopt debugging info.
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
-    std::string print_file_name(print_file_it->second);
-    cur.iPrint = 9;
-    snopt::integer print_file_name_len =
-        static_cast<snopt::integer>(print_file_name.length());
-    snopt::integer inform;
-    snopt::snopenappend_(&cur.iPrint, &(print_file_name[0]), &inform,
-                         print_file_name_len);
-    cur.snSeti("Major print level", static_cast<snopt::integer>(11));
-    cur.snSeti("Print file", cur.iPrint);
+    DrakeProblem.setPrintFile(print_file_it->second);
+    DrakeProblem.setIntParameter("Major print level", 11);
+    DrakeProblem.setIntParameter("Print file", 9);
   }
 
-  snopt::integer minrw, miniw, mincw;
-  cur.snMemA(nF, nx, nxname, nFname, lenA, lenG, &mincw, &miniw, &minrw);
-  d->min_alloc_w(mincw, miniw, minrw);
-  cur.snSeti("Total character workspace", d->lencw);
-  cur.snSeti("Total integer workspace", d->leniw);
-  cur.snSeti("Total real workspace", d->lenrw);
-
-  snopt::integer Cold = 0;
-  snopt::doublereal* xmul = d->xmul.data();
-  snopt::integer* xstate = d->xstate.data();
-  memset(xstate, 0, sizeof(snopt::integer) * nx);
-
-  snopt::doublereal* F = d->F.data();
-  snopt::doublereal* Fmul = d->Fmul.data();
-  snopt::integer* Fstate = d->Fstate.data();
-  memset(Fstate, 0, sizeof(snopt::integer) * nF);
-
-  snopt::doublereal ObjAdd = 0.0;
-  snopt::integer ObjRow = 1;  // feasibility problem (for now)
-
   for (const auto it : prog.GetSolverOptionsDouble(id())) {
-    cur.snSetr(it.first, it.second);
+    DrakeProblem.setRealParameter(it.first.c_str(), it.second);
   }
 
   for (const auto it : prog.GetSolverOptionsInt(id())) {
-    cur.snSeti(it.first, it.second);
+    DrakeProblem.setIntParameter(it.first.c_str(), it.second);
   }
 
-  snopt::integer info;
-  snopt::snopta_(
-      &Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
-      reinterpret_cast<snopt::U_fp>(&snopt_userfun),
-      iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar, &lenG, &lenG, xlow, xupp,
-      xnames, Flow, Fupp, Fnames, x, xstate, xmul, F, Fstate, Fmul, &info,
-      &mincw, &miniw, &minrw, &nS, &nInf, &sInf,
-      // Pass the snopt workspace as the user workspace.  We already set
-      // the maxcu option to reserve some of it for our user code.
-      d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
-      d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
-      npname, 8 * nxname, 8 * nFname, 8 * d->lencw, 8 * d->lencw);
+  // Set the workspace.
+  // integer user workspace
+  // This is a tricky part, we use the integer workspace iu[snopt_miniu] to 
+  // store snopt_user_info. In snopt_userfun, we will need to read
+  // snopt_user_info from the integer workspace.
+  int iu;
+  {
+    int const* const p_snopt_userfun_info = 
+        reinterpret_cast<int*>(&snopt_userfun_info);
+    int* const iu_snopt_userfun_info = &iu;
+    std::copy(p_snopt_userfun_info,
+              p_snopt_userfun_info + sizeof(snopt_userfun_info),
+              iu_snopt_userfun_info);
+  }
+
+  DrakeProblem.setUserI(&iu, snopt_miniu);
+
+  const int Cold = 0;
+  const double ObjAdd = 0.0;
+  const int ObjRow = 0;
+  int nS = 0;
+  // Should I left nInf and sInf uninitialized? The SNOPT example code leaves
+  // them uninitialized.
+  int nInf;
+  double sInf;
+
+  const int info = DrakeProblem.solve(
+      Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, iAfun, jAvar, A, lenA, iGfun,
+      jGvar, lenG, xlow, xupp, Flow, Fupp, x, xstate, xmul, F, Fstate, Fmul, nS,
+      nInf, sInf);
 
   SolverResult solver_result(id());
   solver_result.set_decision_variable_values(
-      Eigen::Map<VectorX<snopt::doublereal>>(x, nx).cast<double>());
+      Eigen::Map<VectorX<double>>(x, nx));
   solver_result.set_optimal_cost(*F);
 
   // todo: extract the other useful quantities, too.
@@ -832,6 +613,23 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     }
   }
   prog.SetSolverResult(solver_result);
+
+  delete[] iAfun;
+  delete[] jAvar;
+  delete[] A;
+  delete[] iGfun;
+  delete[] jGvar;
+  delete[] x;
+  delete[] xlow;
+  delete[] xupp;
+  delete[] xmul;
+  delete[] xstate;
+  delete[] F;
+  delete[] Flow;
+  delete[] Fupp;
+  delete[] Fmul;
+  delete[] Fstate;
+
   return solution_result;
 }
 
