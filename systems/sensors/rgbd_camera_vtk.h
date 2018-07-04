@@ -5,6 +5,9 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
+/// RgbdCameraVTK and RgbdCameraDiscreteVTK uses
+/// [VTK](https://github.com/Kitware/VTK) as the rendering backend.
+/// @ingroup sensor_systems
 using RgbdCameraVTK = RgbdCamera<RgbdRendererVTK>;
 using RgbdCameraDiscreteVTK = RgbdCameraDiscrete<RgbdRendererVTK>;
 

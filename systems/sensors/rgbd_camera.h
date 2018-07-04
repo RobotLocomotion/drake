@@ -23,8 +23,6 @@ namespace systems {
 namespace sensors {
 /// An RGB-D camera system that provides RGB, depth and label images using
 /// visual elements of RigidBodyTree.
-/// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
-/// backend.
 /// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
 /// images. The default depth sensing range is from 0.5 m to 5.0 m.
 ///
@@ -62,6 +60,11 @@ namespace sensors {
 ///     in the scene. For the pixels corresponding to no body, namely the sky
 ///     and the flat terrain, we assign Label::kNoBody and Label::kFlatTerrain,
 ///     respectively.
+///
+/// @tparam Renderer The specific implementation of RgbdRendererBase used by
+///         RgbdCamera to render color, depth and label images.
+///
+/// @sa RgbdCameraVTK, RgbdRendererBase, RgbdRendererVTK
 ///
 /// @ingroup sensor_systems
 template <class Renderer>
@@ -281,6 +284,11 @@ class RgbdCamera final : public LeafSystem<double> {
 /**
  * Wraps a continuous RgbdCamera with zero order holds to have it function as
  * a discrete sensor.
+ *
+ * @tparam Renderer The specific implementation of RgbdRendererBase used by
+ *         RgbdCamera to render color, depth and label images.
+ *
+ * @sa RgbdCameraDiscreteVTK
  */
 template <class Renderer>
 class RgbdCameraDiscrete final : public systems::Diagram<double> {
