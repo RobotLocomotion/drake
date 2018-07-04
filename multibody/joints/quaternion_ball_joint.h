@@ -266,8 +266,8 @@ class QuaternionBallJoint : public DrakeJointImpl<QuaternionBallJoint> {
   Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
     drake::unused(q);
-    // returning zero for now, but a 3D torsional spring could theoretically be
-    // added here
+    // Returning zero for now, but a 3D torsional spring could theoretically be
+    // added here.
     return drake::VectorX<typename DerivedQ::Scalar>::Zero(
         get_num_velocities(), 1);
   }

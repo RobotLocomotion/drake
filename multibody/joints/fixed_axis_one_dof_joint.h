@@ -119,12 +119,12 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     return ret;
   }
 
-  /// Compute the spring torque for a simple singleaxis joint
+  /// Compute the spring torque for a simple singleaxis joint.
   /// Since this is a one DOF joint, the input and output vectors will be
-  /// length 1
+  /// length 1.
   ///
   /// Torque is computed to be included in the dynamics bias terms, and thus
-  /// appears here with a "positive" gain
+  /// appears here with a "positive" gain.
   template <typename DerivedQ>
   Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
@@ -197,9 +197,9 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
     DRAKE_ASSERT(coulomb_window_ > 0);
   }
 
-  /// Set the spring stiffness and nominal position
+  /// Set the spring stiffness and nominal position.
   /// The resuting force will be
-  ///   torque = stiffness * (nominal_position - position)
+  ///   torque = stiffness * (nominal_position - position).
   void SetSpringDynamics(double stiffness, double nominal_position) {
     stiffness_ = stiffness;
     nominal_position_ = nominal_position;

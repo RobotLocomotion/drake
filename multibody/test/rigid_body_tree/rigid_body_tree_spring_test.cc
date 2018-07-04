@@ -40,18 +40,18 @@ class RigidBodyTreeSpringTest : public ::testing::Test {
           tree.get());
     }
 
-    // compute bias without spring forces
+    // Compute bias without spring forces.
     VectorXd q(tree->get_num_positions());
     VectorXd v(tree->get_num_velocities());
-    for (uint i = 0; i < q.size(); i++) {
+    for (int i = 0; i < q.size(); ++i) {
       q(i) = i+1;
     }
-    for (uint i = 0; i < v.size(); i++) {
+    for (int i = 0; i < v.size(); ++i) {
       v(i) = -2*i-1;
     }
 
 
-    auto kinsol = tree->doKinematics(q, v);
+    KinematicsCache<double> kinsol = tree->doKinematics(q, v);
     const typename RigidBodyTree<double>::BodyToWrenchMap no_external_wrenches;
     VectorXd bias_no_spring = tree->dynamicsBiasTerm(kinsol,
                                                      no_external_wrenches,
@@ -60,7 +60,7 @@ class RigidBodyTreeSpringTest : public ::testing::Test {
     const double stiffness = 102.0;  // Nm/rad
     const double nominal_position = 1.1;  // rad
 
-    int body_index = tree->FindIndexOfChildBodyOfJoint("joint2");
+    const int body_index = tree->FindIndexOfChildBodyOfJoint("joint2");
     auto body = tree->get_mutable_body(body_index);
 
     RevoluteJoint& joint = dynamic_cast<RevoluteJoint&>(
@@ -69,10 +69,10 @@ class RigidBodyTreeSpringTest : public ::testing::Test {
     joint.SetSpringDynamics(stiffness, nominal_position);
 
     VectorXd bias_spring = tree->dynamicsBiasTerm(kinsol,
-                                                   no_external_wrenches, true);
+                                                  no_external_wrenches, true);
     VectorXd delta_bias = VectorXd::Zero(tree->get_num_velocities());
-    int q_ind = body->get_position_start_index();
-    int v_ind = body->get_velocity_start_index();
+    const int q_ind = body->get_position_start_index();
+    const int v_ind = body->get_velocity_start_index();
     delta_bias(v_ind) = stiffness * (nominal_position - q(q_ind));
 
     EXPECT_TRUE(CompareMatrices(bias_no_spring - delta_bias, bias_spring,
@@ -80,9 +80,9 @@ class RigidBodyTreeSpringTest : public ::testing::Test {
   }
 };
 
-// Tests spring forces effect on RigidBodyTree dynamics
+// Tests spring forces effect on RigidBodyTree dynamics.
 // Computes dynamics with and without a spring, and checks that the difference
-// is correct
+// is correct.
 TEST_F(RigidBodyTreeSpringTest, QuaternionBaseSpringTest) {
   TestTreeWithSpring(false);
 }

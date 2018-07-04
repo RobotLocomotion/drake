@@ -76,7 +76,7 @@ TEST_F(DrakeJointTests, TestSpringTorques) {
   VectorXd one_dof_position(1);
   one_dof_position << joint_position;
 
-  // Verify that the 1-DOF joints have a zero spring force
+  // Verify that the 1-DOF joints have a zero spring force.
   EXPECT_TRUE(CompareMatrices(
       helical_joint_->SpringTorque(one_dof_position), VectorXd::Zero(1),
       0, MatrixCompareType::absolute));
@@ -87,7 +87,7 @@ TEST_F(DrakeJointTests, TestSpringTorques) {
       revolute_joint_->SpringTorque(one_dof_position), VectorXd::Zero(1),
       0, MatrixCompareType::absolute));
 
-  // Verify that the other joints have a zero spring force
+  // Verify that the other joints have a zero spring force.
   EXPECT_TRUE(CompareMatrices(
       fixed_joint_->SpringTorque(VectorXd::Zero(0)), VectorXd::Zero(0),
       0, MatrixCompareType::absolute));
@@ -103,7 +103,7 @@ TEST_F(DrakeJointTests, TestSpringTorques) {
       roll_pitch_yaw_joint_->SpringTorque(VectorXd::Zero(6)), VectorXd::Zero(6),
       0, MatrixCompareType::absolute));
 
-  // Change the 1-DOF joint spring parameters and check
+  // Change the 1-DOF joint spring parameters and check.
   VectorXd force(1);
   force << stiffness * (nominal_position - joint_position);
 

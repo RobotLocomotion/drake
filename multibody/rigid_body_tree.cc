@@ -2594,7 +2594,7 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree<T>::frictionTorques(
 
 template <typename T>
 template <typename Scalar>
-VectorX<Scalar> RigidBodyTree<T>::CalcGeneralizedSpringForces(VectorX<Scalar> q)
+VectorX<Scalar> RigidBodyTree<T>::CalcGeneralizedSpringForces(const VectorX<Scalar>& q)
     const {
   VectorX<Scalar> generalized_force(num_velocities_);
 
@@ -3795,6 +3795,10 @@ template TwistVector<double> RigidBodyTree<double>::transformSpatialAcceleration
 // Explicit template instantiations for frictionTorques
 template VectorX<AutoDiffXd     > RigidBodyTree<double>::frictionTorques(Eigen::MatrixBase<VectorX<AutoDiffXd     >> const& v) const;  // NOLINT
 template VectorX<double         > RigidBodyTree<double>::frictionTorques(Eigen::MatrixBase<VectorX<double         >> const& v) const;  // NOLINT
+
+// Explicit template instantiations for CalcGeneralizedSpringForces
+template VectorX<double         > RigidBodyTree<double>::CalcGeneralizedSpringForces(const VectorX<double    >& q) const;  // NOLINT
+template VectorX<AutoDiffXd     > RigidBodyTree<double>::CalcGeneralizedSpringForces(const VectorX<AutoDiffXd>& q) const;  // NOLINT
 
 // Explicit template instantiations for inverseDynamics.
 template VectorX<AutoDiffXd     > RigidBodyTree<double>::inverseDynamics<AutoDiffXd     >(KinematicsCache<AutoDiffXd     >&, unordered_map<RigidBody<double> const*, TwistVector<AutoDiffXd     >, hash<RigidBody<double> const*>, equal_to<RigidBody<double> const*>, Eigen::aligned_allocator<pair<RigidBody<double> const* const, TwistVector<AutoDiffXd     >>>> const&, VectorX<AutoDiffXd     > const&, bool) const;  // NOLINT

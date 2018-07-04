@@ -106,7 +106,7 @@ class FixedJoint : public DrakeJointImpl<FixedJoint> {
   Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, 1> SpringTorque(
       const Eigen::MatrixBase<DerivedQ>& q) const {
     drake::unused(q);
-    // fixed joints have zero degrees of freedom
+    // Fixed joints have zero degrees of freedom.
     return drake::VectorX<typename DerivedQ::Scalar>::Zero(0, 1);
   }
 
