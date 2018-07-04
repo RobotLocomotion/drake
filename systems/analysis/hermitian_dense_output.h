@@ -104,6 +104,10 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
   /// This step definition allows for intermediate time, state and state
   /// derivative triplets (e.g. the integrator internal stages) to improve
   /// interpolation.
+  ///
+  /// @note The use of column matrices instead of plain vectors helps reduce
+  ///       HermitianDenseOutput construction overhead, as this type of dense
+  ///       output leverages a PiecewisePolynomial instance that takes matrices.
   class IntegrationStep {
    public:
     /// Constructs a zero length step (i.e. a step containing a single time,

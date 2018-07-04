@@ -14,35 +14,35 @@ namespace {
 template <typename T>
 class HermitianDenseOutputTest : public ::testing::Test {
  protected:
-  const T kInvalidTime{-1.0};
-  const T kInitialTime{0.0};
-  const T kMidTime{0.5};
-  const T kFinalTime{1.0};
-  const T kTimeStep{0.1};
-  const MatrixX<T> kInitialState{
-    (MatrixX<T>(3, 1) << 0., 0., 0.).finished()};
-  const MatrixX<T> kMidState{
-    (MatrixX<T>(3, 1) << 0.5, 5., 50.).finished()};
-  const MatrixX<T> kFinalState{
-    (MatrixX<T>(3, 1) << 1., 10., 100.).finished()};
-  const MatrixX<T> kFinalStateWithFewerDimensions{
-    (MatrixX<T>(2, 1) << 1., 10.).finished()};
-  const MatrixX<T> kFinalStateWithMoreDimensions{
-    (MatrixX<T>(4, 1) << 1., 10., 100., 1000.).finished()};
-  const MatrixX<T> kFinalStateNotAVector{
-    (MatrixX<T>(2, 2) << 1., 10., 100., 1000.).finished()};
-  const MatrixX<T> kInitialStateDerivative{
-    (MatrixX<T>(3, 1) << 0., 1., 0.).finished()};
-  const MatrixX<T> kMidStateDerivative{
-    (MatrixX<T>(3, 1) << 0.5, 0.5, 0.5).finished()};
-  const MatrixX<T> kFinalStateDerivative{
-    (MatrixX<T>(3, 1) << 1., 0., 1.).finished()};
-  const MatrixX<T> kFinalStateDerivativeWithFewerDimensions{
-    (MatrixX<T>(2, 1) << 1., 0.).finished()};
-  const MatrixX<T> kFinalStateDerivativeWithMoreDimensions{
-    (MatrixX<T>(4, 1) << 1., 0., 1., 0.).finished()};
-  const MatrixX<T> kFinalStateDerivativeNotAVector{
-    (MatrixX<T>(2, 2) << 0., 1., 0., 1.).finished()};
+  const double kInvalidTime{-1.0};
+  const double kInitialTime{0.0};
+  const double kMidTime{0.5};
+  const double kFinalTime{1.0};
+  const double kTimeStep{0.1};
+  const MatrixX<double> kInitialState{
+    (MatrixX<double>(3, 1) << 0., 0., 0.).finished()};
+  const MatrixX<double> kMidState{
+    (MatrixX<double>(3, 1) << 0.5, 5., 50.).finished()};
+  const MatrixX<double> kFinalState{
+    (MatrixX<double>(3, 1) << 1., 10., 100.).finished()};
+  const MatrixX<double> kFinalStateWithFewerDimensions{
+    (MatrixX<double>(2, 1) << 1., 10.).finished()};
+  const MatrixX<double> kFinalStateWithMoreDimensions{
+    (MatrixX<double>(4, 1) << 1., 10., 100., 1000.).finished()};
+  const MatrixX<double> kFinalStateNotAVector{
+    (MatrixX<double>(2, 2) << 1., 10., 100., 1000.).finished()};
+  const MatrixX<double> kInitialStateDerivative{
+    (MatrixX<double>(3, 1) << 0., 1., 0.).finished()};
+  const MatrixX<double> kMidStateDerivative{
+    (MatrixX<double>(3, 1) << 0.5, 0.5, 0.5).finished()};
+  const MatrixX<double> kFinalStateDerivative{
+    (MatrixX<double>(3, 1) << 1., 0., 1.).finished()};
+  const MatrixX<double> kFinalStateDerivativeWithFewerDimensions{
+    (MatrixX<double>(2, 1) << 1., 0.).finished()};
+  const MatrixX<double> kFinalStateDerivativeWithMoreDimensions{
+    (MatrixX<double>(4, 1) << 1., 0., 1., 0.).finished()};
+  const MatrixX<double> kFinalStateDerivativeNotAVector{
+    (MatrixX<double>(2, 2) << 0., 1., 0., 1.).finished()};
 };
 
 
@@ -223,16 +223,13 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectConstruction) {
 TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   // Creates an Hermite cubic spline with times, states and state
   // derivatives.
-  const std::vector<double> spline_times =
-      detail::ExtractDoublesOrThrow(std::vector<TypeParam>{
-          this->kInitialTime, this->kMidTime, this->kFinalTime});
-  const std::vector<MatrixX<double>> spline_states =
-      detail::ExtractDoublesOrThrow(std::vector<MatrixX<TypeParam>>{
-          this->kInitialState, this->kMidState, this->kFinalState});
-  const std::vector<MatrixX<double>> spline_state_derivatives =
-      detail::ExtractDoublesOrThrow(std::vector<MatrixX<TypeParam>>{
+  const std::vector<double> spline_times{
+    this->kInitialTime, this->kMidTime, this->kFinalTime};
+  const std::vector<MatrixX<double>> spline_states{
+          this->kInitialState, this->kMidState, this->kFinalState};
+  const std::vector<MatrixX<double>> spline_state_derivatives{
           this->kInitialStateDerivative, this->kMidStateDerivative,
-          this->kFinalStateDerivative});
+          this->kFinalStateDerivative};
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::Cubic(
           spline_times, spline_states, spline_state_derivatives);

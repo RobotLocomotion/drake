@@ -8,6 +8,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/text_logging.h"
+#include "drake/systems/analysis/dense_output.h"
 #include "drake/systems/analysis/hermitian_dense_output.h"
 #include "drake/systems/analysis/stepwise_dense_output.h"
 #include "drake/systems/framework/context.h"
@@ -1309,11 +1310,13 @@ class IntegratorBase {
    */
   virtual void DoReset() {}
 
-
   /**
    * Derived classes can override this method to provide a continuous
    * extension of their own when StartDenseIntegration() is called.
-   * TODO(hidmic): Make pure virtual.
+   *
+   * TODO(hidmic): Make pure virtual and override on each subclass, as
+   * the 'optimal' dense output scheme is only known by the specific
+   * integration scheme being implemented.
    */
   virtual
   std::unique_ptr<StepwiseDenseOutput<T>> DoStartDenseIntegration() {
@@ -1362,8 +1365,11 @@ class IntegratorBase {
    *           unable to take a single step of size @p dt or to advance
    *           its dense output an equal step.
    * @sa DoStep()
+   *
+   * TODO(hidmic): Make pure virtual and override on each subclass, as
+   * the 'optimal' dense output scheme is only known by the specific
+   * integration scheme being implemented.
    */
-  // TODO(hidmic): Make pure virtual.
   virtual bool DoDenseStep(const T& dt) {
     const ContinuousState<T>& state = context_->get_continuous_state();
     // Makes a null (i.e. zero size) dense output step with initial
@@ -1383,13 +1389,14 @@ class IntegratorBase {
     step.Extend(context_->get_time(), state.CopyToVector(),
                 derivatives_->CopyToVector());
 
-    // Retrieves dense output. This cast is safe because the actual
-    // StepwiseDenseOutput<T> derived type is entirely under this
-    // class' control.
-    HermitianDenseOutput<T>* dense_output =
-        dynamic_cast<HermitianDenseOutput<T>*>(get_mutable_dense_output());
+    // Retrieves dense output. This cast is safe if the base implementations
+    // of this method and DoStartDenseIntegration() are in use. Otherwise, a
+    // different dense output type may have been allocated and the following
+    // cast will throw.
+    HermitianDenseOutput<T>& dense_output =
+        dynamic_cast<HermitianDenseOutput<T>&>(*get_mutable_dense_output());
     // Updates dense output with the integration step taken.
-    dense_output->Update(std::move(step));
+    dense_output.Update(std::move(step));
     return true;
   }
 

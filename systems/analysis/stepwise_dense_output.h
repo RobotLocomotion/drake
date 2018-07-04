@@ -26,7 +26,7 @@ class StepwiseDenseOutput : public DenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StepwiseDenseOutput)
 
-  virtual ~StepwiseDenseOutput() = default;
+  ~StepwiseDenseOutput() override = default;
 
   /// Rolls back (drops) the last update.
   /// @remarks This process is irreversible.

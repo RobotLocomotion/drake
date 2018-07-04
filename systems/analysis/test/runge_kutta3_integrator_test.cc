@@ -129,6 +129,9 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   rk3.StartDenseIntegration();
 
   const double t_final = 1.0;
+  // Arbitrary step, valid as long as it doesn't match the same
+  // steps taken by the integrator. otherwise, dense output accuracy
+  // would not be checked.
   const double t_step = t_final / 100.;
   for (double t = 0.; t <= t_final ; t += t_step) {
     // Integrate the whole step.
