@@ -104,6 +104,34 @@ TEST_F(FixedInputPortTest, SystemAndContext) {
   EXPECT_EQ(port1_value_->serial_number(), 1);
 }
 
+// Once the dependency wiring has been set up between a FixedInputPortValue
+// and an input port, providing a replacement value should still use the same
+// tracker and wiring.
+TEST_F(FixedInputPortTest, RepeatedFixInputPortUsesSameTracker) {
+  // Remember the old tickets (corresponding trackers were saved above).
+  const DependencyTicket old_port1_ticket =
+      context_.input_port_ticket(InputPortIndex(1));
+  const DependencyTicket old_port1_value_ticket = port1_value_->ticket();
+
+  // Replace the value object for output port 1.
+  const FixedInputPortValue& new_port1_value =
+      context_.FixInputPort(InputPortIndex(1), Value<std::string>("bar"));
+
+  // The new value object should have the same ticket & tracker as the old one.
+  EXPECT_EQ(new_port1_value.ticket(), old_port1_value_ticket);
+  EXPECT_EQ(&context_.get_tracker(new_port1_value.ticket()), free_tracker1_);
+
+  // The InputPort object should still have the same ticket & tracker.
+  const DependencyTicket new_port1_ticket =
+      context_.input_port_ticket(InputPortIndex(1));
+  EXPECT_EQ(new_port1_ticket, old_port1_ticket);
+  EXPECT_EQ(&context_.get_tracker(new_port1_ticket), tracker1_);
+
+  // And the Prerequisite/Subscriber relationships should still exist.
+  EXPECT_TRUE(free_tracker1_->HasSubscriber(*tracker1_));
+  EXPECT_TRUE(tracker1_->HasPrerequisite(*free_tracker1_));
+}
+
 // Fixed values are cloned only as part of cloning a context, which
 // requires changing the internal context pointer that is used for value
 // change notification. The ticket and input port index remain unchanged
