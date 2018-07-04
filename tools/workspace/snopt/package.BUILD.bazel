@@ -13,10 +13,11 @@ _MAYBE_SNFILEWRAPPER = glob([
 ])
 
 cc_library(
-    name = "snopt_problem",
-    srcs = glob(["interfaces/src/snoptProblem.cpp"]),
-    hdrs = ["interfaces/include/snoptProblem.hpp"],
+    name = "snopt_cwrap",
+    srcs = ["interfaces/src/snopt_cwrap.c"],
+    hdrs = ["interfaces/include/snopt_cwrap.h"],
     visibility = ["//visibility:public"],
+    deps = ["snopt_c"],
 )
 
 # Drake's binary releases are allowed to redistribute SNOPT only if SNOPT is

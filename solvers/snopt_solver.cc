@@ -14,7 +14,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
-#include "snoptProblem.hpp"
+#include "snopt_cwrap.h"
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -35,9 +35,6 @@ struct SnoptUserFunInfo {
   const MathematicalProgram* prog_;
   const std::unordered_set<int>* cost_gradient_indices_;
 };
-
-// snopt minimum workspace requirements
-unsigned int constexpr snopt_miniu = 500;
 
 // Return the number of rows in the nonlinear constraint.
 template <typename C>
@@ -397,9 +394,9 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 bool SnoptSolver::available() const { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
-  snoptProblemA DrakeProblem;
+  snoptProblemA drake_problem;
   // No print file, no summary.
-  DrakeProblem.initialize("", 0);
+  snInit(&drake_problem, "drake_problem", "", 0);
 
   const int nx = prog.num_vars();
   double* x = new double[nx];
@@ -545,35 +542,36 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // Determines if we should print out snopt debugging info.
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
-    DrakeProblem.setPrintFile(print_file_it->second);
-    DrakeProblem.setIntParameter("Major print level", 11);
-    DrakeProblem.setIntParameter("Print file", 9);
+    setPrintFile(&drake_problem, print_file_it->second.c_str());
+    setIntParameter(&drake_problem, "Major print level", 11);
+    setIntParameter(&drake_problem, "Print file", 9);
   }
 
   for (const auto it : prog.GetSolverOptionsDouble(id())) {
-    DrakeProblem.setRealParameter(it.first.c_str(), it.second);
+    setRealParameter(&drake_problem, it.first.c_str(), it.second);
   }
 
   for (const auto it : prog.GetSolverOptionsInt(id())) {
-    DrakeProblem.setIntParameter(it.first.c_str(), it.second);
+    setIntParameter(&drake_problem, it.first.c_str(), it.second);
   }
 
   // Set the workspace.
   // integer user workspace
-  // This is a tricky part, we use the integer workspace iu[snopt_miniu] to 
+  // This is a tricky part, we use the integer workspace iu[snopt_miniu] to
   // store snopt_user_info. In snopt_userfun, we will need to read
   // snopt_user_info from the integer workspace.
   int iu;
+  drake_problem.leniu = 100;
+  drake_problem.iu =
+      static_cast<int*>(malloc(sizeof(int) * drake_problem.leniu));
   {
-    int const* const p_snopt_userfun_info = 
+    int const* const p_snopt_userfun_info =
         reinterpret_cast<int*>(&snopt_userfun_info);
-    int* const iu_snopt_userfun_info = &iu;
+    int* const iu_snopt_userfun_info = &drake_problem.iu;
     std::copy(p_snopt_userfun_info,
               p_snopt_userfun_info + sizeof(snopt_userfun_info),
               iu_snopt_userfun_info);
   }
-
-  DrakeProblem.setUserI(&iu, snopt_miniu);
 
   const int Cold = 0;
   const double ObjAdd = 0.0;
@@ -584,10 +582,10 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int nInf;
   double sInf;
 
-  const int info = DrakeProblem.solve(
-      Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, iAfun, jAvar, A, lenA, iGfun,
-      jGvar, lenG, xlow, xupp, Flow, Fupp, x, xstate, xmul, F, Fstate, Fmul, nS,
-      nInf, sInf);
+  const int info =
+      solveA(&drake_problem, Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, iAfun,
+             jAvar, A, lenA, iGfun, jGvar, lenG, xlow, xupp, Flow, Fupp, x,
+             xstate, xmul, F, Fstate, Fmul, nS, nInf, sInf);
 
   SolverResult solver_result(id());
   solver_result.set_decision_variable_values(
@@ -630,6 +628,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   delete[] Fmul;
   delete[] Fstate;
 
+  free(&drake_problem.iu);
+  deleteSNOPT(&drake_problem);
   return solution_result;
 }
 

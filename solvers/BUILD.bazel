@@ -658,7 +658,7 @@ drake_cc_library(
         "//tools:with_snopt": [
             ":mathematical_program_api",
             "//math:autodiff",
-            "@snopt//:snopt_problem",
+            "@snopt//:snopt_cwrap",
         ],
         "//conditions:default": [
             ":mathematical_program_api",
