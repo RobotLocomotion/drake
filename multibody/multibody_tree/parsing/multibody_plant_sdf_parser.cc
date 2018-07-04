@@ -386,7 +386,7 @@ ModelInstanceIndex AddModelFromSdfFile(
         if (geometry_instance) {
           plant->RegisterVisualGeometry(
               body, geometry_instance->pose(), geometry_instance->shape(),
-              scene_graph);
+              geometry_instance->visual_material(), scene_graph);
         }
       }
 

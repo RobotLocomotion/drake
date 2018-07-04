@@ -244,6 +244,10 @@ class QuadraticConstraint : public Constraint {
   }
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -305,6 +309,10 @@ class LorentzConeConstraint : public Constraint {
   const Eigen::VectorXd& b() const { return b_; }
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -360,6 +368,10 @@ class RotatedLorentzConeConstraint : public Constraint {
   ~RotatedLorentzConeConstraint() override {}
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -524,8 +536,6 @@ class LinearConstraint : public Constraint {
   using Constraint::UpdateUpperBound;
 
  protected:
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
-
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -534,6 +544,13 @@ class LinearConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_;
+
+ private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
 };
 
 /**
@@ -603,7 +620,11 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   ~BoundingBoxConstraint() override {}
 
- protected:
+ private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -641,7 +662,6 @@ class LinearComplementarityConstraint : public Constraint {
   const Eigen::VectorXd& q() const { return q_; }
 
  protected:
-  /** Return Mx + q (the value of the slack variable). */
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -661,6 +681,11 @@ class LinearComplementarityConstraint : public Constraint {
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const override;
 
  private:
+  // Return Mx + q (the value of the slack variable).
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const;
+
   // TODO(ggould-tri) We are storing what are likely statically sized matrices
   // in dynamically allocated containers.  This probably isn't optimal.
   Eigen::MatrixXd M_;

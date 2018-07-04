@@ -1910,6 +1910,103 @@ TEST_F(SymbolicExpressionTest, GetDistinctVariables) {
             Variables({var_x_, var_z_}));
 }
 
+TEST_F(SymbolicExpressionTest, TaylorExpand1) {
+  // Test TaylorExpand(exp(-x²-y²), {x:1, y:2}, 2).
+  const Expression& x{x_};
+  const Expression& y{y_};
+  const Expression e{exp(-x * x - y * y)};
+  const Environment env{{{var_x_, 1}, {var_y_, 2}}};
+  const Expression expanded{TaylorExpand(e, env, 2)};
+  // Obtained from Matlab.
+  const Expression expected{std::exp(-5) *
+                            (1 - 2 * (x - 1) - 4 * (y - 2) + pow(x - 1, 2) +
+                             8 * (x - 1) * (y - 2) + 7 * pow(y - 2, 2))};
+  // The difference should be close to zero. We sample a few points around (1,
+  // 2) and test.
+  const vector<Environment> test_envs{{{{var_x_, 0}, {var_y_, 0}}},
+                                      {{{var_x_, 2}, {var_y_, 3}}},
+                                      {{{var_x_, 0}, {var_y_, 3}}},
+                                      {{{var_x_, 2}, {var_y_, 0}}}};
+  for (const auto& test_env : test_envs) {
+    EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
+  }
+}
+
+TEST_F(SymbolicExpressionTest, TaylorExpand2) {
+  // Test TaylorExpand(sin(-x² -y²), {x:1, y:2}, 2).
+  const Expression& x{x_};
+  const Expression& y{y_};
+  const Expression e{sin(-x * x - y * y)};
+  const Environment env{{{var_x_, 1}, {var_y_, 2}}};
+  const Expression expanded{TaylorExpand(e, env, 2)};
+  // Obtained from Matlab.
+  const Expression expected{8 * sin(5) * (x - 1) * (y - 2) -
+                            (cos(5) - 2 * sin(5)) * (x - 1) * (x - 1) -
+                            (cos(5) - 8 * sin(5)) * (y - 2) * (y - 2) -
+                            2 * cos(5) * (x - 1) - 4 * cos(5) * (y - 2) -
+                            sin(5)};
+  // The difference should be close to zero. We sample a few points around (1,
+  // 2) and test.
+  const vector<Environment> test_envs{{{{var_x_, 0}, {var_y_, 0}}},
+                                      {{{var_x_, 2}, {var_y_, 3}}},
+                                      {{{var_x_, 0}, {var_y_, 3}}},
+                                      {{{var_x_, 2}, {var_y_, 0}}}};
+  for (const auto& test_env : test_envs) {
+    EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
+  }
+}
+
+TEST_F(SymbolicExpressionTest, TaylorExpand3) {
+  // Test TaylorExpand(sin(-x² - y²) + cos(z), {x:1, y:2, z:3}, 3)
+  const Expression& x{x_};
+  const Expression& y{y_};
+  const Expression& z{z_};
+  const Expression e{sin(-pow(x, 2) - pow(y, 2)) + cos(z)};
+  const Environment env{{{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}};
+  const Expression expanded{TaylorExpand(e, env, 3)};
+  // Obtained from Matlab.
+  const Expression expected{
+      cos(3) - sin(5) + (sin(3) * pow(z - 3, 3)) / 6 -
+      (cos(5) - 2 * sin(5)) * pow(x - 1, 2) -
+      (cos(5) - 8 * sin(5)) * pow(y - 2, 2) +
+      pow(x - 1, 3) * ((4 * cos(5)) / 3 + 2 * sin(5)) +
+      pow(y - 2, 3) * ((32 * cos(5)) / 3 + 4 * sin(5)) - 2 * cos(5) * (x - 1) -
+      4 * cos(5) * (y - 2) - sin(3) * (z - 3) - (cos(3) * pow(z - 3, 2)) / 2 +
+      pow(x - 1, 2) * (y - 2) * (8 * cos(5) + 4 * sin(5)) +
+      (x - 1) * pow(y - 2, 2) * (16 * cos(5) + 2 * sin(5)) +
+      8 * sin(5) * (x - 1) * (y - 2)};
+
+  // The difference should be close to zero. We sample a few points around (1,
+  // 2) and test.
+  const vector<Environment> test_envs{
+      {{{var_x_, 0}, {var_y_, 0}, {var_z_, 0}}},
+      {{{var_x_, 0}, {var_y_, 0}, {var_z_, 3}}},
+      {{{var_x_, 0}, {var_y_, 3}, {var_z_, 0}}},
+      {{{var_x_, 3}, {var_y_, 0}, {var_z_, 0}}},
+      {{{var_x_, 0}, {var_y_, 3}, {var_z_, 3}}},
+      {{{var_x_, 3}, {var_y_, 3}, {var_z_, 0}}},
+      {{{var_x_, 3}, {var_y_, 0}, {var_z_, 3}}},
+      {{{var_x_, 3}, {var_y_, 3}, {var_z_, 3}}}};
+  for (const auto& test_env : test_envs) {
+    EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
+  }
+}
+
+TEST_F(SymbolicExpressionTest, TaylorExpand4) {
+  // Test TaylorExpand(7, {}, 2) = 7.
+  const Expression e{7.0};
+  EXPECT_PRED2(ExprEqual, e, TaylorExpand(e, Environment{}, 2));
+}
+
+TEST_F(SymbolicExpressionTest, TaylorExpand5) {
+  // Test TaylorExpand(sin(x) + cos(y), {x: 1}, 2) => Exception.
+  const Expression& x{x_};
+  const Expression& y{y_};
+  const Expression e{sin(x) + cos(y)};
+  const Environment env{{{var_x_, 1}}};
+  EXPECT_THROW(TaylorExpand(e, env, 2), std::runtime_error);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

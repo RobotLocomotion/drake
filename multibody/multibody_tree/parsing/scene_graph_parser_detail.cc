@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/scene_graph_parser_detail.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -19,6 +20,7 @@ namespace detail {
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
+using geometry::VisualMaterial;
 using multibody_plant::CoulombFriction;
 using std::make_unique;
 
@@ -99,36 +101,6 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const sdf::Geometry& sdf_geometry) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
-  // We deal with the <mesh> case separately since sdf::Geometry still does not
-  // support it.
-  // TODO(amcastro-tri): get rid of all sdf::ElementPtr once
-  // sdf::GeometryType::MESH is available.
-  const sdf::Element* const geometry_element = sdf_geometry.Element().get();
-  DRAKE_DEMAND(geometry_element != nullptr);
-  const sdf::Element* const mesh_element =
-      MaybeGetChildElement(*geometry_element, "mesh");
-  if (mesh_element != nullptr) {
-    const std::string file_name =
-        GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
-    double scale = 1.0;
-    if (mesh_element->HasElement("scale")) {
-      const ignition::math::Vector3d& scale_vector =
-          GetChildElementValueOrThrow<ignition::math::Vector3d>(
-              *mesh_element, "scale");
-      // geometry::Mesh only supports isotropic scaling and therefore we enforce
-      // it.
-      if (!(scale_vector.X() == scale_vector.Y() &&
-            scale_vector.X() == scale_vector.Z())) {
-        throw std::runtime_error(
-            "Drake meshes only support isotropic scaling. Therefore all three "
-                "scaling factors must be exactly equal.");
-      }
-      scale = scale_vector.X();
-    }
-    // TODO(amcastro-tri): Fix the given path to be an absolute path.
-    return make_unique<geometry::Mesh>(file_name, scale);
-  }
-
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY: {
       return std::unique_ptr<geometry::Shape>(nullptr);
@@ -156,19 +128,49 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       const sdf::Sphere& shape = *sdf_geometry.SphereShape();
       return make_unique<geometry::Sphere>(shape.Radius());
     }
-    // TODO(amcastro-tri): When sdformat supports it add the MESH case.
-    default: {
-      throw std::logic_error("Geometry type not supported.");
+    case sdf::GeometryType::MESH: {
+      // TODO(jwnimmer-tri) Port this to the sdf::Mesh APIs.
+      const sdf::Element* const geometry_element = sdf_geometry.Element().get();
+      DRAKE_DEMAND(geometry_element != nullptr);
+      const sdf::Element* const mesh_element =
+          MaybeGetChildElement(*geometry_element, "mesh");
+      DRAKE_DEMAND(mesh_element != nullptr);
+      const std::string file_name =
+          GetChildElementValueOrThrow<std::string>(*mesh_element, "uri");
+      double scale = 1.0;
+      if (mesh_element->HasElement("scale")) {
+        const ignition::math::Vector3d& scale_vector =
+            GetChildElementValueOrThrow<ignition::math::Vector3d>(
+                *mesh_element, "scale");
+        // geometry::Mesh only supports isotropic scaling and therefore we
+        // enforce it.
+        if (!(scale_vector.X() == scale_vector.Y() &&
+              scale_vector.X() == scale_vector.Z())) {
+          throw std::runtime_error(
+              "Drake meshes only support isotropic scaling. Therefore all "
+              "three scaling factors must be exactly equal.");
+        }
+        scale = scale_vector.X();
+      }
+      // TODO(amcastro-tri): Fix the given path to be an absolute path.
+      return make_unique<geometry::Mesh>(file_name, scale);
     }
   }
+
+  DRAKE_ABORT_MSG("NOTREACHED");
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const sdf::Visual& sdf_visual) {
+  const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
+  if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
+    // The file specifies an EMPTY geometry.
+    return std::unique_ptr<GeometryInstance>(nullptr);
+  }
+
   // Retrieve the pose of the visual frame G in the parent link L in which
   // geometry gets defined.
   const Isometry3d X_LG = ToIsometry3(sdf_visual.Pose());
-  const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
 
   // GeometryInstance defines its shapes in a "canonical frame" C. For instance:
   // - A half-space's normal is directed along the Cz axis,
@@ -178,37 +180,17 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
   // X_LC defines the pose of the canonical frame in the link frame L.
   Isometry3d X_LC = X_LG;  // In most cases C coincides with the SDF G frame.
 
-  // We deal with the <mesh> case separately since sdf::Geometry still does not
-  // support it and marks <mesh> geometry with type sdf::GeometryType::EMPTY.
-  // Therefore, there are two reasons we can have an EMPTY type:
-  //   1) The file does specify a mesh.
-  //   2) The file truly specifies an EMPTY geometry.
-  // We treat these two cases separately until sdformat provides support for
-  // meshes.
-  // TODO(amcastro-tri): Cleanup usage of sdf::ElementPtr once sdformat gets
-  // extended to support more data representation types.
-  if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
-    sdf::ElementPtr geometry_element = sdf_geometry.Element();
-    DRAKE_DEMAND(geometry_element != nullptr);
-    // Case 1: We do have a mesh.
-    if (geometry_element->HasElement("mesh")) {
-      return make_unique<GeometryInstance>(
-          X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
-    } else {
-      // Case 2: The file truly specifies an EMPTY geometry.
-      return std::unique_ptr<GeometryInstance>(nullptr);
-    }
-  }
-
-  // For a half-space, C and G are not the same since  SDF allows to specify
+  // For a half-space, C and G are not the same since SDF allows to specify
   // the normal of the plane in the G frame.
   // Note to developers: if needed, update this switch statement to consider
   // other geometry types whenever X_LC != X_LG.
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:
     case sdf::GeometryType::BOX:
-    case sdf::GeometryType::CYLINDER: {
-      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+    case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::MESH:
+    case sdf::GeometryType::SPHERE: {
+      // X_LC = X_LG for these geometries.
       break;
     }
     case sdf::GeometryType::PLANE: {
@@ -229,16 +211,43 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
       X_LC = X_LG * X_GC;
       break;
     }
-    case sdf::GeometryType::SPHERE:  {
-      // X_LC = X_LG for SPHERE.
-      break;
-    }
   }
 
-  // TODO(amcastro-tri): Extract <material> once sdf::Visual supports it.
-
+  const VisualMaterial material = MakeVisualMaterialFromSdfVisual(sdf_visual);
   return make_unique<GeometryInstance>(
-      X_LC, MakeShapeFromSdfGeometry(sdf_geometry));
+      X_LC, MakeShapeFromSdfGeometry(sdf_geometry), material);
+}
+
+VisualMaterial MakeVisualMaterialFromSdfVisual(const sdf::Visual& sdf_visual) {
+  // TODO(SeanCurtis-TRI): Update this to use the sdf API when
+  // https://bitbucket.org/osrf/sdformat/pull-requests/445/material-dom/diff
+  // merges.
+
+  const sdf::ElementPtr visual_element = sdf_visual.Element();
+  // Element pointers can only be nullptr if Load() was not called on the sdf::
+  // object. Only a bug could cause this.
+  DRAKE_DEMAND(visual_element != nullptr);
+
+  const sdf::Element* const material_element =
+      MaybeGetChildElement(*visual_element, "material");
+
+  const VisualMaterial default_material;
+  if (material_element == nullptr ||
+      !material_element->HasElement("diffuse")) {
+    return default_material;
+  }
+
+  // If the diffuse tag exists, rely on sdformat's rules for resolving strange
+  // <diffuse> values.
+  using ignition::math::Color;
+  const std::pair<Color, bool> value_pair =
+      material_element->Get<Color>("diffuse", Color());
+  if (value_pair.second == false) return default_material;
+  const Color& sdf_diffuse = value_pair.first;
+
+  Vector4<double> diffuse{sdf_diffuse.R(), sdf_diffuse.G(), sdf_diffuse.B(),
+                          sdf_diffuse.A()};
+  return VisualMaterial(diffuse);
 }
 
 Isometry3d MakeGeometryPoseFromSdfCollision(
@@ -270,8 +279,10 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
   switch (sdf_geometry.Type()) {
     case sdf::GeometryType::EMPTY:
     case sdf::GeometryType::BOX:
-    case sdf::GeometryType::CYLINDER: {
-      // X_LC = X_LG for EMPTY, BOX, CYLINDER.
+    case sdf::GeometryType::CYLINDER:
+    case sdf::GeometryType::MESH:
+    case sdf::GeometryType::SPHERE: {
+      // X_LC = X_LG for these geometries.
       break;
     }
     case sdf::GeometryType::PLANE: {
@@ -288,10 +299,6 @@ Isometry3d MakeGeometryPoseFromSdfCollision(
 
       // Correct X_LC to include the pose X_GC
       X_LC = X_LG * X_GC;
-      break;
-    }
-    case sdf::GeometryType::SPHERE:  {
-      // X_LC = X_LG for SPHERE.
       break;
     }
   }

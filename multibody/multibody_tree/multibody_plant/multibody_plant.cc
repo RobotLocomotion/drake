@@ -80,10 +80,23 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 }
 
 template <typename T>
-void MultibodyPlant<T>::RegisterVisualGeometry(const Body<T>& body,
-                                               const Isometry3<double>& X_BG,
-                                               const geometry::Shape& shape,
-                                               SceneGraph<T>* scene_graph) {
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const Isometry3<double>& X_BG,
+    const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph) {
+  return RegisterVisualGeometry(body, X_BG, shape, geometry::VisualMaterial(),
+                                scene_graph);
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const Body<T>& body, const Isometry3<double>& X_BG,
+    const geometry::Shape& shape, const geometry::VisualMaterial& material,
+    SceneGraph<T>* scene_graph) {
+  // TODO(SeanCurtis-TRI): Consider simply adding an interface that takes a
+  // unique pointer to an already instantiated GeometryInstance. This will
+  // require shuffling around a fair amount of code and should ultimately be
+  // supplanted by providing a cleaner interface between parsing MBP and SG
+  // elements.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
@@ -97,14 +110,15 @@ void MultibodyPlant<T>::RegisterVisualGeometry(const Body<T>& body,
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, material, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, material, scene_graph);
   }
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
   visual_geometries_[body.index()].push_back(id);
+  return id;
 }
 
 template <typename T>
@@ -132,9 +146,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, {}, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, {}, scene_graph);
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
@@ -177,7 +191,9 @@ geometry::GeometrySet MultibodyPlant<T>::CollectRegisteredGeometries(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
-    const geometry::Shape& shape, SceneGraph<T>* scene_graph) {
+    const geometry::Shape& shape,
+    const optional<geometry::VisualMaterial>& material,
+    SceneGraph<T>* scene_graph) {
   // This should never be called with the world index.
   DRAKE_DEMAND(body.index() != world_index());
   DRAKE_ASSERT(!is_finalized());
@@ -194,9 +210,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   }
 
   // Register geometry in the body frame.
+  std::unique_ptr<geometry::GeometryInstance> geometry_instance;
+  if (material) {
+    geometry_instance = std::make_unique<GeometryInstance>(X_BG, shape.Clone(),
+                                                           material.value());
+  } else {
+    geometry_instance = std::make_unique<GeometryInstance>(X_BG, shape.Clone());
+  }
   GeometryId geometry_id = scene_graph->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
-      std::make_unique<GeometryInstance>(X_BG, shape.Clone()));
+      std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
   return geometry_id;
 }
@@ -204,13 +227,22 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterAnchoredGeometry(
     const Isometry3<double>& X_WG, const geometry::Shape& shape,
+    const optional<geometry::VisualMaterial>& material,
     SceneGraph<T>* scene_graph) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(scene_graph == scene_graph_);
+
+  std::unique_ptr<geometry::GeometryInstance> geometry_instance;
+  if (material) {
+    geometry_instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone(),
+                                                           material.value());
+  } else {
+    geometry_instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone());
+  }
   GeometryId geometry_id = scene_graph->RegisterAnchoredGeometry(
       source_id_.value(),
-      std::make_unique<GeometryInstance>(X_WG, shape.Clone()));
+      std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = world_index();
   return geometry_id;
 }

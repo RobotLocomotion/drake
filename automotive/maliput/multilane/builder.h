@@ -78,6 +78,87 @@ class StartReference {
 std::ostream& operator<<(std::ostream& out,
                          const StartReference::Spec& start_spec);
 
+/// Provides methods to build an StartLane::Spec.
+class StartLane {
+ public:
+  /// Defines how a Connection's lane curve starts.
+  ///
+  /// Objects of this class should be created using StartLane::at() methods.
+  class Spec {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spec)
+
+    const Endpoint& endpoint() const { return endpoint_; }
+
+    int lane_id() const { return lane_id_; }
+
+   private:
+    // Allows StartLane factory to build objects of this class.
+    friend class StartLane;
+
+    // Constructs a Spec that specifies with `endpoint` how a Connection's
+    // `lane_id` lane-curve starts.
+    Spec(const Endpoint& endpoint, int lane_id)
+        : endpoint_(endpoint), lane_id_(lane_id) {}
+
+    // Describes the connection's `lane_id_` lane-curve start-point.
+    Endpoint endpoint_{};
+    // Connection's lane-curve index.
+    int lane_id_{};
+  };
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StartLane)
+
+  StartLane() = delete;
+
+  /// Constructs a StartLane::Spec factory to hold `start_lane` lane-curve start
+  /// point.
+  ///
+  /// `start_lane` must be non-negative.
+  explicit StartLane(int start_lane) : start_lane_(start_lane) {
+    DRAKE_DEMAND(start_lane_ >= 0);
+  }
+
+  /// Builds a Spec at `endpoint` with `direction` direction. When
+  /// `direction` == `Direction::kReverse`, `endpoint` is reversed.
+  /// `endpoint`'s theta_dot must be nullopt.
+  Spec at(const Endpoint& endpoint, Direction direction) const {
+    DRAKE_DEMAND(!endpoint.z().theta_dot().has_value());
+    return direction == Direction::kForward
+               ? Spec(endpoint, start_lane_)
+               : Spec(endpoint.reverse(), start_lane_);
+  }
+
+  /// Builds a Spec at `connection`'s `lane_id` lane at `end` side with
+  /// `direction` direction. When `direction` == `Direction::kReverse`,
+  /// `endpoint` is reversed.
+  ///
+  /// `lane_id` must be non-negative and smaller than `connection`'s number of
+  /// lanes.
+  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
+  /// continuity constraints.
+  Spec at(const Connection& connection, int lane_id, api::LaneEnd::Which end,
+          Direction direction) const {
+    DRAKE_DEMAND(lane_id >= 0 && lane_id < connection.num_lanes());
+    Endpoint endpoint = end == api::LaneEnd::Which::kStart
+                            ? connection.LaneStart(lane_id)
+                            : connection.LaneEnd(lane_id);
+    endpoint.get_mutable_z().get_mutable_theta_dot() = {};
+    return direction == Direction::kForward
+               ? Spec(endpoint, start_lane_)
+               : Spec(endpoint.reverse(), start_lane_);
+  }
+
+ private:
+  // Connection's lane-curve index at which Spec will be specified.
+  const int start_lane_{};
+};
+
+/// Streams a string representation of `start_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const StartLane::Spec& start_spec);
+
 /// Provides methods to build an EndReference::Spec.
 class EndReference {
  public:
@@ -134,6 +215,87 @@ class EndReference {
 /// This method is provided for the purposes of debugging or text-logging.
 /// It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const EndReference::Spec& end_spec);
+
+/// Provides methods to build an EndLane::Spec.
+class EndLane {
+ public:
+  /// Defines how a Connection's lane curve ends.
+  ///
+  /// Objects of this class should be created using EndLane::z_at() methods.
+  class Spec {
+   public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spec)
+
+    const EndpointZ& endpoint_z() const { return endpoint_z_; }
+
+    int lane_id() const { return lane_id_; }
+
+   private:
+    // Allows EndLane factory to build objects of this class.
+    friend class EndLane;
+
+    // Constructs a Spec that specifies with `endpoint_z` how a Connection's
+    // `lane_id` lane-curve ends.
+    explicit Spec(const EndpointZ& endpoint_z, int lane_id)
+        : endpoint_z_(endpoint_z), lane_id_(lane_id) {}
+
+    // Describes the connection's `lane_id_` lane-curve end-point.
+    EndpointZ endpoint_z_{};
+    // Connection's lane-curve index.
+    int lane_id_{};
+  };
+
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EndLane)
+
+  EndLane() = delete;
+
+  /// Constructs a EndLane::Spec factory to hold `end_lane` lane-curve end
+  /// point.
+  ///
+  /// `end_lane` must be non-negative.
+  explicit EndLane(int end_lane) : end_lane_(end_lane) {
+    DRAKE_DEMAND(end_lane_ >= 0);
+  }
+
+  /// Builds a Spec at `connection`'s `end` side with `direction` direction.
+  /// When `direction` == `Direction::kReverse`, `end`-side endpoint's
+  /// EndpointZ is reversed.
+  ///
+  /// `lane_id` must be non-negative and smaller than `connection`'s number of
+  /// lanes.
+  /// Spec's theta_dot will be cleared so the Builder adjusts it to match
+  /// continuity constraints.
+  Spec z_at(const Connection& connection, int lane_id, api::LaneEnd::Which end,
+            Direction direction) const {
+    DRAKE_DEMAND(lane_id >= 0 && lane_id < connection.num_lanes());
+    EndpointZ endpoint_z = end == api::LaneEnd::Which::kStart
+                               ? connection.LaneStart(lane_id).z()
+                               : connection.LaneEnd(lane_id).z();
+    endpoint_z.get_mutable_theta_dot() = {};
+    return direction == Direction::kForward
+               ? Spec(endpoint_z, end_lane_)
+               : Spec(endpoint_z.reverse(), end_lane_);
+  }
+
+  /// Builds an Spec at `endpoint_z` with `direction` direction.
+  /// When `direction` == `Direction::kReverse`, `endpoint_z` is reversed.
+  /// `endpoint_z`'s theta_dot must be nullopt.
+  Spec z_at(const EndpointZ& endpoint_z, Direction direction) const {
+    DRAKE_DEMAND(!endpoint_z.theta_dot().has_value());
+    return direction == Direction::kForward
+               ? Spec(endpoint_z, end_lane_)
+               : Spec(endpoint_z.reverse(), end_lane_);
+  }
+
+ private:
+  // Connection's lane-curve index at which Spec will be specified.
+  const int end_lane_{};
+};
+
+/// Streams a string representation of `end_spec` into `out`. Returns `out`.
+/// This method is provided for the purposes of debugging or text-logging.
+/// It is not intended for serialization.
+std::ostream& operator<<(std::ostream& out, const EndLane::Spec& end_spec);
 
 /// Wraps all the lane-related specifications in a Connection.
 class LaneLayout {
@@ -227,6 +389,7 @@ class BuilderBase {
   /// `line_offset` specifies the length of displacement (in the direction of
   /// the heading of `start_spec`'s Endpoint). `end_spec` specifies the
   /// elevation characteristics at the end-point.
+  ///
   /// `lane_layout` defines the number of lanes, their width, extra shoulder
   /// asphalt extensions and placing with respect to connection's reference
   /// curve.
@@ -241,10 +404,7 @@ class BuilderBase {
   ///
   /// `arc_offset` specifies the shape of the arc. `end_spec` specifies the
   /// elevation characteristics at the end-point.
-  /// `r0` is the distance from the reference curve to the first Lane
-  /// centerline. `left_shoulder` and `right_shoulder` are extra lateral
-  /// distances added to the extents of the Segment after the first and last
-  /// Lanes positions are determined.
+  ///
   /// `lane_layout` defines the number of lanes, their width, extra shoulder
   /// asphalt extensions and placing with respect to connection's reference
   /// curve.
@@ -253,6 +413,41 @@ class BuilderBase {
                                     const StartReference::Spec& start_spec,
                                     const ArcOffset& arc_offset,
                                     const EndReference::Spec& end_spec) = 0;
+
+  /// Creates a Connection whose planar reference curve is a line.
+  ///
+  /// `start_spec.lane_id()` lane starts at `start_spec.endpoint()` and
+  /// `end_spec.lane_id()` lane ends with `end_spec.endpoint_z()` which
+  /// specifies the elevation characteristics.
+  ///
+  /// `line_offset` specifies the length of displacement (in the direction of
+  /// the heading of `start_spec`'s Endpoint).
+  ///
+  /// `lane_layout` defines the number of lanes, their width, extra shoulder
+  /// asphalt extensions and placing with respect to connection's reference
+  /// curve.
+  virtual const Connection* Connect(const std::string& id,
+                                    const LaneLayout& lane_layout,
+                                    const StartLane::Spec& start_spec,
+                                    const LineOffset& line_offset,
+                                    const EndLane::Spec& end_spec) = 0;
+
+  /// Creates a Connection whose planar reference curve is an arc.
+  ///
+  /// `start_spec.lane_id()` lane starts at `start_spec.endpoint()` and
+  /// `end_spec.lane_id()` lane ends with `end_spec.endpoint_z()` which
+  /// specifies the elevation characteristics.
+  ///
+  /// `arc_offset` specifies the shape of the arc.
+  ///
+  /// `lane_layout` defines the number of lanes, their width, extra shoulder
+  /// asphalt extensions and placing with respect to connection's reference
+  /// curve.
+  virtual const Connection* Connect(const std::string& id,
+                                    const LaneLayout& lane_layout,
+                                    const StartLane::Spec& start_spec,
+                                    const ArcOffset& arc_offset,
+                                    const EndLane::Spec& end_spec) = 0;
 
   /// Sets the default branch for one end of a connection.
   ///
@@ -391,6 +586,18 @@ class Builder : public BuilderBase {
                             const StartReference::Spec& start_spec,
                             const ArcOffset& arc_offset,
                             const EndReference::Spec& end_spec) override;
+
+  const Connection* Connect(const std::string& id,
+                            const LaneLayout& lane_layout,
+                            const StartLane::Spec& start_spec,
+                            const LineOffset& line_offset,
+                            const EndLane::Spec& end_spec) override;
+
+  const Connection* Connect(const std::string& id,
+                            const LaneLayout& lane_layout,
+                            const StartLane::Spec& start_spec,
+                            const ArcOffset& arc_offset,
+                            const EndLane::Spec& end_spec) override;
 
   void SetDefaultBranch(const Connection* in, int in_lane_index,
                         const api::LaneEnd::Which in_end, const Connection* out,
