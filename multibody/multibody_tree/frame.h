@@ -54,6 +54,19 @@ class Frame : public FrameBase<T> {
   virtual Isometry3<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
+  /// Variant of CalcPoseInBodyFrame() that returns the fixed pose `X_BF` of
+  /// `this` frame F in the body frame B associated with this frame.
+  /// The default implementation for this method aborts.
+  /// %Frame sub-classes that can represent the fixed pose of `this` frame F in
+  /// a body frame B, must override this method.
+  /// An example of a frame sub-class not implementing this method would be that
+  /// of a frame on a soft body, for which its pose in the body frame depends
+  /// on the state of deformation of the body.
+  virtual Isometry3<T> GetFixedPoseInBodyFrame() const {
+    DRAKE_ABORT_MSG("Attempting to retrieve a fixed pose from a frame type "
+                        "that does not support this operation.");
+  }
+
   /// Given the offset pose `X_FQ` of a frame Q in `this` frame F, this method
   /// computes the pose `X_BQ` of frame Q in the body frame B to which this
   /// frame is attached.
@@ -68,6 +81,14 @@ class Frame : public FrameBase<T> {
       const systems::Context<T>& context,
       const Isometry3<T>& X_FQ) const {
     return CalcPoseInBodyFrame(context) * X_FQ;
+  }
+
+  /// Variant of CalcOffsetPoseInBody() that given the offset pose `X_FQ` of a
+  /// frame Q in `this` frame F, returns the pose `X_BQ` of frame Q in the body
+  /// frame B to which this frame is attached.
+  virtual Isometry3<T> GetFixedOffsetPoseInBody(
+      const Isometry3<T>& X_FQ) const {
+    return GetFixedPoseInBodyFrame() * X_FQ;
   }
 
   /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to

@@ -60,6 +60,11 @@ class FixedOffsetFrame final : public Frame<T> {
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
   }
 
+  Isometry3<T> GetFixedPoseInBodyFrame() const override {
+    // X_BF = X_BP * X_PF
+    return parent_frame_.GetFixedOffsetPoseInBody(X_PF_.cast<T>());
+  }
+
  protected:
   /// @name Methods to make a clone templated on different scalar types.
   ///
