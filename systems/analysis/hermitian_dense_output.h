@@ -91,7 +91,7 @@ ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
 ///                  Springer, 1993.
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
-class HermitianDenseOutput : public StepwiseDenseOutput<T> {
+class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HermitianDenseOutput)
 
@@ -110,6 +110,10 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
   ///       output leverages a PiecewisePolynomial instance that takes matrices.
   class IntegrationStep {
    public:
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IntegrationStep)
+    /// Constructs an empty step.
+    IntegrationStep() = default;
+
     /// Constructs a zero length step (i.e. a step containing a single time,
     /// state and state derivative triplet) from column matrices.
     ///
@@ -310,13 +314,9 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
               detail::ExtractDoublesOrThrow(step.get_states()),
               detail::ExtractDoublesOrThrow(step.get_state_derivatives())));
     }
-    // TODO(hidmic): Remove state keeping members when
-    // PiecewisePolynomial better supports non-double types.
     start_time_ = continuous_trajectory_.start_time();
     end_time_ = continuous_trajectory_.end_time();
-    end_state_ = raw_steps_.back().get_states().back();
-    end_state_derivative_ = raw_steps_.back().get_state_derivatives().back();
-
+    last_consolidated_step_ = std::move(raw_steps_.back());
     raw_steps_.clear();
   }
 
@@ -331,69 +331,74 @@ class HermitianDenseOutput : public StepwiseDenseOutput<T> {
                                "are equal.");
     }
     if (!raw_steps_.empty()) {
-      const IntegrationStep& last_raw_step = raw_steps_.back();
-      EnsureOutputConsistencyOrThrow(
-          step, last_raw_step.get_end_time(),
-          last_raw_step.get_states().back(),
-          last_raw_step.get_state_derivatives().back());
+      EnsureOutputConsistencyOrThrow(step, raw_steps_.back());
     } else if (!continuous_trajectory_.empty()) {
-      EnsureOutputConsistencyOrThrow(step, end_time_, end_state_,
-                                     end_state_derivative_);
+      EnsureOutputConsistencyOrThrow(step, last_consolidated_step_);
     }
   }
 
   // Ensures that this dense output would remain consistent if the
   // provided @p step were to be consolidated at its end.
-  // @param step Integration step to be taken.
-  // @param end_time Dense output end time.
-  // @param end_state Dense output end state.
-  // @param end_state Dense output end state derivative.
+  // @param next_step Integration step to be taken.
+  // @param prev_step Last integration step consolidated or to be
+  //                  consolidated into dense output.
   // @throw std::runtime_error
-  //   if given @p step does not ensure C1 continuity at the end
-  //   of this dense output.<br>
-  //   if given @p step dimension does not match this dense output
-  //   dimension.
-  void EnsureOutputConsistencyOrThrow(
-      const IntegrationStep& step, const T& end_time,
-      const MatrixX<T>& end_state, const MatrixX<T>& end_state_derivative) {
+  //   if given @p next_step does not ensure C1 continuity at the
+  //   end of the given @p prev_step.<br>
+  //   if given @p next_step dimensions does not match @p prev_step
+  //   dimensions.
+  static void EnsureOutputConsistencyOrThrow(const IntegrationStep& next_step,
+                                             const IntegrationStep& prev_step) {
     using std::abs;
     using std::max;
 
-    if (end_state.rows() != step.get_dimensions()) {
-      throw std::runtime_error("Provided step dimension and dense output"
-                               " (inferred) dimension do not match.");
+    if (prev_step.get_dimensions() != next_step.get_dimensions()) {
+      throw std::runtime_error("Provided step dimensions and previous"
+                               " step dimensions do not match.");
     }
-    // Maximum time misalignment between step and dense output that
+    // Maximum time misalignment between previous step and next step that
     // can still be disregarded as a discontinuity in time.
+    const T& prev_end_time = prev_step.get_end_time();
+    const T& next_start_time = next_step.get_start_time();
     const T allowed_time_misalignment =
-        max(abs(end_time), T{1.}) * std::numeric_limits<T>::epsilon();
-    const T time_misalignment = abs(end_time - step.get_start_time());
+        max(abs(prev_end_time), T{1.}) * std::numeric_limits<T>::epsilon();
+    const T time_misalignment = abs(prev_end_time - next_start_time);
     if (time_misalignment > allowed_time_misalignment) {
       throw std::runtime_error("Provided step start time and"
-                               " dense output end time differ.");
+                               " previous step end time differ.");
     }
-    if (!end_state.isApprox(step.get_states().front())) {
-      throw std::runtime_error("Provided step start state and dense output end"
+    const MatrixX<T>& prev_end_state = prev_step.get_states().back();
+    const MatrixX<T>& next_start_state = next_step.get_states().front();
+    if (!prev_end_state.isApprox(next_start_state)) {
+      throw std::runtime_error("Provided step start state and previous step end"
                                " state differ. Cannot ensure C0 continuity.");
     }
-    if (!end_state_derivative.isApprox(step.get_state_derivatives().front())) {
+    const MatrixX<T>& prev_end_state_derivative =
+        prev_step.get_state_derivatives().back();
+    const MatrixX<T>& next_start_state_derivative =
+        next_step.get_state_derivatives().front();
+    if (!prev_end_state_derivative.isApprox(next_start_state_derivative)) {
       throw std::runtime_error("Provided step start state derivative and"
-                               " dense output end state derivative differ."
+                               " previous step end state derivative differ."
                                " Cannot ensure C1 continuity.");
     }
   }
 
-  // TODO(hidmic): Remove state keeping members when
-  // PiecewisePolynomial better supports non-double types.
+  // TODO(hidmic): Remove redundant time keeping member-fields when
+  // PiecewisePolynomial supports return by-reference of its time extents.
+  // It currently returns them by-value, double type only, and thus the
+  // need for this storage in order to meet DenseOutput::get_start_time()
+  // and DenseOutput::get_end_time() API.
 
   // The smallest time at which the output is defined.
   T start_time_{};
   // The largest time at which the output is defined.
   T end_time_{};
-  // The value of the output at the `end_time`.
-  MatrixX<T> end_state_{};
-  // The value of the output first time derivative at the `end_time`.
-  MatrixX<T> end_state_derivative_{};
+
+  // The last integration step consolidated into `continuous_trajectory_`,
+  // useful to validate the next integration steps.
+  // @see EnsureOutputConsistencyOrThrow
+  IntegrationStep last_consolidated_step_{};
 
   // The integration steps taken but not consolidated yet (via Consolidate()).
   std::vector<IntegrationStep> raw_steps_{};
