@@ -561,7 +561,7 @@ class LeafSystem : public System<T> {
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
-    const int index = model_numeric_parameters_.size();
+    const NumericParameterIndex index(model_numeric_parameters_.size());
     model_numeric_parameters_.AddVectorModel(index, model_vector.Clone());
     MaybeDeclareVectorBaseInequalityConstraint(
         "parameter " + std::to_string(index), model_vector,
@@ -569,6 +569,7 @@ class LeafSystem : public System<T> {
           const BasicVector<T>& result = context.get_numeric_parameter(index);
           return result;
         });
+    this->AddNumericParameter(index);
     return index;
   }
 
@@ -608,8 +609,9 @@ class LeafSystem : public System<T> {
   /// the default implementation of SetDefaultParameters() will reset parameters
   /// to their model values.  Returns the index of the new parameter.
   int DeclareAbstractParameter(const AbstractValue& model_value) {
-    const int index = model_abstract_parameters_.size();
+    const AbstractParameterIndex index(model_abstract_parameters_.size());
     model_abstract_parameters_.AddModel(index, model_value.Clone());
+    this->AddAbstractParameter(index);
     return index;
   }
 
@@ -774,17 +776,22 @@ class LeafSystem : public System<T> {
   /// Declares that this System should reserve discrete state with
   /// @p num_state_variables state variables. Has no effect if
   /// AllocateDiscreteState is overridden.
+  // TODO(sherm1) Repeated calls to this should allocate additional discrete
+  // state groups. Currently there is only one.
   void DeclareDiscreteState(int num_state_variables) {
+    const DiscreteStateIndex index(0);  // Only one implemented currently.
     model_discrete_state_vector_ =
         std::make_unique<BasicVector<T>>(num_state_variables);
+    this->AddDiscreteStateGroup(index);
   }
 
   /// Declares an abstract state.
   /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
   int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
-    int index = model_abstract_states_.size();
+    const AbstractStateIndex index(model_abstract_states_.size());
     model_abstract_states_.AddModel(index, std::move(abstract_state));
+    this->AddAbstractState(index);
     return index;
   }
 

@@ -32,6 +32,11 @@ class TestSystem : public LeafSystem<T> {
     this->set_name("TestSystem");
     this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
+
+    this->DeclareDiscreteState(3);
+    this->DeclareAbstractState(AbstractValue::Make<int>(5));
+    this->DeclareAbstractState(
+        AbstractValue::Make<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
 
@@ -481,8 +486,34 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
   EXPECT_NEAR(2.445, time, 1e-8);
 }
 
+// Tests that discrete and abstract state dependency wiring is set up
+// correctly.
+TEST_F(LeafSystemTest, DiscreteAndAbstractStateTrackers) {
+  EXPECT_EQ(system_.num_discrete_state_groups(), 1);
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const DependencyTracker& xd_tracker =
+      context->get_tracker(system_.xd_ticket());
+  for (DiscreteStateIndex i(0); i < system_.num_discrete_state_groups(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.discrete_state_ticket(i));
+    EXPECT_TRUE(xd_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xd_tracker));
+  }
+
+  EXPECT_EQ(system_.num_abstract_states(), 2);
+  const DependencyTracker& xa_tracker =
+      context->get_tracker(system_.xa_ticket());
+  for (AbstractStateIndex i(0); i < system_.num_abstract_states(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_state_ticket(i));
+    EXPECT_TRUE(xa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xa_tracker));
+  }
+}
+
 // Tests that the leaf system reserved the declared Parameters with default
-// values, and that they are modifiable.
+// values, that they are modifiable, and that dependency wiring is set up
+// correctly for them.
 TEST_F(LeafSystemTest, NumericParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
@@ -493,10 +524,21 @@ TEST_F(LeafSystemTest, NumericParameters) {
       system_.GetVanillaMutableNumericParameters(context.get());
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
+
+  EXPECT_EQ(system_.num_numeric_parameters(), 1);
+  const DependencyTracker& all_parameters_tracker =
+      context->get_tracker(system_.all_parameters_ticket());
+  for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.numeric_parameter_ticket(i));
+    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared abstract Parameters with
-// default values, and that they are modifiable.
+// default values, that they are modifiable, and that dependency wiring is set
+// up correctly for them.
 TEST_F(LeafSystemTest, AbstractParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const std::string& param = context->get_abstract_parameter(0 /*index*/)
@@ -507,6 +549,17 @@ TEST_F(LeafSystemTest, AbstractParameters) {
           .GetMutableValueOrThrow<std::string>();
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
+
+  EXPECT_EQ(system_.num_abstract_parameters(), 1);
+  const DependencyTracker& all_parameters_tracker =
+      context->get_tracker(system_.all_parameters_ticket());
+  for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
+       ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_parameter_ticket(i));
+    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.

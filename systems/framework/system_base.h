@@ -608,6 +608,28 @@ class SystemBase : public internal::SystemMessageInterface {
     return cache_entries_[index]->ticket();
   }
 
+  /** Returns the number of declared discrete state groups (each group is
+  a vector-valued discrete state variable). */
+  int num_discrete_state_groups() const {
+    return static_cast<int>(discrete_state_tickets_.size());
+  }
+
+  /** Returns the number of declared abstract state variables. */
+  int num_abstract_states() const {
+    return static_cast<int>(abstract_state_tickets_.size());
+  }
+
+  /** Returns the number of declared numeric parameters (each of these is
+  a vector-valued parameter). */
+  int num_numeric_parameters() const {
+    return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  /** Returns the number of declared abstract parameters. */
+  int num_abstract_parameters() const {
+    return static_cast<int>(abstract_parameter_tickets_.size());
+  }
+
   /** Returns a ticket indicating dependence on a particular discrete state
   variable (may be a vector). (We sometimes refer to this as a "discrete
   variable group".) */
@@ -663,6 +685,50 @@ class SystemBase : public internal::SystemMessageInterface {
     DRAKE_DEMAND(&port->get_system_base() == this);
     DRAKE_DEMAND(port->get_index() == this->get_num_output_ports());
     output_ports_.push_back(std::move(port));
+  }
+
+  /** (Internal use only) Assigns a ticket to a new discrete variable group
+  with the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddDiscreteStateGroup(DiscreteStateIndex index) {
+    DRAKE_DEMAND(index == num_discrete_state_groups());
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    discrete_state_tickets_.push_back(
+        {ticket, "discrete state group " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new abstract state variable with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddAbstractState(AbstractStateIndex index) {
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    DRAKE_DEMAND(index == num_abstract_states());
+    abstract_state_tickets_.push_back(
+        {ticket, "abstract state " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new numeric parameter with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddNumericParameter(NumericParameterIndex index) {
+    DRAKE_DEMAND(index == num_numeric_parameters());
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    numeric_parameter_tickets_.push_back(
+        {ticket, "numeric parameter " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new abstract parameter with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddAbstractParameter(AbstractParameterIndex index) {
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    DRAKE_DEMAND(index == num_abstract_parameters());
+    abstract_parameter_tickets_.push_back(
+        {ticket, "abstract parameter " + std::to_string(index)});
   }
 
   /** (Internal use only) This is for cache entries associated with pre-defined
@@ -801,22 +867,6 @@ class SystemBase : public internal::SystemMessageInterface {
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
-  int num_discrete_state_tickets() const {
-    return static_cast<int>(discrete_state_tickets_.size());
-  }
-
-  int num_abstract_state_tickets() const {
-    return static_cast<int>(abstract_state_tickets_.size());
-  }
-
-  int num_numeric_parameter_tickets() const {
-    return static_cast<int>(numeric_parameter_tickets_.size());
-  }
-
-  int num_abstract_parameter_tickets() const {
-    return static_cast<int>(abstract_parameter_tickets_.size());
-  }
-
   // Used to create trackers for variable-number System-allocated objects.
   struct TrackerInfo {
     DependencyTicket ticket;
@@ -825,25 +875,25 @@ class SystemBase : public internal::SystemMessageInterface {
 
   const TrackerInfo& discrete_state_tracker_info(
       DiscreteStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_discrete_state_tickets());
+    DRAKE_DEMAND(0 <= index && index < num_discrete_state_groups());
     return discrete_state_tickets_[index];
   }
 
   const TrackerInfo& abstract_state_tracker_info(
       AbstractStateIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_state_tickets());
+    DRAKE_DEMAND(0 <= index && index < num_abstract_states());
     return abstract_state_tickets_[index];
   }
 
   const TrackerInfo& numeric_parameter_tracker_info(
       NumericParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_tickets());
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameters());
     return numeric_parameter_tickets_[index];
   }
 
   const TrackerInfo& abstract_parameter_tracker_info(
       AbstractParameterIndex index) const {
-    DRAKE_DEMAND(0 <= index && index < num_abstract_parameter_tickets());
+    DRAKE_DEMAND(0 <= index && index < num_abstract_parameters());
     return abstract_parameter_tickets_[index];
   }
 
