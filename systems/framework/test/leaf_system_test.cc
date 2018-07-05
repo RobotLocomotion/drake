@@ -719,7 +719,8 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 };
 
 // Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
-// correct topology.
+// correct topology, and that the all_input_ports dependency tracker is
+// properly subscribed to the input ports in an allocated context.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
@@ -736,6 +737,17 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.get_input_port_base(InputPortIndex(10)), std::out_of_range,
       "System.*get_input_port_base().*no input port.*10.*only 5.*");
+
+  // Check DependencyTracker setup for input ports.
+  auto context = dut.AllocateContext();
+  const DependencyTracker& all_inputs_tracker =
+      context->get_tracker(dut.all_input_ports_ticket());
+  for (InputPortIndex i(0); i < dut.get_num_input_ports(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(dut.input_port_ticket(i));
+    EXPECT_TRUE(all_inputs_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_inputs_tracker));
+  }
 
   const OutputPortBase& out2_base =
       dut.get_output_port_base(OutputPortIndex(2));
