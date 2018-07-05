@@ -128,6 +128,16 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return n_joint_dofs;
   }
 
+  const T& GetOnePosition(const systems::Context<T>& context) const {
+    DRAKE_THROW_UNLESS(num_dofs() == 1);
+    return DoGetOnePosition(context);
+  }
+
+  const T& GetOneVelocity(const systems::Context<T>& context) const {
+    DRAKE_THROW_UNLESS(num_dofs() == 1);
+    return DoGetOneVelocity(context);
+  }
+
   /// Adds into `forces` a force along the one of the joint's degrees of
   /// freedom indicated by index `joint_dof`.
   /// The meaning for this degree of freedom and even its dimensional units
@@ -270,6 +280,16 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// E.g., this method should return one for a revolute joint and it should
   /// return three for a ball joint.
   virtual int do_get_num_dofs() const = 0;
+
+  virtual const T& DoGetOnePosition(
+      const systems::Context<T>& context) const {
+    DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");
+  }
+
+  virtual const T& DoGetOneVelocity(
+      const systems::Context<T>& context) const {
+    DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");
+  }
 
   /// Adds into `forces` a force along the one of the joint's degrees of
   /// freedom given by `joint_dof`.

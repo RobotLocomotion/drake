@@ -199,6 +199,14 @@ class PrismaticJoint final : public Joint<T> {
     return 1;
   }
 
+  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+    return get_translation(context);
+  }
+
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+    return get_translation_rate(context);
+  }
+
   // Joint<T> finals:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const final {

@@ -257,6 +257,37 @@ void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
 }
 
 template<typename T>
+void MultibodyPlant<T>::SetUpJointLimitsParameters() {
+  const double kJointLimitsStiffness = 150.0;
+  const double kJointLimitsDamping = 1.0;
+
+  for (JointIndex joint_index(0); joint_index < model().num_joints();
+       ++joint_index) {
+    const Joint<T>& joint = model().get_joint(joint_index);
+    auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
+    auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
+    DRAKE_THROW_UNLESS(revolute_joint || prismatic_joint);
+    joint_limits_parameters_.joints_with_limits.push_back(joint.index());
+    joint_limits_parameters_.stiffness.push_back(kJointLimitsStiffness);
+    joint_limits_parameters_.damping.push_back(kJointLimitsDamping);
+
+    if (revolute_joint) {
+      joint_limits_parameters_.lower_limit.push_back(
+          revolute_joint->lower_limit());
+      joint_limits_parameters_.upper_limit.push_back(
+          revolute_joint->upper_limit());
+    }
+
+    if (prismatic_joint) {
+      joint_limits_parameters_.lower_limit.push_back(
+          prismatic_joint->lower_limit());
+      joint_limits_parameters_.upper_limit.push_back(
+          prismatic_joint->upper_limit());
+    }
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a SceneGraph if the plant is
@@ -282,28 +313,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
         stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
   }
-
-  for (JointIndex joint_index(0); joint_index < model().num_joints();
-      ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-
-    auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
-    if (revolute_joint) {
-      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-      joint_limits_parameters_.lower_limit.push_back(revolute_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(revolute_joint->upper_limit());
-      joint_limits_parameters_.stiffness.push_back(150.0);
-      joint_limits_parameters_.damping.push_back(1.0);
-    }
-    auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
-    if (prismatic_joint) {
-      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-      joint_limits_parameters_.lower_limit.push_back(prismatic_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(prismatic_joint->upper_limit());
-      joint_limits_parameters_.stiffness.push_back(150.0);
-      joint_limits_parameters_.damping.push_back(1.0);
-    }
-  }
+  SetUpJointLimitsParameters();
 }
 
 template <typename T>
@@ -841,33 +851,13 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const double upper_limit = joint_limits_parameters_.upper_limit[index];
     const double stiffness = joint_limits_parameters_.stiffness[index];
     const double damping = joint_limits_parameters_.damping[index];
+    const Joint<T>& joint = model().get_joint(joint_index);
 
-    T q(0), v(0);
-    {
-      auto joint = dynamic_cast<const RevoluteJoint<T>*>(
-          &model().get_joint(joint_index));
-      if (joint) {
-        q = joint->get_angle(context);
-        v = joint->get_angular_rate(context);
-      }
-    }
-    {
-      auto joint = dynamic_cast<const PrismaticJoint<T>*>(
-          &model().get_joint(joint_index));
-      if (joint) {
-        q = joint->get_translation(context);
-        v = joint->get_translation_rate(context);
-      }
-    }
+    const T& q = joint.GetOnePosition(context);
+    const T& v = joint.GetOneVelocity(context);
 
     const T penalty_force = CalcJointLimitPenaltyForce(
         lower_limit, upper_limit, stiffness, damping, q, v);
-
-    const Joint<T>& joint = model().get_joint(joint_index);
-
-    //PRINT_VAR(joint.name());
-    //PRINT_VAR(stiffness);
-    //PRINT_VAR(damping);
 
     joint.AddInOneForce(context, 0, penalty_force, forces);
   }

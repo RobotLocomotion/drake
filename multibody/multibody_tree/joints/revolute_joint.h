@@ -207,6 +207,14 @@ class RevoluteJoint final : public Joint<T> {
     return 1;
   }
 
+  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+    return get_angle(context);
+  }
+
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+    return get_angular_rate(context);
+  }
+
   // Joint<T> overrides:
   std::unique_ptr<typename Joint<T>::BluePrint>
   MakeImplementationBlueprint() const override {

@@ -1152,6 +1152,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // bodies connected by a joint.
   void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
+  void SetUpJointLimitsParameters();
+
   // This is a *temporary* method to eliminate visual geometries from collision
   // while we wait for geometry roles to be introduced.
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
@@ -1474,8 +1476,11 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   StribeckModel stribeck_model_;
 
   struct JointLimitsParameters {
-    // list of joints that have limits.
+    // list of joints that have limits. These are all single-dof joints.
     std::vector<JointIndex> joints_with_limits;
+    // Position lower/upper bounds for each joint in joints_with_limits. The
+    // Units depend on the particular joint type. For instance, radians for
+    // RevoluteJoint or meters for PrismaticJoint.
     std::vector<double> lower_limit;
     std::vector<double> upper_limit;
     // Penalty parameters.
