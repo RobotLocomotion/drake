@@ -300,7 +300,9 @@ struct Impl {
             }, py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>())
+        // Computation.
         .def("CalcOutput", &System<T>::CalcOutput)
+        .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives)
         // Sugar.
         .def(
             "GetGraphvizString",
