@@ -144,6 +144,7 @@ drake_cc_library(
         ":multibody_tree_indexes",
         ":spatial_inertia",
         "//common:autodiff",
+        "//common:nice_type_name",
         "//math:geometric_transform",
     ],
 )
