@@ -144,4 +144,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "joint_limits_test",
+    timeout = "moderate",
+    deps = [
+        ":multibody_plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
 add_lint_tests()

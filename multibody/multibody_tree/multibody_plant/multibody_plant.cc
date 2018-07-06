@@ -62,7 +62,7 @@ struct JointLimitsPenaltyParametersEstimator {
   static std::pair<double, double>
   CalcCriticallyDampedHarmonicOscillatorParameters(
       double period, double inertia) {
-    const double damping_ratio = 1.0;  // Critically damped.
+    const double damping_ratio = 0.5;  // Close to critically damped.
     const double omega0 = 2.0 * M_PI / period;
     const double stiffness = inertia * omega0 * omega0;
     const double damping = 2.0 * damping_ratio * std::sqrt(inertia * stiffness);
@@ -103,7 +103,12 @@ struct JointLimitsPenaltyParametersEstimator {
     PRINT_VAR(child_params.second);
 
     // Return the combined penalty parameters of the two bodies.
-    return CombinePenaltyParameters(parent_params, child_params);
+    auto params = CombinePenaltyParameters(parent_params, child_params);
+
+    // Adjust to include the desired violation length scale.
+    // params.second = params.second / params.first / violation_length_scale;
+
+    return params;
   }
 
   static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
@@ -320,8 +325,8 @@ template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
-    const double kAlpha = 10.0;
-    const double kPenaltyTimeScale = 1.0e-3;
+    const double kAlpha = 100.0;
+    const double kPenaltyTimeScale = 0.1;
 
     const Joint<T>& joint = model().get_joint(joint_index);
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
@@ -354,11 +359,25 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
           prismatic_joint->lower_limit());
       joint_limits_parameters_.upper_limit.push_back(
           prismatic_joint->upper_limit());
+
       // Estimate penalty parameters.
       auto penalty_parameters =
           internal::JointLimitsPenaltyParametersEstimator<T>::
           CalcPrismaticJointPenaltyParameters(
               *prismatic_joint, penalty_time_scale);
+
+      if (!is_discrete()) {
+        // Harmonic oscillator parameters.
+        const double k = penalty_parameters.first;
+        const double c = penalty_parameters.second;
+        const double violation_scale =
+            (prismatic_joint->lower_limit() +
+             prismatic_joint->upper_limit()) / 100.0;
+        penalty_parameters.second = c / k / violation_scale;
+      }
+
+      PRINT_VAR(penalty_parameters.first);
+      PRINT_VAR(penalty_parameters.second);
       joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
       joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
@@ -898,8 +917,8 @@ template<typename T>
 void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
-  
-  auto CalcJointLimitPenaltyForce = [](
+
+  auto CalcContinuousPenaltyForce = [](
       double lower_limit, double upper_limit, double stiffness, double damping,
       const T& q, const T& v) {
     DRAKE_DEMAND(lower_limit <= upper_limit);
@@ -920,6 +939,28 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     }
     return T(0.0);
   };
+
+  auto CalcPenaltyForce = [](
+      double lower_limit, double upper_limit, double stiffness, double damping,
+      const T& q, const T& v) {
+    DRAKE_DEMAND(lower_limit <= upper_limit);
+    DRAKE_DEMAND(stiffness >= 0);
+    DRAKE_DEMAND(damping >= 0);
+
+    if (q > upper_limit) {
+      const T delta_q = q - upper_limit;
+      const T limit_force = (-stiffness * delta_q - damping * v);
+      using std::min;  // Needed for ADL.
+      return min(limit_force, 0.);
+    } else if (q < lower_limit) {
+      const T delta_q = q - lower_limit;
+      const T limit_force =
+          (-stiffness * delta_q + damping * v);
+      using std::max;  // Needed for ADL.
+      return max(limit_force, 0.);
+    }
+    return T(0.0);
+  };
   
   for (size_t index = 0;
        index < joint_limits_parameters_.joints_with_limits.size(); ++index) {
@@ -934,8 +975,11 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const T& q = joint.GetOnePosition(context);
     const T& v = joint.GetOneVelocity(context);
 
-    const T penalty_force = CalcJointLimitPenaltyForce(
-        lower_limit, upper_limit, stiffness, damping, q, v);
+    const T penalty_force = is_discrete() ?
+        CalcPenaltyForce(
+            lower_limit, upper_limit, stiffness, damping, q, v) :
+        CalcContinuousPenaltyForce(
+            lower_limit, upper_limit, stiffness, damping, q, v);
 
     joint.AddInOneForce(context, 0, penalty_force, forces);
   }
