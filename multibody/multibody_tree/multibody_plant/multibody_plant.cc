@@ -58,15 +58,56 @@ using systems::OutputPortIndex;
 namespace internal {
 template <typename T>
 struct JointLimitsPenaltyParametersEstimator {
-  static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
-      const RevoluteJoint<T>& joint) {
-    const double kJointLimitsStiffness = 150.0;
-    const double kJointLimitsDamping = 1.0;
-    return std::make_pair(kJointLimitsStiffness, kJointLimitsDamping);
+
+  static std::pair<double, double>
+  CalcCriticallyDampedHarmonicOscillatorParameters(
+      double period, double inertia) {
+    const double damping_ratio = 1.0;  // Critically damped.
+    const double omega0 = 2.0 * M_PI / period;
+    const double stiffness = inertia * omega0 * omega0;
+    const double damping = 2.0 * damping_ratio * std::sqrt(inertia * stiffness);
+    return std::make_pair(stiffness, damping);
   }
 
+  static std::pair<double, double> CombinePenaltyParameters(
+      const std::pair<double, double>& params1,
+      const std::pair<double, double>& params2) {
+    const double stiffness1 = params1.first;
+    const double stiffness2 = params2.first;
+    if (stiffness1 < stiffness2) {
+      return params1;
+    } else {
+      return params2;
+    }
+  };
+
   static std::pair<double, double> CalcPrismaticJointPenaltyParameters(
-      const PrismaticJoint<T>& joint) {
+      const PrismaticJoint<T>& joint, double numerical_time_scale) {
+    // Penalty parameters for the parent body (child fixed).
+    const double parent_mass = joint.parent_body().index() == world_index() ?
+                               std::numeric_limits<double>::infinity() :
+                               joint.parent_body().get_default_mass();
+    auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, parent_mass);
+    // Penalty parameters for the child body (parent fixed).
+    const double child_mass = joint.child_body().index() == world_index() ?
+                               std::numeric_limits<double>::infinity() :
+                               joint.child_body().get_default_mass();
+    auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, child_mass);
+
+    PRINT_VAR(parent_params.first);
+    PRINT_VAR(parent_params.second);
+
+    PRINT_VAR(child_params.first);
+    PRINT_VAR(child_params.second);
+
+    // Return the combined penalty parameters of the two bodies.
+    return CombinePenaltyParameters(parent_params, child_params);
+  }
+
+  static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
+      const RevoluteJoint<T>& joint) {
     const double kJointLimitsStiffness = 150.0;
     const double kJointLimitsDamping = 1.0;
     return std::make_pair(kJointLimitsStiffness, kJointLimitsDamping);
@@ -279,12 +320,19 @@ template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
+    const double kAlpha = 10.0;
+    const double kPenaltyTimeScale = 1.0e-3;
+
     const Joint<T>& joint = model().get_joint(joint_index);
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
     auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
     // Currently MBP only supports limits for prismatic and revolute joints.
-    DRAKE_THROW_UNLESS(revolute_joint || prismatic_joint);
+    if (!(revolute_joint || prismatic_joint)) continue;
+
     joint_limits_parameters_.joints_with_limits.push_back(joint.index());
+
+    const double penalty_time_scale =
+        is_discrete() ? kAlpha * time_step() : kPenaltyTimeScale;
 
     if (revolute_joint) {
       // Store joint limits.
@@ -309,7 +357,8 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
       // Estimate penalty parameters.
       auto penalty_parameters =
           internal::JointLimitsPenaltyParametersEstimator<T>::
-          CalcPrismaticJointPenaltyParameters(*prismatic_joint);
+          CalcPrismaticJointPenaltyParameters(
+              *prismatic_joint, penalty_time_scale);
       joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
       joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
