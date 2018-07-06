@@ -55,6 +55,25 @@ using systems::InputPortDescriptor;
 using systems::InputPortIndex;
 using systems::OutputPortIndex;
 
+namespace internal {
+template <typename T>
+struct JointLimitsPenaltyParametersEstimator {
+  static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
+      const RevoluteJoint<T>& joint) {
+    const double kJointLimitsStiffness = 150.0;
+    const double kJointLimitsDamping = 1.0;
+    return std::make_pair(kJointLimitsStiffness, kJointLimitsDamping);
+  }
+
+  static std::pair<double, double> CalcPrismaticJointPenaltyParameters(
+      const PrismaticJoint<T>& joint) {
+    const double kJointLimitsStiffness = 150.0;
+    const double kJointLimitsDamping = 1.0;
+    return std::make_pair(kJointLimitsStiffness, kJointLimitsDamping);
+  }
+};
+}  // namespace internal
+
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step) :
     systems::LeafSystem<T>(systems::SystemTypeTag<
@@ -258,31 +277,41 @@ void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
 
 template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
-  const double kJointLimitsStiffness = 150.0;
-  const double kJointLimitsDamping = 1.0;
-
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
     const Joint<T>& joint = model().get_joint(joint_index);
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
     auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
+    // Currently MBP only supports limits for prismatic and revolute joints.
     DRAKE_THROW_UNLESS(revolute_joint || prismatic_joint);
     joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-    joint_limits_parameters_.stiffness.push_back(kJointLimitsStiffness);
-    joint_limits_parameters_.damping.push_back(kJointLimitsDamping);
 
     if (revolute_joint) {
+      // Store joint limits.
       joint_limits_parameters_.lower_limit.push_back(
           revolute_joint->lower_limit());
       joint_limits_parameters_.upper_limit.push_back(
           revolute_joint->upper_limit());
+      // Estimate penalty parameters.
+      auto penalty_parameters =
+          internal::JointLimitsPenaltyParametersEstimator<T>::
+          CalcRevoluteJointPenaltyParameters(*revolute_joint);
+      joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+      joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
 
     if (prismatic_joint) {
+      // Store joint limits.
       joint_limits_parameters_.lower_limit.push_back(
           prismatic_joint->lower_limit());
       joint_limits_parameters_.upper_limit.push_back(
           prismatic_joint->upper_limit());
+      // Estimate penalty parameters.
+      auto penalty_parameters =
+          internal::JointLimitsPenaltyParametersEstimator<T>::
+          CalcPrismaticJointPenaltyParameters(*prismatic_joint);
+      joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+      joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
   }
 }
