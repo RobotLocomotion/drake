@@ -151,6 +151,10 @@ class RgbdRendererOSPRay::Impl : private ModuleInitVtkRenderingOpenGL2 {
   // respectively. Each vtkActor corresponds to an visual element specified in
   // SDF / URDF.
   std::map<int, std::array<ActorCollection, kNumOutputImage>> id_object_maps_;
+
+  vtkNew<vtkOSPRayPass> ospray_;
+  std::array<vtkNew<vtkActor>, kNumOutputImage> actors_;
+  std::array<vtkNew<vtkPolyDataMapper>, kNumOutputImage> mappers_;
 };
 
 void RgbdRendererOSPRay::Impl::SetBackground(
@@ -265,8 +269,7 @@ RgbdRendererOSPRay::Impl::Impl(RgbdRendererOSPRay* parent,
   }
 
   // OSPRay specific configuration.
-  vtkNew<vtkOSPRayPass> ospray;
-  cp->renderer->SetPass(ospray);
+  cp->renderer->SetPass(ospray_);
   vtkOSPRayRendererNode::SetRendererType("pathtracer", cp->renderer);
   vtkOSPRayRendererNode::SetSamplesPerPixel(1, cp->renderer);
 
@@ -310,9 +313,6 @@ RgbdRendererOSPRay::Impl::Impl(RgbdRendererOSPRay* parent,
 optional<RgbdRenderer::VisualIndex>
 RgbdRendererOSPRay::Impl::ImplRegisterVisual(
     const DrakeShapes::VisualElement& visual, int body_id) {
-  std::array<vtkNew<vtkActor>, kNumOutputImage> actors;
-  std::array<vtkNew<vtkPolyDataMapper>, kNumOutputImage> mappers;
-
   bool shape_matched = true;
   const DrakeShapes::Geometry& geometry = visual.getGeometry();
   switch (visual.getShape()) {
@@ -325,7 +325,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       vtk_cube->SetYLength(box.size(1));
       vtk_cube->SetZLength(box.size(2));
 
-      for (auto& mapper : mappers) {
+      for (auto& mapper : mappers_) {
         mapper->SetInputConnection(vtk_cube->GetOutputPort());
       }
       break;
@@ -337,7 +337,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       vtk_sphere->SetThetaResolution(50);
       vtk_sphere->SetPhiResolution(50);
 
-      for (auto& mapper : mappers) {
+      for (auto& mapper : mappers_) {
         mapper->SetInputConnection(vtk_sphere->GetOutputPort());
       }
       break;
@@ -359,7 +359,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       transform_filter->SetTransform(transform.GetPointer());
       transform_filter->Update();
 
-      for (auto& mapper : mappers) {
+      for (auto& mapper : mappers_) {
         mapper->SetInputConnection(transform_filter->GetOutputPort());
       }
       break;
@@ -384,7 +384,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       transform_filter->SetTransform(transform.GetPointer());
       transform_filter->Update();
 
-      for (auto& mapper : mappers) {
+      for (auto& mapper : mappers_) {
         mapper->SetInputConnection(transform_filter->GetOutputPort());
       }
 
@@ -394,7 +394,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
       const std::string file = RemoveFileExtension(mesh_filename);
       bool success = materials_->ReadFile(std::string(file + ".json").c_str());
       if (success) {
-        auto prop = actors[ImageType::kColor]->GetProperty();
+        auto prop = actors_[ImageType::kColor]->GetProperty();
         auto f = file.substr(file.find_last_of("/") + 1);
         prop->SetMaterialName(f.c_str());
       } else {
@@ -415,7 +415,7 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
 
   // Registers actors.
   if (shape_matched) {
-    auto& color_actor = actors[ImageType::kColor];
+    auto& color_actor = actors_[ImageType::kColor];
     if (color_actor->GetProperty()->GetNumberOfTextures() == 0) {
       // Taken from diffuse color.
       const auto color = visual.getMaterial();
@@ -425,11 +425,11 @@ RgbdRendererOSPRay::Impl::ImplRegisterVisual(
     vtkSmartPointer<vtkTransform> vtk_transform =
         ConvertToVtkTransform(visual.getWorldTransform());
     auto& actor_collections = id_object_maps_[body_id];
-    for (size_t i = 0; i < actors.size(); ++i) {
-      actors[i]->SetMapper(mappers[i].GetPointer());
-      actors[i]->SetUserTransform(vtk_transform);
-      pipelines_[i]->renderer->AddActor(actors[i].GetPointer());
-      actor_collections[i].push_back(actors[i].GetPointer());
+    for (size_t i = 0; i < actors_.size(); ++i) {
+      actors_[i]->SetMapper(mappers_[i].GetPointer());
+      actors_[i]->SetUserTransform(vtk_transform);
+      pipelines_[i]->renderer->AddActor(actors_[i].GetPointer());
+      actor_collections[i].push_back(actors_[i].GetPointer());
     }
 
     return optional<VisualIndex>(VisualIndex(static_cast<int>(
