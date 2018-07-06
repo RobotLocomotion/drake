@@ -85,6 +85,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
 
   RotationMatrix<double> R;
   R.SetOrThrowIfNotValidInDebugBuild(m);
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
@@ -270,26 +271,40 @@ GTEST_TEST(RotationMatrix, IsValid) {
 
 // Tests whether or not a RotationMatrix is an identity matrix.
 GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
+  // Test that the default constructor creates an exact identity matrix.
   RotationMatrix<double> R;
   EXPECT_TRUE(R.IsExactlyIdentity().value());
 
+  // Test that setting R to an identity matrix does not throw an exception.
   Matrix3d m;
   m << 1, 0, 0,
        0, 1, 0,
        0, 0, 1;
-  R.SetOrThrowIfNotValid(m);
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   EXPECT_TRUE(R.IsExactlyIdentity().value());
 
-  m(0, 2) = kEpsilon;
-  R.SetOrThrowIfNotValid(m);
+  // Test impact of absolute mininimum deviation from identity matrix.
+  m(0, 2) = std::numeric_limits<double>::denorm_min();  // ≈ 4.94066e-324
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   EXPECT_FALSE(R.IsExactlyIdentity().value());
+
+  // Test that setting a RotationMatrix to a 3x3 matrix that is close-enough to
+  // an identity matrix does not throw an exception.
+  m(0, 2) = 127 * kEpsilon;
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  EXPECT_FALSE(R.IsExactlyIdentity().value());
+
+  // Test that setting a RotationMatrix to a 3x3 matrix that is slightly too-far
+  // from an identity matrix will throw an exception.
+  m(0, 2) = 129 * kEpsilon;
+  EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
 
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  R.SetOrThrowIfNotValid(m);
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   EXPECT_FALSE(R.IsExactlyIdentity().value());
 }
 
@@ -471,53 +486,47 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   const double q3d = std::sqrt(1 - (q0d * q0d + q1d * q1d + q2d * q2d));
   const symbolic::Environment env{{q0, q0d}, {q1, q1d}, {q2, q2d}, {q3, q3d}};
 
-  // Evaluate the symbolic R_R_inverse matrix with specific numerical values.
-  const Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
+  // Test that a RotationMatrix with underlying symbolic expressions properly
+  // evaluates, e.g. evaluate symbolic R_R_inverse matrix with numerical values.
+  Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
   Eigen::Matrix3d m_numerical{Evaluate(m_symbolic, env)};
   const RotationMatrix<double> R_identity(m_numerical);
   const Bool<double> is_identity = R_identity.IsIdentityToInternalTolerance();
   EXPECT_TRUE(is_identity.value());
 
-  // Verify Bool methods IsExactlyIdentity(), IsIdentityToInternalTolerance().
-  // Note: Some of these tests are repeated above (OK).
-  m_numerical(0, 1) = kEpsilon;
-  const RotationMatrix<double> R_approx(m_numerical);
-  EXPECT_FALSE(R_approx.IsExactlyIdentity().value());
-  EXPECT_TRUE(R_approx.IsIdentityToInternalTolerance().value());
+  // Verify default constructor for a RotationMatrix templatized on
+  // symbolic::Expression is an identity matrix.
+  RotationMatrix<symbolic::Expression> R1;
+  EXPECT_TRUE(R1.IsExactlyIdentity().value());
 
-  // Verify Bool method IsOrthonormal();
-  const Bool<double> is_orthonormal =
-      RotationMatrix<double>::IsOrthonormal(R_identity.matrix(), 16*kEpsilon);
+  // Verify IsOrthonormal() can be called on a 3x3 matrix templatized on
+  // symbolic::Expression, when its elements have numerical values.
+  m_symbolic << 1, 0, 0,
+                0, 1, 0,
+                0, 0, 1;
+  Bool<symbolic::Expression> is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(m_symbolic, 0);
   EXPECT_TRUE(is_orthonormal.value());
+  m_symbolic(0, 2) = 8 * kEpsilon;
+  is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(m_symbolic, kEpsilon);
+  EXPECT_FALSE(is_orthonormal.value());
 
-  // Verify Bool method IsValid().
-  const Bool<double> is_validA =
-      RotationMatrix<double>::IsValid(R_identity.matrix(), 16*kEpsilon);
-  EXPECT_TRUE(is_validA.value());
-
-  // Verify Bool method IsValid().
-  m_numerical(0, 1) = 800 * kEpsilon;
-  const Bool<double> is_validB = RotationMatrix<double>::IsValid(m_numerical);
-  EXPECT_FALSE(is_validB.value());
-
-  // Verify Bool method IsNearlyEqualTo().
-  const Bool<double> is_nearly_equalA =
-      R_approx.IsNearlyEqualTo(R_identity, 10 * kEpsilon);
-  const Bool<double> is_nearly_equalB =
-      R_approx.IsNearlyEqualTo(R_identity, 0.1 * kEpsilon);
-  EXPECT_TRUE(is_nearly_equalA.value());
-  EXPECT_FALSE(is_nearly_equalB.value());
+  // When the underlying scalar type is a symbolic::Expression, ensure
+  // SetOrThrowIfNotValidInDebugBuild() only sets the rotation matrix, with no
+  // validity checks, e.g., ThrowIfNotValid() is a "no-op" (does nothing).
+  m_symbolic << q0, q1, q2,
+                q1, q2, q3,
+                q2, q3, 4;
+  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
+  EXPECT_FALSE(R1.IsExactlyIdentity().value());
 
   // Verify Bool method IsExactlyEqualTo().
-  const Bool<double> is_exactly_equalA = R_approx.IsExactlyEqualTo(R_approx);
-  const Bool<double> is_exactly_equalB = R_approx.IsExactlyEqualTo(R_identity);
-  EXPECT_TRUE(is_exactly_equalA.value());
-  EXPECT_FALSE(is_exactly_equalB.value());
-
-  // Ensure ThrowIfNotValid() does nothing for symbolic::Expression
-  const Matrix3<symbolic::Expression> m_symbolic_inverse = R_inverse.matrix();
-  RotationMatrix<symbolic::Expression> R_symbolic;
-  EXPECT_NO_THROW(R_symbolic.SetOrThrowIfNotValid(m_symbolic_inverse));
+  RotationMatrix<symbolic::Expression> R2;
+  const Bool<symbolic::Expression> is_exactly_equal = R2.IsExactlyEqualTo(R1);
+  EXPECT_FALSE(is_exactly_equal.value());
+  R2.SetOrThrowIfNotValidInDebugBuild(R1.matrix());
+  EXPECT_TRUE(R2.IsExactlyEqualTo(R1).value());
 }
 
 class RotationMatrixConversionTests : public ::testing::Test {

@@ -417,9 +417,9 @@ class RotationMatrix {
   /// - [Dahleh] "Lectures on Dynamic Systems and Controls: Electrical
   /// Engineering and Computer Science, Massachusetts Institute of Technology"
   /// https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-241j-dynamic-systems-and-control-spring-2011/readings/MIT6_241JS11_chap04.pdf
-  // @internal Although this function exists for all scalar types, invocation on
-  // symbolic::Expression (non-numeric types) will throw an exception.
-  // @internal This function's name is referenced in Doxygen documentation.
+  /// @note Although this function exists for all scalar types, invocation on
+  /// symbolic::Expression (non-numeric types) will throw an exception.
+  //  @internal This function's name is referenced in Doxygen documentation.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, RotationMatrix<S>>::type
   ProjectToRotationMatrix(const Matrix3<S>& M, T* quality_factor = NULL) {
