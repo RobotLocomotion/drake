@@ -343,36 +343,20 @@ class SimplePenetrationTest : public ::testing::Test {
     Vector3<double> norm_into_B = Vector3<double>::UnitX();
     expected.nhat_BA_W = origin_is_A ? -norm_into_B : norm_into_B;
 
-    // Reverse if previous order assumption is false
-    if (penetration.id_A == colliding_sphere) {
-      Vector3<double> temp;
-      // Swap the indices
-      expected_penetration.id_A = colliding_sphere;
-      expected_penetration.id_B = origin_sphere;
-      // Swap the points
-      temp = expected_penetration.p_WCa;
-      expected_penetration.p_WCa = expected_penetration.p_WCb;
-      expected_penetration.p_WCb = temp;
-      // Reverse the normal
-      expected_penetration.nhat_BA_W = -expected_penetration.nhat_BA_W;
-      // Penetration depth is same either way; do nothing.
-    }
->>>>>>> Pick what I want
-
-    EXPECT_EQ(penetration.id_A, expected_penetration.id_A);
-    EXPECT_EQ(penetration.id_B, expected_penetration.id_B);
-    EXPECT_EQ(penetration.depth, expected_penetration.depth);
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected_penetration.p_WCa,
+    EXPECT_EQ(penetration.id_A, expected.id_A);
+    EXPECT_EQ(penetration.id_B, expected.id_B);
+    EXPECT_EQ(penetration.depth, expected.depth);
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCa, expected.p_WCa,
                                 1e-13, MatrixCompareType::absolute));
-    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected_penetration.p_WCb,
+    EXPECT_TRUE(CompareMatrices(penetration.p_WCb, expected.p_WCb,
                                 1e-13, MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(penetration.nhat_BA_W,
-                                expected_penetration.nhat_BA_W, 1e-13,
+                                expected.nhat_BA_W, 1e-13,
                                 MatrixCompareType::absolute));
 
     // Should return the penetration depth here.
     NearestPair<double> expected_distance;
-    expected_distance.distance = -expected_penetration.depth;
+    expected_distance.distance = -expected.depth;
     expected_distance.id_A = origin_sphere;
     expected_distance.id_B = colliding_sphere;
     expected_distance.p_ACa = Eigen::Vector3d(radius_, 0, 0);
@@ -386,7 +370,10 @@ class SimplePenetrationTest : public ::testing::Test {
 
   // Compute penetration and confirm that none were found.
   template <typename T>
-  void ExpectNoPenetration(ProximityEngine<T>* engine) {
+  void ExpectNoPenetration(GeometryId origin_sphere,
+                           GeometryId colliding_sphere,
+                           double colliding_sphere_x,
+                           ProximityEngine<T>* engine) {
     std::vector<PenetrationAsPointPair<double>> penetration_results =
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
     EXPECT_EQ(penetration_results.size(), 0);
@@ -399,19 +386,23 @@ class SimplePenetrationTest : public ::testing::Test {
 
     // There are no guarantees as to the ordering of which element is A and
     // which is B. This test enforces an order for validation.
-
     EXPECT_TRUE(
         (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
         (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
 
+    bool origin_is_A = origin_sphere < colliding_sphere;
     NearestPair<double> expected_distance;
-    expected_distance.id_A = origin_sphere;     // located at origin
-    expected_distance.id_B = colliding_sphere;  // located at [1.5R, 0, 0]
-    expected_distance.distance = 2 * radius_ - colliding_x_;
-    expected_distance.p_ACa = Vector3<double>{radius_, 0, 0};
-    expected_distance.p_BCb = Vector3<double>{-radius_, 0, 0};
+    expected_distance.id_A = origin_is_A ? origin_sphere : colliding_sphere;
+    expected_distance.id_B = origin_is_A ? colliding_sphere : origin_sphere;
+    expected_distance.distance = colliding_sphere_x - 2 * radius_;
+    // Contact point on the origin_sphere.
+    Vector3<double> p_OCo{radius_, 0, 0};
+    // Contact point on the colliding_sphere.
+    Vector3<double> p_CCc{-radius_, 0, 0};
+    expected_distance.p_ACa = origin_is_A ? p_OCo : p_CCc;
+    expected_distance.p_BCb = origin_is_A ? p_CCc : p_OCo;
 
-    CompareNearestPair(distance, expected_distance, 1e-13);
+    CompareNearestPair(distance, expected_distance, 2e-3);
   }
 
   ProximityEngine<double> engine_;
@@ -443,7 +434,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndAnchored) {
 
   // Non-colliding case
   MoveDynamicSphere(dynamic_index, false /* not colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, dynamic_id, free_x_, &engine_);
 
   // Colliding case
   MoveDynamicSphere(dynamic_index, true /* colliding */);
@@ -477,7 +468,7 @@ TEST_F(SimplePenetrationTest, PenetrationDynamicAndDynamicSingleSource) {
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, collide_id, free_x_, &engine_);
 
   // Colliding case
   MoveDynamicSphere(collide_index, true /* colliding */);
@@ -550,20 +541,20 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsWithin) {
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, collide_id, free_x_, &engine_);
 
   // Colliding case
   MoveDynamicSphere(collide_index, true /* colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, &engine_);
 
   // Test colliding case on copy.
   ProximityEngine<double> copy_engine(engine_);
-  ExpectNoPenetration(&copy_engine);
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, &copy_engine);
 
   // Test AutoDiffXd converted engine
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectNoPenetration(ad_engine.get());
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, ad_engine.get());
 }
 
 // Invokes ExcludeCollisionsBetween in various scenarios which will and won't
@@ -639,20 +630,20 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
 
   // Non-colliding case
   MoveDynamicSphere(collide_index, false /* not colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, collide_id, free_x_, &engine_);
 
   // Colliding case
   MoveDynamicSphere(collide_index, true /* colliding */);
-  ExpectNoPenetration(&engine_);
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, &engine_);
 
   // Test colliding case on copy.
   ProximityEngine<double> copy_engine(engine_);
-  ExpectNoPenetration(&copy_engine);
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, &copy_engine);
 
   // Test AutoDiffXd converted engine
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
-  ExpectNoPenetration(ad_engine.get());
+  ExpectNoPenetration(origin_id, collide_id, colliding_x_, ad_engine.get());
 }
 
 // Robust Box-Primitive tests. Tests collision of the box with other primitives
