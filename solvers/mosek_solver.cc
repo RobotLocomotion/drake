@@ -21,8 +21,9 @@ namespace {
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
-// https://docs.mosek.com/8.1/capi/solver-io.html.
-static void MSKAPI printstr(void* handle, const char str[]) {
+// https://docs.mosek.com/8.1/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/8.1/capi/solver-io.html#stream-logging.
+void MSKAPI printstr(void* , const char str[]) {
   printf("%s", str);
 }
 
@@ -713,7 +714,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   }
   if (rescode == MSK_RES_OK && stream_logging_) {
     if (log_file_.empty()) {
-      rescode = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
+      rescode =
+          MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
     } else {
       rescode =
           MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);

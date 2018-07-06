@@ -73,7 +73,9 @@ class MosekSolver : public MathematicalProgramSolverInterface {
   // or a log file. Default to false, such that the solver runs silently.
   // Check out https://docs.mosek.com/8.1/capi/solver-io.html for more info.
   bool stream_logging_{false};
-  // The log file
+  // set @p log_file to the name of that file. If the user wants to output the
+  // logging to the console, then set log_file to empty string. Default to an
+  // empty string.
   std::string log_file_{};
 };
 
