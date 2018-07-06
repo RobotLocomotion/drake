@@ -30,6 +30,7 @@ drake_cc_binary(
         "//geometry:geometry_visualization",
         "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant",
+        "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
         "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
         "//systems/analysis:implicit_euler_integrator",
         "//systems/analysis:runge_kutta2_integrator",
