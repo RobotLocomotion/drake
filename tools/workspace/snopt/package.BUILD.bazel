@@ -12,14 +12,6 @@ _MAYBE_SNFILEWRAPPER = glob([
     "cexamples/snfilewrapper.h",
 ])
 
-cc_library(
-    name = "snopt_cwrap",
-    srcs = ["interfaces/src/snopt_cwrap.c"],
-    hdrs = ["interfaces/include/snopt_cwrap.h"],
-    visibility = ["//visibility:public"],
-    deps = ["snopt_c"],
-)
-
 # Drake's binary releases are allowed to redistribute SNOPT only if SNOPT is
 # not redistributed as a stand-alone package -- users must not use the SNOPT
 # code on its own, but rather only through Drake's interfaces.  To that end,
