@@ -126,6 +126,34 @@ GTEST_TEST(RgbdCamera, TestInstantiation) {
   Verify(movable_camera_hd720, kSizeHd720);
 }
 
+GTEST_TEST(RgbdCamera, TestInstantiationRenderer) {
+  auto Verify = [](const RgbdCamera& camera, Size size) {
+    VerifyCameraInfo(camera.color_camera_info(), size);
+    VerifyCameraInfo(camera.depth_camera_info(), size);
+    VerifyCameraPose(camera.color_camera_optical_pose());
+    VerifyCameraPose(camera.depth_camera_optical_pose());
+    EXPECT_NO_THROW(camera.tree());
+  };
+
+  RgbdCamera fixed_camera("rgbd_camera", RigidBodyTree<double>(),
+                          Eigen::Vector3d(1., 2., 3.),
+                          Eigen::Vector3d(0.1, 0.2, 0.3),
+                          std::make_unique<RgbdRendererVTK>(RenderingConfig{
+                              kSizeVga.width, kSizeVga.height, kFovY,
+                              kDepthRangeNear, kDepthRangeFar, kShowWindow}));
+  Verify(fixed_camera, kSizeVga);
+  // With the fixed camera use case, RgbdCamera doesn't hold a frame, thus
+  // throws an exception.
+  EXPECT_THROW(fixed_camera.frame(), std::logic_error);
+
+  RgbdCamera movable_camera("rgbd_camera", RigidBodyTree<double>(),
+                            RigidBodyFrame<double>(),
+                            std::make_unique<RgbdRendererVTK>(RenderingConfig{
+                                kSizeVga.width, kSizeVga.height, kFovY,
+                                kDepthRangeNear, kDepthRangeFar, kShowWindow}));
+  Verify(movable_camera, kSizeVga);
+  EXPECT_NO_THROW(movable_camera.frame());
+}
 
 class RgbdCameraDiagram : public systems::Diagram<double> {
  public:
@@ -300,46 +328,6 @@ TEST_F(RgbdCameraDiagramTest, MovableCameraOutputTest) {
     const Eigen::Isometry3d actual = camera_base_pose->get_isometry();
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(),
                                 actual.matrix(), kTolerance));
-  }
-}
-
-// Making sure that output image will be the same before vs. after calling
-// ResetRenderer()
-TEST_F(RgbdCameraDiagramTest, ResetRendererTest) {
-  // RgbdCamera is looking straight down 1m above the ground.
-  const Eigen::Isometry3d X_WB = Eigen::Translation3d(0., 0., 1.) *
-      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
-
-  for (auto size : kSizes) {
-    Init("nothing.sdf", X_WB, size);
-    Verify();
-
-    auto renderer1 = &diagram_->camera().mutable_renderer();
-
-    auto const rgb1 =
-        output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
-
-    diagram_->camera().ResetRenderer(
-        std::unique_ptr<RgbdRenderer>(new RgbdRendererVTK(
-            RenderingConfig{size.width, size.height, kFovY,
-                            kDepthRangeNear, kDepthRangeFar, kShowWindow})));
-
-    auto renderer2 = &diagram_->camera().mutable_renderer();
-    EXPECT_NE(renderer1, renderer2);
-
-    CalcOutput();
-
-    auto const rgb2 =
-        output_->GetMutableData(0)->GetMutableValue<ImageRgba8U>();
-
-    for (int y = 0; y < size.height; ++y) {
-      for (int x = 0; x < size.width; ++x) {
-        for (int ch = 0; ch < 4; ++ch) {
-          // Use ASSERT here instead of EXPECT to stop all subsequent testing.
-          ASSERT_EQ(rgb1.at(x, y)[ch], rgb2.at(x, y)[ch]);
-        }
-      }
-    }
   }
 }
 

@@ -57,18 +57,18 @@ RgbdCamera::RgbdCamera(const std::string& name,
                        int height)
     : tree_(tree),
       frame_(RigidBodyFrame<double>()),
-      camera_fixed_(true),
-      color_camera_info_(width, height, fov_y),
-      depth_camera_info_(width, height, fov_y),
       X_WB_initial_(
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
                                 .ToMatrix3ViaRotationMatrix())),
+      camera_fixed_(true),
       renderer_(new RgbdRendererVTK(
           RenderingConfig{width, height, fov_y, z_near, z_far, show_window},
           Eigen::Translation3d(position[0], position[1], position[2]) *
           Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
-                                .ToMatrix3ViaRotationMatrix()) * X_BC_)) {
+                                .ToMatrix3ViaRotationMatrix()) * X_BC_)),
+      color_camera_info_(width, height, fov_y),
+      depth_camera_info_(width, height, fov_y) {
   InitPorts(name);
   InitRenderer();
 }
@@ -81,12 +81,49 @@ RgbdCamera::RgbdCamera(const std::string& name,
     : tree_(tree),
       frame_(frame),
       camera_fixed_(false),
-      color_camera_info_(width, height, fov_y),
-      depth_camera_info_(width, height, fov_y),
       renderer_(
           new RgbdRendererVTK(RenderingConfig{width, height, fov_y,
                                               z_near, z_far, show_window},
-                              Eigen::Isometry3d::Identity())) {
+                              Eigen::Isometry3d::Identity())),
+      color_camera_info_(width, height, fov_y),
+      depth_camera_info_(width, height, fov_y) {
+  InitPorts(name);
+  InitRenderer();
+}
+
+RgbdCamera::RgbdCamera(const std::string& name,
+                       const RigidBodyTree<double>& tree,
+                       const Eigen::Vector3d& position,
+                       const Eigen::Vector3d& orientation,
+                       std::unique_ptr<RgbdRenderer> renderer)
+    : tree_(tree),
+      frame_(RigidBodyFrame<double>()),
+      X_WB_initial_(
+          Eigen::Translation3d(position[0], position[1], position[2]) *
+          Eigen::Isometry3d(math::RollPitchYaw<double>(orientation)
+                                .ToMatrix3ViaRotationMatrix())),
+      camera_fixed_(true),
+      renderer_(std::move(renderer)),
+      color_camera_info_(renderer_->config().width, renderer_->config().height,
+                         renderer_->config().fov_y),
+      depth_camera_info_(renderer_->config().width, renderer_->config().height,
+                         renderer_->config().fov_y) {
+  InitPorts(name);
+  InitRenderer();
+}
+
+RgbdCamera::RgbdCamera(const std::string& name,
+                       const RigidBodyTree<double>& tree,
+                       const RigidBodyFrame<double>& frame,
+                       std::unique_ptr<RgbdRenderer> renderer)
+    : tree_(tree),
+      frame_(frame),
+      camera_fixed_(false),
+      renderer_(std::move(renderer)),
+      color_camera_info_(renderer_->config().width, renderer_->config().height,
+                         renderer_->config().fov_y),
+      depth_camera_info_(renderer_->config().width, renderer_->config().height,
+                         renderer_->config().fov_y) {
   InitPorts(name);
   InitRenderer();
 }

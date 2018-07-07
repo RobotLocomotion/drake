@@ -23,8 +23,6 @@ namespace systems {
 namespace sensors {
 /// An RGB-D camera system that provides RGB, depth and label images using
 /// visual elements of RigidBodyTree.
-/// RgbdCamera uses [VTK](https://github.com/Kitware/VTK) as the rendering
-/// backend.
 /// Its image resolution is fixed at VGA (640 x 480 pixels) for all three
 /// images. The default depth sensing range is from 0.5 m to 5.0 m.
 ///
@@ -68,30 +66,12 @@ class RgbdCamera final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdCamera)
 
-  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
-  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
-  /// in the converted point will be NaN.
-  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
-  /// InvalidDepth::kTooClose, the converted point will be
-  /// InvalidDepth::kTooFar. Note that this matches the convention used by the
-  /// Point Cloud Library (PCL).
-  ///
-  /// @param[in] depth_image The input depth image obtained from RgbdCamera.
-  ///
-  /// @param[in] camera_info The input camera info which is used for conversion.
-  ///
-  /// @param[out] point_cloud The pointer of output point cloud.
-  // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
-  // Eigen::Matrix3Xf and create new constants there instead of reusing
-  // InvalidDepth.
-  // TODO(kunimatsu-tri) Move this to drake::perception.
-  static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
-                                            const CameraInfo& camera_info,
-                                            Eigen::Matrix3Xf* point_cloud);
-
   /// A constructor for %RgbdCamera that defines `B` using Euler angles.
   /// The pose of %RgbdCamera will be fixed to the world coordinate system
   /// throughout the simulation.
+  ///
+  /// This constructor uses [VTK](https://github.com/Kitware/VTK) as the
+  /// rendering backend.
   ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
@@ -139,6 +119,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
   /// updated during the simulation.
   ///
+  /// This constructor uses [VTK](https://github.com/Kitware/VTK) as the
+  /// rendering backend.
+  ///
   /// @param name The name of the RgbdCamera.  This can be any value, but
   /// should typically be unique among all sensors attached to a particular
   /// model instance.
@@ -176,24 +159,66 @@ class RgbdCamera final : public LeafSystem<double> {
              int width = RenderingConfig::kDefaultWidth,
              int height = RenderingConfig::kDefaultHeight);
 
-  ~RgbdCamera() = default;
+  /// A constructor for %RgbdCamera that defines `B` using Euler angles.
+  /// The pose of %RgbdCamera will be fixed to the world coordinate system
+  /// throughout the simulation.
+  ///
+  /// @param name The name of the RgbdCamera.  This can be any value, but
+  /// should typically be unique among all sensors attached to a particular
+  /// model instance.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
+  ///
+  /// @param position The x-y-z position of `B` in `W`. This defines the
+  /// translation component of `X_WB`.
+  ///
+  /// @param orientation The roll-pitch-yaw orientation of `B` in `W`. This
+  /// defines the orientation component of `X_WB`.
+  ///
+  /// @param renderer The rendering backend to render images for the camera.
+  /// Camera configuration parameters are obtained from the RenderingConfig
+  /// settings in the renderer. The renderer will be owned by this camera.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
+  RgbdCamera(const std::string& name,
+             const RigidBodyTree<double>& tree,
+             const Eigen::Vector3d& position,
+             const Eigen::Vector3d& orientation,
+             std::unique_ptr<RgbdRenderer> renderer);
 
-  /// Sets and initializes RgbdRenderer. The viewpoint of renderer will be
-  /// appropriately handled inside this function.
-  /// Note that if any visual element is registered with renderer before
-  /// this method is called, its behavior will not be guaranteed.
-  // TODO(kunimatsu-tri) Initialize the internal state of renderer when this
-  // method is called.
-  void ResetRenderer(std::unique_ptr<RgbdRenderer> renderer) {
-    renderer_ = std::move(renderer);
-    InitRenderer();
-    // This is needed only for camera_fixed_ is true since UpdateViewpoint()
-    // will be called while rendering related output ports are evaluated
-    // if it is false.
-    if (camera_fixed_) {
-      renderer_->UpdateViewpoint(X_WB_initial_ * X_BC_);
-    }
-  }
+  /// A constructor for %RgbdCamera that defines `B` using a RigidBodyFrame.
+  /// The pose of %RgbdCamera is fixed to a user-defined frame and will be
+  /// updated during the simulation.
+  ///
+  /// @param name The name of the RgbdCamera.  This can be any value, but
+  /// should typically be unique among all sensors attached to a particular
+  /// model instance.
+  ///
+  /// @param tree The RigidBodyTree containing the geometric description of the
+  /// world. The life span of this parameter must exceed that of this class's
+  /// instance. The maximum number of bodies in the `tree` must be less than
+  /// 1536 based on the number of the colors used for the label image, otherwise
+  /// an exception will be thrown.
+  ///
+  /// @param frame The frame in @tree to which this camera is attached.
+  ///
+  /// @param renderer The rendering backend to render images for the camera.
+  /// Camera configuration parameters are obtained from the RenderingConfig
+  /// settings in the renderer. The renderer will be owned by this camera.
+  ///
+  /// @throws std::logic_error When the number of rigid bodies in the scene
+  /// exceeds the maximum limit 1535.
+  RgbdCamera(const std::string& name,
+             const RigidBodyTree<double>& tree,
+             const RigidBodyFrame<double>& frame,
+             std::unique_ptr<RgbdRenderer> renderer);
+
+  ~RgbdCamera() = default;
 
   /// Reterns mutable renderer.
   RgbdRenderer& mutable_renderer() { return *renderer_; }
@@ -244,6 +269,27 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Returns the vector valued output port that contains a PoseVector.
   const OutputPort<double>& camera_base_pose_output_port() const;
 
+  /// Converts a depth image obtained from RgbdCamera to a point cloud.  If a
+  /// pixel in the depth image has NaN depth value, all the `(x, y, z)` values
+  /// in the converted point will be NaN.
+  /// Similarly, if a pixel has either InvalidDepth::kTooFar or
+  /// InvalidDepth::kTooClose, the converted point will be
+  /// InvalidDepth::kTooFar. Note that this matches the convention used by the
+  /// Point Cloud Library (PCL).
+  ///
+  /// @param[in] depth_image The input depth image obtained from RgbdCamera.
+  ///
+  /// @param[in] camera_info The input camera info which is used for conversion.
+  ///
+  /// @param[out] point_cloud The pointer of output point cloud.
+  // TODO(kunimatsu-tri) Use drake::perception::PointCloud instead of
+  // Eigen::Matrix3Xf and create new constants there instead of reusing
+  // InvalidDepth.
+  // TODO(kunimatsu-tri) Move this to drake::perception.
+  static void ConvertDepthImageToPointCloud(const ImageDepth32F& depth_image,
+                                            const CameraInfo& camera_info,
+                                            Eigen::Matrix3Xf* point_cloud);
+
  private:
   void InitPorts(const std::string& name);
 
@@ -274,11 +320,8 @@ class RgbdCamera final : public LeafSystem<double> {
   const RigidBodyFrame<double> frame_;
   using VisualIndex = RgbdRenderer::VisualIndex;
   std::map<int, std::vector<VisualIndex>> body_visual_indices_map_;
-
-  const bool camera_fixed_;
-  const CameraInfo color_camera_info_;
-  const CameraInfo depth_camera_info_;
   const Eigen::Isometry3d X_WB_initial_;
+
   // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
   // the RgbdCamera's base coordinate system (`B`).
   // TODO(kunimatsu-tri) Add support for arbitrary relative pose.
@@ -293,7 +336,10 @@ class RgbdCamera final : public LeafSystem<double> {
         (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
          Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
+  const bool camera_fixed_;
   std::unique_ptr<RgbdRenderer> renderer_;
+  const CameraInfo color_camera_info_;
+  const CameraInfo depth_camera_info_;
 };
 
 /**
