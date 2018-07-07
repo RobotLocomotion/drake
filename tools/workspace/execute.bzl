@@ -52,10 +52,12 @@ def execute_and_return(repo_ctx, command, additional_search_paths = []):
     )
 
 def execute_or_fail(repo_ctx, command):
-    """Runs the `command` (list) and immediately fails on any error."""
+    """Runs the `command` (list) and immediately fails on any error.
+    Returns a struct with the stdout value."""
     result = execute_and_return(repo_ctx, command)
     if result.error:
         fail("Unable to complete setup for @{} repository: {}".format(
             repo_ctx.name,
             result.error,
         ))
+    return result

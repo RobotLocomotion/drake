@@ -1305,6 +1305,23 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(jwnimmer-tri) We should remove this demo once snopt_solver.cc is using
+# snopt_cwrap directly.  In the meantime, this program ensures that snopt_cwrap
+# continues to compile and run correctly.
+drake_cc_binary(
+    name = "snopt_cwrap_example_toya",
+    srcs = ["test/snopt_cwrap_example_toya.c"],
+    add_test_rule = 1,
+    copts = ["-w"],
+    tags = [
+        "nolint",
+        "snopt",
+    ],
+    deps = [
+        "@snopt//:snopt_cwrap",
+    ],
+)
+
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [

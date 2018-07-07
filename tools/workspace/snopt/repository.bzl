@@ -123,6 +123,12 @@ def _impl(repo_ctx):
     else:
         _setup_local_archive(repo_ctx, snopt_path)
 
+    # Add in the helper.
+    repo_ctx.symlink(
+        Label("@drake//tools/workspace/snopt:fortran.bzl"),
+        "fortran.bzl",
+    )
+
 snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
