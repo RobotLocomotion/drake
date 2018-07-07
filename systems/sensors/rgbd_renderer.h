@@ -69,11 +69,11 @@ struct RenderingConfig {
 ///     corresponds to an object in the scene. For the pixels corresponding to
 ///     no body, namely the sky and the flat terrain, we assign Label::kNoBody
 ///     and Label::kFlatTerrain, respectively.
-class RgbdRenderer {
+class RgbdRendererBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRenderer)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdRendererBase)
 
-  /// A constructor for %RgbdRenderer.
+  /// A constructor for %RgbdRendererBase.
   ///
   /// @param config Configurations of the renderer. See RenderingConfig.
   ///
@@ -82,10 +82,10 @@ class RgbdRenderer {
   /// calling `UpdateViewpoint` later on. Default value: Identity.
   /// TODO(thduynguyen, kunimatsu-tri): Handle multiple viewpoints, e.g. for
   /// stereo depth camera?
-  RgbdRenderer(const RenderingConfig& config,
+  RgbdRendererBase(const RenderingConfig& config,
                const Eigen::Isometry3d& X_WC = Eigen::Isometry3d::Identity());
 
-  virtual ~RgbdRenderer();
+  virtual ~RgbdRendererBase();
 
   /// Adds a flat terrain in the rendering scene.
   void AddFlatTerrain();

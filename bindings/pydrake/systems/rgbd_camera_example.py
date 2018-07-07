@@ -14,7 +14,7 @@ from pydrake.systems.framework import (
     )
 from pydrake.systems.sensors import (
     CameraInfo,
-    RgbdCamera,
+    RgbdCameraVTK,
     )
 
 # Create tree describing scene.
@@ -32,7 +32,7 @@ frame = RigidBodyFrame(
 tree.addFrame(frame)
 
 # Create camera.
-camera = RgbdCamera(
+camera = RgbdCameraVTK(
     name="camera", tree=tree, frame=frame,
     z_near=0.5, z_far=5.0,
     fov_y=np.pi / 4, show_window=True)

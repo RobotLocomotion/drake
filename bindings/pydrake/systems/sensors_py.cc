@@ -15,7 +15,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
-#include "drake/systems/sensors/rgbd_camera.h"
+#include "drake/systems/sensors/rgbd_camera_vtk.h"
 
 using std::string;
 using std::unique_ptr;
@@ -186,7 +186,7 @@ PYBIND11_MODULE(sensors, m) {
   };
 
   // TODO(eric.cousineau): Use something like `RenderingConfig`, per (#8123).
-  py::class_<RgbdCamera, LeafSystem<T>> rgbd_camera(m, "RgbdCamera");
+  py::class_<RgbdCameraVTK, LeafSystem<T>> rgbd_camera(m, "RgbdCameraVTK");
   rgbd_camera
     .def(
       py::init<
@@ -200,34 +200,34 @@ PYBIND11_MODULE(sensors, m) {
       py::arg("height") = int{RenderingConfig::kDefaultHeight},
       // Keep alive, reference: `this` keeps  `RigidBodyTree` alive.
       py::keep_alive<1, 3>())
-    .def("color_camera_info", &RgbdCamera::color_camera_info,
+    .def("color_camera_info", &RgbdCameraVTK::color_camera_info,
          py_reference_internal)
-    .def("depth_camera_info", &RgbdCamera::depth_camera_info,
+    .def("depth_camera_info", &RgbdCameraVTK::depth_camera_info,
          py_reference_internal)
-    .def("color_camera_optical_pose", &RgbdCamera::color_camera_optical_pose)
-    .def("depth_camera_optical_pose", &RgbdCamera::depth_camera_optical_pose)
-    .def("frame", &RgbdCamera::frame, py_reference_internal)
-    .def("tree", &RgbdCamera::tree, py_reference);
+    .def("color_camera_optical_pose", &RgbdCameraVTK::color_camera_optical_pose)
+    .def("depth_camera_optical_pose", &RgbdCameraVTK::depth_camera_optical_pose)
+    .def("frame", &RgbdCameraVTK::frame, py_reference_internal)
+    .def("tree", &RgbdCameraVTK::tree, py_reference);
   def_camera_ports(&rgbd_camera);
 
-  py::class_<RgbdCameraDiscrete, Diagram<T>> rgbd_camera_discrete(
-      m, "RgbdCameraDiscrete");
+  py::class_<RgbdCameraDiscreteVTK, Diagram<T>> rgbd_camera_discrete(
+      m, "RgbdCameraDiscreteVTK");
   rgbd_camera_discrete
     .def(
-      py::init<unique_ptr<RgbdCamera>, double, bool>(),
+      py::init<unique_ptr<RgbdCameraVTK>, double, bool>(),
       py::arg("camera"),
-      py::arg("period") = double{RgbdCameraDiscrete::kDefaultPeriod},
+      py::arg("period") = double{RgbdCameraDiscreteVTK::kDefaultPeriod},
       py::arg("render_label_image") = true,
-      // Keep alive, ownership: `RgbdCamera` keeps `this` alive.
+      // Keep alive, ownership: `RgbdCameraVTK` keeps `this` alive.
       py::keep_alive<2, 1>())
     // N.B. Since `camera` is already connected, we do not need additional
     // `keep_alive`s.
-    .def("camera", &RgbdCameraDiscrete::camera)
-    .def("mutable_camera", &RgbdCameraDiscrete::mutable_camera)
-    .def("period", &RgbdCameraDiscrete::period);
+    .def("camera", &RgbdCameraDiscreteVTK::camera)
+    .def("mutable_camera", &RgbdCameraDiscreteVTK::mutable_camera)
+    .def("period", &RgbdCameraDiscreteVTK::period);
   def_camera_ports(&rgbd_camera_discrete);
   rgbd_camera_discrete.attr("kDefaultPeriod") =
-      double{RgbdCameraDiscrete::kDefaultPeriod};
+      double{RgbdCameraDiscreteVTK::kDefaultPeriod};
 }
 
 }  // namespace pydrake

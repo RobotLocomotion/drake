@@ -122,7 +122,7 @@ TEST_F(RgbdRendererVTKTest, BoxTest) {
   Eigen::Vector3d box_size(1, 1, 1);
   visual.setGeometry(DrakeShapes::Box(box_size));
   const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
+  const RgbdRendererBase::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
@@ -150,7 +150,7 @@ TEST_F(RgbdRendererVTKTest, SphereTest) {
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Sphere(0.5));
   const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
+  const RgbdRendererBase::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
@@ -178,7 +178,7 @@ TEST_F(RgbdRendererVTKTest, CylinderTest) {
   DrakeShapes::VisualElement visual(X_WV);
   visual.setGeometry(DrakeShapes::Cylinder(0.2, 1.2));  // Radius and length.
   const int kBodyID = 1;
-  const RgbdRenderer::VisualIndex kVisualID(0);
+  const RgbdRendererBase::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
@@ -206,7 +206,7 @@ TEST_F(RgbdRendererVTKTest, MeshTest) {
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
   visual.setGeometry(DrakeShapes::Mesh("", filename));
   const int kBodyID = 0;
-  const RgbdRenderer::VisualIndex kVisualID(0);
+  const RgbdRendererBase::VisualIndex kVisualID(0);
   renderer_->RegisterVisual(visual, kBodyID);
   renderer_->UpdateVisualPose(X_WV, kBodyID, kVisualID);
   Render();
