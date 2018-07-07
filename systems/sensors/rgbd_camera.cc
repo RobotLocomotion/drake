@@ -171,8 +171,6 @@ void RgbdCamera::InitRenderer() {
       }
     }
   }
-
-  renderer_->AddFlatTerrain();
 }
 
 const InputPort<double>& RgbdCamera::state_input_port() const {

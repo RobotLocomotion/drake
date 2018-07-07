@@ -17,6 +17,14 @@ namespace sensors {
 
 /// Common configurations of rendering systems.
 struct RenderingConfig {
+  RenderingConfig(int _width, int _height, double _fov_y, double _z_near,
+                  double _z_far, bool _show_window)
+      : width(_width),
+        height(_height),
+        fov_y(_fov_y),
+        z_near(_z_near),
+        z_far(_z_far),
+        show_window(_show_window) {}
   // TODO(eric.cousineau): Define all default values be defined here to
   // minimize duplication.
   /// The width of the image to be rendered in pixels.
