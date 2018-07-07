@@ -167,9 +167,9 @@ void EvaluateAllCosts(const MathematicalProgram& prog,
   }
 }
 
-int snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
-                  double F[], int* needG, int* neG, double G[], char* cu,
-                  int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
+void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
+                   double F[], int* needG, int* neG, double G[], char* cu,
+                   int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
   // Our snOptA call passes the snopt workspace as the user workspace and
   // reserves one 8-char of space to pass the problem pointer.
   SnoptUserFunInfo const* snopt_userfun_info = NULL;
@@ -216,8 +216,6 @@ int snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
   EvaluateNonlinearConstraints(
       *current_problem, current_problem->linear_complementarity_constraints(),
       F, G, &constraint_index, &grad_index, xvec);
-
-  return 0;
 }
 
 /*
@@ -394,9 +392,16 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 bool SnoptSolver::available() const { return true; }
 
 SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
-  snoptProblemA drake_problem;
+  snProblem drake_problem;
   // No print file, no summary.
-  snInit(&drake_problem, "drake_problem", "", 0);
+  char problem_name[14] = "drake_problem";
+  snInit(&drake_problem, problem_name, "", 0);
+
+  SnoptUserFunInfo snopt_userfun_info;
+  snopt_userfun_info.prog_ = &prog;
+  const std::unordered_set<int> cost_gradient_indices =
+      GetCostNonzeroGradientIndices(prog);
+  snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
 
   const int nx = prog.num_vars();
   double* x = new double[nx];
@@ -542,17 +547,22 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // Determines if we should print out snopt debugging info.
   const auto print_file_it = snopt_option_str.find("Print file");
   if (print_file_it != snopt_option_str.end()) {
-    setPrintFile(&drake_problem, print_file_it->second.c_str());
-    setIntParameter(&drake_problem, "Major print level", 11);
-    setIntParameter(&drake_problem, "Print file", 9);
+    setPrintfile(&drake_problem,
+                 const_cast<char*>(print_file_it->second.c_str()));
+    char major_print_level[18] = "Major print level";
+    setIntParameter(&drake_problem, major_print_level, 11);
+    char print_file[11] = "Print file";
+    setIntParameter(&drake_problem, print_file, 9);
   }
 
   for (const auto it : prog.GetSolverOptionsDouble(id())) {
-    setRealParameter(&drake_problem, it.first.c_str(), it.second);
+    setRealParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
+                     it.second);
   }
 
   for (const auto it : prog.GetSolverOptionsInt(id())) {
-    setIntParameter(&drake_problem, it.first.c_str(), it.second);
+    setIntParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
+                    it.second);
   }
 
   // Set the workspace.
@@ -560,14 +570,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   // This is a tricky part, we use the integer workspace iu[snopt_miniu] to
   // store snopt_user_info. In snopt_userfun, we will need to read
   // snopt_user_info from the integer workspace.
-  int iu;
   drake_problem.leniu = 100;
   drake_problem.iu =
       static_cast<int*>(malloc(sizeof(int) * drake_problem.leniu));
   {
     int const* const p_snopt_userfun_info =
         reinterpret_cast<int*>(&snopt_userfun_info);
-    int* const iu_snopt_userfun_info = &drake_problem.iu;
+    int* const iu_snopt_userfun_info = &drake_problem.iu[0];
     std::copy(p_snopt_userfun_info,
               p_snopt_userfun_info + sizeof(snopt_userfun_info),
               iu_snopt_userfun_info);
@@ -583,9 +592,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   double sInf;
 
   const int info =
-      solveA(&drake_problem, Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, iAfun,
-             jAvar, A, lenA, iGfun, jGvar, lenG, xlow, xupp, Flow, Fupp, x,
-             xstate, xmul, F, Fstate, Fmul, nS, nInf, sInf);
+      solveA(&drake_problem, Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, lenA,
+             iAfun, jAvar, A, lenG, iGfun, jGvar, xlow, xupp, Flow, Fupp, x,
+             xstate, xmul, F, Fstate, Fmul, &nS, &nInf, &sInf);
 
   SolverResult solver_result(id());
   solver_result.set_decision_variable_values(
