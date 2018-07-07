@@ -245,9 +245,7 @@ class RotationMatrix {
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
   void SetOrThrowIfNotValidInDebugBuild(const Matrix3<T>& R) {
-#ifdef DRAKE_ASSERT_IS_ARMED
-    ThrowIfNotValid(R);
-#endif
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
   }
 

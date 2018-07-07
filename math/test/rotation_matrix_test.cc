@@ -95,7 +95,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
 #ifdef DRAKE_ASSERT_IS_ARMED
   EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
 #else
-  R.SetOrThrowIfNotValidInDebugBuild(m);
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
 #endif
 }
 
@@ -108,7 +108,9 @@ GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
 
 // Test making a rotation matrix associated with a X, Y, or Z-rotation.
 GTEST_TEST(RotationMatrix, MakeXRotationMakeYRotationMakeZRotation) {
-  const Vector3d i(1, 0, 0), j(0, 1, 0), k(0, 0, 1);
+  const Vector3d i = Eigen::Vector3d::UnitX();
+  const Vector3d j = Eigen::Vector3d::UnitY();
+  const Vector3d k = Eigen::Vector3d::UnitZ();
   double tolerance = 32 * kEpsilon;
 
   // Test making a rotation matrix associated with X-rotation.

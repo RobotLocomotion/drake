@@ -9,15 +9,17 @@ namespace drake {
 namespace symbolic {
 namespace {
 
+using math::RotationMatrixd;
+
 class SymbolicExpressionTransformationTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    R1_ = math::RotationMatrixd::MakeXRotation(.25 * M_PI) *
-          math::RotationMatrixd::MakeYRotation(.5 * M_PI) *
-          math::RotationMatrixd::MakeZRotation(.33 * M_PI);
-    R2_ = math::RotationMatrixd::MakeXRotation(M_PI / 2) *
-          math::RotationMatrixd::MakeYRotation(-M_PI / 2) *
-          math::RotationMatrixd::MakeZRotation(M_PI / 2);
+    R1_ = RotationMatrixd::MakeXRotation(.25 * M_PI) *
+          RotationMatrixd::MakeYRotation(.5 * M_PI) *
+          RotationMatrixd::MakeZRotation(.33 * M_PI);
+    R2_ = RotationMatrixd::MakeXRotation(M_PI / 2) *
+          RotationMatrixd::MakeYRotation(-M_PI / 2) *
+          RotationMatrixd::MakeZRotation(M_PI / 2);
 
     affine_.setIdentity();
     affine_.rotate(R1_.matrix());
@@ -37,8 +39,8 @@ class SymbolicExpressionTransformationTest : public ::testing::Test {
   }
 
   // Rotation Matrices.
-  math::RotationMatrixd R1_;
-  math::RotationMatrixd R2_;
+  RotationMatrixd R1_;
+  RotationMatrixd R2_;
 
   // Transformations.
   Eigen::Transform<double, 3, Eigen::Affine, Eigen::DontAlign> affine_;

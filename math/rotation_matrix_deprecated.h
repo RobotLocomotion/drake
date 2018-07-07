@@ -138,7 +138,7 @@ VectorX<typename Derived::Scalar> rotmat2Representation(
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
-// TODO(mitiguy) Delete this code after July 12, 2018.
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use math::RotationMatrix::MakeXRotation(theta).")
@@ -147,7 +147,7 @@ Matrix3<T> XRotation(const T& theta) {
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
-// TODO(mitiguy) Delete this code after July 12, 2018.
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use math::RotationMatrix::MakeYRotation(theta).")
@@ -156,7 +156,7 @@ Matrix3<T> YRotation(const T& theta) {
 }
 
 /// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
-// TODO(mitiguy) Delete this code after July 12, 2018.
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
 DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
                  "Use math::RotationMatrix::MakeZRotation(theta).")
