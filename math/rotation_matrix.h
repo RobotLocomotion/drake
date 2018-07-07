@@ -48,11 +48,7 @@ class RotationMatrix {
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
   explicit RotationMatrix(const Matrix3<T>& R) : R_AB_() {
-#ifdef DRAKE_ASSERT_IS_ARMED
-    SetOrThrowIfNotValid(R);
-#else
-    SetUnchecked(R);
-#endif
+    SetOrThrowIfNotValidInDebugBuild(R);
   }
 
   /// Constructs a %RotationMatrix from an Eigen::Quaternion.
@@ -248,8 +244,8 @@ class RotationMatrix {
   /// Sets `this` %RotationMatrix from a Matrix3.
   /// @param[in] R an allegedly valid rotation matrix.
   /// @throws std::logic_error in debug builds if R fails IsValid(R).
-  void SetOrThrowIfNotValid(const Matrix3<T>& R) {
-    ThrowIfNotValid(R);
+  void SetOrThrowIfNotValidInDebugBuild(const Matrix3<T>& R) {
+    DRAKE_ASSERT_VOID(ThrowIfNotValid(R));
     SetUnchecked(R);
   }
 

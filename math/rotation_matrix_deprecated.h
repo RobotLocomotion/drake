@@ -137,20 +137,29 @@ VectorX<typename Derived::Scalar> rotmat2Representation(
                          "or math::RotationMatrix::ToQuaternionAsVector4.");
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeXRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use math::RotationMatrix::MakeXRotation(theta).")
 Matrix3<T> XRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeXRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeYRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use math::RotationMatrix::MakeYRotation(theta).")
 Matrix3<T> YRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeYRotation(theta).matrix();
 }
 
-/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation
+/// (Deprecated), use @ref math::RotationMatrix::MakeZRotation().
+// TODO(mitiguy) Delete this code after October 6, 2018.
 template <typename T>
+DRAKE_DEPRECATED("This code is deprecated per issue #8323. "
+                 "Use math::RotationMatrix::MakeZRotation(theta).")
 Matrix3<T> ZRotation(const T& theta) {
   return drake::math::RotationMatrix<T>::MakeZRotation(theta).matrix();
 }
