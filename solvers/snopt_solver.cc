@@ -14,7 +14,9 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
+extern "C" {
 #include "snopt_cwrap.h"
+}
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
