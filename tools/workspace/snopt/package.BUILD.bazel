@@ -183,7 +183,7 @@ fortran_library(
 
 fortran_library(
     name = "snopt_wrapper_fortran",
-    srcs =  [
+    srcs = [
         "interfaces/src/snopt_wrapper.f90",
     ],
     deps = [
