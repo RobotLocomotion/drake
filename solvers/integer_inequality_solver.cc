@@ -116,7 +116,8 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const std::vector<ColumnType>& column_type,
                                int last_free_var_pos) {
   DRAKE_ASSERT((last_free_var_pos >= 0) && (last_free_var_pos < A.cols()));
-  DRAKE_ASSERT(column_type.size() == A.cols());
+  DRAKE_ASSERT(column_type.size() == static_cast<std::vector<ColumnType>
+                                                    ::size_type>(A.cols()));
 
   Eigen::MatrixXi feasible_points(0, last_free_var_pos + 1);
   for (const auto& value : column_alphabets[last_free_var_pos]) {
