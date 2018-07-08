@@ -17,7 +17,7 @@ namespace solvers {
   * @param lower_bound A (n x 1) integer vector.
   * @return A (p x n) matrix whose rows are the solutions.
 */
-Eigen::MatrixXi EnumerateIntegerSolutions(
+Eigen::Matrix<int, -1, -1, Eigen::RowMajor> EnumerateIntegerSolutions(
     const Eigen::Ref<const Eigen::MatrixXi>& A,
     const Eigen::Ref<const Eigen::VectorXi>& b,
     const Eigen::Ref<const Eigen::VectorXi>& lower_bound,

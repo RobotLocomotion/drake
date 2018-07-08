@@ -14,7 +14,7 @@ using Monomial = symbolic::Monomial;
 using Variables = symbolic::Variables;
 using MonomialVector = VectorX<symbolic::Monomial>;
 using Exponent = Eigen::RowVectorXi;
-using ExponentList = Eigen::MatrixXi;
+using ExponentList = Eigen::Matrix<int, -1, -1, Eigen::RowMajor>;
 
 // Given a list of exponents and variables, returns a vector of monomials.
 // Ex: if exponents = [0, 1;1, 2], and vars = [x(0), x(1)], then the vector
@@ -95,9 +95,7 @@ void Intersection(const ExponentList& A, ExponentList* B) {
       B->row(index++) = B->row(i);
     }
   }
-  //  The trailing .eval() prevents aliasing problems documented
-  //  at https://eigen.tuxfamily.org/dox/group__TopicAliasing.html.
-  *B = (B->topRows(index)).eval();
+  B->conservativeResize(index, Eigen::NoChange);
 }
 
 /* Removes exponents of the monomials that aren't diagonally-consistent with

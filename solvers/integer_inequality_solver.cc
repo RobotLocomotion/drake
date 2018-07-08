@@ -14,6 +14,7 @@ namespace solvers {
 namespace {
 
 using IntegerVectorList = std::vector<std::vector<int>>;
+using SolutionList = Eigen::Matrix<int, -1, -1, Eigen::RowMajor>;
 
 bool IsElementwiseNonnegative(const Eigen::MatrixXi& A) {
   return (A.array() >= 0).all();
@@ -78,15 +79,15 @@ std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
 
 /* Given an integer z and a list of integer vectors V, constructs
  * the Cartesian product (v, z) for all v ∈ V */
-Eigen::MatrixXi CartesianProduct(const Eigen::MatrixXi& V, int z) {
-  Eigen::MatrixXi cart_products(V.rows(), V.cols() + 1);
-  cart_products << V, Eigen::MatrixXi::Constant(V.rows(), 1, z);
+SolutionList CartesianProduct(const SolutionList& V, int z) {
+  SolutionList cart_products(V.rows(), V.cols() + 1);
+  cart_products << V, SolutionList::Constant(V.rows(), 1, z);
 
   return cart_products;
 }
 
-Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
-                              const Eigen::MatrixXi& B) {
+SolutionList VerticalStack(const SolutionList& A,
+                              const SolutionList& B) {
   DRAKE_ASSERT(A.cols() == B.cols());
   if (A.rows() == 0) {
     return B;
@@ -94,7 +95,7 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
   if (B.rows() == 0) {
     return A;
   }
-  Eigen::MatrixXi Y(A.rows() + B.rows(), B.cols());
+  SolutionList Y(A.rows() + B.rows(), B.cols());
   Y << A, B;
   return Y;
 }
@@ -110,7 +111,7 @@ Eigen::MatrixXi VerticalStack(const Eigen::MatrixXi& A,
  */
 
 // TODO(frankpermenter):  Update to use preallocated memory
-Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
+SolutionList FeasiblePoints(const SolutionList& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& column_type,
@@ -119,9 +120,9 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
   DRAKE_ASSERT(column_type.size() == static_cast<std::vector<ColumnType>
                                                     ::size_type>(A.cols()));
 
-  Eigen::MatrixXi feasible_points(0, last_free_var_pos + 1);
+  SolutionList feasible_points(0, last_free_var_pos + 1);
   for (const auto& value : column_alphabets[last_free_var_pos]) {
-    Eigen::MatrixXi new_feasible_points;
+    SolutionList new_feasible_points;
 
     if (last_free_var_pos == 0) {
       if (IsElementwiseNonnegative(b - A.col(0) * value)) {
@@ -153,7 +154,7 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
 
 }  // namespace
 
-Eigen::MatrixXi EnumerateIntegerSolutions(
+SolutionList EnumerateIntegerSolutions(
     const Eigen::Ref<const Eigen::MatrixXi>& A,
     const Eigen::Ref<const Eigen::VectorXi>& b,
     const Eigen::Ref<const Eigen::VectorXi>& lower_bound,
