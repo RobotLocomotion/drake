@@ -14,9 +14,14 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
+// clang-format off to disable clang-format-includes
+// clang-format-includes require adding the folder of snopt_cwrap.h, which
+// causes a compiler error if I do
+// #include "snopt/snopt_cwrap.h"
 extern "C" {
 #include "snopt_cwrap.h"
 }
+// clang-format on
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -260,24 +265,23 @@ template <typename C>
 void UpdateConstraintBoundsAndGradients(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& constraint_list, double* Flow, double* Fupp,
-    double* Fmul, int* iGfun, int* jGvar, size_t* constraint_index,
-    size_t* grad_index) {
+    int* iGfun, int* jGvar, size_t* constraint_index, size_t* grad_index) {
   for (auto const& binding : constraint_list) {
     auto const& c = binding.evaluator();
     int n = c->num_constraints();
 
     auto const lb = c->lower_bound(), ub = c->upper_bound();
     for (int i = 0; i < n; i++) {
-      Flow[*constraint_index + i] = lb(i);
-      Fupp[*constraint_index + i] = ub(i);
-      Fmul[*constraint_index + i] = 0;
+      const int constraint_index_i = *constraint_index + i;
+      Flow[constraint_index_i] = lb(i);
+      Fupp[constraint_index_i] = ub(i);
     }
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < static_cast<int>(binding.GetNumElements()); ++j) {
-        iGfun[*grad_index] = *constraint_index + i + 1;  // row order
+        iGfun[*grad_index] = *constraint_index + i;  // row order
         jGvar[*grad_index] =
-            prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+            prog.FindDecisionVariableIndex(binding.variables()(j));
         (*grad_index)++;
       }
     }
@@ -296,16 +300,15 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
     const MathematicalProgram& prog,
     const std::vector<Binding<LinearComplementarityConstraint>>&
         constraint_list,
-    double* Flow, double* Fupp, double* Fmul, int* iGfun, int* jGvar,
+    double* Flow, double* Fupp, int* iGfun, int* jGvar,
     size_t* constraint_index, size_t* grad_index) {
   for (const auto& binding : constraint_list) {
     Flow[*constraint_index] = 0;
     Fupp[*constraint_index] = 0;
-    Fmul[*constraint_index] = 0;
     for (int j = 0; j < binding.evaluator()->M().rows(); ++j) {
-      iGfun[*grad_index] = *constraint_index + 1;
+      iGfun[*grad_index] = *constraint_index;
       jGvar[*grad_index] =
-          prog.FindDecisionVariableIndex(binding.variables()(j)) + 1;
+          prog.FindDecisionVariableIndex(binding.variables()(j));
       (*grad_index)++;
     }
     ++(*constraint_index);
@@ -382,12 +385,34 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 
     const auto bounds = LinearConstraintBounds(*c);
     for (int i = 0; i < n; i++) {
-      Flow[*constraint_index + i] = bounds.first(i);
-      Fupp[*constraint_index + i] = bounds.second(i);
+      const int constraint_index_i = *constraint_index + i;
+      Flow[constraint_index_i] = bounds.first(i);
+      Fupp[constraint_index_i] = bounds.second(i);
     }
     *constraint_index += n;
     *linear_constraint_index += n;
   }
+}
+
+void SetSnoptWorkspace(snProblem* snopt_problem,
+                       SnoptUserFunInfo const* snopt_userfun_info) {
+  // snopt-interface does not allow using the char workspace, as explained in
+  // http://ccom.ucsd.edu/~optimizers/usage/c/, that "due to the incompatibility
+  // of strings in Fortran/C, all character arrays are disabled."
+  //
+  // This is a tricky part, we use the integer workspace iu[snopt_miniu] to
+  // store snopt_user_info. In snopt_userfun, we will need to read
+  // snopt_user_info from the integer workspace.
+  snopt_problem->leniu = 100;
+  snopt_problem->iu =
+      static_cast<int*>(malloc(sizeof(int) * snopt_problem->leniu));
+
+  int const* const p_snopt_userfun_info =
+      reinterpret_cast<int*>(&snopt_userfun_info);
+  int* const iu_snopt_userfun_info = &snopt_problem->iu[0];
+  std::copy(p_snopt_userfun_info,
+            p_snopt_userfun_info + sizeof(snopt_userfun_info),
+            iu_snopt_userfun_info);
 }
 }  // anon namespace
 
@@ -397,13 +422,15 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   snProblem drake_problem;
   // No print file, no summary.
   char problem_name[14] = "drake_problem";
-  snInit(&drake_problem, problem_name, "", 0);
+  char print_file_name[1] = "";
+  snInit(&drake_problem, problem_name, print_file_name, 0);
 
   SnoptUserFunInfo snopt_userfun_info;
   snopt_userfun_info.prog_ = &prog;
   const std::unordered_set<int> cost_gradient_indices =
       GetCostNonzeroGradientIndices(prog);
   snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
+  SetSnoptWorkspace(&drake_problem, &snopt_userfun_info);
 
   const int nx = prog.num_vars();
   double* x = new double[nx];
@@ -423,6 +450,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     xlow[i] = -std::numeric_limits<double>::infinity();
     xupp[i] = std::numeric_limits<double>::infinity();
     xstate[i] = 0;
+    xmul[i] = 0;
   }
   // Set up the lower and upper bounds.
   for (auto const& binding : prog.bounding_box_constraints()) {
@@ -486,10 +514,13 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   double* Fupp = new double[nF];
   double* Fmul = new double[nF];
   int* Fstate = new int[nF];
+  for (int i = 0; i < nF; ++i) {
+    Fmul[i] = 0.0;
+    Fstate[i] = 0;
+  }
   // F[0] is the cost, so Flow[0] = -∞, Fupp[0] = ∞.
   Flow[0] = -std::numeric_limits<double>::infinity();
   Fupp[0] = std::numeric_limits<double>::infinity();
-  Fmul[0] = 0;
 
   // Set up the gradient sparsity pattern.
   const int lenG = max_num_gradients;
@@ -497,24 +528,24 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int* jGvar = new int[lenG];
   size_t grad_index = 0;
   for (const auto cost_gradient_index : cost_gradient_indices) {
-    iGfun[grad_index] = 1;
-    jGvar[grad_index] = cost_gradient_index + 1;
+    iGfun[grad_index] = 0;
+    jGvar[grad_index] = cost_gradient_index;
     ++grad_index;
   }
   // constraint_index starts at 1 because row 0 is the cost.
   size_t constraint_index = 1;
   UpdateConstraintBoundsAndGradients(prog, prog.generic_constraints(), Flow,
-                                     Fupp, Fmul, iGfun, jGvar,
-                                     &constraint_index, &grad_index);
+                                     Fupp, iGfun, jGvar, &constraint_index,
+                                     &grad_index);
   UpdateConstraintBoundsAndGradients(prog, prog.lorentz_cone_constraints(),
-                                     Flow, Fupp, Fmul, iGfun, jGvar,
+                                     Flow, Fupp, iGfun, jGvar,
                                      &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.rotated_lorentz_cone_constraints(), Flow, Fupp, Fmul, iGfun,
-      jGvar, &constraint_index, &grad_index);
+      prog, prog.rotated_lorentz_cone_constraints(), Flow, Fupp, iGfun, jGvar,
+      &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
-      prog, prog.linear_complementarity_constraints(), Flow, Fupp, Fmul, iGfun,
-      jGvar, &constraint_index, &grad_index);
+      prog, prog.linear_complementarity_constraints(), Flow, Fupp, iGfun, jGvar,
+      &constraint_index, &grad_index);
 
   // Now find the sparsity pattern of the linear constraints, and also update
   // Flow and Fupp corresponding to the linear constraints.
@@ -539,8 +570,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   size_t A_index = 0;
   for (auto const& it : tripletList) {
     A[A_index] = it.value();
-    iAfun[A_index] = 1 + num_nonlinear_constraints + it.row() + 1;
-    jAvar[A_index] = it.col() + 1;
+    iAfun[A_index] = 1 + num_nonlinear_constraints + it.row();
+    jAvar[A_index] = it.col();
     A_index++;
   }
 
@@ -553,9 +584,8 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
                  const_cast<char*>(print_file_it->second.c_str()));
     char major_print_level[18] = "Major print level";
     setIntParameter(&drake_problem, major_print_level, 11);
-    char print_file[11] = "Print file";
-    setIntParameter(&drake_problem, print_file, 9);
   }
+
 
   for (const auto it : prog.GetSolverOptionsDouble(id())) {
     setRealParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
@@ -565,23 +595,6 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   for (const auto it : prog.GetSolverOptionsInt(id())) {
     setIntParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
                     it.second);
-  }
-
-  // Set the workspace.
-  // integer user workspace
-  // This is a tricky part, we use the integer workspace iu[snopt_miniu] to
-  // store snopt_user_info. In snopt_userfun, we will need to read
-  // snopt_user_info from the integer workspace.
-  drake_problem.leniu = 100;
-  drake_problem.iu =
-      static_cast<int*>(malloc(sizeof(int) * drake_problem.leniu));
-  {
-    int const* const p_snopt_userfun_info =
-        reinterpret_cast<int*>(&snopt_userfun_info);
-    int* const iu_snopt_userfun_info = &drake_problem.iu[0];
-    std::copy(p_snopt_userfun_info,
-              p_snopt_userfun_info + sizeof(snopt_userfun_info),
-              iu_snopt_userfun_info);
   }
 
   const int Cold = 0;
@@ -639,7 +652,7 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   delete[] Fmul;
   delete[] Fstate;
 
-  free(&drake_problem.iu);
+  free(drake_problem.iu);
   deleteSNOPT(&drake_problem);
   return solution_result;
 }
