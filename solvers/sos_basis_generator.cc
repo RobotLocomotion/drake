@@ -73,7 +73,7 @@ ExponentList PairwiseSums(const ExponentList& exponents) {
 // Returns true if the first num_rows of A contains B.
 bool ContainsExponent(const ExponentList& A, int num_rows, const Exponent& B) {
   DRAKE_ASSERT(B.rows() == 1 && B.cols() == A.cols());
-  DRAKE_ASSERT((num_rows >= 0) && (num_rows < A.rows()) );
+  DRAKE_ASSERT((num_rows >= 0) && (num_rows <= A.rows()));
   for (int i = 0; i < num_rows; i++) {
     if (A.row(i) == B) {
       return true;
