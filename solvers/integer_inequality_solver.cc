@@ -111,7 +111,7 @@ SolutionList VerticalStack(const SolutionList& A,
  */
 
 // TODO(frankpermenter):  Update to use preallocated memory
-SolutionList FeasiblePoints(const SolutionList& A,
+SolutionList FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& column_type,
