@@ -4,17 +4,15 @@
 
 #include <Eigen/Core>
 
-#include "drake/common/symbolic.h"
 #include "drake/solvers/integer_inequality_solver.h"
-
 namespace drake {
 namespace solvers {
 namespace {
 // Anonymous namespace containing collection of utility functions
-using Variable = drake::symbolic::Variable;
-using Monomial = drake::symbolic::Monomial;
-using Variables = drake::symbolic::Variables;
-using MonomialVector = drake::VectorX<symbolic::Monomial>;
+using Variable = symbolic::Variable;
+using Monomial = symbolic::Monomial;
+using Variables = symbolic::Variables;
+using MonomialVector = VectorX<symbolic::Monomial>;
 using Exponent = Eigen::RowVectorXi;
 using ExponentList = Eigen::MatrixXi;
 
@@ -72,9 +70,11 @@ ExponentList PairwiseSums(const ExponentList& exponents) {
   return sums;
 }
 
-bool ContainsExponent(const ExponentList& A, const Exponent& B) {
+// Returns true if the first num_rows of A contains B.
+bool ContainsExponent(const ExponentList& A, int num_rows, const Exponent& B) {
   DRAKE_ASSERT(B.rows() == 1 && B.cols() == A.cols());
-  for (int i = 0; i < A.rows(); i++) {
+  DRAKE_ASSERT((num_rows >= 0) && (num_rows < A.rows()) );
+  for (int i = 0; i < num_rows; i++) {
     if (A.row(i) == B) {
       return true;
     }
@@ -82,21 +82,22 @@ bool ContainsExponent(const ExponentList& A, const Exponent& B) {
   return false;
 }
 
-/* Intersection(A,B) removes duplicate rows from B and any row that doesn't also
- * appear in A.  For example, given A = [1,0; 0,1; 1,1] and B = [1,0; 1,1;
- * 1,1;], it overwrites B with [1,0; 1,1]. */
+/* Intersection(A, B) removes duplicate rows from B and any row that doesn't also
+ * appear in A.  For example, given A = [1, 0; 0, 1; 1, 1] and B = [1, 0; 1, 1;
+ * 1, 1;], it overwrites B with [1, 0; 1, 1]. */
 
 void Intersection(const ExponentList& A, ExponentList* B) {
   DRAKE_ASSERT(A.cols() == B->cols());
-  int indx = 0;
+  int index = 0;
   for (int i = 0; i < B->rows(); i++) {
-    if ((ContainsExponent(A, B->row(i))) &&
-        !(ContainsExponent(B->topRows(indx), B->row(i)))) {
-      B->row(indx++) = B->row(i);
+    if ((ContainsExponent(A, A.rows(), B->row(i))) &&
+        !(ContainsExponent(*B, index, B->row(i)))) {
+      B->row(index++) = B->row(i);
     }
   }
-  //  Possible Eigen bug: can produce incorrect results without .eval().
-  *B = (B->topRows(indx)).eval();
+  //  The trailing .eval() prevents aliasing problems documented
+  //  at https://eigen.tuxfamily.org/dox/group__TopicAliasing.html.
+  *B = (B->topRows(index)).eval();
 }
 
 /* Removes exponents of the monomials that aren't diagonally-consistent with
@@ -138,17 +139,28 @@ struct Hyperplanes {
 Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
   Hyperplanes H;
 
-  int scale = RAND_MAX / 100;
-  int num_hyperplanes = exponents_of_p.cols();
-  H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
+
+  // get_random() samples uniformly between normal_vector_component_min/max.
+  const int normal_vector_component_min  = 1;
+  const int normal_vector_component_max  = 20;
+  std::default_random_engine generator;
+  std::uniform_int_distribution<int> distribution(normal_vector_component_min,
+                                                  normal_vector_component_max);
+  auto get_random = [&]() { return distribution(generator); };
+
+
+  // Number of hyperplanes currently picked heuristically.
+  // TODO(frankpermenter): Pick using degree, number of variables,
+  // and length of exponents_of_p.
+  int num_hyperplanes = 10*exponents_of_p.cols();
+
   //  We generate nonnegative or nonpositive columns so that call to
   //  EnumerateIntegerSolutions is more efficient.
+  H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
   for (int i = 0; i < H.normal_vectors.cols(); i++) {
-    H.normal_vectors.col(i)
-        << Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale;
-    int sign = std::rand() > (RAND_MAX / 2) ? -1 : 1;
-    H.normal_vectors.col(i) =
-        sign * abs(Eigen::ArrayXi::Random(num_hyperplanes, 1) / scale);
+    int sign = (i % 2) ? -1 : 1;
+    H.normal_vectors.col(i) << sign*Eigen::VectorXi::NullaryExpr(
+                                                  num_hyperplanes, get_random);
   }
 
   Eigen::MatrixXi dot_products = H.normal_vectors * exponents_of_p.transpose();
@@ -157,19 +169,17 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
 
   return H;
 }
-}  // namespace
 
 ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   Eigen::VectorXi lower_bounds = exponents_of_p.colwise().minCoeff() / 2;
   Eigen::VectorXi upper_bounds = exponents_of_p.colwise().maxCoeff() / 2;
 
-  // Fix the random seed so code is deterministic.
-  unsigned int random_seed = 1;
-  std::srand(random_seed);
+  // Note: RandomSupportingHyperplanes is actually deterministic due to
+  // its internal initialization of the random number seed.
   Hyperplanes hyperplanes = RandomSupportingHyperplanes(exponents_of_p);
 
   // We check the inequalities in two batches to allow for internal
-  // infeasibility propogation inside of EnumerateIntegerSolutions,
+  // infeasibility propagation inside of EnumerateIntegerSolutions,
   // which is done only if A has a column that is elementwise nonnegative
   // or nonpositive. (This condition never holds if we check the
   // inequalities in one batch, since A = [normal_vectors;-normal_vectors].)
@@ -185,6 +195,9 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
   RemoveDiagonallyInconsistentExponents(exponents_of_p, &basis_exponents);
   return basis_exponents;
 }
+
+}  // namespace
+
 
 MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial& p) {
   drake::VectorX<Variable> vars(p.indeterminates().size());

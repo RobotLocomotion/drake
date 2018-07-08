@@ -1,12 +1,10 @@
-/* clang-format off to disable clang-format-includes */
 #include "drake/solvers/sos_basis_generator.h"
-#include "drake/common/symbolic_monomial_util.h"
-#include "drake/solvers/mathematical_program.h"
-/* clang-format on */
 
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/symbolic_monomial_util.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace solvers {

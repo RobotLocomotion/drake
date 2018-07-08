@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace solvers {
-namespace integer_programming {
+namespace {
 
 using IntegerVectorList = std::vector<std::vector<int>>;
 
@@ -58,18 +58,17 @@ IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
 enum class ColumnType { Nonnegative, Nonpositive, Indefinite };
 std::vector<ColumnType> ProcessInputs(const Eigen::MatrixXi& A,
                                       IntegerVectorList* alphabet) {
-  DRAKE_ASSERT(alphabet != NULL);
+  DRAKE_ASSERT(alphabet);
   int cnt = 0;
-  std::vector<ColumnType> column_type(A.cols());
+  std::vector<ColumnType> column_type(A.cols(), ColumnType::Indefinite);
 
   for (auto& col_alphabet : *alphabet) {
-    column_type.at(cnt) = ColumnType::Indefinite;
     if (IsElementwiseNonnegative(A.col(cnt))) {
       std::sort(col_alphabet.begin(), col_alphabet.end());
-      column_type.at(cnt) = ColumnType::Nonnegative;
+      column_type[cnt] = ColumnType::Nonnegative;
     } else if (IsElementwiseNonpositive(A.col(cnt))) {
       std::sort(col_alphabet.begin(), col_alphabet.end(), std::greater<int>());
-      column_type.at(cnt) = ColumnType::Nonpositive;
+      column_type[cnt] = ColumnType::Nonpositive;
     }
     cnt++;
   }
@@ -115,11 +114,12 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
                                const Eigen::VectorXi& b,
                                const IntegerVectorList& column_alphabets,
                                const std::vector<ColumnType>& column_type,
-                               int last_free_var_pos
-                               ) {
-  Eigen::MatrixXi feasible_points(0, last_free_var_pos + 1);
+                               int last_free_var_pos) {
+  DRAKE_ASSERT((last_free_var_pos >= 0) && (last_free_var_pos < A.cols()));
+  DRAKE_ASSERT(column_type.size() == A.cols());
 
-  for (const auto& value : column_alphabets.at(last_free_var_pos)) {
+  Eigen::MatrixXi feasible_points(0, last_free_var_pos + 1);
+  for (const auto& value : column_alphabets[last_free_var_pos]) {
     Eigen::MatrixXi new_feasible_points;
 
     if (last_free_var_pos == 0) {
@@ -139,21 +139,18 @@ Eigen::MatrixXi FeasiblePoints(const Eigen::MatrixXi& A,
     if (new_feasible_points.rows() > 0) {
       feasible_points = VerticalStack(feasible_points, new_feasible_points);
     } else {
-        //  Propagate infeasibility: if this test passes, then no feasible
-        //  points exist for remaining values in the alphabet.
-        if (column_type.at(last_free_var_pos) != ColumnType::Indefinite) {
-          return feasible_points;
-        }
+      //  Propagate infeasibility: if this test passes, then no feasible
+      //  points exist for remaining values in the alphabet.
+      if (column_type[last_free_var_pos] != ColumnType::Indefinite) {
+        return feasible_points;
+      }
     }
   }
 
   return feasible_points;
 }
 
-}  // namespace integer_programming
-
-using drake::solvers::integer_programming::BuildAlphabetFromBounds;
-using drake::solvers::integer_programming::ProcessInputs;
+}  // namespace
 
 Eigen::MatrixXi EnumerateIntegerSolutions(
     const Eigen::Ref<const Eigen::MatrixXi>& A,
@@ -169,8 +166,7 @@ Eigen::MatrixXi EnumerateIntegerSolutions(
   // columns and sorts the variable alphabet accordingly.
   auto column_type = ProcessInputs(A, &variable_alphabets);
 
-  return drake::solvers::integer_programming::FeasiblePoints(
-      A, b, variable_alphabets, column_type, A.cols()-1);
+  return FeasiblePoints(A, b, variable_alphabets, column_type, A.cols()-1);
 }
 
 }  // namespace solvers
