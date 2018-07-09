@@ -105,17 +105,66 @@ struct JointLimitsPenaltyParametersEstimator {
     // Return the combined penalty parameters of the two bodies.
     auto params = CombinePenaltyParameters(parent_params, child_params);
 
-    // Adjust to include the desired violation length scale.
-    // params.second = params.second / params.first / violation_length_scale;
-
     return params;
   }
 
   static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
-      const RevoluteJoint<T>& joint) {
+      const RevoluteJoint<T>& joint, double numerical_time_scale) {
+
+    auto CalcRotationalInertiaAboutAxis =
+        [](const RevoluteJoint<T>& joint, const Frame<T>& frame) {
+          const RigidBody<T>* body =
+              dynamic_cast<const RigidBody<T>*>(&frame.body());
+          DRAKE_THROW_UNLESS(body != nullptr);
+          const SpatialInertia<T>& M_PPo_P =
+              body->default_spatial_inertia().template cast<T>();
+          const Isometry3<T> X_PJ = frame.GetFixedPoseInBodyFrame();
+          const Vector3<T>& p_PJ = X_PJ.translation();
+          const Matrix3<T>& R_PJ = X_PJ.linear();
+          const SpatialInertia<T> M_PJo_J =
+              M_PPo_P.Shift(p_PJ).ReExpress(R_PJ);
+          const RotationalInertia<T> I_PJo_J =
+              M_PJo_J.CalcRotationalInertia();
+          // Rotational inertia about the joint axis.
+          const Vector3<T>& axis = joint.revolute_axis();
+          const T I_a = axis.transpose() * (I_PJo_J * axis);
+          return ExtractDoubleOrThrow(I_a);
+        };
+
+    const double I_Pa =
+        joint.parent_body().index() == world_index() ?
+        std::numeric_limits<double>::infinity() :
+        CalcRotationalInertiaAboutAxis(joint, joint.frame_on_parent());
+    auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, I_Pa);
+
+    const double I_Ca =
+        joint.child_body().index() == world_index() ?
+        std::numeric_limits<double>::infinity() :
+        CalcRotationalInertiaAboutAxis(joint, joint.frame_on_child());
+    auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, I_Ca);
+
+    PRINT_VAR(I_Pa);
+
+    PRINT_VAR(I_Ca);
+
+    PRINT_VAR(parent_params.first);
+    PRINT_VAR(parent_params.second);
+
+    PRINT_VAR(child_params.first);
+    PRINT_VAR(child_params.second);
+
+    // Return the combined penalty parameters of the two bodies.
+    auto params = CombinePenaltyParameters(parent_params, child_params);
+
+    return params;
+
+#if 0
     const double kJointLimitsStiffness = 150.0;
     const double kJointLimitsDamping = 1.0;
     return std::make_pair(kJointLimitsStiffness, kJointLimitsDamping);
+#endif
   }
 };
 }  // namespace internal
@@ -356,7 +405,8 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
       // Estimate penalty parameters.
       auto penalty_parameters =
           internal::JointLimitsPenaltyParametersEstimator<T>::
-          CalcRevoluteJointPenaltyParameters(*revolute_joint);
+          CalcRevoluteJointPenaltyParameters(
+              *revolute_joint, penalty_time_scale);
       joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
       joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
