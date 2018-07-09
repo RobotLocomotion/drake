@@ -26,7 +26,7 @@ void DepthImageToPointCloud::ConvertDepthImageToPointCloud(const systems::Contex
   Eigen::Matrix3Xf point_cloud;
   systems::sensors::RgbdCamera::ConvertDepthImageToPointCloud(input_image, camera_info_, &point_cloud);
 
-  int n = point_cloud.rows() * point_cloud.cols();
+  int n = point_cloud.cols();
   output->resize(n);
   for (int i = 0; i < n; i++) {
       output->mutable_xyz(i) = point_cloud.col(i);

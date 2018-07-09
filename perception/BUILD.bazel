@@ -3,6 +3,7 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
+    "drake_cc_binary",
     "drake_cc_library",
     "drake_cc_package_library",
 )
@@ -46,6 +47,22 @@ drake_cc_library(
         "//common:essential",
         "//systems/framework",
         "//systems/sensors",
+    ],
+)
+
+drake_cc_binary(
+    name = "depth_to_cloud_test",
+    srcs = ["depth_to_cloud_test.cc"],
+    add_test_rule = 1,
+    test_rule_args = [],
+    data = ["//examples/pr2:models"],
+    deps = [
+        ":depth_image_to_point_cloud",
+        "//multibody/parsers",
+        "//multibody/rigid_body_plant",
+        "//multibody:rigid_body_tree_construction",
+        "//systems/analysis:simulator",
+        "//systems/sensors:rgbd_camera",
     ],
 )
 
