@@ -640,7 +640,7 @@ cc_library(
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkRenderingVolume",
-         deps = [
+        deps = [
             ":vtkCommonCore",
             ":vtkRenderingCore",
         ],
