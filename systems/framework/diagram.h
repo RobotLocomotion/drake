@@ -811,26 +811,34 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
  private:
   // Allocates a default-constructed diagram context containing the complete
   // diagram substructure of default-constructed subcontexts.
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
     // Reserve inputs as specified during Diagram initialization.
     auto context = std::make_unique<DiagramContext<T>>(num_subsystems());
+    this->InitializeContextBase(&*context);
 
     // Recursively construct each constituent system and its subsystems,
     // then add to this diagram Context.
     for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
+      const System<T>& system = *registered_systems_[i];
       auto subcontext = dynamic_pointer_cast_or_throw<Context<T>>(
-          SystemBase::MakeContext(sys));
+          system.AllocateContext());
       context->AddSystem(i, std::move(subcontext));
     }
 
-    // TODO(sherm1) Move to separate interconnection phase.
-    // Wire up the Diagram-internal inputs and outputs.
+    // Creates this diagram's composite data structures that collect its
+    // subsystems' resources, which must have already been allocated above.
+    context->MakeParameters();
+    context->MakeState();
+
+    // Connect child subsystem input ports to the child subsystem output ports
+    // on which they depend. Declares dependency of each input port on its
+    // connected output port.
     for (const auto& connection : connection_map_) {
       const OutputPortLocator& src = connection.second;
       const InputPortLocator& dest = connection.first;
-      context->Connect(ConvertToContextPortIdentifier(src),
-                       ConvertToContextPortIdentifier(dest));
+      context->SubscribeInputPortToOutputPort(
+          ConvertToContextPortIdentifier(src),
+          ConvertToContextPortIdentifier(dest));
     }
 
     // Diagram-external input ports are exported from child subsystems. Inform
@@ -838,7 +846,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // child subsystem's input port on its parent Diagram's input port.
     for (InputPortIndex i(0); i < this->get_num_input_ports(); ++i) {
       const InputPortLocator& id = input_port_ids_[i];
-      context->ExportInput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeExportedInputPortToDiagramPort(
+          i, ConvertToContextPortIdentifier(id));
     }
 
     // Connect exported child subsystem output ports to the Diagram-level output
@@ -846,27 +855,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // Diagram-level output on its child-level output.
     for (OutputPortIndex i(0); i < this->get_num_output_ports(); ++i) {
       const OutputPortLocator& id = output_port_ids_[i];
-      context->ExportOutput(i, ConvertToContextPortIdentifier(id));
+      context->SubscribeDiagramPortToExportedOutputPort(
+          i, ConvertToContextPortIdentifier(id));
     }
-
-    // TODO(sherm1) Move to final resource allocation phase.
-    context->MakeState();
-    context->MakeParameters();
 
     return context;
-  }
-
-  // Permits child Systems to take a look at the completed Context to see
-  // if they have any objections.
-  void DoValidateAllocatedContext(const ContextBase& context_base) const final {
-    auto& context = dynamic_cast<const DiagramContext<T>&>(context_base);
-
-    // Depth-first validation of Context to make sure restrictions are met.
-    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
-      const System<T>& sys = *registered_systems_[i];
-      const Context<T>& subcontext = context.GetSubsystemContext(i);
-      SystemBase::ValidateAllocatedContext(sys, subcontext);
-    }
   }
 
   // Evaluates the value of the specified subsystem input

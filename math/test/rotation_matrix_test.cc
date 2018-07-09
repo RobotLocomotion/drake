@@ -84,7 +84,7 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
       0, -sin_theta, cos_theta;
 
   RotationMatrix<double> R;
-  R.SetOrThrowIfNotValid(m);
+  R.SetOrThrowIfNotValidInDebugBuild(m);
   Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
@@ -92,7 +92,11 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
       0, cos_theta, sin_theta,
       0, -sin_theta, cos_theta;
-  EXPECT_THROW(R.SetOrThrowIfNotValid(m), std::logic_error);
+#ifdef DRAKE_ASSERT_IS_ARMED
+  EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
+#else
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+#endif
 }
 
 // Test setting a RotationMatrix to an identity matrix.
@@ -102,31 +106,69 @@ GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 }
 
-// Test making a rotation matrix associated with a X-rotation.
-GTEST_TEST(RotationMatrix, RotationMatrixX) {
-  const double theta = 0.3;
-  const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitX()).matrix();
+// Test making a rotation matrix associated with a X, Y, or Z-rotation.
+GTEST_TEST(RotationMatrix, MakeXRotationMakeYRotationMakeZRotation) {
+  const Vector3d i = Eigen::Vector3d::UnitX();
+  const Vector3d j = Eigen::Vector3d::UnitY();
+  const Vector3d k = Eigen::Vector3d::UnitZ();
+  double tolerance = 32 * kEpsilon;
+
+  // Test making a rotation matrix associated with X-rotation.
+  double theta = 0.3;
+  Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitX()).matrix();
   RotationMatrix<double> R = RotationMatrix<double>::MakeXRotation(theta);
-  const Matrix3d zero_matrix = m - R.matrix();
+  Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
-}
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeXRotation(M_PI_4) * i,
+                              i, tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeXRotation(M_PI_4) * j,
+                              Vector3d(0, M_SQRT1_2, M_SQRT1_2), tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeXRotation(M_PI_4) * k,
+                              Vector3d(0, -M_SQRT1_2, M_SQRT1_2), tolerance));
 
-// Test making a rotation matrix associated with a Y-rotation.
-GTEST_TEST(RotationMatrix, RotationMatrixY) {
-  const double theta = 0.4;
-  const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitY()).matrix();
-  RotationMatrix<double> R = RotationMatrix<double>::MakeYRotation(theta);
-  const Matrix3d zero_matrix = m - R.matrix();
+  // Test making a rotation matrix associated with Y-rotation.
+  theta = 0.4;
+  m = Eigen::AngleAxisd(theta, Vector3d::UnitY()).matrix();
+  R = RotationMatrix<double>::MakeYRotation(theta);
+  zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
-}
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeYRotation(M_PI_4) * i,
+                              Vector3d(M_SQRT1_2, 0, -M_SQRT1_2), tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeYRotation(M_PI_4) * j,
+                              j, tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeYRotation(M_PI_4) * k,
+                              Vector3d(M_SQRT1_2, 0, M_SQRT1_2), tolerance));
 
-// Test making a rotation matrix associated with a Z-rotation.
-GTEST_TEST(RotationMatrix, RotationMatrixZ) {
-  const double theta = 0.5;
-  const Matrix3d m = Eigen::AngleAxisd(theta, Vector3d::UnitZ()).matrix();
-  RotationMatrix<double> R = RotationMatrix<double>::MakeZRotation(theta);
-  const Matrix3d zero_matrix = m - R.matrix();
+  // Test making a rotation matrix associated with Z-rotation.
+  theta = 0.5;
+  m = Eigen::AngleAxisd(theta, Vector3d::UnitZ()).matrix();
+  R = RotationMatrix<double>::MakeZRotation(theta);
+  zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeZRotation(M_PI_4) * i,
+                              Vector3d(M_SQRT1_2, M_SQRT1_2, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeZRotation(M_PI_4) * j,
+                              Vector3d(-M_SQRT1_2, M_SQRT1_2, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(RotationMatrixd::MakeZRotation(M_PI_4) * k,
+                              k, tolerance));
+
+  // Test that rotation by Pi + theta does not change the rotation axis and
+  // flips the signs on the other two axes.
+  RotationMatrixd RA, RB;
+  RA = RotationMatrixd::MakeXRotation(M_PI + theta);
+  RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(1, -1, -1)) *
+       RotationMatrixd::MakeXRotation(theta);
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
+
+  RA = RotationMatrixd::MakeYRotation(M_PI + theta);
+  RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(-1, 1, -1)) *
+       RotationMatrixd::MakeYRotation(theta);
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
+
+  RA = RotationMatrixd::MakeZRotation(M_PI + theta);
+  RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(-1, -1, 1)) *
+       RotationMatrixd::MakeZRotation(theta);
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
 }
 
 // Test making a rotation matrix from a RollPitchYaw rotation sequence (which is

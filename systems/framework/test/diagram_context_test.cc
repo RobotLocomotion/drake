@@ -39,7 +39,6 @@ class SystemWithNumericParameters : public LeafSystem<double> {
   SystemWithNumericParameters() {}
   ~SystemWithNumericParameters() override {}
 
-
   std::unique_ptr<Parameters<double>> AllocateParameters() const override {
     return std::make_unique<Parameters<double>>(
         std::make_unique<BasicVector<double>>(2));
@@ -53,6 +52,11 @@ class SystemWithAbstractParameters : public LeafSystem<double> {
   }
   ~SystemWithAbstractParameters() override {}
 };
+
+}  // namespace
+
+// This class must be outside the anonymous namespace to permit the
+// DiagramContext friend declaration to work.
 
 class DiagramContextTest : public ::testing::Test {
  protected:
@@ -132,6 +136,8 @@ class DiagramContextTest : public ::testing::Test {
   std::unique_ptr<SystemWithAbstractParameters>
       system_with_abstract_parameters_;
 };
+
+namespace {
 
 // Verifies that @p state is a clone of the state constructed in
 // DiagramContextTest::SetUp.
@@ -245,9 +251,9 @@ TEST_F(DiagramContextTest, DiagramState) {
 // Tests that no exception is thrown when connecting a valid source
 // and destination port.
 TEST_F(DiagramContextTest, ConnectValid) {
-  EXPECT_NO_THROW(
-      context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                        {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
+  EXPECT_NO_THROW(context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)}));
 }
 
 // Tests that input ports can be assigned to the DiagramContext and then
@@ -260,8 +266,9 @@ TEST_F(DiagramContextTest, SetAndGetInputPorts) {
 }
 
 TEST_F(DiagramContextTest, Clone) {
-  context_->Connect({SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
-                    {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
+  context_->SubscribeInputPortToOutputPort(
+      {SubsystemIndex(0) /* adder0_ */, OutputPortIndex(0)},
+      {SubsystemIndex(1) /* adder1_ */, InputPortIndex(1)});
   AttachInputPorts();
 
   auto clone = dynamic_pointer_cast<DiagramContext<double>>(context_->Clone());

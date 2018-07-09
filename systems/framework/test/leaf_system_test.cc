@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -31,6 +32,11 @@ class TestSystem : public LeafSystem<T> {
     this->set_name("TestSystem");
     this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
+
+    this->DeclareDiscreteState(3);
+    this->DeclareAbstractState(AbstractValue::Make<int>(5));
+    this->DeclareAbstractState(
+        AbstractValue::Make<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
 
@@ -197,7 +203,8 @@ class LeafSystemTest : public ::testing::Test {
   }
 
   TestSystem<double> system_;
-  LeafContext<double> context_;
+  std::unique_ptr<LeafContext<double>> context_ptr_ = system_.AllocateContext();
+  LeafContext<double>& context_ = *context_ptr_;
 
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
@@ -479,8 +486,34 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
   EXPECT_NEAR(2.445, time, 1e-8);
 }
 
+// Tests that discrete and abstract state dependency wiring is set up
+// correctly.
+TEST_F(LeafSystemTest, DiscreteAndAbstractStateTrackers) {
+  EXPECT_EQ(system_.num_discrete_state_groups(), 1);
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const DependencyTracker& xd_tracker =
+      context->get_tracker(system_.xd_ticket());
+  for (DiscreteStateIndex i(0); i < system_.num_discrete_state_groups(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.discrete_state_ticket(i));
+    EXPECT_TRUE(xd_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xd_tracker));
+  }
+
+  EXPECT_EQ(system_.num_abstract_states(), 2);
+  const DependencyTracker& xa_tracker =
+      context->get_tracker(system_.xa_ticket());
+  for (AbstractStateIndex i(0); i < system_.num_abstract_states(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_state_ticket(i));
+    EXPECT_TRUE(xa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xa_tracker));
+  }
+}
+
 // Tests that the leaf system reserved the declared Parameters with default
-// values, and that they are modifiable.
+// values, that they are modifiable, and that dependency wiring is set up
+// correctly for them.
 TEST_F(LeafSystemTest, NumericParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
@@ -491,10 +524,21 @@ TEST_F(LeafSystemTest, NumericParameters) {
       system_.GetVanillaMutableNumericParameters(context.get());
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
+
+  EXPECT_EQ(system_.num_numeric_parameters(), 1);
+  const DependencyTracker& all_parameters_tracker =
+      context->get_tracker(system_.all_parameters_ticket());
+  for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.numeric_parameter_ticket(i));
+    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared abstract Parameters with
-// default values, and that they are modifiable.
+// default values, that they are modifiable, and that dependency wiring is set
+// up correctly for them.
 TEST_F(LeafSystemTest, AbstractParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const std::string& param = context->get_abstract_parameter(0 /*index*/)
@@ -505,6 +549,17 @@ TEST_F(LeafSystemTest, AbstractParameters) {
           .GetMutableValueOrThrow<std::string>();
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
+
+  EXPECT_EQ(system_.num_abstract_parameters(), 1);
+  const DependencyTracker& all_parameters_tracker =
+      context->get_tracker(system_.all_parameters_ticket());
+  for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
+       ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_parameter_ticket(i));
+    EXPECT_TRUE(all_parameters_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_parameters_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.
@@ -664,7 +719,8 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 };
 
 // Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
-// correct topology.
+// correct topology, and that the all_input_ports dependency tracker is
+// properly subscribed to the input ports in an allocated context.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
@@ -681,6 +737,17 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut.get_input_port_base(InputPortIndex(10)), std::out_of_range,
       "System.*get_input_port_base().*no input port.*10.*only 5.*");
+
+  // Check DependencyTracker setup for input ports.
+  auto context = dut.AllocateContext();
+  const DependencyTracker& all_inputs_tracker =
+      context->get_tracker(dut.all_input_ports_ticket());
+  for (InputPortIndex i(0); i < dut.get_num_input_ports(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(dut.input_port_ticket(i));
+    EXPECT_TRUE(all_inputs_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_inputs_tracker));
+  }
 
   const OutputPortBase& out2_base =
       dut.get_output_port_base(OutputPortIndex(2));
@@ -767,7 +834,6 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 // correct values.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
-  auto context = dut.CreateDefaultContext();
   auto system_output = dut.AllocateOutput();
 
   // Check that BasicVector<double>(3) came out.
@@ -801,8 +867,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i = 0; i < 4; ++i) {
+  for (OutputPortIndex i(0); i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
@@ -1090,16 +1157,20 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
-  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  context->set_continuous_state(std::make_unique<ContinuousState<double>>(
+
+  // This needs to be a LeafContext for access to init_ methods.
+  auto context = dynamic_pointer_cast_or_throw<LeafContext<double>>(
+      system_.CreateDefaultContext());
+
+  context->init_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
-  context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
+  context->init_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
   std::vector<std::unique_ptr<AbstractValue>> abstract_data;
   abstract_data.push_back(PackValue(3));
   abstract_data.push_back(PackValue(5));
   abstract_data.push_back(PackValue(7));
-  context->set_abstract_state(
+  context->init_abstract_state(
       std::make_unique<AbstractValues>(std::move(abstract_data)));
 
   // Copy the state.

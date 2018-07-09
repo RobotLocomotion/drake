@@ -218,11 +218,11 @@ class TestSystem : public System<double> {
   }
 
  private:
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<double>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<double>>();
+    InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase&) const final {}
 
   mutable int publish_count_ = 0;
   mutable int update_count_ = 0;
@@ -485,11 +485,11 @@ class ValueIOTestSystem : public System<T> {
     return std::make_unique<ContinuousState<T>>();
   }
 
-  std::unique_ptr<ContextBase> DoMakeContext() const final {
-    return std::make_unique<LeafContext<T>>();
+  std::unique_ptr<ContextBase> DoAllocateContext() const final {
+    auto context = std::make_unique<LeafContext<T>>();
+    this->InitializeContextBase(&*context);
+    return context;
   }
-
-  void DoValidateAllocatedContext(const ContextBase& context) const final {}
 
   std::unique_ptr<CompositeEventCollection<T>>
   AllocateCompositeEventCollection() const override {
