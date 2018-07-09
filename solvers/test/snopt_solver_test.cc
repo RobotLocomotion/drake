@@ -1,6 +1,7 @@
 #include "drake/solvers/snopt_solver.h"
 
 #include <iostream>
+#include <thread>
 
 #include <gtest/gtest.h>
 #include <spruce.hh>
@@ -92,10 +93,10 @@ GTEST_TEST(SnoptTest, TestSetOption) {
 }
 
 GTEST_TEST(SnoptTest, TestPrintFile) {
-  // SNOPT 7.6 has a known bug where it mis-handles the NIL terminator byte
-  // when setting an debug log filename.  This is fixed in newer releases.
-  // Ideally we would add this function to the asan blacklist, but SNOPT
-  // doesn't have symbols so we'll just disable this test case instead.
+// SNOPT 7.6 has a known bug where it mis-handles the NIL terminator byte
+// when setting an debug log filename.  This is fixed in newer releases.
+// Ideally we would add this function to the asan blacklist, but SNOPT
+// doesn't have symbols so we'll just disable this test case instead.
 #if __has_feature(address_sanitizer) or defined(__SANITIZE_ADDRESS__)
   constexpr bool using_asan = true;
 #else
@@ -154,6 +155,61 @@ GTEST_TEST(SnoptTest, TestSparseCost) {
   EXPECT_TRUE(
       CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, -1, 1), tol));
   EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
+}
+
+GTEST_TEST(SnoptTest, MultiThreadTest) {
+  // Test if we can run several snopt solvers simultaneously on multiple
+  // threads.
+  // We create a convex QP problem with a unique global optimal, starting from
+  // different initial guesses, snopt should output the same result.
+  // min (x₀-1)² + (x₁-2)²
+  // s.t x₀ + x₁ = 1
+  // The optimal solution is x*=(0, 1)
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  const Eigen::Vector2d c(1, 2);
+  prog.AddQuadraticCost((x - c).squaredNorm());
+
+  prog.AddLinearConstraint(x(0) + x(1) == 1);
+
+  SnoptSolver snopt_solver;
+
+  auto SolveWithInitialGuess = [&snopt_solver, &prog](
+      const Eigen::Vector2d& x_init, const std::string& print_file_name) {
+    int snopt_status;
+    double objective;
+    Eigen::Vector2d x_val;
+
+    std::map<std::string, std::string> snopt_options_string =
+        prog.GetSolverOptionsStr(snopt_solver.solver_id());
+    // Set the print file
+    const std::string print_file = temp_directory() + print_file_name;
+    std::cout << print_file << std::endl;
+    EXPECT_FALSE(spruce::path(print_file).exists());
+    snopt_options_string["Print file"] = print_file;
+
+    snopt_solver.DoSolve(prog, x_init, snopt_options_string,
+                         prog.GetSolverOptionsInt(snopt_solver.solver_id()),
+                         prog.GetSolverOptionsDouble(snopt_solver.solver_id()),
+                         &snopt_status, &objective, &x_val);
+    EXPECT_EQ(snopt_status, 1);
+    EXPECT_NEAR(objective, 2, 1E-6);
+    EXPECT_TRUE(CompareMatrices(x_val, Eigen::Vector2d(0, 1), 1E-6));
+    EXPECT_TRUE(spruce::path(print_file).exists());
+  };
+
+  const int num_threads = 10;
+  std::vector<std::thread> test_threads;
+  for (int i = 0; i < num_threads; ++i) {
+    // Arbitrary initial guess.
+    const Eigen::Vector2d x_init(i + 1, (i - 2.0) / 10);
+    const std::string print_file_name =
+        "snopt_multithread" + std::to_string(i) + ".out";
+    test_threads.emplace_back(SolveWithInitialGuess, x_init, print_file_name);
+  }
+  for (int i = 0; i < num_threads; ++i) {
+    test_threads[i].join();
+  }
 }
 }  // namespace test
 }  // namespace solvers

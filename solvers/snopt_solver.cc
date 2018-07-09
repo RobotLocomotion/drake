@@ -14,14 +14,10 @@
 #include "drake/math/autodiff.h"
 #include "drake/solvers/mathematical_program.h"
 
-// clang-format off to disable clang-format-includes
-// clang-format-includes require adding the folder of snopt_cwrap.h, which
-// causes a compiler error if I do
-// #include "snopt/snopt_cwrap.h"
 extern "C" {
+// NOLINTNEXTLINE(build/include)
 #include "snopt_cwrap.h"
 }
-// clang-format on
 
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
@@ -418,7 +414,14 @@ void SetSnoptWorkspace(snProblem* snopt_problem,
 
 bool SnoptSolver::available() const { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+void SnoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const Eigen::VectorXd>& x_init,
+    const std::map<std::string, std::string>& snopt_options_string,
+    const std::map<std::string, int>& snopt_options_int,
+    const std::map<std::string, double>& snopt_options_double, int* snopt_info,
+    double* objective, EigenPtr<Eigen::VectorXd> x_val) const {
+  DRAKE_ASSERT(x_val->rows() == prog.num_vars());
   snProblem drake_problem;
   // No print file, no summary.
   char problem_name[14] = "drake_problem";
@@ -440,10 +443,9 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int* xstate = new int[nx];
 
   // Initialize the guess for x.
-  const Eigen::VectorXd& x_initial_guess = prog.initial_guess();
   for (int i = 0; i < nx; ++i) {
-    if (!std::isnan(x_initial_guess(i))) {
-      x[i] = x_initial_guess(i);
+    if (!std::isnan(x_init(i))) {
+      x[i] = x_init(i);
     } else {
       x[i] = 0.0;
     }
@@ -575,24 +577,21 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
     A_index++;
   }
 
-  const std::map<std::string, std::string>& snopt_option_str =
-      prog.GetSolverOptionsStr(id());
   // Determines if we should print out snopt debugging info.
-  const auto print_file_it = snopt_option_str.find("Print file");
-  if (print_file_it != snopt_option_str.end()) {
+  const auto print_file_it = snopt_options_string.find("Print file");
+  if (print_file_it != snopt_options_string.end()) {
     setPrintfile(&drake_problem,
                  const_cast<char*>(print_file_it->second.c_str()));
     char major_print_level[18] = "Major print level";
     setIntParameter(&drake_problem, major_print_level, 11);
   }
 
-
-  for (const auto it : prog.GetSolverOptionsDouble(id())) {
+  for (const auto it : snopt_options_double) {
     setRealParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
                      it.second);
   }
 
-  for (const auto it : prog.GetSolverOptionsInt(id())) {
+  for (const auto it : snopt_options_int) {
     setIntParameter(&drake_problem, const_cast<char*>(it.first.c_str()),
                     it.second);
   }
@@ -606,35 +605,12 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
   int nInf;
   double sInf;
 
-  const int info =
+  *snopt_info =
       solveA(&drake_problem, Cold, nF, nx, ObjAdd, ObjRow, snopt_userfun, lenA,
              iAfun, jAvar, A, lenG, iGfun, jGvar, xlow, xupp, Flow, Fupp, x,
              xstate, xmul, F, Fstate, Fmul, &nS, &nInf, &sInf);
-
-  SolverResult solver_result(id());
-  solver_result.set_decision_variable_values(
-      Eigen::Map<VectorX<double>>(x, nx));
-  solver_result.set_optimal_cost(*F);
-
-  // todo: extract the other useful quantities, too.
-
-  SolutionResult solution_result{SolutionResult::kUnknownError};
-  if (info >= 1 && info <= 6) {
-    solution_result = SolutionResult::kSolutionFound;
-  } else {
-    drake::log()->debug("Snopt returns code {}\n", info);
-    if (info >= 11 && info <= 16) {
-      solution_result = SolutionResult::kInfeasibleConstraints;
-    } else if (info >= 20 && info <= 22) {
-      solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
-      solution_result = SolutionResult::kUnbounded;
-    } else if (info >= 30 && info <= 32) {
-      solution_result = SolutionResult::kIterationLimit;
-    } else if (info == 91) {
-      solution_result = SolutionResult::kInvalidInput;
-    }
-  }
-  prog.SetSolverResult(solver_result);
+  *x_val = Eigen::Map<Eigen::VectorXd>(x, nx);
+  *objective = F[0];
 
   delete[] iAfun;
   delete[] jAvar;
@@ -654,6 +630,38 @@ SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
 
   free(drake_problem.iu);
   deleteSNOPT(&drake_problem);
+}
+
+SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+  int snopt_status{0};
+  double objective{0};
+  Eigen::VectorXd x_val(prog.num_vars());
+  DoSolve(prog, prog.initial_guess(), prog.GetSolverOptionsStr(id()),
+          prog.GetSolverOptionsInt(id()), prog.GetSolverOptionsDouble(id()),
+          &snopt_status, &objective, &x_val);
+  SolverResult solver_result(id());
+  solver_result.set_decision_variable_values(x_val);
+  solver_result.set_optimal_cost(objective);
+
+  // todo: extract the other useful quantities, too.
+
+  SolutionResult solution_result{SolutionResult::kUnknownError};
+  if (snopt_status >= 1 && snopt_status <= 6) {
+    solution_result = SolutionResult::kSolutionFound;
+  } else {
+    drake::log()->debug("Snopt returns code {}\n", snopt_status);
+    if (snopt_status >= 11 && snopt_status <= 16) {
+      solution_result = SolutionResult::kInfeasibleConstraints;
+    } else if (snopt_status >= 20 && snopt_status <= 22) {
+      solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
+      solution_result = SolutionResult::kUnbounded;
+    } else if (snopt_status >= 30 && snopt_status <= 32) {
+      solution_result = SolutionResult::kIterationLimit;
+    } else if (snopt_status == 91) {
+      solution_result = SolutionResult::kInvalidInput;
+    }
+  }
+  prog.SetSolverResult(solver_result);
   return solution_result;
 }
 
