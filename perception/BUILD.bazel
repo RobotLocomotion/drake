@@ -37,6 +37,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "depth_image_to_point_cloud",
+    srcs = ["depth_image_to_point_cloud.cc"],
+    hdrs = ["depth_image_to_point_cloud.h"],
+    deps = [
+        ":point_cloud",
+        "//common:essential",
+        "//systems/framework",
+        "//systems/sensors",
+    ],
+)
+
 drake_cc_googletest(
     name = "point_cloud_flags_test",
     srcs = ["test/point_cloud_flags_test.cc"],
