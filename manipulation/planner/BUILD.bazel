@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -17,6 +17,7 @@ drake_cc_package_library(
     deps = [
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
+        ":kinematic_trajectory_optimization",
         ":robot_plan_interpolator",
     ],
 )
@@ -41,6 +42,18 @@ drake_cc_library(
         "//multibody:rigid_body_tree",
         "//multibody/multibody_tree",
         "//multibody/parsers",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematic_trajectory_optimization",
+    srcs = ["kinematic_trajectory_optimization.cc"],
+    hdrs = ["kinematic_trajectory_optimization.h"],
+    deps = [
+        "//common",
+        "//math:bspline_curve",
+        "//math:gradient",
         "//solvers:mathematical_program",
     ],
 )
@@ -90,6 +103,14 @@ drake_cc_googletest(
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//manipulation/util:world_sim_tree_builder",
         "//multibody/benchmarks/kuka_iiwa_robot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematic_trajectory_optimization_test",
+    deps = [
+        ":kinematic_trajectory_optimization",
+        "//solvers:constraint",
     ],
 )
 
