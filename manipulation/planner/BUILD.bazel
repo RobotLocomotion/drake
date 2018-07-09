@@ -70,6 +70,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rigid_body_tree_wrapper",
+    srcs = ["rigid_body_tree_wrapper.cc"],
+    hdrs = ["rigid_body_tree_wrapper.h"],
+    deps = [
+        ":kinematic_tree",
+        "//common:essential",
+        "//multibody:inverse_kinematics",
+        "//multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
@@ -131,6 +143,19 @@ drake_cc_googletest(
     deps = [
         ":kinematic_tree",
         "@gtest//:main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_body_tree_wrapper_test",
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rigid_body_tree_wrapper",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/util:world_sim_tree_builder",
     ],
 )
 
