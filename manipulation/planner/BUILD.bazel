@@ -59,6 +59,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "kinematic_tree",
+    srcs = ["kinematic_tree.cc"],
+    hdrs = ["kinematic_tree.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
@@ -111,6 +122,15 @@ drake_cc_googletest(
     deps = [
         ":kinematic_trajectory_optimization",
         "//solvers:constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematic_tree_test",
+    srcs = ["test/kinematic_tree_test.cc"],
+    deps = [
+        ":kinematic_tree",
+        "@gtest//:main",
     ],
 )
 
