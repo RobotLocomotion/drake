@@ -22,7 +22,8 @@ vtk_test_tags = [
     "no_memcheck",
     # Mitigates driver-related issues when running under `bazel test`. For
     # more information, see #7004.
-    "no-sandbox"]
+    "no-sandbox",
+]
 
 drake_cc_package_library(
     name = "sensors",
@@ -422,10 +423,10 @@ filegroup(
     srcs = [
         "test/models/background.jpg",
         "test/models/box.sdf",
-        "test/models/meshes/box2.obj",
-        "test/models/meshes/box.obj",
         "test/models/meshes/box.json",
+        "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
+        "test/models/meshes/box2.obj",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
     ],
