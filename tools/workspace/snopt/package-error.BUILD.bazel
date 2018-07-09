@@ -25,3 +25,9 @@ cc_library(
     hdrs = [":error-message.h"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "snopt_cwrap",
+    hdrs = [":error-message.h"],
+    visibility = ["//visibility:public"],
+)

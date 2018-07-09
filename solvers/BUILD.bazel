@@ -6,6 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+    "drake_cc_test",
 )
 load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -1302,6 +1303,18 @@ drake_cc_googletest(
         ":mixed_integer_rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+# TODO(jwnimmer-tri) We should remove this sample once snopt_solver.cc is using
+# snopt_cwrap directly.  In the meantime, this program ensures that snopt_cwrap
+# continues to compile and run correctly.
+drake_cc_test(
+    name = "snopt_cwrap_example",
+    srcs = ["test/snopt_cwrap_example.cc"],
+    tags = ["snopt"],
+    deps = [
+        "@snopt//:snopt_cwrap",
     ],
 )
 
