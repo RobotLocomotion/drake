@@ -18,9 +18,10 @@ struct NearestPair {
   /** Constructor
    @param a       The id of the first geometry (A).
    @param b       The id of the second geometry (B).
-   @param p_A     The point on geometry A's surface nearest B, in A's frame.
-   @param p_B     The point on geometry B's surface nearest A, in B's frame.
-   @param dist    The distance between p_A and p_B. */
+   @param p_A     The witness point on geometry A's, in A's frame.
+   @param p_B     The witness point on geometry B's, in B's frame.
+   @param dist    The signed distance between p_A and p_B. When A and B are
+   separated, dist > 0; when A and B are touching or penetrating, dist < 0.*/
   NearestPair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
               const Vector3<T>& p_B, T dist) : id_A(a), id_B(b),
                                                p_ACa(p_A), p_BCb(p_B),

@@ -209,14 +209,18 @@ class CollisionFilterLegacy {
 };
 
 // Struct for use in SingleDistanceCallback(). Contains the distance request
-// and accumulates result in a drake::multibody::collision::NearestPair vector.
+// and accumulates result in a drake::geometry::NearestPair vector.
 struct DistanceData {
   DistanceData(const std::vector<GeometryId>* dynamic_map_in,
-               const std::vector<GeometryId>* anchored_map_in)
-      : dynamic_map(*dynamic_map_in), anchored_map(*anchored_map_in) {}
+               const std::vector<GeometryId>* anchored_map_in,
+               const CollisionFilterLegacy* collision_filter_in)
+      : dynamic_map(*dynamic_map_in),
+        anchored_map(*anchored_map_in),
+        collision_filter(*collision_filter_in) {}
   // Maps so the distance call back can map from engine index to geometry id.
   const std::vector<GeometryId>& dynamic_map;
   const std::vector<GeometryId>& anchored_map;
+  const CollisionFilterLegacy& collision_filter;
 
   // Distance request
   fcl::DistanceRequestd request;
@@ -246,18 +250,19 @@ struct CollisionData {
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
 
-// The callback function in fcl::distance request. @p dist is used in
-// fcl::distance, that the distance between two geometries is proved to be
-// greater than @p dist (for example, the smallest distance between the bounding
-// boxes containing object A and object B is greater than @p dist), then
-// fcl::distance will skip this callback. In our case, as we want to compute
-// the distance between any pair of geometries, we leave @p dist unchanged as
-// its default value (max_double).
+// The callback function in fcl::distance request. The final unnamed parameter
+// is `dist`, which is used in fcl::distance, that if the distance between two
+// geometries is proved to be greater than `dist` (for example, the smallest
+// distance between the bounding boxes containing object A and object B is
+// greater than `dist`), then fcl::distance will skip this callback. In our
+// case, as we want to compute the distance between any pair of geometries, we
+// leave `dist` unchanged as its default value (max_double). So the last
+// parameter is merely a placeholder, and not being used or updated in the
+// callback.
 bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                       fcl::CollisionObjectd* fcl_object_B_ptr,
                       // NOLINTNEXTLINE
-                      void* callback_data, double& dist) {
-  unused(dist);
+                      void* callback_data, double&) {
   // NOTE: Although this function *takes* non-const pointers to satisfy the
   // fcl api, it should not exploit the non-constness to modify the collision
   // objects. We insure this by immediately assigning to a const version and
@@ -265,7 +270,18 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
   const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
 
-  // TODO(SeanCurtis-TRI): Introduce collision filtering here.
+  auto& collision_data = *static_cast<DistanceData*>(callback_data);
+
+  // Extract the collision filter keys from the fcl collision objects. These
+  // keys will also be used to map the fcl collision object back to the Drake
+  // GeometryId for colliding geometries.
+  EncodedData encoding_A(fcl_object_A);
+  EncodedData encoding_B(fcl_object_B);
+
+  const bool can_collide = collision_data.collision_filter.CanCollideWith(
+      encoding_A.encoded_data(), encoding_B.encoded_data());
+
+  if (can_collide) {
     // Unpack the callback data
     auto& distance_data = *static_cast<DistanceData*>(callback_data);
     const fcl::DistanceRequestd& request = distance_data.request;
@@ -284,11 +300,18 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     nearest_pair.p_ACa = result.nearest_points[0];
     nearest_pair.p_BCb = result.nearest_points[1];
     nearest_pair.distance = result.min_distance;
+    // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
+    // surfaces and then flip the normal.
+    if (nearest_pair.id_B < nearest_pair.id_A) {
+      std::swap(nearest_pair.id_A, nearest_pair.id_B);
+      std::swap(nearest_pair.p_ACa, nearest_pair.p_BCb);
+    }
 
     distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
+  }
 
   // Returning true would tell the broadphase manager to terminate early. Since
-  // we want to find all the collisions present in the model's current
+  // we want to find all the signed distance present in the model's current
   // configuration, we return false.
   return false;
 }
@@ -613,11 +636,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const {
     std::vector<NearestPair<double>> nearest_pairs;
-    DistanceData distance_data{&dynamic_map, &anchored_map};
+    DistanceData distance_data{&dynamic_map, &anchored_map, &collision_filter_};
     distance_data.nearest_pairs = &nearest_pairs;
     distance_data.request.enable_nearest_points = true;
     distance_data.request.enable_signed_distance = true;
     distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    // The tolerance uses the default value in FCL. If the user wants high
+    // accuracy solution, modify distance_data.request.distance_tolerance.
 
     dynamic_tree_.distance(&distance_data, DistanceCallback);
     dynamic_tree_.distance(

@@ -128,21 +128,36 @@ class QueryObject {
   //@}
 
   //---------------------------------------------------------------------------
-  /** @name                   Signed Distance Queries
-   
-   These queries represent _signed_distance_ querites -- queries to determine
-   the signed distance. When two objects do not overlap, the signed distance
-   is the actual distance between the two objects A and B, defined as the
-   minimal distance between any pair of points Na and Nb, with Na on object A
-   and Nb on object B. The nearest points are the pair of points that gives the
-   minimal distance. When the two objects overlap, the signed distance is the
-   penetration depth, a non-positive number. It is the smallest distance of a
-   vector v, such that by shifting one object (for example, object A) along that
-   vector to object A', the shifted object A' do not overlap with B (or they
-   only overlap at the boundary). The nearest points between A' and B is Na' and
-   Nb. The nearest points between A and B when the overlap, is defined as
-   Na' - v and Nb. Notice that the signed distance function is a continuous
-   function w.r.t the pose of the objects. */
+  /**
+   @anchor signed_distance_query
+   @name                   Signed Distance Queries
+
+   These queries represent _signed_distance_ queries.
+   These queries provide φ(A, B), the signed distance between two objects A and
+   B.
+
+   If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
+   minimal distance between the two objects. More formally:
+   φ = min(|Aₚ - Bₚ|²)
+   ∀ Aₚ ∈ A and Bₚ ∈ B. 
+   Note: the pair (Aₚ, Bₚ) is a "witness" of the distance.
+   The pair need not be unique (think of two parallel planes).
+
+   If the objects touch or overlap (i.e., A ⋂ B ≠ ∅), φ ≤ 0 and can be
+   interpreted as the negative penetration depth. It is the smallest length of
+   the vector v, such that by shifting one object along that vector relative to
+   the other, the two objects will no longer be overlapping. More formally,
+   φ(A, B) = min |v|.
+   s.t  (A ⊕ {v}) ⋂ B = ∅ 
+   where A ⊕ {v} is object A displaced by vector v, namely
+   A ⊕ {v} = {u + v | ∀ u ∈ A}, where ⊕ represents Minkowski sum. By
+   implication, there exist points Aₚ and Bₚ on the surfaces of objects A and B,
+   respectively, such that Aₚ + v = Bₚ, Aₚ ∈ B, Bₚ ∈ A. These points are the
+   witnesses to the penetration.
+
+   Note: the signed distance function is a continuous function with respect to
+   the pose of the objects.
+   */
 
   //@{
 
@@ -150,11 +165,11 @@ class QueryObject {
    * Computes the signed distance together with the nearest points across all
    * pairs of geometries in the world. Reports both the separating geometries
    * and penetrating geometries.
-   * @retval near_pairs A vector of reporting the signed distance characterized
-   * as point pairs. Notice that this is an O(N²) operation, where N is the 
+   * @retval near_pairs A vector of reporting the signed distance together with
+   * the witness pairs. Notice that this is an O(N²) operation, where N is the 
    * number of geometries in the world. We report the distance between dynamic
-   * objects, or between a dynamic object and a static object. We DO NOT report
-   * the distance between two static objects.
+   * objects, and between a dynamic and static objects. We DO NOT report the
+   * distance between two static objects.
    */
   std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints()
       const;

@@ -15,7 +15,6 @@ drake_cc_package_library(
     deps = [
         ":nearest_pair",
         ":penetration_as_point_pair",
-        ":point_proximity",
     ],
 )
 
@@ -33,16 +32,6 @@ drake_cc_library(
     name = "nearest_pair",
     srcs = [],
     hdrs = ["nearest_pair.h"],
-    deps = [
-        "//common",
-        "//geometry:geometry_ids",
-    ],
-)
-
-drake_cc_library(
-    name = "point_proximity",
-    srcs = [],
-    hdrs = ["point_proximity.h"],
     deps = [
         "//common",
         "//geometry:geometry_ids",
