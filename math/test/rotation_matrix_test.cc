@@ -80,23 +80,22 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   const double sin_theta = std::sin(0.5);
   Matrix3d m;
   m << 1, 0, 0,
-      0, cos_theta, sin_theta,
-      0, -sin_theta, cos_theta;
+       0, cos_theta, sin_theta,
+       0, -sin_theta, cos_theta;
 
   RotationMatrix<double> R;
-  R.SetOrThrowIfNotValidInDebugBuild(m);
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  R.set(m);
   Matrix3d zero_matrix = m - R.matrix();
   EXPECT_TRUE((zero_matrix.array() == 0).all());
 
   // Bad matrix should throw exception.
   m << 1, 9000*kEpsilon, 9000*kEpsilon,
-      0, cos_theta, sin_theta,
-      0, -sin_theta, cos_theta;
+       0, cos_theta, sin_theta,
+       0, -sin_theta, cos_theta;
 #ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
+  EXPECT_THROW(R.set(m), std::logic_error);
 #else
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  EXPECT_NO_THROW(R.set(m));
 #endif
 }
 
@@ -280,24 +279,24 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   m << 1, 0, 0,
        0, 1, 0,
        0, 0, 1;
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  R.set(m);
   EXPECT_TRUE(R.IsExactlyIdentity().value());
 
   // Test impact of absolute mininimum deviation from identity matrix.
   m(0, 2) = std::numeric_limits<double>::denorm_min();  // ≈ 4.94066e-324
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  EXPECT_NO_THROW(R.set(m));
   EXPECT_FALSE(R.IsExactlyIdentity().value());
 
   // Test that setting a RotationMatrix to a 3x3 matrix that is close to a valid
   // RotationMatrix does not throw an exception, whereas setting to a 3x3 matrix
   // that is slightly too-far from a valid RotationMatrix throws an exception.
   m(0, 2) = 127 * kEpsilon;
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  EXPECT_NO_THROW(R.set(m));
   m(0, 2) = 129 * kEpsilon;
 #ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
+  EXPECT_THROW(R.set(m), std::logic_error);
 #else
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  EXPECT_NO_THROW(R.set(m));
 #endif
 
   const double cos_theta = std::cos(0.5);
@@ -305,7 +304,7 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   m << 1, 0, 0,
        0, cos_theta, sin_theta,
        0, -sin_theta, cos_theta;
-  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+  R.set(m);
   EXPECT_FALSE(R.IsExactlyIdentity().value());
 }
 
@@ -494,69 +493,89 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
   Eigen::Matrix3d m_numerical{Evaluate(m_symbolic, env)};
   const RotationMatrix<double> R_identity(m_numerical);
-  const Bool<double> is_identity = R_identity.IsIdentityToInternalTolerance();
-  EXPECT_TRUE(is_identity.value());
+  EXPECT_TRUE(R_identity.IsIdentityToInternalTolerance().value());
 
   // Verify default constructor for a RotationMatrix templatized on
-  // symbolic::Expression is an identity matrix.
+  // symbolic::Expression is an identity matrix (and is orthonormal).
   RotationMatrix<symbolic::Expression> R1;
-  EXPECT_TRUE(R1.IsExactlyIdentity().value());
+  Bool<symbolic::Expression> is_identity = R1.IsExactlyIdentity();
+  Bool<symbolic::Expression> is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(R1.matrix(), 0);
+  EXPECT_TRUE(is_identity.value());
+  EXPECT_TRUE(is_orthonormal.value());
 
   // Verify IsOrthonormal() can be called on a 3x3 matrix templatized on
   // symbolic::Expression, when its elements have numerical values.
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
                 0, 0, 1;
-  // Test that this symbolic identity matrix is orthogonal with tolerance = 0.
-  Bool<symbolic::Expression> is_orthonormal =
-      RotationMatrix<symbolic::Expression>::IsOrthonormal(m_symbolic, 0);
+  R1.set(m_symbolic);
+  is_identity = R1.IsExactlyIdentity();
+  is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(R1.matrix(), 0);
+  EXPECT_TRUE(is_identity.value());
   EXPECT_TRUE(is_orthonormal.value());
 
   // Test that setting an off-diagonal term of the otherwise symbolic identity
-  // matrix to 8 * kEpsilon results in a non-orthogonal if tolerance = kEpsilon,
-  // but is orthogonal if tolerance = 16 * kEpsilon.
+  // matrix to 8 * kEpsilon results in IsOrthonormal() returning false if
+  // tolerance = 2 * kEpsilon, but true if tolerance = 16 * kEpsilon.
+  // Also test IsExactlyIdentity() returns false, but
+  // IsIdentityToInternalTolerance() returns true (it uses 128 * kEpsilon).
   m_symbolic(0, 2) = 8 * kEpsilon;
+  R1.set(m_symbolic);
+  is_identity = R1.IsExactlyIdentity();
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      m_symbolic, kEpsilon);
+      R1.matrix(), 2 * kEpsilon);
+  EXPECT_FALSE(is_identity.value());
   EXPECT_FALSE(is_orthonormal.value());
+  is_identity = R1.IsIdentityToInternalTolerance();
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      m_symbolic, 16 * kEpsilon);
+      R1.matrix(), 16 * kEpsilon);
+  EXPECT_TRUE(is_identity.value());
   EXPECT_TRUE(is_orthonormal.value());
 
   // When the underlying scalar type is a symbolic::Expression, ensure
-  // SetOrThrowIfNotValidInDebugBuild() only sets the rotation matrix, with no
-  // validity checks, e.g., ThrowIfNotValid() is a "no-op" (does nothing).
+  // set(m_symbolic) only sets the rotation matrix, with no validity checks
+  // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
   // Ensure validity check is skipped even if symbolic expressions are numbers
   // or a mis-mash combination of numbers and symbolic variables.
-  m_symbolic << q0, q1, q2,
-                q1, q2, q3,
-                q2, q3, q0;
-  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
-  EXPECT_FALSE(R1.IsExactlyIdentity().value());
   m_symbolic << 1, 2, 3,
                 4, 5, 6,
                 7, 8, 9;
-  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
-  EXPECT_FALSE(R1.IsExactlyIdentity().value());
+  R1.set(m_symbolic);
+  is_identity = R1.IsExactlyIdentity();
+  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
+      R1.matrix(), 256 * kEpsilon);
+  EXPECT_FALSE(is_identity.value());
+  EXPECT_FALSE(is_orthonormal.value());
+
+  m_symbolic << q0, q1, q2,
+                q1, q2, q3,
+                q2, q3, q0;
+  R1.set(m_symbolic);
+  is_identity = R1.IsExactlyIdentity();
+  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
+      R1.matrix(), 256 * kEpsilon);
+  EXPECT_FALSE(is_identity.value());  // Soonho: Should this throw exception?
+  EXPECT_THROW(EXPECT_TRUE(is_orthonormal.value()), std::runtime_error);
+
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
                 0, 0, q1;
-  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
-  EXPECT_FALSE(R1.IsExactlyIdentity().value());
-
-  // Check that assertion is thrown when calling IsOrthonormal() since the test
-  // does a comparision of a symbolic expression against a double number.
-  // TODO(Mitiguy) Talk to Soonho about fixing this.
+  R1.set(m_symbolic);
+  is_identity = R1.IsExactlyIdentity();
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-    m_symbolic, 256 * kEpsilon);
+      m_symbolic, 256 * kEpsilon);
+  EXPECT_FALSE(is_identity.value());  // Soonho: Should this throw exception?
   EXPECT_THROW(EXPECT_TRUE(is_orthonormal.value()), std::runtime_error);
 
   // Verify Bool method IsExactlyEqualTo().
-  RotationMatrix<symbolic::Expression> R2;
-  const Bool<symbolic::Expression> is_exactly_equal = R2.IsExactlyEqualTo(R1);
+  RotationMatrix<symbolic::Expression> R2;  // Identity matrix.
+  Bool<symbolic::Expression> is_exactly_equal = R2.IsExactlyEqualTo(R1);
   EXPECT_FALSE(is_exactly_equal.value());
-  R2.SetOrThrowIfNotValidInDebugBuild(R1.matrix());
-  EXPECT_TRUE(R2.IsExactlyEqualTo(R1).value());
+  R2.set(R1.matrix());
+  is_exactly_equal = R2.IsExactlyEqualTo(R1);
+  EXPECT_TRUE(is_exactly_equal.value());
 }
 
 class RotationMatrixConversionTests : public ::testing::Test {
