@@ -18,6 +18,9 @@ drake_cc_package_library(
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
         ":kinematic_trajectory_optimization",
+        ":kinematic_tree",
+        ":optimize_manipulation_trajectory",
+        ":rigid_body_tree_wrapper",
         ":robot_plan_interpolator",
     ],
 )
