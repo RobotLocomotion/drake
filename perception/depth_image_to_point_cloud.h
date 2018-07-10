@@ -45,7 +45,6 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
 
   int input_port_depth_image_{0};
 
-  // std::unique_ptr<const systems::sensors::CameraInfo> camera_info_;
   const systems::sensors::CameraInfo* camera_info_;
 };
 
