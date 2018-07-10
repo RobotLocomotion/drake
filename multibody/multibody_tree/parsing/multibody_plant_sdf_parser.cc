@@ -13,11 +13,6 @@
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsers/parser_path_utils.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
-
 namespace drake {
 namespace multibody {
 namespace parsing {
@@ -200,6 +195,10 @@ void AddJointActuatorFromSpecification(
 }
 
 // Returns joint limits as the pair (lower_limit, upper_limit).
+// The units of the limits depend on the particular joint type. Units are meters
+// for prismatic joints and radians for revolute joints.
+// This method throws an exception if the joint type is not one of revolute or
+// prismatic.
 std::pair<double, double> ParseJointLimits(const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -284,8 +283,6 @@ void AddJointFromSpecification(
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const std::pair<double, double> limits = ParseJointLimits(joint_spec);
-      PRINT_VAR(limits.first);
-      PRINT_VAR(limits.second);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
