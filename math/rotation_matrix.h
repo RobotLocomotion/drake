@@ -5,6 +5,7 @@
 #include <string>
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
@@ -592,11 +593,11 @@ class RotationMatrix {
   // validity check is made and no assertion is thrown.
   template <typename S = T>
   static typename std::enable_if<is_numeric<S>::value, void>::type
-  ThrowIfNotValid(const Matrix3<T>& R);
+  ThrowIfNotValid(const Matrix3<S>& R);
 
   template <typename S = T>
   static typename std::enable_if<!is_numeric<S>::value, void>::type
-  ThrowIfNotValid(const Matrix3<T>&) {}
+  ThrowIfNotValid(const Matrix3<S>&) {}
 
   // Given an approximate rotation matrix M, finds the orthonormal matrix R
   // closest to M.  Closeness is measured with a matrix-2 norm (or equivalently
@@ -718,6 +719,42 @@ Matrix3<typename Derived::Scalar> rpy2rotmat(
   const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
   const RotationMatrix<Scalar> R(roll_pitch_yaw);
   return R.matrix();
+}
+
+// @internal Initially, this code was in rotation_matrix.cc.  After
+// RotationMatrix was instantiated on symbolic expression, there was a linker
+// error that arose, but only during release builds and when tests in
+// rotation_matrix_test.cc used symbolic expressions.  I (Paul) spent a fair
+// amount of time trying to understand this problem (with Sherm & Sean).
+template<typename T>
+template <typename S>
+typename std::enable_if<is_numeric<S>::value, void>::type
+RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
+  if (!R.allFinite()) {
+    throw std::logic_error(
+        "Error: Rotation matrix contains an element that is infinity or "
+            "NaN.");
+  }
+  // If the matrix is not-orthogonal, try to give a detailed message.
+  // This is particularly important if matrix is very-near orthogonal.
+  if (!IsOrthonormal(R, get_internal_tolerance_for_orthonormality()).value()) {
+    const T measure_of_orthonormality = GetMeasureOfOrthonormality(R);
+    const double measure = ExtractDoubleOrThrow(measure_of_orthonormality);
+    std::string message = fmt::format(
+        "Error: Rotation matrix is not orthonormal."
+        "  Measure of orthonormality error: {:G}  (near-zero is good)."
+        "  To calculate the proper orthonormal rotation matrix closest to"
+        " the alleged rotation matrix, use the SVD (expensive) method"
+        " RotationMatrix::ProjectToRotationMatrix(), or for a less expensive"
+        " (but not necessarily closest) rotation matrix, use the constructor"
+        " RotationMatrix<T>(ToQuaternion(your_Matrix3)).  Alternately, if"
+        " using quaternions, ensure the quaternion is normalized.", measure);
+    throw std::logic_error(message);
+  }
+  if (R.determinant() < 0) {
+    throw std::logic_error("Error: Rotation matrix determinant is negative. "
+                               "It is possible a basis is left-handed");
+  }
 }
 
 }  // namespace math

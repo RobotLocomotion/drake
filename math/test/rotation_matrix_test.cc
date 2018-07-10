@@ -470,7 +470,7 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
 }
 
 // Test creating a rotation matrix with symbolic variables.
-GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
+GTEST_TEST(RotationMatrix, SymbolicRotationMatrixWithEnvironmentMap) {
   const symbolic::Variable q0("q0");  // Quaternion element q0.
   const symbolic::Variable q1("q1");  // Quaternion element q1.
   const symbolic::Variable q2("q2");  // Quaternion element q2.
@@ -490,91 +490,88 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
 
   // Test that a RotationMatrix with underlying symbolic expressions properly
   // evaluates, e.g. evaluate symbolic R_R_inverse matrix with numerical values.
-  Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
-  Eigen::Matrix3d m_numerical{Evaluate(m_symbolic, env)};
+  const Matrix3<symbolic::Expression> m_symbolic = R_R_inverse.matrix();
+  const Eigen::Matrix3d m_numerical{Evaluate(m_symbolic, env)};
   const RotationMatrix<double> R_identity(m_numerical);
   EXPECT_TRUE(R_identity.IsIdentityToInternalTolerance().value());
+}
 
-  // Verify default constructor for a RotationMatrix templatized on
-  // symbolic::Expression is an identity matrix (and is orthonormal).
-  RotationMatrix<symbolic::Expression> R1;
-  Bool<symbolic::Expression> is_identity = R1.IsExactlyIdentity();
-  Bool<symbolic::Expression> is_orthonormal =
-      RotationMatrix<symbolic::Expression>::IsOrthonormal(R1.matrix(), 0);
+// Verify default constructor for a RotationMatrix templatized on
+// symbolic::Expression is an identity matrix and is orthonormal.
+GTEST_TEST(RotationMatrix, SymbolicIdentityRotationMatrix) {
+  RotationMatrix<symbolic::Expression> R;
+  const Bool<symbolic::Expression> is_identity = R.IsExactlyIdentity();
+  const Bool<symbolic::Expression> is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(R.matrix(), 0);
   EXPECT_TRUE(is_identity.value());
   EXPECT_TRUE(is_orthonormal.value());
+}
 
-  // Verify IsOrthonormal() can be called on a 3x3 matrix templatized on
-  // symbolic::Expression, when its elements have numerical values.
-  m_symbolic << 1, 0, 0,
+// Test creating a rotation matrix with symbolic constants is able to evaluate
+// to numerical values for various tests.
+GTEST_TEST(RotationMatrix, SymbolicRotationMatrixWithConstantExpressions) {
+  Matrix3<symbolic::Expression> m_symbolic;
+  m_symbolic << 1, 0, 32 * kEpsilon,
                 0, 1, 0,
                 0, 0, 1;
-  R1.set(m_symbolic);
-  is_identity = R1.IsExactlyIdentity();
-  is_orthonormal =
-      RotationMatrix<symbolic::Expression>::IsOrthonormal(R1.matrix(), 0);
-  EXPECT_TRUE(is_identity.value());
-  EXPECT_TRUE(is_orthonormal.value());
-
-  // Test that setting an off-diagonal term of the otherwise symbolic identity
-  // matrix to 8 * kEpsilon results in IsOrthonormal() returning false if
-  // tolerance = 2 * kEpsilon, but true if tolerance = 16 * kEpsilon.
-  // Also test IsExactlyIdentity() returns false, but
-  // IsIdentityToInternalTolerance() returns true (it uses 128 * kEpsilon).
-  m_symbolic(0, 2) = 8 * kEpsilon;
-  R1.set(m_symbolic);
-  is_identity = R1.IsExactlyIdentity();
-  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      R1.matrix(), 2 * kEpsilon);
+  RotationMatrix<symbolic::Expression> R(m_symbolic);
+  Bool<symbolic::Expression> is_identity = R.IsExactlyIdentity();
+  Bool<symbolic::Expression> is_orthonormal =
+      RotationMatrix<symbolic::Expression>::IsOrthonormal(R.matrix(),
+                                                          16 * kEpsilon);
   EXPECT_FALSE(is_identity.value());
   EXPECT_FALSE(is_orthonormal.value());
-  is_identity = R1.IsIdentityToInternalTolerance();
+  is_identity = R.IsIdentityToInternalTolerance();  // Uses 128 * kEpsilon.
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      R1.matrix(), 16 * kEpsilon);
+      R.matrix(), 64 * kEpsilon);
   EXPECT_TRUE(is_identity.value());
   EXPECT_TRUE(is_orthonormal.value());
 
   // When the underlying scalar type is a symbolic::Expression, ensure
   // set(m_symbolic) only sets the rotation matrix, with no validity checks
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
-  // Ensure validity check is skipped even if symbolic expressions are numbers
-  // or a mis-mash combination of numbers and symbolic variables.
   m_symbolic << 1, 2, 3,
                 4, 5, 6,
                 7, 8, 9;
-  R1.set(m_symbolic);
-  is_identity = R1.IsExactlyIdentity();
+  R.set(m_symbolic);
+  is_identity = R.IsExactlyIdentity();
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      R1.matrix(), 256 * kEpsilon);
+      R.matrix(), 64 * kEpsilon);
   EXPECT_FALSE(is_identity.value());
   EXPECT_FALSE(is_orthonormal.value());
+}
 
-  m_symbolic << q0, q1, q2,
-                q1, q2, q3,
-                q2, q3, q0;
-  R1.set(m_symbolic);
-  is_identity = R1.IsExactlyIdentity();
-  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      R1.matrix(), 256 * kEpsilon);
+// Test creating a rotation matrix with symbolic variables.
+GTEST_TEST(RotationMatrix, SymbolicRotationMatrixWithVariables) {
+  const symbolic::Variable x("x"), y("y"), z("z");  // Arbitrary variables.
+  Matrix3<symbolic::Expression> m_symbolic;
+  m_symbolic << x, y, z,
+                y, z, x,
+                z, x, y;
+  RotationMatrix<symbolic::Expression> R(m_symbolic);
+  Bool<symbolic::Expression> is_identity = R.IsExactlyIdentity();
+  Bool<symbolic::Expression> is_orthonormal =
+    RotationMatrix<symbolic::Expression>::IsOrthonormal(R.matrix(),
+                                                        64 * kEpsilon);
   EXPECT_FALSE(is_identity.value());  // Soonho: Should this throw exception?
   EXPECT_THROW(EXPECT_TRUE(is_orthonormal.value()), std::runtime_error);
 
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
-                0, 0, q1;
-  R1.set(m_symbolic);
-  is_identity = R1.IsExactlyIdentity();
+                0, 0, x;
+  R.set(m_symbolic);
+  is_identity = R.IsExactlyIdentity();
   is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
-      m_symbolic, 256 * kEpsilon);
+      R.matrix(), 64 * kEpsilon);
   EXPECT_FALSE(is_identity.value());  // Soonho: Should this throw exception?
   EXPECT_THROW(EXPECT_TRUE(is_orthonormal.value()), std::runtime_error);
 
   // Verify Bool method IsExactlyEqualTo().
   RotationMatrix<symbolic::Expression> R2;  // Identity matrix.
-  Bool<symbolic::Expression> is_exactly_equal = R2.IsExactlyEqualTo(R1);
+  Bool<symbolic::Expression> is_exactly_equal = R2.IsExactlyEqualTo(R);
   EXPECT_FALSE(is_exactly_equal.value());
-  R2.set(R1.matrix());
-  is_exactly_equal = R2.IsExactlyEqualTo(R1);
+  R2.set(R.matrix());
+  is_exactly_equal = R2.IsExactlyEqualTo(R);
   EXPECT_TRUE(is_exactly_equal.value());
 }
 
