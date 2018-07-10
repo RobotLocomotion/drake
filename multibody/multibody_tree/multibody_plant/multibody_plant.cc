@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -10,8 +11,8 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -81,7 +82,6 @@ namespace internal {
 // quadratic with the time step.
 template <typename T>
 struct JointLimitsPenaltyParametersEstimator {
-
   // This helper method returns a pair (k, d) (in that order) for a harmonic
   // oscillator given the period τ₀ of the oscillator and the inertia m̃. d is
   // computed for a critically damped oscillator.
@@ -115,7 +115,7 @@ struct JointLimitsPenaltyParametersEstimator {
     } else {
       return params2;
     }
-  };
+  }
 
   // Helper method to estimate the penalty parameters for a prismatic joint.
   // The strategy consists in computing a set of penalty parameters for each
@@ -491,7 +491,6 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
         }
       }
     }
-
   }
 }
 
@@ -1050,7 +1049,7 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     }
     return T(0.0);
   };
-  
+
   for (size_t index = 0;
        index < joint_limits_parameters_.joints_with_limits.size(); ++index) {
     const JointIndex joint_index =

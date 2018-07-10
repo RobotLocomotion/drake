@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
 #include <memory>
+#include <utility>
 
 #include <sdf/sdf.hh>
 

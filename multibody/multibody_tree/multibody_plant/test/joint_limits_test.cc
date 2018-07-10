@@ -193,8 +193,6 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
           "iiwa14_no_collision.sdf";
   MultibodyPlant<double> plant(time_step);
   AddModelFromSdfFile(FindResourceOrThrow(file_path), &plant);
-  //plant.AddForceElement<UniformGravityFieldElement>(
-    //  Vector3<double>(0, 0, -9.81));
   plant.Finalize();
 
   // Some sanity check on model sizes.
