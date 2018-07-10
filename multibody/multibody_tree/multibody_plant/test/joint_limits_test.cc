@@ -23,57 +23,99 @@ namespace multibody {
 namespace multibody_plant {
 namespace {
 
-// This test creates a simple multibody model of a sphere rolling down an
-// inclined plane. After simulating the model for a given length of time, this
-// test verifies the numerical solution against analytical results obtained from
-// an energy conservation analysis.
-GTEST_TEST(JointLimitsTest, PrismaticJoint) {
-  const double time_step = 1.0e-3;
+// These unit tests verify the convergence of the joint limits as the time step
+// is decreased. MultibodyPlant uses a characteristic "numerical stiffness" time
+// scale proportional to the time step of the discrete model. This time scale is
+// used to estimate the largest stiffness penalty parameter used to enforce
+// joint limits that still guarantees the stability of the time stepping
+// approach. This stiffness parameter is shown to be proportional to the inverse
+// of the time step squared, i.e. k ∝ 1/δt².
+// Since, at steady state, the violation of the joint limit is inversely
+// proportional to the stiffness parameter, this violation turns out being
+// proportional to the time step squared, that is, Δq ∝ δt².
+// Therefore the convergence of the joint limit violation is expected to be
+// quadratic with the time step. These unit tests verifies this.
+// In addition, the joint velocities are expected to go to zero within a time
+// interval proportional to this numerical stiffness time scale. This is also
+// verified.
+// Moreover, these unit tests validate the stability of the method as the time
+// step is decreased, verifying that the solution is stable even though the
+// joint stiffness increases as we decrease the time step.
 
+
+// This unit test verifies the convergence of joint limits for a prismatic
+// joint. Refer to the documentation at the top of this file for further
+// details.
+// The test consists of a box shaped body of a given mass attached to the world
+// by a prismatic joint granting a single degree of freedom to move along the
+// z axis. An actuator is added to this joint so that we can apply a force
+// that pushes the body against the joint's limits. We then verify the joint
+// limits are satisfied within the expected precision for the given time step.
+GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
   // Length of the simulation, in seconds.
   const double simulation_time = 1.0;
 
   // Plant's parameters.
   const double mass = 1.0;      // Mass of the body, [kg]
   const double box_size = 0.3;  // The size of the box shaped body, [m].
+  const double kVelocityTolerance = 1.0e-12;
 
-  MultibodyPlant<double> plant(time_step);
-  const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
-          mass, Vector3<double>::Zero(),
-          mass * UnitInertia<double>::SolidBox(box_size, box_size, box_size));
-  const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
-  const PrismaticJoint<double>& slider = plant.AddJoint<PrismaticJoint>(
-      "Slider", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
-      0.0 /* damping */, 0.0 /* lower limit */, 0.1 /* upper limit */);
-  plant.AddJointActuator("ForceAlongZ", slider);
-  plant.Finalize();
+  for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
+    MultibodyPlant<double> plant(time_step);
+    const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
+        mass, Vector3<double>::Zero(),
+        mass * UnitInertia<double>::SolidBox(box_size, box_size, box_size));
+    const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
+    const PrismaticJoint<double>& slider = plant.AddJoint<PrismaticJoint>(
+        "Slider", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
+        0.0 /* damping */, 0.0 /* lower limit */, 0.1 /* upper limit */);
+    plant.AddJointActuator("ForceAlongZ", slider);
+    plant.Finalize();
 
-  // Sanity check for the model's size.
-  DRAKE_DEMAND(plant.num_velocities() == 1);
-  DRAKE_DEMAND(plant.num_positions() == 1);
+    // Sanity check for the model's size.
+    DRAKE_DEMAND(plant.num_velocities() == 1);
+    DRAKE_DEMAND(plant.num_positions() == 1);
 
-  Simulator<double> simulator(plant);
-  Context<double>& context = simulator.get_mutable_context();
-  context.FixInputPort(0, Vector1<double>::Constant(-10.0));
-  simulator.Initialize();
-  simulator.StepTo(simulation_time);
+    Simulator<double> simulator(plant);
+    Context<double>& context = simulator.get_mutable_context();
+    context.FixInputPort(0, Vector1<double>::Constant(-10.0));
+    simulator.Initialize();
+    simulator.StepTo(simulation_time);
 
-  // For this test we expect the steady state to be within 1 mm of the limit.
-  EXPECT_NEAR(slider.get_translation(context), slider.lower_limit(), 1.1e-3);
+    // We expect a second order convergence with the time step. That is, we
+    // expect the error to be lower than:
+    const double expected_error = 1100 * time_step * time_step;
+    // where the constant 1100 is simply obtained through previous runs of this
+    // test. See description of this test at the top.
 
-  // After a second of simulation we expect the slider to be at rest.
-  EXPECT_NEAR(slider.get_translation_rate(context), 0.0, 1.0e-12);
+    // For this test we expect the steady state to be within 1 mm of the limit.
+    EXPECT_NEAR(
+        slider.get_translation(context), slider.lower_limit(), expected_error);
 
-  // Set the force to be positive and re-start the simulation.
-  context.FixInputPort(0, Vector1<double>::Constant(10.0));
-  context.set_time(0.0);
-  simulator.StepTo(simulation_time);
+    // After a second of simulation we expect the slider to be at rest.
+    EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
 
-  // Verify we are at rest near the upper limit.
-  EXPECT_NEAR(slider.get_translation(context), slider.upper_limit(), 1.1e-3);
-  EXPECT_NEAR(slider.get_translation_rate(context), 0.0, 1.0e-12);
+    // Set the force to be positive and re-start the simulation.
+    context.FixInputPort(0, Vector1<double>::Constant(10.0));
+    context.set_time(0.0);
+    simulator.StepTo(simulation_time);
+
+    // Verify we are at rest near the upper limit.
+    EXPECT_NEAR(
+        slider.get_translation(context), slider.upper_limit(), expected_error);
+    EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
+  }
 }
 
+// This unit test verifies the convergence of joint limits for a revolute
+// joint. Refer to the documentation at the top of this file for further
+// details.
+// The test consists of a rod body of a given mass attached to the world
+// by a revolute joint at one of the rod's ends, granting a single degree of
+// freedom to rotate about the z axis. An actuator is added to this joint so
+// that we can apply a torque that pushes the rod against the joint's limits.
+// We then verify the joint limits are satisfied within the expected precision
+// for the given time step.
 GTEST_TEST(JointLimitsTest, RevoluteJoint) {
   const double time_step = 1.0e-3;
 
