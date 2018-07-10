@@ -97,6 +97,12 @@ void DefineFrameworkPySemantics(py::module m) {
            py_reference_internal)
       // Sugar methods
       // - Continuous.
+      .def("get_continuous_state",
+           &Context<T>::get_continuous_state,
+           py_reference_internal)
+      .def("get_mutable_continuous_state",
+           &Context<T>::get_mutable_continuous_state,
+           py_reference_internal)
       .def("get_continuous_state_vector",
            &Context<T>::get_continuous_state_vector,
            py_reference_internal)
