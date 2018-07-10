@@ -147,7 +147,7 @@ struct JointLimitsPenaltyParametersEstimator {
 
   // Helper method to estimate the penalty parameters for a revolute joint.
   // The strategy consists in computing a set of penalty parameters for each
-  // body connected by joint as if the other body was weled and ignoring
+  // body connected by joint as if the other body was welded and ignoring
   // any other bodies in the system. This leads to a torsional spring system
   // for which the inertia m̃ corresponds to the rotational inertia of the body
   // in consideration, computed about the axis of the joint.
@@ -155,7 +155,6 @@ struct JointLimitsPenaltyParametersEstimator {
   // CombinePenaltyParameters() leading to a single set of parameters.
   static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
       const RevoluteJoint<T>& joint, double numerical_time_scale) {
-
     // For the body attached to `frame` (one of the parent/child frames of
     // `joint`), this helper lambda computes the rotational inertia of the body
     // about the axis of the joint.
@@ -176,6 +175,15 @@ struct JointLimitsPenaltyParametersEstimator {
           const RigidBody<T>* body =
               dynamic_cast<const RigidBody<T>*>(&frame.body());
           DRAKE_THROW_UNLESS(body != nullptr);
+
+          // This check is needed for such models for which the user leaves the
+          // spatial inertias unspecified (i.e. initialized to NaN). A user
+          // might do this when only interested in performing kinematics
+          // computations.
+          if (std::isnan(body->get_default_mass())) {
+            return std::numeric_limits<double>::infinity();
+          }
+
           const SpatialInertia<T>& M_PPo_P =
               body->default_spatial_inertia().template cast<T>();
           const Isometry3<T> X_PJ = frame.GetFixedPoseInBodyFrame();
@@ -301,13 +309,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
         "RegisterAsSourceForSceneGraph()");
   }
   GeometryId id;
-  geometry::VisualMaterial invisible_material(Vector4<double>(1.0, 0.0, 0.0, 0.0));
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, invisible_material, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, {}, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, invisible_material, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, {}, scene_graph);
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
@@ -418,8 +425,6 @@ template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
   for (JointIndex joint_index(0); joint_index < model().num_joints();
        ++joint_index) {
-    // Penalty parameters can only be estimated for discrete models.
-    DRAKE_THROW_UNLESS(is_discrete());
     // Currently MultibodyPlant applies these "compliant" joint limit forces
     // using an explicit Euler strategy. Stability analysis of the explict Euler
     // applied to the harmonic oscillator (the model used for these compliant
@@ -470,6 +475,23 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
       joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
       joint_limits_parameters_.damping.push_back(penalty_parameters.second);
     }
+
+    // Since currently MBP only handles joint limits for discrete models, verify
+    // there are no joint limits when the model is continuous.
+    if (!is_discrete()) {
+      for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
+        const double stiffness = joint_limits_parameters_.stiffness[i];
+        if (!std::isinf(stiffness)) {
+          const JointIndex index =
+              joint_limits_parameters_.joints_with_limits[i];
+          throw std::logic_error(
+              "Currently MultibodyPlant does not handle joint limits for "
+              "continuous models. However a limit was specified for joint `"
+              "`" + model().get_joint(index).name() + "`.");
+        }
+      }
+    }
+
   }
 }
 
@@ -1105,8 +1127,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   AddJointActuationForces(context, &forces);
 
   AddJointDampingForces(context, &forces);
-
-  AddJointLimitsPenaltyForces(context, &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 
