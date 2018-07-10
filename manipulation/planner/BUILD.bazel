@@ -70,6 +70,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "optimize_manipulation_trajectory",
+    srcs = ["optimize_manipulation_trajectory.cc"],
+    hdrs = ["optimize_manipulation_trajectory.h"],
+    deps = [
+        ":kinematic_trajectory_optimization",
+        ":kinematic_tree",
+        "//common:essential",
+        "//common/trajectories",
+        "//math:bspline_basis",
+        "//math:bspline_curve",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "rigid_body_tree_wrapper",
     srcs = ["rigid_body_tree_wrapper.cc"],
     hdrs = ["rigid_body_tree_wrapper.h"],
@@ -139,10 +154,38 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "kinematic_tree_test",
-    srcs = ["test/kinematic_tree_test.cc"],
     deps = [
         ":kinematic_tree",
-        "@gtest//:main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "optimize_manipulation_trajectory_test",
+    srcs = [
+        "test/optimize_manipulation_trajectory_test.cc",
+        "test/optimize_manipulation_trajectory_test_parameters.inc",
+    ],
+    data = [
+        ":test",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    # Setting shard_count allows the test runner to split up the test-points in
+    # this test into shard_count separate pieces which will be exectuted in
+    # parallel, subject to the availability of resources. There are 111 test
+    # points in this test, but 50 is the maximum number of shards that bazel
+    # will allow. To count the number of tests in the googletest target
+    # "foo_test" run
+    #   $ ./bazel-bin/path/to/foo_test --gtest_list_tests | grep "  \w" | wc -l
+    shard_count = 50,
+    tags = ["snopt"],
+    deps = [
+        ":kinematic_tree",
+        ":optimize_manipulation_trajectory",
+        ":rigid_body_tree_wrapper",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+        "//lcm",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody/rigid_body_plant:drake_visualizer",
     ],
 )
 
