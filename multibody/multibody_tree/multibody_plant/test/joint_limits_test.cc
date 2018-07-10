@@ -10,10 +10,6 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
 namespace drake {
 
 using systems::Context;
@@ -58,7 +54,10 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
   // Plant's parameters.
   const double mass = 1.0;      // Mass of the body, [kg]
   const double box_size = 0.3;  // The size of the box shaped body, [m].
-  const double kVelocityTolerance = 1.0e-12;
+
+  // At steady state after one second of simulation, we expect the velocity to
+  // be zero within this absolute tolerance.
+  const double kVelocityTolerance = 1.0e-12;  // in m/s.
 
   for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
     MultibodyPlant<double> plant(time_step);
@@ -88,10 +87,8 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     // where the constant 1100 is simply obtained through previous runs of this
     // test. See description of this test at the top.
 
-    // For this test we expect the steady state to be within 1 mm of the limit.
     EXPECT_NEAR(
         slider.get_translation(context), slider.lower_limit(), expected_error);
-
     // After a second of simulation we expect the slider to be at rest.
     EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
 
@@ -117,8 +114,6 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
 // We then verify the joint limits are satisfied within the expected precision
 // for the given time step.
 GTEST_TEST(JointLimitsTest, RevoluteJoint) {
-  const double time_step = 1.0e-3;
-
   // Length of the simulation, in seconds.
   const double simulation_time = 1.0;
 
@@ -127,46 +122,56 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
   const double rod_length = 0.3;   // The length of the rod, [m].
   const double rod_radius = 0.01;  // The radius of the rod, [m].
 
-  MultibodyPlant<double> plant(time_step);
-  // The COM of the rod is right at its center, though we place the body frame B
-  // on the left end of the rod to connect it to the world with a revolute
-  // joint.
-  const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
-      mass, Vector3<double>(rod_length / 2.0, 0.0, 0.0),
-      mass * UnitInertia<double>::SolidCylinder(
-          rod_radius, rod_length, Vector3<double>::UnitX()));
-  const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
-  const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
-      "Pin", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
-      0.0 /* damping */,
-      -M_PI / 5.0 /* lower limit */, M_PI / 3.0 /* upper limit */);
-  plant.AddJointActuator("TorqueAboutZ", pin);
-  plant.Finalize();
+  // At steady state after one second of simulation, we expect the velocity to
+  // be zero within this absolute tolerance.
+  const double kVelocityTolerance = 1.0e-12;  // in rad/s.
 
-  // Sanity check for the model's size.
-  DRAKE_DEMAND(plant.num_velocities() == 1);
-  DRAKE_DEMAND(plant.num_positions() == 1);
+  for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
+    MultibodyPlant<double> plant(time_step);
+    // The COM of the rod is right at its center, though we place the body frame B
+    // on the left end of the rod to connect it to the world with a revolute
+    // joint.
+    const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
+        mass, Vector3<double>(rod_length / 2.0, 0.0, 0.0),
+        mass * UnitInertia<double>::SolidCylinder(
+            rod_radius, rod_length, Vector3<double>::UnitX()));
+    const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
+    const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
+        "Pin", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
+        0.0 /* damping */,
+        -M_PI / 5.0 /* lower limit */, M_PI / 3.0 /* upper limit */);
+    plant.AddJointActuator("TorqueAboutZ", pin);
+    plant.Finalize();
 
-  Simulator<double> simulator(plant);
-  Context<double>& context = simulator.get_mutable_context();
-  context.FixInputPort(0, Vector1<double>::Constant(1.5));
-  simulator.Initialize();
-  simulator.StepTo(simulation_time);
+    // Sanity check for the model's size.
+    DRAKE_DEMAND(plant.num_velocities() == 1);
+    DRAKE_DEMAND(plant.num_positions() == 1);
 
-  // For this test we expect the steady state to be within 5e-3 radians of the
-  // limit.
-  EXPECT_NEAR(pin.get_angle(context), pin.upper_limit(), 5.1e-3);
-  // After a second of simulation we expect the pint to be at rest.
-  EXPECT_NEAR(pin.get_angular_rate(context), 0.0, 1.0e-12);
+    Simulator<double> simulator(plant);
+    Context<double>& context = simulator.get_mutable_context();
+    context.FixInputPort(0, Vector1<double>::Constant(1.5));
+    simulator.Initialize();
+    simulator.StepTo(simulation_time);
 
-  // Set the torque to be negative and re-start the simulation.
-  context.FixInputPort(0, Vector1<double>::Constant(-1.5));
-  context.set_time(0.0);
-  simulator.StepTo(simulation_time);
+    // We expect a second order convergence with the time step. That is, we
+    // expect the error to be lower than:
+    const double expected_error = 5100 * time_step * time_step;
+    // where the constant 5100 is simply obtained through previous runs of this
+    // test. See description of this test at the top.
 
-  // Verify we are at rest near the lower limit.
-  EXPECT_NEAR(pin.get_angle(context), pin.lower_limit(), 5.1e-3);
-  EXPECT_NEAR(pin.get_angular_rate(context), 0.0, 1.0e-12);
+    EXPECT_NEAR(pin.get_angle(context), pin.upper_limit(), expected_error);
+    // After a second of simulation we expect the pint to be at rest.
+    EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
+
+    // Set the torque to be negative and re-start the simulation.
+    context.FixInputPort(0, Vector1<double>::Constant(-1.5));
+    context.set_time(0.0);
+    simulator.StepTo(simulation_time);
+
+    // Verify we are at rest near the lower limit.
+    EXPECT_NEAR(pin.get_angle(context), pin.lower_limit(), expected_error);
+    EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
+  }
 }
 
 }  // namespace
