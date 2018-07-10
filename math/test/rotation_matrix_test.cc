@@ -159,17 +159,17 @@ GTEST_TEST(RotationMatrix, MakeXRotationMakeYRotationMakeZRotation) {
   RA = RotationMatrixd::MakeXRotation(M_PI + theta);
   RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(1, -1, -1)) *
        RotationMatrixd::MakeXRotation(theta);
-  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance).value());
 
   RA = RotationMatrixd::MakeYRotation(M_PI + theta);
   RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(-1, 1, -1)) *
        RotationMatrixd::MakeYRotation(theta);
-  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance).value());
 
   RA = RotationMatrixd::MakeZRotation(M_PI + theta);
   RB = RotationMatrixd(Eigen::DiagonalMatrix<double, 3>(-1, -1, 1)) *
        RotationMatrixd::MakeZRotation(theta);
-  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance));
+  EXPECT_TRUE(RA.IsNearlyEqualTo(RB, tolerance).value());
 }
 
 // Test making a rotation matrix from a RollPitchYaw rotation sequence (which is
@@ -288,16 +288,17 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   EXPECT_FALSE(R.IsExactlyIdentity().value());
 
-  // Test that setting a RotationMatrix to a 3x3 matrix that is close-enough to
-  // an identity matrix does not throw an exception.
+  // Test that setting a RotationMatrix to a 3x3 matrix that is close to a valid
+  // RotationMatrix does not throw an exception, whereas setting to a 3x3 matrix
+  // that is slightly too-far from a valid RotationMatrix throws an exception.
   m(0, 2) = 127 * kEpsilon;
   EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
-  EXPECT_FALSE(R.IsExactlyIdentity().value());
-
-  // Test that setting a RotationMatrix to a 3x3 matrix that is slightly too-far
-  // from an identity matrix will throw an exception.
   m(0, 2) = 129 * kEpsilon;
+#ifdef DRAKE_ASSERT_IS_ARMED
   EXPECT_THROW(R.SetOrThrowIfNotValidInDebugBuild(m), std::logic_error);
+#else
+  EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
+#endif
 
   const double cos_theta = std::cos(0.5);
   const double sin_theta = std::sin(0.5);
@@ -307,6 +308,7 @@ GTEST_TEST(RotationMatrix, IsExactlyIdentity) {
   EXPECT_NO_THROW(R.SetOrThrowIfNotValidInDebugBuild(m));
   EXPECT_FALSE(R.IsExactlyIdentity().value());
 }
+
 
 // Test ProjectMatrixToRotationMatrix.
 GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
@@ -445,6 +447,7 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
                                 10 * kEpsilon).value());
 }
 
+
 // Test RotationMatrix cast method from double to AutoDiffXd.
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
@@ -504,22 +507,49 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrices) {
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
                 0, 0, 1;
+  // Test that this symbolic identity matrix is orthogonal with tolerance = 0.
   Bool<symbolic::Expression> is_orthonormal =
       RotationMatrix<symbolic::Expression>::IsOrthonormal(m_symbolic, 0);
   EXPECT_TRUE(is_orthonormal.value());
+
+  // Test that setting an off-diagonal term of the otherwise symbolic identity
+  // matrix to 8 * kEpsilon results in a non-orthogonal if tolerance = kEpsilon,
+  // but is orthogonal if tolerance = 16 * kEpsilon.
   m_symbolic(0, 2) = 8 * kEpsilon;
-  is_orthonormal =
-      RotationMatrix<symbolic::Expression>::IsOrthonormal(m_symbolic, kEpsilon);
+  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
+      m_symbolic, kEpsilon);
   EXPECT_FALSE(is_orthonormal.value());
+  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
+      m_symbolic, 16 * kEpsilon);
+  EXPECT_TRUE(is_orthonormal.value());
 
   // When the underlying scalar type is a symbolic::Expression, ensure
   // SetOrThrowIfNotValidInDebugBuild() only sets the rotation matrix, with no
   // validity checks, e.g., ThrowIfNotValid() is a "no-op" (does nothing).
+  // Ensure validity check is skipped even if symbolic expressions are numbers
+  // or a mis-mash combination of numbers and symbolic variables.
   m_symbolic << q0, q1, q2,
                 q1, q2, q3,
-                q2, q3, 4;
+                q2, q3, q0;
   EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
   EXPECT_FALSE(R1.IsExactlyIdentity().value());
+  m_symbolic << 1, 2, 3,
+                4, 5, 6,
+                7, 8, 9;
+  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
+  EXPECT_FALSE(R1.IsExactlyIdentity().value());
+  m_symbolic << 1, 0, 0,
+                0, 1, 0,
+                0, 0, q1;
+  EXPECT_NO_THROW(R1.SetOrThrowIfNotValidInDebugBuild(m_symbolic));
+  EXPECT_FALSE(R1.IsExactlyIdentity().value());
+
+  // Check that assertion is thrown when calling IsOrthonormal() since the test
+  // does a comparision of a symbolic expression against a double number.
+  // TODO(Mitiguy) Talk to Soonho about fixing this.
+  is_orthonormal = RotationMatrix<symbolic::Expression>::IsOrthonormal(
+    m_symbolic, 256 * kEpsilon);
+  EXPECT_THROW(EXPECT_TRUE(is_orthonormal.value()), std::runtime_error);
 
   // Verify Bool method IsExactlyEqualTo().
   RotationMatrix<symbolic::Expression> R2;
