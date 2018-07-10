@@ -128,11 +128,19 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return n_joint_dofs;
   }
 
+  /// Returns the position coordinate for joints with a single degree of
+  /// freedom.
+  /// @throws std::exception if the joint does not have a single degree of
+  /// freedom.
   const T& GetOnePosition(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_dofs() == 1);
     return DoGetOnePosition(context);
   }
 
+  /// Returns the velocity coordinate for joints with a single degree of
+  /// freedom.
+  /// @throws std::exception if the joint does not have a single degree of
+  /// freedom.
   const T& GetOneVelocity(const systems::Context<T>& context) const {
     DRAKE_THROW_UNLESS(num_dofs() == 1);
     return DoGetOneVelocity(context);
@@ -281,11 +289,23 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// return three for a ball joint.
   virtual int do_get_num_dofs() const = 0;
 
+  /// Implementation to the NVI GetOnePosition() that must only be implemented
+  /// by those joint subclasses that have a single degree of freedom.
+  /// The default implementation for all other joints is to abort with an
+  /// appropriate message.
+  /// Revolute and prismatic are examples of joints that will want to implement
+  /// this method.
   virtual const T& DoGetOnePosition(
       const systems::Context<T>& context) const {
     DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");
   }
 
+  /// Implementation to the NVI GetOneVelocity() that must only be implemented
+  /// by those joint subclasses that have a single degree of freedom.
+  /// The default implementation for all other joints is to abort with an
+  /// appropriate message.
+  /// Revolute and prismatic are examples of joints that will want to implement
+  /// this method.
   virtual const T& DoGetOneVelocity(
       const systems::Context<T>& context) const {
     DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");

@@ -58,8 +58,16 @@ class PrismaticJoint final : public Joint<T> {
   ///   joint. The damping force (in N) is modeled as `f = -damping⋅v`, i.e.
   ///   opposing motion, with v the translational speed for `this` joint (see
   ///   get_translation_rate()).
+  /// @param[in] lower_limit
+  ///   Lower limit, in meters, for the translation coordinate
+  ///   (see get_translation()).
+  /// @param[in] upper_limit
+  ///   upper limit, in meters, for the translation coordinate
+  ///   (see get_translation()).
   /// @throws std::exception if the L2 norm of `axis` is less than the square
   /// root of machine epsilon.
+  /// @throws std::exception if damping is negative.
+  /// @throws std::exception if lower_limit > upper_limit.
   PrismaticJoint(const std::string& name,
                 const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
                 const Vector3<double>& axis, double damping = 0,
@@ -69,7 +77,7 @@ class PrismaticJoint final : public Joint<T> {
     const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
-    DRAKE_THROW_UNLESS(lower_limit < upper_limit);
+    DRAKE_THROW_UNLESS(lower_limit <= upper_limit);
     axis_ = axis.normalized();
     damping_ = damping;
     lower_limit_ = lower_limit;
@@ -87,10 +95,10 @@ class PrismaticJoint final : public Joint<T> {
   /// Returns `this` joint's damping constant in N⋅s/m.
   double damping() const { return damping_; }
 
-  /// Returns the lower limit for `this` joint in radians.
+  /// Returns the lower limit for `this` joint in meters.
   double lower_limit() const { return lower_limit_; }
 
-  /// Returns the upper limit for `this` joint in radians.
+  /// Returns the upper limit for `this` joint in meters.
   double upper_limit() const { return upper_limit_; }
 
   /// @name Context-dependent value access
@@ -257,7 +265,7 @@ class PrismaticJoint final : public Joint<T> {
   double damping_{0};
 
   // The lower and upper joint limits in radians.
-  // lower_limit_ < upper_limit_ always.
+  // lower_limit_ <= upper_limit_ always (enforced at construction).
   double lower_limit_{-std::numeric_limits<double>::infinity()};
   double upper_limit_{std::numeric_limits<double>::infinity()};
 };
