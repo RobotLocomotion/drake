@@ -3,9 +3,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
@@ -14,6 +16,8 @@ namespace drake {
 
 using systems::Context;
 using systems::Simulator;
+using multibody::parsing::AddModelFromSdfFile;
+using multibody::UniformGravityFieldElement;
 
 namespace multibody {
 namespace multibody_plant {
@@ -37,7 +41,6 @@ namespace {
 // Moreover, these unit tests validate the stability of the method as the time
 // step is decreased, verifying that the solution is stable even though the
 // joint stiffness increases as we decrease the time step.
-
 
 // This unit test verifies the convergence of joint limits for a prismatic
 // joint. Refer to the documentation at the top of this file for further
@@ -128,8 +131,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
 
   for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
     MultibodyPlant<double> plant(time_step);
-    // The COM of the rod is right at its center, though we place the body frame B
-    // on the left end of the rod to connect it to the world with a revolute
+    // The COM of the rod is right at its center, though we place the body frame
+    // B on the left end of the rod to connect it to the world with a revolute
     // joint.
     const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
         mass, Vector3<double>(rod_length / 2.0, 0.0, 0.0),
@@ -171,6 +174,79 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     // Verify we are at rest near the lower limit.
     EXPECT_NEAR(pin.get_angle(context), pin.lower_limit(), expected_error);
     EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
+  }
+}
+
+GTEST_TEST(JointLimitsTest, KukaArm) {
+  const double time_step = 1.0e-3;
+  const double simulation_time = 40;
+
+  // At steady state after one second of simulation, we expect the velocity to
+  // be zero within this absolute tolerance.
+  const double kVelocityTolerance = 1.0e-12;
+
+  // Expected relative tolerance for the joint limits.
+  const double kRelativePositionTolerance = 0.015;
+
+  const std::string file_path =
+      "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf";
+  MultibodyPlant<double> plant(time_step);
+  AddModelFromSdfFile(FindResourceOrThrow(file_path), &plant);
+  //plant.AddForceElement<UniformGravityFieldElement>(
+    //  Vector3<double>(0, 0, -9.81));
+  plant.Finalize();
+
+  // Some sanity check on model sizes.
+  ASSERT_EQ(plant.num_velocities(), 7);
+  ASSERT_EQ(plant.num_actuators(), 7);
+  ASSERT_EQ(plant.num_actuated_dofs(), 7);
+
+  // Verify the joint limits were correctly parsed.
+  VectorX<double> lower_limits(7);
+  lower_limits
+      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
+  VectorX<double> upper_limits(7);
+  upper_limits = -lower_limits;
+
+  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    EXPECT_NEAR(joint.lower_limit(), lower_limits(joint_number-1),
+                std::numeric_limits<double>::epsilon());
+    EXPECT_NEAR(joint.upper_limit(), upper_limits(joint_number-1),
+                std::numeric_limits<double>::epsilon());
+  }
+
+  Simulator<double> simulator(plant);
+  Context<double>& context = simulator.get_mutable_context();
+
+  // Drive all the joints to their upper limit by applying a positive torque.
+  context.FixInputPort(0, VectorX<double>::Constant(7, 0.4));
+  simulator.Initialize();
+  simulator.StepTo(simulation_time);
+
+  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    EXPECT_LT(std::abs(
+        (joint.get_angle(context)-joint.upper_limit())/joint.upper_limit()),
+              kRelativePositionTolerance);
+    EXPECT_NEAR(joint.get_angular_rate(context), 0.0, kVelocityTolerance);
+  }
+
+  // Drive all the joints to their lower limit by applying a negative torque.
+  context.FixInputPort(0, VectorX<double>::Constant(7, -0.4));
+  plant.SetDefaultContext(&context);
+  context.set_time(0.0);
+  simulator.StepTo(simulation_time);
+  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+    const auto& joint = plant.model().GetJointByName<RevoluteJoint>(joint_name);
+    EXPECT_LT(std::abs(
+        (joint.get_angle(context)-joint.lower_limit())/joint.lower_limit()),
+              kRelativePositionTolerance);
+    EXPECT_NEAR(joint.get_angular_rate(context), 0.0, kVelocityTolerance);
   }
 }
 

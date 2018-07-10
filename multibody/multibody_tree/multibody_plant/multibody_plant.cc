@@ -409,6 +409,8 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
               *revolute_joint, penalty_time_scale);
       joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
       joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      PRINT_VAR(penalty_parameters.first);
+      PRINT_VAR(penalty_parameters.second);
     }
 
     if (prismatic_joint) {

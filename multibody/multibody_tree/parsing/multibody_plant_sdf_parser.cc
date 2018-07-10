@@ -13,6 +13,11 @@
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsers/parser_path_utils.h"
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
+
 namespace drake {
 namespace multibody {
 namespace parsing {
@@ -279,6 +284,8 @@ void AddJointFromSpecification(
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
       const std::pair<double, double> limits = ParseJointLimits(joint_spec);
+      PRINT_VAR(limits.first);
+      PRINT_VAR(limits.second);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
