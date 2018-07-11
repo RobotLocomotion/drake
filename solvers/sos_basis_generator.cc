@@ -156,7 +156,7 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p) {
   //  EnumerateIntegerSolutions is more efficient.
   H.normal_vectors = Eigen::MatrixXi(num_hyperplanes, exponents_of_p.cols());
   for (int i = 0; i < H.normal_vectors.cols(); i++) {
-    int sign = (i % 2) ? -1 : 1;
+    const int sign = (i % 2) ? -1 : 1;
     H.normal_vectors.col(i) << sign*Eigen::VectorXi::NullaryExpr(
                                                   num_hyperplanes, get_random);
   }
