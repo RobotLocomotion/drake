@@ -498,9 +498,15 @@ SolutionResult KinematicTrajectoryOptimization::Solve(
                            position_curve_.control_points()[i]);
   }
 
-  SnoptSolver solver;
-  SolutionResult result = solver.Solve(*prog_);
-  drake::log()->info("Solver used: {}", prog_->GetSolverId().value().name());
+  SolutionResult result{SolutionResult::kUnknownError};
+  if (formula_linear_constraints_.empty() &&
+      expression_quadratic_costs_.empty() && expression_linear_costs_.empty() &&
+      generic_position_constraints_.empty()) {
+    result = SolutionResult::kSolutionFound;
+  } else {
+    result = prog_->Solve();
+    drake::log()->info("Solver used: {}", prog_->GetSolverId().value().name());
+  }
 
   if (always_update_curve || result == SolutionResult::kSolutionFound ||
       result == SolutionResult::kIterationLimit) {
