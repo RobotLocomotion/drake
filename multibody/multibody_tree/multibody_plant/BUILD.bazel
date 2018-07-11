@@ -173,4 +173,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "joint_limits_test",
+    timeout = "long",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":multibody_plant",
+        "//common:find_resource",
+        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//systems/analysis:simulator",
+    ],
+)
+
 add_lint_tests()

@@ -1152,6 +1152,29 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // bodies connected by a joint.
   void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
+  // For discrete models, MultibodyPlant uses a penalty method to impose joint
+  // limits. In this penalty method a force law of the form:
+  //   τ = -k(q - qᵤ) - cv if q > qᵤ
+  //   τ = -k(q - qₗ) - cv if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
+  // The penalty parameters k (stiffness) and c (damping) are estimated using
+  // a harmonic oscillator model of the form ẍ + 2ζω₀ ẋ + ω₀² x = 0, with
+  // x = (q - qᵤ) near the upper limit when q > qᵤ and x = (q - qₗ) near the
+  // lower limit when q < qₗ and where ω₀² = k / m̃ is the characteristic
+  // numerical stiffness frequency and m̃ is an inertia term that for prismatic
+  // joints reduces to a simple function of the mass of the bodies adjancent to
+  // a particular joint. For revolute joints m̃ relates to the rotational inertia
+  // of the adjacent bodies to a joint. See the implementation notes for further
+  // details. Both ω₀ and ζ are non-negative numbers.
+  // The characteristic frequency ω₀ is entirely a function the time step of the
+  // discrete model so that, from a stability analysis of the simplified
+  // harmonic oscillator model, we guarantee the resulting time stepping is
+  // stable. That is, the numerical stiffness of the method is such that it
+  // corresponds to the largest penalty parameter (smaller violation errors)
+  // that still guarantees stability.
+  void SetUpJointLimitsParameters();
+
   // This is a *temporary* method to eliminate visual geometries from collision
   // while we wait for geometry roles to be introduced.
   // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
@@ -1331,6 +1354,18 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void AddJointActuationForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
+  // Helper method to apply penalty forces that enforce joint limits.
+  // At each joint with joint limits this penalty method applies a force law of
+  // the form:
+  //   τ = min(-k(q - qᵤ) - cv, 0) if q > qᵤ
+  //   τ = max(-k(q - qₗ) - cv, 0) if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
+  // The penalty parameters k (stiffness) and c (damping) are estimated using
+  // a harmonic oscillator model within SetUpJointLimitsParameters().
+  void AddJointLimitsPenaltyForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Helper method to apply forces due to damping at the joints.
   // Currently, MultibodyPlant treats damping forces separately from other
   // ForceElement forces so that it can use an implicit scheme in the time
@@ -1469,6 +1504,23 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     double inv_v_stiction_tolerance_{-1};
   };
   StribeckModel stribeck_model_;
+
+  // This structure aids in the bookkeeping of parameters associated with joint
+  // limits and the penalty method parameters used to enforce them.
+  struct JointLimitsParameters {
+    // list of joints that have limits. These are all single-dof joints.
+    std::vector<JointIndex> joints_with_limits;
+    // Position lower/upper bounds for each joint in joints_with_limits. The
+    // Units depend on the particular joint type. For instance, radians for
+    // RevoluteJoint or meters for PrismaticJoint.
+    std::vector<double> lower_limit;
+    std::vector<double> upper_limit;
+    // Penalty parameters. These are defined in accordance to the penalty force
+    // internally implemented by MultibodyPlant in
+    // AddJointLimitsPenaltyForces().
+    std::vector<double> stiffness;
+    std::vector<double> damping;
+  } joint_limits_parameters_;
 
   // Iteration order on this map DOES matter, and therefore we use an std::map.
   std::map<BodyIndex, geometry::FrameId> body_index_to_frame_id_;
