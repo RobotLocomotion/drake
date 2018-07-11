@@ -11,7 +11,14 @@ namespace parsing {
 
 /// Default value of the Coulomb's law coefficients of friction for when they
 /// are not specified in the SDF file.
-const multibody_plant::CoulombFriction<double> kDefaultFriction(1.0, 1.0);
+// Note:
+//   static global variables are strongly discouraged by the C++ style guide:
+// http://drake.mit.edu/styleguide/cppguide.html#Static_and_Global_Variables
+// For this reason, we create and return an instance of CoulombFriction
+// instead of using a static variable.
+inline multibody_plant::CoulombFriction<double> default_friction() {
+  return multibody_plant::CoulombFriction<double>(1.0, 1.0);
+}
 
 namespace detail {
 
