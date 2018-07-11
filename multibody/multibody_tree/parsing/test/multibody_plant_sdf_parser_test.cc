@@ -24,7 +24,7 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::Body;
 using multibody::parsing::AddModelFromSdfFile;
-using multibody::parsing::kDefaultFriction;
+using multibody::parsing::default_friction;
 using systems::Context;
 
 namespace multibody {
@@ -281,7 +281,7 @@ TEST_F(MultibodyPlantSdfParser, LinksWithCollisions) {
   // not specify them in the SDF file.
   EXPECT_TRUE(ExtractBoolOrThrow(
       plant_.default_coulomb_friction(link3_collision_geometry_ids[0]) ==
-          kDefaultFriction));
+          default_friction()));
 }
 // Verifies model instances are correctly created in the plant.
 TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
