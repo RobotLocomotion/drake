@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "perception",
     deps = [
+        ":depth_image_to_point_cloud",
         ":point_cloud",
         ":point_cloud_flags",
     ],
@@ -49,22 +50,6 @@ drake_cc_library(
         "//systems/sensors",
     ],
 )
-
-#drake_cc_binary(
-#    name = "depth_to_cloud_test",
-#    srcs = ["depth_to_cloud_test.cc"],
-#    add_test_rule = 1,
-#    test_rule_args = [],
-#    data = ["//examples/pr2:models"],
-#    deps = [
-#        ":depth_image_to_point_cloud",
-#        "//multibody/parsers",
-#        "//multibody/rigid_body_plant",
-#        "//multibody:rigid_body_tree_construction",
-#        "//systems/analysis:simulator",
-#        "//systems/sensors:rgbd_camera",
-#    ],
-#)
 
 drake_cc_googletest(
     name = "depth_image_to_point_cloud_test",
