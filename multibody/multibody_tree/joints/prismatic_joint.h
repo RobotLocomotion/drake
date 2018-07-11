@@ -53,26 +53,28 @@ class PrismaticJoint final : public Joint<T> {
   ///   rotation, the measures of `axis` in either frame F or M
   ///   are exactly the same, that is, `axis_F = axis_M`.
   ///   This vector can have any length, only the direction is used.
+  /// @param[in] lower_limit
+  ///   Lower limit, in meters, for the translation coordinate
+  ///   (see get_translation()).
+  /// @param[in] upper_limit
+  ///   Upper limit, in meters, for the translation coordinate
+  ///   (see get_translation()).
   /// @param[in] damping
   ///   Viscous damping coefficient, in N⋅s/m, used to model losses within the
   ///   joint. The damping force (in N) is modeled as `f = -damping⋅v`, i.e.
   ///   opposing motion, with v the translational speed for `this` joint (see
   ///   get_translation_rate()).
-  /// @param[in] lower_limit
-  ///   Lower limit, in meters, for the translation coordinate
-  ///   (see get_translation()).
-  /// @param[in] upper_limit
-  ///   upper limit, in meters, for the translation coordinate
-  ///   (see get_translation()).
   /// @throws std::exception if the L2 norm of `axis` is less than the square
   /// root of machine epsilon.
   /// @throws std::exception if damping is negative.
   /// @throws std::exception if lower_limit > upper_limit.
-  PrismaticJoint(const std::string& name,
-                const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis, double damping = 0,
-                double lower_limit = -std::numeric_limits<double>::infinity(),
-                double upper_limit = std::numeric_limits<double>::infinity()) :
+  PrismaticJoint(
+      const std::string& name,
+      const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
+      const Vector3<double>& axis,
+      double lower_limit = -std::numeric_limits<double>::infinity(),
+      double upper_limit = std::numeric_limits<double>::infinity(),
+      double damping = 0) :
       Joint<T>(name, frame_on_parent, frame_on_child) {
     const double kEpsilon = std::sqrt(std::numeric_limits<double>::epsilon());
     DRAKE_THROW_UNLESS(!axis.isZero(kEpsilon));

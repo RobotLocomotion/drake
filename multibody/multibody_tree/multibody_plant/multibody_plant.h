@@ -1153,16 +1153,21 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   void FilterAdjacentBodies(geometry::SceneGraph<T>* scene_graph);
 
   // For discrete models, MultibodyPlant uses a penalty method to impose joint
-  // limits. In this penalty method a force law of the form τ = -k(q-q0) - cv
-  // is used to limit the position q to its limit q0 when q is close to q0.
+  // limits. In this penalty method a force law of the form:
+  //   τ = -k(q - qᵤ) - cv if q > qᵤ
+  //   τ = -k(q - qₗ) - cv if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
   // The penalty parameters k (stiffness) and c (damping) are estimated using
-  // a harmonic oscillator model of the form q̈ + 2ζω₀ q̇ + ω₀² q = 0, where
-  // ω₀² = k / m̃ is the characteristic numerical stiffness frequency and m̃ is
-  // an inertia term that for prismatic joints reduces to a simple function of
-  // the mass of the bodies adjancent to a particular joint. For revolute joints
-  // m̃ relates to the rotational inertia of the adjacent bodies to a joint. See
-  // the implementation notes for further details.
-  // The characteristic frequecy ω₀ is entirely a function the time step of the
+  // a harmonic oscillator model of the form ẍ + 2ζω₀ ẋ + ω₀² x = 0, with
+  // x = (q - qᵤ) near the upper limit when q > qᵤ and x = (q - qₗ) near the
+  // lower limit when q < qₗ and where ω₀² = k / m̃ is the characteristic
+  // numerical stiffness frequency and m̃ is an inertia term that for prismatic
+  // joints reduces to a simple function of the mass of the bodies adjancent to
+  // a particular joint. For revolute joints m̃ relates to the rotational inertia
+  // of the adjacent bodies to a joint. See the implementation notes for further
+  // details. Both ω₀ and ζ are non-negative numbers.
+  // The characteristic frequency ω₀ is entirely a function the time step of the
   // discrete model so that, from a stability analysis of the simplified
   // harmonic oscillator model, we guarantee the resulting time stepping is
   // stable. That is, the numerical stiffness of the method is such that it
@@ -1350,6 +1355,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Helper method to apply penalty forces that enforce joint limits.
+  // At each joint with joint limits this penalty method applies a force law of
+  // the form:
+  //   τ = min(-k(q - qᵤ) - cv) if q > qᵤ
+  //   τ = max(-k(q - qₗ) - cv) if q < qₗ
+  // is used to limit the position q to be within the lower/upper limits
+  // (qₗ, qᵤ).
+  // The penalty parameters k (stiffness) and c (damping) are estimated using
+  // a harmonic oscillator model within SetUpJointLimitsParameters().
   void AddJointLimitsPenaltyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 

@@ -24,7 +24,9 @@ namespace multibody_plant {
 namespace {
 
 // These unit tests verify the convergence of the joint limits as the time step
-// is decreased. MultibodyPlant uses a characteristic "numerical stiffness" time
+// is decreased. A constant force is applied at the joint to drive its state to
+// the upper/lower limit.
+// MultibodyPlant uses a characteristic "numerical stiffness" time
 // scale proportional to the time step of the discrete model. This time scale is
 // used to estimate the largest stiffness penalty parameter used to enforce
 // joint limits that still guarantees the stability of the time stepping
@@ -70,7 +72,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
     const PrismaticJoint<double>& slider = plant.AddJoint<PrismaticJoint>(
         "Slider", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
-        0.0 /* damping */, 0.0 /* lower limit */, 0.1 /* upper limit */);
+        0.0 /* lower limit */, 0.1 /* upper limit */, 0.0 /* damping */);
     plant.AddJointActuator("ForceAlongZ", slider);
     plant.Finalize();
 
@@ -141,8 +143,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
     const RevoluteJoint<double>& pin = plant.AddJoint<RevoluteJoint>(
         "Pin", plant.world_body(), {}, body, {}, Vector3<double>::UnitZ(),
-        0.0 /* damping */,
-        -M_PI / 5.0 /* lower limit */, M_PI / 3.0 /* upper limit */);
+        -M_PI / 5.0 /* lower limit */, M_PI / 3.0 /* upper limit */,
+        0.0 /* damping */);
     plant.AddJointActuator("TorqueAboutZ", pin);
     plant.Finalize();
 
@@ -185,7 +187,12 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // be zero within this absolute tolerance.
   const double kVelocityTolerance = 1.0e-12;
 
-  // Expected relative tolerance for the joint limits.
+  // Expected relative tolerance for the joint limits. This number is chosen
+  // so that the verifications performed below pass for the time step used in
+  // this test. A smaller time step would lead to smaller violations (with
+  // quadratic convergence in the time step) and therefore we could make
+  // kRelativePositionTolerance even smaller. However there is a trade off
+  // between what we want to test and the computational cost of this unit test.
   const double kRelativePositionTolerance = 0.015;
 
   const std::string file_path =

@@ -287,7 +287,7 @@ void AddJointFromSpecification(
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, damping, limits.first, limits.second);
+          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
@@ -298,7 +298,7 @@ void AddJointFromSpecification(
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, damping, limits.first, limits.second);
+          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }

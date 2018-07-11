@@ -105,7 +105,7 @@ struct JointLimitsPenaltyParametersEstimator {
   // The combination law is very simple, this method returns the set of
   // parameters with the smallest stiffness, and thus it favors the stiffness
   // leading to the lower numerical stiffness (thus guaranteeing stability).
-  static std::pair<double, double> CombinePenaltyParameters(
+  static std::pair<double, double> PickLessStiffPenaltyParameters(
       const std::pair<double, double>& params1,
       const std::pair<double, double>& params2) {
     const double stiffness1 = params1.first;
@@ -119,28 +119,28 @@ struct JointLimitsPenaltyParametersEstimator {
 
   // Helper method to estimate the penalty parameters for a prismatic joint.
   // The strategy consists in computing a set of penalty parameters for each
-  // body connected by joint as if the other body was weled and ignoring
+  // body connected by joint as if the other body was welded and ignoring
   // any other bodies in the system. This leads to a spring mass system where
   // the inertia m̃ corresponds to the mass of the body in consideration.
   // Then the penalty parameters estimated for each body are combined with
-  // CombinePenaltyParameters() leading to a single set of parameters.
+  // PickLessStiffPenaltyParameters() leading to a single set of parameters.
   static std::pair<double, double> CalcPrismaticJointPenaltyParameters(
       const PrismaticJoint<T>& joint, double numerical_time_scale) {
     // Penalty parameters for the parent body (child fixed).
     const double parent_mass = joint.parent_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
                                joint.parent_body().get_default_mass();
-    auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+    const auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, parent_mass);
     // Penalty parameters for the child body (parent fixed).
     const double child_mass = joint.child_body().index() == world_index() ?
                                std::numeric_limits<double>::infinity() :
                                joint.child_body().get_default_mass();
-    auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+    const auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, child_mass);
 
     // Return the combined penalty parameters of the two bodies.
-    auto params = CombinePenaltyParameters(parent_params, child_params);
+    auto params = PickLessStiffPenaltyParameters(parent_params, child_params);
 
     return params;
   }
@@ -152,13 +152,13 @@ struct JointLimitsPenaltyParametersEstimator {
   // for which the inertia m̃ corresponds to the rotational inertia of the body
   // in consideration, computed about the axis of the joint.
   // Then the penalty parameters estimated for each body are combined with
-  // CombinePenaltyParameters() leading to a single set of parameters.
+  // PickLessStiffPenaltyParameters() leading to a single set of parameters.
   static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
       const RevoluteJoint<T>& joint, double numerical_time_scale) {
     // For the body attached to `frame` (one of the parent/child frames of
     // `joint`), this helper lambda computes the rotational inertia of the body
     // about the axis of the joint.
-    // That is, it computes Iₐ = â⋅Iᴮ⋅â where Iᴮ is the rotational inertia of
+    // That is, it computes Iₐ = âᵀ⋅Iᴮ⋅â where Iᴮ is the rotational inertia of
     // the body, â is the axis of the joint, and Iₐ is the (scalar) rotational
     // inertia of the body computed about the joint's axis. Iₐ is the inertia
     // that must be considered for the problem of a pendulum oscillating about
@@ -215,7 +215,7 @@ struct JointLimitsPenaltyParametersEstimator {
         numerical_time_scale, I_Ca);
 
     // Return the combined penalty parameters of the two bodies.
-    return CombinePenaltyParameters(parent_params, child_params);
+    return PickLessStiffPenaltyParameters(parent_params, child_params);
   }
 };
 }  // namespace internal
@@ -477,6 +477,8 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 
     // Since currently MBP only handles joint limits for discrete models, verify
     // there are no joint limits when the model is continuous.
+    // Therefore we throw an exception with an appropriate message when a user
+    // specifies joint limits for a continuous model.
     if (!is_discrete()) {
       for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
         const double stiffness = joint_limits_parameters_.stiffness[i];
