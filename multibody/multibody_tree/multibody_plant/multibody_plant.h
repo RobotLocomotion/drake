@@ -1357,8 +1357,8 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   // Helper method to apply penalty forces that enforce joint limits.
   // At each joint with joint limits this penalty method applies a force law of
   // the form:
-  //   τ = min(-k(q - qᵤ) - cv) if q > qᵤ
-  //   τ = max(-k(q - qₗ) - cv) if q < qₗ
+  //   τ = min(-k(q - qᵤ) - cv, 0) if q > qᵤ
+  //   τ = max(-k(q - qₗ) - cv, 0) if q < qₗ
   // is used to limit the position q to be within the lower/upper limits
   // (qₗ, qᵤ).
   // The penalty parameters k (stiffness) and c (damping) are estimated using
