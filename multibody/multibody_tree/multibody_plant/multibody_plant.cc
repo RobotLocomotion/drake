@@ -136,12 +136,19 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
         "RegisterAsSourceForSceneGraph()");
   }
   GeometryId id;
+  // We use an "invisible" color with alpha channel set to zero so that
+  // collision geometry does not render on top of visual geometry in our
+  // visualizer.
+  // TODO(amcastro-tri): Remove this "invisible" color once "roles" land in
+  // SceneGraph.
+  const geometry::VisualMaterial invisible_material(
+      Vector4<double>(0.0, 0.0, 0.0, 0.0));
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
-    id = RegisterAnchoredGeometry(X_BG, shape, {}, scene_graph);
+    id = RegisterAnchoredGeometry(X_BG, shape, invisible_material, scene_graph);
   } else {
-    id = RegisterGeometry(body, X_BG, shape, {}, scene_graph);
+    id = RegisterGeometry(body, X_BG, shape, invisible_material, scene_graph);
   }
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
