@@ -295,8 +295,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// appropriate message.
   /// Revolute and prismatic are examples of joints that will want to implement
   /// this method.
-  virtual const T& DoGetOnePosition(
-      const systems::Context<T>& context) const {
+  virtual const T& DoGetOnePosition(const systems::Context<T>&) const {
     DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");
   }
 
@@ -306,8 +305,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// appropriate message.
   /// Revolute and prismatic are examples of joints that will want to implement
   /// this method.
-  virtual const T& DoGetOneVelocity(
-      const systems::Context<T>& context) const {
+  virtual const T& DoGetOneVelocity(const systems::Context<T>&) const {
     DRAKE_ABORT_MSG("This method can only be called on single-dof joints.");
   }
 

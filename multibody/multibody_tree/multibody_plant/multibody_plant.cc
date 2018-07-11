@@ -170,8 +170,7 @@ struct JointLimitsPenaltyParametersEstimator {
     // [Goldstein, 2014] Goldstein, H., Poole, C.P. and Safko, J.L., 2014.
     //                   Classical Mechanics: Pearson New International Edition.
     //                   Pearson Higher Ed.
-    auto CalcRotationalInertiaAboutAxis =
-        [](const RevoluteJoint<T>& joint, const Frame<T>& frame) {
+    auto CalcRotationalInertiaAboutAxis = [&joint](const Frame<T>& frame) {
           const RigidBody<T>* body =
               dynamic_cast<const RigidBody<T>*>(&frame.body());
           DRAKE_THROW_UNLESS(body != nullptr);
@@ -203,7 +202,7 @@ struct JointLimitsPenaltyParametersEstimator {
     const double I_Pa =
         joint.parent_body().index() == world_index() ?
         std::numeric_limits<double>::infinity() :
-        CalcRotationalInertiaAboutAxis(joint, joint.frame_on_parent());
+        CalcRotationalInertiaAboutAxis(joint.frame_on_parent());
     auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, I_Pa);
 
@@ -211,7 +210,7 @@ struct JointLimitsPenaltyParametersEstimator {
     const double I_Ca =
         joint.child_body().index() == world_index() ?
         std::numeric_limits<double>::infinity() :
-        CalcRotationalInertiaAboutAxis(joint, joint.frame_on_child());
+        CalcRotationalInertiaAboutAxis(joint.frame_on_child());
     auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
         numerical_time_scale, I_Ca);
 
