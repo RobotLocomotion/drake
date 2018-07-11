@@ -32,8 +32,7 @@ DEFINE_bool(visualize_only_terminal_state, true,
             "the simulate "
             "to rest terminates.");
 DEFINE_double(max_settling_time, 1.5,
-              "maximum simulation time for settling the"
-              "object.");
+              "maximum simulation time for settling the object.");
 DEFINE_double(v_threshold, 0.1, "velocity threshold to terminate sim early.");
 DEFINE_bool(fall_sim, false,
             "Compute a fall simulation to 'settle' the objects.");
@@ -44,13 +43,11 @@ const char kPath[] = "examples/kuka_iiwa_arm/models/objects/";
 
 std::unique_ptr<RigidBodyTreed> GenerateSceneTree(
     std::set<int>* clutter_instances, int num_repetitions) {
-  map<string, int> target_names = {
-      {string(kPath) + "block_for_pick_and_place.urdf", num_repetitions},
-      {string(kPath) + "block_for_pick_and_place_large_size.urdf",
-       num_repetitions},
-      {string(kPath) + "big_robot_toy.urdf", num_repetitions},
-      {string(kPath) + "block_for_pick_and_place_mid_size.urdf",
-       num_repetitions}};
+  std::vector<string> target_names = {
+      {string(kPath) + "block_for_pick_and_place.urdf"},
+      {string(kPath) + "block_for_pick_and_place_large_size.urdf"},
+      {string(kPath) + "big_robot_toy.urdf"},
+      {string(kPath) + "block_for_pick_and_place_mid_size.urdf"}};
 
   std::unique_ptr<util::WorldSimTreeBuilder<double>> tree_builder =
       std::make_unique<util::WorldSimTreeBuilder<double>>();
@@ -60,17 +57,17 @@ std::unique_ptr<RigidBodyTreed> GenerateSceneTree(
 
   std::set<int> clutter_instance_list;
   int model_ctr = 0;
-  for (map<string, int>::iterator it = target_names.begin();
+  for (std::vector<string>::iterator it = target_names.begin();
        it != target_names.end(); ++it) {
     stringstream model_name;
     model_name << "model_" << model_ctr++;
-    tree_builder->StoreModel(model_name.str(), it->first);
+    tree_builder->StoreModel(model_name.str(), it);
 
-    for (int i = 0; i < it->second; ++i) {
+    for (int i = 0; i < max_iterations; ++i) {
       // All floating objects are added to origin. The floating base
       // coordinates define the object's pose relative to the world
       // frame.
-      Isometry3<double> model_pose = Isometry3<double>::Identity();
+      Isometry3<double> X_WM = Isometry3<double>::Identity();
       int tree_instances = tree_builder->AddFloatingModelInstance(
           model_name.str(), model_pose.translation());
       clutter_instance_list.insert(tree_instances);
@@ -85,9 +82,6 @@ std::unique_ptr<RigidBodyTreed> GenerateSceneTree(
 
 int DoMain() {
   lcm::DrakeLcm lcm;
-  Isometry3<double> clutter_base = Isometry3<double>::Identity();
-  clutter_base.translation() = (VectorX<double>(3) << 0.0, 0.0, 3.0).finished();
-
   std::set<int> clutter_instances;
 
   auto scene_tree = GenerateSceneTree(&clutter_instances, FLAGS_repetitions);
@@ -99,9 +93,8 @@ int DoMain() {
 
   VectorX<double> q_nominal =
       VectorX<double>::Random(scene_tree->get_num_positions());
-  std::unique_ptr<RandomClutterGenerator> clutter;
-
-  clutter = std::make_unique<RandomClutterGenerator>(
+  
+  RandomClutterGenerator clutter = RandomClutterGenerator(
       scene_tree.get(), clutter_instances, Vector3<double>(0.0, 0.0, 0.3),
       Vector3<double>(0.2, 0.4, 0.3 * FLAGS_repetitions));
 
@@ -128,13 +121,14 @@ int DoMain() {
     }
   }
 
+  // Uses a arbitrary seed.
   std::default_random_engine generator(123);
 
   VectorX<double> q_final, v_final;
   double sum_ik_time = 0, sum_total_time = 0;
   for (int i = 0; i < FLAGS_max_iterations; ++i) {
     time_t t_start = time(0);
-    VectorX<double> q_ik = clutter->GenerateFloatingClutter(
+    VectorX<double> q_ik = clutter.GenerateFloatingClutter(
         q_nominal, &generator, FLAGS_z_height_cost);
     if (FLAGS_visualize_only_terminal_state) {
       simple_tree_visualizer->visualize(q_ik);
@@ -145,8 +139,6 @@ int DoMain() {
 
     sum_ik_time += ik_time;
     double mean_ik_time = sum_ik_time / (i + 1.0);
-    drake::log()->debug(
-        "Successfully computed clutter. About to simulate dropping");
     if (FLAGS_fall_sim) {
       q_final = dropper->Run(q_ik, &v_final, FLAGS_v_threshold,
                              FLAGS_max_settling_time);

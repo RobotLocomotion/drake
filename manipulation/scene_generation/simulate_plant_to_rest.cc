@@ -95,8 +95,6 @@ VectorX<double> SimulatePlantToRest::Run(const VectorX<double>& q_ik,
     step_time = 1.0;
     step_delta = 0.1;
     do {
-      drake::log()->debug("Starting Simulation");
-
       simulator.StepTo(step_time);
       step_time += step_delta;
       x = simulator.get_context().get_continuous_state_vector().CopyToVector();
