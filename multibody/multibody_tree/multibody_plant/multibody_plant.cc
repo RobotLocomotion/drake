@@ -440,39 +440,53 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     // Currently MBP only supports limits for prismatic and revolute joints.
     if (!(revolute_joint || prismatic_joint)) continue;
 
-    joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-
     const double penalty_time_scale = kAlpha * time_step();
 
     if (revolute_joint) {
-      // Store joint limits.
-      joint_limits_parameters_.lower_limit.push_back(
-          revolute_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(
-          revolute_joint->upper_limit());
-      // Estimate penalty parameters.
-      auto penalty_parameters =
-          internal::JointLimitsPenaltyParametersEstimator<T>::
-          CalcRevoluteJointPenaltyParameters(
-              *revolute_joint, penalty_time_scale);
-      joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
-      joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      // We only compute parameters if they are far from being infinity.
+      // SDF defaults to 1.0e16 instead of infinity.
+      if (-1.0e16 < revolute_joint->lower_limit() &&
+          revolute_joint->upper_limit() < 1.0e16) {
+        joint_limits_parameters_.joints_with_limits.push_back(
+            revolute_joint->index());
+
+        // Store joint limits.
+        joint_limits_parameters_.lower_limit.push_back(
+            revolute_joint->lower_limit());
+        joint_limits_parameters_.upper_limit.push_back(
+            revolute_joint->upper_limit());
+        // Estimate penalty parameters.
+        auto penalty_parameters =
+            internal::JointLimitsPenaltyParametersEstimator<T>::
+            CalcRevoluteJointPenaltyParameters(
+                *revolute_joint, penalty_time_scale);
+        joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+        joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      }
     }
 
     if (prismatic_joint) {
-      // Store joint limits.
-      joint_limits_parameters_.lower_limit.push_back(
-          prismatic_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(
-          prismatic_joint->upper_limit());
+      // We only compute parameters if they are far from being infinity.
+      // SDF defaults to 1.0e16 instead of infinity.
+      if (-1.0e16 < prismatic_joint->lower_limit() &&
+          prismatic_joint->upper_limit() < 1.0e16) {
+        joint_limits_parameters_.joints_with_limits.push_back(
+            prismatic_joint->index());
 
-      // Estimate penalty parameters.
-      auto penalty_parameters =
-          internal::JointLimitsPenaltyParametersEstimator<T>::
-          CalcPrismaticJointPenaltyParameters(
-              *prismatic_joint, penalty_time_scale);
-      joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
-      joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+        // Store joint limits.
+        joint_limits_parameters_.lower_limit.push_back(
+            prismatic_joint->lower_limit());
+        joint_limits_parameters_.upper_limit.push_back(
+            prismatic_joint->upper_limit());
+
+        // Estimate penalty parameters.
+        auto penalty_parameters =
+            internal::JointLimitsPenaltyParametersEstimator<T>::
+            CalcPrismaticJointPenaltyParameters(
+                *prismatic_joint, penalty_time_scale);
+        joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+        joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      }
     }
 
     // Since currently MBP only handles joint limits for discrete models, verify

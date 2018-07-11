@@ -144,7 +144,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "joint_limits_test",
-    timeout = "moderate",
+    timeout = "long",
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
