@@ -39,7 +39,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
         kWidth, kHeight, kFocalX, kFocalY, kCenterX, kCenterY);
     converter_ = std::make_unique<DepthImageToPointCloud>(*camera_info_.get());
     context_ = converter_->CreateDefaultContext();
-    output_ = converter_->get_output_port().Allocate();
+    output_ = converter_->point_cloud_output_port().Allocate();
     systems::sensors::ImageDepth32F image;
     input_ =
         systems::AbstractValue::Make<systems::sensors::ImageDepth32F>(image);
@@ -52,23 +52,41 @@ class DepthImageToPointCloudTest : public ::testing::Test {
   std::unique_ptr<systems::sensors::CameraInfo> camera_info_;
 };
 
-// Tests that the system computes the correct point cloud for a given depth
-// image where all pixels have a constant value.
-TEST_F(DepthImageToPointCloudTest, ConvertConstantDepth) {
-  const double kDepth = 0.65;
+// Verifies that the system computes the correct point cloud for a given depth
+// image.
+TEST_F(DepthImageToPointCloudTest, ConversionAndNanValueTest) {
+  const float kDistanceTolerance = 1e-8;
+  const float kDepth = 0.65;
+  const int kTooClosePointCloudIndex = 2;
+  const int kTooFarPointCloudIndex = 658;
+
   Eigen::VectorXf test_data = kDepth * Eigen::VectorXf::Ones(kWidth * kHeight);
+  test_data(kTooClosePointCloudIndex) =
+      systems::sensors::InvalidDepth::kTooClose;
+  test_data(kTooFarPointCloudIndex) = systems::sensors::InvalidDepth::kTooFar;
+
   systems::sensors::ImageDepth32F image =
       DepthImageToPointCloudTest::MakeImage(kWidth, kHeight, test_data);
 
   context_->FixInputPort(
       0, systems::AbstractValue::Make<systems::sensors::ImageDepth32F>(image));
 
-  converter_->get_output_port().Calc(*context_, output_.get());
+  converter_->point_cloud_output_port().Calc(*context_, output_.get());
 
   auto output_cloud = output_->GetValueOrThrow<perception::PointCloud>();
   Eigen::VectorXf output_depth = output_cloud.xyzs().row(2);
 
-  EXPECT_TRUE(CompareMatrices(output_depth, test_data));
+  // kTooClose is treated as kTooFar. For the detail, refer to the document of
+  // RgbdCamera::ConvertDepthImageToPointCloud.
+  for (int i = 0; i < output_depth.size(); ++i) {
+    if (i == kTooClosePointCloudIndex) {
+      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
+    } else if (i == kTooFarPointCloudIndex) {
+      ASSERT_EQ(output_depth(i), systems::sensors::InvalidDepth::kTooFar);
+    } else {
+      ASSERT_NEAR(output_depth(i), test_data(i), kDistanceTolerance);
+    }
+  }
 }
 
 }  // namespace

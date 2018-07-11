@@ -32,11 +32,11 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
 
   /// Returns the abstract valued input port that contains an ImageDepth32F.
   const systems::InputPortDescriptor<double>& depth_image_input_port() const {
-    return this->get_input_port(input_port_depth_image_);
+    return this->get_input_port(input_port_depth_image_index_);
   }
 
   /// Returns the abstract valued output port that contains a PointCloud.
-  const systems::OutputPort<double>& get_output_port() const {
+  const systems::OutputPort<double>& point_cloud_output_port() const {
     return LeafSystem<double>::get_output_port(0);
   }
 
@@ -48,7 +48,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   void ConvertDepthImageToPointCloud(const systems::Context<double>& context,
                                      PointCloud* output) const;
 
-  int input_port_depth_image_{0};
+  int input_port_depth_image_index_{-1};
 
   const systems::sensors::CameraInfo& camera_info_;
 };
