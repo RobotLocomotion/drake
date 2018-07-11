@@ -3,10 +3,16 @@
 #include <ignition/math/Pose3.hh>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
 namespace parsing {
+
+/// Default value of the Coulomb's law coefficients of friction for when they
+/// are not specified in the SDF file.
+const multibody_plant::CoulombFriction<double> kDefaultFriction(1.0, 1.0);
+
 namespace detail {
 
 /// Helper function to express an ignition::math::Vector3d instance as
