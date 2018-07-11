@@ -32,9 +32,9 @@ void DepthImageToPointCloud::ConvertDepthImageToPointCloud(
   systems::sensors::RgbdCamera::ConvertDepthImageToPointCloud(
       input_image, camera_info_, &point_cloud);
 
-  const int num_cols = point_cloud.cols();
-  output->resize(num_cols);
-  for (int i = 0; i < num_cols; i++) {
+  const int kNumCols = point_cloud.cols();
+  output->resize(kNumCols);
+  for (int i = 0; i < kNumCols; i++) {
     output->mutable_xyz(i) = point_cloud.col(i);
   }
 }
