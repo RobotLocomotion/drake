@@ -29,11 +29,10 @@ MonomialSet VectorToSet(const drake::VectorX<Monomial>& x) {
 
 class SosBasisGeneratorTest : public ::testing::Test {
  public:
-  void CheckMonomialBasis(const symbolic::Polynomial& poly,
-                          const MonomialSet& basis_ref) {
+  MonomialSet GetMonomialBasis(const symbolic::Polynomial& poly) {
     drake::VectorX<Monomial> basis = ConstructMonomialBasis(poly);
     MonomialSet basis_set = VectorToSet(basis);
-    EXPECT_EQ(basis_set, basis_ref);
+    return basis_set;
   }
 
  protected:
@@ -52,7 +51,7 @@ TEST_F(SosBasisGeneratorTest, MotzkinPoly) {
   basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 1)));
   basis_ref.insert(Monomial(pow(x_(0), 2) * pow(x_(1), 1)));
   basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 2)));
-  CheckMonomialBasis(poly, basis_ref);
+  EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
 TEST_F(SosBasisGeneratorTest, Univariate) {
@@ -64,13 +63,13 @@ TEST_F(SosBasisGeneratorTest, Univariate) {
   basis_ref.insert(Monomial(pow(x_(0), 2)));
   basis_ref.insert(Monomial(pow(x_(0), 3)));
   basis_ref.insert(Monomial(pow(x_(0), 4)));
-  CheckMonomialBasis(poly, basis_ref);
+  EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
 TEST_F(SosBasisGeneratorTest, Empty) {
   const symbolic::Polynomial poly{pow(x_(0), 3)};
   MonomialSet basis_ref;
-  CheckMonomialBasis(poly, basis_ref);
+  EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
 TEST_F(SosBasisGeneratorTest, NewtonPolytopeEmptyInterior) {
@@ -80,14 +79,14 @@ TEST_F(SosBasisGeneratorTest, NewtonPolytopeEmptyInterior) {
   MonomialSet basis_ref;
   basis_ref.insert(Monomial(pow(x_(0), 1) * pow(x_(1), 1)));
   basis_ref.insert(Monomial(pow(x_(0), 2) * pow(x_(1), 2)));
-  CheckMonomialBasis(poly, basis_ref);
+  EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
 TEST_F(SosBasisGeneratorTest, Singleton) {
   const symbolic::Polynomial poly{1 + pow(x_(0), 1)};
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());
-  CheckMonomialBasis(poly, basis_ref);
+  EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
 }  // namespace

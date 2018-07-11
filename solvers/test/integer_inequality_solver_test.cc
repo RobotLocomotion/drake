@@ -28,15 +28,10 @@ IntegerSet MatrixToSet(const Eigen::MatrixXi& M) {
 
 class IntegerLatticeTest : public ::testing::Test {
  public:
-  ::testing::AssertionResult CheckEnumeration(const IntegerSet& ref) {
+  IntegerSet EnumerationSolutions() {
     const auto y = EnumerateIntegerSolutions(A_, b_,
                                              lower_bound_, upper_bound_);
-    const auto y_set = MatrixToSet(y);
-    if (y_set == ref) {
-      return ::testing::AssertionSuccess();
-    } else {
-      return ::testing::AssertionFailure();
-    }
+    return MatrixToSet(y);
   }
 
   void SetDimensions(int num_ineq, int num_var) {
@@ -67,7 +62,7 @@ TEST_F(IntegerLatticeTest, EqualComponents) {
   ref.insert(Eigen::VectorXi::Constant(2, 0));
   ref.insert(Eigen::VectorXi::Constant(2, 1));
   ref.insert(Eigen::VectorXi::Constant(2, 2));
-  EXPECT_TRUE(CheckEnumeration(ref));
+  EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
 TEST_F(IntegerLatticeTest, SumToConstant) {
@@ -80,7 +75,7 @@ TEST_F(IntegerLatticeTest, SumToConstant) {
   Eigen::MatrixXi ref_mat(3, 2);
   ref_mat << 0, 2, 2, 0, 1, 1;
 
-  EXPECT_TRUE(CheckEnumeration(MatrixToSet(ref_mat)));
+  EXPECT_EQ(EnumerationSolutions(), MatrixToSet(ref_mat));
 }
 
 TEST_F(IntegerLatticeTest, Empty) {
@@ -92,7 +87,7 @@ TEST_F(IntegerLatticeTest, Empty) {
   upper_bound_ << 2, 0;
   IntegerSet ref;
 
-  EXPECT_TRUE(CheckEnumeration(ref));
+  EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
 TEST_F(IntegerLatticeTest, Singleton) {
@@ -104,7 +99,7 @@ TEST_F(IntegerLatticeTest, Singleton) {
   upper_bound_ << 1, 2, 3, 4;
   IntegerSet ref;
   ref.insert(lower_bound_);
-  EXPECT_TRUE(CheckEnumeration(ref));
+  EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
 
@@ -126,7 +121,7 @@ TEST_F(IntegerLatticeTest, InfeasProp) {
 
   IntegerSet ref;
   ref.insert(lower_bound_);
-  EXPECT_TRUE(CheckEnumeration(ref));
+  EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
 
@@ -146,7 +141,7 @@ TEST_F(IntegerLatticeTest, EntireBoxFeasible) {
              1, 0,
              1, 1,
              1, 2;
-  EXPECT_TRUE(CheckEnumeration(MatrixToSet(ref_mat)));
+  EXPECT_EQ(EnumerationSolutions(), MatrixToSet(ref_mat));
 }
 
 
