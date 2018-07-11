@@ -469,7 +469,9 @@ GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   }
 }
 
-// Verify RotationMatrix can be instantiated on symbolic::Expression.
+// Verify RotationMatrix is compatible with symbolic::Expression. This includes,
+// construction, and the two methods specialized for symbolic::Expression:
+// ThrowIfNotValid() and ProjectToRotationMatrix().
 GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   RotationMatrix<symbolic::Expression> R;
 
@@ -478,8 +480,12 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
   // e.g., ThrowIfNotValid() is a "no-op" (does nothing).
   Matrix3<symbolic::Expression> m_symbolic;
   m_symbolic << 1, 2, 3,  // This is an obviously invalid rotation matrix.
-      4, 5, 6,
-      7, 8, 9;
+                4, 5, 6,
+                7, 8, 9;
+  // Note: The function under test in the next line is ThrowIfNotValid().
+  // Since this function is private, it cannot be directly tested.
+  // Instead, it is tested via the set() method which calls ThrowIfNotValid()
+  // when assertions are armed.
   EXPECT_NO_THROW(R.set(m_symbolic));
 
   // Test ProjectToRotationMatrix() throws an exception for symbolic expression.
@@ -487,7 +493,8 @@ GTEST_TEST(RotationMatrix, SymbolicRotationMatrixSimpleTests) {
       RotationMatrix<symbolic::Expression> R_symbolic_after_project =
       RotationMatrix<symbolic::Expression>::ProjectToRotationMatrix(m_symbolic),
       std::runtime_error,
-      "This method is not supported for scalar types.*");
+      "This method is not supported for scalar types "
+      "that are not drake::is_numeric<S>.");
 }
 
 
