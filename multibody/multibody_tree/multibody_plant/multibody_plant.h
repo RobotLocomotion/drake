@@ -1505,7 +1505,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   };
   StribeckModel stribeck_model_;
 
-  // This structure aid the bookkeeping of parameters associated with joint
+  // This structure aids in the bookkeeping of parameters associated with joint
   // limits and the penalty method parameters used to enforce them.
   struct JointLimitsParameters {
     // list of joints that have limits. These are all single-dof joints.
@@ -1515,7 +1515,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     // RevoluteJoint or meters for PrismaticJoint.
     std::vector<double> lower_limit;
     std::vector<double> upper_limit;
-    // Penalty parameters.
+    // Penalty parameters. These are defined in accordance to the penalty force
+    // internally implemented by MultibodyPlant in
+    // AddJointLimitsPenaltyForces().
     std::vector<double> stiffness;
     std::vector<double> damping;
   } joint_limits_parameters_;
