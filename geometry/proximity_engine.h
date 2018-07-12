@@ -7,8 +7,8 @@
 #include "drake/common/autodiff.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
-#include "drake/geometry/query_results/nearest_pair.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -92,6 +92,22 @@ class ProximityEngine {
   /** Reports the number of _anchored_ geometries (spanning all sources). */
   int num_anchored() const;
 
+  /** The distance (signed/unsigned/penetration distance) is generally computed
+   * from an iterative process. The distance_tolerance determines when the
+   * iterative process will terminate.
+   * When the objects are penetrating, and the penetration depth are computed
+   * through Expanded Polytope Algorithm (EPA) (for example, the mesh-to-mesh
+   * penetration depth), the computed penetration depth is guaranteed to be
+   * within @p tol from the true distance.
+   * When the objects are separating, and the separating distance are computed
+   * through GJK algorithm (for example, the mesh-to-mesh distance), then the
+   * process terminates when the change of distance is smaller than @p tol
+   * between two consecutive iterations. Note this does NOT mean that the actual
+   * distance is within @p tol to the computed distance. */
+  void set_distance_tolerance(double tol);
+
+  double distance_tolerance() const;
+
   //@}
 
   /** Updates the poses for all of the dynamic geometries in the engine. It
@@ -125,12 +141,15 @@ class ProximityEngine {
    @param[in]   anchored_map  A map from geometry _index_ to the corresponding
                               global geometry identifier for anchored
                               geometries.
-   @returns nearest_pairs A vector populated with all pairs of closest points.
-            We guarantee that nearest_pairs[i].id_A < nearest_pairs[i].id_B. 
-            Namely within each pair, the two objects are sorted based on their
-            IDs.
+   @returns signed_distance_pair A vector populated with all pairs of witness
+                                 points. We guarantee that
+                                 signed_distance_pair[i].id_A <
+                                 signed_distance_pair[i].id_B.
+                                 Namely within each pair, the two objects are
+                                 sorted based on their IDs.
    */
-  std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints(
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const;
   //@}

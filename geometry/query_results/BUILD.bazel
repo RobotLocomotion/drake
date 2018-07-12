@@ -13,8 +13,8 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "query_results",
     deps = [
-        ":nearest_pair",
         ":penetration_as_point_pair",
+        ":signed_distance_pair",
     ],
 )
 
@@ -29,9 +29,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "nearest_pair",
+    name = "signed_distance_pair",
     srcs = [],
-    hdrs = ["nearest_pair.h"],
+    hdrs = ["signed_distance_pair.h"],
     deps = [
         "//common",
         "//geometry:geometry_ids",

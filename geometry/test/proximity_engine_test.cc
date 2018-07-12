@@ -13,8 +13,9 @@ namespace geometry {
 namespace internal {
 // Compare nearest pair. Note that we can switch body A with body B in one pair,
 // and the comparison result would be the same.
-void CompareNearestPair(const NearestPair<double>& pair,
-                        const NearestPair<double>& pair_expected, double tol) {
+void CompareSignedDistancePair(const SignedDistancePair<double>& pair,
+                               const SignedDistancePair<double>& pair_expected,
+                               double tol) {
   EXPECT_NEAR(pair.distance, pair_expected.distance, tol);
   ASSERT_LT(pair.id_A, pair_expected.id_B);
   EXPECT_EQ(pair.id_B, pair_expected.id_B);
@@ -298,11 +299,11 @@ class SimplePenetrationTest : public ::testing::Test {
     ASSERT_EQ(penetration_results.size(), 1);
     const PenetrationAsPointPair<double>& penetration = penetration_results[0];
 
-    std::vector<NearestPair<double>> distance_results =
+    std::vector<SignedDistancePair<double>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(dynamic_map_,
                                                            anchored_map_);
     ASSERT_EQ(distance_results.size(), 1);
-    const NearestPair<double>& distance = distance_results[0];
+    const SignedDistancePair<double>& distance = distance_results[0];
 
     // There are no guarantees as to the ordering of which element is A and
     // which is B. This test enforces an order for validation.
@@ -316,11 +317,6 @@ class SimplePenetrationTest : public ::testing::Test {
     EXPECT_TRUE(
         (distance.id_A == origin_sphere && distance.id_B == colliding_sphere) ||
         (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
-
-    // Currently the signed distance and penetration depth takes different
-    // paths, one uses the general EPA algorithm, the other calls the primitive
-    // to primitive query.
-    EXPECT_NEAR(penetration.depth, -distance.distance, 2E-5);
 
     // Assume A => origin_sphere and b => colliding_sphere
     // NOTE: In this current version, penetration is only reported in double.
@@ -351,7 +347,7 @@ class SimplePenetrationTest : public ::testing::Test {
                                 1e-13, MatrixCompareType::absolute));
 
     // Should return the penetration depth here.
-    NearestPair<double> expected_distance;
+    SignedDistancePair<double> expected_distance;
     expected_distance.distance = -expected.depth;
     expected_distance.id_A = origin_sphere;
     expected_distance.id_B = colliding_sphere;
@@ -361,12 +357,12 @@ class SimplePenetrationTest : public ::testing::Test {
       std::swap(expected_distance.id_A, expected_distance.id_B);
       std::swap(expected_distance.p_ACa, expected_distance.p_BCb);
     }
-    // TODO(hongkai.dai): the penetration depth computed from GJK algorithm is
-    // inaccruate (with tolerance 2E-3). I should modify the FCL code upstream,
-    // such that it calls the primitive-to-primitive distance, instead of GJK
-    // algorithm.
     EXPECT_LT(distance.id_A, distance.id_B);
-    CompareNearestPair(distance, expected_distance, 2e-3);
+    // TODO(hongkai.dai): Set the FCL solver tolerance, and check the distance
+    // against that tolerance, when the PR
+    // https://github.com/flexible-collision-library/fcl/pull/314 is merged into
+    // FCL upstream.
+    CompareSignedDistancePair(distance, expected_distance, 2e-3);
   }
 
   // The two spheres collides, but are ignored due to the setting in the
@@ -379,7 +375,7 @@ class SimplePenetrationTest : public ::testing::Test {
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
     EXPECT_EQ(penetration_results.size(), 0);
 
-    std::vector<NearestPair<double>> distance_results =
+    std::vector<SignedDistancePair<double>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(dynamic_map_,
                                                            anchored_map_);
     ASSERT_EQ(distance_results.size(), 0);
@@ -394,11 +390,11 @@ class SimplePenetrationTest : public ::testing::Test {
         engine->ComputePointPairPenetration(dynamic_map_, anchored_map_);
     EXPECT_EQ(penetration_results.size(), 0);
 
-    std::vector<NearestPair<double>> distance_results =
+    std::vector<SignedDistancePair<double>> distance_results =
         engine->ComputeSignedDistancePairwiseClosestPoints(dynamic_map_,
                                                            anchored_map_);
     ASSERT_EQ(distance_results.size(), 1);
-    NearestPair<double> distance = distance_results[0];
+    SignedDistancePair<double> distance = distance_results[0];
 
     // There are no guarantees as to the ordering of which element is A and
     // which is B. This test enforces an order for validation.
@@ -407,7 +403,7 @@ class SimplePenetrationTest : public ::testing::Test {
         (distance.id_A == colliding_sphere && distance.id_B == origin_sphere));
 
     bool origin_is_A = origin_sphere < colliding_sphere;
-    NearestPair<double> expected_distance;
+    SignedDistancePair<double> expected_distance;
     expected_distance.id_A = origin_is_A ? origin_sphere : colliding_sphere;
     expected_distance.id_B = origin_is_A ? colliding_sphere : origin_sphere;
     expected_distance.distance = free_x_ - 2 * radius_;
@@ -418,7 +414,7 @@ class SimplePenetrationTest : public ::testing::Test {
     expected_distance.p_ACa = origin_is_A ? p_OCo : p_CCc;
     expected_distance.p_BCb = origin_is_A ? p_CCc : p_OCo;
 
-    CompareNearestPair(distance, expected_distance, 2e-3);
+    CompareSignedDistancePair(distance, expected_distance, 2e-3);
   }
 
   ProximityEngine<double> engine_;

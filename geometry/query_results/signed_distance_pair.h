@@ -7,22 +7,22 @@
 namespace drake {
 namespace geometry {
 
-/** The data for reporting the distance between two geometries, A and B.
+/** The data for reporting the signed distance between two geometries, A and B.
  @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
-struct NearestPair {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NearestPair)
+struct SignedDistancePair{
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair)
 
-  NearestPair() {}
+  SignedDistancePair() {}
 
   /** Constructor
    @param a       The id of the first geometry (A).
    @param b       The id of the second geometry (B).
-   @param p_A     The witness point on geometry A's, in A's frame.
-   @param p_B     The witness point on geometry B's, in B's frame.
+   @param p_A     The witness point on geometry A's surface, in A's frame.
+   @param p_B     The witness point on geometry B's surface, in B's frame.
    @param dist    The signed distance between p_A and p_B. When A and B are
-   separated, dist > 0; when A and B are touching or penetrating, dist < 0.*/
-  NearestPair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
+   separated, dist > 0; when A and B are touching or penetrating, dist <= 0.*/
+  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
               const Vector3<T>& p_B, T dist) : id_A(a), id_B(b),
                                                p_ACa(p_A), p_BCb(p_B),
                                                distance(dist) {}

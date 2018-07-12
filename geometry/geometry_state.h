@@ -437,8 +437,8 @@ class GeometryState {
    * objects, or between a dynamic object and a static object. We DO NOT report
    * the distance between two static objects.
    */
-  std::vector<NearestPair<double>> ComputeSignedDistancePairwiseClosestPoints()
-      const {
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints() const {
     return geometry_engine_->ComputeSignedDistancePairwiseClosestPoints(
         geometry_index_id_map_, anchored_geometry_index_id_map_);
   }
