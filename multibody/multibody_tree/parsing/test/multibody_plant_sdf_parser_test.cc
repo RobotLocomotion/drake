@@ -288,16 +288,8 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
   // We start with the world and default model instances.
   ASSERT_EQ(plant_.num_model_instances(), 2);
 
-  ModelInstanceIndex instance1_idx =
+  ModelInstanceIndex instance1 =
       AddModelFromSdfFile(full_name_, "instance1", &plant_);
-
-  const std::string acrobot_sdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  ModelInstanceIndex instance2_idx =
-      AddModelFromSdfFile(acrobot_sdf_name, &plant_);
-
-  // TODO(sam.creasey) Check that we can add multiple copies of the same model
-  // with different names once that's supported.
 
   // Check that a duplicate model names are not allowed.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -305,12 +297,60 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
       "This model already contains a model instance named 'instance1'. "
       "Model instance names must be unique within a given model.");
 
+  // Load two acrobots to check per-model-instance items.
+  const std::string acrobot_sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  ModelInstanceIndex acrobot1 =
+      AddModelFromSdfFile(acrobot_sdf_name, &plant_);
+  ModelInstanceIndex acrobot2 =
+      AddModelFromSdfFile(acrobot_sdf_name, "acrobot2", &plant_);
+
   // We are done adding models.
   plant_.Finalize();
 
-  ASSERT_EQ(plant_.num_model_instances(), 4);
-  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1_idx);
-  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), instance2_idx);
+  ASSERT_EQ(plant_.num_model_instances(), 5);
+  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), acrobot1);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot2"), acrobot2);
+
+  EXPECT_TRUE(plant_.HasBodyNamed("Link1"));
+  EXPECT_FALSE(plant_.HasBodyNamed("Link1", instance1));
+  EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot1));
+  EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot2));
+
+  BodyIndex acrobot1_link1 = plant_.GetBodyByName("Link1", acrobot1).index();
+  BodyIndex acrobot2_link1 = plant_.GetBodyByName("Link1", acrobot2).index();
+  EXPECT_NE(acrobot1_link1, acrobot2_link1);
+
+  BodyIndex arbitrary_link1 = plant_.GetBodyByName("Link1").index();
+  EXPECT_TRUE((arbitrary_link1 == acrobot1_link1) ||
+              (arbitrary_link1 == acrobot2_link1));
+
+  EXPECT_TRUE(plant_.HasJointNamed("ShoulderJoint"));
+  EXPECT_FALSE(plant_.HasJointNamed("ShoulderJoint", instance1));
+  EXPECT_TRUE(plant_.HasJointNamed("ShoulderJoint", acrobot1));
+  EXPECT_TRUE(plant_.HasJointNamed("ShoulderJoint", acrobot2));
+
+  JointIndex acrobot1_joint =
+      plant_.GetJointByName("ShoulderJoint", acrobot1).index();
+  JointIndex acrobot2_joint =
+      plant_.GetJointByName("ShoulderJoint", acrobot2).index();
+  EXPECT_NE(acrobot1_joint, acrobot2_joint);
+
+  JointIndex arbitrary_joint = plant_.GetJointByName("ShoulderJoint").index();
+  EXPECT_TRUE((arbitrary_joint == acrobot1_joint) ||
+              (arbitrary_joint == acrobot2_joint));
+
+  JointActuatorIndex acrobot1_actuator =
+      plant_.GetJointActuatorByName("ElbowJoint", acrobot1).index();
+  JointActuatorIndex acrobot2_actuator =
+      plant_.GetJointActuatorByName("ElbowJoint", acrobot2).index();
+  EXPECT_NE(acrobot1_actuator, acrobot2_actuator);
+
+  JointActuatorIndex arbitrary_actuator =
+      plant_.GetJointActuatorByName("ElbowJoint").index();
+  EXPECT_TRUE((arbitrary_actuator == acrobot1_actuator) ||
+              (arbitrary_actuator == acrobot2_actuator));
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
