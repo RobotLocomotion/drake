@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -12,6 +13,7 @@
 #include "drake/common/unused.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/analysis/antiderivative_function.h"
+#include "drake/systems/analysis/scalar_dense_output.h"
 #include "drake/systems/analysis/scalar_initial_value_problem.h"
 
 namespace drake {
@@ -131,6 +133,18 @@ class RoadCurve {
   ///                           positive number.
   double CalcPFromS(double s, double r) const;
 
+  /// Optimizes the computation of the parametric position p along the reference
+  /// curve from the longitudinal position (in path-length) `s` along a parallel
+  /// curve laterally offset by `r` from the reference curve.
+  /// @see CalcPFromS(double, double)
+  /// @return A function that relates longitudinal position `s` at the specified
+  ///         parallel curve to parametric position p along the reference curve,
+  ///         defined for all `s` values between 0 and the total path length of
+  ///         the parallel curve.
+  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
+  ///                           positive number.
+  std::function<double(double)> OptimizeCalcPFromS(double r) const;
+
   /// Computes the path length integral in the interval of the parameter [0; p]
   /// and along a parallel curve laterally offset by `r` the planar reference
   /// curve.
@@ -139,6 +153,17 @@ class RoadCurve {
   /// @throw std::runtime_error When `r` makes the radius of curvature be a non
   ///                           positive number.
   double CalcSFromP(double p, double r) const;
+
+  /// Optimizes the computation of path length integral in the interval of the
+  /// parameter [0; p] and along a parallel curve laterally offset by `r` the
+  /// planar reference curve.
+  /// @see CalcSFromP(double, double)
+  /// @return A function that relates parametric position p along the reference
+  ///         curve to longitudinal position s at the specified parallel curve,
+  ///         defined for all p between 0 and 1.
+  /// @throw std::runtime_error When `r` makes the radius of curvature be a non
+  ///                           positive number.
+  std::function<double(double)> OptimizeCalcSFromP(double r) const;
 
   /// Computes the reference curve.
   /// @param p The reference curve parameter.

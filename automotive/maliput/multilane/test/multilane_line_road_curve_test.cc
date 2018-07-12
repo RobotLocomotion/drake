@@ -138,14 +138,21 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   EXPECT_DOUBLE_EQ(flat_dut.p_scale(), kDirection.norm());
   // Evaluates inverse function for different path length and offset values.
   for (double r : r_vector) {
+    std::function<double(double)> p_from_s_at_r =
+        flat_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
-      EXPECT_DOUBLE_EQ(flat_dut.CalcPFromS(p * kDirection.norm(), r), p);
+      const double s = p * kDirection.norm();
+      EXPECT_DOUBLE_EQ(flat_dut.CalcPFromS(s, r), p);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
     }
   }
   // Evaluates the path length integral for different offset values.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        flat_dut.OptimizeCalcSFromP(r);
     for (double p : p_vector) {
       EXPECT_DOUBLE_EQ(flat_dut.CalcSFromP(p, r), p * kDirection.norm());
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), p * kDirection.norm());
     }
   }
 
@@ -159,10 +166,16 @@ TEST_F(MultilaneLineRoadCurveTest, OffsetTest) {
   // Evaluates inverse function and path length integral for different values of
   // p and r lateral offsets.
   for (double r : r_vector) {
+    std::function<double(double)> s_from_p_at_r =
+        elevated_dut.OptimizeCalcSFromP(r);
+    std::function<double(double)> p_from_s_at_r =
+        elevated_dut.OptimizeCalcPFromS(r);
     for (double p : p_vector) {
       const double s = p * kDirection.norm() * std::sqrt(1. + slope * slope);
       EXPECT_DOUBLE_EQ(elevated_dut.CalcPFromS(s, r), p);
+      EXPECT_DOUBLE_EQ(p_from_s_at_r(s), p);
       EXPECT_DOUBLE_EQ(elevated_dut.CalcSFromP(p, r), s);
+      EXPECT_DOUBLE_EQ(s_from_p_at_r(p), s);
     }
   }
 }
