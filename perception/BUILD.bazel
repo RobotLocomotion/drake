@@ -75,6 +75,43 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "rigid_body_tree_removal",
+    srcs = ["rigid_body_tree_removal.cc"],
+    hdrs = ["rigid_body_tree_removal.h"],
+    deps = [
+        ":point_cloud",
+        "//common:essential",
+        "//multibody:rigid_body_tree",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_binary(
+    name = "rigid_body_tree_removal_test",
+    srcs = ["rigid_body_tree_removal_test.cc"],
+    add_test_rule = 1,
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/xtion_description:models",
+    ],
+    test_rule_args = [],
+    deps = [
+        ":rigid_body_tree_removal",
+        "//examples/kuka_iiwa_arm:iiwa_lcm",
+        "//examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//lcm",
+        "//manipulation/util:world_sim_tree_builder",
+        "//multibody/rigid_body_plant",
+        "//systems/analysis",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "//systems/sensors:rgbd_camera",
+        "@gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "point_cloud_flags_test",
     srcs = ["test/point_cloud_flags_test.cc"],
