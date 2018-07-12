@@ -64,6 +64,9 @@ class Lane : public api::Lane {
     DRAKE_DEMAND(lane_bounds_.min() >= driveable_bounds_.min());
     DRAKE_DEMAND(lane_bounds_.max() <= driveable_bounds_.max());
     DRAKE_DEMAND(road_curve != nullptr);
+    s_from_p_at_r0_ = road_curve_->OptimizeCalcSFromP(r0_);
+    p_from_s_at_r0_ = road_curve_->OptimizeCalcPFromS(r0_);
+    lane_length_ = s_from_p_at_r0_(1.0);
   }
 
   // TODO(maddog-tri)  Allow superelevation to have a center-of-rotation
@@ -123,7 +126,7 @@ class Lane : public api::Lane {
   optional<api::LaneEnd> DoGetDefaultBranch(
       const api::LaneEnd::Which which_end) const override;
 
-  double do_length() const override;
+  double do_length() const override { return lane_length_; }
 
   api::RBounds do_lane_bounds(double) const override { return lane_bounds_; }
 
@@ -161,6 +164,10 @@ class Lane : public api::Lane {
   const api::HBounds elevation_bounds_;
   const RoadCurve* road_curve_{};
   const double r0_;
+
+  std::function<double(double)> s_from_p_at_r0_;
+  std::function<double(double)> p_from_s_at_r0_;
+  double lane_length_;
 };
 
 

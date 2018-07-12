@@ -1,6 +1,8 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 
-#include "drake/common/drake_assert.h"
+#include <algorithm>
+
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -169,6 +171,30 @@ double RoadCurve::CalcSFromP(double p, double r) const {
   return FastCalcSFromP(p, r);
 }
 
+std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
+  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  if (computation_policy() == ComputationPolicy::kPreferAccuracy
+      && !AreFastComputationsAccurate(r)) {
+    // Populates parameter vector with (r, h) coordinate values.
+    systems::AntiderivativeFunction<double>::SpecifiedValues values;
+    values.k = (VectorX<double>(2) << r, 0.0).finished();
+    // Prepares dense output for shared ownership, as std::function
+    // instances only take copyable callables.
+    std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+      s_from_p_func_->DenseEvaluate(1.0, values)};
+    const double tolerance =
+        s_from_p_func_->get_integrator()->get_target_accuracy();
+    return [dense_output, tolerance] (double p) {
+      const double saturated_p = std::min(std::max(p, 0.), 1.);
+      DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < tolerance);
+      return dense_output->Evaluate(saturated_p);
+    };
+  }
+  return [this, r] (double p) {
+    return this->FastCalcSFromP(p, r);
+  };
+}
+
 double RoadCurve::CalcPFromS(double s, double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
@@ -180,6 +206,33 @@ double RoadCurve::CalcPFromS(double s, double r) const {
   }
   return FastCalcPFromS(s, r);
 }
+
+std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
+  DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  if (computation_policy() == ComputationPolicy::kPreferAccuracy
+      && !AreFastComputationsAccurate(r)) {
+    // Populates parameter vector with (r, h) coordinate values.
+    systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
+    values.k = (VectorX<double>(2) << r, 0.0).finished();
+    // Prepares dense output for shared ownership, as std::function
+    // instances only take copyable callables.
+    std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+      p_from_s_ivp_->DenseSolve(CalcSFromP(1.0, r), values)};
+    const double tolerance =
+        p_from_s_ivp_->get_integrator()->get_target_accuracy();
+    return [dense_output, tolerance] (double s) {
+      const double saturated_s = std::min(
+          std::max(s, dense_output->get_start_time()),
+          dense_output->get_end_time());
+      DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < tolerance);
+      return dense_output->Evaluate(saturated_s);
+    };
+  }
+  return [this, r] (double s) {
+    return this->FastCalcPFromS(s, r);
+  };
+}
+
 
 double RoadCurve::CalcGPrimeAsUsedForCalcSFromP(double p) const {
   if (computation_policy() == ComputationPolicy::kPreferSpeed) {

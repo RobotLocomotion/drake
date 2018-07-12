@@ -55,6 +55,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//math:saturate",
         "//systems/analysis:antiderivative_function",
+        "//systems/analysis:scalar_dense_output",
         "//systems/analysis:scalar_initial_value_problem",
     ],
 )
