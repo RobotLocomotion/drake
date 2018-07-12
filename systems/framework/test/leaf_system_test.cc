@@ -200,6 +200,10 @@ class LeafSystemTest : public ::testing::Test {
     event_info_ = system_.AllocateCompositeEventCollection();
     leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(
         event_info_.get());
+
+    // Make sure caching tests will work properly even if caching is off
+    // by default.
+    context_.EnableCaching();
   }
 
   TestSystem<double> system_;
@@ -867,6 +871,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
+
   // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
   for (OutputPortIndex i(0); i < 4; ++i) {
@@ -1084,6 +1091,9 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   DeclaredNonModelOutputSystem dut;
   auto context = dut.CreateDefaultContext();
   auto system_output = dut.AllocateOutput();  // Invokes all allocators.
+
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
 
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);
