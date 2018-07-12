@@ -288,16 +288,8 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
   // We start with the world and default model instances.
   ASSERT_EQ(plant_.num_model_instances(), 2);
 
-  ModelInstanceIndex instance1_idx =
+  ModelInstanceIndex instance1 =
       AddModelFromSdfFile(full_name_, "instance1", &plant_);
-
-  const std::string acrobot_sdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  ModelInstanceIndex instance2_idx =
-      AddModelFromSdfFile(acrobot_sdf_name, &plant_);
-
-  // TODO(sam.creasey) Check that we can add multiple copies of the same model
-  // with different names once that's supported.
 
   // Check that a duplicate model names are not allowed.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -305,12 +297,88 @@ TEST_F(MultibodyPlantSdfParser, ModelInstanceTest) {
       "This model already contains a model instance named 'instance1'. "
       "Model instance names must be unique within a given model.");
 
+  // Load two acrobots to check per-model-instance items.
+  const std::string acrobot_sdf_name = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  ModelInstanceIndex acrobot1 =
+      AddModelFromSdfFile(acrobot_sdf_name, &plant_);
+
+  // Loading the model again without specifying a different model name should
+  // throw.
+  EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, &plant_),
+               std::logic_error);
+
+  ModelInstanceIndex acrobot2 =
+      AddModelFromSdfFile(acrobot_sdf_name, "acrobot2", &plant_);
+
   // We are done adding models.
   plant_.Finalize();
 
-  ASSERT_EQ(plant_.num_model_instances(), 4);
-  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1_idx);
-  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), instance2_idx);
+  ASSERT_EQ(plant_.num_model_instances(), 5);
+  EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), acrobot1);
+  EXPECT_EQ(plant_.GetModelInstanceByName("acrobot2"), acrobot2);
+
+  // Check a couple links from the first model without specifying the model
+  // instance.
+  EXPECT_TRUE(plant_.HasBodyNamed("link3"));
+  EXPECT_FALSE(plant_.HasBodyNamed("link_which_doesnt_exist"));
+
+  // Links which appear in multiple model instances throw if the instance
+  // isn't specified.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.HasBodyNamed("Link1"), std::logic_error,
+      "Body Link1 appears in multiple model instances.");
+
+  EXPECT_FALSE(plant_.HasBodyNamed("Link1", instance1));
+  EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot1));
+  EXPECT_TRUE(plant_.HasBodyNamed("Link1", acrobot2));
+
+  const Body<double>& acrobot1_link1 =
+      plant_.GetBodyByName("Link1", acrobot1);
+  const Body<double>& acrobot2_link1 =
+      plant_.GetBodyByName("Link1", acrobot2);
+  EXPECT_NE(acrobot1_link1.index(), acrobot2_link1.index());
+  EXPECT_EQ(acrobot1_link1.model_instance(), acrobot1);
+  EXPECT_EQ(acrobot2_link1.model_instance(), acrobot2);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.GetBodyByName("Link1"), std::logic_error,
+      "Body Link1 appears in multiple model instances.");
+
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.HasJointNamed("ShoulderJoint"), std::logic_error,
+      "Joint ShoulderJoint appears in multiple model instances.");
+  EXPECT_FALSE(plant_.HasJointNamed("ShoulderJoint", instance1));
+  EXPECT_TRUE(plant_.HasJointNamed("ShoulderJoint", acrobot1));
+  EXPECT_TRUE(plant_.HasJointNamed("ShoulderJoint", acrobot2));
+
+  const Joint<double>& acrobot1_joint =
+      plant_.GetJointByName("ShoulderJoint", acrobot1);
+  const Joint<double>& acrobot2_joint =
+      plant_.GetJointByName("ShoulderJoint", acrobot2);
+  EXPECT_NE(acrobot1_joint.index(), acrobot2_joint.index());
+  EXPECT_EQ(acrobot1_joint.model_instance(), acrobot1);
+  EXPECT_EQ(acrobot2_joint.model_instance(), acrobot2);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.GetJointByName("ShoulderJoint"), std::logic_error,
+      "Joint ShoulderJoint appears in multiple model instances.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.HasJointActuatorNamed("ElbowJoint"), std::logic_error,
+      "Joint actuator ElbowJoint appears in multiple model instances.");
+
+  const JointActuator<double>& acrobot1_actuator =
+      plant_.GetJointActuatorByName("ElbowJoint", acrobot1);
+  const JointActuator<double>& acrobot2_actuator =
+      plant_.GetJointActuatorByName("ElbowJoint", acrobot2);
+  EXPECT_NE(acrobot1_actuator.index(), acrobot2_actuator.index());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_.GetJointActuatorByName("ElbowJoint"), std::logic_error,
+      "Joint actuator ElbowJoint appears in multiple model instances.");
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
