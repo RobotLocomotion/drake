@@ -149,7 +149,20 @@ Variables Monomial::GetVariables() const {
 }
 
 bool Monomial::operator==(const Monomial& m) const {
-  return powers_ == m.powers_;
+  if (powers_.size() != m.powers_.size()) {
+    return false;
+  }
+  for (auto it1 = powers_.begin(), it2 = m.powers_.begin();
+       it1 != powers_.end(); ++it1, ++it2) {
+    const Variable& var1{it1->first};
+    const Variable& var2{it2->first};
+    const int exponent1{it1->second};
+    const int exponent2{it2->second};
+    if (!var1.equal_to(var2) || exponent1 != exponent2) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }
