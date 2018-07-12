@@ -170,7 +170,8 @@ class Transform {
   /// @returns `true` if `this` is exactly the identity transform.
   /// @see IsIdentityToEpsilon().
   Bool<T> IsExactlyIdentity() const {
-    return rotation().IsExactlyIdentity() && (translation().array() == 0).all();
+    return rotation().IsExactlyIdentity() &&
+           Bool<T>{(translation().array() == 0).all()};
   }
 
   /// Returns true if `this` is within tolerance of the identity transform.
@@ -184,8 +185,8 @@ class Transform {
   /// @see IsExactlyIdentity().
   Bool<T> IsIdentityToEpsilon(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
-    return max_component <= translation_tolerance &&
-        rotation().IsIdentityToInternalTolerance();
+    return Bool<T>{max_component <= translation_tolerance} &&
+           rotation().IsIdentityToInternalTolerance();
   }
 
   /// Calculates X_BA = X_AB⁻¹, the inverse of `this` %Transform.

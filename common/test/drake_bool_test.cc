@@ -108,22 +108,22 @@ TEST_F(BoolTestDouble, Cond) {
 }
 
 TEST_F(BoolTestDouble, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && false).value());
-  EXPECT_FALSE((false && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && false);
+  EXPECT_FALSE(false && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || true).value());
-  EXPECT_TRUE((true || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || true);
+  EXPECT_TRUE(true || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestDouble, AllOf) {
@@ -209,22 +209,22 @@ TEST_F(BoolTestAutoDiffXd, Cond) {
 }
 
 TEST_F(BoolTestAutoDiffXd, LogicalOperators) {
-  EXPECT_TRUE((b_true_ && b_true_).value());
-  EXPECT_FALSE((b_false_ && b_true_).value());
-  EXPECT_FALSE((b_true_ && b_false_).value());
-  EXPECT_FALSE((b_false_ && b_false_).value());
-  EXPECT_FALSE((b_true_ && (x_ > y_)).value());
-  EXPECT_FALSE(((x_ > y_) && b_true_).value());
+  EXPECT_TRUE(b_true_ && b_true_);
+  EXPECT_FALSE(b_false_ && b_true_);
+  EXPECT_FALSE(b_true_ && b_false_);
+  EXPECT_FALSE(b_false_ && b_false_);
+  EXPECT_FALSE(b_true_ && (x_ > y_));
+  EXPECT_FALSE((x_ > y_) && b_true_);
 
-  EXPECT_TRUE((b_true_ || b_true_).value());
-  EXPECT_TRUE((b_false_ || b_true_).value());
-  EXPECT_TRUE((b_true_ || b_false_).value());
-  EXPECT_FALSE((b_false_ || b_false_).value());
-  EXPECT_TRUE((b_false_ || (x_ < y_)).value());
-  EXPECT_TRUE(((x_ < y_) || b_false_).value());
+  EXPECT_TRUE(b_true_ || b_true_);
+  EXPECT_TRUE(b_false_ || b_true_);
+  EXPECT_TRUE(b_true_ || b_false_);
+  EXPECT_FALSE(b_false_ || b_false_);
+  EXPECT_TRUE(b_false_ || (x_ < y_));
+  EXPECT_TRUE((x_ < y_) || b_false_);
 
-  EXPECT_FALSE((!b_true_).value());
-  EXPECT_TRUE((!b_false_).value());
+  EXPECT_FALSE(!b_true_);
+  EXPECT_TRUE(!b_false_);
 }
 
 TEST_F(BoolTestAutoDiffXd, AllOf) {
