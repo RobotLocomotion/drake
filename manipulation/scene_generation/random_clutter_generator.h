@@ -3,6 +3,7 @@
 #include <random>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
@@ -39,7 +40,7 @@ namespace scene_generation {
 class RandomClutterGenerator {
  public:
   /**
-   * Constructs the RandomClutterGenerator for a particular scene within 
+   * Constructs the RandomClutterGenerator for a particular scene within
    * designated bounds.
    * @param scene_tree A pointer to the tree containing the scene.
    * @param clutter_model_instances A set of model instance indices
@@ -48,7 +49,8 @@ class RandomClutterGenerator {
    * world coordinates.
    * @param clutter_size The size of the clutter bounding box along the
    * length, breadth, and height.
-   * @param min_inter_object_distance Minimum distance between objects in meters.
+   * @param min_inter_object_distance Minimum distance between objects in
+   * meters.
    */
   RandomClutterGenerator(RigidBodyTree<double>* scene_tree,
                          const std::set<int>& clutter_model_instances,
@@ -62,32 +64,32 @@ class RandomClutterGenerator {
    * the model_instances not specified in `clutter_model_instances' are set
    * from this value.
    * @param generator Used to pass a seed.
-   * @param z_height_cost An optional cost added to the optimization problem 
-   * on the height (z) of each of the model intances. Set to either 0 or {} 
-   * in order to not utilise any z cost. @pre z_height_cost must be 
+   * @param z_height_cost An optional cost added to the optimization problem
+   * on the height (z) of each of the model intances. Set to either 0 or {}
+   * in order to not utilise any z cost. @pre z_height_cost must be
    * non-negative, if specified.
-   * @returns The generalized coordinates q representing a feasible 
+   * @returns The generalized coordinates q representing a feasible
    * configuration.
    */
   VectorX<double> GenerateFloatingClutter(const VectorX<double>& q_nominal,
-                                          std::default_random_engine *generator,
+                                          std::default_random_engine* generator,
                                           optional<double> z_height_cost = {});
 
  private:
-
   int ComputeIK(VectorX<double>* q_result,
-    const std::vector<RigidBodyConstraint*>& constraint_array, 
-    const VectorX<double>& q_initial, const VectorX<double>& q_nominal, 
-    const std::vector<int>& z_indices,
-    optional<double> z_height_cost = {});
+                const std::vector<RigidBodyConstraint*>& constraint_array,
+                const VectorX<double>& q_initial,
+                const VectorX<double>& q_nominal,
+                const std::vector<int>& z_indices,
+                optional<double> z_height_cost = {});
 
-void AddBodyToOrientationConstraint(const RigidBody<double>* body,
-                                    VectorX<double>* linear_posture_lb,
-                                    VectorX<double>* linear_posture_ub,
-                                    VectorX<double>* q_initial,
-                                    VectorX<double>* q_nominal_candidate,
-                                    std::vector<int>* z_indices, 
-                                    std::default_random_engine *generator);
+  void AddBodyToOrientationConstraint(const RigidBody<double>* body,
+                                      VectorX<double>* linear_posture_lb,
+                                      VectorX<double>* linear_posture_ub,
+                                      VectorX<double>* q_initial,
+                                      VectorX<double>* q_nominal_candidate,
+                                      std::vector<int>* z_indices,
+                                      std::default_random_engine* generator);
 
   RigidBodyTree<double>* scene_tree_ptr_{};
   std::set<int> clutter_model_instances_;

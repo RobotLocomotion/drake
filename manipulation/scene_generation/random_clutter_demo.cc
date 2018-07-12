@@ -36,8 +36,7 @@ DEFINE_double(max_settling_time, 1.5,
 DEFINE_double(v_threshold, 0.1, "velocity threshold to terminate sim early.");
 DEFINE_bool(fall_sim, false,
             "Compute a fall simulation to 'settle' the objects.");
-DEFINE_double(z_height_cost, 0.0,
-            "Add a cost on the z height of the objects");
+DEFINE_double(z_height_cost, 0.0, "Add a cost on the z height of the objects");
 
 const char kPath[] = "examples/kuka_iiwa_arm/models/objects/";
 
@@ -57,19 +56,18 @@ std::unique_ptr<RigidBodyTreed> GenerateSceneTree(
 
   std::set<int> clutter_instance_list;
   int model_ctr = 0;
-  for (std::vector<string>::iterator it = target_names.begin();
-       it != target_names.end(); ++it) {
+  for (auto& it : target_names) {
     stringstream model_name;
     model_name << "model_" << model_ctr++;
     tree_builder->StoreModel(model_name.str(), it);
 
-    for (int i = 0; i < max_iterations; ++i) {
+    for (int i = 0; i < FLAGS_max_iterations; ++i) {
       // All floating objects are added to origin. The floating base
       // coordinates define the object's pose relative to the world
       // frame.
       Isometry3<double> X_WM = Isometry3<double>::Identity();
       int tree_instances = tree_builder->AddFloatingModelInstance(
-          model_name.str(), model_pose.translation());
+          model_name.str(), X_WM.translation());
       clutter_instance_list.insert(tree_instances);
     }
   }
@@ -93,7 +91,7 @@ int DoMain() {
 
   VectorX<double> q_nominal =
       VectorX<double>::Random(scene_tree->get_num_positions());
-  
+
   RandomClutterGenerator clutter = RandomClutterGenerator(
       scene_tree.get(), clutter_instances, Vector3<double>(0.0, 0.0, 0.3),
       Vector3<double>(0.2, 0.4, 0.3 * FLAGS_repetitions));

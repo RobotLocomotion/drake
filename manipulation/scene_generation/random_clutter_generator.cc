@@ -96,17 +96,17 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
         active_bodies_idx, active_group_names);
     constraint_array.push_back(&min_distance_constraint);
 
-    // In order to setup the random feasible orientation constaint, the current 
+    // In order to setup the random feasible orientation constaint, the current
     // approach is to simply setup a linear inequality constraint of the form
     // lb <= Aq <= ub, such that the
-    // upper (ub) and lower bounds (ub) of the orientation components of the 
-    // state (q) equal some random orientation and the translation components 
-    // of the state are sampled from a bounded distribution. 
+    // upper (ub) and lower bounds (ub) of the orientation components of the
+    // state (q) equal some random orientation and the translation components
+    // of the state are sampled from a bounded distribution.
     // The following vectors are populated on the basis of this equation, with
     // the A matrix being specified by a sparse matrix notation, i,e the ith
-    // (linear_posture_iAfun) and jth position (linear_posture_jAVar) specifying 
-    // the index values for elements which take on the value specified by 
-    // linear_posture_A.  
+    // (linear_posture_iAfun) and jth position (linear_posture_jAVar) specifying
+    // the index values for elements which take on the value specified by
+    // linear_posture_A.
     Eigen::VectorXi linear_posture_iAfun = GenerateIndices(q_nominal.size()),
                     linear_posture_jAvar = linear_posture_iAfun;
     VectorX<double> linear_posture_A = VectorX<double>::Ones(q_nominal.size()),
@@ -123,9 +123,9 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
           scene_tree_ptr_->FindModelInstanceBodies(instance);
       for (size_t i = 0; i < model_instance_bodies.size(); ++i) {
         auto body = model_instance_bodies[i];
-        AddBodyToOrientationConstraint(body, 
-          &linear_posture_lb, &linear_posture_ub, &q_initial, &q_nominal_candidate, 
-          &z_indices, generator);
+        AddBodyToOrientationConstraint(
+            body, &linear_posture_lb, &linear_posture_ub, &q_initial,
+            &q_nominal_candidate, &z_indices, generator);
       }
     }
 
@@ -137,66 +137,60 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
 
     constraint_array.push_back(&linear_posture_constraint);
 
-    ik_result_code =  ComputeIK(&q_ik_result,
-      constraint_array, q_initial, q_nominal_candidate,  z_indices,
-      z_height_cost);
+    ik_result_code = ComputeIK(&q_ik_result, constraint_array, q_initial,
+                               q_nominal_candidate, z_indices, z_height_cost);
   }
 
   return q_ik_result;
 }
 
-int RandomClutterGenerator::ComputeIK(VectorX<double>* q_result,
-  const std::vector<RigidBodyConstraint*>& constraint_array, 
+int RandomClutterGenerator::ComputeIK(
+    VectorX<double>* q_result,
+    const std::vector<RigidBodyConstraint*>& constraint_array,
     const VectorX<double>& q_initial, const VectorX<double>& q_nominal,
-    const std::vector<int>& z_indices, 
-    optional<double> z_height_cost) {
+    const std::vector<int>& z_indices, optional<double> z_height_cost) {
+  VectorX<double> q_result_return;
 
-    VectorX<double> q_result_return;
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(q_initial.size(), q_initial.size());
 
-    Eigen::MatrixXd Q =
-        Eigen::MatrixXd::Zero(q_initial.size(), q_initial.size());
-
-     IKoptions ikoptions(scene_tree_ptr_);
-    if (z_height_cost) {
-      DRAKE_DEMAND(*z_height_cost >= 0);
-      for (auto& it : z_indices) {
-        Q(it, it) = *z_height_cost;
-      }
-      ikoptions.setQ(Q);
+  IKoptions ikoptions(scene_tree_ptr_);
+  if (z_height_cost) {
+    DRAKE_DEMAND(*z_height_cost >= 0);
+    for (auto& it : z_indices) {
+      Q(it, it) = *z_height_cost;
     }
+    ikoptions.setQ(Q);
+  }
 
-    ikoptions.setDebug(true);
+  ikoptions.setDebug(true);
 
-    // setup IK problem and run.
-    IKResults ik_results =
-        inverseKinSimple(scene_tree_ptr_, q_initial, q_nominal,
-                         constraint_array, ikoptions);
+  // setup IK problem and run.
+  IKResults ik_results = inverseKinSimple(scene_tree_ptr_, q_initial, q_nominal,
+                                          constraint_array, ikoptions);
 
-    int ik_result_code;
-    for (auto result_code_info : ik_results.info) {
-      drake::log()->info("IK Result code : {}", result_code_info);
-      ik_result_code = result_code_info;
-      if (ik_result_code > 1) {
-        drake::log()->debug("IK failure, recomputing IK");
-      }
+  int ik_result_code;
+  for (auto result_code_info : ik_results.info) {
+    drake::log()->info("IK Result code : {}", result_code_info);
+    ik_result_code = result_code_info;
+    if (ik_result_code > 1) {
+      drake::log()->debug("IK failure, recomputing IK");
     }
+  }
 
-    if (!ik_results.q_sol.empty()) {
-      q_result_return = ik_results.q_sol.back();
-    }
+  if (!ik_results.q_sol.empty()) {
+    q_result_return = ik_results.q_sol.back();
+  }
 
-    *q_result = q_result_return;
+  *q_result = q_result_return;
 
-  return ik_result_code; 
+  return ik_result_code;
 }
 
 void RandomClutterGenerator::AddBodyToOrientationConstraint(
-  const RigidBody<double>* body, VectorX<double>* linear_posture_lb,
-                                    VectorX<double>* linear_posture_ub,
-                                    VectorX<double>* q_initial,
-                                    VectorX<double>* q_nominal_candidate,
-                                    std::vector<int>* z_indices,
-                                    std::default_random_engine *generator) {
+    const RigidBody<double>* body, VectorX<double>* linear_posture_lb,
+    VectorX<double>* linear_posture_ub, VectorX<double>* q_initial,
+    VectorX<double>* q_nominal_candidate, std::vector<int>* z_indices,
+    std::default_random_engine* generator) {
   if (body->has_joint()) {
     const DrakeJoint* joint = &body->getJoint();
     if (!joint->is_fixed()) {
@@ -211,8 +205,8 @@ void RandomClutterGenerator::AddBodyToOrientationConstraint(
         // If the num dofs of the joint is 7 its a floating quaternion
         // joint.The position part to be bounded by the clutter bounding
         // box, the orientation part to be a random quaternion.
-        // Position. 
-        // Note that this code assumes the dofs are organised as 
+        // Position.
+        // Note that this code assumes the dofs are organised as
         // x-y-z-quaternion.
         joint_lb.head(3) = clutter_lb_;
         joint_ub.head(3) = clutter_ub_;
