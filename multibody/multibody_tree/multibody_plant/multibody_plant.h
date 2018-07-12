@@ -524,10 +524,26 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->HasBodyNamed(name);
   }
 
+  /// @returns `true` if a body named `name` was added to the %MultibodyPlant
+  /// in @p model_instance.
+  /// @see AddRigidBody().
+  bool HasBodyNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasBodyNamed(name, model_instance);
+  }
+
   /// @returns `true` if a joint named `name` was added to the %MultibodyPlant.
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return model_->HasJointNamed(name);
+  }
+
+  /// @returns `true` if a joint named `name` was added to the %MultibodyPlant
+  /// in @p model_instance.
+  /// @see AddJoint().
+  bool HasJointNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasJointNamed(name, model_instance);
   }
 
   /// @returns `true` if an actuator named `name` was added to the
@@ -535,6 +551,14 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @see AddJointActuator().
   bool HasJointActuatorNamed(const std::string& name) const {
     return model_->HasJointActuatorNamed(name);
+  }
+
+  /// @returns `true` if an actuator named `name` was added to the
+  /// %MultibodyPlant in @p model_instance.
+  /// @see AddJointActuator().
+  bool HasJointActuatorNamed(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->HasJointActuatorNamed(name, model_instance);
   }
 
   /// @returns `true` if a model instance named `name` was added to the
@@ -555,7 +579,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// be performed while new multibody elements are being added to the model.
   /// @{
 
-  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// Returns a constant reference to a rigid body that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this`
@@ -564,13 +588,33 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->GetBodyByName(name);
   }
 
-  /// Returns a constant reference to the joint that is uniquely identified
+  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @see HasBodyNamed() to query if there exists a body in `this`
+  /// %MultibodyPlant with a given specified name.
+  const Body<T>& GetBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetBodyByName(name, model_instance);
+  }
+
+  /// Returns a constant reference to a joint that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no joint with the requested name.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
   const Joint<T>& GetJointByName(const std::string& name) const {
     return model_->GetJointByName(name);
+  }
+
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no joint with the requested name.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
+  const Joint<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetJointByName(name, model_instance);
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -587,7 +631,22 @@ class MultibodyPlant : public systems::LeafSystem<T> {
     return model_->template GetJointByName<JointType>(name);
   }
 
-  /// Returns a constant reference to the actuator that is uniquely identified
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// if there is no Joint with that name.
+  /// @see HasJointNamed() to query if there exists a joint in `this`
+  /// %MultibodyPlant with a given specified name.
+  template <template<typename> class JointType>
+  const JointType<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->template GetJointByName<JointType>(name, model_instance);
+  }
+
+  /// Returns a constant reference to an actuator that is identified
   /// by the string `name` in `this` %MultibodyPlant.
   /// @throws std::logic_error if there is no actuator with the requested name.
   /// @see HasJointActuatorNamed() to query if there exists an actuator in
@@ -595,6 +654,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return model_->GetJointActuatorByName(name);
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` %MultibodyPlant with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    return model_->GetJointActuatorByName(name, model_instance);
   }
 
   /// Returns the index to the model instance that is uniquely identified

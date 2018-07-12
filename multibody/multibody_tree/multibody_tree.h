@@ -205,18 +205,20 @@ class MultibodyTree {
   const RigidBody<T>& AddRigidBody(
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B) {
-    if (HasBodyNamed(name)) {
-      throw std::logic_error(
-          "This model already contains a body named '" + name + "'. " +
-          "Body names must be unique within a given model.");
-    }
     if (model_instance >= num_model_instances()) {
       throw std::logic_error("Invalid model instance specified.");
     }
 
+    if (HasBodyNamed(name, model_instance)) {
+      throw std::logic_error(
+          "Model instance '" + instance_index_to_name_.at(model_instance) +
+          "' already contains a body named '" + name + "'. " +
+          "Body names must be unique within a given model.");
+    }
+
     const RigidBody<T>& body =
         this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
-    body_name_to_index_[name] = body.index();
+    body_name_to_index_.insert(std::make_pair(name, body.index()));
     return body;
   }
 
@@ -601,11 +603,6 @@ class MultibodyTree {
       Args&&... args) {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
-    if (HasJointNamed(name)) {
-      throw std::logic_error(
-          "This model already contains a joint named '" + name + "'. " +
-          "Joint names must be unique within a given model.");
-    }
 
     const Frame<T>* frame_on_parent;
     if (X_PF) {
@@ -626,7 +623,7 @@ class MultibodyTree {
             name,
             *frame_on_parent, *frame_on_child,
             std::forward<Args>(args)...));
-    joint_name_to_index_[name] = joint.index();
+    joint_name_to_index_.insert(std::make_pair(name, joint.index()));
     return joint;
   }
 
@@ -649,10 +646,12 @@ class MultibodyTree {
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint) {
-    if (HasJointActuatorNamed(name)) {
+    if (HasJointActuatorNamed(name, joint.model_instance())) {
       throw std::logic_error(
-          "This model already contains a joint actuator named '" + name +
-          "'. Joint actuator names must be unique within a given model.");
+          "Model instance '" +
+          instance_index_to_name_.at(joint.model_instance()) +
+          "' already contains a joint actuator named '" + name + "'. " +
+          "Joint actuator names must be unique within a given model.");
     }
 
     if (topology_is_valid()) {
@@ -666,7 +665,7 @@ class MultibodyTree {
     owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
     JointActuator<T>* actuator = owned_actuators_.back().get();
     actuator->set_parent_tree(this, actuator_index);
-    actuator_name_to_index_[name] = actuator_index;
+    actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
     return *actuator;
   }
 
@@ -693,6 +692,7 @@ class MultibodyTree {
     }
     const ModelInstanceIndex index(num_model_instances());
     instance_name_to_index_[name] = index;
+    instance_index_to_name_[index] = name;
     return index;
   }
 
@@ -869,16 +869,68 @@ class MultibodyTree {
     return body_name_to_index_.find(name) != body_name_to_index_.end();
   }
 
+  /// @returns `true` if a body named `name` was added to @p model_instance.
+  /// @see AddRigidBody().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasBodyNamed(const std::string& name,
+                    ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    // Search linearly on the assumption that we won't often have lots of
+    // bodies with the same name in different model instances.  If this turns
+    // out to be incorrect we can switch to a different data structore.
+    const auto range = body_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_body(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// @returns `true` if a joint named `name` was added to the model.
   /// @see AddJoint().
   bool HasJointNamed(const std::string& name) const {
     return joint_name_to_index_.find(name) != joint_name_to_index_.end();
   }
 
+  /// @returns `true` if a joint named `name` was added to @p model_instance.
+  /// @see AddJoint().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointNamed(const std::string& name,
+                     ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = joint_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_joint(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// @returns `true` if a joint actuator named `name` was added to the model.
   /// @see AddJointActuator().
   bool HasJointActuatorNamed(const std::string& name) const {
     return actuator_name_to_index_.find(name) != actuator_name_to_index_.end();
+  }
+
+  /// @returns `true` if a joint actuator named `name` was added to
+  /// @p model_instance.
+  /// @see AddJointActuator().
+  ///
+  /// @throws if @p model_instance is not valid for this model.
+  bool HasJointActuatorNamed(const std::string& name,
+                             ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = actuator_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (get_joint_actuator(it->second).model_instance() == model_instance) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// @returns `true` if a model instance named `name` was added to the model.
@@ -892,14 +944,20 @@ class MultibodyTree {
   /// These methods allow a user to retrieve a reference to a multibody element
   /// by its name. A std::logic_error is thrown if there is no element with the
   /// requested name.
+  ///
   /// These queries can be performed at any time during the lifetime of a
   /// %MultibodyTree model, i.e. there is no restriction on whether they must
   /// be called before or after Finalize(). This implies that these queries can
   /// be performed while new multibody elements are being added to the model.
+  ///
+  /// If the named element is present in more than one model instance and a
+  /// model instance is not explicitly specified, the returned reference may
+  /// in any model instance which has an element by that name.
+  ///
   /// @{
 
-  /// Returns a constant reference to the body that is uniquely identified
-  /// by the string `name` in `this` model.
+  /// Returns a constant reference to the body that is identified by the
+  /// string `name` in `this` model.
   /// @throws std::logic_error if there is no body with the requested name.
   /// @see HasBodyNamed() to query if there exists a body in `this` model with a
   /// given specified name.
@@ -910,6 +968,26 @@ class MultibodyTree {
           "' in the model.");
     }
     return get_body(it->second);
+  }
+
+  /// Returns a constant reference to the body that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
+  const Body<T>& GetBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = body_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Body<T>& body = get_body(it->second);
+      if (body.model_instance() == model_instance) {
+        return body;
+      }
+    }
+    throw std::logic_error(
+        "There is no body named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// Returns a constant reference to the rigid body that is uniquely identified
@@ -927,6 +1005,25 @@ class MultibodyTree {
     return *body;
   }
 
+  /// Returns a constant reference to the rigid body that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no body with the requested name.
+  /// @throws std::logic_error if the requested body is not a RigidBody.
+  /// @see HasBodyNamed() to query if there exists a body in `this` model with a
+  /// given specified name.
+  const RigidBody<T>& GetRigidBodyByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const RigidBody<T>* body =
+        dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
+    if (body == nullptr) {
+      throw std::logic_error(
+          "Body '" + name + "' in model instance '" +
+          instance_index_to_name_.at(model_instance)  +"' is not a RigidBody.");
+    }
+    return *body;
+  }
+
   /// Returns a constant reference to the joint that is uniquely identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no joint with the requested name.
@@ -939,6 +1036,26 @@ class MultibodyTree {
           "' in the model.");
     }
     return get_joint(it->second);
+  }
+
+  /// Returns a constant reference to the joint that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no joint with the requested name.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  const Joint<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = joint_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const Joint<T>& joint = get_joint(it->second);
+      if (joint.model_instance() == model_instance) {
+        return joint;
+      }
+    }
+    throw std::logic_error(
+        "There is no joint named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// A templated version of GetJointByName() to return a constant reference of
@@ -964,6 +1081,33 @@ class MultibodyTree {
     return *joint;
   }
 
+  /// A templated version of GetJointByName() to return a constant reference of
+  /// the specified type `JointType` in place of the base Joint class. See
+  /// GetJointByName() for details.
+  /// @tparam JointType The specific type of the Joint to be retrieved. It must
+  /// be a subclass of Joint.
+  /// @throws std::logic_error if the named joint is not of type `JointType` or
+  /// if there is no Joint with that name.
+  /// @see HasJointNamed() to query if there exists a joint in `this` model with
+  /// a given specified name.
+  template <template<typename> class JointType>
+  const JointType<T>& GetJointByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+    const JointType<T>* joint =
+        dynamic_cast<const JointType<T>*>(
+            &GetJointByName(name, model_instance));
+    if (joint == nullptr) {
+      throw std::logic_error(
+          "Joint '" + name + "' in model instance " +
+          model_instances_.at(model_instance)->name() + "is not of type '" +
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
+    }
+    return *joint;
+  }
+
   /// Returns a constant reference to the actuator that is uniquely identified
   /// by the string `name` in `this` model.
   /// @throws std::logic_error if there is no actuator with the requested name.
@@ -977,6 +1121,26 @@ class MultibodyTree {
           "' in the model.");
     }
     return get_joint_actuator(it->second);
+  }
+
+  /// Returns a constant reference to the actuator that is uniquely identified
+  /// by the string `name` in @p model_instance.
+  /// @throws std::logic_error if there is no actuator with the requested name.
+  /// @see HasJointActuatorNamed() to query if there exists an actuator in
+  /// `this` model with a given specified name.
+  const JointActuator<T>& GetJointActuatorByName(
+      const std::string& name, ModelInstanceIndex model_instance) const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    const auto range = actuator_name_to_index_.equal_range(name);
+    for (auto it = range.first; it != range.second; ++it) {
+      const JointActuator<T>& actuator = get_joint_actuator(it->second);
+      if (actuator.model_instance() == model_instance) {
+        return actuator;
+      }
+    }
+    throw std::logic_error(
+        "There is no joint actuator named '" + name + "' in model instance '" +
+        instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// Returns the index to the model instance that is uniquely identified
@@ -2014,6 +2178,15 @@ class MultibodyTree {
       std::unique_ptr<JointType<T>> joint) {
     static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
                   "JointType must be a sub-class of Joint<T>.");
+
+    if (HasJointNamed(joint->name(), joint->model_instance())) {
+      throw std::logic_error(
+          "Model instance '" +
+          instance_index_to_name_.at(joint->model_instance()) +
+          "' already contains a joint named '" + joint->name() + "'. " +
+          "Joint names must be unique within a given model.");
+    }
+
     if (topology_is_valid()) {
       throw std::logic_error("This MultibodyTree is finalized already. "
                              "Therefore adding more joints is not allowed. "
@@ -2337,16 +2510,20 @@ class MultibodyTree {
   // since they are not templated on <T>.
 
   // Map used to find body indexes by their unique body name.
-  std::unordered_map<std::string, BodyIndex> body_name_to_index_;
+  std::unordered_multimap<std::string, BodyIndex> body_name_to_index_;
 
   // Map used to find joint indexes by their joint name.
-  std::unordered_map<std::string, JointIndex> joint_name_to_index_;
+  std::unordered_multimap<std::string, JointIndex> joint_name_to_index_;
 
   // Map used to find actuator indexes by their actuator name.
-  std::unordered_map<std::string, JointActuatorIndex> actuator_name_to_index_;
+  std::unordered_multimap<std::string,
+                          JointActuatorIndex> actuator_name_to_index_;
 
   // Map used to find a model instance index by its model instance name.
   std::unordered_map<std::string, ModelInstanceIndex> instance_name_to_index_;
+
+  // Map used to find a model instance name by its model instance index.
+  std::unordered_map<ModelInstanceIndex, std::string> instance_index_to_name_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes
