@@ -469,6 +469,9 @@ class DiagramTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
     output_ = diagram_->AllocateOutput();
 
+    // Make sure caching is on locally, even if it is off by default.
+    context_->EnableCaching();
+
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
     integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
@@ -1867,6 +1870,9 @@ class NestedDiagramContextTest : public ::testing::Test {
     big_diagram_->set_name("big_diagram");
     big_context_ = big_diagram_->CreateDefaultContext();
     big_output_ = big_diagram_->AllocateOutput();
+
+    // Make sure caching is on locally, even if it is off by default.
+    big_context_->EnableCaching();
   }
 
   Integrator<double>* integrator0_;
