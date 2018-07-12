@@ -43,7 +43,7 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
   constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   const RotationMatrix<T> R_quaternion(quaternion);
   constexpr double tolerance = 20 * kEpsilon;
-  if (!R_quaternion.IsNearlyEqualTo(R, tolerance)) {
+  if (!R_quaternion.IsNearlyEqualTo(R, tolerance).value()) {
     std::string message = fmt::format("RollPitchYaw::{}():"
         " An element of the RotationMatrix R passed to this method differs by"
         " more than {:G} from the corresponding element of the RotationMatrix"
@@ -64,7 +64,7 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
   // Use: (12*eps) + (4 mults + 1 add) * 1/2 eps = 17.5 eps.
   const RollPitchYaw<T> roll_pitch_yaw(rpy);
   const RotationMatrix<T> R_rpy = RotationMatrix<T>(roll_pitch_yaw);
-  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(R, 20 * kEpsilon));
+  DRAKE_ASSERT(R_rpy.IsNearlyEqualTo(R, 20 * kEpsilon).value());
 #endif
 }
 
@@ -200,7 +200,7 @@ bool RollPitchYaw<T>::IsNearlySameOrientation(const RollPitchYaw<T>& other,
   // angles' values should be able to be accurately reproduced.
   const RotationMatrix<T> R1(*this);
   const RotationMatrix<T> R2(other);
-  return R1.IsNearlyEqualTo(R2, tolerance);
+  return R1.IsNearlyEqualTo(R2, tolerance).value();
 }
 
 template <typename T>

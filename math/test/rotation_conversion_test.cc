@@ -41,15 +41,16 @@ GTEST_TEST(EigenEulerAngleTest, MakeXYZRotation) {
   // Verify MakeXRotation(theta), MakeYRotation(theta), MakeZRotation(theta) is
   // the same as AngleAxis equivalents.
   const double theta = 0.1234567;  // Arbitrary angle.
-  const RotationMatrix<double> Rx(RotationMatrix<double>::MakeXRotation(theta));
-  const RotationMatrix<double> Ry(RotationMatrix<double>::MakeYRotation(theta));
-  const RotationMatrix<double> Rz(RotationMatrix<double>::MakeZRotation(theta));
+  const RotationMatrixd Rx(RotationMatrixd::MakeXRotation(theta));
+  const RotationMatrixd Ry(RotationMatrixd::MakeYRotation(theta));
+  const RotationMatrixd Rz(RotationMatrixd::MakeZRotation(theta));
   const Quaterniond qx(Eigen::AngleAxisd(theta, Vector3d::UnitX()));
   const Quaterniond qy(Eigen::AngleAxisd(theta, Vector3d::UnitY()));
   const Quaterniond qz(Eigen::AngleAxisd(theta, Vector3d::UnitZ()));
-  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrix<double>(qx), 512 * kEpsilon));
-  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrix<double>(qy), 512 * kEpsilon));
-  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrix<double>(qz), 512 * kEpsilon));
+  const double tolerance = 32 * kEpsilon;
+  EXPECT_TRUE(Rx.IsNearlyEqualTo(RotationMatrixd(qx), tolerance).value());
+  EXPECT_TRUE(Ry.IsNearlyEqualTo(RotationMatrixd(qy), tolerance).value());
+  EXPECT_TRUE(Rz.IsNearlyEqualTo(RotationMatrixd(qz), tolerance).value());
 }
 
 GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
@@ -371,8 +372,12 @@ TEST_F(RotationConversionTest, RotmatQuat) {
     EXPECT_TRUE(
         AreQuaternionsEqualForOrientation(quat_drake, quat_eigen, kTolerance));
     // Ensure the calculated quaternion produces the same rotation matrix.
+    // This test accuracy to near machine precision and uses a tolerance of
+    // 32 * kEpsilon (allows for 5 of the 53 mantissa bits to be inaccurate).
+    // This 5-bit estimate seems to be a reasonably tight bound which
+    // nevertheless passes a representative sampling of compilers and platforms.
     const RotationMatrix<double> rotmat(quat_drake);
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 256 * kEpsilon));
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat, 32 * kEpsilon).value());
   }
 }
 
@@ -381,7 +386,7 @@ TEST_F(RotationConversionTest, rotmat2rpyTest) {
     const RollPitchYaw<double> rpy(Ri);
     const RotationMatrix<double> rotmat_expected(rpy);
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
-    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon));
+    EXPECT_TRUE(Ri.IsNearlyEqualTo(rotmat_expected, 256 * kEpsilon).value());
     EXPECT_TRUE(rpy.IsRollPitchYawInCanonicalRange());
   }
 }
@@ -399,7 +404,8 @@ TEST_F(RotationConversionTest, rpy2rotmatTest) {
     // Compute rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
     // then compare the result with RotationMatrix(RollPitchYaw).
     const RotationMatrix<double> R_from_rpy(rpyi);
-    EXPECT_TRUE(R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon));
+    EXPECT_TRUE(
+        R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon).value());
 
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
     const RollPitchYaw<double> rpy_expected(R_from_rpy);
