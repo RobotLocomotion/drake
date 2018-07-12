@@ -859,6 +859,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
           i, ConvertToContextPortIdentifier(id));
     }
 
+    // TODO(sherm1) Remove this line and the corresponding one in
+    // LeafSystem to enable caching by default in Drake.
+    context->DisableCaching();
+
     return context;
   }
 
