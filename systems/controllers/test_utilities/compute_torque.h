@@ -15,6 +15,8 @@ namespace drake {
 namespace systems {
 namespace controllers_test {
 
+// Computes torque predicted by inverse dynamics for use with inverse dynamics
+// and inverse dynamics controller testing.
 VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
                               const VectorX<double>& q,
                               const VectorX<double>& v,
@@ -27,6 +29,8 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
   return tree.massMatrix(cache) * vd_d + tree.dynamicsBiasTerm(cache, f_ext);
 }
 
+// Computes torque predicted by inverse dynamics for use with inverse dynamics
+// and inverse dynamics controller testing.
 VectorX<double> ComputeTorque(
     const multibody::multibody_plant::MultibodyPlant<double>& plant,
     const VectorX<double>& q,

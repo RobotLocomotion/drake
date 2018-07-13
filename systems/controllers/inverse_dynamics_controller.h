@@ -129,18 +129,20 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   }
 
   /**
-   * Returns a constant reference to the RigidBodyTree used for control.
+   * Returns a constant pointer to the RigidBodyTree used for control. Pointer
+   * will be null if `this` was constructed using a MultibodyPlant.
    */
-  const RigidBodyTree<T>& get_rigid_body_tree_for_control() const {
-    return *rigid_body_tree_for_control_;
+  const RigidBodyTree<T>* get_rigid_body_tree_for_control() const {
+    return rigid_body_tree_for_control_.get();
   }
 
   /**
-   * Returns a constant reference to the MultibodyTree used for control.
+   * Returns a constant pointer to the MultibodyPlant used for control. Pointer
+   * will be null if `this` was constructed using a RigidBodyTree.
    */
-  const multibody::multibody_plant::MultibodyPlant<T>&
+  const multibody::multibody_plant::MultibodyPlant<T>*
       get_multi_body_plant_for_control() const {
-    return *multi_body_plant_for_control_;
+    return *multi_body_plant_for_control_.get();
   }
 
  private:
