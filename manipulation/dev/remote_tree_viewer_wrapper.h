@@ -27,7 +27,9 @@ class RemoteTreeViewerWrapper {
                          const std::vector<std::vector<double>>& color = {
                              {1.0, 0.0, 1.0}});
   void PublishLine(const Eigen::Matrix3Xd& pts,
-                   const std::vector<std::string>& path);
+                   const std::vector<std::string>& path,
+                   const Eigen::Ref<const Eigen::Vector4d>& color =
+                       Eigen::Vector4d(1, 0, 0, 1));
   void PublishRawMesh(const Eigen::Matrix3Xd& verts,
                       const std::vector<Eigen::Vector3i>& tris,
                       const std::vector<std::string>& path);
