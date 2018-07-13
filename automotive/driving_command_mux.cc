@@ -26,13 +26,13 @@ DrivingCommandMux<T>::DrivingCommandMux(const DrivingCommandMux<U>&)
     : DrivingCommandMux<T>() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& DrivingCommandMux<T>::steering_input()
+const systems::InputPort<T>& DrivingCommandMux<T>::steering_input()
     const {
   return systems::System<T>::get_input_port(steering_port_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 DrivingCommandMux<T>::acceleration_input() const {
   return systems::System<T>::get_input_port(acceleration_port_index_);
 }

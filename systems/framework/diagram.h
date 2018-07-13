@@ -467,7 +467,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     *dot << "}" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+  void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  std::stringstream* dot) const override {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
@@ -789,7 +789,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     // Ask the subsystem to perform the allocation.
     const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;
@@ -799,7 +799,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     // Ask the subsystem to perform the allocation.
     const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
     const System<T>* subsystem = id.first;

@@ -120,12 +120,12 @@ class PidControlledSystem : public Diagram<T> {
   System<T>* plant() { return plant_; }
 
   /// @return the input port for the feed forward control input.
-  const InputPortDescriptor<T>& get_control_input_port() const {
+  const InputPort<T>& get_control_input_port() const {
     return this->get_input_port(0);
   }
 
   /// @return the input port for the desired position/velocity state.
-  const InputPortDescriptor<T>& get_state_input_port() const {
+  const InputPort<T>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
@@ -136,16 +136,16 @@ class PidControlledSystem : public Diagram<T> {
   /// The return type of ConnectController.
   struct ConnectResult {
     /// The feed forward control input.
-    const InputPortDescriptor<T>& control_input_port;
+    const InputPort<T>& control_input_port;
     /// The feedback state input.
-    const InputPortDescriptor<T>& state_input_port;
+    const InputPort<T>& state_input_port;
   };
 
   /// Creates a PidController and uses @p builder to connect @p plant_input and
   /// @p plant_output from an existing plant. The controlled states are selected
   /// by @p feedback_selector.
   static ConnectResult ConnectController(
-      const InputPortDescriptor<T>& plant_input,
+      const InputPort<T>& plant_input,
       const OutputPort<T>& plant_output,
       const MatrixX<double>& feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
@@ -155,7 +155,7 @@ class PidControlledSystem : public Diagram<T> {
   /// @p plant_output from an existing plant. The plant's full state is used for
   /// feedback.
   static ConnectResult ConnectController(
-      const InputPortDescriptor<T>& plant_input,
+      const InputPort<T>& plant_input,
       const OutputPort<T>& plant_output,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
@@ -167,7 +167,7 @@ class PidControlledSystem : public Diagram<T> {
   /// that using input limits along with integral gain constant may cause the
   /// integrator to windup.
   static ConnectResult ConnectControllerWithInputSaturation(
-      const InputPortDescriptor<T>& plant_input,
+      const InputPort<T>& plant_input,
       const OutputPort<T>& plant_output,
       const MatrixX<double>& feedback_selector,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
@@ -181,7 +181,7 @@ class PidControlledSystem : public Diagram<T> {
   /// limits along with integral gain constant may cause the integrator to
   /// windup.
   static ConnectResult ConnectControllerWithInputSaturation(
-      const InputPortDescriptor<T>& plant_input,
+      const InputPort<T>& plant_input,
       const OutputPort<T>& plant_output,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,

@@ -237,7 +237,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    with that `id`. This port is used to communicate _pose_ data for registered
    frames.
    @throws  std::logic_error if the source_id is _not_ recognized. */
-  const systems::InputPortDescriptor<T>& get_source_pose_port(SourceId id);
+  const systems::InputPort<T>& get_source_pose_port(SourceId id);
 
   /** Returns the output port which produces the PoseBundle for LCM
    communication to drake visualizer. */

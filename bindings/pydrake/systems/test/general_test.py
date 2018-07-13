@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 
+import pydrake.systems.framework as mut
+
 import copy
 import warnings
 
@@ -28,7 +30,7 @@ from pydrake.systems.framework import (
     DiscreteUpdateEvent_,
     DiscreteValues_,
     Event_,
-    InputPortDescriptor_,
+    InputPort_,
     LeafContext_,
     LeafSystem_,
     OutputPort_,
@@ -122,7 +124,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(DiagramBuilder_)
         self._check_instantiations(OutputPort_)
         self._check_instantiations(SystemOutput_)
-        self._check_instantiations(InputPortDescriptor_)
+        self._check_instantiations(InputPort_)
         self._check_instantiations(Parameters_)
         self._check_instantiations(State_)
         self._check_instantiations(ContinuousState_)
@@ -137,6 +139,10 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(BasicVector_)
         self._check_instantiations(Supervector_)
         self._check_instantiations(Subvector_)
+        # Deprecated aliases.
+        # TODO(eric.cousineau): Make this raise a deprecation warning.
+        self._check_instantiations(mut.InputPortDescriptor_)
+        self.assertEqual(mut.InputPortDescriptor, mut.InputPort)
 
     def test_scalar_type_conversion(self):
         for T in [float, AutoDiffXd, Expression]:

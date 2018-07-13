@@ -49,14 +49,14 @@ class InverseDynamics : public LeafSystem<T> {
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const {
+  const InputPort<T>& get_input_port_estimated_state() const {
     return this->get_input_port(input_port_index_state_);
   }
 
   /**
    * Returns the input port for the desired acceleration.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
+  const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(!pure_gravity_compensation_);
     return this->get_input_port(input_port_index_desired_acceleration_);
   }
