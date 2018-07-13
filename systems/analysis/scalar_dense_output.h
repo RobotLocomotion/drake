@@ -5,7 +5,7 @@
 namespace drake {
 namespace systems {
 
-/// An interface for dense output of scalar ODE and DAE solutions.
+/// An interface for dense output of scalar ODEs and DAEs solutions.
 ///
 /// See DenseOutput class documentation for further details.
 ///
@@ -18,15 +18,15 @@ class ScalarDenseOutput {
   virtual ~ScalarDenseOutput() = default;
 
   /// Evaluates output at the given time @p t.
-  /// @param t Time to evaluate extension at.
+  /// @param t Time to evaluate output at.
   /// @return Output scalar value.
   /// @pre Output is not empty i.e. is_empty() is false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  /// @throw std::runtime_error if the extension is not defined for the
+  /// @throw std::runtime_error if the output is not defined for the
   ///                           given @p t.
   virtual T Evaluate(const T& t) const = 0;
 
-  /// Checks whether the extension is empty or not.
+  /// Checks whether the output is empty or not.
   virtual bool is_empty() const = 0;
 
   /// Returns output's start time, or in other words, the oldest time

@@ -24,11 +24,15 @@ namespace systems {
 /// that 𝐤 can be understood as an m-tuple or as an element of ℝᵐ, the vector
 /// space, depending on how it is used by the integrable function.
 ///
-/// Additionally, support for computing the antiderivative function F for
-/// entire integration intervals is provided. This is convenient when a more
-/// dense sampling of the IVP solution than what would be available through
-/// either fixed or error-controlled step integration (for a given accuracy)
-/// is needed.
+/// Additionally, configured integrator's dense output support can be leveraged
+/// to efficiently approximate the antiderivative function F within integration
+/// intervals. This is convenient when there's a need for a more dense sampling
+/// of F than what would be available through either fixed or error-controlled
+/// step integration (for a given accuracy), or when F is to be evaluated at a
+/// high rate for arbitrary values of u within a given interval.
+/// See ScalarInitialValueProblem class documentation for further details on
+/// dense output usage. See configured integrator's documentation for further
+/// reference on the specific dense output technique in use.
 ///
 /// For further insight into its use, consider the following examples.
 ///
@@ -139,11 +143,12 @@ class AntiderivativeFunction {
     return scalar_ivp_->Solve(u, scalar_ivp_values);
   }
 
-  /// Evaluates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx for the whole
-  /// interval that goes from the lower integration bound v (see definition
-  /// in class documentation) to the uppermost integration bound @p w using
-  /// the parameter vector 𝐤 (see definition in class documentation) if present
-  /// in @p values, falling back to the ones given on construction if missing.
+  /// Evaluates and yields an approximation of the definite integral
+  /// F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx for the closed interval that goes from the
+  /// lower integration bound v (see definition in class documentation) to
+  /// the uppermost integration bound @p w using the parameter vector 𝐤 (see
+  /// definition in class documentation) if present in @p values, falling back
+  /// to the ones given on construction if missing.
   ///
   /// @param w The uppermost integration bound.
   /// @param values The specified values for the integration.

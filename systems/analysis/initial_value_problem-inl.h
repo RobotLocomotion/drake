@@ -153,7 +153,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
   const SpecifiedValues safe_values = SanitizeValuesOrThrow(tf, values);
 
   // Potentially invalidates the cache.
-  MayResetCachedState(tf, safe_values);
+  ResetCachedStateIfNecessary(tf, safe_values);
 
   // Initializes integrator if necessary.
   if (!integrator_->is_initialized()) {
@@ -214,7 +214,7 @@ void InitialValueProblem<T>::ResetCachedState(
 }
 
 template <typename T>
-void InitialValueProblem<T>::MayResetCachedState(
+void InitialValueProblem<T>::ResetCachedStateIfNecessary(
     const T& tf, const SpecifiedValues& values) const {
   // Only resets cache if necessary.
   if (values != current_values_ || tf < context_->get_time()) {

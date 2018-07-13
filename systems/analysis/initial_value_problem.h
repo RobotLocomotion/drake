@@ -23,16 +23,22 @@ namespace systems {
 /// allows for generic IVP definitions, which can later be solved for any
 /// instance of said vector.
 ///
-/// Additionally, support for solving the IVP for entire time intervals is
-/// provided. This is convenient when a more dense sampling of the IVP
-/// solution than what would be available through either fixed or
-/// error-controlled step integration (for a given accuracy) is needed.
+/// By default, an explicit 3rd order RungeKutta integration scheme is used.
 ///
 /// This class' implementation performs basic computation caching, optimizing
 /// away repeated integration whenever the IVP is solved for increasing values
 /// of time t while both initial conditions and parameters are kept constant,
 /// e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁ will only require
 /// integrating from t₁ onward.
+///
+/// Additionally, configured integrator's dense output support can be leveraged
+/// to efficiently approximate the IVP solution within closed time intervals.
+/// This is convenient when there's a need for a more dense sampling of the
+/// IVP solution than what would be available through either fixed or
+/// error-controlled step integration (for a given accuracy), or when the IVP
+/// is to be solved at a high rate for arbitrary times within a given interval.
+/// See configured integrator's documentation for further reference on the
+/// specific dense output technique in use.
 ///
 /// For further insight into its use, consider the following examples:
 ///
@@ -137,10 +143,10 @@ class InitialValueProblem {
   /// @throw std::logic_error if preconditions are not met.
   VectorX<T> Solve(const T& tf, const SpecifiedValues& values = {}) const;
 
-  /// Solves the IVP for the whole time interval between the initial time t₀
-  /// and the given final time @p tf, using initial state 𝐱₀ and parameter
-  /// vector 𝐤 present in @p values (falling back to the ones given on
-  /// construction if not given).
+  /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for
+  /// the closed time interval between the initial time t₀ and the given final
+  /// time @p tf, using initial state 𝐱₀ and parameter vector 𝐤 present in
+  /// @p values (falling back to the ones given on construction if not given).
   ///
   /// @param tf The time to solve the IVP up to.
   /// @param values The specified values for the IVP.
@@ -228,7 +234,8 @@ class InitialValueProblem {
   // values and integration context based on time @p tf to solve for
   // and the provided @p values. If cached state can be reused, it's a
   // no-op.
-  void MayResetCachedState(const T& tf, const SpecifiedValues& values) const;
+  void ResetCachedStateIfNecessary(
+      const T& tf, const SpecifiedValues& values) const;
 
   // IVP current specified values (for caching).
   mutable SpecifiedValues current_values_;

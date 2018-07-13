@@ -29,10 +29,16 @@ namespace systems {
 /// Moreover, this scalar form facilitates single-dimensional quadrature
 /// using methods for solving initial value problems.
 ///
-/// Additionally, support for solving the IVP for entire time intervals is
-/// provided. This is convenient when a more dense sampling of the IVP
-/// solution than what would be available through either fixed or
-/// error-controlled step integration (for a given accuracy) is needed.
+/// Additionally, configured integrator's dense output support can be leveraged
+/// to efficiently approximate the IVP solution within closed time intervals.
+/// This is convenient when there's a need for a more dense sampling of the
+/// IVP solution than what would be available through either fixed or
+/// error-controlled step integration (for a given accuracy), or when the IVP
+/// is to be solved at a high rate for arbitrary times within a given interval.
+/// After construction, if necessary, equivalent vector dense outputs may be
+/// wrapped into a scalar form that is consistent with the IVP definition.
+/// See configured integrator's documentation for further reference on the
+/// specific dense output technique in use.
 ///
 /// For further insight into its use, consider the following examples of scalar
 /// IVPs:
@@ -127,15 +133,15 @@ class ScalarInitialValueProblem {
   /// @pre If given, the dimension of the parameter vector @p values.k
   ///      must match that of the parameter vector in the default specified
   ///      values given on construction.
-  /// @throw std::logic_error if preconditions is not met.
+  /// @throw std::logic_error if any of the preconditions is not met.
   T Solve(const T& tf, const SpecifiedValues& values = {}) const {
     return this->vector_ivp_->Solve(tf, ToVectorIVPSpecifiedValues(values))[0];
   }
 
-  /// Solves the IVP for the whole time interval between the initial time t₀
-  /// and the given final time @p tf, using initial state x₀ and parameter
-  /// vector 𝐤 present in @p values (falling back to the ones given on
-  /// construction if not given).
+  /// Solves and yields an approximation of the IVP solution x(t; 𝐤) for the
+  /// closed time interval between the initial time t₀ and the given final
+  /// time @p tf, using initial state x₀ and parameter vector 𝐤 present in
+  /// @p values (falling back to the ones given on construction if not given).
   ///
   /// @param tf The time to solve the IVP up to.
   /// @param values The specified values for the IVP.
