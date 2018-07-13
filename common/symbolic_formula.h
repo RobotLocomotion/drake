@@ -163,11 +163,6 @@ class Formula {
    *
    * @throws runtime_error if a variable `v` is needed for an evaluation but not
    * provided by @p env.
-   *
-   * Note that for an equality e₁ = e₂ and an inequality e₁ ≠ e₂, this method
-   * partially evaluates e₁ and e₂ and checks the structural equality of the two
-   * results if @p env does not provide complete information to call Evaluate on
-   * e₁ and e₂.
    */
   bool Evaluate(const Environment& env = Environment{}) const;
 
