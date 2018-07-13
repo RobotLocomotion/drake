@@ -1,4 +1,4 @@
-#include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/input_port.h"
 
 #include "drake/common/default_scalars.h"
 

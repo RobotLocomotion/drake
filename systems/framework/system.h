@@ -24,7 +24,7 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
-#include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/input_port.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/system_constraint.h"
