@@ -6,6 +6,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -120,52 +121,84 @@ void EvaluateNonlinearConstraints(
   }
 }
 
-/*
- * Loops through each cost stored in MathematicalProgram, and obtain the indices
- * of the non-zero gradient, in the summed cost.
- */
-std::unordered_set<int> GetCostNonzeroGradientIndices(
-    const MathematicalProgram& prog) {
-  std::unordered_set<int> cost_gradient_indices;
-  cost_gradient_indices.reserve(prog.num_vars());
-  for (const auto& cost : prog.GetAllCosts()) {
+// Find the variables with non-zero gradient in @p costs, and add the indices of
+// these variable to cost_gradient_indices.
+template <typename C>
+void GetNonlinearCostNonzeroGradientIndices(
+    const MathematicalProgram& prog, const std::vector<Binding<C>>& costs,
+    std::unordered_set<int>* cost_gradient_indices) {
+  for (const auto& cost : costs) {
     for (int i = 0; i < static_cast<int>(cost.GetNumElements()); ++i) {
-      cost_gradient_indices.insert(
+      cost_gradient_indices->insert(
           prog.FindDecisionVariableIndex(cost.variables()(i)));
     }
   }
+}
+
+/*
+ * Loops through each nonlinear cost stored in MathematicalProgram, and obtain
+ * the indices of the non-zero gradient, in the summed cost.
+ */
+std::unordered_set<int> GetAllNonlinearCostNonzeroGradientIndices(
+    const MathematicalProgram& prog) {
+  std::unordered_set<int> cost_gradient_indices;
+  cost_gradient_indices.reserve(prog.num_vars());
+  // quadratic costs.
+  GetNonlinearCostNonzeroGradientIndices(prog, prog.quadratic_costs(),
+                                         &cost_gradient_indices);
+  // generic costs.
+  GetNonlinearCostNonzeroGradientIndices(prog, prog.generic_costs(),
+                                         &cost_gradient_indices);
   return cost_gradient_indices;
 }
 
-void EvaluateAllCosts(const MathematicalProgram& prog,
-                      const std::unordered_set<int>& cost_gradient_indices,
-                      double F[], double G[], size_t* grad_index,
-                      const Eigen::VectorXd& xvec) {
-  // evaluate cost
-  Eigen::VectorXd this_x;
-  AutoDiffVecXd ty(1);
+/*
+ * Evaluates all the nonlinear costs, and the value of the costs to
+ * @p total_cost, and also add the gradients to @p nonlinear_cost_gradients.
+ */
+template <typename C>
+void EvaluateAndAddNonlinearCosts(
+    const MathematicalProgram& prog,
+    const std::vector<Binding<C>>& nonlinear_costs, const Eigen::VectorXd& x,
+    double* total_cost, std::vector<double>* nonlinear_cost_gradients) {
+  for (const auto& binding : nonlinear_costs) {
+    const auto& obj = binding.evaluator();
+    const int num_v_variables = binding.GetNumElements();
 
-  std::vector<double> cost_gradient(prog.num_vars(), 0);
-  for (auto const& binding : prog.GetAllCosts()) {
-    auto const& obj = binding.evaluator();
-
-    int num_v_variables = binding.GetNumElements();
-    this_x.resize(num_v_variables);
-    for (int j = 0; j < num_v_variables; ++j) {
-      this_x(j) = xvec(prog.FindDecisionVariableIndex(binding.variables()(j)));
+    Eigen::VectorXd this_x(num_v_variables);
+    // binding_var_indices[i] is the index of binding.variables()(i) in prog's
+    // decision variables.
+    std::vector<int> binding_var_indices(num_v_variables);
+    for (int i = 0; i < num_v_variables; ++i) {
+      binding_var_indices[i] =
+          prog.FindDecisionVariableIndex(binding.variables()(i));
+      this_x(i) = x(binding_var_indices[i]);
     }
-
+    AutoDiffVecXd ty(1);
     obj->Eval(math::initializeAutoDiff(this_x), &ty);
 
-    F[0] += ty(0).value();
-
-    for (int j = 0; j < num_v_variables; ++j) {
-      size_t vj_index = prog.FindDecisionVariableIndex(binding.variables()(j));
-      cost_gradient[vj_index] += ty(0).derivatives()(j);
+    *total_cost += ty(0).value();
+    for (int i = 0; i < num_v_variables; ++i) {
+      (*nonlinear_cost_gradients)[binding_var_indices[i]] +=
+          ty(0).derivatives()(i);
     }
   }
-  for (const auto cost_gradient_index : cost_gradient_indices) {
-    G[*grad_index] = cost_gradient[cost_gradient_index];
+}
+
+void EvaluateAllNonlinearCosts(
+    const MathematicalProgram& prog,
+    const std::unordered_set<int>& nonlinear_cost_gradient_indices, double F[],
+    double G[], size_t* grad_index, const Eigen::VectorXd& xvec) {
+  std::vector<double> cost_gradients(prog.num_vars(), 0);
+  // Quadratic costs.
+  EvaluateAndAddNonlinearCosts(prog, prog.quadratic_costs(), xvec, &(F[0]),
+                               &cost_gradients);
+  // Generic costs.
+  EvaluateAndAddNonlinearCosts(prog, prog.generic_costs(), xvec, &(F[0]),
+                               &cost_gradients);
+
+  for (const auto cost_gradient_index : nonlinear_cost_gradient_indices) {
+    G[*grad_index] = cost_gradients[cost_gradient_index];
     ++(*grad_index);
   }
 }
@@ -200,8 +233,8 @@ void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
 
   current_problem->EvalVisualizationCallbacks(xvec);
 
-  EvaluateAllCosts(*current_problem, *cost_gradient_indices, F, G, &grad_index,
-                   xvec);
+  EvaluateAllNonlinearCosts(*current_problem, *cost_gradient_indices, F, G,
+                            &grad_index, xvec);
 
   // The constraint index starts at 1 because the cost is the
   // first row.
@@ -312,8 +345,8 @@ void UpdateConstraintBoundsAndGradients<LinearComplementarityConstraint>(
 }
 
 template <typename C>
-Eigen::SparseMatrix<double> LinearConstraintA(const C& constraint) {
-  return constraint.GetSparseMatrix();
+Eigen::SparseMatrix<double> LinearEvaluatorA(const C& evaluator) {
+  return evaluator.GetSparseMatrix();
 }
 
 // Return the number of rows in the linear constraint
@@ -333,7 +366,7 @@ int LinearConstraintSize<LinearComplementarityConstraint>(
 }
 
 template <>
-Eigen::SparseMatrix<double> LinearConstraintA<LinearComplementarityConstraint>(
+Eigen::SparseMatrix<double> LinearEvaluatorA<LinearComplementarityConstraint>(
     const LinearComplementarityConstraint& constraint) {
   return constraint.M().sparseView();
 }
@@ -357,6 +390,26 @@ LinearConstraintBounds<LinearComplementarityConstraint>(
                                 std::numeric_limits<double>::infinity()));
 }
 
+void UpdateLinearCost(
+    const MathematicalProgram& prog,
+    std::unordered_map<int, double>* variable_to_coefficient_map,
+    double* linear_cost_constant_term) {
+  for (const auto& binding : prog.linear_costs()) {
+    *linear_cost_constant_term += binding.evaluator()->b();
+    for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
+      const int variable_index =
+          prog.FindDecisionVariableIndex(binding.variables()(k));
+      auto it = variable_to_coefficient_map->find(variable_index);
+      if (it == variable_to_coefficient_map->end()) {
+        variable_to_coefficient_map->emplace_hint(it, variable_index,
+                                                  binding.evaluator()->a()(k));
+      } else {
+        it->second += binding.evaluator()->a()(k);
+      }
+    }
+  }
+}
+
 template <typename C>
 void UpdateLinearConstraint(const MathematicalProgram& prog,
                             const std::vector<Binding<C>>& linear_constraints,
@@ -368,7 +421,7 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
     auto const& c = binding.evaluator();
     int n = LinearConstraintSize(*c);
 
-    const Eigen::SparseMatrix<double> A_constraint = LinearConstraintA(*c);
+    const Eigen::SparseMatrix<double> A_constraint = LinearEvaluatorA(*c);
 
     for (int k = 0; k < static_cast<int>(binding.GetNumElements()); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(A_constraint, k); it;
@@ -430,9 +483,9 @@ void SnoptSolver::DoSolve(
 
   SnoptUserFunInfo snopt_userfun_info;
   snopt_userfun_info.prog_ = &prog;
-  const std::unordered_set<int> cost_gradient_indices =
-      GetCostNonzeroGradientIndices(prog);
-  snopt_userfun_info.cost_gradient_indices_ = &cost_gradient_indices;
+  const std::unordered_set<int> nonlinear_cost_gradient_indices =
+      GetAllNonlinearCostNonzeroGradientIndices(prog);
+  snopt_userfun_info.cost_gradient_indices_ = &nonlinear_cost_gradient_indices;
   SetSnoptWorkspace(&drake_problem, &snopt_userfun_info);
 
   const int nx = prog.num_vars();
@@ -480,7 +533,7 @@ void SnoptSolver::DoSolve(
 
   // Update nonlinear constraints.
   int num_nonlinear_constraints = 0;
-  int max_num_gradients = cost_gradient_indices.size();
+  int max_num_gradients = nonlinear_cost_gradient_indices.size();
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -529,7 +582,7 @@ void SnoptSolver::DoSolve(
   int* iGfun = new int[lenG];
   int* jGvar = new int[lenG];
   size_t grad_index = 0;
-  for (const auto cost_gradient_index : cost_gradient_indices) {
+  for (const auto cost_gradient_index : nonlinear_cost_gradient_indices) {
     iGfun[grad_index] = 0;
     jGvar[grad_index] = cost_gradient_index;
     ++grad_index;
@@ -549,28 +602,40 @@ void SnoptSolver::DoSolve(
       prog, prog.linear_complementarity_constraints(), Flow, Fupp, iGfun, jGvar,
       &constraint_index, &grad_index);
 
-  // Now find the sparsity pattern of the linear constraints, and also update
-  // Flow and Fupp corresponding to the linear constraints.
+  // Now find the sparsity pattern of the linear constraints/costs, and also
+  // update Flow and Fupp corresponding to the linear constraints.
   // We use Eigen::Triplet to store the non-zero entries in the linear
   // constraint
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
-  std::vector<T> tripletList;
-  tripletList.reserve(num_linear_constraints * prog.num_vars());
+  double linear_cost_constant_term = 0;
+  std::unordered_map<int, double> variable_to_linear_cost_coefficient;
+  UpdateLinearCost(prog, &variable_to_linear_cost_coefficient,
+                   &linear_cost_constant_term);
 
+  std::vector<T> linear_constraints_triplets;
+  linear_constraints_triplets.reserve(num_linear_constraints * prog.num_vars());
   size_t linear_constraint_index = 0;
-  UpdateLinearConstraint(prog, linear_constraints, &tripletList, Flow, Fupp,
-                         &constraint_index, &linear_constraint_index);
-  UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(),
-                         &tripletList, Flow, Fupp, &constraint_index,
+  UpdateLinearConstraint(prog, linear_constraints, &linear_constraints_triplets,
+                         Flow, Fupp, &constraint_index,
                          &linear_constraint_index);
+  UpdateLinearConstraint(prog, prog.linear_complementarity_constraints(),
+                         &linear_constraints_triplets, Flow, Fupp,
+                         &constraint_index, &linear_constraint_index);
 
-  const int lenA = tripletList.size();
+  const int lenA = variable_to_linear_cost_coefficient.size() +
+                   linear_constraints_triplets.size();
   double* A = new double[lenA];
   int* iAfun = new int[lenA];
   int* jAvar = new int[lenA];
   size_t A_index = 0;
-  for (auto const& it : tripletList) {
+  for (const auto& it : variable_to_linear_cost_coefficient) {
+    A[A_index] = it.second;
+    iAfun[A_index] = 0;
+    jAvar[A_index] = it.first;
+    A_index++;
+  }
+  for (auto const& it : linear_constraints_triplets) {
     A[A_index] = it.value();
     iAfun[A_index] = 1 + num_nonlinear_constraints + it.row();
     jAvar[A_index] = it.col();
@@ -597,7 +662,7 @@ void SnoptSolver::DoSolve(
   }
 
   const int Cold = 0;
-  const double ObjAdd = 0.0;
+  const double ObjAdd = linear_cost_constant_term;
   const int ObjRow = 0;
   int nS = 0;
   // Should I left nInf and sInf uninitialized? The SNOPT example code leaves

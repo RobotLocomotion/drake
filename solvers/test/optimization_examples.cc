@@ -80,7 +80,7 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
       return 1E-10;
     }
     case SolverType::kSnopt : {
-      return 1.5E-6;
+      return 1E-8;
     }
     case SolverType::kIpopt : {
       return 1E-6;
@@ -205,7 +205,7 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
 
 void NonConvexQPproblem1::CheckSolution() const {
   const auto& x_value = prog_->GetSolution(x_);
-  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-9,
+  EXPECT_TRUE(CompareMatrices(x_value, x_expected_, 1E-6,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog_, 1E-5);
 }
