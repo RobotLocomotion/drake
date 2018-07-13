@@ -762,11 +762,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
       dut.get_output_port_base(OutputPortIndex(7)), std::out_of_range,
       "System.*get_output_port_base().*no output port.*7.*only 4.*");
 
-  const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
-  const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
-  const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
-  const InputPortDescriptor<double>& in3 = dut.get_input_port(3);
-  const InputPortDescriptor<double>& in4 = dut.get_input_port(4);
+  const InputPort<double>& in0 = dut.get_input_port(0);
+  const InputPort<double>& in1 = dut.get_input_port(1);
+  const InputPort<double>& in2 = dut.get_input_port(2);
+  const InputPort<double>& in3 = dut.get_input_port(3);
+  const InputPort<double>& in4 = dut.get_input_port(4);
 
   const OutputPort<double>& out0 = dut.get_output_port(0);
   const OutputPort<double>& out1 = dut.get_output_port(1);

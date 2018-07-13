@@ -1259,11 +1259,11 @@ class Reduce : public LeafSystem<double> {
                                   &Reduce::CalcFeedthrough);
   }
 
-  const systems::InputPortDescriptor<double>& get_sink_input() {
+  const systems::InputPort<double>& get_sink_input() {
     return this->get_input_port(sink_input_);
   }
 
-  const systems::InputPortDescriptor<double>& get_feedthrough_input() {
+  const systems::InputPort<double>& get_feedthrough_input() {
     return this->get_input_port(feedthrough_input_);
   }
 

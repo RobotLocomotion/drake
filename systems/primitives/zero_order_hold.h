@@ -45,7 +45,7 @@ class ZeroOrderHold : public LeafSystem<T> {
   // PassThrough (#6490).
 
   /// Returns the sole input port.
-  const InputPortDescriptor<T>& get_input_port() const {
+  const InputPort<T>& get_input_port() const {
     return LeafSystem<T>::get_input_port(0);
   }
 

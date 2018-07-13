@@ -83,11 +83,11 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
 
   explicit IiwaCommandSender(int num_joints = kIiwaArmNumJoints);
 
-  const systems::InputPortDescriptor<double>& get_position_input_port() const {
+  const systems::InputPort<double>& get_position_input_port() const {
     return this->get_input_port(position_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_torque_input_port() const {
+  const systems::InputPort<double>& get_torque_input_port() const {
     return this->get_input_port(torque_input_port_);
   }
 
@@ -172,15 +172,15 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
 
   explicit IiwaStatusSender(int num_joints = kIiwaArmNumJoints);
 
-  const systems::InputPortDescriptor<double>& get_command_input_port() const {
+  const systems::InputPort<double>& get_command_input_port() const {
     return this->get_input_port(0);
   }
 
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
+  const systems::InputPort<double>& get_state_input_port() const {
     return this->get_input_port(1);
   }
 
-  const systems::InputPortDescriptor<double>& get_commanded_torque_input_port()
+  const systems::InputPort<double>& get_commanded_torque_input_port()
       const {
     return this->get_input_port(2);
   }
@@ -189,7 +189,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
    * Optional input port. If not connected, the joint_torque_measured field in
    * the output message will be identical to the joint_torque_commanded field.
    */
-  const systems::InputPortDescriptor<double>& get_measured_torque_input_port()
+  const systems::InputPort<double>& get_measured_torque_input_port()
       const {
     return this->get_input_port(3);
   }
@@ -198,7 +198,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
    * Optional input port. If not connected, the joint_torque_external field in
    * the output message will be zeros.
    */
-  const systems::InputPortDescriptor<double>& get_external_torque_input_port()
+  const systems::InputPort<double>& get_external_torque_input_port()
       const {
     return this->get_input_port(4);
   }

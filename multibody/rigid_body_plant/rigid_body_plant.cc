@@ -460,7 +460,7 @@ bool RigidBodyPlant<T>::model_instance_has_actuators(
 }
 
 template <typename T>
-const InputPortDescriptor<T>&
+const InputPort<T>&
 RigidBodyPlant<T>::model_instance_actuator_command_input_port(
     int model_instance_id) const {
   if (input_map_.at(model_instance_id) == kInvalidPortIdentifier) {

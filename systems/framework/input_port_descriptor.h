@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/constants.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
@@ -16,11 +17,9 @@ class System;
 /// @tparam T The mathematical type of the context, which must be a valid Eigen
 ///           scalar.
 template <typename T>
-class InputPortDescriptor final : public InputPortBase {
+class InputPort final : public InputPortBase {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPortDescriptor)
-
-  ~InputPortDescriptor() final {}
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InputPort)
 
   /// (Internal use only)
   /// Constructs a type-specific input port. See InputPortBase::InputPortBase()
@@ -28,7 +27,7 @@ class InputPortDescriptor final : public InputPortBase {
   /// here must be the same object as the `system_base` parameter.
   // The System and SystemBase are provided separately since we don't have
   // access to System's declaration here so can't cast but the caller can.
-  InputPortDescriptor(InputPortIndex index, DependencyTicket ticket,
+  InputPort(InputPortIndex index, DependencyTicket ticket,
                       PortDataType data_type, int size,
                       const optional<RandomDistribution>& random_type,
                       const System<T>* system, SystemBase* system_base)
@@ -47,6 +46,14 @@ class InputPortDescriptor final : public InputPortBase {
  private:
   const System<T>& system_;
 };
+
+#ifndef DRAKE_DOXYGEN_CXX
+/// DEPRECATED -- use InputPort instead.
+// TODO(sherm1) Remove this after 10/12/2018 (3 months).
+template <typename T>
+using InputPortDescriptor DRAKE_DEPRECATED("Use InputPort instead.") =
+    InputPort<T>;
+#endif
 
 }  // namespace systems
 }  // namespace drake

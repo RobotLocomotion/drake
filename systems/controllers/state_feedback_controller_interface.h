@@ -21,13 +21,13 @@ class StateFeedbackControllerInterface {
   /**
    * Returns the input port for the estimated state.
    */
-  virtual const InputPortDescriptor<T>& get_input_port_estimated_state()
+  virtual const InputPort<T>& get_input_port_estimated_state()
       const = 0;
 
   /**
    * Returns the input port for the desired state.
    */
-  virtual const InputPortDescriptor<T>& get_input_port_desired_state()
+  virtual const InputPort<T>& get_input_port_desired_state()
       const = 0;
 
   /**

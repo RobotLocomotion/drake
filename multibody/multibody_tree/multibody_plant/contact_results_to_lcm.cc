@@ -37,7 +37,7 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 ContactResultsToLcmSystem<T>::get_contact_result_input_port() const {
   return this->get_input_port(contact_result_input_port_index_);
 }

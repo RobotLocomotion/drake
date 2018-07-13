@@ -37,13 +37,13 @@ template <typename T>
 PurePursuitController<T>::~PurePursuitController() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& PurePursuitController<T>::lane_input()
+const systems::InputPort<T>& PurePursuitController<T>::lane_input()
     const {
   return systems::System<T>::get_input_port(lane_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 PurePursuitController<T>::ego_pose_input() const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }

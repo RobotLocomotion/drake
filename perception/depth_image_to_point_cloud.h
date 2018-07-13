@@ -31,7 +31,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
       const systems::sensors::CameraInfo& camera_info);
 
   /// Returns the abstract valued input port that contains an ImageDepth32F.
-  const systems::InputPortDescriptor<double>& depth_image_input_port() const {
+  const systems::InputPort<double>& depth_image_input_port() const {
     return this->get_input_port(input_port_depth_image_index_);
   }
 

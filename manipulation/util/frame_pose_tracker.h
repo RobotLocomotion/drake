@@ -81,10 +81,10 @@ class FramePoseTracker : public systems::LeafSystem<double> {
       std::vector<Eigen::Isometry3d>());
 
   /**
-   * This InputPortDescriptor represents an abstract valued input port of type
+   * This InputPort represents an abstract valued input port of type
    * KinematicsResults<double>.
    */
-  const systems::InputPortDescriptor<double>& get_kinematics_input_port()
+  const systems::InputPort<double>& get_kinematics_input_port()
   const {
     return this->get_input_port(kinematics_input_port_index_);
   }

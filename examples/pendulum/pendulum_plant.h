@@ -36,7 +36,7 @@ class PendulumPlant : public systems::LeafSystem<T> {
   ~PendulumPlant() override;
 
   /// Returns the input port to the externally applied force.
-  const systems::InputPortDescriptor<T>& get_input_port() const;
+  const systems::InputPort<T>& get_input_port() const;
 
   /// Returns the port to output state.
   const systems::OutputPort<T>& get_output_port() const;

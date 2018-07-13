@@ -86,17 +86,17 @@ const OutputPort<double>& RobotStateEncoder::lcm_message_port()
   return get_output_port(lcm_message_port_index_);
 }
 
-const InputPortDescriptor<double>& RobotStateEncoder::kinematics_results_port()
+const InputPort<double>& RobotStateEncoder::kinematics_results_port()
     const {
   return get_input_port(kinematics_results_port_index_);
 }
 
-const InputPortDescriptor<double>& RobotStateEncoder::contact_results_port()
+const InputPort<double>& RobotStateEncoder::contact_results_port()
     const {
   return get_input_port(contact_results_port_index_);
 }
 
-const InputPortDescriptor<double>& RobotStateEncoder::effort_port(
+const InputPort<double>& RobotStateEncoder::effort_port(
     const RigidBodyActuator& actuator) const {
   return get_input_port(effort_port_indices_.at(&actuator));
 }

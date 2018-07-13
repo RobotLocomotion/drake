@@ -76,7 +76,7 @@ void PidControlledSystem<T>::Initialize(
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectController(
-    const InputPortDescriptor<T>& plant_input,
+    const InputPort<T>& plant_input,
     const OutputPort<T>& plant_output,
     const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
@@ -101,7 +101,7 @@ PidControlledSystem<T>::ConnectController(
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectController(
-    const InputPortDescriptor<T>& plant_input,
+    const InputPort<T>& plant_input,
     const OutputPort<T>& plant_output,
     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
     const Eigen::VectorXd& Kd,
@@ -114,7 +114,7 @@ PidControlledSystem<T>::ConnectController(
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectControllerWithInputSaturation(
-    const InputPortDescriptor<T>& plant_input,
+    const InputPort<T>& plant_input,
     const OutputPort<T>& plant_output,
     const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
     const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
@@ -132,7 +132,7 @@ PidControlledSystem<T>::ConnectControllerWithInputSaturation(
 template <typename T>
 typename PidControlledSystem<T>::ConnectResult
 PidControlledSystem<T>::ConnectControllerWithInputSaturation(
-    const InputPortDescriptor<T>& plant_input,
+    const InputPort<T>& plant_input,
     const OutputPort<T>& plant_output,
     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
     const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,

@@ -787,7 +787,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws std::exception if this system was not registered with a
   /// SceneGraph.
   /// @throws std::exception if called pre-finalize. See Finalize().
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
+  const systems::InputPort<T>& get_geometry_query_input_port() const;
 
   /// Returns the output port of frames' poses to communicate with a
   /// SceneGraph.
@@ -852,7 +852,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   /// @throws if called before Finalize(), if the model does not contain any
   /// actuators, or if multiple model instances have actuated dofs.
-  const systems::InputPortDescriptor<T>& get_actuation_input_port() const;
+  const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
@@ -861,7 +861,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @throws if called before Finalize() or if the model instance does not
   /// contain any actuators.
   /// @throws if the model instance does not exist.
-  const systems::InputPortDescriptor<T>& get_actuation_input_port(
+  const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
   /// @}

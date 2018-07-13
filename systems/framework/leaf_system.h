@@ -369,7 +369,7 @@ class LeafSystem : public System<T> {
   /// size).  Subclasses can override this method if the default behavior is
   /// not sufficient.
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     std::unique_ptr<BasicVector<T>> model_result =
         model_input_values_.CloneVectorModel<T>(descriptor.get_index());
     if (model_result) {
@@ -385,7 +385,7 @@ class LeafSystem : public System<T> {
   /// Subclasses with abstract input ports must either provide a model_value
   /// when declaring the port, or else override this method.
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     std::unique_ptr<AbstractValue> model_result =
         model_input_values_.CloneModel(descriptor.get_index());
     if (model_result) {
@@ -444,7 +444,7 @@ class LeafSystem : public System<T> {
     *dot << "}\"];" << std::endl;
   }
 
-  void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+  void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  std::stringstream *dot) const final {
     DRAKE_DEMAND(port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
@@ -811,7 +811,7 @@ class LeafSystem : public System<T> {
   /// VectorBase::CalcInequalityConstraint() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
-  const InputPortDescriptor<T>& DeclareVectorInputPort(
+  const InputPort<T>& DeclareVectorInputPort(
       const BasicVector<T>& model_vector,
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
@@ -834,7 +834,7 @@ class LeafSystem : public System<T> {
   /// This is the best way to declare LeafSystem abstract input ports.
   /// LeafSystem's default implementation of DoAllocateInputAbstract will be
   /// model_value.Clone().
-  const InputPortDescriptor<T>& DeclareAbstractInputPort(
+  const InputPort<T>& DeclareAbstractInputPort(
       const AbstractValue& model_value) {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());

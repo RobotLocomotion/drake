@@ -16,7 +16,7 @@ namespace geometry {
 
 using systems::AbstractValue;
 using systems::Context;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::LeafContext;
 using systems::LeafSystem;
 using systems::rendering::PoseBundle;
@@ -142,7 +142,7 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& SceneGraph<T>::get_source_pose_port(
+const systems::InputPort<T>& SceneGraph<T>::get_source_pose_port(
     SourceId id) {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
   return this->get_input_port(input_source_ids_[id].pose_port);

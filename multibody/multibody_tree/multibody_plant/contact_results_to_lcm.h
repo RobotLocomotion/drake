@@ -44,7 +44,7 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
   explicit ContactResultsToLcmSystem(const ContactResultsToLcmSystem<U>& other)
       : systems::LeafSystem<T>(), body_names_(other.body_names_) {}
 
-  const systems::InputPortDescriptor<T>& get_contact_result_input_port() const;
+  const systems::InputPort<T>& get_contact_result_input_port() const;
   const systems::OutputPort<T>& get_lcm_message_output_port() const;
 
  private:

@@ -28,7 +28,7 @@ from pydrake.systems.framework import (
     DiscreteUpdateEvent_,
     DiscreteValues_,
     Event_,
-    InputPortDescriptor_,
+    InputPort_,
     LeafContext_,
     LeafSystem_,
     OutputPort_,
@@ -122,7 +122,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(DiagramBuilder_)
         self._check_instantiations(OutputPort_)
         self._check_instantiations(SystemOutput_)
-        self._check_instantiations(InputPortDescriptor_)
+        self._check_instantiations(InputPort_)
         self._check_instantiations(Parameters_)
         self._check_instantiations(State_)
         self._check_instantiations(ContinuousState_)

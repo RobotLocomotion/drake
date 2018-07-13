@@ -32,11 +32,11 @@ class TestDepthSensorToLcmPointCloudMessage : public ::testing::Test {
     DepthSensorToLcmPointCloudMessage dut(spec_);
     EXPECT_EQ(dut.get_num_input_ports(), 2);
     EXPECT_EQ(dut.get_num_output_ports(), 1);
-    const InputPortDescriptor<double>& sensor_data_input_port =
+    const InputPort<double>& sensor_data_input_port =
         dut.depth_readings_input_port();
     EXPECT_EQ(sensor_data_input_port.get_system(), &dut);
     EXPECT_EQ(sensor_data_input_port.size(), spec_.num_depth_readings());
-    const InputPortDescriptor<double>& pose_input_port =
+    const InputPort<double>& pose_input_port =
         dut.pose_input_port();
     EXPECT_EQ(pose_input_port.size(), PoseVector<double>::kSize);
 
