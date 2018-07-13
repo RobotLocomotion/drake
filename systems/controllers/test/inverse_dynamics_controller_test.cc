@@ -39,7 +39,7 @@ GTEST_TEST(InverseDynamicsControllerTestRBP, TestTorque) {
       std::move(robot_ptr), kp, ki, kd, true);
   auto context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
-  const RigidBodyTree<double>& robot = dut->get_rigid_body_tree_for_control();
+  const RigidBodyTree<double>& robot = *dut->get_rigid_body_tree_for_control();
 
   // Sets current state and reference state and acceleration values.
   VectorX<double> q(dim), v(dim), q_r(dim), v_r(dim), vd_r(dim);
@@ -117,7 +117,7 @@ GTEST_TEST(InverseDynamicsControllerTestMBP, TestTorque) {
   auto inverse_dynamics_context = dut->CreateDefaultContext();
   auto output = dut->AllocateOutput();
   const MultibodyPlant<double>& robot_plant =
-      dut->get_multi_body_plant_for_control();
+      *dut->get_multi_body_plant_for_control();
   const MultibodyTree<double>& robot_model = robot_plant.model();
 
   // Sets current state and reference state and acceleration values.

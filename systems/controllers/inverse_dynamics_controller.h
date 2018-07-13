@@ -142,7 +142,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
    */
   const multibody::multibody_plant::MultibodyPlant<T>*
       get_multi_body_plant_for_control() const {
-    return *multi_body_plant_for_control_.get();
+    return multi_body_plant_for_control_.get();
   }
 
  private:
