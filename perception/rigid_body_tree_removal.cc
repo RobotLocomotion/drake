@@ -6,10 +6,10 @@ namespace perception {
 RigidBodyTreeRemoval::RigidBodyTreeRemoval(const RigidBodyTree<double>& tree)
     : tree_(tree) {
   /// input port for point cloud
-  input_port_index_point_cloud_ = this->DeclareAbstractInputPort().get_index();
+  point_cloud_input_port_index_ = this->DeclareAbstractInputPort().get_index();
 
-  /// input port for tree positions
-  input_port_index_tree_positions_ =
+  /// input port for tree positions and velocities
+  state_input_port_index_ =
       this->DeclareInputPort(
               systems::kVectorValued,
               tree_.get_num_positions() + tree_.get_num_velocities())
@@ -29,7 +29,7 @@ void RigidBodyTreeRemoval::FilterPointCloud(
     const systems::Context<double>& context, PointCloud* output) const {
   // 1. Create the list of points to be considered.
   const systems::AbstractValue* input =
-      this->EvalAbstractInput(context, input_port_index_point_cloud_);
+      this->EvalAbstractInput(context, point_cloud_input_port_index_);
   DRAKE_ASSERT(input != nullptr);
   const auto& input_cloud = input->GetValue<PointCloud>();
 
@@ -41,7 +41,8 @@ void RigidBodyTreeRemoval::FilterPointCloud(
 
   // 2. Extract the indices of the points in collision.
   Eigen::VectorXd q =
-      this->EvalEigenVectorInput(context, input_port_index_tree_positions_);
+      this->EvalEigenVectorInput(context, state_input_port_index_)
+          .head(tree_.get_num_positions());
   KinematicsCache<double> kinematics_cache = tree_.doKinematics(q);
   std::vector<size_t> filtered_point_indices =
       const_cast<RigidBodyTree<double>&>(tree_).collidingPoints(

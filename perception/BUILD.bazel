@@ -118,6 +118,7 @@ drake_cc_googletest(
     name = "rigid_body_tree_removal_test",
     srcs = ["test/rigid_body_tree_removal_test.cc"],
     deps = [
+        ":depth_image_to_point_cloud",
         ":point_cloud",
         ":rigid_body_tree_removal",
         "//common/test_utilities:eigen_matrix_compare",
