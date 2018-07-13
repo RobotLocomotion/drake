@@ -29,21 +29,16 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   /// of the world.
   explicit RigidBodyTreeRemoval(const RigidBodyTree<double>& tree);
 
-  /// Returns the RigidBodyTree for which known geometries are calculated.
-  //  const RigidBodyTree<double>& tree() const { return tree_; }
-
-  /// Returns a descriptor of the input port containing the generalized
-  /// positions of
-  /// the RigidBodyTree.
-  const systems::InputPortDescriptor<double>&
-  get_rigid_body_tree_positions_input_port() const {
-    return this->get_input_port(input_port_index_tree_positions_);
+  /// Returns the vector valued input port that contains a vector
+  /// of `q, v` corresponding to the positions and velocities associated with
+  /// a RigidBodyTree.
+  const systems::InputPortDescriptor<double>& state_input_port() const {
+    return this->get_input_port(state_input_port_index_);
   }
 
-  /// Returns a descriptor of the input port containing the point cloud.
-  const systems::InputPortDescriptor<double>& get_point_cloud_input_port()
-      const {
-    return this->get_input_port(input_port_index_point_cloud_);
+  /// Returns the abstract valued input port that contains a PointCloud.
+  const systems::InputPortDescriptor<double>& point_cloud_input_port() const {
+    return this->get_input_port(point_cloud_input_port_index_);
   }
 
   const systems::OutputPort<double>& point_cloud_output_port() const {
@@ -58,8 +53,8 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
 
   const RigidBodyTree<double>& tree_;
 
-  int input_port_index_point_cloud_{0};
-  int input_port_index_tree_positions_{1};
+  int point_cloud_input_port_index_{-1};
+  int state_input_port_index_{-1};
 
   double collision_threshold_;
 };
