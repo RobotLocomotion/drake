@@ -61,6 +61,7 @@ drake_cc_library(
     hdrs = ["inverse_dynamics.h"],
     deps = [
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
     ],
 )
@@ -74,6 +75,7 @@ drake_cc_library(
         ":pid_controller",
         ":state_feedback_controller_interface",
         "//multibody:rigid_body_tree",
+        "//multibody/multibody_tree/multibody_plant",
         "//systems/framework",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
@@ -297,7 +299,9 @@ drake_cc_googletest(
         ":inverse_dynamics",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/parsing",
         "//multibody/parsers",
+        "//systems/controllers/test_utilities",
     ],
 )
 
@@ -310,7 +314,9 @@ drake_cc_googletest(
         ":inverse_dynamics_controller",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/multibody_tree/parsing",
         "//multibody/parsers",
+        "//systems/controllers/test_utilities",
     ],
 )
 

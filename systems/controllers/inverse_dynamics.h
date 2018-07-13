@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -47,6 +48,22 @@ class InverseDynamics : public LeafSystem<T> {
   InverseDynamics(const RigidBodyTree<T>& tree, bool pure_gravity_compensation);
 
   /**
+   * Computes inverse dynamics for @p plant.
+   * @param plant Reference to the plant. The life span of @p plant must be
+   * longer than this instance.
+   * @param context A context for the `robot` that will be cloned and used
+   * to set generalized positions and velocities for computing inverse dynamics.
+   * Warning: any Parameters modified in `context` after construction will not
+   * be propagated into the cloned context.
+   * @param pure_gravity_compensation If set to true, this instance will only
+   * consider the gravity term. It also will NOT have the desired acceleration
+   * input port.
+   */
+  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>& plant,
+                  const systems::Context<T>& context,
+                  bool pure_gravity_compensation);
+
+  /**
    * Returns the input port for the estimated state.
    */
   const InputPortDescriptor<T>& get_input_port_estimated_state() const {
@@ -77,8 +94,15 @@ class InverseDynamics : public LeafSystem<T> {
   void CalcOutputTorque(const Context<T>& context,
                         BasicVector<T>* torque) const;
 
-  const RigidBodyTree<T>& tree_;
+  const RigidBodyTree<T>* rigid_body_tree_{nullptr};
+  const multibody::multibody_plant::MultibodyPlant<T>* multi_body_plant_{
+      nullptr};
   const bool pure_gravity_compensation_{false};
+
+  // This context is used solely for setting generalized positions and
+  // velocities in multi_body_plant_- changing this value does not affect
+  // the correctness of computation.
+  mutable std::unique_ptr<Context<T>> multibody_plant_context_;
 
   int input_port_index_state_{0};
   int input_port_index_desired_acceleration_{0};

@@ -90,7 +90,7 @@ IiwaAndBoxPlantWithStateEstimator<T>::IiwaAndBoxPlantWithStateEstimator(
   // bot_core::robot_state_t messages.
   iiwa_state_est_ =
       base_builder->template AddSystem<OracularStateEstimation<T>>(
-          iiwa_controller_->get_robot_for_control());
+          iiwa_controller_->get_rigid_body_tree_for_control());
   iiwa_state_est_->set_name("OracularStateEstimationIIWAState");
   base_builder->Connect(iiwa_output_port,
                         iiwa_state_est_->get_input_port_state());

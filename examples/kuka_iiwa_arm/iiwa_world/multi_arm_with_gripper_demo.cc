@@ -127,7 +127,8 @@ void main() {
             plant->get_rigid_body_tree(), info.instance_id,
             kEndEffectorLinkName, wsg_info[ctr].instance_id);
     RigidBody<double>* controller_ee =
-        controller->get_robot_for_control().FindBody(kEndEffectorLinkName);
+        controller->get_rigid_body_tree_for_control().FindBody(
+            kEndEffectorLinkName);
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
 
     diagram_builder->Connect(iiwa_traj_src->get_output_port(),
