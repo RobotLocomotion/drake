@@ -93,32 +93,37 @@ systems::sensors::RgbdCamera* AddCamera(
   return rgbd_camera;
 }
 
-GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
+void BuildFloatingBox(systems::DiagramBuilder<double>* builder) {
   auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
   AddFloatingBoxToTree(tree_ptr.get());
   tree_ptr->compile();
-  systems::DiagramBuilder<double> builder;
   auto plant =
-      builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_ptr));
+      builder->AddSystem<systems::RigidBodyPlant<double>>(std::move(tree_ptr));
 
-  auto camera = AddCamera(&builder, plant);
+  auto camera = AddCamera(builder, plant);
 
   auto converter =
-      builder.AddSystem<DepthImageToPointCloud>(camera->depth_camera_info());
+      builder->AddSystem<DepthImageToPointCloud>(camera->depth_camera_info());
 
   auto filter =
-      builder.AddSystem<RigidBodyTreeRemoval>(plant->get_rigid_body_tree());
+      builder->AddSystem<RigidBodyTreeRemoval>(plant->get_rigid_body_tree());
 
-  builder.Connect(plant->state_output_port(), camera->state_input_port());
-  builder.Connect(camera->depth_image_output_port(),
-                  converter->depth_image_input_port());
-  builder.Connect(plant->state_output_port(), filter->state_input_port());
-  builder.Connect(converter->point_cloud_output_port(),
-                  filter->point_cloud_input_port());
+  builder->Connect(plant->state_output_port(), camera->state_input_port());
+  builder->Connect(camera->depth_image_output_port(),
+                   converter->depth_image_input_port());
+  builder->Connect(plant->state_output_port(), filter->state_input_port());
+  builder->Connect(converter->point_cloud_output_port(),
+                   filter->point_cloud_input_port());
 
-  builder.ExportOutput(converter->point_cloud_output_port());
-  builder.ExportOutput(filter->point_cloud_output_port());
+  builder->ExportOutput(converter->point_cloud_output_port());
+  builder->ExportOutput(filter->point_cloud_output_port());
+}
 
+// Tests that the visual geometries corresponding to a RigidBodyTree
+// containing only floating bodies is removed completely from the point cloud.
+GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
+  systems::DiagramBuilder<double> builder;
+  BuildFloatingBox(&builder);
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
   std::unique_ptr<systems::Context<double>> context =
@@ -126,9 +131,6 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
 
   std::unique_ptr<systems::SystemOutput<double>> output =
       diagram->AllocateOutput();
-
-  const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
-  Eigen::VectorXd q = tree.getZeroConfiguration();
 
   diagram->CalcOutput(*context, output.get());
   auto const unfiltered_cloud =
@@ -140,19 +142,24 @@ GTEST_TEST(RigidBodyTreeRemovalTests, FilterFloatingBoxTest) {
   EXPECT_EQ(filtered_cloud.size(), 0);
 }
 
+// Tests that the visual geometries corresponding to fixed bodies in a
+// RigidBodyTree are not removed from the point cloud.
 GTEST_TEST(RigidBodyTreeRemovalTests, FilterFixedBoxTest) {
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  AddFixedBoxToTree(tree.get());
-  tree->compile();
   systems::DiagramBuilder<double> builder;
-  auto plant =
-      builder.AddSystem<systems::RigidBodyPlant<double>>(std::move(tree));
+  BuildFloatingBox(&builder);
+  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
 
-  auto camera = AddCamera(&builder, plant);
+  std::unique_ptr<systems::Context<double>> context =
+      diagram->CreateDefaultContext();
 
-  RigidBodyTreeRemoval filter(plant->get_rigid_body_tree());
+  std::unique_ptr<systems::SystemOutput<double>> output =
+      diagram->AllocateOutput();
 
-  builder.Connect(plant->state_output_port(), camera->state_input_port());
+  diagram->CalcOutput(*context, output.get());
+  auto const unfiltered_cloud =
+      output->GetMutableData(0)->GetMutableValue<PointCloud>();
+  auto const filtered_cloud =
+      output->GetMutableData(1)->GetMutableValue<PointCloud>();
 }
 
 }  // namespace
