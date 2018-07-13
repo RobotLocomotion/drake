@@ -179,6 +179,8 @@ drake_cc_googletest(
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
+    # TODO (amcastro): Re-enable test, times out on mac tsan
+    tags = ["manual"],
     deps = [
         ":multibody_plant",
         "//common:find_resource",
