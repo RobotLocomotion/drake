@@ -567,6 +567,7 @@ drake_cc_library(
         "//tools:with_gurobi": [
             ":mathematical_program_api",
             "//math:eigen_sparse_triplet",
+            "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
         ],
         "//conditions:default": [

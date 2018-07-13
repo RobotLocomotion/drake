@@ -18,6 +18,7 @@
 #include "gurobi_c.h"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/scoped_singleton.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
 #include "drake/solvers/mathematical_program.h"
@@ -605,6 +606,54 @@ void AddSecondOrderConeVariables(
 
 bool GurobiSolver::available() const { return true; }
 
+/*
+ * Implements RAII for a Gurobi license / environment.
+ */
+class GurobiSolver::License {
+ public:
+  License() {
+    const char* grb_license_file = std::getenv("GRB_LICENSE_FILE");
+    if (grb_license_file == nullptr) {
+      throw std::runtime_error(
+          "Could not locate Gurobi license key file because GRB_LICENSE_FILE "
+          "environment variable was not set.");
+    }
+
+    int grb_load_env_error = GRBloadenv(&env_, nullptr);
+
+    for (int i = 1; grb_load_env_error && i < num_tries_; ++i) {
+      drake::log()->info("Gurobi returns code {}, with message \"{}\", "
+                         "retrying.\n",
+                         grb_load_env_error, GRBgeterrormsg(env_));
+      grb_load_env_error = GRBloadenv(&env_, nullptr);
+    }
+    if (grb_load_env_error) {
+      drake::log()->info("Gurobi returns code {}, with message \"{}\".\n",
+                         grb_load_env_error,
+                         GRBgeterrormsg(env_));
+      throw std::runtime_error("Could not create Gurobi environment.");
+    }
+    DRAKE_DEMAND(env_ != nullptr);
+  }
+
+  ~License() {
+    GRBfreeenv(env_);
+    env_ = nullptr;
+  }
+
+  GRBenv* Gurobi_env() {
+    return env_;
+  }
+
+ private:
+  GRBenv* env_ = nullptr;
+  int num_tries_ = 3;
+};
+
+std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
+  return GetScopedSingleton<GurobiSolver::License>();
+}
+
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   // We only process quadratic costs and linear / bounding box
   // constraints.
@@ -616,8 +665,10 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
         "environment variable was not set.");
   }
 
-  GRBenv* env = nullptr;
-  GRBloadenv(&env, nullptr);
+  if (!license_) {
+    license_ = AcquireLicense();
+  }
+  GRBenv* env = license_->Gurobi_env();
 
   DRAKE_ASSERT(prog.generic_costs().empty());
   DRAKE_ASSERT(prog.generic_constraints().empty());
@@ -852,7 +903,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   prog.SetSolverResult(solver_result);
 
   GRBfreemodel(model);
-  GRBfreeenv(env);
 
   return solution_result;
 }
