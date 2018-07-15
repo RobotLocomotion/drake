@@ -388,6 +388,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "spring_damper_test",
+    deps = [
+        ":multibody_tree",
+        "//systems/framework:context",
+    ],
+)
+
 # === joints/test/ ===
 
 drake_cc_googletest(

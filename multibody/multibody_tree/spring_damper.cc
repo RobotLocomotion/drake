@@ -35,6 +35,8 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
+  using std::sqrt;
+
   // Alias to the array of applied body forces:
   std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
 
@@ -44,26 +46,32 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
   const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
   const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
 
+  // Vector from P to Q. It's length is the current length of the spring.
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
-  const T length = p_PQ_W.norm();
+
+  // To avoid division by zero when "length", the length of p_PQ goes to zero,
+  // we use a "soft norm" defined by:
+  //   ‖x‖ₛ = sqrt(xᵀ⋅x + ε²)
+  // where ε is a small positive value so that it's effect is negligible for
+  // non-zero p_PQ.
+  const T epsilon_squared = std::numeric_limits<double>::epsilon();
+  // Using this "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
+  const T length_soft = sqrt(p_PQ_W.squaredNorm() + epsilon_squared);
 
   PRINT_VAR(p_WP.transpose());
   PRINT_VAR(p_WQ.transpose());
   PRINT_VAR(p_PQ_W.transpose());
-  PRINT_VAR(length);
+  PRINT_VAR(length_soft);
 
-  // TODO: Check for zero norm or use "soft" norms as defined by Sherm.
-  const Vector3<T> r_PQ_W = p_PQ_W.normalized();
+  const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 
   PRINT_VAR(r_PQ_W.transpose());
   PRINT_VAR(stiffness());
   PRINT_VAR(rest_length());
 
   // Force on A, applied at P, expressed in the world frame.
-  const Vector3<T> f_AP_W = stiffness() * (length - rest_length()) * r_PQ_W;
-
-  // Force on B, applied at Q, expressed in the world frame.
-  const Vector3<T> f_BQ_W = -f_AP_W;
+  const Vector3<T> f_AP_W =
+      stiffness() * (length_soft - rest_length()) * r_PQ_W;
 
   PRINT_VAR(f_AP_W.transpose());
 
@@ -85,7 +93,7 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
       SpatialForce<T>(Vector3<T>::Zero(), f_AP_W).Shift(p_PAo_W);
 
   F_Bo_W_array[bodyB().node_index()] +=
-      SpatialForce<T>(Vector3<T>::Zero(), f_BQ_W).Shift(p_QBo_W);
+      SpatialForce<T>(Vector3<T>::Zero(), -f_AP_W).Shift(p_QBo_W);
 }
 
 template <typename T>
