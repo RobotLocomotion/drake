@@ -10,6 +10,8 @@
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
+// Forward reference keeps us from including RBT headers that significantly
+// slow compilation.
 template <class T>
 class RigidBodyTree;
 

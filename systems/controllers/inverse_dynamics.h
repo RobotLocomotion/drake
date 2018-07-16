@@ -6,6 +6,8 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
+// Forward reference keeps us from including RBT headers that significantly
+// slow compilation.
 template <class T>
 class RigidBodyTree;
 
