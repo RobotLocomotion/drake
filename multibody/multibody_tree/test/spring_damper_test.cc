@@ -4,13 +4,13 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/spatial_inertia.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
+#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
+#include "drake/multibody/multibody_tree/rigid_body.h"
+#include "drake/multibody/multibody_tree/spatial_inertia.h"
+#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -37,7 +37,8 @@ class SpringDamperTester : public ::testing::Test {
 
     // Allow body B to slide along the x axis.
     slider_ = &model_.AddJoint<PrismaticJoint>(
-        "Slider", model_.world_body(), {}, *bodyB_, {}, Vector3<double>::UnitX());
+        "Slider", model_.world_body(), {}, *bodyB_, {},
+        Vector3<double>::UnitX());
 
     spring_damper_ = &model_.AddForceElement<SpringDamper>(
         *bodyA_, p_AP_, *bodyB_, p_BQ_, rest_length_, stiffness_, damping_);
@@ -87,7 +88,7 @@ class SpringDamperTester : public ::testing::Test {
   const PrismaticJoint<double>* slider_{nullptr};
   const SpringDamper<double>* spring_damper_{nullptr};
   std::unique_ptr<MultibodyForces<double>> forces_;
-  
+
   // Parameters of the case.
   const double rest_length_ = 1.0;  // [m]
   const double stiffness_ = 2.0;    // [N/m]

@@ -1,5 +1,7 @@
 #include "drake/multibody/multibody_tree/spring_damper.h"
 
+#include <limits>
+#include <utility>
 #include <vector>
 
 #include "drake/common/autodiff.h"
