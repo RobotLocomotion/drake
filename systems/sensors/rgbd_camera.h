@@ -228,7 +228,7 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Returns a descriptor of the vector valued input port that takes a vector
   /// of `q, v` corresponding to the positions and velocities associated with
   /// the RigidBodyTree.
-  const InputPortDescriptor<double>& state_input_port() const;
+  const InputPort<double>& state_input_port() const;
 
   /// Returns the abstract valued output port that contains a RGBA image of the
   /// type ImageRgba8U.
@@ -264,7 +264,7 @@ class RgbdCamera final : public LeafSystem<double> {
   // now it has to be repeated before each image output port calculation.
   void UpdateModelPoses(const BasicVector<double>& input_vector) const;
 
-  const InputPortDescriptor<double>* state_input_port_{};
+  const InputPort<double>* state_input_port_{};
   const OutputPort<double>* color_image_port_{};
   const OutputPort<double>* depth_image_port_{};
   const OutputPort<double>* label_image_port_{};
@@ -327,7 +327,7 @@ class RgbdCameraDiscrete final : public systems::Diagram<double> {
   double period() const { return period_; }
 
   /// @see RgbdCamera::state_input_port().
-  const InputPortDescriptor<double>& state_input_port() const {
+  const InputPort<double>& state_input_port() const {
     return get_input_port(input_port_state_);
   }
 

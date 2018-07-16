@@ -59,19 +59,19 @@ template <typename T>
 IdmController<T>::~IdmController() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_pose_input()
+const systems::InputPort<T>& IdmController<T>::ego_pose_input()
     const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_velocity_input()
+const systems::InputPort<T>& IdmController<T>::ego_velocity_input()
     const {
   return systems::System<T>::get_input_port(ego_velocity_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
+const systems::InputPort<T>& IdmController<T>::traffic_input() const {
   return systems::System<T>::get_input_port(traffic_index_);
 }
 

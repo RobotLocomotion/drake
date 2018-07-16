@@ -43,7 +43,7 @@ class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
       frame_map);
 
 
-  const systems::InputPortDescriptor<double>& get_optitrack_input_port() const {
+  const systems::InputPort<double>& get_optitrack_input_port() const {
     return get_input_port(pose_input_port_index_);
   }
 

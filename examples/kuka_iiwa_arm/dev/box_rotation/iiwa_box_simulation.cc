@@ -65,7 +65,7 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::Simulator;

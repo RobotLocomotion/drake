@@ -88,7 +88,7 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_output_port() const;
 
   /// Returns the input port to the tire angle and applied longitudinal force.
-  const systems::InputPortDescriptor<T>& get_input_port() const;
+  const systems::InputPort<T>& get_input_port() const;
 
   const DynamicBicycleCarState<T>& get_state(
       const systems::Context<T>& context) const;

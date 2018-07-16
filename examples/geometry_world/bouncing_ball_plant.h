@@ -42,7 +42,7 @@ class BouncingBallPlant : public systems::LeafSystem<T> {
                     const Vector2<double>& p_WB);
   ~BouncingBallPlant() override;
 
-  const systems::InputPortDescriptor<T>& get_geometry_query_input_port() const;
+  const systems::InputPort<T>& get_geometry_query_input_port() const;
   /** Returns the port to output state. */
   const systems::OutputPort<T>& get_state_output_port() const;
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;

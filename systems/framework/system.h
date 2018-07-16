@@ -24,7 +24,7 @@
 #include "drake/common/unused.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event_collection.h"
-#include "drake/systems/framework/input_port_descriptor.h"
+#include "drake/systems/framework/input_port.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/system_base.h"
 #include "drake/systems/framework/system_constraint.h"
@@ -109,7 +109,7 @@ class System : public SystemBase {
   /// to return input vector types other than BasicVector. The @p descriptor
   /// must match a port declared via DeclareInputPort.
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const {
+      const InputPort<T>& descriptor) const {
     DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
     const int index = descriptor.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
@@ -122,7 +122,7 @@ class System : public SystemBase {
   /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
   /// The @p descriptor must match a port declared via DeclareInputPort.
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const {
+      const InputPort<T>& descriptor) const {
     DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
     const int index = descriptor.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
@@ -274,7 +274,7 @@ class System : public SystemBase {
   /// prior input. Does not assign any values to the fixed inputs.
   void AllocateFixedInputs(Context<T>* context) const {
     for (InputPortIndex i(0); i < get_num_input_ports(); ++i) {
-      const InputPortDescriptor<T>& port = get_input_port(i);
+      const InputPort<T>& port = get_input_port(i);
       if (port.get_data_type() == kVectorValued) {
         context->FixInputPort(port.get_index(), AllocateInputVector(port));
       } else {
@@ -981,8 +981,8 @@ class System : public SystemBase {
 
   /// Returns the typed input port at index @p port_index.
   // TODO(sherm1) Make this an InputPortIndex.
-  const InputPortDescriptor<T>& get_input_port(int port_index) const {
-    return dynamic_cast<const InputPortDescriptor<T>&>(
+  const InputPort<T>& get_input_port(int port_index) const {
+    return dynamic_cast<const InputPort<T>&>(
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
@@ -1117,7 +1117,7 @@ class System : public SystemBase {
 
   /// Appends a fragment to the @p dot stream identifying the graphviz node
   /// representing @p port. Does nothing by default.
-  virtual void GetGraphvizInputPortToken(const InputPortDescriptor<T>& port,
+  virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
                                          std::stringstream* dot) const {
     unused(port, dot);
   }
@@ -1425,20 +1425,20 @@ class System : public SystemBase {
   /// reason explicitly about randomness at the system level.  All random input
   /// ports are assumed to be statistically independent.
   /// @return descriptor of declared port.
-  const InputPortDescriptor<T>& DeclareInputPort(
+  const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
     const InputPortIndex port_index(get_num_input_ports());
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
     this->AddInputPort(
-        std::make_unique<InputPortDescriptor<T>>(
+        std::make_unique<InputPort<T>>(
             port_index, port_ticket, type, size, random_type, this, this));
     return get_input_port(port_index);
   }
 
   /// Adds an abstract-valued port to the input topology.
   /// @return descriptor of declared port.
-  const InputPortDescriptor<T>& DeclareAbstractInputPort() {
+  const InputPort<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
 
@@ -1461,12 +1461,12 @@ class System : public SystemBase {
   /// Allocates an input vector of the leaf type that the System requires on
   /// the port specified by @p descriptor. Caller owns the returned memory.
   virtual BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const = 0;
+      const InputPort<T>& descriptor) const = 0;
 
   /// Allocates an abstract input of the leaf type that the System requires on
   /// the port specified by @p descriptor. Caller owns the returned memory.
   virtual AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const = 0;
+      const InputPort<T>& descriptor) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

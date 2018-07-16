@@ -66,7 +66,7 @@ TYPED_TEST_P(ParticleTest, OutputTest) {
 /// consistent with its state and input (velocity and acceleration).
 TYPED_TEST_P(ParticleTest, DerivativesTest) {
   // Set input.
-  const systems::InputPortDescriptor<TypeParam>& input_descriptor =
+  const systems::InputPort<TypeParam>& input_descriptor =
       this->dut_->get_input_port(0);
   auto input = std::make_unique<systems::BasicVector<TypeParam>>(
       input_descriptor.size());

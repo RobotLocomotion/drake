@@ -147,7 +147,7 @@ TEST_F(VectorSystemTest, Topology) {
 
   // One input port.
   ASSERT_EQ(dut.get_num_input_ports(), 1);
-  const InputPortDescriptor<double>& descriptor_in = dut.get_input_port();
+  const InputPort<double>& descriptor_in = dut.get_input_port();
   EXPECT_EQ(descriptor_in.get_data_type(), kVectorValued);
   EXPECT_EQ(descriptor_in.size(), TestVectorSystem::kSize);
 

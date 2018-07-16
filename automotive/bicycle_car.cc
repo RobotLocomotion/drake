@@ -48,13 +48,13 @@ template <typename T>
 BicycleCar<T>::~BicycleCar() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& BicycleCar<T>::get_steering_input_port()
+const systems::InputPort<T>& BicycleCar<T>::get_steering_input_port()
     const {
   return systems::System<T>::get_input_port(steering_input_port_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& BicycleCar<T>::get_force_input_port()
+const systems::InputPort<T>& BicycleCar<T>::get_force_input_port()
     const {
   return systems::System<T>::get_input_port(force_input_port_);
 }

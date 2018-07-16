@@ -61,19 +61,19 @@ class BeamModel final : public LeafSystem<T> {
   template <typename U>
   explicit BeamModel(const BeamModel<U>&);
 
-  const InputPortDescriptor<T>& get_depth_input_port() const {
+  const InputPort<T>& get_depth_input_port() const {
     return this->get_input_port(0);
   }
-  const InputPortDescriptor<T>& get_event_random_input_port() const {
+  const InputPort<T>& get_event_random_input_port() const {
     return this->get_input_port(1);
   }
-  const InputPortDescriptor<T>& get_hit_random_input_port() const {
+  const InputPort<T>& get_hit_random_input_port() const {
     return this->get_input_port(2);
   }
-  const InputPortDescriptor<T>& get_short_random_input_port() const {
+  const InputPort<T>& get_short_random_input_port() const {
     return this->get_input_port(3);
   }
-  const InputPortDescriptor<T>& get_uniform_random_input_port() const {
+  const InputPort<T>& get_uniform_random_input_port() const {
     return this->get_input_port(4);
   }
 

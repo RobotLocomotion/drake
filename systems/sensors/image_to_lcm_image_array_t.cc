@@ -99,17 +99,17 @@ ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
           .get_index();
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 ImageToLcmImageArrayT::color_image_input_port() const {
   return this->get_input_port(color_image_input_port_index_);
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 ImageToLcmImageArrayT::depth_image_input_port() const {
   return this->get_input_port(depth_image_input_port_index_);
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 ImageToLcmImageArrayT::label_image_input_port() const {
   return this->get_input_port(label_image_input_port_index_);
 }
