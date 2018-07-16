@@ -64,6 +64,7 @@ drake_cc_googletest(
     tags = [
         "snopt",
     ],
+    timeout = "moderate",
     deps = [
         ":random_clutter_generator",
         ":simulate_plant_to_rest",

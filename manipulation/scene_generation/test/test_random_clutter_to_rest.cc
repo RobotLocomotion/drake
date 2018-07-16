@@ -25,13 +25,13 @@ const char kContainer[] = "open_top_box.urdf";
 const char kObject1[] = "big_robot_toy.urdf";
 const char kObject2[] = "block_for_pick_and_place.urdf";
 
-const int kNumRepetitions = 4;
+const int kNumRepetitions = 2;
 const int kNumBodiesInClutter = 2 * kNumRepetitions;
 const double kZHeightCost = 100.0; // Chosen arbitrarily.
 
 namespace {
 // Verifies that the obtained clutter IK solution is a 'feasible' clutter, i.e.
-// All the bodies are situated within the bounds specified by `kClutterSize`.  
+// All the bodies are situated within the bounds specified by `kClutterSize`.
 void VerifyClutterIk(const VectorX<double>& q, int num_elements_in_clutter) {
   Vector3<double> clutter_min = kClutterCenter - 0.5 * kClutterSize;
   Vector3<double> clutter_max = kClutterCenter + 0.5 * kClutterSize;
@@ -95,16 +95,16 @@ class ClutterGeneratorTest : public ::testing::Test {
   int num_positions_;
 };
 
-const int kNumTrials = 5;
+const int kNumTrials = 2;
 
 // This is a regression test. Verifies only valid clutter is generated.
 TEST_F(ClutterGeneratorTest, TestClutterIkValidity) {
   // Uses an arbitrarily chosen seed.
   std::default_random_engine generator(42);
 
-  // The expected number of positions corresponds to 7DoF for the configuration 
-  // of each of the bodies in the clutter i.e. each of the 2 types rigid bodies 
-  // that are repeated 4 times each within the clutter RigidBodyTree. 
+  // The expected number of positions corresponds to 7DoF for the configuration
+  // of each of the bodies in the clutter i.e. each of the 2 types rigid bodies
+  // that are repeated 4 times each within the clutter RigidBodyTree.
   EXPECT_EQ(num_positions_, 7 * kNumBodiesInClutter);
   VectorX<double> q_initial = VectorX<double>::Random(num_positions_);
   VectorX<double> q_ik, q_ik_previous = q_initial;
@@ -143,7 +143,7 @@ TEST_F(ClutterGeneratorTest, TestClutterIkCost) {
 
   // Uses an arbitrarily chosen seed.
   std::default_random_engine generator_2(42);
-  
+
   // This loop tests the repeatability.
   for (int i = 0; i < kNumTrials; ++i) {
     q_ik = clutter_generator_->GenerateFloatingClutter(q_initial, &generator_2);
@@ -172,7 +172,7 @@ TEST_F(ClutterGeneratorTest, TestPlantToRest) {
                                                      kZHeightCost);
 
   EXPECT_NO_THROW(q_out_stored = plant_to_rest_->Run(q_ik));
-  
+
   // This loop tests the repeatability.
   for (int i = 0; i < kNumTrials; ++i) {
     EXPECT_EQ(q_ik.size(), num_positions_);
