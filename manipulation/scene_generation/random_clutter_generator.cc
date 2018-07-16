@@ -124,7 +124,7 @@ VectorX<double> RandomClutterGenerator::GenerateFloatingClutter(
       for (size_t i = 0; i < model_instance_bodies.size(); ++i) {
         auto body = model_instance_bodies[i];
         AddBodyToOrientationConstraint(
-            body, &linear_posture_lb, &linear_posture_ub, &q_initial,
+            *body, &linear_posture_lb, &linear_posture_ub, &q_initial,
             &q_nominal_candidate, &z_indices, generator);
       }
     }
@@ -187,12 +187,12 @@ int RandomClutterGenerator::ComputeIK(
 }
 
 void RandomClutterGenerator::AddBodyToOrientationConstraint(
-    const RigidBody<double>* body, VectorX<double>* linear_posture_lb,
+    const RigidBody<double>& body, VectorX<double>* linear_posture_lb,
     VectorX<double>* linear_posture_ub, VectorX<double>* q_initial,
     VectorX<double>* q_nominal_candidate, std::vector<int>* z_indices,
     std::default_random_engine* generator) {
-  if (body->has_joint()) {
-    const DrakeJoint* joint = &body->getJoint();
+  if (body.has_joint()) {
+    const DrakeJoint* joint = &body.getJoint();
     if (!joint->is_fixed()) {
       int joint_dofs = joint->get_num_positions();
       // Enforces checks only for Floating quaternion joints.
@@ -202,18 +202,17 @@ void RandomClutterGenerator::AddBodyToOrientationConstraint(
       VectorX<double> joint_initial = joint_ub;
       VectorX<double> joint_nominal = joint_ub;
       if (joint_dofs == 7) {
-        // If the num dofs of the joint is 7 its a floating quaternion
-        // joint.The position part to be bounded by the clutter bounding
-        // box, the orientation part to be a random quaternion.
-        // Position.
-        // Note that this code assumes the dofs are organised as
+        // If the num dofs of the joint is 7 it's a floating quaternion
+        // joint.The position part is then to be bounded by the clutter
+        // bounding box, the orientation part to be a random quaternion.
+        // Note that this code assumes the dofs are organized as
         // x-y-z-quaternion.
         joint_lb.head(3) = clutter_lb_;
         joint_ub.head(3) = clutter_ub_;
         auto temp_out =
             GenerateBoundedRandomSample(generator, clutter_lb_, clutter_ub_);
         joint_initial.head(3) = temp_out;
-        z_indices->push_back(body->get_position_start_index() + 2);
+        z_indices->push_back(body.get_position_start_index() + 2);
         joint_nominal.head(3) = Vector3<double>::Zero(3);
         // Orientation
         Eigen::Quaterniond quat =
@@ -239,13 +238,13 @@ void RandomClutterGenerator::AddBodyToOrientationConstraint(
       // TODO(naveenoid) : Consider moving to a MathematicalProgram
       // formulation of the problem to use that API directly and use
       // symbolic mapping.
-      linear_posture_lb->segment(body->get_position_start_index(), joint_dofs) =
+      linear_posture_lb->segment(body.get_position_start_index(), joint_dofs) =
           joint_lb;
-      linear_posture_ub->segment(body->get_position_start_index(), joint_dofs) =
+      linear_posture_ub->segment(body.get_position_start_index(), joint_dofs) =
           joint_ub;
-      q_initial->segment(body->get_position_start_index(), joint_dofs) =
+      q_initial->segment(body.get_position_start_index(), joint_dofs) =
           joint_initial;
-      q_nominal_candidate->segment(body->get_position_start_index(),
+      q_nominal_candidate->segment(body.get_position_start_index(),
                                    joint_dofs) = joint_nominal;
     }
   }

@@ -57,6 +57,7 @@ add_lint_tests()
 
 drake_cc_googletest(
     name = "test_random_clutter_to_rest",
+    timeout = "moderate",
     data = [
         "//examples/kuka_iiwa_arm:prod_models",
     ],
@@ -64,7 +65,6 @@ drake_cc_googletest(
     tags = [
         "snopt",
     ],
-    timeout = "moderate",
     deps = [
         ":random_clutter_generator",
         ":simulate_plant_to_rest",

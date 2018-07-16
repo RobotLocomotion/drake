@@ -44,7 +44,7 @@ class RandomClutterGenerator {
    * designated bounds.
    * @param scene_tree A pointer to the tree containing the scene.
    * @param clutter_model_instances A set of model instance indices
-   * corresponding to those on the tree that should comprise the clutter
+   * corresponding to those on the tree that should comprise the clutter.
    * @param clutter_center Centroid of the clutter bounding box in
    * world coordinates.
    * @param clutter_size The size of the clutter bounding box along the
@@ -83,7 +83,7 @@ class RandomClutterGenerator {
                 const std::vector<int>& z_indices,
                 optional<double> z_height_cost = {});
 
-  void AddBodyToOrientationConstraint(const RigidBody<double>* body,
+  void AddBodyToOrientationConstraint(const RigidBody<double>& body,
                                       VectorX<double>* linear_posture_lb,
                                       VectorX<double>* linear_posture_ub,
                                       VectorX<double>* q_initial,

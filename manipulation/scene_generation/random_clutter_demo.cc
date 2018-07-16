@@ -61,7 +61,7 @@ std::unique_ptr<RigidBodyTreed> GenerateSceneTree(
     model_name << "model_" << model_ctr++;
     tree_builder->StoreModel(model_name.str(), it);
 
-    for (int i = 0; i < FLAGS_max_iterations; ++i) {
+    for (int i = 0; i < num_repetitions; ++i) {
       // All floating objects are added to origin. The floating base
       // coordinates define the object's pose relative to the world
       // frame.
