@@ -20,7 +20,11 @@ SpringDamper<T>::SpringDamper(
     bodyB_(bodyB),
     p_BQ_(p_BQ),
     rest_length_(rest_length),
-    stiffness_(stiffness), damping_(damping) {}
+    stiffness_(stiffness), damping_(damping) {
+  DRAKE_THROW_UNLESS(rest_length >= 0);
+  DRAKE_THROW_UNLESS(stiffness >= 0);
+  DRAKE_THROW_UNLESS(damping >= 0);
+}
 
 template <typename T>
 void SpringDamper<T>::DoCalcAndAddForceContribution(

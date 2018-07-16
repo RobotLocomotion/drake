@@ -12,9 +12,23 @@ namespace multibody {
 
 template <typename T> class Body;
 
-/// This ForceElement allows modeling the effect of a uniform gravity field as
-/// felt by bodies on the surface of the Earth.
-/// This gravity fields acts on all bodies in the MultibodyTree model.
+/// This ForceElement models a spring-damper attached between two points on
+/// two different bodies.
+/// Given a point P on a body A and a point Q on a body B with positions
+/// p_AP_A and p_BQ_B, respectively, this spring applies equal and opposite
+/// forces on bodies A and B according to: <pre>
+///   f_AP = (k⋅(ℓ - ℓ₀) + c⋅dℓ/dt)⋅r̂
+///   f_BQ = -f_AP
+/// </pre>
+/// where `ℓ = ‖p_WQ - p_WP‖` is the current length of the spring, dℓ/dt its
+/// rate of change, `r̂ = (p_WQ - p_WP) / ℓ` is the normalized vector from P to
+/// Q, and k and c are the stiffness and damping of the spring-damper,
+/// respectively.
+/// Note that:
+///   - The applied force is always along the line connecting points P and Q.
+///   - Damping always dissipates energy.
+///   - Forces and bodies A and B are equal and opposite according to Newton's
+///     third law.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -29,7 +43,21 @@ class SpringDamper : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpringDamper)
 
-  /// blah...
+  /// Constructor for a spring-damper between a point P on `bodyA` and a
+  /// point Q on `bodyB`. Point P is defined by its position `p_AP` as
+  /// measured and expressed in the body frame A and similarly, point Q is
+  /// defined by its position p_BQ as measured and expressed in body frame B.
+  /// The remaining parameters define:
+  /// @param[in] rest_length
+  ///   The resting length ℓ₀, in meters, at which the spring applies no forces.
+  /// @param[in] stiffness
+  ///   The stiffness k of the spring in N/m.
+  /// @param[in] damping
+  ///   The damping of the damper in N⋅s/m.
+  /// Refer to this class's documentation for further details.
+  /// @throws std::exception if `rest_length` is negative.
+  /// @throws std::exception if `stiffness` is negative.
+  /// @throws std::exception if `damping` is negative.
   SpringDamper(
       const Body<T>& bodyA, const Vector3<double>& p_AP,
       const Body<T>& bodyB, const Vector3<double>& p_BQ,
@@ -39,8 +67,12 @@ class SpringDamper : public ForceElement<T> {
 
   const Body<T>& bodyB() const { return bodyB_; }
 
+  /// The position p_AP of point P on body A as measured and expressed in body
+  /// frame A.
   const Vector3<double> point_on_bodyA() const { return p_AP_; }
 
+  /// The position p_BQ of point Q on body B as measured and expressed in body
+  /// frame B.
   const Vector3<double> point_on_bodyB() const { return p_BQ_; }
 
   double rest_length() const { return rest_length_; }
@@ -49,12 +81,6 @@ class SpringDamper : public ForceElement<T> {
 
   double damping() const { return damping_; }
 
-  /// Computes the total potential energy of all bodies in the model in this
-  /// uniform gravity field. The definition of potential energy allows to
-  /// arbitrarily choose the zero energy height. This element takes the zero
-  /// energy height to be the same as the world's height. That is, a body
-  /// will have zero potential energy when its the height of its center of mass
-  /// is at the world's origin.
   T CalcPotentialEnergy(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc) const final;
