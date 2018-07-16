@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace solvers {
-
 std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   return {};
 }
