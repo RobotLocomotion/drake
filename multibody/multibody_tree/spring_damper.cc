@@ -6,13 +6,6 @@
 #include "drake/multibody/multibody_tree/body.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 
-#include <iostream>
-//#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-//#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
-#define PRINT_VAR(a) (void) a;
-#define PRINT_VARn(a) (void) a;
-
 namespace drake {
 namespace multibody {
 
@@ -58,40 +51,35 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
   // Using this "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
   const T length_soft = sqrt(p_PQ_W.squaredNorm() + epsilon_squared);
 
-  PRINT_VAR(p_WP.transpose());
-  PRINT_VAR(p_WQ.transpose());
-  PRINT_VAR(p_PQ_W.transpose());
-  PRINT_VAR(length_soft);
-
   const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 
-  PRINT_VAR(r_PQ_W.transpose());
-  PRINT_VAR(stiffness());
-  PRINT_VAR(rest_length());
-
   // Force on A, applied at P, expressed in the world frame.
-  const Vector3<T> f_AP_W =
+  Vector3<T> f_AP_W =
       stiffness() * (length_soft - rest_length()) * r_PQ_W;
 
-  PRINT_VAR(f_AP_W.transpose());
-
+  // Compute the velocities of P and Q so that we can add the damping force.
   // p_PAo = p_WAo - p_WP
   const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
+  const SpatialVelocity<T>& V_WP =
+      vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
 
   // p_QBo = p_WBo - p_WQ
   const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
+  const SpatialVelocity<T>& V_WQ =
+      vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
 
-  // Compute damping force.
-  const SpatialVelocity<T>& V_WP = vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
-  const SpatialVelocity<T>& V_WQ = vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
-  // relative velocity of P in Q, expressed in world.
+  // Relative velocity of P in Q, expressed in the world frame.
   const Vector3<T> v_PQ_W = V_WQ.translational() - V_WP.translational();
-  //const T length_dot = v_PQ_W.d
-  (void) v_PQ_W;
+  // The rate at which the length of the spring changes.
+  const T length_dot = v_PQ_W.dot(r_PQ_W);
 
+  // Add the damping force on A at P.
+  f_AP_W += damping() * length_dot * r_PQ_W;
+
+  // Shift to the corresponding body frame and add spring-damper contribution
+  // to the output forces.
   F_Bo_W_array[bodyA().node_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), f_AP_W).Shift(p_PAo_W);
-
   F_Bo_W_array[bodyB().node_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), -f_AP_W).Shift(p_QBo_W);
 }

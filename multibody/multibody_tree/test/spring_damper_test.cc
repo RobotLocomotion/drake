@@ -57,14 +57,16 @@ class SpringDamperTester : public ::testing::Test {
     forces_ = std::make_unique<MultibodyForces<double>>(model_);
   }
 
-  void SetSliderPosition(double position) {
+  void SetSliderState(double position, double position_rate) {
     slider_->set_translation(context_.get(), position);
+    slider_->set_translation_rate(context_.get(), position_rate);
     // Update the kinematics cache.
     model_.CalcPositionKinematicsCache(*context_, pc_.get());
     model_.CalcVelocityKinematicsCache(*context_, *pc_, vc_.get());
   }
 
   void CalcSpringDamperForces() const {
+    forces_->SetZero();
     spring_damper_->CalcAndAddForceContribution(
         *mbt_context_, *pc_, *vc_, forces_.get());
   }
@@ -111,7 +113,7 @@ TEST_F(SpringDamperTester, ConstructionAndAccessors) {
 // Verify the spring applies no forces when the spearation length equals the
 // rest length.
 TEST_F(SpringDamperTester, RestLength) {
-  SetSliderPosition(1.0);
+  SetSliderState(1.0, 0.0);
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
@@ -123,7 +125,7 @@ TEST_F(SpringDamperTester, RestLength) {
 // length.
 TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   const double length = 2.0;
-  SetSliderPosition(length);
+  SetSliderState(length, 0.0);
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
@@ -145,7 +147,7 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
 // length.
 TEST_F(SpringDamperTester, LengthSmallerThanRestLength) {
   const double length = 0.5;
-  SetSliderPosition(length);
+  SetSliderState(length, 0.0);
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
@@ -161,10 +163,43 @@ TEST_F(SpringDamperTester, LengthSmallerThanRestLength) {
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+}
 
+// Verify forces computation when the spring is at its rest length (zero spring
+// force) but it is expanding/compressing and therefore damping is non-zero.
+TEST_F(SpringDamperTester, NonZeroVelocity) {
+  // The spring is stretching.
+  const double length_dot = 1.0;
+  // We use the rest length for this test so that the spring contribution is
+  // zero.
+  SetSliderState(rest_length_, length_dot);
+  CalcSpringDamperForces();
+  const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
+  const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
+  // The spring force is zero in this case and only the damping force is
+  // non-zero.
+  const double expected_force_magnitude = damping_ * length_dot;
+  const double expected_torque_magnitude =
+      expected_force_magnitude * torque_arm_length_;
+  const SpatialForce<double> F_A_W_expected(
+      Vector3<double>(0, 0, -expected_torque_magnitude),
+      Vector3<double>(expected_force_magnitude, 0, 0));
+  EXPECT_TRUE(CompareMatrices(
+      F_A_W.get_coeffs(), F_A_W_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
 
-  PRINT_VAR(F_A_W);
-  PRINT_VAR(F_B_W);
+  // Spring is compressing.
+  SetSliderState(rest_length_, -length_dot);
+  CalcSpringDamperForces();
+  EXPECT_TRUE(CompareMatrices(
+      F_A_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      F_B_W.get_coeffs(), F_A_W_expected.get_coeffs(),
+      kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
