@@ -198,7 +198,7 @@ TEST_F(RgbdRendererOSPRayTest, MeshTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), ColorI({106, 255, 129}), 214u,
+  CompareColor(color_.at(x, y), ColorI({104, 255, 129}), 214u,
                kColorPixelTolerance);
 }
 
