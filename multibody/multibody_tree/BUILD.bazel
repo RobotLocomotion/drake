@@ -392,6 +392,7 @@ drake_cc_googletest(
     name = "spring_damper_test",
     deps = [
         ":multibody_tree",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework:context",
     ],
 )
