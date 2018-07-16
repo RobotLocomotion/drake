@@ -277,6 +277,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
   //@}
 
+  /// @anchor context_base_change_notification_methods
   /** @name         Change notification methods (Internal use only)
   These "Note" methods are used by framework-internal derived classes to effect
   change notifications that propagate down from a DiagramContext (where the
