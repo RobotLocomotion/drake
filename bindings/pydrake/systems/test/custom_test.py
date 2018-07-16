@@ -203,6 +203,16 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(
             system.HasDirectFeedthrough(input_port=0, output_port=0))
 
+        # Test explicit calls.
+        system = TrivialSystem()
+        context = system.CreateDefaultContext()
+        system.Publish(context)
+        self.assertTrue(system.called_publish)
+        context_update = context.Clone()
+        system.CalcTimeDerivatives(
+            context, context_update.get_mutable_continuous_state())
+        self.assertTrue(system.called_continuous)
+
     def test_vector_system_overrides(self):
         dt = 0.5
         for is_discrete in [False, True]:

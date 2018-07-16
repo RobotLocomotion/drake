@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 
 #include <memory>
+#include <utility>
 
 #include <sdf/sdf.hh>
 
@@ -195,6 +196,10 @@ void AddJointActuatorFromSpecification(
 }
 
 // Returns joint limits as the pair (lower_limit, upper_limit).
+// The units of the limits depend on the particular joint type. Units are meters
+// for prismatic joints and radians for revolute joints.
+// This method throws an exception if the joint type is not one of revolute or
+// prismatic.
 std::pair<double, double> ParseJointLimits(const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
@@ -282,7 +287,7 @@ void AddJointFromSpecification(
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, damping, limits.first, limits.second);
+          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
@@ -293,7 +298,7 @@ void AddJointFromSpecification(
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, damping, limits.first, limits.second);
+          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }

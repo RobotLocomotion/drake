@@ -5,6 +5,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/multibody_tree/parsing/sdf_parser_common.h"
 
 namespace drake {
 namespace multibody {

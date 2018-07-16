@@ -22,7 +22,7 @@ from pydrake.systems.analysis import (
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
     Context_,
-    ContinuousState_,
+    ContinuousState, ContinuousState_,
     Diagram, Diagram_,
     DiagramBuilder, DiagramBuilder_,
     DiscreteUpdateEvent_,
@@ -39,7 +39,7 @@ from pydrake.systems.framework import (
     Supervector_,
     System_,
     SystemOutput_,
-    VectorBase_,
+    VectorBase, VectorBase_,
     VectorSystem_,
     )
 from pydrake.systems import primitives
@@ -92,6 +92,19 @@ class TestGeneral(unittest.TestCase):
             self.assertEqual(len(w), 1)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
+
+    def test_context_api(self):
+        system = Adder(3, 10)
+        context = system.CreateDefaultContext()
+        self.assertIsInstance(
+            context.get_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_continuous_state_vector(), VectorBase)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state_vector(), VectorBase)
+        # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
 
     def test_instantiations(self):
         # Quick check of instantions for given types.

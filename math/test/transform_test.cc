@@ -84,7 +84,7 @@ Transform<double> GetTransformB() {
 // Tests default constructor - should be identity transform.
 GTEST_TEST(Transform, DefaultTransformIsIdentity) {
   const Transform<double> X;
-  EXPECT_TRUE(X.IsExactlyIdentity());
+  EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
 // Tests constructing a Transform from a RotationMatrix and Vector3.
@@ -185,7 +185,7 @@ GTEST_TEST(Transform, Isometry3) {
 // Tests method Identity (identity rotation matrix and zero vector).
 GTEST_TEST(Transform, Identity) {
   const Transform<double>& X = Transform<double>::Identity();
-  EXPECT_TRUE(X.IsExactlyIdentity());
+  EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
 // Tests method SetIdentity.
@@ -194,34 +194,34 @@ GTEST_TEST(Transform, SetIdentity) {
   const Vector3d p(2, 3, 4);
   Transform<double> X(R, p);
   X.SetIdentity();
-  EXPECT_TRUE(X.IsExactlyIdentity());
+  EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
 // Tests whether or not a Transform is an identity transform.
 GTEST_TEST(Transform, IsIdentity) {
   // Test whether it is an identity matrix multiple ways.
   Transform<double> X1;
-  EXPECT_TRUE(X1.IsExactlyIdentity());
-  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0));
-  EXPECT_TRUE(X1.rotation().IsExactlyIdentity());
+  EXPECT_TRUE(X1.IsExactlyIdentity().value());
+  EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0).value());
+  EXPECT_TRUE(X1.rotation().IsExactlyIdentity().value());
   EXPECT_TRUE((X1.translation().array() == 0).all());
 
   // Test non-identity matrix.
   const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
   Transform<double> X2(R, p);
-  EXPECT_FALSE(X2.IsExactlyIdentity());
+  EXPECT_FALSE(X2.IsExactlyIdentity().value());
 
   // Change rotation matrix to identity, but leave non-zero position vector.
   X2.set_rotation(RotationMatrix<double>::Identity());
-  EXPECT_FALSE(X2.IsExactlyIdentity());
-  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99));
-  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01));
+  EXPECT_FALSE(X2.IsExactlyIdentity().value());
+  EXPECT_FALSE(X2.IsIdentityToEpsilon(3.99).value());
+  EXPECT_TRUE(X2.IsIdentityToEpsilon(4.01).value());
 
   // Change position vector to zero vector.
   const Vector3d zero_vector(0, 0, 0);
   X2.set_translation(zero_vector);
-  EXPECT_TRUE(X2.IsExactlyIdentity());
+  EXPECT_TRUE(X2.IsExactlyIdentity().value());
 }
 
 // Tests calculating the inverse of a Transform.
@@ -236,7 +236,7 @@ GTEST_TEST(Transform, Inverse) {
   // Note: The square-root of the condition number for a Transform is roughly
   // the magnitude of the position vector.  The accuracy of the calculation for
   // the inverse of a Transform drops off with the sqrt condition number.
-  EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon));
+  EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon).value());
 }
 
 // Tests Transform multiplied by another Transform
@@ -250,7 +250,7 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
   const RotationMatrix<double> R_BA = GetRotationMatrixA();
   const RotationMatrix<double> R_CB = GetRotationMatrixB();
   const RotationMatrix<double> R_CA_expected = R_CB * R_BA;
-  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0));
+  EXPECT_TRUE(R_CA.IsNearlyEqualTo(R_CA_expected, 0).value());
 
   // Expected position vector (from MotionGenesis).
   const double x_expected = 5.761769695362743;
@@ -266,7 +266,7 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
   // As documented in IsNearlyEqualTo(), 32 * epsilon was chosen because it is
   // slightly larger than the characteristic length |p_CoAo_C| = 14.2
   const Transform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
-  EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon));
+  EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon).value());
 }
 
 // Tests Transform multiplied by a position vector.

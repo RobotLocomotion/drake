@@ -1,7 +1,9 @@
 #include "drake/solvers/mosek_solver.h"
 
 #include <gtest/gtest.h>
+#include <spruce.hh>
 
+#include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
@@ -115,6 +117,28 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   if (mosek_solver.available()) {
     SolveEigenvalueProblem(mosek_solver, 1E-7);
   }
+}
+
+GTEST_TEST(MosekTest, TestLogFile) {
+  // Test if we can print the logging info to a log file.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) == 1);
+
+  const std::string log_file = temp_directory() + "mosek.log";
+  EXPECT_FALSE(spruce::path(log_file).exists());
+  MosekSolver solver;
+  solver.Solve(prog);
+  // By default, no logging file.
+  EXPECT_FALSE(spruce::path(log_file).exists());
+  // Output the logging to the console
+  solver.set_stream_logging(true, "");
+  solver.Solve(prog);
+  EXPECT_FALSE(spruce::path(log_file).exists());
+  // Output the logging to the file.
+  solver.set_stream_logging(true, log_file);
+  solver.Solve(prog);
+  EXPECT_TRUE(spruce::path(log_file).exists());
 }
 }  // namespace test
 }  // namespace solvers

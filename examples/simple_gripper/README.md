@@ -55,10 +55,16 @@ bazel build //examples/simple_gripper
 Running the Example
 -------------------
 
-Launch the visualizer
+Launch the visualizer (optionally visualizing contact forces or not)
+
+Without contact forces visualized:
 ```
-./bazel-bin/tools/drake_visualizer
+./bazel-bin/tools/drake_visualizer```
+With contact forces visualized:
 ```
+./bazel-bin/tools/drake_visualizer --script multibody/rigid_body_plant/visualization/contact_viz.py
+```
+
 Launch the simulation with
 ```
 ./bazel-bin/examples/simple_gripper/simple_gripper --simulation_time=10.0

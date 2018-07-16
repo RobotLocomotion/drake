@@ -1,13 +1,14 @@
 #pragma once
 
-#include "drake/systems/analysis/continuous_extension.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/systems/analysis/dense_output.h"
 
 namespace drake {
 namespace systems {
 
-/// A ContinuousExtension class interface extension, geared towards
-/// step-wise construction procedures. Extensions of this kind are to be
-/// built incrementally by means of discrete updates that extend its domain.
+/// A DenseOutput class interface extension, geared towards step-wise
+/// construction procedures. Outputs of this kind are to be built
+/// incrementally by means of discrete updates that extend its domain.
 /// Nature of an update remains implementation specific.
 ///
 /// To allow for update rectification (i.e. drop and replacement), in case it
@@ -21,8 +22,12 @@ namespace systems {
 ///
 /// @tparam T A valid Eigen scalar type.
 template <typename T>
-class StepwiseContinuousExtension : public ContinuousExtension<T> {
+class StepwiseDenseOutput : public DenseOutput<T> {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StepwiseDenseOutput)
+
+  ~StepwiseDenseOutput() override = default;
+
   /// Rolls back (drops) the last update.
   /// @remarks This process is irreversible.
   /// @pre Updates have taken place since instantiation or last
@@ -44,6 +49,9 @@ class StepwiseContinuousExtension : public ContinuousExtension<T> {
   ///       (via get_start_time()/get_end_time()).
   /// @throw std::logic_error if any of the preconditions is not met.
   virtual void Consolidate() = 0;
+
+ protected:
+  StepwiseDenseOutput() = default;
 };
 
 }  // namespace systems

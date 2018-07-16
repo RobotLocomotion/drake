@@ -1,6 +1,7 @@
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -10,13 +11,8 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/orthonormal_basis.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
-
+#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -54,6 +50,175 @@ using systems::Context;
 using systems::InputPortDescriptor;
 using systems::InputPortIndex;
 using systems::OutputPortIndex;
+
+namespace internal {
+// This is a helper struct used to estimate the parameters used in the penalty
+// method to enforce joint limits.
+// The penalty method applies at each joint, a spring-damper force with
+// parameters estimated by this struct.
+// Once a joint reaches a limit (either lower or upper), the governing equations
+// for that joint's coordinate can be approximated by a harmonic oscillator with
+// stiffness and damping corresponding to the penalty parameters for that joint
+// as:  q̈ + 2ζω₀ q̇ + ω₀² q = 0, where ω₀² = k / m̃ is the characteristic
+// numerical stiffness frequency and m̃ is an inertia term computed differently
+// for prismatic and revolute joints.
+// The numerical frequency is defined as ω₀ = 2π/τ₀ with τ₀ = αδt a numerical
+// stiffness time scale set to be proportional to the time step of the discrete
+// model. The damping ratio ζ is set to one, corresponding to a critically
+// damped oscillator and thus so that the penalty method emulates the effect of
+// a "hard" limit.
+// Knowing ω₀ (from the time step) and m̃ (a function of the bodies connected by
+// the joint), it is possible, from the equations for a harmonic oscillator, to
+// estimate the stiffness k and damping d parameters for the penalty method.
+// Finally, MultibodyPlant uses a value of α to guarantee the stability of the
+// method (from a stability analysis of the time stepping method for the
+// model of a harmonic oscillator).
+// Using this estimation procedure, the stiffness k is shown to be proportional
+// to the inverse of the time step squared, i.e. k ∝ 1/δt².
+// Since, at steady state, the violation of the joint limit is inversely
+// proportional to the stiffness parameter, this violation turns out being
+// proportional to the time step squared, that is, Δq ∝ δt².
+// Therefore the convergence of the joint limit violation is expected to be
+// quadratic with the time step.
+template <typename T>
+struct JointLimitsPenaltyParametersEstimator {
+  // This helper method returns a pair (k, d) (in that order) for a harmonic
+  // oscillator given the period τ₀ of the oscillator and the inertia m̃. d is
+  // computed for a critically damped oscillator.
+  // The harmonic oscillator model corresponds to:
+  //    m̃q̈ + d q̇ + k q = 0
+  // or equivalently:
+  //    q̈ + 2ζω₀ q̇ + ω₀² q = 0
+  // with ω₀ = sqrt(k/m̃) and ζ = d/sqrt(km̃)/2 the damping ratio, which is one
+  // for critically damped oscillators.
+  static std::pair<double, double>
+  CalcCriticallyDampedHarmonicOscillatorParameters(
+      double period, double inertia) {
+    const double damping_ratio = 1.0;  // Critically damped.
+    const double omega0 = 2.0 * M_PI / period;
+    const double stiffness = inertia * omega0 * omega0;
+    const double damping = 2.0 * damping_ratio * std::sqrt(inertia * stiffness);
+    return std::make_pair(stiffness, damping);
+  }
+
+  // This method combines a pair of penalty parameters params1 and params2.
+  // The combination law is very simple, this method returns the set of
+  // parameters with the smallest stiffness, and thus it favors the stiffness
+  // leading to the lower numerical stiffness (thus guaranteeing stability).
+  static std::pair<double, double> PickLessStiffPenaltyParameters(
+      const std::pair<double, double>& params1,
+      const std::pair<double, double>& params2) {
+    const double stiffness1 = params1.first;
+    const double stiffness2 = params2.first;
+    if (stiffness1 < stiffness2) {
+      return params1;
+    } else {
+      return params2;
+    }
+  }
+
+  // Helper method to estimate the penalty parameters for a prismatic joint.
+  // The strategy consists in computing a set of penalty parameters for each
+  // body connected by joint as if the other body was welded and ignoring
+  // any other bodies in the system. This leads to a spring mass system where
+  // the inertia m̃ corresponds to the mass of the body in consideration.
+  // Then the penalty parameters estimated for each body are combined with
+  // PickLessStiffPenaltyParameters() leading to a single set of parameters.
+  static std::pair<double, double> CalcPrismaticJointPenaltyParameters(
+      const PrismaticJoint<T>& joint, double numerical_time_scale) {
+    // Penalty parameters for the parent body (child fixed).
+    const double parent_mass = joint.parent_body().index() == world_index() ?
+                               std::numeric_limits<double>::infinity() :
+                               joint.parent_body().get_default_mass();
+    const auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, parent_mass);
+    // Penalty parameters for the child body (parent fixed).
+    const double child_mass = joint.child_body().index() == world_index() ?
+                               std::numeric_limits<double>::infinity() :
+                               joint.child_body().get_default_mass();
+    const auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, child_mass);
+
+    // Return the combined penalty parameters of the two bodies.
+    auto params = PickLessStiffPenaltyParameters(parent_params, child_params);
+
+    return params;
+  }
+
+  // Helper method to estimate the penalty parameters for a revolute joint.
+  // The strategy consists in computing a set of penalty parameters for each
+  // body connected by joint as if the other body was welded and ignoring
+  // any other bodies in the system. This leads to a torsional spring system
+  // for which the inertia m̃ corresponds to the rotational inertia of the body
+  // in consideration, computed about the axis of the joint.
+  // Then the penalty parameters estimated for each body are combined with
+  // PickLessStiffPenaltyParameters() leading to a single set of parameters.
+  static std::pair<double, double> CalcRevoluteJointPenaltyParameters(
+      const RevoluteJoint<T>& joint, double numerical_time_scale) {
+    // For the body attached to `frame` (one of the parent/child frames of
+    // `joint`), this helper lambda computes the rotational inertia of the body
+    // about the axis of the joint.
+    // That is, it computes Iₐ = âᵀ⋅Iᴮ⋅â where Iᴮ is the rotational inertia of
+    // the body, â is the axis of the joint, and Iₐ is the (scalar) rotational
+    // inertia of the body computed about the joint's axis. Iₐ is the inertia
+    // that must be considered for the problem of a pendulum oscillating about
+    // an axis â, leading to the equations for a harmonic oscillator when we
+    // apply the penalty forces.
+    // For further details on Iₐ, the interested reader can refer to
+    // [Goldstein, 2014, §5.3].
+    //
+    // [Goldstein, 2014] Goldstein, H., Poole, C.P. and Safko, J.L., 2014.
+    //                   Classical Mechanics: Pearson New International Edition.
+    //                   Pearson Higher Ed.
+    auto CalcRotationalInertiaAboutAxis = [&joint](const Frame<T>& frame) {
+          const RigidBody<T>* body =
+              dynamic_cast<const RigidBody<T>*>(&frame.body());
+          DRAKE_THROW_UNLESS(body != nullptr);
+
+          // This check is needed for such models for which the user leaves the
+          // spatial inertias unspecified (i.e. initialized to NaN). A user
+          // might do this when only interested in performing kinematics
+          // computations.
+          if (std::isnan(body->get_default_mass())) {
+            return std::numeric_limits<double>::infinity();
+          }
+
+          const SpatialInertia<T>& M_PPo_P =
+              body->default_spatial_inertia().template cast<T>();
+          const Isometry3<T> X_PJ = frame.GetFixedPoseInBodyFrame();
+          const Vector3<T>& p_PJ = X_PJ.translation();
+          const Matrix3<T>& R_PJ = X_PJ.linear();
+          const SpatialInertia<T> M_PJo_J =
+              M_PPo_P.Shift(p_PJ).ReExpress(R_PJ);
+          const RotationalInertia<T> I_PJo_J =
+              M_PJo_J.CalcRotationalInertia();
+          // Rotational inertia about the joint axis.
+          const Vector3<T>& axis = joint.revolute_axis();
+          const T I_a = axis.transpose() * (I_PJo_J * axis);
+          return ExtractDoubleOrThrow(I_a);
+        };
+
+    // Rotational inertia about the joint's axis for the parent body.
+    const double I_Pa =
+        joint.parent_body().index() == world_index() ?
+        std::numeric_limits<double>::infinity() :
+        CalcRotationalInertiaAboutAxis(joint.frame_on_parent());
+    auto parent_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, I_Pa);
+
+    // Rotational inertia about the joint's axis for the child body.
+    const double I_Ca =
+        joint.child_body().index() == world_index() ?
+        std::numeric_limits<double>::infinity() :
+        CalcRotationalInertiaAboutAxis(joint.frame_on_child());
+    auto child_params = CalcCriticallyDampedHarmonicOscillatorParameters(
+        numerical_time_scale, I_Ca);
+
+    // Return the combined penalty parameters of the two bodies.
+    return PickLessStiffPenaltyParameters(parent_params, child_params);
+  }
+};
+}  // namespace internal
 
 template<typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step) :
@@ -143,7 +308,13 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
         "RegisterAsSourceForSceneGraph()");
   }
   GeometryId id;
-  geometry::VisualMaterial invisible_material(Vector4<double>(1.0, 0.0, 0.0, 0.0));
+  // We use an "invisible" color with alpha channel set to zero so that
+  // collision geometry does not render on top of visual geometry in our
+  // visualizer.
+  // TODO(amcastro-tri): Remove this "invisible" color once "roles" land in
+  // SceneGraph.
+  const geometry::VisualMaterial invisible_material(
+      Vector4<double>(0.0, 0.0, 0.0, 0.0));
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register anchored geometry on ANY body welded to the world.
   if (body.index() == world_index()) {
@@ -257,6 +428,95 @@ void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
 }
 
 template<typename T>
+void MultibodyPlant<T>::SetUpJointLimitsParameters() {
+  for (JointIndex joint_index(0); joint_index < model().num_joints();
+       ++joint_index) {
+    // Currently MultibodyPlant applies these "compliant" joint limit forces
+    // using an explicit Euler strategy. Stability analysis of the explict Euler
+    // applied to the harmonic oscillator (the model used for these compliant
+    // forces) shows the scheme to be stable for kAlpha > 2π. We take a
+    // significantly larger kAlpha so that we are well within the stability
+    // region of the scheme.
+    // TODO(amcastro-tri): Decrease the value of kAlpha to be closer to one when
+    // the time stepping scheme is updated to be implicit in the joint limits.
+    const double kAlpha = 20 * M_PI;
+
+    const Joint<T>& joint = model().get_joint(joint_index);
+    auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
+    auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
+    // Currently MBP only supports limits for prismatic and revolute joints.
+    if (!(revolute_joint || prismatic_joint)) continue;
+
+    const double penalty_time_scale = kAlpha * time_step();
+
+    if (revolute_joint) {
+      // We only compute parameters if they are far from being infinity.
+      // SDF defaults to 1.0e16 instead of infinity.
+      if (-1.0e16 < revolute_joint->lower_limit() ||
+          revolute_joint->upper_limit() < 1.0e16) {
+        joint_limits_parameters_.joints_with_limits.push_back(
+            revolute_joint->index());
+
+        // Store joint limits.
+        joint_limits_parameters_.lower_limit.push_back(
+            revolute_joint->lower_limit());
+        joint_limits_parameters_.upper_limit.push_back(
+            revolute_joint->upper_limit());
+        // Estimate penalty parameters.
+        auto penalty_parameters =
+            internal::JointLimitsPenaltyParametersEstimator<T>::
+            CalcRevoluteJointPenaltyParameters(
+                *revolute_joint, penalty_time_scale);
+        joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+        joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      }
+    }
+
+    if (prismatic_joint) {
+      // We only compute parameters if they are far from being infinity.
+      // SDF defaults to 1.0e16 instead of infinity.
+      if (-1.0e16 < prismatic_joint->lower_limit() ||
+          prismatic_joint->upper_limit() < 1.0e16) {
+        joint_limits_parameters_.joints_with_limits.push_back(
+            prismatic_joint->index());
+
+        // Store joint limits.
+        joint_limits_parameters_.lower_limit.push_back(
+            prismatic_joint->lower_limit());
+        joint_limits_parameters_.upper_limit.push_back(
+            prismatic_joint->upper_limit());
+
+        // Estimate penalty parameters.
+        auto penalty_parameters =
+            internal::JointLimitsPenaltyParametersEstimator<T>::
+            CalcPrismaticJointPenaltyParameters(
+                *prismatic_joint, penalty_time_scale);
+        joint_limits_parameters_.stiffness.push_back(penalty_parameters.first);
+        joint_limits_parameters_.damping.push_back(penalty_parameters.second);
+      }
+    }
+
+    // Since currently MBP only handles joint limits for discrete models, verify
+    // there are no joint limits when the model is continuous.
+    // Therefore we throw an exception with an appropriate message when a user
+    // specifies joint limits for a continuous model.
+    if (!is_discrete()) {
+      for (size_t i = 0; i < joint_limits_parameters_.stiffness.size(); ++i) {
+        const double stiffness = joint_limits_parameters_.stiffness[i];
+        if (!std::isinf(stiffness)) {
+          const JointIndex index =
+              joint_limits_parameters_.joints_with_limits[i];
+          throw std::logic_error(
+              "Currently MultibodyPlant does not handle joint limits for "
+              "continuous models. However a limit was specified for joint `"
+              "`" + model().get_joint(index).name() + "`.");
+        }
+      }
+    }
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareStateAndPorts();
   // Only declare ports to communicate with a SceneGraph if the plant is
@@ -282,28 +542,7 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
         stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
   }
-
-  for (JointIndex joint_index(0); joint_index < model().num_joints();
-      ++joint_index) {
-    const Joint<T>& joint = model().get_joint(joint_index);
-
-    auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
-    if (revolute_joint) {
-      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-      joint_limits_parameters_.lower_limit.push_back(revolute_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(revolute_joint->upper_limit());
-      joint_limits_parameters_.stiffness.push_back(150.0);
-      joint_limits_parameters_.damping.push_back(1.0);
-    }
-    auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
-    if (prismatic_joint) {
-      joint_limits_parameters_.joints_with_limits.push_back(joint.index());
-      joint_limits_parameters_.lower_limit.push_back(prismatic_joint->lower_limit());
-      joint_limits_parameters_.upper_limit.push_back(prismatic_joint->upper_limit());
-      joint_limits_parameters_.stiffness.push_back(150.0);
-      joint_limits_parameters_.damping.push_back(1.0);
-    }
-  }
+  SetUpJointLimitsParameters();
 }
 
 template <typename T>
@@ -809,30 +1048,30 @@ void MultibodyPlant<T>::AddJointActuationForces(
 template<typename T>
 void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  DRAKE_THROW_UNLESS(is_discrete());
   DRAKE_DEMAND(forces != nullptr);
-  
-  auto CalcJointLimitPenaltyForce = [](
+
+  auto CalcPenaltyForce = [](
       double lower_limit, double upper_limit, double stiffness, double damping,
       const T& q, const T& v) {
     DRAKE_DEMAND(lower_limit <= upper_limit);
     DRAKE_DEMAND(stiffness >= 0);
     DRAKE_DEMAND(damping >= 0);
-    
+
     if (q > upper_limit) {
       const T delta_q = q - upper_limit;
-      const T limit_force = (-stiffness * delta_q * (1 + damping * v));
+      const T limit_force = -stiffness * delta_q - damping * v;
       using std::min;  // Needed for ADL.
       return min(limit_force, 0.);
     } else if (q < lower_limit) {
       const T delta_q = q - lower_limit;
-      const T limit_force =
-          (-stiffness * delta_q * (1 - damping * v));
+      const T limit_force = -stiffness * delta_q - damping * v;
       using std::max;  // Needed for ADL.
       return max(limit_force, 0.);
     }
     return T(0.0);
   };
-  
+
   for (size_t index = 0;
        index < joint_limits_parameters_.joints_with_limits.size(); ++index) {
     const JointIndex joint_index =
@@ -841,33 +1080,13 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const double upper_limit = joint_limits_parameters_.upper_limit[index];
     const double stiffness = joint_limits_parameters_.stiffness[index];
     const double damping = joint_limits_parameters_.damping[index];
-
-    T q(0), v(0);
-    {
-      auto joint = dynamic_cast<const RevoluteJoint<T>*>(
-          &model().get_joint(joint_index));
-      if (joint) {
-        q = joint->get_angle(context);
-        v = joint->get_angular_rate(context);
-      }
-    }
-    {
-      auto joint = dynamic_cast<const PrismaticJoint<T>*>(
-          &model().get_joint(joint_index));
-      if (joint) {
-        q = joint->get_translation(context);
-        v = joint->get_translation_rate(context);
-      }
-    }
-
-    const T penalty_force = CalcJointLimitPenaltyForce(
-        lower_limit, upper_limit, stiffness, damping, q, v);
-
     const Joint<T>& joint = model().get_joint(joint_index);
 
-    //PRINT_VAR(joint.name());
-    //PRINT_VAR(stiffness);
-    //PRINT_VAR(damping);
+    const T& q = joint.GetOnePosition(context);
+    const T& v = joint.GetOneVelocity(context);
+
+    const T penalty_force = CalcPenaltyForce(
+        lower_limit, upper_limit, stiffness, damping, q, v);
 
     joint.AddInOneForce(context, 0, penalty_force, forces);
   }
@@ -929,8 +1148,6 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   AddJointActuationForces(context, &forces);
 
   AddJointDampingForces(context, &forces);
-
-  AddJointLimitsPenaltyForces(context, &forces);
 
   model_->CalcMassMatrixViaInverseDynamics(context, &M);
 

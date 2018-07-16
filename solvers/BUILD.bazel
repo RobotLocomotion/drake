@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":gurobi_qp",
         ":gurobi_solver",
         ":indeterminate",
+        ":integer_inequality_solver",
         ":integer_optimization_util",
         ":ipopt_solver",
         ":linear_system_solver",
@@ -48,9 +49,29 @@ drake_cc_package_library(
         ":solver_id",
         ":solver_type",
         ":solver_type_converter",
+        ":sos_basis_generator",
         ":symbolic_extraction",
         ":system_identification",
         ":unrevised_lemke_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "integer_inequality_solver",
+    srcs = ["integer_inequality_solver.cc"],
+    hdrs = ["integer_inequality_solver.h"],
+    deps = ["//common:essential"],
+)
+
+drake_cc_library(
+    name = "sos_basis_generator",
+    srcs = ["sos_basis_generator.cc"],
+    hdrs = ["sos_basis_generator.h"],
+    deps = [
+        ":integer_inequality_solver",
+        "//common:essential",
+        "//common:polynomial",
+        "//common:symbolic",
     ],
 )
 
@@ -241,6 +262,7 @@ drake_cc_library(
         ":scs_solver",
         ":snopt_solver",
         ":solver_id",
+        ":sos_basis_generator",
         ":symbolic_extraction",
         ":unrevised_lemke_solver",
         "//common:autodiff",
@@ -1053,6 +1075,8 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
+        "//common:temp_directory",
+        "@spruce",
     ],
 )
 
@@ -1261,6 +1285,22 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     deps = [
         ":mathematical_program",
+        ":sos_basis_generator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sos_basis_generator_test",
+    deps = [
+        ":mathematical_program",
+        ":sos_basis_generator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "integer_inequality_solver_test",
+    deps = [
+        ":integer_inequality_solver",
     ],
 )
 

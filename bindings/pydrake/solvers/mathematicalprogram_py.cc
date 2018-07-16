@@ -294,6 +294,13 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
                const Formula&)>(&MathematicalProgram::AddConstraint))
       .def("AddLinearConstraint",
            static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+               const Eigen::Ref<const Eigen::MatrixXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const VectorXDecisionVariable>&)>(
+               &MathematicalProgram::AddLinearConstraint))
+      .def("AddLinearConstraint",
+           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
                const Expression&, double, double)>(
                &MathematicalProgram::AddLinearConstraint))
       .def("AddLinearConstraint",
@@ -397,6 +404,7 @@ PYBIND11_MODULE(_mathematicalprogram_py, m) {
       .def("FindDecisionVariableIndex",
            &MathematicalProgram::FindDecisionVariableIndex)
       .def("num_vars", &MathematicalProgram::num_vars)
+      .def("decision_variables", &MathematicalProgram::decision_variables)
       .def("GetSolution",
            [](const MathematicalProgram& prog, const Variable& var) {
              return prog.GetSolution(var);

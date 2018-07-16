@@ -54,6 +54,10 @@
                                                                              \
   virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1> frictionTorque(           \
       const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v)   \
+      const = 0;                                                             \
+                                                                             \
+  virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1> SpringTorque(             \
+      const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q)   \
       const = 0;
 
 /**
