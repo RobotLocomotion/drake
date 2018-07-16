@@ -61,7 +61,7 @@ class SignalLogger : public LeafSystem<T> {
   void reset() { log_.reset(); }
 
   /// Returns the only input port.
-  const InputPortDescriptor<T>& get_input_port() const;
+  const InputPort<T>& get_input_port() const;
 
  private:
   // Logging is done in this method.

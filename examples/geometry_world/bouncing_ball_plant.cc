@@ -61,7 +61,7 @@ template <typename T>
 BouncingBallPlant<T>::~BouncingBallPlant() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 BouncingBallPlant<T>::get_geometry_query_input_port() const {
   return systems::System<T>::get_input_port(geometry_query_port_);
 }

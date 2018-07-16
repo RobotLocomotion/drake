@@ -23,11 +23,11 @@ const int kImageHeight = 6;
 robotlocomotion::image_array_t SetUpInputAndOutput(
     ImageToLcmImageArrayT* dut, const ImageRgba8U& color_image,
     const ImageDepth32F& depth_image, const ImageLabel16I& label_image) {
-  const InputPortDescriptor<double>& color_image_input_port =
+  const InputPort<double>& color_image_input_port =
       dut->color_image_input_port();
-  const InputPortDescriptor<double>& depth_image_input_port =
+  const InputPort<double>& depth_image_input_port =
       dut->depth_image_input_port();
-  const InputPortDescriptor<double>& label_image_input_port =
+  const InputPort<double>& label_image_input_port =
       dut->label_image_input_port();
 
   auto color_image_value = std::make_unique<Value<ImageRgba8U>>(color_image);

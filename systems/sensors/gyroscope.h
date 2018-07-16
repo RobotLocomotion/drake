@@ -88,7 +88,7 @@ class Gyroscope : public systems::LeafSystem<double> {
   /// Returns a descriptor of the input port that should contain the generalized
   /// (i.e., linear and rotational) position and velocity state of the
   /// RigidBodyTree DOFs.
-  const InputPortDescriptor<double>& get_input_port() const {
+  const InputPort<double>& get_input_port() const {
     return System<double>::get_input_port(input_port_index_);
   }
 

@@ -164,7 +164,7 @@ void DefineFrameworkPySemantics(py::module m) {
           py::keep_alive<2, 1>())
       .def("Connect",
            py::overload_cast<
-               const OutputPort<T>&, const InputPortDescriptor<T>&>(
+               const OutputPort<T>&, const InputPort<T>&>(
                &DiagramBuilder<T>::Connect))
       .def("ExportInput", &DiagramBuilder<T>::ExportInput,
            py_reference_internal)
@@ -191,11 +191,26 @@ void DefineFrameworkPySemantics(py::module m) {
       .def("get_vector_data", &SystemOutput<T>::get_vector_data,
            py_reference_internal);
 
-    DefineTemplateClassWithDefault<InputPortDescriptor<T>>(
-        m, "InputPortDescriptor", GetPyParam<T>())
-      .def("size", &InputPortDescriptor<T>::size)
-      .def("get_data_type", &InputPortDescriptor<T>::get_data_type)
-      .def("get_index", &InputPortDescriptor<T>::get_index);
+    DefineTemplateClassWithDefault<InputPort<T>>(
+        m, "InputPort", GetPyParam<T>())
+      .def("size", &InputPort<T>::size)
+      .def("get_data_type", &InputPort<T>::get_data_type)
+      .def("get_index", &InputPort<T>::get_index);
+
+    // TODO(eric.cousineau): Make these deprecated module attributes so that
+    // they present deprecation messages.
+    // N.B. While this is called over again for each `T`, it is idempotent
+    // (no averse side-effects).
+    m.attr("InputPortDescriptor") = m.attr("InputPort");
+    m.attr("InputPortDescriptor_") = m.attr("InputPort_");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // Use deprecated alias directly here, so that it's easy to know when to
+    // remove it from the Python code.
+    static_assert(
+      std::is_same<InputPortDescriptor<T>, InputPort<T>>::value,
+      "Remove Python aliases once this causes a compilation error this fails");
+  #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(

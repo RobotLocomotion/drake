@@ -33,7 +33,7 @@ const systems::OutputPort<T>& DynamicBicycleCar<T>::get_output_port() const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& DynamicBicycleCar<T>::get_input_port()
+const systems::InputPort<T>& DynamicBicycleCar<T>::get_input_port()
     const {
   return systems::System<T>::get_input_port(0);
 }

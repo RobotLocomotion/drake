@@ -365,11 +365,9 @@ for the Context half that stores the runtime values. Here are some examples:
 :------------------|:--------------------|:------------------
 System             | System              | Context
 Output port        | OutputPort          | (cache entry)
-Input port         | InputPortDescriptor | FixedInputPortValue
+Input port         | InputPort           | FixedInputPortValue
 Cache entry        | CacheEntry          | CacheEntryValue
 Dependency tracker | (ticket only)       | DependencyTracker
-
-(The names are as they exist now; some clearly need changing!)
 
 The System-side objects are used for declaring the computational structure of
 a System; the Context-side objects are used to maintain correct current values.

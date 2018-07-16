@@ -34,7 +34,7 @@ using geometry::GeometryInstance;
 using geometry::PenetrationAsPointPair;
 using geometry::SceneGraph;
 using geometry::SourceId;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
 
@@ -47,7 +47,7 @@ using drake::multibody::SpatialForce;
 using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::InputPortIndex;
 using systems::OutputPortIndex;
 
@@ -1517,7 +1517,7 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 MultibodyPlant<T>::get_actuation_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(num_actuators() > 0);
@@ -1526,7 +1526,7 @@ MultibodyPlant<T>::get_actuation_input_port() const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 MultibodyPlant<T>::get_actuation_input_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -1624,7 +1624,7 @@ const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 MultibodyPlant<T>::get_geometry_query_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(geometry_source_is_registered());

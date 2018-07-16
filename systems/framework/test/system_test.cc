@@ -61,7 +61,7 @@ class TestSystem : public System<double> {
   void SetDefaultParameters(const Context<double>& context,
                             Parameters<double>* params) const override {}
 
-  const InputPortDescriptor<double>& AddAbstractInputPort() {
+  const InputPort<double>& AddAbstractInputPort() {
     return this->DeclareAbstractInputPort();
   }
 
@@ -125,12 +125,12 @@ class TestSystem : public System<double> {
 
  protected:
   BasicVector<double>* DoAllocateInputVector(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& descriptor) const override {
     return nullptr;
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<double>& descriptor) const override {
+      const InputPort<double>& descriptor) const override {
     return nullptr;
   }
 
@@ -468,14 +468,14 @@ class ValueIOTestSystem : public System<T> {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     // Should only get called for the first input.
     EXPECT_EQ(descriptor.get_index(), 0);
     return AbstractValue::Make<std::string>("").release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPortDescriptor<T>& descriptor) const override {
+      const InputPort<T>& descriptor) const override {
     // Should not get called for the first (abstract) input.
     EXPECT_GE(descriptor.get_index(), 1);
     return new TestTypedVector<T>();
