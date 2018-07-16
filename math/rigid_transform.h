@@ -32,7 +32,7 @@ namespace math {
 ///
 /// @note This class does not store the frames associated with the transform and
 /// cannot enforce proper usage of this class.  For example, it makes sense to
-/// multiply transforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
+/// multiply %RigidTransforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
 ///
 /// @note This class is not a 4x4 transformation matrix -- even though its
 /// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
@@ -41,24 +41,24 @@ namespace math {
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
 template <typename T>
-class Transform {
+class RigidTransform {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transform)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidTransform)
 
-  /// Constructs the %Transform that corresponds to aligning the two frames so
-  /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
-  /// Hence, the constructed %Transform contains an identity RotationMatrix and
-  /// a zero position vector.
-  Transform() { SetIdentity(); }
+  /// Constructs the %RigidTransform that corresponds to aligning the two frames
+  /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
+  /// Bo.  Hence, the constructed %RigidTransform contains an identity
+  /// RotationMatrix and a zero position vector.
+  RigidTransform() { SetIdentity(); }
 
-  /// Constructs a %Transform from a rotation matrix and a position vector.
+  /// Constructs a %RigidTransform from a rotation matrix and a position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  Transform(const RotationMatrix<T>& R, const Vector3<T>& p)
+  RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p)
       : R_AB_(R), p_AoBo_A_(p) {}
 
-  /// Constructs a Transform from an Eigen Isometry3.
+  /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
@@ -66,9 +66,9 @@ class Transform {
   /// orthonormal 3x3 rotation matrix.
   /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  explicit Transform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
+  explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
-  /// Sets `this` Transform from an Eigen Isometry3.
+  /// Sets `this` %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
   /// origin to frame B's origin.  `p_AoBo_A` must be expressed in frame A.
@@ -81,56 +81,55 @@ class Transform {
     p_AoBo_A_ = pose.translation();
   }
 
-  /// Creates a %Transform templatized on a scalar type U from a
-  /// %Transform templatized on scalar type T.  For example,
+  /// Creates a %RigidTransform templatized on a scalar type U from a
+  /// %RigidTransform templatized on scalar type T.  For example,
   /// ```
-  /// Transform<double> source = Transform<double>::Identity();
-  /// Transform<AutoDiffXd> foo = source.cast<AutoDiffXd>();
+  /// RigidTransform<double> source = RigidTransform<double>::Identity();
+  /// RigidTransform<AutoDiffXd> foo = source.cast<AutoDiffXd>();
   /// ```
-  /// @tparam U Scalar type on which the returned %Transform is templated.
-  /// @note `Transform<From>::cast<To>()` creates a new `Transform<To>` from a
-  /// `Transform<From>` but only if type `To` is constructible from type `From`.
-  /// This cast method works in accordance with Eigen's cast method for Eigen's
-  /// objects that underlie this %Transform.  For example, Eigen currently
-  /// allows cast from type double to AutoDiffXd, but not vice-versa.
+  /// @tparam U Scalar type on which the returned %RigidTransform is templated.
+  /// @note `RigidTransform<From>::cast<To>()` creates a new
+  /// `RigidTransform<To>` from a `RigidTransform<From>` but only if type `To`
+  /// is constructible from type `From`.  This cast method works in accordance
+  /// with Eigen's cast method for Eigen's objects that underlie this
+  /// %RigidTransform.  For example, Eigen currently allows cast from type
+  /// double to AutoDiffXd, but not vice-versa.
   template <typename U>
-  Transform<U> cast() const {
+  RigidTransform<U> cast() const {
     const RotationMatrix<U> R = R_AB_.template cast<U>();
     const Vector3<U> p = p_AoBo_A_.template cast<U>();
-    return Transform<U>(R, p);
+    return RigidTransform<U>(R, p);
   }
 
-  /// Returns the identity %Transform (which corresponds to coincident frames).
-  /// @returns the %Transform that corresponds to aligning the two frames so
+  /// Returns the identity %RigidTransform (corresponds to coincident frames).
+  /// @return the %RigidTransform that corresponds to aligning the two frames so
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
-  /// Hence, the returned %Transform contains a 3x3 identity matrix and a
+  /// Hence, the returned %RigidTransform contains a 3x3 identity matrix and a
   /// zero position vector.
   // @internal This method's name was chosen to mimic Eigen's Identity().
-  static const Transform<T>& Identity() {
-    static const never_destroyed<Transform<T>> kIdentity;
+  static const RigidTransform<T>& Identity() {
+    static const never_destroyed<RigidTransform<T>> kIdentity;
     return kIdentity.access();
   }
 
-  /// Returns R_AB, the rotation matrix portion of `this` transform.
-  /// @retval R_AB the rotation matrix portion of `this` transform.
+  /// Returns R_AB, the rotation matrix portion of `this` %RigidTransform.
+  /// @retval R_AB the rotation matrix portion of `this` %RigidTransform.
   const RotationMatrix<T>& rotation() const { return R_AB_; }
 
-  /// Sets the %RotationMatrix portion of `this` transform.
+  /// Sets the %RotationMatrix portion of `this` %RigidTransform.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   void set_rotation(const RotationMatrix<T>& R) { R_AB_ = R; }
 
-  /// Returns `p_AoBo_A`, the position vector portion of `this` transform.
-  /// @retval p_AoBo_A the position vector portion of `this` transform, i.e.,
-  /// the position vector from Ao (frame A's origin) to Bo (frame B's origin).
+  /// Returns `p_AoBo_A`, the position vector portion of `this` %RigidTransform,
+  /// i.e., position vector from Ao (frame A's origin) to Bo (frame B's origin).
   const Vector3<T>& translation() const { return p_AoBo_A_; }
 
-  /// Sets the position vector portion of `this` transform.
+  /// Sets the position vector portion of `this` %RigidTransform.
   /// @param[in] p position vector from Ao (frame A's origin) to Bo (frame B's
   /// origin) expressed in frame A.  In monogram notation p is denoted p_AoBo_A.
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
-  /// Returns the 4x4 matrix associated with this %Transform.
-  /// @return the 4x4 matrix associated with this %Transform, i.e., returns X_AB
+  /// Returns the 4x4 matrix associated with this %RigidTransform, i.e., X_AB.
   ///  ┌                ┐
   ///  │ R_AB  p_AoBo_A │
   ///  │                │
@@ -144,8 +143,7 @@ class Transform {
     return pose;
   }
 
-  /// Returns the Isometry associated with a %Transform.
-  /// @returns the Isometry associated with a %Transform.
+  /// Returns the Isometry associated with a %RigidTransform.
   Isometry3<T> GetAsIsometry3() const {
     // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
     // of Isometry3 and pose.translation() returns a mutable reference to the
@@ -156,24 +154,23 @@ class Transform {
     return pose;
   }
 
-  /// Sets `this` %Transform so it corresponds to aligning the two frames so
-  /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
-  /// Hence, `this` %Transform contains a 3x3 identity matrix and a
+  /// Sets `this` %RigidTransform so it corresponds to aligning the two frames
+  /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
+  /// Bo.  Hence, `this` %RigidTransform contains a 3x3 identity matrix and a
   /// zero position vector.
-  const Transform<T>& SetIdentity() {
+  const RigidTransform<T>& SetIdentity() {
     R_AB_ = RotationMatrix<T>::Identity();
     p_AoBo_A_.setZero();
     return *this;
   }
 
-  /// Returns `true` if `this` is exactly the identity transform.
-  /// @returns `true` if `this` is exactly the identity transform.
+  /// Returns `true` if `this` is exactly the identity %RigidTransform.
   /// @see IsIdentityToEpsilon().
   Bool<T> IsExactlyIdentity() const {
     return rotation().IsExactlyIdentity() && (translation().array() == 0).all();
   }
 
-  /// Returns true if `this` is within tolerance of the identity transform.
+  /// Returns true if `this` is within tolerance of the identity RigidTransform.
   /// @returns `true` if the RotationMatrix portion of `this` satisfies
   /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
   /// portion of `this` is equal to zero vector within `translation_tolerance`.
@@ -188,39 +185,40 @@ class Transform {
         rotation().IsIdentityToInternalTolerance();
   }
 
-  /// Calculates X_BA = X_AB⁻¹, the inverse of `this` %Transform.
-  /// @retval X_BA = X_AB⁻¹ the inverse of `this` %Transform.
-  /// @note The inverse of transform X_AB is X_BA, which contains the rotation
-  /// matrix R_BA = R_AB⁻¹ = R_ABᵀ and the position vector `p_BoAo_B_`,
+  /// Returns X_BA = X_AB⁻¹, the inverse of `this` %RigidTransform.
+  /// @note The inverse of %RigidTransform X_AB is X_BA, which contains the
+  /// rotation matrix R_BA = R_AB⁻¹ = R_ABᵀ and the position vector `p_BoAo_B_`
   /// (position from B's origin Bo to A's origin Ao, expressed in frame B).
-  /// @note: The square-root of the condition number for a Transform is roughly
+  /// @note: The square-root of a %RigidTransform's condition number is roughly
   /// the magnitude of the position vector.  The accuracy of the calculation for
-  /// the inverse of a Transform drops off with the sqrt condition number.
+  /// the inverse of a %RigidTransform drops off with the sqrt condition number.
   // @internal This method's name was chosen to mimic Eigen's inverse().
-  Transform<T> inverse() const {
+  RigidTransform<T> inverse() const {
     const RotationMatrix<T> R_BA = R_AB_.inverse();
-    return Transform<T>(R_BA, R_BA * (-p_AoBo_A_));
+    return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
-  /// In-place multiply of `this` transform `X_AB` by `other` transform `X_BC`.
-  /// @param[in] other %Transform that post-multiplies `this`.
-  /// @returns `this` transform which has been multiplied by `other`.
+  /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
+  /// %RigidTransform `X_BC`.
+  /// @param[in] other %RigidTransform that post-multiplies `this`.
+  /// @returns `this` %RigidTransform which has been multiplied by `other`.
   /// On return, `this = X_AC`, where `X_AC = X_AB * X_BC`.
-  Transform<T>& operator*=(const Transform<T>& other) {
+  RigidTransform<T>& operator*=(const RigidTransform<T>& other) {
     p_AoBo_A_ = *this * other.translation();
     R_AB_ *= other.rotation();
     return *this;
   }
 
-  /// Calculates `this` transform `X_AB` multiplied by `other` transform `X_BC`.
-  /// @param[in] other %Transform that post-multiplies `this`.
+  /// Calculates `this` %RigidTransform `X_AB` multiplied by `other`
+  /// %RigidTransform `X_BC`.
+  /// @param[in] other %RigidTransform that post-multiplies `this`.
   /// @retval X_AC = X_AB * X_BC
-  Transform<T> operator*(const Transform<T>& other) const {
+  RigidTransform<T> operator*(const RigidTransform<T>& other) const {
     const Vector3<T> p_AoCo_A = *this * other.translation();
-    return Transform<T>(rotation() * other.rotation(), p_AoCo_A);
+    return RigidTransform<T>(rotation() * other.rotation(), p_AoCo_A);
   }
 
-  /// Calculates `this` transform `X_AB` multiplied by the position vector
+  /// Calculates `this` %RigidTransform `X_AB` multiplied by the position vector
   /// 'p_BoQ_B` which is from Bo (B's origin) to an arbitrary point Q.
   /// @param[in] p_BoQ_B position vector from Bo to Q, expressed in frame B.
   /// @retval p_AoQ_A position vector from Ao to Q, expressed in frame A.
@@ -230,22 +228,23 @@ class Transform {
 
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
-  /// @param[in] other %Transform to compare to `this`.
+  /// @param[in] other %RigidTransform to compare to `this`.
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// elements in `this` and `other`.
   /// @returns `true` if `‖this.matrix() - other.matrix()‖∞ <= tolerance`.
   /// @note Consider scaling tolerance with the largest of magA and magB, where
   /// magA and magB denoted the magnitudes of `this` position vector and `other`
   /// position vectors, respectively.
-  Bool<T> IsNearlyEqualTo(const Transform<T>& other, double tolerance) const {
+  Bool<T> IsNearlyEqualTo(const RigidTransform<T>& other,
+                          double tolerance) const {
     return GetMaximumAbsoluteDifference(other) <= tolerance;
   }
 
   /// Computes the infinity norm of `this` - `other` (i.e., the maximum absolute
   /// value of the difference between the elements of `this` and `other`).
-  /// @param[in] other %Transform to subtract from `this`.
+  /// @param[in] other %RigidTransform to subtract from `this`.
   /// @returns ‖`this` - `other`‖∞
-  T GetMaximumAbsoluteDifference(const Transform<T>& other) const {
+  T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
     const T R_difference = R_AB_.GetMaximumAbsoluteDifference(other.rotation());
     const T p_difference = GetMaximumAbsoluteTranslationDifference(other);
     return R_difference > p_difference ? R_difference : p_difference;
@@ -254,19 +253,21 @@ class Transform {
   /// Returns the maximum absolute value of the difference in the position
   /// vectors (translation) in `this` and `other`.  In other words, returns
   /// the infinity norm of the difference in the position vectors.
-  /// @param[in] other %Transform whose position vector is subtracted from
+  /// @param[in] other %RigidTransform whose position vector is subtracted from
   /// the position vector in `this`.
-  T GetMaximumAbsoluteTranslationDifference(const Transform<T>& other) const {
+  T GetMaximumAbsoluteTranslationDifference(
+      const RigidTransform<T>& other) const {
     const Vector3<T> p_difference = translation() - other.translation();
     return p_difference.template lpNorm<Eigen::Infinity>();
   }
 
  private:
-  // Make Transform<U> templatized on any typename U be a friend of a %Transform
-  // templatized on any other typename T. This is needed for the method
-  // Transform<T>::cast<U>() to be able to use the required private constructor.
+  // Make RigidTransform<U> templatized on any typename U be a friend of a
+  // %RigidTransform templatized on any other typename T. This is needed for the
+  // method RigidTransform<T>::cast<U>() to be able to use the required private
+  // constructor.
   template <typename U>
-  friend class Transform;
+  friend class RigidTransform;
 
   // Rotation matrix relating two frames, e.g. frame A and frame B.
   RotationMatrix<T> R_AB_;

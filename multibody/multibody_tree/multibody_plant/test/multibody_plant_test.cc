@@ -18,9 +18,9 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/visual_material.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/math/transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
@@ -48,9 +48,9 @@ using geometry::PenetrationAsPointPair;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::VisualMaterial;
+using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using math::Transform;
 using multibody::benchmarks::Acrobot;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
@@ -1319,21 +1319,20 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
-    const Transform<double> X_WLb =
+    const RigidTransform<double> X_WLb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(0, -large_box_size_ / 2.0, 0));
-    const Transform<double> X_WSb =
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+                               Vector3<double>(0, -large_box_size_ / 2.0, 0));
+    const RigidTransform<double> X_WSb =
         // Pure rotation.
-        Transform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
-                          Vector3<double>::Zero()) *
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_4),
+                               Vector3<double>::Zero()) *
         // Pure translation.
-        Transform<double>(RotationMatrix<double>::Identity(),
-                          Vector3<double>(
-                              0, small_box_size_ / 2.0 - penetration_, 0));
+        RigidTransform<double>(RotationMatrix<double>::Identity(),
+               Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
     plant_.model().SetFreeBodyPoseOrThrow(
         large_box, X_WLb.GetAsIsometry3(), context);
