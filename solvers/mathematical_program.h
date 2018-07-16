@@ -38,7 +38,7 @@
 namespace drake {
 namespace solvers {
 
-/** @defgroup solvers Formulating and Solving Optimization Problems
+/** @addtogroup solvers
  * @{
  * Drake wraps a number of commercial solvers (+ a few custom solvers) to
  * provide a common interface for convex optimization, mixed-integer convex
