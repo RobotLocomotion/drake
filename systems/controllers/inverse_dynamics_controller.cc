@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"

@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "drake/multibody/rigid_body_tree.h"
+
 using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::VelocityKinematicsCache;
