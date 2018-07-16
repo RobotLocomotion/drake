@@ -1033,6 +1033,8 @@ class LeafSystem : public System<T> {
 
   // =========================================================================
   /// @name                    Declare output ports
+  /// @anchor DeclareLeafOutputPort_documentation
+  ///
   /// Methods in this section are used by derived classes to declare their
   /// output ports, which may be vector valued or abstract valued. Every output
   /// port must have an _allocator_ function and
