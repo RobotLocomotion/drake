@@ -46,4 +46,4 @@ def _getattr_handler(name):
         raise AttributeError()
 
 
-ModuleShim.install(__name__, _getattr_handler)
+ModuleShim._install(__name__, _getattr_handler)
