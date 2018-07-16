@@ -29,12 +29,12 @@ DepthSensorToLcmPointCloudMessage::DepthSensorToLcmPointCloudMessage(
           .get_index();
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 DepthSensorToLcmPointCloudMessage::depth_readings_input_port() const {
   return this->get_input_port(depth_readings_input_port_index_);
 }
 
-const InputPortDescriptor<double>&
+const InputPort<double>&
 DepthSensorToLcmPointCloudMessage::pose_input_port() const {
   return this->get_input_port(pose_input_port_index_);
 }

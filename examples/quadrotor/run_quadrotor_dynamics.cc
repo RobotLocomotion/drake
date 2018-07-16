@@ -29,7 +29,7 @@ using multibody::joints::kRollPitchYaw;
 using parsers::ModelInstanceIdTable;
 using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using parsers::sdf::AddModelInstancesFromSdfFile;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 
 namespace examples {
 namespace quadrotor {

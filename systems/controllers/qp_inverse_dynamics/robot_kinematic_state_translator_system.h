@@ -41,7 +41,7 @@ class RobotKinematicStateTranslatorSystem : public LeafSystem<T> {
   /**
    * Returns the input port for the state vector.
    */
-  const InputPortDescriptor<T>& get_input_port() const {
+  const InputPort<T>& get_input_port() const {
     return System<T>::get_input_port(0);
   }
 

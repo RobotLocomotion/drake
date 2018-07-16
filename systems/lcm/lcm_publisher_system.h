@@ -130,13 +130,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
   const LcmAndVectorBaseTranslator& get_translator() const;
 
   /// Returns the sole input port.
-  const InputPortDescriptor<double>& get_input_port() const {
+  const InputPort<double>& get_input_port() const {
     DRAKE_THROW_UNLESS(this->get_num_input_ports() == 1);
     return LeafSystem<double>::get_input_port(0);
   }
 
   DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
-  const InputPortDescriptor<double>& get_input_port(int index) const {
+  const InputPort<double>& get_input_port(int index) const {
     DRAKE_THROW_UNLESS(index == 0);
     return get_input_port();
   }

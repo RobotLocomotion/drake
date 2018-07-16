@@ -54,12 +54,12 @@ class LcmPlant : public systems::Diagram<double> {
       const pick_and_place::SimulatedPlantConfiguration& plant_configuration,
       const pick_and_place::OptitrackConfiguration& optitrack_configuration);
 
-  const systems::InputPortDescriptor<double>& get_input_port_iiwa_command(
+  const systems::InputPort<double>& get_input_port_iiwa_command(
       int index) const {
     return this->get_input_port(input_port_iiwa_command_.at(index));
   }
 
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_command(
+  const systems::InputPort<double>& get_input_port_wsg_command(
       int index) const {
     return this->get_input_port(input_port_wsg_command_.at(index));
   }

@@ -11,7 +11,7 @@ from pydrake.multibody.rigid_body_tree import (
     RigidBodyFrame,
     )
 from pydrake.systems.framework import (
-    InputPortDescriptor,
+    InputPort,
     OutputPort,
     Value,
     )
@@ -183,7 +183,7 @@ class TestSensors(unittest.TestCase):
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
 
     def _check_input(self, value):
-        self.assertIsInstance(value, InputPortDescriptor)
+        self.assertIsInstance(value, InputPort)
 
     def _check_output(self, value):
         self.assertIsInstance(value, OutputPort)

@@ -31,7 +31,7 @@ class QpOutputTranslatorSystem : public systems::LeafSystem<double> {
   /**
    * Returns the input port for QpOutput.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_qp_output()
+  const systems::InputPort<double>& get_input_port_qp_output()
       const {
     return get_input_port(input_port_index_qp_output_);
   }

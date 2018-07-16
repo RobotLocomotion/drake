@@ -293,7 +293,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Otherwise, a std::runtime_error will be thrown. It returns the same port
   /// as model_instance_actuator_command_input_port() using input
   /// parameter RigidBodyTreeConstants::kFirstNonWorldModelInstanceId.
-  const InputPortDescriptor<T>& actuator_command_input_port() const {
+  const InputPort<T>& actuator_command_input_port() const {
     if (get_num_model_instances() != 1) {
       throw std::runtime_error(
           "RigidBodyPlant::actuator_command_input_port(): "
@@ -315,7 +315,7 @@ class RigidBodyPlant : public LeafSystem<T> {
   /// Returns a descriptor of the input port for a specific model instance. This
   /// method can only be called when this class is instantiated with constructor
   /// parameter `export_model_instance_centric_ports` equal to `true`.
-  const InputPortDescriptor<T>& model_instance_actuator_command_input_port(
+  const InputPort<T>& model_instance_actuator_command_input_port(
       int model_instance_id) const;
 
   ///@}

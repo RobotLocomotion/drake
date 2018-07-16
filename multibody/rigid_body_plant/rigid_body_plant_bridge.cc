@@ -54,7 +54,7 @@ const OutputPort<T>& RigidBodyPlantBridge<T>::geometry_pose_output_port()
 }
 
 template <typename T>
-const InputPortDescriptor<T>&
+const InputPort<T>&
 RigidBodyPlantBridge<T>::rigid_body_plant_state_input_port() const {
   return this->get_input_port(plant_state_port_);
 }
