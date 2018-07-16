@@ -98,8 +98,8 @@ void AutomotiveSimulator<T>::ConnectCarOutputsAndPriusVis(
   DRAKE_DEMAND(&pose_output.get_system() == &velocity_output.get_system());
   const std::string name = pose_output.get_system().get_name();
   auto ports = aggregator_->AddSinglePoseAndVelocityInput(name, id);
-  builder_->Connect(pose_output, ports.pose_descriptor);
-  builder_->Connect(velocity_output, ports.velocity_descriptor);
+  builder_->Connect(pose_output, ports.pose_input_port);
+  builder_->Connect(velocity_output, ports.velocity_input_port);
   if (lcm_) {
     car_vis_applicator_->AddCarVis(std::make_unique<PriusVis<T>>(id, name));
   }

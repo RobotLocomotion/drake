@@ -194,12 +194,12 @@ TEST_F(PoseAggregatorTest, CompositeAggregation) {
 // Tests that PoseAggregator allocates no state variables in the context_.
 TEST_F(PoseAggregatorTest, Stateless) { EXPECT_TRUE(context_->is_stateless()); }
 
-// Tests that AddSinglePoseAndVelocityInput returns descriptors for both
+// Tests that AddSinglePoseAndVelocityInput returns input ports for both
 // the new ports.
 TEST_F(PoseAggregatorTest, AddSinglePoseAndVelocityPorts) {
   auto ports = aggregator_.AddSinglePoseAndVelocityInput("test", 100);
-  const InputPort<double>& pose_port = ports.pose_descriptor;
-  const InputPort<double>& velocity_port = ports.velocity_descriptor;
+  const InputPort<double>& pose_port = ports.pose_input_port;
+  const InputPort<double>& velocity_port = ports.velocity_input_port;
   EXPECT_EQ(PoseVector<double>::kSize, pose_port.size());
   EXPECT_EQ(FrameVelocity<double>::kSize, velocity_port.size());
 }

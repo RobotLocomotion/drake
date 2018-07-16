@@ -68,13 +68,13 @@ class PurePursuitControllerTest : public ::testing::Test {
 
 TEST_F(PurePursuitControllerTest, Topology) {
   ASSERT_EQ(2, dut_->get_num_input_ports());
-  const auto& lane_input_descriptor =
+  const auto& lane_input_port =
       dut_->get_input_port(dut_->lane_input().get_index());
-  EXPECT_EQ(systems::kAbstractValued, lane_input_descriptor.get_data_type());
-  const auto& ego_input_descriptor =
+  EXPECT_EQ(systems::kAbstractValued, lane_input_port.get_data_type());
+  const auto& ego_input_port =
       dut_->get_input_port(dut_->ego_pose_input().get_index());
-  EXPECT_EQ(systems::kVectorValued, ego_input_descriptor.get_data_type());
-  EXPECT_EQ(7 /* PoseVector input */, ego_input_descriptor.size());
+  EXPECT_EQ(systems::kVectorValued, ego_input_port.get_data_type());
+  EXPECT_EQ(7 /* PoseVector input */, ego_input_port.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& command_output_port =

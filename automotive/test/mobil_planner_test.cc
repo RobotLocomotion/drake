@@ -158,24 +158,24 @@ TEST_P(MobilPlannerTest, Topology) {
   InitializeMobilPlanner(true /* initial_with_s */);
 
   ASSERT_EQ(4, dut_->get_num_input_ports());
-  const auto& ego_pose_input_descriptor =
+  const auto& ego_pose_input_port =
       dut_->get_input_port(ego_pose_input_index_);
-  EXPECT_EQ(systems::kVectorValued, ego_pose_input_descriptor.get_data_type());
-  EXPECT_EQ(7 /* PoseVector input */, ego_pose_input_descriptor.size());
-  const auto& ego_velocity_input_descriptor =
+  EXPECT_EQ(systems::kVectorValued, ego_pose_input_port.get_data_type());
+  EXPECT_EQ(7 /* PoseVector input */, ego_pose_input_port.size());
+  const auto& ego_velocity_input_port =
       dut_->get_input_port(ego_velocity_input_index_);
   EXPECT_EQ(systems::kVectorValued,
-            ego_velocity_input_descriptor.get_data_type());
-  EXPECT_EQ(6 /* FrameVelocity input */, ego_velocity_input_descriptor.size());
-  const auto& ego_acceleration_input_descriptor =
+            ego_velocity_input_port.get_data_type());
+  EXPECT_EQ(6 /* FrameVelocity input */, ego_velocity_input_port.size());
+  const auto& ego_acceleration_input_port =
       dut_->get_input_port(ego_acceleration_input_index_);
   EXPECT_EQ(systems::kVectorValued,
-            ego_acceleration_input_descriptor.get_data_type());
+            ego_acceleration_input_port.get_data_type());
   EXPECT_EQ(1 /* acceleration input */,
-            ego_acceleration_input_descriptor.size());
-  const auto& traffic_input_descriptor =
+            ego_acceleration_input_port.size());
+  const auto& traffic_input_port =
       dut_->get_input_port(traffic_input_index_);
-  EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
+  EXPECT_EQ(systems::kAbstractValued, traffic_input_port.get_data_type());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& lane_output_port = dut_->get_output_port(lane_output_index_);

@@ -225,9 +225,9 @@ class RgbdCamera final : public LeafSystem<double> {
   /// Returns the RigidBodyTree to which this RgbdCamera is attached.
   const RigidBodyTree<double>& tree() const { return tree_; }
 
-  /// Returns a descriptor of the vector valued input port that takes a vector
-  /// of `q, v` corresponding to the positions and velocities associated with
-  /// the RigidBodyTree.
+  /// Returns the vector valued input port that takes a vector of `q, v`
+  /// corresponding to the positions and velocities associated with the
+  /// RigidBodyTree.
   const InputPort<double>& state_input_port() const;
 
   /// Returns the abstract valued output port that contains a RGBA image of the

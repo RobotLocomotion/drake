@@ -65,8 +65,8 @@ class CarVisApplicatorTest : public ::testing::Test {
 
 TEST_F(CarVisApplicatorTest, Topology) {
   ASSERT_EQ(dut_->get_num_input_ports(), 1);
-  const auto& pose_port_descriptor = dut_->get_car_poses_input_port();
-  EXPECT_EQ(pose_port_descriptor.get_data_type(), systems::kAbstractValued);
+  const auto& pose_port = dut_->get_car_poses_input_port();
+  EXPECT_EQ(pose_port.get_data_type(), systems::kAbstractValued);
 
   ASSERT_EQ(dut_->get_num_output_ports(), 1);
   const auto& lane_output_port =
