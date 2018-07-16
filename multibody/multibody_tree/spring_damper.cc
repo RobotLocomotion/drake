@@ -42,14 +42,8 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
   // Vector from P to Q. It's length is the current length of the spring.
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
-  // To avoid division by zero when "length", the length of p_PQ goes to zero,
-  // we use a "soft norm" defined by:
-  //   ‖x‖ₛ = sqrt(xᵀ⋅x + ε²)
-  // where ε is a small positive value so that it's effect is negligible for
-  // non-zero p_PQ.
-  const T epsilon_squared = std::numeric_limits<double>::epsilon();
-  // Using this "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
-  const T length_soft = sqrt(p_PQ_W.squaredNorm() + epsilon_squared);
+  // Using a "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
+  const T length_soft = SoftNorm(p_PQ_W);
 
   const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 
@@ -88,19 +82,19 @@ template <typename T>
 T SpringDamper<T>::CalcPotentialEnergy(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc) const {
-#if 0
-  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
-  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
+  const Isometry3<T>& X_WA =   pc.get_X_WB(bodyA().template node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
 
-  const Vector3<T> p_WP = X_WA * p_AP_;
-  const Vector3<T> p_WQ = X_WB * p_BQ_;
+  const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
+  const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
 
+  // Vector from P to Q. It's length is the current length of the spring.
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
-  const T length = p_PQ_W.norm();
 
-  return 0.5 * stiffness() * length * length;
-#endif
-  return T(0);
+  // We use the same "soft" norm used in the force computation for consistency.
+  const T delta_length = SoftNorm(p_PQ_W) - rest_length();
+
+  return 0.5 * stiffness() * delta_length * delta_length;
 }
 
 template <typename T>
@@ -184,6 +178,13 @@ std::unique_ptr<ForceElement<AutoDiffXd>>
 SpringDamper<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+T SpringDamper<T>::SoftNorm(const Vector3<T>& x) const {
+  using std::sqrt;
+  const T epsilon_squared = std::numeric_limits<double>::epsilon();
+  return sqrt(x.squaredNorm() + epsilon_squared);
 }
 
 // Explicitly instantiates on the most common scalar types.

@@ -88,6 +88,13 @@ class SpringDamper : public ForceElement<T> {
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
   const MultibodyTree<ToScalar>& tree_clone) const;
 
+  // To avoid division by zero when the length of the spring approaches zero,
+  // we use a "soft norm" defined by:
+  //   ‖x‖ₛ = sqrt(xᵀ⋅x + ε²)
+  // where ε is a small positive value so that it's effect is negligible for
+  // non-zero x.
+  T SoftNorm(const Vector3<T>& x) const;
+
   const Body<T>& bodyA_;
   const Vector3<double> p_AP_;
   const Body<T>& bodyB_;

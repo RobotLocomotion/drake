@@ -119,6 +119,11 @@ TEST_F(SpringDamperTester, RestLength) {
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
   EXPECT_EQ(F_A_W.get_coeffs(), SpatialForce<double>::Zero().get_coeffs());
   EXPECT_EQ(F_B_W.get_coeffs(), SpatialForce<double>::Zero().get_coeffs());
+
+  // Verify the potential energy is zero.
+  const double potential_energy =
+      spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
+  EXPECT_NEAR(potential_energy, 0.0, kTolerance);
 }
 
 // Verify forces computation when the spring length is larger than its rest
@@ -141,6 +146,13 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+
+  // Verify the value of the potential energy.
+  const double potential_energy_expected =
+      0.5 * stiffness_ * (length - rest_length_) * (length - rest_length_);
+  const double potential_energy =
+      spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
+  EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
 }
 
 // Verify forces computation when the spring length is smaller than its rest
