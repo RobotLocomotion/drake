@@ -6,7 +6,7 @@
 // To link to the Spatial Inertia discussion: @ref multibody_spatial_inertia.
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_concepts Multibody Dynamics Concepts
+/** @addtogroup multibody_concepts
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting

@@ -197,7 +197,7 @@ class Context : public ContextBase {
     return get_parameters().get_abstract_parameter(index);
   }
   //@}
-
+  /** @anchor context_value_change_methods */
   /// @name           Methods for changing locally-stored values
   /// Methods in this group allow changes to the values of quantities stored
   /// locally in this %Context. The changeable quantities are:
