@@ -95,6 +95,12 @@ class SpringDamper : public ForceElement<T> {
   // non-zero x.
   T SoftNorm(const Vector3<T>& x) const;
 
+  // Helper method to compute the rate of change of the separation length
+  // between the two endpoints for this spring-damper.
+  T CalcLengthTimeDerivative(
+      const PositionKinematicsCache<T>& pc,
+      const VelocityKinematicsCache<T>& vc) const;
+
   const Body<T>& bodyA_;
   const Vector3<double> p_AP_;
   const Body<T>& bodyB_;

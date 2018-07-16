@@ -30,9 +30,6 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
     MultibodyForces<T>* forces) const {
   using std::sqrt;
 
-  // Alias to the array of applied body forces:
-  std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
-
   const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().template node_index());
   const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
 
@@ -51,29 +48,24 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
   Vector3<T> f_AP_W =
       stiffness() * (length_soft - rest_length()) * r_PQ_W;
 
-  // Compute the velocities of P and Q so that we can add the damping force.
-  // p_PAo = p_WAo - p_WP
-  const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
-  const SpatialVelocity<T>& V_WP =
-      vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
-
-  // p_QBo = p_WBo - p_WQ
-  const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
-  const SpatialVelocity<T>& V_WQ =
-      vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
-
-  // Relative velocity of P in Q, expressed in the world frame.
-  const Vector3<T> v_PQ_W = V_WQ.translational() - V_WP.translational();
   // The rate at which the length of the spring changes.
-  const T length_dot = v_PQ_W.dot(r_PQ_W);
+  const T length_dot = CalcLengthTimeDerivative(pc, vc);
 
   // Add the damping force on A at P.
   f_AP_W += damping() * length_dot * r_PQ_W;
 
   // Shift to the corresponding body frame and add spring-damper contribution
   // to the output forces.
+  // Alias to the array of applied body forces:
+  std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
+
+  // p_PAo = p_WAo - p_WP
+  const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
   F_Bo_W_array[bodyA().node_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), f_AP_W).Shift(p_PAo_W);
+
+  // p_QBo = p_WBo - p_WQ
+  const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
   F_Bo_W_array[bodyB().node_index()] +=
       SpatialForce<T>(Vector3<T>::Zero(), -f_AP_W).Shift(p_QBo_W);
 }
@@ -102,50 +94,42 @@ T SpringDamper<T>::CalcConservativePower(
     const MultibodyTreeContext<T>& context,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc) const {
-#if 0
-  const SpatialVelocity<T>& V_WA = vc.get_V_WB(bodyA().node_index());
-  const SpatialVelocity<T>& V_WB = vc.get_V_WB(bodyB().node_index());
+  // Since the potential energy is:
+  //  V = 1/2⋅k⋅(ℓ-ℓ₀)²
+  // The conservative power is defined as:
+  //  Pc = -d(V)/dt
+  // being positive when the potential energy decreases.
 
-  const Vector3<T> v_AB_W = V_WA.translational() - V_WB.translational();
+  const Isometry3<T>& X_WA =   pc.get_X_WB(bodyA().template node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
 
-  // Add the potential energy due to gravity for each body in the model.
-  // Skip the world.
-  const MultibodyTree<T>& model = this->get_parent_tree();
-  const int num_bodies = model.num_bodies();
-  T TotalConservativePower = 0.0;
-  // Skip the "world" body.
-  for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
-    const Body<T>& body = model.get_body(body_index);
+  const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
+  const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
 
-    // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
-    // caching is in place.
-    const T mass = body.get_mass(context);
-    const Vector3<T> p_BoBcm_B = body.CalcCenterOfMassInBodyFrame(context);
-    const Isometry3<T>& X_WB = pc.get_X_WB(body.node_index());
-    const Matrix3<T> R_WB = X_WB.linear();
-    // TODO(amcastro-tri): Consider caching p_BoBcm_W.
-    const Vector3<T> p_BoBcm_W = R_WB * p_BoBcm_B;
+  // Vector from P to Q. It's length is the current length of the spring.
+  const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
-    const SpatialVelocity<T>& V_WB = vc.get_V_WB(body.node_index());
-    const SpatialVelocity<T> V_WBcm = V_WB.Shift(p_BoBcm_W);
-    const Vector3<T>& v_WBcm = V_WBcm.translational();
+  // We use the same "soft" norm used in the force computation for consistency.
+  const T delta_length = SoftNorm(p_PQ_W) - rest_length();
 
-    // The conservative power is defined to be positive when the potential
-    // energy decreases.
-    TotalConservativePower += (mass * v_WBcm.dot(gravity_vector()));
-  }
-  return TotalConservativePower;
-#endif
-  return T(0);
+  // The rate at which the length of the spring changes.
+  const T length_dot = CalcLengthTimeDerivative(pc, vc);
+
+  // Since V = 1/2⋅k⋅(ℓ-ℓ₀)² we have that, from its definition:
+  // Pc = -d(V)/dt = -k⋅(ℓ-ℓ₀)⋅dℓ/dt
+  const T Pc = -stiffness() * delta_length * length_dot;
+  return Pc;
 }
 
 template <typename T>
 T SpringDamper<T>::CalcNonConservativePower(
     const MultibodyTreeContext<T>&,
-    const PositionKinematicsCache<T>&,
-    const VelocityKinematicsCache<T>&) const {
-  // A uniform gravity field is conservative. Therefore return zero power.
-  return 0.0;
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  // The rate at which the length of the spring changes.
+  const T length_dot = CalcLengthTimeDerivative(pc, vc);
+  // Energy is dissipated at rate Pnc = -d⋅(dℓ/dt)²:
+  return -damping() * length_dot * length_dot;
 }
 
 template <typename T>
@@ -185,6 +169,43 @@ T SpringDamper<T>::SoftNorm(const Vector3<T>& x) const {
   using std::sqrt;
   const T epsilon_squared = std::numeric_limits<double>::epsilon();
   return sqrt(x.squaredNorm() + epsilon_squared);
+}
+
+template <typename T>
+T SpringDamper<T>::CalcLengthTimeDerivative(
+    const PositionKinematicsCache<T>& pc,
+    const VelocityKinematicsCache<T>& vc) const {
+  const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().template node_index());
+  const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
+
+  const Vector3<T> p_WP = X_WA * p_AP_.template cast<T>();
+  const Vector3<T> p_WQ = X_WB * p_BQ_.template cast<T>();
+
+  // Vector from P to Q. It's length is the current length of the spring.
+  const Vector3<T> p_PQ_W = p_WQ - p_WP;
+
+  // Using a "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
+  const T length_soft = SoftNorm(p_PQ_W);
+
+  const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
+
+  // Compute the velocities of P and Q so that we can add the damping force.
+  // p_PAo = p_WAo - p_WP
+  const Vector3<T> p_PAo_W = X_WA.translation() - p_WP;
+  const SpatialVelocity<T>& V_WP =
+      vc.get_V_WB(bodyA().node_index()).Shift(-p_PAo_W);
+
+  // p_QBo = p_WBo - p_WQ
+  const Vector3<T> p_QBo_W = X_WB.translation() - p_WQ;
+  const SpatialVelocity<T>& V_WQ =
+      vc.get_V_WB(bodyB().node_index()).Shift(-p_QBo_W);
+
+  // Relative velocity of P in Q, expressed in the world frame.
+  const Vector3<T> v_PQ_W = V_WQ.translational() - V_WP.translational();
+  // The rate at which the length of the spring changes.
+  const T length_dot = v_PQ_W.dot(r_PQ_W);
+
+  return length_dot;
 }
 
 // Explicitly instantiates on the most common scalar types.

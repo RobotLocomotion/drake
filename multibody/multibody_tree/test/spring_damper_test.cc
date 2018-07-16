@@ -13,9 +13,6 @@
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/systems/framework/context.h"
 
-#include <iostream>
-#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
-
 namespace drake {
 
 using systems::Context;
@@ -153,6 +150,12 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   const double potential_energy =
       spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
   EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
+
+  // Since the spring configuration is static, that is velocities are zero, we
+  // expect zero conservative and non-conservative power.
+  const double conservative_power =
+      spring_damper_->CalcConservativePower(*mbt_context_, *pc_, *vc_);
+  EXPECT_NEAR(conservative_power, 0.0, kTolerance);
 }
 
 // Verify forces computation when the spring length is smaller than its rest
@@ -212,6 +215,29 @@ TEST_F(SpringDamperTester, NonZeroVelocity) {
   EXPECT_TRUE(CompareMatrices(
       F_B_W.get_coeffs(), F_A_W_expected.get_coeffs(),
       kTolerance, MatrixCompareType::relative));
+}
+
+// This test verifies the computation of both conservative and non-conservative
+// powers for a configuration when they are non-zero.
+TEST_F(SpringDamperTester, Power) {
+  const double length = 2.0;
+  const double length_dot = 1.0;
+  SetSliderState(length, length_dot);
+
+  const double conservative_power =
+      spring_damper_->CalcConservativePower(*mbt_context_, *pc_, *vc_);
+  const double conservative_power_expected =
+      -stiffness_ * (length - rest_length_) * length_dot;
+  EXPECT_NEAR(conservative_power, conservative_power_expected, kTolerance);
+
+  const double non_conservative_power =
+      spring_damper_->CalcNonConservativePower(*mbt_context_, *pc_, *vc_);
+  const double non_conservative_power_expected =
+      -damping_ * length_dot * length_dot;
+  // It should always be non-positive.
+  EXPECT_LT(non_conservative_power, 0.0);
+  EXPECT_NEAR(non_conservative_power,
+              non_conservative_power_expected, kTolerance);
 }
 
 }  // namespace
