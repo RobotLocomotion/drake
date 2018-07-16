@@ -15,6 +15,7 @@ If you would like to disable all Drake-related warnings, you may use the
 
 import sys
 import traceback
+from types import ModuleType
 import warnings
 
 # TODO(eric.cousineau): Make autocomplete ignore `ModuleShim` attributes
@@ -33,6 +34,8 @@ class ModuleShim(object):
     def __init__(self, orig_module, handler):
         assert hasattr(orig_module, "__all__"), (
             "Please define `__all__` for this module.")
+        assert isinstance(orig_module, ModuleType), (
+            "{} must be a module".format(orig_module))
         # https://stackoverflow.com/a/16237698/7829525
         object.__setattr__(self, '_orig_module', orig_module)
         object.__setattr__(self, '_handler', handler)
@@ -66,14 +69,23 @@ class ModuleShim(object):
     def __repr__(self):
         return repr(self._orig_module)
 
+    def __dir__(self):
+        # Implemented to provide a useful subset of completions to
+        # `rlcompleter`.
+        return self._orig_module.__all__
+
     @classmethod
-    def install(cls, name, handler):
-        """ Hook into module's attribute accessors and mutators.
+    def _install(cls, name, handler):
+        """
+        Hook into module's attribute accessors and mutators.
         @param name
             Module name. Generally should be __name__.
         @param handler
             Function of the form `handler(var)`, where `var` is
             the variable name.
+        @note This is private such that `install` does not pollute completion
+        candidations provided by `rlcompleter` when it iterates through
+        `__bases__`.
         """
         old_module = sys.modules[name]
         new_module = cls(old_module, handler)
