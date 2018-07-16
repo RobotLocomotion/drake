@@ -7,6 +7,7 @@
 
 //------------------------------------------------------------------------------
 /** @defgroup multibody_concepts Multibody Dynamics Concepts
+    @ingroup drake_technical_notes
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting

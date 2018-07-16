@@ -53,12 +53,14 @@ out the Doxygen C++ documentation</a></p>
 only updated nightly.</p>
 
 <h3>Technical Notes</h3>
-These links provide notes on Drake's design and implementation.
+These links provide notes on Drake's theory, design, and implementation.
 
 - @ref multibody_concepts
 - @ref cache_design_notes
+- @ref system_scalar_conversion
 
 */
+/** @defgroup drake_technical_notes Drake Technical Notes */
 
 
 
