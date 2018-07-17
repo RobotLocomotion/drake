@@ -12,22 +12,22 @@ namespace multibody {
 
 template <typename T> class Body;
 
-/// This ForceElement models a spring-damper attached between two points on
+/// This %ForceElement models a spring-damper attached between two points on
 /// two different bodies.
 /// Given a point P on a body A and a point Q on a body B with positions
-/// p_AP_A and p_BQ_B, respectively, this spring applies equal and opposite
-/// forces on bodies A and B according to: <pre>
+/// p_AP_A and p_BQ_B, respectively, this spring-damper applies equal and
+/// opposite forces on bodies A and B according to: <pre>
 ///   f_AP = (k⋅(ℓ - ℓ₀) + c⋅dℓ/dt)⋅r̂
 ///   f_BQ = -f_AP
 /// </pre>
 /// where `ℓ = ‖p_WQ - p_WP‖` is the current length of the spring, dℓ/dt its
 /// rate of change, `r̂ = (p_WQ - p_WP) / ℓ` is the normalized vector from P to
-/// Q, and k and c are the stiffness and damping of the spring-damper,
-/// respectively.
+/// Q, ℓ₀ is the rest length of the spring and k and c are the stiffness and
+/// damping of the spring-damper, respectively.
 /// Note that:
 ///   - The applied force is always along the line connecting points P and Q.
 ///   - Damping always dissipates energy.
-///   - Forces and bodies A and B are equal and opposite according to Newton's
+///   - Forces on bodies A and B are equal and opposite according to Newton's
 ///     third law.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
@@ -49,11 +49,12 @@ class SpringDamper : public ForceElement<T> {
   /// defined by its position p_BQ as measured and expressed in body frame B.
   /// The remaining parameters define:
   /// @param[in] rest_length
-  ///   The resting length ℓ₀, in meters, at which the spring applies no forces.
+  ///   The resting length of the spring ℓ₀, in meters, at which the spring
+  ///   applies no forces. It must be non-negative.
   /// @param[in] stiffness
-  ///   The stiffness k of the spring in N/m.
+  ///   The stiffness k of the spring in N/m. It must be non-negative.
   /// @param[in] damping
-  ///   The damping of the damper in N⋅s/m.
+  ///   The damping c of the damper in N⋅s/m. It must be non-negative.
   /// Refer to this class's documentation for further details.
   /// @throws std::exception if `rest_length` is negative.
   /// @throws std::exception if `stiffness` is negative.
@@ -114,10 +115,11 @@ class SpringDamper : public ForceElement<T> {
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
   const MultibodyTree<ToScalar>& tree_clone) const;
 
-  // To avoid division by zero when the length of the spring approaches zero,
+  // To avoid a division by zero when computing a normalized vector from point P
+  // on body A to point Q on body B as length of the spring approaches zero,
   // we use a "soft norm" defined by:
   //   ‖x‖ₛ = sqrt(xᵀ⋅x + ε²)
-  // where ε is a small positive value so that it's effect is negligible for
+  // where ε is a small positive value so that its effect is negligible for
   // non-zero x.
   T SoftNorm(const Vector3<T>& x) const;
 

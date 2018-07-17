@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
@@ -42,6 +43,29 @@ class SpringDamperTester : public ::testing::Test {
 
     spring_damper_ = &model_.AddForceElement<SpringDamper>(
         *bodyA_, p_AP_, *bodyB_, p_BQ_, rest_length_, stiffness_, damping_);
+
+    // Verify the the constructor for the spring-damper throws if either the
+    // rest length, stiffness or damping are negative numbers.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        model_.AddForceElement<SpringDamper>(
+            *bodyA_, p_AP_, *bodyB_, p_BQ_,
+            -1.0 /* negative rest length */, stiffness_, damping_),
+        std::exception,
+        ".*condition 'rest_length >= 0' failed.*");
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        model_.AddForceElement<SpringDamper>(
+            *bodyA_, p_AP_, *bodyB_, p_BQ_,
+            rest_length_, -1.0  /* negative stiffness */, damping_),
+        std::exception,
+        ".*condition 'stiffness >= 0' failed.*");
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        model_.AddForceElement<SpringDamper>(
+            *bodyA_, p_AP_, *bodyB_, p_BQ_,
+            rest_length_, stiffness_, -1.0 /* negative damping */),
+        std::exception,
+        ".*condition 'damping >= 0' failed.*");
 
     model_.Finalize();
 
@@ -108,7 +132,7 @@ TEST_F(SpringDamperTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_damper_->point_on_bodyB(), p_BQ_);
 }
 
-// Verify the spring applies no forces when the spearation length equals the
+// Verify the spring applies no forces when the separation length equals the
 // rest length.
 TEST_F(SpringDamperTester, RestLength) {
   SetSliderState(1.0, 0.0);
