@@ -55,16 +55,15 @@ class InverseDynamics : public LeafSystem<T> {
    * Computes inverse dynamics for @p plant.
    * @param plant Reference to the plant. The life span of @p plant must be
    * longer than this instance.
-   * @param context A context for the `robot` that will be cloned and used
-   * to set generalized positions and velocities for computing inverse dynamics.
-   * Warning: any Parameters modified in `context` after construction will not
-   * be propagated into the cloned context.
+   * @param parameters The parameters corresponding to this plant.
    * @param pure_gravity_compensation If set to true, this instance will only
    * consider the gravity term. It also will NOT have the desired acceleration
    * input port.
+   * @pre The plant must be finalized (i.e., plant.is_finalized() must return
+   * `true`).
    */
   InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>& plant,
-                  const systems::Context<T>& context,
+                  const systems::Parameters<T>& parameters,
                   bool pure_gravity_compensation);
 
   /**

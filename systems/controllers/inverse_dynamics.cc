@@ -45,34 +45,14 @@ InverseDynamics<T>::InverseDynamics(const RigidBodyTree<T>& tree,
 
 template <typename T>
 InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>& plant,
-                                    const Context<T>& multibody_plant_context,
+                                    const Parameters<T>& multibody_parameters,
                                     bool pure_gravity_compensation)
     : multi_body_plant_(&plant),
       pure_gravity_compensation_(pure_gravity_compensation),
       q_dim_(plant.model().num_positions()),
       v_dim_(plant.model().num_velocities()),
       act_dim_(plant.model().num_actuators()) {
-  input_port_index_state_ =
-      this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
-  output_port_index_torque_ =
-      this->DeclareVectorOutputPort(BasicVector<T>(act_dim_),
-                                    &InverseDynamics<T>::CalcOutputTorque)
-          .get_index();
-
-  // TODO(edrumwri): Replace this with multibody_plant_context.Clone() when
-  // Issue #9118 has been addressed.
-  multibody_plant_context_ = plant.CreateDefaultContext();
-  multibody_plant_context_->get_mutable_state().SetFrom(
-      multibody_plant_context.get_state());
-  multibody_plant_context_->get_mutable_parameters().SetFrom(
-      multibody_plant_context.get_parameters());
-
-  // Doesn't declare desired acceleration input port if we are only doing
-  // gravity compensation.
-  if (!pure_gravity_compensation_) {
-    input_port_index_desired_acceleration_ =
-        this->DeclareInputPort(kVectorValued, v_dim_).get_index();
-  }
+  DRAKE_DEMAND(plant.is_finalized());
 
   if (v_dim_ != act_dim_) {
     std::stringstream msg;
@@ -80,6 +60,25 @@ InverseDynamics<T>::InverseDynamics(const MultibodyPlant<T>& plant,
         << "  - size of gravity vector: " << v_dim_ << "\n"
         << "  - number of actuators: " << act_dim_;
     throw std::runtime_error(msg.str().c_str());
+  }
+
+  input_port_index_state_ =
+      this->DeclareInputPort(kVectorValued, q_dim_ + v_dim_).get_index();
+  output_port_index_torque_ =
+      this->DeclareVectorOutputPort(BasicVector<T>(act_dim_),
+                                    &InverseDynamics<T>::CalcOutputTorque)
+          .get_index();
+
+  // Copy the parameters.
+  multibody_plant_context_ = plant.CreateDefaultContext();
+  multibody_plant_context_->get_mutable_parameters().SetFrom(
+      multibody_parameters);
+
+  // Doesn't declare desired acceleration input port if we are only doing
+  // gravity compensation.
+  if (!pure_gravity_compensation_) {
+    input_port_index_desired_acceleration_ =
+        this->DeclareInputPort(kVectorValued, v_dim_).get_index();
   }
 }
 
@@ -120,10 +119,8 @@ void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
     DRAKE_DEMAND(multi_body_plant_);
 
     // Set the position and velocity in the context.
-    multibody_plant_context_->get_mutable_continuous_state().
-        get_mutable_generalized_position().SetFromVector(x.head(q_dim_));
-    multibody_plant_context_->get_mutable_continuous_state().
-        get_mutable_generalized_velocity().SetFromVector(x.tail(v_dim_));
+    multibody_plant_context_->get_mutable_continuous_state_vector().
+        SetFromVector(x);
 
     // Compute the caches.
     const auto& tree = multi_body_plant_->model();
@@ -134,8 +131,7 @@ void InverseDynamics<T>::CalcOutputTorque(const Context<T>& context,
                                      &vcache);
 
     // Compute inverse dynamics.
-    VectorX<T> tau_applied = VectorX<T>::Zero(
-        tree.num_velocities());
+    const VectorX<T> tau_applied(0);  // No applied torques.
     std::vector<multibody::SpatialAcceleration<T>> A_WB_array(
         tree.num_bodies());
     std::vector<multibody::SpatialForce<T>> F_BMo_W_array(tree.num_bodies());

@@ -115,7 +115,7 @@ InverseDynamicsController<T>::InverseDynamicsController(
 template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     std::unique_ptr<MultibodyPlant<T>> robot,
-    const systems::Context<T>& context,
+    const systems::Parameters<T>& parameters,
     const VectorX<double>& kp, const VectorX<double>& ki,
     const VectorX<double>& kd, bool has_reference_acceleration)
     : has_reference_acceleration_(has_reference_acceleration) {
@@ -124,7 +124,7 @@ InverseDynamicsController<T>::InverseDynamicsController(
   DiagramBuilder<T> builder;
   auto inverse_dynamics =
     builder.template AddSystem<InverseDynamics<T>>(
-      *multi_body_plant_for_control_, context, false);
+      *multi_body_plant_for_control_, parameters, false);
 
     SetUp(kp, ki, kd, *inverse_dynamics, &builder);
 }

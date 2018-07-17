@@ -76,20 +76,17 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
    * unique pointer.
    * @param robot Unique pointer whose ownership will be transfered to this
    * instance.
-   * @param context A context for the `robot` that will be cloned and used
-   * to set generalized positions and velocities for computing inverse dynamics.
-   * Warning: any Parameters modified in `context` after construction will not
-   * be propagated into the cloned context.
    * @param kp Position gain
    * @param ki Integral gain
    * @param kd Velocity gain
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
+   * @pre `robot` has been finalized (robot.is_finalized() returns `true`).
    */
   InverseDynamicsController(
       std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> robot,
-      const systems::Context<T>& context,
+      const systems::Parameters<T>& parameters,
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
