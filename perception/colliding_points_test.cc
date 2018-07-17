@@ -9,11 +9,6 @@ int doMain(int argc, char **argv) {
   auto tree_ptr = std::make_unique<RigidBodyTree<double>>();
 
   auto body = std::make_unique<RigidBody<double>>();
-  const Eigen::Vector3d size(0.25, 0.25, 0.25);
-  const DrakeShapes::Box shape(size);
-  drake::multibody::collision::Element body_collision(
-      shape, Isometry3<double>::Identity());
-  body->AddCollisionElement("", &body_collision);
 
   Eigen::Isometry3d joint_transform;
   {
@@ -25,7 +20,14 @@ int doMain(int argc, char **argv) {
       std::make_unique<RollPitchYawFloatingJoint>("box_joint", joint_transform);
   body->add_joint(&tree_ptr->world(), std::move(joint));
 
-  tree_ptr->add_rigid_body(std::move(body));
+  RigidBody<double>* body_in_tree = tree_ptr->add_rigid_body(std::move(body));
+
+  const Eigen::Vector3d size(0.25, 0.25, 0.25);
+  const DrakeShapes::Box shape(size);
+  drake::multibody::collision::Element body_collision(
+      shape, Isometry3<double>::Identity());
+  tree_ptr->addCollisionElement(body_collision, *body_in_tree, "default");
+
   tree_ptr->compile();
 
   std::vector<Eigen::Vector3d> points;
