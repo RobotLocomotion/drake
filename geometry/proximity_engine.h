@@ -136,7 +136,12 @@ class ProximityEngine {
                               global geometry identifier for anchored
                               geometries.
    @returns signed_distance_pair A vector populated with all pairs of witness
-                                 points. 
+                                 points. For a pair consisting of geometries A
+                                 and B, distances will always be reported as the
+                                 pair (A, B). In other words, it won't sometimes
+                                 be (A, B) and other times be (B, A). The pair
+                                 is defined with respect to a fixed, arbitrary
+                                 ordering.
    */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(

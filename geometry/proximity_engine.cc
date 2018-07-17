@@ -793,9 +793,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                test.getNodeType() == ref.getNodeType() &&
                test.getObjectType() == ref.getObjectType() &&
                test.getAABB().center() == ref.getAABB().center() &&
-               test.getAABB().width() && ref.getAABB().width() &&
-               test.getAABB().height() && ref.getAABB().height() &&
-               test.getAABB().depth() && ref.getAABB().depth();
+               test.getAABB().width() == ref.getAABB().width() &&
+               test.getAABB().height() == ref.getAABB().height() &&
+               test.getAABB().depth() == ref.getAABB().depth();
       };
       bool is_copy = true;
       is_copy = is_copy &&
