@@ -27,7 +27,10 @@ class RigidBodyTreeRemoval final : public systems::LeafSystem<double> {
   ///
   /// @param[in] tree The RigidBodyTree containing the geometric configuration
   /// of the world.
-  explicit RigidBodyTreeRemoval(const RigidBodyTree<double>& tree);
+  /// @param [in] collision_threshold The threshold for the collision
+  /// detection that decides which points to remove from the point cloud.
+  RigidBodyTreeRemoval(const RigidBodyTree<double>& tree,
+                       double collision_threshold);
 
   /// Returns the vector valued input port that contains a vector
   /// of `q, v` corresponding to the positions and velocities associated with
