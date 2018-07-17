@@ -673,7 +673,8 @@ cc_library(
     file_content += """
 filegroup(
     name = "vtk",
-    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE"]),
+    srcs = glob(["**/*"], exclude=["BUILD.bazel", "WORKSPACE",
+        "lib/python3.*/**/*", "lib/libvtkWrappingPython3*.so"]),
     visibility = ["//visibility:public"],
 )
 """
