@@ -30,7 +30,7 @@ SpringDamper<T>::SpringDamper(
 
 template <typename T>
 void SpringDamper<T>::DoCalcAndAddForceContribution(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
@@ -78,7 +78,7 @@ void SpringDamper<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 T SpringDamper<T>::CalcPotentialEnergy(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const PositionKinematicsCache<T>& pc) const {
   const Isometry3<T>& X_WA =   pc.get_X_WB(bodyA().template node_index());
   const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().template node_index());
@@ -97,7 +97,7 @@ T SpringDamper<T>::CalcPotentialEnergy(
 
 template <typename T>
 T SpringDamper<T>::CalcConservativePower(
-    const MultibodyTreeContext<T>& context,
+    const MultibodyTreeContext<T>&,
     const PositionKinematicsCache<T>& pc,
     const VelocityKinematicsCache<T>& vc) const {
   // Since the potential energy is:
