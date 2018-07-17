@@ -789,9 +789,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
+    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
     const System<T>* subsystem = id.first;
     const InputPortIndex subindex = id.second;
     return subsystem->AllocateInputVector(subsystem->get_input_port(subindex))
@@ -799,9 +799,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Ask the subsystem to perform the allocation.
-    const InputPortLocator& id = input_port_ids_[descriptor.get_index()];
+    const InputPortLocator& id = input_port_ids_[input_port.get_index()];
     const System<T>* subsystem = id.first;
     const InputPortIndex subindex = id.second;
     return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex))
@@ -1382,10 +1382,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     GetSystemIndexOrAbort(sys);
 
     // Add this port to our externally visible topology.
-    const auto& subsystem_descriptor = sys->get_input_port(port_index);
-    this->DeclareInputPort(subsystem_descriptor.get_data_type(),
-                           subsystem_descriptor.size(),
-                           subsystem_descriptor.get_random_type());
+    const auto& subsystem_input_port = sys->get_input_port(port_index);
+    this->DeclareInputPort(subsystem_input_port.get_data_type(),
+                           subsystem_input_port.size(),
+                           subsystem_input_port.get_random_type());
   }
 
   // Exposes the given subsystem output port as an output of the Diagram.

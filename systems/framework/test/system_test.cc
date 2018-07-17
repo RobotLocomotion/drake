@@ -125,12 +125,12 @@ class TestSystem : public System<double> {
 
  protected:
   BasicVector<double>* DoAllocateInputVector(
-      const InputPort<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPort<double>& descriptor) const override {
+      const InputPort<double>& input_port) const override {
     return nullptr;
   }
 
@@ -317,9 +317,9 @@ TEST_F(SystemTest, DiscreteUpdate) {
   EXPECT_EQ(1, system_.get_update_count());
 }
 
-// Tests that descriptor references remain valid even if lots of other
-// descriptors are added to the system, forcing a vector resize.
-TEST_F(SystemTest, PortDescriptorsAreStable) {
+// Tests that port references remain valid even if lots of other ports are added
+// to the system, forcing a vector resize.
+TEST_F(SystemTest, PortReferencesAreStable) {
   const auto& first_input = system_.AddAbstractInputPort();
   const auto& first_output = system_.AddAbstractOutputPort();
   for (int i = 0; i < 1000; i++) {
@@ -468,16 +468,16 @@ class ValueIOTestSystem : public System<T> {
   }
 
   AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should only get called for the first input.
-    EXPECT_EQ(descriptor.get_index(), 0);
+    EXPECT_EQ(input_port.get_index(), 0);
     return AbstractValue::Make<std::string>("").release();
   }
 
   BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     // Should not get called for the first (abstract) input.
-    EXPECT_GE(descriptor.get_index(), 1);
+    EXPECT_GE(input_port.get_index(), 1);
     return new TestTypedVector<T>();
   }
 

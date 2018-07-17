@@ -109,9 +109,9 @@ class SimpleCarTest : public ::testing::Test {
 
 TEST_F(SimpleCarTest, Topology) {
   ASSERT_EQ(1, dut_->get_num_input_ports());
-  const auto& input_descriptor = dut_->get_input_port(0);
-  EXPECT_EQ(systems::kVectorValued, input_descriptor.get_data_type());
-  EXPECT_EQ(DrivingCommandIndices::kNumCoordinates, input_descriptor.size());
+  const auto& input_port = dut_->get_input_port(0);
+  EXPECT_EQ(systems::kVectorValued, input_port.get_data_type());
+  EXPECT_EQ(DrivingCommandIndices::kNumCoordinates, input_port.size());
 
   ASSERT_EQ(3, dut_->get_num_output_ports());
   const auto& state_output = dut_->state_output();

@@ -103,31 +103,31 @@ class System : public SystemBase {
   virtual std::unique_ptr<CompositeEventCollection<T>>
       AllocateCompositeEventCollection() const = 0;
 
-  /// Given a port descriptor, allocates the vector storage.  The default
+  /// Given an input port, allocates the vector storage.  The default
   /// implementation in this class allocates a BasicVector.  Subclasses must
   /// override the NVI implementation of this function, DoAllocateInputVector,
-  /// to return input vector types other than BasicVector. The @p descriptor
+  /// to return input vector types other than BasicVector. The @p input_port
   /// must match a port declared via DeclareInputPort.
   std::unique_ptr<BasicVector<T>> AllocateInputVector(
-      const InputPort<T>& descriptor) const {
-    DRAKE_ASSERT(descriptor.get_data_type() == kVectorValued);
-    const int index = descriptor.get_index();
+      const InputPort<T>& input_port) const {
+    DRAKE_ASSERT(input_port.get_data_type() == kVectorValued);
+    const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
-    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(descriptor));
+    return std::unique_ptr<BasicVector<T>>(DoAllocateInputVector(input_port));
   }
 
-  /// Given a port descriptor, allocates the abstract storage. Subclasses with a
+  /// Given an input port, allocates the abstract storage. Subclasses with a
   /// abstract input ports must override the NVI implementation of this
   /// function, DoAllocateInputAbstract, to return an appropriate AbstractValue.
-  /// The @p descriptor must match a port declared via DeclareInputPort.
+  /// The @p input_port must match a port declared via DeclareInputPort.
   std::unique_ptr<AbstractValue> AllocateInputAbstract(
-      const InputPort<T>& descriptor) const {
-    DRAKE_ASSERT(descriptor.get_data_type() == kAbstractValued);
-    const int index = descriptor.get_index();
+      const InputPort<T>& input_port) const {
+    DRAKE_ASSERT(input_port.get_data_type() == kAbstractValued);
+    const int index = input_port.get_index();
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kAbstractValued);
-    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(descriptor));
+    return std::unique_ptr<AbstractValue>(DoAllocateInputAbstract(input_port));
   }
 
   /// Returns a container that can hold the values of all of this System's
@@ -1266,20 +1266,20 @@ class System : public SystemBase {
     DRAKE_ASSERT_VOID(other_system.CheckValidContextT(*target_context));
 
     for (int i = 0; i < get_num_input_ports(); ++i) {
-      const auto& descriptor = get_input_port(i);
+      const auto& input_port = get_input_port(i);
 
-      if (descriptor.get_data_type() == kVectorValued) {
+      if (input_port.get_data_type() == kVectorValued) {
         // For vector-valued input ports, we placewise initialize a fixed input
         // vector using the explicit conversion from double to T.
         const BasicVector<double>* other_vec =
             other_system.EvalVectorInput(other_context, i);
         if (other_vec == nullptr) continue;
-        auto our_vec = this->AllocateInputVector(descriptor);
+        auto our_vec = this->AllocateInputVector(input_port);
         for (int j = 0; j < our_vec->size(); ++j) {
           our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
         }
         target_context->FixInputPort(i, *our_vec);
-      } else if (descriptor.get_data_type() == kAbstractValued) {
+      } else if (input_port.get_data_type() == kAbstractValued) {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.
         const AbstractValue* other_value =
@@ -1287,7 +1287,7 @@ class System : public SystemBase {
         if (other_value == nullptr) continue;
         target_context->FixInputPort(i, other_value->Clone());
       } else {
-        DRAKE_ABORT_MSG("Unknown descriptor type.");
+        DRAKE_ABORT_MSG("Unknown input port type.");
       }
     }
   }
@@ -1424,7 +1424,7 @@ class System : public SystemBase {
   /// enables algorithms for design and analysis (e.g. state estimation) to
   /// reason explicitly about randomness at the system level.  All random input
   /// ports are assumed to be statistically independent.
-  /// @return descriptor of declared port.
+  /// @returns the declared port.
   const InputPort<T>& DeclareInputPort(
       PortDataType type, int size,
       optional<RandomDistribution> random_type = nullopt) {
@@ -1437,7 +1437,7 @@ class System : public SystemBase {
   }
 
   /// Adds an abstract-valued port to the input topology.
-  /// @return descriptor of declared port.
+  /// @returns the declared port.
   const InputPort<T>& DeclareAbstractInputPort() {
     return DeclareInputPort(kAbstractValued, 0 /* size */);
   }
@@ -1459,14 +1459,14 @@ class System : public SystemBase {
   /// acceptable inputs to the %System.
 
   /// Allocates an input vector of the leaf type that the System requires on
-  /// the port specified by @p descriptor. Caller owns the returned memory.
+  /// the port specified by @p input_port. Caller owns the returned memory.
   virtual BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& descriptor) const = 0;
+      const InputPort<T>& input_port) const = 0;
 
   /// Allocates an abstract input of the leaf type that the System requires on
-  /// the port specified by @p descriptor. Caller owns the returned memory.
+  /// the port specified by @p input_port. Caller owns the returned memory.
   virtual AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& descriptor) const = 0;
+      const InputPort<T>& input_port) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

@@ -66,15 +66,15 @@ PYBIND11_MODULE(rendering, m) {
       m, "PoseVelocityInputPorts")
       // N.B. We use lambdas below since we cannot use `def_readonly` with
       // reference members.
-      .def_property_readonly("pose_descriptor",
+      .def_property_readonly("pose_input_port",
            [](PoseVelocityInputPorts<T>* self) ->
            const InputPort<T>& {
-             return self->pose_descriptor;
+             return self->pose_input_port;
            })
-      .def_property_readonly("velocity_descriptor",
+      .def_property_readonly("velocity_input_port",
            [](PoseVelocityInputPorts<T>* self) ->
            const InputPort<T>& {
-             return self->velocity_descriptor;
+             return self->velocity_input_port;
            });
 
   py::class_<PoseAggregator<T>, LeafSystem<T>>(m, "PoseAggregator")

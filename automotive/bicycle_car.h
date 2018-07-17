@@ -75,11 +75,10 @@ class BicycleCar final : public systems::LeafSystem<T> {
 
   ~BicycleCar() override;
 
-  /// Returns a descriptor of the input port that contains the steering angle.
+  /// Returns the input port that contains the steering angle.
   const systems::InputPort<T>& get_steering_input_port() const;
 
-  /// Returns a descriptor of the input port that contains the applied
-  /// powertrain force.
+  /// Returns the input port that contains the applied powertrain force.
   const systems::InputPort<T>& get_force_input_port() const;
 
   /// Returns the output port that contains the bicycle states.

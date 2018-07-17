@@ -362,32 +362,32 @@ class LeafSystem : public System<T> {
     DoCalcNextUpdateTimeImpl(context, events, time);
   }
 
-  /// Allocates a vector that is suitable as an input value for @p descriptor.
+  /// Allocates a vector that is suitable as an input value for @p input_port.
   /// The default implementation in this class either clones the model_vector
   /// (if the port was declared via DeclareVectorInputPort) or else allocates a
   /// BasicVector (if the port was declared via DeclareInputPort(kVectorValued,
   /// size).  Subclasses can override this method if the default behavior is
   /// not sufficient.
   BasicVector<T>* DoAllocateInputVector(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     std::unique_ptr<BasicVector<T>> model_result =
-        model_input_values_.CloneVectorModel<T>(descriptor.get_index());
+        model_input_values_.CloneVectorModel<T>(input_port.get_index());
     if (model_result) {
       return model_result.release();
     }
-    return new BasicVector<T>(descriptor.size());
+    return new BasicVector<T>(input_port.size());
   }
 
-  /// Allocates an AbstractValue suitable as an input value for @p descriptor.
+  /// Allocates an AbstractValue suitable as an input value for @p input_port.
   /// The default implementation in this class either clones the model_value
   /// (if the port was declared via DeclareAbstractInputPort) or else aborts.
   ///
   /// Subclasses with abstract input ports must either provide a model_value
   /// when declaring the port, or else override this method.
   AbstractValue* DoAllocateInputAbstract(
-      const InputPort<T>& descriptor) const override {
+      const InputPort<T>& input_port) const override {
     std::unique_ptr<AbstractValue> model_result =
-        model_input_values_.CloneModel(descriptor.get_index());
+        model_input_values_.CloneModel(input_port.get_index());
     if (model_result) {
       return model_result.release();
     }
