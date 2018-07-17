@@ -31,13 +31,13 @@ namespace systems {
 /// e.g. if solved for t₁ > t₀ first, solving for t₂ > t₁ will only require
 /// integrating from t₁ onward.
 ///
-/// Additionally, configured integrator's dense output support can be leveraged
-/// to efficiently approximate the IVP solution within closed time intervals.
+/// Additionally, integrator's dense output support can be leveraged to
+/// efficiently approximate the IVP solution within closed intervals of t.
 /// This is convenient when there's a need for a more dense sampling of the
 /// IVP solution than what would be available through either fixed or
 /// error-controlled step integration (for a given accuracy), or when the IVP
-/// is to be solved at a high rate for arbitrary times within a given interval.
-/// See configured integrator's documentation for further reference on the
+/// is to be solved repeatedly for arbitrarily many t values within a given
+/// interval. See integrator's documentation for further reference on the
 /// specific dense output technique in use.
 ///
 /// For further insight into its use, consider the following examples:

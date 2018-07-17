@@ -6,9 +6,9 @@
 namespace drake {
 namespace systems {
 
-/// An interface for dense output of ODEs and DAEs solutions, to efficiently
-/// approximate them at arbitrarily many points when solving them numerically
-/// (see IntegratorBase class documentation).
+/// An interface for dense output of ODEs solutions, to efficiently approximate
+/// them at arbitrarily many points when solving them numerically (see
+/// IntegratorBase class documentation).
 ///
 /// Multiple definitions of _dense output_ may be found in literature. For some
 /// authors, it refers to the process of repeatedly adjusting the integration
@@ -49,10 +49,9 @@ class DenseOutput {
   virtual VectorX<T> Evaluate(const T& t) const = 0;
 
   /// Evaluates the output's @p dimension at the given time @p t.
-  /// @remarks The computational cost of this method may vary across
-  ///          implementations but it's guaranteed to be less than or
-  ///          equal to that of of indexing an Evaluate(const T&) call
-  ///          return.
+  /// @note On some implementations, the computational cost of this
+  ///       method may be lower than that of of indexing an
+  ///       Evaluate(const T&) call return vector value.
   /// @param t Time to evaluate output at.
   /// @param dimension Dimension to evaluate.
   /// @return Output @p dimension scalar value .

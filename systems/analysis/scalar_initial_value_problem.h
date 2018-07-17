@@ -29,16 +29,9 @@ namespace systems {
 /// Moreover, this scalar form facilitates single-dimensional quadrature
 /// using methods for solving initial value problems.
 ///
-/// Additionally, configured integrator's dense output support can be leveraged
-/// to efficiently approximate the IVP solution within closed time intervals.
-/// This is convenient when there's a need for a more dense sampling of the
-/// IVP solution than what would be available through either fixed or
-/// error-controlled step integration (for a given accuracy), or when the IVP
-/// is to be solved at a high rate for arbitrary times within a given interval.
-/// After construction, if necessary, equivalent vector dense outputs may be
-/// wrapped into a scalar form that is consistent with the IVP definition.
-/// See configured integrator's documentation for further reference on the
-/// specific dense output technique in use.
+/// See InitialValueProblem class documentation for information on caching
+/// support and dense output usage for improved efficiency in scalar IVP
+/// solving.
 ///
 /// For further insight into its use, consider the following examples of scalar
 /// IVPs:

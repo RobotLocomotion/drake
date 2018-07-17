@@ -5,7 +5,7 @@
 namespace drake {
 namespace systems {
 
-/// An interface for dense output of scalar ODEs and DAEs solutions.
+/// An interface for dense output of scalar ODEs solutions.
 ///
 /// See DenseOutput class documentation for further details.
 ///

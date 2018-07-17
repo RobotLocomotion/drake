@@ -18,21 +18,15 @@ namespace systems {
 /// Drake's ODE initial value problem solvers ("integrators"), provide the
 /// ability to perform quadrature on an arbitrary scalar integrable function.
 /// That is, it allows the evaluation of an antiderivative function F(u; 𝐤),
-/// such that F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ,
+/// such that F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx where f : ℝ  →  ℝ , u ∈ ℝ, v ∈ ℝ,
 /// 𝐤 ∈ ℝᵐ. The parameter vector 𝐤 allows for generic function definitions,
 /// which can later be evaluated for any instance of said vector. Also, note
 /// that 𝐤 can be understood as an m-tuple or as an element of ℝᵐ, the vector
 /// space, depending on how it is used by the integrable function.
 ///
-/// Additionally, configured integrator's dense output support can be leveraged
-/// to efficiently approximate the antiderivative function F within integration
-/// intervals. This is convenient when there's a need for a more dense sampling
-/// of F than what would be available through either fixed or error-controlled
-/// step integration (for a given accuracy), or when F is to be evaluated at a
-/// high rate for arbitrary values of u within a given interval.
-/// See ScalarInitialValueProblem class documentation for further details on
-/// dense output usage. See configured integrator's documentation for further
-/// reference on the specific dense output technique in use.
+/// See ScalarInitialValueProblem class documentation for information
+/// on caching support and dense output usage for improved efficiency in
+/// antiderivative function F evaluation.
 ///
 /// For further insight into its use, consider the following examples.
 ///
@@ -123,7 +117,7 @@ class AntiderivativeFunction {
         scalar_ode_function, scalar_ivp_default_values);
   }
 
-  /// Evaluates the definite integral F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx from the lower
+  /// Evaluates the definite integral F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx from the lower
   /// integration bound v (see definition in class documentation) to @p u using
   /// the parameter vector 𝐤 (see definition in class documentation) if present
   /// in @p values, falling back to the ones given on construction if missing.
@@ -144,7 +138,7 @@ class AntiderivativeFunction {
   }
 
   /// Evaluates and yields an approximation of the definite integral
-  /// F(u; 𝐤) =∫ᵥᵘ f(x; 𝐤) dx for the closed interval that goes from the
+  /// F(u; 𝐤) = ∫ᵥᵘ f(x; 𝐤) dx for the closed interval that goes from the
   /// lower integration bound v (see definition in class documentation) to
   /// the uppermost integration bound @p w using the parameter vector 𝐤 (see
   /// definition in class documentation) if present in @p values, falling back
