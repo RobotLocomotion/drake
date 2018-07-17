@@ -122,8 +122,18 @@ drake_cc_googletest(
         ":point_cloud",
         ":rigid_body_tree_removal",
         "//common/test_utilities:eigen_matrix_compare",
+        "//lcm",
         "//multibody/rigid_body_plant",
+        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/sensors:rgbd_camera",
+    ],
+)
+
+drake_cc_binary(
+    name = "colliding_points_test",
+    srcs = ["colliding_points_test.cc"],
+    deps = [
+        "//multibody/rigid_body_plant",
     ],
 )
 
