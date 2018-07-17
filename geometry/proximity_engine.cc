@@ -637,9 +637,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& dynamic_map,
       const std::vector<GeometryId>& anchored_map) const {
-    std::vector<SignedDistancePair<double>> nearest_pairs;
+    std::vector<SignedDistancePair<double>> witness_pairs;
     DistanceData distance_data{&dynamic_map, &anchored_map, &collision_filter_};
-    distance_data.nearest_pairs = &nearest_pairs;
+    distance_data.nearest_pairs = &witness_pairs;
     distance_data.request.enable_nearest_points = true;
     distance_data.request.enable_signed_distance = true;
     distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -650,7 +650,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
             &anchored_tree_),
         &distance_data, DistanceCallback);
-    return nearest_pairs;
+    return witness_pairs;
   }
 
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(

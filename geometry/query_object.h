@@ -138,7 +138,7 @@ class QueryObject {
 
    If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
    minimal distance between the two objects. More formally:
-   φ = min(|Aₚ - Bₚ|²)
+   φ = min(|Aₚ - Bₚ|)
    ∀ Aₚ ∈ A and Bₚ ∈ B. 
    Note: the pair (Aₚ, Bₚ) is a "witness" of the distance.
    The pair need not be unique (think of two parallel planes).
@@ -152,8 +152,8 @@ class QueryObject {
    where Tᵥ is a rigid transformation that displaces A by the vector v, namely
    Tᵥ · A = {u + v | ∀ u ∈ A}.
    By implication, there exist points Aₚ and Bₚ on the surfaces of objects A and
-   B, respectively, such that Aₚ + v = Bₚ, Aₚ ∈ B, Bₚ ∈ A. These points are the
-   witnesses to the penetration.
+   B, respectively, such that Aₚ + v = Bₚ, Aₚ ∈ A ∩ B, Bₚ ∈ A ∩ B. These points
+   are the witnesses to the penetration.
 
    This method is affected by collision filtering; geometry pairs that
    have been filtered will not produce signed distance query results.
@@ -172,7 +172,10 @@ class QueryObject {
    * filter. We report the distance between dynamic objects, and between dynamic
    * and anchored objects. We DO NOT report the distance between two anchored 
    * objects.
-   * @retval near_pairs The signed distance for all unfilted geometry pairs.
+   * @retval near_pairs The signed distance for all unfiltered geometry pairs.
+   * TODO(hongkai.dai): add a distance bound as an optional input, such that the
+   * function doesn't return the pairs whose signed distance is larger than the
+   * distance bound.
    */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints() const;

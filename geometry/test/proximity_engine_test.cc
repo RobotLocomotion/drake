@@ -11,7 +11,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-// Compare nearest pair. Note that we can switch body A with body B in one pair,
+// Compare witness pair. Note that we can switch body A with body B in one pair,
 // and the comparison result would be the same.
 void CompareSignedDistancePair(const SignedDistancePair<double>& pair,
                                const SignedDistancePair<double>& pair_expected,
@@ -142,7 +142,7 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
 // Signed distance tests -- testing data flow; not testing the value of the
 // query.
 
-// A scene with no geometry reports no nearest pairs.
+// A scene with no geometry reports no witness pairs.
 GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsOnEmptyScene) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> empty_map;

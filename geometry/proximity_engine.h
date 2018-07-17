@@ -125,11 +125,11 @@ class ProximityEngine {
   //@{
   // NOTE: This maps to Model::ClosestPointsAllToAll().
   /** Determines all the closest points between any pair of bodies/elements.
-   * This function returns the _signed_ distance function between each pair of
-   * elements in @p dynamic_map (object whose pose will change), and between
-   * each pair between an element in @p dynamic_map and another element in
-   * @p anchored_map. The order and size of the closest points are invariant
-   * when the poses of the objects are changed.
+   This function returns the _signed_ distance function between each pair of
+   elements in @p dynamic_map (object whose pose will change), and between
+   each pair between an element in @p dynamic_map and another element in
+   @p anchored_map. The order and size of the closest points are invariant
+   when the poses of the objects are changed.
    @param[in]   dynamic_map   A map from geometry _index_ to the corresponding
                               global geometry identifier for dynamic geometries.
    @param[in]   anchored_map  A map from geometry _index_ to the corresponding

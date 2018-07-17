@@ -31,9 +31,9 @@ struct SignedDistancePair{
   GeometryId id_A;
   /** The id of the second geometry in the pair. */
   GeometryId id_B;
-  /** The point on geometry A's surface nearest B, in A's frame. */
+  /** The witness point on geometry A's surface, expressed in A's frame. */
   Vector3<T> p_ACa;
-  /** The point on geometry B's surface nearest A, in B's frame. */
+  /** The witness point on geometry B's surface, expressed in B's frame. */
   Vector3<T> p_BCb;
   /** The distance between p_A_A and p_B_B (measured in a common frame). */
   T distance{};
