@@ -790,13 +790,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       auto ValidateObject = [](const fcl::CollisionObject<double>& test,
                                const fcl::CollisionObject<double>& ref) {
         return test.getUserData() == ref.getUserData() && &test != &ref &&
-                   test.getNodeType() == ref.getNodeType() &&
-                   test.getObjectType() == ref.getObjectType() &&
-                   test.getAABB().center() == ref.getAABB().center() &&
-                   test.getAABB().width(),
-               ref.getAABB().width() && test.getAABB().height(),
-               ref.getAABB().height() && test.getAABB().depth(),
-               ref.getAABB().depth();
+               test.getNodeType() == ref.getNodeType() &&
+               test.getObjectType() == ref.getObjectType() &&
+               test.getAABB().center() == ref.getAABB().center() &&
+               test.getAABB().width() && ref.getAABB().width() &&
+               test.getAABB().height() && ref.getAABB().height() &&
+               test.getAABB().depth() && ref.getAABB().depth();
       };
       bool is_copy = true;
       is_copy = is_copy &&
@@ -872,7 +871,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
-  // The default value is 1E-6.
   double distance_tolerance_{1E-6};
 };
 

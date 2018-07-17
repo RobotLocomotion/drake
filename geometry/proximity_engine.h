@@ -95,15 +95,9 @@ class ProximityEngine {
   /** The distance (signed/unsigned/penetration distance) is generally computed
    * from an iterative process. The distance_tolerance determines when the
    * iterative process will terminate.
-   * When the objects are penetrating, and the penetration depth are computed
-   * through Expanded Polytope Algorithm (EPA) (for example, the mesh-to-mesh
-   * penetration depth), the computed penetration depth is guaranteed to be
-   * within @p tol from the true distance.
-   * When the objects are separating, and the separating distance are computed
-   * through GJK algorithm (for example, the mesh-to-mesh distance), then the
-   * process terminates when the change of distance is smaller than @p tol
-   * between two consecutive iterations. Note this does NOT mean that the actual
-   * distance is within @p tol to the computed distance. */
+   * As a rule of rule of thumb, one can generally assume that the answer will
+   * be within 10 * tol to the true answer.
+   */
   void set_distance_tolerance(double tol);
 
   double distance_tolerance() const;
@@ -142,11 +136,7 @@ class ProximityEngine {
                               global geometry identifier for anchored
                               geometries.
    @returns signed_distance_pair A vector populated with all pairs of witness
-                                 points. We guarantee that
-                                 signed_distance_pair[i].id_A <
-                                 signed_distance_pair[i].id_B.
-                                 Namely within each pair, the two objects are
-                                 sorted based on their IDs.
+                                 points. 
    */
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(
