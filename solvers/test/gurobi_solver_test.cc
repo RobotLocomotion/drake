@@ -233,6 +233,37 @@ TEST_P(TestFindSpringEquilibrium, TestSOCP) {
 INSTANTIATE_TEST_CASE_P(
     GurobiTest, TestFindSpringEquilibrium,
     ::testing::ValuesIn(GetFindSpringEquilibriumProblems()));
+
+GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
+  // Running multiple threads of GurobiSolver, they share the same GRBenv
+  // which is created when acquiring the Gurobi license in the main function.
+
+  std::vector<std::unique_ptr<MathematicalProgram>> progs;
+  const int num_threads = 10;
+  // In each thread, solve the optimization program:
+  // min x² + 2*i*x + i²
+  for (int i = 0; i < num_threads; ++i) {
+    progs.push_back(std::make_unique<MathematicalProgram>());
+    auto x = progs[i]->NewContinuousVariables<1>()(0);
+    progs[i]->AddQuadraticCost(x * x + 2 * i * x + i * i);
+  }
+
+  auto SolveProgram = [](MathematicalProgram* prog, int i) {
+    GurobiSolver gurobi_solver;
+    const SolutionResult result = gurobi_solver.Solve(*prog);
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    EXPECT_NEAR(prog->GetSolution(prog->decision_variable(0)), -i, 1E-6);
+  };
+
+  std::vector<std::thread> test_threads;
+  for (int i = 0; i < num_threads; ++i) {
+    test_threads.emplace_back(SolveProgram, progs[i].get(), i);
+  }
+  for (int i = 0; i < num_threads; ++i) {
+    test_threads[i].join();
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
