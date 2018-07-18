@@ -2922,6 +2922,24 @@ GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
   EXPECT_TRUE(was_called);
 }
 
+GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
+  MathematicalProgram prog;
+  const SolverId solver_id("solver_id");
+  const SolverId wrong_solver_id("wrong_solver_id");
+
+  prog.SetSolverOption(solver_id, "double_name", 1.0);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(solver_id).at("double_name"), 1.0);
+  EXPECT_EQ(prog.GetSolverOptionsDouble(wrong_solver_id).size(), 0);
+
+  prog.SetSolverOption(solver_id, "int_name", 2);
+  EXPECT_EQ(prog.GetSolverOptionsInt(solver_id).at("int_name"), 2);
+  EXPECT_EQ(prog.GetSolverOptionsInt(wrong_solver_id).size(), 0);
+
+  prog.SetSolverOption(solver_id, "string_name", "3");
+  EXPECT_EQ(prog.GetSolverOptionsStr(solver_id).at("string_name"), "3");
+  EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
