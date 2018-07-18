@@ -238,60 +238,6 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
 
   HermitianDenseOutput() = default;
 
-  VectorX<T> Evaluate(const T& t) const override {
-    if (is_empty()) {
-      throw std::logic_error("Empty dense output cannot be evaluated.");
-    }
-    if (t < get_start_time() || t > get_end_time()) {
-      throw std::runtime_error("Dense output is not defined for given time.");
-    }
-    const MatrixX<double> matrix_value =
-        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
-    return matrix_value.col(0).cast<T>();
-  }
-
-  T Evaluate(const T& t, const int dimension) const override {
-    if (is_empty()) {
-      throw std::logic_error("Empty dense output cannot be evaluated.");
-    }
-    if (dimension < 0 || get_dimensions() <= dimension) {
-      throw std::runtime_error("Invalid dimension for dense output.");
-    }
-    if (t < get_start_time() || t > get_end_time()) {
-      throw std::runtime_error("Dense output is not defined for given time.");
-    }
-    return continuous_trajectory_.scalarValue(
-        ExtractDoubleOrThrow(t), dimension, 0);
-  }
-
-  int get_dimensions() const override {
-    if (is_empty()) {
-      throw std::logic_error("Dimension is not defined for"
-                             " an empty dense output.");
-    }
-    return continuous_trajectory_.rows();
-  }
-
-  bool is_empty() const override {
-    return continuous_trajectory_.empty();
-  }
-
-  const T& get_end_time() const override {
-    if (is_empty()) {
-      throw std::logic_error("End time is not defined for"
-                             " an empty dense output.");
-    }
-    return end_time_;
-  }
-
-  const T& get_start_time() const override {
-    if (is_empty()) {
-      throw std::logic_error("Start time is not defined for"
-                             " an empty dense output.");
-    }
-    return start_time_;
-  }
-
   /// Update output with the given @p step.
   ///
   /// Provided @p step is queued for later consolidation. Note that
@@ -335,6 +281,29 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   }
 
  private:
+  VectorX<T> DoEvaluate(const T& t) const override {
+    const MatrixX<double> matrix_value =
+        continuous_trajectory_.value(ExtractDoubleOrThrow(t));
+    return matrix_value.col(0).cast<T>();
+  }
+
+  T DoEvaluate(const T& t, const int dimension) const override {
+    return continuous_trajectory_.scalarValue(
+        ExtractDoubleOrThrow(t), dimension, 0);
+  }
+
+  bool do_is_empty() const override {
+    return continuous_trajectory_.empty();
+  }
+
+  int do_get_dimensions() const override {
+    return continuous_trajectory_.rows();
+  }
+
+  const T& do_get_end_time() const override { return end_time_; }
+
+  const T& do_get_start_time() const override { return start_time_; }
+
   // Validates that the provided @p step can be consolidated into this
   // dense output.
   // @see Update(const IntegrationStep&)

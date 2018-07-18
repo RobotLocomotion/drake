@@ -35,22 +35,6 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
     }
   }
 
-  T Evaluate(const T& t) const override {
-    return base_output_->Evaluate(t, dimension_);
-  }
-
-  bool is_empty() const override {
-    return base_output_->is_empty();
-  }
-
-  const T& get_start_time() const override {
-    return base_output_->get_start_time();
-  }
-
-  const T& get_end_time() const override {
-    return base_output_->get_end_time();
-  }
-
   /// Returns the base dense output upon which the
   /// view operates.
   const DenseOutput<T>* get_base_output() const {
@@ -58,6 +42,22 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
   }
 
  private:
+  T DoEvaluate(const T& t) const override {
+    return base_output_->Evaluate(t, dimension_);
+  }
+
+  bool do_is_empty() const override {
+    return base_output_->is_empty();
+  }
+
+  const T& do_get_start_time() const override {
+    return base_output_->get_start_time();
+  }
+
+  const T& do_get_end_time() const override {
+    return base_output_->get_end_time();
+  }
+
   // The base (vector) dense output being wrapped.
   const std::unique_ptr<DenseOutput<T>> base_output_;
   // The dimension of interest for the view.

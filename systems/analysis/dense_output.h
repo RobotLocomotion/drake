@@ -6,7 +6,7 @@
 namespace drake {
 namespace systems {
 
-/// An interface for dense output of ODEs solutions, to efficiently approximate
+/// An interface for dense output of ODE solutions, to efficiently approximate
 /// them at arbitrarily many points when solving them numerically (see
 /// IntegratorBase class documentation).
 ///
@@ -46,12 +46,21 @@ class DenseOutput {
   /// @throw std::logic_error if any of the preconditions are not met.
   /// @throw std::runtime_error if the output is not defined for the
   ///                           given @p t.
-  virtual VectorX<T> Evaluate(const T& t) const = 0;
+  VectorX<T> Evaluate(const T& t) const {
+    if (is_empty()) {
+      throw std::logic_error("Empty dense output cannot be evaluated.");
+    }
+    if (t < this->do_get_start_time() || t > this->do_get_end_time()) {
+      throw std::runtime_error("Dense output is not defined for given time.");
+    }
+    return this->DoEvaluate(t);
+  }
 
   /// Evaluates the output's @p dimension at the given time @p t.
   /// @note On some implementations, the computational cost of this
   ///       method may be lower than that of of indexing an
-  ///       Evaluate(const T&) call return vector value.
+  ///       Evaluate(const T&) call return vector value, thus making
+  ///       it the preferred mechanism when targeting a single dimension.
   /// @param t Time to evaluate output at.
   /// @param dimension Dimension to evaluate.
   /// @return Output @p dimension scalar value .
@@ -61,30 +70,83 @@ class DenseOutput {
   ///                           given @p t.
   /// @throw std::runtime_error if given @p dimension is not valid
   ///                           i.e. 0 <= @p dimension < get_dimensions().
-  virtual T Evaluate(const T& t, int dimension) const = 0;
+  T Evaluate(const T& t, int dimension) const {
+    if (is_empty()) {
+      throw std::logic_error("Empty dense output cannot be evaluated.");
+    }
+    if (dimension < 0 || this->do_get_dimensions() <= dimension) {
+      throw std::runtime_error("Invalid dimension for dense output.");
+    }
+    if (t < this->do_get_start_time() || t > this->do_get_end_time()) {
+      throw std::runtime_error("Dense output is not defined for given time.");
+    }
+    return this->DoEvaluate(t, dimension);
+  }
 
   /// Returns the output dimension `n`.
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  virtual int get_dimensions() const = 0;
+  int get_dimensions() const {
+    if (is_empty()) {
+      throw std::logic_error("Dimension is not defined for"
+                             " an empty dense output.");
+    }
+    return this->do_get_dimensions();
+  }
 
   /// Checks whether the output is empty or not.
-  virtual bool is_empty() const = 0;
+  bool is_empty() const { return this->do_is_empty(); }
 
   /// Returns output's start time, or in other words, the oldest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  virtual const T& get_start_time() const = 0;
+  const T& get_start_time() const {
+    if (is_empty()) {
+      throw std::logic_error("Start time is not defined for"
+                             " an empty dense output.");
+    }
+    return this->do_get_start_time();
+  }
 
   /// Returns output's end time, or in other words, the newest time
   /// `t` that it can be evaluated at e.g. via Evaluate().
   /// @pre Output is not empty i.e. is_empty() equals false.
   /// @throw std::logic_error if any of the preconditions is not met.
-  virtual const T& get_end_time() const = 0;
+  const T& get_end_time() const {
+    if (is_empty()) {
+      throw std::logic_error("End time is not defined for"
+                             " an empty dense output.");
+    }
+    return this->do_get_end_time();
+  }
 
  protected:
   DenseOutput() = default;
+
+ private:
+  // @see Evaluate(const T&)
+  virtual VectorX<T> DoEvaluate(const T& t) const = 0;
+
+  // @remarks The computational cost of this method ought
+  //          to be less than or equal to that of indexing
+  //          DoEvaluate(const T&) return value.
+  // @see Evaluate(const T&, int)
+  virtual T DoEvaluate(const T& t, int dimension) const {
+    return this->DoEvaluate(t)(dimension);
+  }
+
+  // @see is_empty()
+  virtual bool do_is_empty() const = 0;
+
+  // @see get_dimensions()
+  virtual int do_get_dimensions() const = 0;
+
+  // @see get_start_time()
+  virtual const T& do_get_start_time() const = 0;
+
+  // @see get_end_time()
+  virtual const T& do_get_end_time() const = 0;
 };
 
 }  // namespace systems
