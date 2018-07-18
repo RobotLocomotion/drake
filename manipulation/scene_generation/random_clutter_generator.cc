@@ -168,7 +168,7 @@ int RandomClutterGenerator::ComputeIK(
   IKResults ik_results = inverseKinSimple(scene_tree_ptr_, q_initial, q_nominal,
                                           constraint_array, ikoptions);
 
-  int ik_result_code;
+  int ik_result_code = 100;
   for (auto result_code_info : ik_results.info) {
     drake::log()->info("IK Result code : {}", result_code_info);
     ik_result_code = result_code_info;
