@@ -128,8 +128,8 @@ class DenseOutput {
   // @see Evaluate(const T&)
   virtual VectorX<T> DoEvaluate(const T& t) const = 0;
 
-  // @remarks The computational cost of this method ought
-  //          to be less than or equal to that of indexing
+  // @remarks The computational cost of this method must
+  //          be less than or equal to that of indexing
   //          DoEvaluate(const T&) return value.
   // @see Evaluate(const T&, int)
   virtual T DoEvaluate(const T& t, int dimension) const {
