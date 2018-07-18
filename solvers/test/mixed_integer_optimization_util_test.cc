@@ -97,7 +97,7 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
   auto y = prog.NewContinuousVariables<1>()(0);
   Eigen::Matrix<double, 2, 7> A;
   // clang-format off
-  A << 0, 1, 2, 4, 5, 7, 8,
+  A << 0, 1, 2, 4, 6, 7, 8,
        0, 1, 0, 2, 0, 1, 0;
   // clang-format on
   auto lambda = prog.NewContinuousVariables<7>();
@@ -108,15 +108,35 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
   prog.AddLinearConstraint(line_segment(0) == x);
   prog.AddLinearConstraint(line_segment(1) == y);
 
-  Binding<QuadraticCost> cost = prog.AddQuadraticCost();
-  // We will test with different points Qs.
-  std::vector<Eigen::Vector2d> Qs;
-  Qs.emplace_back(1, 1);
-  Qs.emplace_back(2, 1);
-  Qs.emplace_back(3, 1);
-  Qs.emplace_back(4, 1);
-  Qs.emplace_back(5, 1);
-  Qs.emplace_back(5, 1);
+  Binding<QuadraticCost> cost =
+      prog.AddQuadraticCost(Eigen::Matrix2d::Zero(), Eigen::Vector2d::Zero(), 0,
+                            VectorDecisionVariable<2>(x, y));
+  // We will test with different points Qs, each Q corresponds to a nearest
+  // point P on the line segments.
+  std::vector<std::pair<Eigen::Vector2d, Eigen::Vector2d>> Q_and_P;
+  Q_and_P.push_back(
+      std::make_pair(Eigen::Vector2d(1, 1), Eigen::Vector2d(1, 1)));
+  Q_and_P.push_back(
+      std::make_pair(Eigen::Vector2d(1.9, 1), Eigen::Vector2d(1.45, 0.55)));
+  Q_and_P.push_back(
+      std::make_pair(Eigen::Vector2d(3, 1), Eigen::Vector2d(3, 1)));
+  Q_and_P.push_back(
+      std::make_pair(Eigen::Vector2d(5, 1.2), Eigen::Vector2d(4.9, 1.1)));
+  Q_and_P.push_back(
+      std::make_pair(Eigen::Vector2d(7.5, 1.2), Eigen::Vector2d(7.15, 0.85)));
+  for (int i = 0; i < static_cast<int>(Q_and_P.size()); ++i) {
+    const Eigen::Vector2d& Q = Q_and_P[i].first;
+    cost.evaluator()->UpdateCoefficients(2 * Eigen::Matrix2d::Identity(),
+                                         -2 * Q, Q.squaredNorm());
+
+    GurobiSolver gurobi_solver;
+    const SolutionResult result = gurobi_solver.Solve(prog);
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    const Eigen::Vector2d P(prog.GetSolution(VectorDecisionVariable<2>(x, y)));
+    const Eigen::Vector2d P_expected = Q_and_P[i].second;
+    EXPECT_TRUE(CompareMatrices(P, P_expected, 1E-6));
+    EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-6);
+  }
 }
 
 GTEST_TEST(TestLogarithmicSos2, Test4Lambda) {
