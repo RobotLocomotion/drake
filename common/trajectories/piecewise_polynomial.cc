@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 using std::runtime_error;
 using std::vector;
@@ -103,8 +104,8 @@ PiecewisePolynomial<T>::integral(
 
 template <typename T>
 double PiecewisePolynomial<T>::scalarValue(double t,
-                                                         Eigen::Index row,
-                                                         Eigen::Index col) {
+                                           Eigen::Index row,
+                                           Eigen::Index col) const {
   int segment_index = this->get_segment_index(t);
   return segmentValueAtGlobalAbscissa(segment_index, t, row, col);
 }
@@ -264,6 +265,38 @@ bool PiecewisePolynomial<T>::isApprox(
     }
   }
   return true;
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::ConcatenateInTime(
+    const PiecewisePolynomial<T>& other) {
+  if (!empty()) {
+    // Performs basic sanity checks.
+    DRAKE_THROW_UNLESS(this->rows() == other.rows());
+    DRAKE_THROW_UNLESS(this->cols() == other.cols());
+    const double time_offset = other.start_time() - this->end_time();
+    // Absolute tolerance is scaled along with the time scale.
+    const double absolute_tolerance = std::max(std::abs(this->end_time()), 1.) *
+                                      std::numeric_limits<double>::epsilon();
+    DRAKE_THROW_UNLESS(std::abs(time_offset) < absolute_tolerance);
+    // Gets instance breaks.
+    std::vector<double>& breaks = this->get_mutable_breaks();
+    // Drops first break to avoid duplication.
+    breaks.pop_back();
+    // Concatenates other breaks, while shifting them appropriately
+    // for both trajectories to be time-aligned.
+    for (double other_break : other.breaks()) {
+      breaks.push_back(other_break - time_offset);
+    }
+    // Concatenates other polynomials.
+    polynomials_.insert(polynomials_.end(),
+                        other.polynomials_.begin(),
+                        other.polynomials_.end());
+  } else {
+    std::vector<double>& breaks = this->get_mutable_breaks();
+    breaks = other.breaks();
+    polynomials_ = other.polynomials_;
+  }
 }
 
 template <typename T>
@@ -740,7 +773,7 @@ PiecewisePolynomial<T>
 PiecewisePolynomial<T>::Cubic(
     const std::vector<double>& breaks,
     const std::vector<CoefficientMatrix>& knots,
-    const bool periodic_end_condition) {
+    bool periodic_end_condition) {
   const std::vector<double>& times = breaks;
   const std::vector<CoefficientMatrix>& Y = knots;
   CheckSplineGenerationInputValidityOrThrow(times, Y, 3);
@@ -769,8 +802,8 @@ PiecewisePolynomial<T>::Cubic(
 
       if (N > 3 && !periodic_end_condition) {
         // Ydddot(times[1]) is continuous.
-        A(row_idx, 3) = 1; // Cubic term of 1st segment
-        A(row_idx, 4 + 3) = -1; // Cubic term of 2nd segment
+        A(row_idx, 3) = 1;  // Cubic term of 1st segment
+        A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment
         b(row_idx++) = 0;
 
         // Ydddot(times[N-2]) is continuous.
@@ -782,18 +815,19 @@ PiecewisePolynomial<T>::Cubic(
         const double end_dt = times[times.size() - 1] - times[times.size() - 2];
         // Enforce velocity between end-of-last and beginning-of-first segments
         // are continuous.
-        A(row_idx, 1) = -1; // Linear term of 1st segment.
-        A(row_idx, 4 * (N - 2) + 1) = 1; // Linear term of last segment.
-        A(row_idx, 4 * (N - 2) + 2) = 2*end_dt; // Squared term of last segment.
-        A(row_idx, 4 * (N - 2) + 3) = 3*end_dt*end_dt; // Cubic term of last
-                                                       // segment.
+        A(row_idx, 1) = -1;  // Linear term of 1st segment.
+        A(row_idx, 4 * (N - 2) + 1) = 1;  // Linear term of last segment.
+        A(row_idx, 4 * (N - 2) + 2) = 2*end_dt;  // Squared term of last
+                                                 // segment.
+        A(row_idx, 4 * (N - 2) + 3) = 3*end_dt*end_dt;  // Cubic term of last
+                                                        // segment.
         b(row_idx++) = 0;
 
         // Enforce acceleration between end-of-last and beginning-of-first
         // segments are continuous.
-        A(row_idx, 2) = -2; // Quadratic term of 1st segment.
-        A(row_idx, 4 * (N - 2) + 2) = 2; // Quadratic term of last segment.
-        A(row_idx, 4 * (N - 2) + 3) = 6*end_dt; // Cubic term of last segment.
+        A(row_idx, 2) = -2;  // Quadratic term of 1st segment.
+        A(row_idx, 4 * (N - 2) + 2) = 2;  // Quadratic term of last segment.
+        A(row_idx, 4 * (N - 2) + 3) = 6*end_dt;  // Cubic term of last segment.
         b(row_idx++) = 0;
       } else {
         // Set Jerk to zero if only have 3 points, becomes a quadratic.
@@ -892,7 +926,7 @@ template <typename T>
 PiecewisePolynomial<T> PiecewisePolynomial<T>::Cubic(
     const Eigen::Ref<const Eigen::VectorXd>& breaks,
     const Eigen::Ref<const MatrixX<T>>& knots,
-    const bool periodic_end_condition) {
+    bool periodic_end_condition) {
   DRAKE_DEMAND(knots.cols() == breaks.size());
   std::vector<double> my_breaks(breaks.data(), breaks.data() + breaks.size());
   return PiecewisePolynomial<T>::Cubic(my_breaks, ColsToStdVector(knots),
@@ -924,3 +958,4 @@ template class PiecewisePolynomial<double>;
 
 }  // namespace trajectories
 }  // namespace drake
+

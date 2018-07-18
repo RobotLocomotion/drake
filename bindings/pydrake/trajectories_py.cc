@@ -61,9 +61,10 @@ PYBIND11_MODULE(trajectories, m) {
                   py::arg("breaks"), py::arg("knots"), py::arg("knots_dot"))
       .def_static("Cubic",
                   py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
-                                    const Eigen::Ref<const MatrixX<T>>&>(
+                                    const Eigen::Ref<const MatrixX<T>>&,
+                                    bool>(
                       &PiecewisePolynomial<T>::Cubic),
-                  py::arg("breaks"), py::arg("knots"))
+                  py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"))
       .def("value", &PiecewisePolynomial<T>::value)
       .def("derivative", &PiecewisePolynomial<T>::derivative)
       .def("rows", &PiecewisePolynomial<T>::rows)

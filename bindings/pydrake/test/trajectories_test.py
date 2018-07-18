@@ -42,8 +42,9 @@ class TestTrajectories(unittest.TestCase):
     def test_cubic(self):
         t = [0., 1., 2.]
         x = np.diag((4., 5., 6.))
+        periodic_end = False
         # Just test the spelling for these.
-        pp1 = PiecewisePolynomial.Cubic(t, x)
+        pp1 = PiecewisePolynomial.Cubic(t, x, periodic_end)
         pp2 = PiecewisePolynomial.Cubic(t, x, np.identity(3))
         pp3 = PiecewisePolynomial.Cubic(t, x, [0., 0., 0.], [0., 0., 0.])
 
