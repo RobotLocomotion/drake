@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":materials",
         ":proximity_engine",
         ":scene_graph",
+        ":scene_graph_inspector",
         ":shape_specification",
     ],
 )
@@ -159,11 +160,18 @@ drake_cc_library(
     deps = [
         ":geometry_context",
         ":geometry_state",
+        ":scene_graph_inspector",
         "//common:essential",
         "//geometry/query_results:penetration_as_point_pair",
         "//systems/framework",
         "//systems/rendering:pose_bundle",
     ],
+)
+
+drake_cc_library(
+    name = "scene_graph_inspector",
+    hdrs = ["scene_graph_inspector.h"],
+    deps = [":geometry_state"],
 )
 
 drake_cc_library(
@@ -291,6 +299,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "query_object_test",
     deps = [
+        ":geometry_frame",
+        ":geometry_instance",
         ":scene_graph",
         "//common/test_utilities:expect_throws_message",
     ],

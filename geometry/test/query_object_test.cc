@@ -6,6 +6,8 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -25,8 +27,7 @@ class QueryObjectTester {
   static std::unique_ptr<QueryObject<T>> MakeQueryObject(
       const GeometryContext<T>* context, const SceneGraph<T>* scene_graph) {
     auto q = std::unique_ptr<QueryObject<T>>(new QueryObject<T>());
-    q->scene_graph_ = scene_graph;
-    q->context_ = context;
+    q->set(context, scene_graph);
     return q;
   }
 
@@ -50,6 +51,7 @@ class QueryObjectTester {
 
 namespace {
 
+using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
 
@@ -98,11 +100,29 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(QOT::ThrowIfDefault(*default_object));
 
   // Enumerate *all* queries to confirm they throw the proper exception.
-  EXPECT_DEFAULT_ERROR(default_object->GetFrameId(GeometryId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object->GetSourceName(SourceId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
 
 #undef EXPECT_DEFAULT_ERROR
+}
+
+// Confirms the inspector returned by the QueryObject provides complete
+// inspection abilities.
+GTEST_TEST(QueryObjectInspectTest, CreateValidInspector) {
+  SceneGraph<double> scene_graph;
+  SourceId source_id = scene_graph.RegisterSource("source");
+  auto identity = Isometry3<double>::Identity();
+  FrameId frame_id =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame", identity));
+  GeometryId geometry_id = scene_graph.RegisterGeometry(
+      source_id, frame_id, make_unique<GeometryInstance>(
+                               identity, make_unique<Sphere>(1.0), "sphere"));
+  unique_ptr<Context<double>> context = scene_graph.AllocateContext();
+  auto geo_context = dynamic_cast<GeometryContext<double>*>(context.get());
+  unique_ptr<QueryObject<double>> query_object =
+      QueryObjectTester::MakeQueryObject<double>(geo_context, &scene_graph);
+
+  const SceneGraphInspector<double>& inspector = query_object->inspector();
+  EXPECT_EQ(inspector.GetFrameId(geometry_id), frame_id);
 }
 
 // NOTE: This doesn't test the specific queries; GeometryQuery simply wraps

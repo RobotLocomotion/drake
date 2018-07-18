@@ -636,6 +636,9 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @param[in] shape
   ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
   ///   geometry::Cylinder, etc.
+  /// @param[in] name
+  ///   The name for the geometry. It must be unique in the geometry's scope
+  ///   (as defined in drake::geometry::GeometryInstance).
   /// @param[in] material
   ///   The visual material to assign to the geometry.
   /// @param[out] scene_graph
@@ -648,14 +651,16 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// @returns the id for the registered geometry.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, const geometry::VisualMaterial& material,
+      const geometry::Shape& shape, const std::string& name,
+      const geometry::VisualMaterial& material,
       geometry::SceneGraph<T>* scene_graph);
 
   /// Overload for visual geometry registration; it implicitly assigns the
   /// default material.
   geometry::GeometryId RegisterVisualGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape, geometry::SceneGraph<T>* scene_graph);
+      const geometry::Shape& shape, const std::string& name,
+      geometry::SceneGraph<T>* scene_graph);
 
   /// Returns an array of GeometryId's identifying the different visual
   /// geometries for `body` previously registered with a SceneGraph.
@@ -699,7 +704,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
   geometry::GeometryId RegisterCollisionGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
-      const geometry::Shape& shape,
+      const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -1259,6 +1264,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape,
+      const std::string& name,
       const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
@@ -1271,6 +1277,7 @@ class MultibodyPlant : public systems::LeafSystem<T> {
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterAnchoredGeometry(
       const Isometry3<double>& X_WG, const geometry::Shape& shape,
+      const std::string& name,
       const optional<geometry::VisualMaterial>& material,
       geometry::SceneGraph<T>* scene_graph);
 
