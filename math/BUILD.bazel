@@ -91,6 +91,7 @@ drake_cc_library(
         "roll_pitch_yaw.h",
         "rotation_matrix.h",
         "rotation_matrix_deprecated.h",
+        "transform.h",  # Deprecated.
     ],
     deps = [
         "//common:default_scalars",

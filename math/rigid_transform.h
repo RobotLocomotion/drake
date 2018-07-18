@@ -12,14 +12,15 @@
 namespace drake {
 namespace math {
 
-/// This class represents a rigid transform between two frames, which can be
-/// regarded in two ways.  It can be regarded as a distance-preserving linear
-/// operator (i.e., one that rotates and/or translates) which (for example) can
-/// add one position vector to another and express the result in a particular
-/// basis as `p_AoQ_A = X_AB * p_BoQ_B` (Q is any point).  Alternately, a rigid
-/// transform describes the pose between two frames A and B (i.e., the relative
-/// orientation and position of A to B).  Herein, the terms rotation/orientation
-/// and translation/position are used interchangeably.
+/// This class represents a proper rigid transform between two frames which can
+/// be regarded in two ways.  It can be regarded as a distance-preserving linear
+/// operator that can rotate and/or translate a rigid body without changing its
+/// shape or size (rigid) and without mirroring/reflecting the body (proper),
+/// e.g., it can add one position vector to another and express the result in a
+/// particular basis as `p_AoQ_A = X_AB * p_BoQ_B` (Q is any point).
+/// Alternately, a rigid transform describes the pose between two frames A and B
+/// (i.e., the relative orientation and position of A to B).  Herein, the terms
+/// rotation/orientation and translation/position are used interchangeably.
 /// The class stores a RotationMatrix that relates right-handed orthogonal
 /// unit vectors Ax, Ay, Az fixed in frame A to right-handed orthogonal
 /// unit vectors Bx, By, Bz fixed in frame B.
@@ -31,15 +32,20 @@ namespace math {
 /// See @ref multibody_quantities for monogram notation for dynamics.
 ///
 /// @note This class does not store the frames associated with the transform and
-/// cannot enforce proper usage of this class.  For example, it makes sense to
+/// cannot enforce correct usage of this class.  For example, it makes sense to
 /// multiply %RigidTransforms as `X_AB * X_BC`, but not `X_AB * X_CB`.
 ///
 /// @note This class is not a 4x4 transformation matrix -- even though its
 /// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
 /// contains a rotation matrix class as well as a 3x1 position vector.  To form
 /// a 4x4 matrix, use GetAsMatrix().  GetAsIsometry() is treated similarly.
+/// @note An isometry is sometimes regarded as synonymous with rigid transform.
+///
+/// @authors Paul Mitiguy (2018) Original author.
+/// @authors Drake team (see https://drake.mit.edu/credits).
 ///
 /// @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+
 template <typename T>
 class RigidTransform {
  public:
@@ -143,7 +149,7 @@ class RigidTransform {
     return pose;
   }
 
-  /// Returns the Isometry associated with a %RigidTransform.
+  /// Returns the isometry in ℜ³ that is equivalent to a %RigidTransform.
   Isometry3<T> GetAsIsometry3() const {
     // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
     // of Isometry3 and pose.translation() returns a mutable reference to the
