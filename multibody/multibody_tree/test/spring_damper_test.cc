@@ -41,29 +41,29 @@ class SpringDamperTester : public ::testing::Test {
         "Slider", model_.world_body(), {}, *bodyB_, {},
         Vector3<double>::UnitX());
 
-    spring_damper_ = &model_.AddForceElement<SpringDamper>(
-        *bodyA_, p_AP_, *bodyB_, p_BQ_, rest_length_, stiffness_, damping_);
+    spring_damper_ = &model_.AddForceElement<LinearSpringDamper>(
+        *bodyA_, p_AP_, *bodyB_, p_BQ_, free_length_, stiffness_, damping_);
 
     // Verify the the constructor for the spring-damper throws if either the
     // rest length, stiffness or damping are negative numbers.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model_.AddForceElement<SpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
             -1.0 /* negative rest length */, stiffness_, damping_),
         std::exception,
-        ".*condition 'rest_length >= 0' failed.*");
+        ".*condition 'free_length >= 0' failed.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model_.AddForceElement<SpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
-            rest_length_, -1.0  /* negative stiffness */, damping_),
+            free_length_, -1.0  /* negative stiffness */, damping_),
         std::exception,
         ".*condition 'stiffness >= 0' failed.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        model_.AddForceElement<SpringDamper>(
+        model_.AddForceElement<LinearSpringDamper>(
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
-            rest_length_, stiffness_, -1.0 /* negative damping */),
+            free_length_, stiffness_, -1.0 /* negative damping */),
         std::exception,
         ".*condition 'damping >= 0' failed.*");
 
@@ -110,11 +110,11 @@ class SpringDamperTester : public ::testing::Test {
   const RigidBody<double>* bodyA_{nullptr};
   const RigidBody<double>* bodyB_{nullptr};
   const PrismaticJoint<double>* slider_{nullptr};
-  const SpringDamper<double>* spring_damper_{nullptr};
+  const LinearSpringDamper<double>* spring_damper_{nullptr};
   std::unique_ptr<MultibodyForces<double>> forces_;
 
   // Parameters of the case.
-  const double rest_length_ = 1.0;  // [m]
+  const double free_length_ = 1.0;  // [m]
   const double stiffness_ = 2.0;    // [N/m]
   const double damping_ = 0.5;      // [Ns/m]
   const double torque_arm_length_{1.0};
@@ -127,9 +127,9 @@ TEST_F(SpringDamperTester, ConstructionAndAccessors) {
   EXPECT_EQ(spring_damper_->bodyB().index(), bodyB_->index());
   EXPECT_EQ(spring_damper_->stiffness(), stiffness_);
   EXPECT_EQ(spring_damper_->damping(), damping_);
-  EXPECT_EQ(spring_damper_->rest_length(), rest_length_);
-  EXPECT_EQ(spring_damper_->point_on_bodyA(), p_AP_);
-  EXPECT_EQ(spring_damper_->point_on_bodyB(), p_BQ_);
+  EXPECT_EQ(spring_damper_->free_length(), free_length_);
+  EXPECT_EQ(spring_damper_->p_AP(), p_AP_);
+  EXPECT_EQ(spring_damper_->p_BQ(), p_BQ_);
 }
 
 // Verify the spring applies no forces when the separation length equals the
@@ -156,7 +156,7 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
-  const double expected_force_magnitude = stiffness_ * (length - rest_length_);
+  const double expected_force_magnitude = stiffness_ * (length - free_length_);
   const double expected_torque_magnitude =
       expected_force_magnitude * torque_arm_length_;
   const SpatialForce<double> F_A_W_expected(
@@ -171,7 +171,7 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
 
   // Verify the value of the potential energy.
   const double potential_energy_expected =
-      0.5 * stiffness_ * (length - rest_length_) * (length - rest_length_);
+      0.5 * stiffness_ * (length - free_length_) * (length - free_length_);
   const double potential_energy =
       spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
   EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
@@ -191,7 +191,7 @@ TEST_F(SpringDamperTester, LengthSmallerThanRestLength) {
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
-  const double expected_force_magnitude = stiffness_ * (length - rest_length_);
+  const double expected_force_magnitude = stiffness_ * (length - free_length_);
   const double expected_torque_magnitude =
       expected_force_magnitude * torque_arm_length_;
   const SpatialForce<double> F_A_W_expected(
@@ -212,7 +212,7 @@ TEST_F(SpringDamperTester, NonZeroVelocity) {
   const double length_dot = 1.0;
   // We use the rest length for this test so that the spring contribution is
   // zero.
-  SetSliderState(rest_length_, length_dot);
+  SetSliderState(free_length_, length_dot);
   CalcSpringDamperForces();
   const SpatialForce<double>& F_A_W = GetSpatialForceOnBodyA();
   const SpatialForce<double>& F_B_W = GetSpatialForceOnBodyB();
@@ -232,7 +232,7 @@ TEST_F(SpringDamperTester, NonZeroVelocity) {
       kTolerance, MatrixCompareType::relative));
 
   // Spring is compressing.
-  SetSliderState(rest_length_, -length_dot);
+  SetSliderState(free_length_, -length_dot);
   CalcSpringDamperForces();
   EXPECT_TRUE(CompareMatrices(
       F_A_W.get_coeffs(), -F_A_W_expected.get_coeffs(),
@@ -252,7 +252,7 @@ TEST_F(SpringDamperTester, Power) {
   const double conservative_power =
       spring_damper_->CalcConservativePower(*mbt_context_, *pc_, *vc_);
   const double conservative_power_expected =
-      -stiffness_ * (length - rest_length_) * length_dot;
+      -stiffness_ * (length - free_length_) * length_dot;
   EXPECT_NEAR(conservative_power, conservative_power_expected, kTolerance);
 
   const double non_conservative_power =
