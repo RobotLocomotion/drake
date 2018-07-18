@@ -1,4 +1,4 @@
-#include "drake/math/transform.h"
+#include "drake/math/rigid_transform.h"
 
 #include <gtest/gtest.h>
 
@@ -72,27 +72,27 @@ Matrix3d GetBadRotationMatrix() {
 Vector3d GetPositionVectorA() { return Vector3d(2, 3, 4); }
 Vector3d GetPositionVectorB() { return Vector3d(5, 6, 7); }
 
-// Helper function to create generic transforms.
-Transform<double> GetTransformA() {
-  return Transform<double>(GetRotationMatrixA(), GetPositionVectorA());
+// Helper function to create a generic RigidTransform.
+RigidTransform<double> GetRigidTransformA() {
+  return RigidTransform<double>(GetRotationMatrixA(), GetPositionVectorA());
 }
 
-Transform<double> GetTransformB() {
-  return Transform<double>(GetRotationMatrixB(), GetPositionVectorB());
+RigidTransform<double> GetRigidTransformB() {
+  return RigidTransform<double>(GetRotationMatrixB(), GetPositionVectorB());
 }
 
-// Tests default constructor - should be identity transform.
-GTEST_TEST(Transform, DefaultTransformIsIdentity) {
-  const Transform<double> X;
+// Tests default constructor - should be identity RigidTransform.
+GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
+  const RigidTransform<double> X;
   EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
-// Tests constructing a Transform from a RotationMatrix and Vector3.
-GTEST_TEST(Transform, TransformConstructor) {
+// Tests constructing a RigidTransform from a RotationMatrix and Vector3.
+GTEST_TEST(RigidTransform, RigidTransformConstructor) {
   const RotationMatrix<double> R1 = GetRotationMatrixB();
   const Matrix3d m = R1.matrix();
   const Vector3<double> p(4, 5, 6);
-  const Transform<double> X(R1, p);
+  const RigidTransform<double> X(R1, p);
   const Matrix3d zero_rotation = m - X.rotation().matrix();
   const Vector3d zero_position = p - X.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
@@ -104,18 +104,18 @@ GTEST_TEST(Transform, TransformConstructor) {
   // RotationMatrix class, it is here due to the bug (mentioned below) in
   // EXPECT_THROW.  Contrast the use here of EXPECT_THROW (which does not have
   // an extra set of parentheses around its first argument) with the use of
-  // EXPECT_THROW((Transform<double>(isometryC)), std::logic_error); below.
+  // EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error); below.
   const Matrix3d bad = GetBadRotationMatrix();
-  EXPECT_THROW(Transform<double>(RotationMatrix<double>(bad), p),
+  EXPECT_THROW(RigidTransform<double>(RotationMatrix<double>(bad), p),
                std::logic_error);
 #endif
 }
 
-// Tests getting a 4x4 matrix from a Transform.
-GTEST_TEST(Transform, Matrix44) {
+// Tests getting a 4x4 matrix from a RigidTransform.
+GTEST_TEST(RigidTransform, Matrix44) {
   const RotationMatrix<double> R = GetRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
-  const Transform<double> X(R, p);
+  const RigidTransform<double> X(R, p);
   const Matrix4<double> Y = X.GetAsMatrix4();
   const Matrix3d m = R.matrix();
 
@@ -137,8 +137,8 @@ GTEST_TEST(Transform, Matrix44) {
   EXPECT_EQ(Y(3, 3), 1);
 }
 
-// Tests set/get a Transform with an Isometry3.
-GTEST_TEST(Transform, Isometry3) {
+// Tests set/get a RigidTransform with an Isometry3.
+GTEST_TEST(RigidTransform, Isometry3) {
   const RotationMatrix<double> R = GetRotationMatrixB();
   const Matrix3d m = R.matrix();
   const Vector3<double> p(4, 5, 6);
@@ -146,22 +146,22 @@ GTEST_TEST(Transform, Isometry3) {
   isometryA.linear() = m;
   isometryA.translation() = p;
 
-  // Test constructing a Transform from an Isometry3.
-  const Transform<double> X(isometryA);
+  // Test constructing a RigidTransform from an Isometry3.
+  const RigidTransform<double> X(isometryA);
   Matrix3d zero_rotation = m - X.rotation().matrix();
   Vector3d zero_position = p - X.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
-  // Tests making an Isometry3 from a Transform.
+  // Tests making an Isometry3 from a RigidTransform.
   const Isometry3<double> isometryB = X.GetAsIsometry3();
   zero_rotation = m - isometryB.linear();
   zero_position = p - isometryB.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
-  // Test setting a Transform from an Isometry3.
-  Transform<double> X2;
+  // Test setting a RigidTransform from an Isometry3.
+  RigidTransform<double> X2;
   X2.SetFromIsometry3(isometryA);
   zero_rotation = m - X2.rotation().matrix();
   zero_position = p - X2.translation();
@@ -174,33 +174,33 @@ GTEST_TEST(Transform, Isometry3) {
   Isometry3<double> isometryC;
   isometryC.linear() = bad;
   // Note: As of December 2017, there seems to be a bug in EXPECT_THROW.
-  // The next line incorrectly calls the default Transform constructor.
-  // The default Transform constructor does not throw an exception which means
-  // the EXPECT_THROW fails.  The fix (credit Sherm) was to add an extra set
+  // The next line incorrectly calls the default RigidTransform constructor.
+  // The default RigidTransform constructor does not throw an exception which
+  // means the EXPECT_THROW fails.  The fix (credit Sherm) was to add an extra
   // set of parentheses around the first argument of EXPECT_THROW.
-  EXPECT_THROW((Transform<double>(isometryC)), std::logic_error);
+  EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error);
 #endif
 }
 
 // Tests method Identity (identity rotation matrix and zero vector).
-GTEST_TEST(Transform, Identity) {
-  const Transform<double>& X = Transform<double>::Identity();
+GTEST_TEST(RigidTransform, Identity) {
+  const RigidTransform<double>& X = RigidTransform<double>::Identity();
   EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
 // Tests method SetIdentity.
-GTEST_TEST(Transform, SetIdentity) {
+GTEST_TEST(RigidTransform, SetIdentity) {
   const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
-  Transform<double> X(R, p);
+  RigidTransform<double> X(R, p);
   X.SetIdentity();
   EXPECT_TRUE(X.IsExactlyIdentity().value());
 }
 
-// Tests whether or not a Transform is an identity transform.
-GTEST_TEST(Transform, IsIdentity) {
+// Tests whether or not a RigidTransform is an identity RigidTransform.
+GTEST_TEST(RigidTransform, IsIdentity) {
   // Test whether it is an identity matrix multiple ways.
-  Transform<double> X1;
+  RigidTransform<double> X1;
   EXPECT_TRUE(X1.IsExactlyIdentity().value());
   EXPECT_TRUE(X1.IsIdentityToEpsilon(0.0).value());
   EXPECT_TRUE(X1.rotation().IsExactlyIdentity().value());
@@ -209,7 +209,7 @@ GTEST_TEST(Transform, IsIdentity) {
   // Test non-identity matrix.
   const RotationMatrix<double> R = GetRotationMatrixA();
   const Vector3d p(2, 3, 4);
-  Transform<double> X2(R, p);
+  RigidTransform<double> X2(R, p);
   EXPECT_FALSE(X2.IsExactlyIdentity().value());
 
   // Change rotation matrix to identity, but leave non-zero position vector.
@@ -224,26 +224,26 @@ GTEST_TEST(Transform, IsIdentity) {
   EXPECT_TRUE(X2.IsExactlyIdentity().value());
 }
 
-// Tests calculating the inverse of a Transform.
-GTEST_TEST(Transform, Inverse) {
+// Tests calculating the inverse of a RigidTransform.
+GTEST_TEST(RigidTransform, Inverse) {
   const RotationMatrix<double> R_AB = GetRotationMatrixA();
   const Vector3d p_AoBo_A(2, 3, 4);
-  const Transform<double> X(R_AB, p_AoBo_A);
-  const Transform<double> I = X * X.inverse();
-  const Transform<double> X_identity = Transform<double>::Identity();
+  const RigidTransform<double> X(R_AB, p_AoBo_A);
+  const RigidTransform<double> I = X * X.inverse();
+  const RigidTransform<double> X_identity = RigidTransform<double>::Identity();
   // As documented in IsNearlyEqualTo(), 8 * epsilon was chosen because it is
   // slightly larger than the characteristic length |p_AoBo_A| = 5.4
-  // Note: The square-root of the condition number for a Transform is roughly
-  // the magnitude of the position vector.  The accuracy of the calculation for
-  // the inverse of a Transform drops off with the sqrt condition number.
+  // Note: The square-root of a RigidTransform's condition number is roughly the
+  // magnitude of the position vector.  The accuracy of the calculation for the
+  // inverse of a RigidTransform drops off with sqrt(condition number).
   EXPECT_TRUE(I.IsNearlyEqualTo(X_identity, 8 * kEpsilon).value());
 }
 
-// Tests Transform multiplied by another Transform
-GTEST_TEST(Transform, OperatorMultiplyByTransform) {
-  const Transform<double> X_BA = GetTransformA();
-  const Transform<double> X_CB = GetTransformB();
-  const Transform<double> X_CA = X_CB * X_BA;
+// Tests RigidTransform multiplied by another RigidTransform
+GTEST_TEST(RigidTransform, OperatorMultiplyByRigidTransform) {
+  const RigidTransform<double> X_BA = GetRigidTransformA();
+  const RigidTransform<double> X_CB = GetRigidTransformB();
+  const RigidTransform<double> X_CA = X_CB * X_BA;
 
   // Check accuracy of rotation calculations.
   const RotationMatrix<double> R_CA = X_CA.rotation();
@@ -262,16 +262,16 @@ GTEST_TEST(Transform, OperatorMultiplyByTransform) {
   const Vector3d p_CoAo_C_actual = X_CA.translation();
   EXPECT_TRUE(p_CoAo_C_actual.isApprox(p_CoAo_C_expected, 32 * kEpsilon));
 
-  // Expected transform (with position vector from MotionGenesis).
+  // Expected RigidTransform (with position vector from MotionGenesis).
   // As documented in IsNearlyEqualTo(), 32 * epsilon was chosen because it is
   // slightly larger than the characteristic length |p_CoAo_C| = 14.2
-  const Transform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
+  const RigidTransform<double> X_CA_expected(R_CA_expected, p_CoAo_C_expected);
   EXPECT_TRUE(X_CA.IsNearlyEqualTo(X_CA_expected, 32 * kEpsilon).value());
 }
 
-// Tests Transform multiplied by a position vector.
-GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
-  const Transform<double> X_CB = GetTransformB();
+// Tests RigidTransform multiplied by a position vector.
+GTEST_TEST(RigidTransform, OperatorMultiplyByPositionVector) {
+  const RigidTransform<double> X_CB = GetRigidTransformB();
 
   // Calculate position vector from Co to Q, expressed in C.
   const Vector3d p_BoQ_B = GetPositionVectorA();
@@ -287,13 +287,13 @@ GTEST_TEST(Transform, OperatorMultiplyByPositionVector) {
   EXPECT_TRUE(p_CoQ_C.isApprox(p_CoQ_C_expected, 32 * kEpsilon));
 }
 
-// Test Transform cast method from double to AutoDiffXd.
-GTEST_TEST(Transform, CastFromDoubleToAutoDiffXd) {
+// Test RigidTransform cast method from double to AutoDiffXd.
+GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
   const RollPitchYaw<double> rpy(0.4, 0.3, 0.2);
   const RotationMatrix<double> R_double(rpy);
   const Vector3d p_double(-5, 3, 9);
-  const Transform<double> T_double(R_double, p_double);
-  const Transform<AutoDiffXd> T_autodiff = T_double.cast<AutoDiffXd>();
+  const RigidTransform<double> T_double(R_double, p_double);
+  const RigidTransform<AutoDiffXd> T_autodiff = T_double.cast<AutoDiffXd>();
 
   // To avoid a (perhaps) tautological test, check element-by-element equality.
   const Matrix4<double>& m_double = T_double.GetAsMatrix4();
