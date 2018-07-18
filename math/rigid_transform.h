@@ -136,11 +136,13 @@ class RigidTransform {
   void set_translation(const Vector3<T>& p) { p_AoBo_A_ = p; }
 
   /// Returns the 4x4 matrix associated with this %RigidTransform, i.e., X_AB.
+  /// <pre>
   ///  ┌                ┐
   ///  │ R_AB  p_AoBo_A │
   ///  │                │
   ///  │   0      1     │
   ///  └                ┘
+  /// </pre>
   Matrix4<T> GetAsMatrix4() const {
     Matrix4<T> pose;
     pose.template topLeftCorner<3, 3>() = rotation().matrix();
@@ -176,7 +178,7 @@ class RigidTransform {
     return rotation().IsExactlyIdentity() && (translation().array() == 0).all();
   }
 
-  /// Returns true if `this` is within tolerance of the identity RigidTransform.
+  /// Return true if `this` is within tolerance of the identity %RigidTransform.
   /// @returns `true` if the RotationMatrix portion of `this` satisfies
   /// RotationMatrix::IsIdentityToInternalTolerance() and if the position vector
   /// portion of `this` is equal to zero vector within `translation_tolerance`.
