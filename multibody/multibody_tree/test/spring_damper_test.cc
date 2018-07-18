@@ -51,7 +51,7 @@ class SpringDamperTester : public ::testing::Test {
             *bodyA_, p_AP_, *bodyB_, p_BQ_,
             -1.0 /* negative rest length */, stiffness_, damping_),
         std::exception,
-        ".*condition 'free_length >= 0' failed.*");
+        ".*condition 'free_length > 0' failed.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         model_.AddForceElement<LinearSpringDamper>(
@@ -146,6 +146,14 @@ TEST_F(SpringDamperTester, RestLength) {
   const double potential_energy =
       spring_damper_->CalcPotentialEnergy(*mbt_context_, *pc_);
   EXPECT_NEAR(potential_energy, 0.0, kTolerance);
+}
+
+TEST_F(SpringDamperTester, LengthApproachesZero) {
+  SetSliderState(0.0, 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CalcSpringDamperForces(), std::runtime_error,
+      "The length of the spring became nearly zero. "
+      "Revisit your model to avoid this situation.");
 }
 
 // Verify forces computation when the spring length is larger than its rest

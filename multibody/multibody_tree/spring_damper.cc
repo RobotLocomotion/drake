@@ -23,7 +23,7 @@ LinearSpringDamper<T>::LinearSpringDamper(
     p_BQ_(p_BQ),
     free_length_(free_length),
     stiffness_(stiffness), damping_(damping) {
-  DRAKE_THROW_UNLESS(free_length >= 0);
+  DRAKE_THROW_UNLESS(free_length > 0);
   DRAKE_THROW_UNLESS(stiffness >= 0);
   DRAKE_THROW_UNLESS(damping >= 0);
 }
@@ -46,7 +46,7 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
   // Using a "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
-  const T length_soft = SoftNorm(p_PQ_W);
+  const T length_soft = SafeSoftNorm(p_PQ_W);
 
   const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 
@@ -90,7 +90,7 @@ T LinearSpringDamper<T>::CalcPotentialEnergy(
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
   // We use the same "soft" norm used in the force computation for consistency.
-  const T delta_length = SoftNorm(p_PQ_W) - free_length();
+  const T delta_length = SafeSoftNorm(p_PQ_W) - free_length();
 
   return 0.5 * stiffness() * delta_length * delta_length;
 }
@@ -116,7 +116,7 @@ T LinearSpringDamper<T>::CalcConservativePower(
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
   // We use the same "soft" norm used in the force computation for consistency.
-  const T delta_length = SoftNorm(p_PQ_W) - free_length();
+  const T delta_length = SafeSoftNorm(p_PQ_W) - free_length();
 
   // The rate at which the length of the spring changes.
   const T length_dot = CalcLengthTimeDerivative(pc, vc);
@@ -171,10 +171,17 @@ LinearSpringDamper<T>::DoCloneToScalar(
 }
 
 template <typename T>
-T LinearSpringDamper<T>::SoftNorm(const Vector3<T>& x) const {
+T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T> &x) const {
   using std::sqrt;
-  const T epsilon_squared = std::numeric_limits<double>::epsilon();
-  return sqrt(x.squaredNorm() + epsilon_squared);
+  const double epsilon_length =
+      std::numeric_limits<double>::epsilon() * free_length();
+  const double epsilon_length_squared = epsilon_length * epsilon_length;
+  const T x2 = x.squaredNorm();
+  if (x2 < epsilon_length_squared) {
+    throw std::runtime_error("The length of the spring became nearly zero. "
+                                 "Revisit your model to avoid this situation.");
+  }
+  return sqrt(x2 + epsilon_length_squared);
 }
 
 template <typename T>
@@ -191,7 +198,7 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
   const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
   // Using a "soft" norm we define a "soft length" as ℓₛ = ‖p_PQ‖ₛ.
-  const T length_soft = SoftNorm(p_PQ_W);
+  const T length_soft = SafeSoftNorm(p_PQ_W);
 
   const Vector3<T> r_PQ_W = p_PQ_W / length_soft;
 

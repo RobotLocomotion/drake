@@ -23,7 +23,12 @@ template <typename T> class Body;
 /// where `ℓ = ‖p_WQ - p_WP‖` is the current length of the spring, dℓ/dt its
 /// rate of change, `r̂ = (p_WQ - p_WP) / ℓ` is the normalized vector from P to
 /// Q, ℓ₀ is the free length of the spring and k and c are the stiffness and
-/// damping of the spring-damper, respectively.
+/// damping of the spring-damper, respectively. This %ForceElement is meant to
+/// model finite free length springs attached between two points. In this
+/// typical arrangement springs are usually pre-loaded, meaning they apply
+/// a non-zero spring force in the static configuration of the system. Thus,
+/// neither the free length ℓ₀ nor the current length ℓ of the spring can ever
+/// be zero.
 /// Note that:
 ///   - The applied force is always along the line connecting points P and Q.
 ///   - Damping always dissipates energy.
@@ -50,13 +55,14 @@ class LinearSpringDamper final : public ForceElement<T> {
   /// The remaining parameters define:
   /// @param[in] free_length
   ///   The free length of the spring ℓ₀, in meters, at which the spring
-  ///   applies no forces. It must be non-negative.
+  ///   applies no forces. Since this force element is meant to model finite
+  ///   length springs, ℓ₀ must be strictly positive.
   /// @param[in] stiffness
   ///   The stiffness k of the spring in N/m. It must be non-negative.
   /// @param[in] damping
   ///   The damping c of the damper in N⋅s/m. It must be non-negative.
   /// Refer to this class's documentation for further details.
-  /// @throws std::exception if `free_length` is negative.
+  /// @throws std::exception if `free_length` is negative or zero.
   /// @throws std::exception if `stiffness` is negative.
   /// @throws std::exception if `damping` is negative.
   LinearSpringDamper(
@@ -118,10 +124,13 @@ class LinearSpringDamper final : public ForceElement<T> {
   // To avoid a division by zero when computing a normalized vector from point P
   // on body A to point Q on body B as length of the spring approaches zero,
   // we use a "soft norm" defined by:
-  //   ‖x‖ₛ = sqrt(xᵀ⋅x + ε²)
-  // where ε is a small positive value so that its effect is negligible for
-  // non-zero x.
-  T SoftNorm(const Vector3<T>& x) const;
+  //   ‖x‖ₛ = sqrt(xᵀ⋅x + δ²)
+  // where δ = ε⋅ℓ₀ with ε a small dimensionless positive value so that the
+  // effect of δ is negligible for non-zero x.
+  // This spring model does not allow the length of the spring to approach zero
+  // since that would incur in a non-physical situation. Therefore this "safe"
+  // norm will throw a std::runtime_error when ‖x‖ < δ.
+  T SafeSoftNorm(const Vector3<T> &x) const;
 
   // Helper method to compute the rate of change of the separation length
   // between the two endpoints for this spring-damper.
