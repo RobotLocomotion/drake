@@ -87,6 +87,38 @@ void LogarithmicSos2Test(int num_lambda, bool logarithmic_binning) {
   }
 }
 
+GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
+  // We will define line segments A₀A₁, ..., A₅A₆ in 2D, where points Aᵢ are
+  // defined as A₀ = (0, 0), A₁ = (1, 1), A₂ = (2, 0), A₃ = (4, 2), A₅ = (6, 0),
+  // A₅ = (7, 1), A₆ = (8, 0). We compute the closest point P = (x, y) on the
+  // line segments to a given point Q.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>()(0);
+  auto y = prog.NewContinuousVariables<1>()(0);
+  Eigen::Matrix<double, 2, 7> A;
+  // clang-format off
+  A << 0, 1, 2, 4, 5, 7, 8,
+       0, 1, 0, 2, 0, 1, 0;
+  // clang-format on
+  auto lambda = prog.NewContinuousVariables<7>();
+  auto z = prog.NewBinaryVariables<6>();
+  AddSos2Constraint(&prog, lambda.cast<symbolic::Expression>(),
+                    z.cast<symbolic::Expression>());
+  const Vector2<symbolic::Expression> line_segment = A * lambda;
+  prog.AddLinearConstraint(line_segment(0) == x);
+  prog.AddLinearConstraint(line_segment(1) == y);
+
+  Binding<QuadraticCost> cost = prog.AddQuadraticCost();
+  // We will test with different points Qs.
+  std::vector<Eigen::Vector2d> Qs;
+  Qs.emplace_back(1, 1);
+  Qs.emplace_back(2, 1);
+  Qs.emplace_back(3, 1);
+  Qs.emplace_back(4, 1);
+  Qs.emplace_back(5, 1);
+  Qs.emplace_back(5, 1);
+}
+
 GTEST_TEST(TestLogarithmicSos2, Test4Lambda) {
   LogarithmicSos2Test(4, true);
 }
