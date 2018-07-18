@@ -130,12 +130,15 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
                                          -2 * Q, Q.squaredNorm());
 
     GurobiSolver gurobi_solver;
-    const SolutionResult result = gurobi_solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const Eigen::Vector2d P(prog.GetSolution(VectorDecisionVariable<2>(x, y)));
-    const Eigen::Vector2d P_expected = Q_and_P[i].second;
-    EXPECT_TRUE(CompareMatrices(P, P_expected, 1E-6));
-    EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-6);
+    if (gurobi_solver.available()) {
+      const SolutionResult result = gurobi_solver.Solve(prog);
+      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      const Eigen::Vector2d P(
+          prog.GetSolution(VectorDecisionVariable<2>(x, y)));
+      const Eigen::Vector2d P_expected = Q_and_P[i].second;
+      EXPECT_TRUE(CompareMatrices(P, P_expected, 1E-6));
+      EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-6);
+    }
   }
 }
 
