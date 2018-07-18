@@ -322,7 +322,7 @@ GTEST_TEST(MultilaneLoaderTest, RoadCircuit) {
       lanes: [1, 0, 10]
       start: ["lane.0", "connections.s3.end.0.forward"]
       arc: [20, 180]
-      explicit_end: ["lane.0", "connections.s1.start.0.forward"]
+      explicit_end: ["lane.0", "connections.s1.start.2.forward"]
     s5:
       lanes: [2, 0, -5]
       start: ["ref", "points.b.forward"]
