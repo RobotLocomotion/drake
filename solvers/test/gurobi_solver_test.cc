@@ -242,7 +242,9 @@ GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
   // which is created when acquiring the Gurobi license in the main function.
 
   auto SolveProgram = [](int i, int N) {
-    // In each thread, solve the optimization program
+    // We want to solve a complicated program in each thread, so that multiple
+    // programs will run concurrently. To this end, in each thread, we solve
+    // the following mixed-integer program
     // min (x - i)² + (y - 1)²
     // s.t Point (x, y) are on the line segments A₁A₂, A₂A₃, ..., Aₙ₋₁Aₙ,
     // where A₂ⱼ= (2j, 1), A₂ⱼ₊₁ = (2j+1, 0)

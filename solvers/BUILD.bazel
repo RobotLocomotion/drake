@@ -922,6 +922,7 @@ drake_cc_googletest(
         "test/gurobi_solver_test.cc",
     ],
     tags = gurobi_test_tags(),
+    use_default_main = False,
     deps = [
         ":gurobi_solver",
         ":linear_program_examples",
