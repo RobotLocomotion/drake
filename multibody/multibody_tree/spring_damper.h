@@ -23,12 +23,14 @@ template <typename T> class Body;
 /// where `ℓ = ‖p_WQ - p_WP‖` is the current length of the spring, dℓ/dt its
 /// rate of change, `r̂ = (p_WQ - p_WP) / ℓ` is the normalized vector from P to
 /// Q, ℓ₀ is the free length of the spring and k and c are the stiffness and
-/// damping of the spring-damper, respectively. This %ForceElement is meant to
+/// damping of the spring-damper, respectively. This ForceElement is meant to
 /// model finite free length springs attached between two points. In this
 /// typical arrangement springs are usually pre-loaded, meaning they apply
 /// a non-zero spring force in the static configuration of the system. Thus,
 /// neither the free length ℓ₀ nor the current length ℓ of the spring can ever
-/// be zero.
+/// be zero. The length of the spring approaching zero would incur in a
+/// non-physical configuration and therefore this element throws a
+/// std::runtime_error exception in that case.
 /// Note that:
 ///   - The applied force is always along the line connecting points P and Q.
 ///   - Damping always dissipates energy.
