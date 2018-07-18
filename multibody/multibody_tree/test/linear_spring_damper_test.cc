@@ -1,4 +1,4 @@
-#include "drake/multibody/multibody_tree/spring_damper.h"
+#include "drake/multibody/multibody_tree/linear_spring_damper.h"
 
 #include <gtest/gtest.h>
 

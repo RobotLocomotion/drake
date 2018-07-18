@@ -96,6 +96,7 @@ drake_cc_library(
         "joints/prismatic_joint.cc",
         "joints/revolute_joint.cc",
         "joints/weld_joint.cc",
+        "linear_spring_damper.cc",
         "mobilizer_impl.cc",
         "model_instance.cc",
         "multibody_forces.cc",
@@ -105,7 +106,6 @@ drake_cc_library(
         "revolute_mobilizer.cc",
         "rigid_body.cc",
         "space_xyz_mobilizer.cc",
-        "spring_damper.cc",
         "uniform_gravity_field_element.cc",
         "weld_mobilizer.cc",
     ],
@@ -123,6 +123,7 @@ drake_cc_library(
         "joints/prismatic_joint.h",
         "joints/revolute_joint.h",
         "joints/weld_joint.h",
+        "linear_spring_damper.h",
         "mobilizer.h",
         "mobilizer_impl.h",
         "model_instance.h",
@@ -133,7 +134,6 @@ drake_cc_library(
         "revolute_mobilizer.h",
         "rigid_body.h",
         "space_xyz_mobilizer.h",
-        "spring_damper.h",
         "uniform_gravity_field_element.h",
         "weld_mobilizer.h",
     ],
@@ -390,7 +390,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "spring_damper_test",
+    name = "linear_spring_damper_test",
     deps = [
         ":multibody_tree",
         "//common/test_utilities:eigen_matrix_compare",
