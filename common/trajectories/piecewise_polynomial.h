@@ -258,15 +258,19 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * continuous for the first two and last two segments. If
    * `periodic_end_condition` is `true`, then the first and second derivatives
    * between the end of the last segment and the beginning of the first
-   * segment will be continuous.
-   * See https://en.wikipedia.org/wiki/Spline_interpolation for more details
-   * about "Not-a-knot" condition.
-   * The matlab file "spline.m" and
-   * http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf are also good
-   * references.
+   * segment will be continuous. Note that the periodic end condition does
+   * not require the first and last knot to be colocated, nor does it add
+   * an additional knot to connect the first and last segments. Only first
+   * and second derivative continuity is enforced. 
+   * See https://en.wikipedia.org/wiki/Spline_interpolation, 
+   * https://www.math.uh.edu/~jingqiu/math4364/spline.pdf, and
+   * http://www.maths.lth.se/na/courses/FMN081/FMN081-06/lecture11.pdf
+   * for more about cubic splines and their end conditions.
+   * The MATLAB files "spline.m" and "csape.m" are also good references.
    *
-   * @p breaks and @p knots must have at least 3 elements. Otherwise there is
-   * not enough information to solve for the coefficients.
+   * @p breaks and @p knots must have at least 3 elements. The "not-a-knot" 
+   * condition is ill-defined for two knots, and the "periodic" condition 
+   * produces a straight line (use `FirstOrderHold` for this instead).
    *
    * @param periodic_end_condition Determines whether the "not-a-knot" 
    * (`false`) or the periodic spline (`true`) end condition is used.

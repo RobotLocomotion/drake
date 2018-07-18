@@ -765,9 +765,9 @@ PiecewisePolynomial<T>::Cubic(
 // Internal knot points have continuous values, first and second derivatives.
 // If `periodic_end_condition` is `true`, the first and second derivatives will
 // be continuous between the end of the last segment and the beginning of
-// the first. Otherwise, the third derivative is made continuous at the end
-// of the first segment and the beginning of the last segment (i.e the
-// "not-a-knot" condition).
+// the first. Otherwise, the third derivative is made continuous between the
+// first two segments and between the last two segments (the "not-a-knot"
+// end condition).
 template <typename T>
 PiecewisePolynomial<T>
 PiecewisePolynomial<T>::Cubic(
@@ -800,17 +800,7 @@ PiecewisePolynomial<T>::Cubic(
       int row_idx =
           SetupCubicSplineInteriorCoeffsLinearSystem(times, Y, j, k, &A, &b);
 
-      if (N > 3 && !periodic_end_condition) {
-        // Ydddot(times[1]) is continuous.
-        A(row_idx, 3) = 1;  // Cubic term of 1st segment.
-        A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment.
-        b(row_idx++) = 0;
-
-        // Ydddot(times[N-2]) is continuous.
-        A(row_idx, 4 * (N - 3) + 3) = 1;
-        A(row_idx, 4 * (N - 2) + 3) = -1;
-        b(row_idx++) = 0;
-      } else if (periodic_end_condition) {
+      if (periodic_end_condition) {
         // Time during the last segment.
         const double end_dt = times[times.size() - 1] - times[times.size() - 2];
         // Enforce velocity between end-of-last and beginning-of-first segments
@@ -831,12 +821,24 @@ PiecewisePolynomial<T>::Cubic(
                                                    // segment.
         b(row_idx++) = 0;
       } else {
-        // Set Jerk to zero if only have 3 points, becomes a quadratic.
-        A(row_idx, 3) = 1;
-        b(row_idx++) = 0;
+        if (N > 3) {
+          // Ydddot(times[1]) is continuous.
+          A(row_idx, 3) = 1;  // Cubic term of 1st segment.
+          A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment.
+          b(row_idx++) = 0;
 
-        A(row_idx, 4 + 3) = 1;
-        b(row_idx++) = 0;
+          // Ydddot(times[N-2]) is continuous.
+          A(row_idx, 4 * (N - 3) + 3) = 1;
+          A(row_idx, 4 * (N - 2) + 3) = -1;
+          b(row_idx++) = 0;
+        } else {
+          // Set Jerk to zero if only have 3 points, becomes a quadratic.
+          A(row_idx, 3) = 1;
+          b(row_idx++) = 0;
+
+          A(row_idx, 4 + 3) = 1;
+          b(row_idx++) = 0;
+        }
       }
 
       // TODO(siyuan.feng): Should switch to a sparse solver.
