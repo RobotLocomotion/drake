@@ -217,9 +217,10 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
         0, 3, 3,
         -2, 2, 2,
         1, 1, 1;
+  const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
-      PiecewisePolynomial<double>::Cubic(breaks, knots, true);
+      PiecewisePolynomial<double>::Cubic(breaks, knots, periodic_endpoint);
 
   std::unique_ptr<Trajectory<double>> spline_dt =
       periodic_spline.MakeDerivative(1);
@@ -235,8 +236,8 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   Eigen::VectorXd dt_diff = end_dt - begin_dt;
   Eigen::VectorXd ddt_diff = end_ddt - begin_ddt;
 
-  EXPECT_TRUE(dt_diff.template lpNorm<Eigen::Infinity>() < 1e-8);
-  EXPECT_TRUE(ddt_diff.template lpNorm<Eigen::Infinity>() < 1e-8);
+  EXPECT_TRUE(dt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
+  EXPECT_TRUE(ddt_diff.template lpNorm<Eigen::Infinity>() < 1e-14);
 }
 
 GTEST_TEST(testPiecewisePolynomial, AllTests

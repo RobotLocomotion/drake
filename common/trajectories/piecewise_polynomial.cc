@@ -763,11 +763,11 @@ PiecewisePolynomial<T>::Cubic(
 
 // Makes a cubic piecewise polynomial.
 // Internal knot points have continuous values, first and second derivatives.
-// If periodic_end_condition is true, the first and second derivatives will
+// If `periodic_end_condition` is `true`, the first and second derivatives will
 // be continuous between the end of the last segment and the beginning of
-// the first. Otherwise, third derivative is made continuous at the end of
-// the first segment and the beginning of the last segment "not-a-knot"
-// condition.
+// the first. Otherwise, the third derivative is made continuous at the end
+// of the first segment and the beginning of the last segment (i.e the
+// "not-a-knot" condition).
 template <typename T>
 PiecewisePolynomial<T>
 PiecewisePolynomial<T>::Cubic(
@@ -802,8 +802,8 @@ PiecewisePolynomial<T>::Cubic(
 
       if (N > 3 && !periodic_end_condition) {
         // Ydddot(times[1]) is continuous.
-        A(row_idx, 3) = 1;  // Cubic term of 1st segment
-        A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment
+        A(row_idx, 3) = 1;  // Cubic term of 1st segment.
+        A(row_idx, 4 + 3) = -1;  // Cubic term of 2nd segment.
         b(row_idx++) = 0;
 
         // Ydddot(times[N-2]) is continuous.
@@ -814,20 +814,21 @@ PiecewisePolynomial<T>::Cubic(
         // Time during the last segment.
         const double end_dt = times[times.size() - 1] - times[times.size() - 2];
         // Enforce velocity between end-of-last and beginning-of-first segments
-        // are continuous.
+        // is continuous.
         A(row_idx, 1) = -1;  // Linear term of 1st segment.
         A(row_idx, 4 * (N - 2) + 1) = 1;  // Linear term of last segment.
-        A(row_idx, 4 * (N - 2) + 2) = 2*end_dt;  // Squared term of last
-                                                 // segment.
-        A(row_idx, 4 * (N - 2) + 3) = 3*end_dt*end_dt;  // Cubic term of last
-                                                        // segment.
+        A(row_idx, 4 * (N - 2) + 2) = 2 * end_dt;  // Squared term of last
+                                                   // segment.
+        A(row_idx, 4 * (N - 2) + 3) = 3 * end_dt * end_dt;  // Cubic term of
+                                                            // last segment.
         b(row_idx++) = 0;
 
-        // Enforce acceleration between end-of-last and beginning-of-first
-        // segments are continuous.
+        // Enforce that acceleration between end-of-last and beginning-of-first
+        // segments is continuous.
         A(row_idx, 2) = -2;  // Quadratic term of 1st segment.
         A(row_idx, 4 * (N - 2) + 2) = 2;  // Quadratic term of last segment.
-        A(row_idx, 4 * (N - 2) + 3) = 6*end_dt;  // Cubic term of last segment.
+        A(row_idx, 4 * (N - 2) + 3) = 6 * end_dt;  // Cubic term of last
+                                                   // segment.
         b(row_idx++) = 0;
       } else {
         // Set Jerk to zero if only have 3 points, becomes a quadratic.
