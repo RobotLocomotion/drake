@@ -61,8 +61,7 @@ class RigidTransform {
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
   /// @param[in] p position vector from frame A's origin to frame B's origin,
   /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
-  RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p)
-      : R_AB_(R), p_AoBo_A_(p) {}
+  RigidTransform(const RotationMatrix<T>& R, const Vector3<T>& p) { set(R, p); }
 
   /// Constructs a %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
@@ -74,6 +73,15 @@ class RigidTransform {
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
+  /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
+  /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
+  /// @param[in] p position vector from frame A's origin to frame B's origin,
+  /// expressed in frame A.  In monogram notation p is denoted `p_AoBo_A`.
+  void set(const RotationMatrix<T>& R, const Vector3<T>& p) {
+    set_rotation(R);
+    set_translation(p);
+  }
+
   /// Sets `this` %RigidTransform from an Eigen Isometry3.
   /// @param[in] pose Isometry3 that contains an allegedly valid rotation matrix
   /// `R_AB` and also contains a position vector `p_AoBo_A` from frame A's
@@ -83,8 +91,7 @@ class RigidTransform {
   /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   void SetFromIsometry3(const Isometry3<T>& pose) {
-    R_AB_ = RotationMatrix<T>(pose.linear());
-    p_AoBo_A_ = pose.translation();
+    set(RotationMatrix<T>(pose.linear()), pose.translation());
   }
 
   /// Creates a %RigidTransform templatized on a scalar type U from a
@@ -167,15 +174,15 @@ class RigidTransform {
   /// Bo.  Hence, `this` %RigidTransform contains a 3x3 identity matrix and a
   /// zero position vector.
   const RigidTransform<T>& SetIdentity() {
-    R_AB_ = RotationMatrix<T>::Identity();
-    p_AoBo_A_.setZero();
+    set(RotationMatrix<T>::Identity(), Vector3<T>::Zero());
     return *this;
   }
 
   /// Returns `true` if `this` is exactly the identity %RigidTransform.
   /// @see IsIdentityToEpsilon().
   Bool<T> IsExactlyIdentity() const {
-    return rotation().IsExactlyIdentity() && (translation().array() == 0).all();
+    const Bool<T> is_position_zero = translation() == Vector3<T>::Zero();
+    return is_position_zero && rotation().IsExactlyIdentity();
   }
 
   /// Return true if `this` is within tolerance of the identity %RigidTransform.

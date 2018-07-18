@@ -308,6 +308,46 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
   }
 }
 
+// Verify RigidTransform is compatible with symbolic::Expression. This includes,
+// construction and methods involving Bool specialized for symbolic::Expression,
+// namely: IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
+// TODO(Mitiguy) Once PR 9127 is merged, should not need ExtractBoolOrThrow
+// in any of these tests, so remove them in at least a few of these tests.
+GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
+  // Test RigidTransform can be constructed with symbolic::Expression.
+  RigidTransform<symbolic::Expression> X;
+
+  // Test IsExactlyIdentity() nominally works with symbolic::Expression.
+  Bool<symbolic::Expression> test_Bool = X.IsExactlyIdentity();
+  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+
+  // Test IsIdentityToEpsilon() nominally works with symbolic::Expression.
+  test_Bool = X.IsIdentityToEpsilon(kEpsilon);
+  EXPECT_TRUE(ExtractBoolOrThrow(test_Bool));
+
+  // Test IsNearlyEqualTo() nominally works for symbolic::Expression.
+  const RigidTransform<symbolic::Expression>& X_built_in_identity =
+      RigidTransform<symbolic::Expression>::Identity();
+  test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
+
+  // Now perform the same tests on a non-identity transform.
+  Vector3<symbolic::Expression> p_symbolic(1, 2, 3);
+  X.set_translation(p_symbolic);
+
+  // Test IsExactlyIdentity() works with symbolic::Expression.
+  test_Bool = X.IsExactlyIdentity();
+  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+
+  // Test IsIdentityToEpsilon() works with symbolic::Expression.
+  test_Bool = X.IsIdentityToEpsilon(kEpsilon);
+  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+
+  // Test IsNearlyEqualTo() works for symbolic::Expression.
+  test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
+  EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
+}
+
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
