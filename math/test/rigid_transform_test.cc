@@ -88,13 +88,23 @@ GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
 }
 
 // Tests constructing a RigidTransform from a RotationMatrix and Vector3.
-GTEST_TEST(RigidTransform, RigidTransformConstructor) {
+// Also test the set method.
+GTEST_TEST(RigidTransform, RigidTransformConstructorAndSet) {
   const RotationMatrix<double> R1 = GetRotationMatrixB();
   const Matrix3d m = R1.matrix();
   const Vector3<double> p(4, 5, 6);
-  const RigidTransform<double> X(R1, p);
-  const Matrix3d zero_rotation = m - X.rotation().matrix();
-  const Vector3d zero_position = p - X.translation();
+  RigidTransform<double> X(R1, p);
+  Matrix3d zero_rotation = m - X.rotation().matrix();
+  Vector3d zero_position = p - X.translation();
+  EXPECT_TRUE((zero_rotation.array() == 0).all());
+  EXPECT_TRUE((zero_position.array() == 0).all());
+
+  // Test the set method.
+  X.set(RotationMatrix<double>::Identity(), Vector3d(0, 0, 0));
+  EXPECT_TRUE(X.IsExactlyIdentity().value());
+  X.set(R1, p);
+  zero_rotation = m - X.rotation().matrix();
+  zero_position = p - X.translation();
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
@@ -312,7 +322,7 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
 // construction and methods involving Bool specialized for symbolic::Expression,
 // namely: IsExactlyIdentity(), IsIdentityToEpsilon(), IsNearlyEqualTo().
 // TODO(Mitiguy) Once PR 9127 is merged, should not need ExtractBoolOrThrow
-// in any of these tests, so remove them in at least a few of these tests.
+// in any of these tests, so remove them.
 GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   // Test RigidTransform can be constructed with symbolic::Expression.
   RigidTransform<symbolic::Expression> X;
@@ -331,7 +341,7 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   test_Bool = X.IsNearlyEqualTo(X_built_in_identity, kEpsilon);
 
   // Now perform the same tests on a non-identity transform.
-  Vector3<symbolic::Expression> p_symbolic(1, 2, 3);
+  const Vector3<symbolic::Expression> p_symbolic(1, 2, 3);
   X.set_translation(p_symbolic);
 
   // Test IsExactlyIdentity() works with symbolic::Expression.
@@ -347,6 +357,33 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
   EXPECT_FALSE(ExtractBoolOrThrow(test_Bool));
 }
 
+// Test that symbolic conversions may throw exceptions.
+GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
+  const symbolic::Variable x("x");  // Arbitrary variable.
+  Matrix3<symbolic::Expression> m_symbolic;
+  m_symbolic << 1, 0, 0,
+                0, 1, 0,
+                0, 0, x;  // Not necessarily an identity matrix.
+  RotationMatrix<symbolic::Expression> R_symbolic(m_symbolic);
+  const Vector3<symbolic::Expression> p_symbolic(0, 0, 0);
+  const RigidTransform<symbolic::Expression> X_symbolic(R_symbolic, p_symbolic);
+
+  // The next tests should throw exceptions since the tests are inconclusive
+  // because the value of x is unknown.
+  Bool<symbolic::Expression> test_Bool = X_symbolic.IsExactlyIdentity();
+  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+
+  test_Bool = X_symbolic.IsIdentityToEpsilon(kEpsilon);
+  EXPECT_THROW(ExtractBoolOrThrow(test_Bool), std::runtime_error);
+
+  const RigidTransform<symbolic::Expression>& X_identity =
+      RigidTransform<symbolic::Expression>::Identity();
+  // The next line throws an exception in GetMaximumAbsoluteDifference() which
+  // requires a C++ bool (not drake Bool) to properly return.
+  // GetMaximumAbsoluteDifference() is called by IsNearlyEqual().
+  EXPECT_THROW(test_Bool = X_symbolic.IsNearlyEqualTo(X_identity, kEpsilon),
+               std::runtime_error);
+}
 
 }  // namespace
 }  // namespace math

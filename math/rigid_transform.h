@@ -259,6 +259,8 @@ class RigidTransform {
   /// value of the difference between the elements of `this` and `other`).
   /// @param[in] other %RigidTransform to subtract from `this`.
   /// @returns ‖`this` - `other`‖∞
+  // @internal The last line of this method throws an exception if T is a
+  // symbolic::Expression and there are free variables in `this` or `other`.
   T GetMaximumAbsoluteDifference(const RigidTransform<T>& other) const {
     const T R_difference = R_AB_.GetMaximumAbsoluteDifference(other.rotation());
     const T p_difference = GetMaximumAbsoluteTranslationDifference(other);
