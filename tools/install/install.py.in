@@ -120,7 +120,13 @@ def install(src, dst):
         installed = True
     else:
         print("-- Up-to-date: {}".format(dst_full))
-    re_result = re.match(dylib_match, dst)
+    # NOTE: Only the libraries whose filenames start with `lib` are taken into
+    # account. This workaround allows to install libraries for multiple Python
+    # versions without triggering the error message below. These libraries can
+    # have the same names but are in different subdirectories.
+    # Caveat: We assume that no library depends on these Python libraries and
+    # require some RPath fix-up.
+    re_result = re.match(r'lib' + dylib_match, os.path.basename(dst))
     if re_result is not None:  # It is a library
         basename = os.path.basename(re_result.group(0))
         # Check that dependency is only referenced once
